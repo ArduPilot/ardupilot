@@ -17,6 +17,7 @@ import argparse
 import socket
 import serial
 import errno
+import math
 
 parser = argparse.ArgumentParser(description='ArduPilot MSP FPV viewer')
 parser.add_argument('--port', default="tcp:localhost:5763", help="port to listen on, can be serial port or tcp:IP:port")
@@ -79,8 +80,7 @@ def item_to_pos(item):
     pos_x = (pos-2048) % 32
     return (pos_x, pos_y)
 
-
-def display_text(item, message):
+def display_text(item, message, x_offset=0):
     '''display a string message for an item'''
     XY = item_to_pos(item)
     if XY is None:
@@ -90,10 +90,86 @@ def display_text(item, message):
     textRect = text.get_rect()
 
     slen = len(message)
-    px = X * FontWidth
+    px = X * FontWidth + x_offset
     py = Y * FontHeight
     textRect.center = (px+textRect.width//2, py+textRect.height//2)
     display_surface.blit(text, textRect)
+
+def draw_gauge(x, y, width, height, perc):
+    '''draw an horizontal gauge'''
+    pygame.draw.rect(display_surface, (255, 255, 255), (x, y, width, height), 1)
+    pygame.draw.rect(display_surface, (255, 255, 255), (x+2, y+2, (width-4)*perc/100, height-4))
+
+def draw_batt_icon(x, y):
+    pygame.draw.rect(display_surface, (255, 255, 255), (x+1, y, 6, 3))
+    pygame.draw.rect(display_surface, (255, 255, 255), (x, y+3, 8, 14))
+
+def draw_triangle(x, y, r, angle):
+    a = angle -90 
+    ra = math.radians(a)
+    x1 = x + r * math.cos(ra)
+    y1 = y + r * math.sin(ra)
+
+    ra = math.radians(a + 140)
+    x2 = x + r * math.cos(ra)
+    y2 = y + r * math.sin(ra)
+
+    ra = math.radians(a - 140)
+    x3 = x + r * math.cos(ra)
+    y3 = y + r * math.sin(ra)
+
+    ra = math.radians(angle - 270)
+    x4 = x + r * 0.5 * math.cos(ra)
+    y4 = y + r * 0.5 *math.sin(ra)
+
+    pygame.draw.line(display_surface, (255, 255, 255), (x1, y1), (x2, y2), 2)
+    pygame.draw.line(display_surface, (255, 255, 255), (x1, y1), (x3, y3), 2)
+    pygame.draw.line(display_surface, (255, 255, 255), (x2, y2), (x4, y4), 2)
+    pygame.draw.line(display_surface, (255, 255, 255), (x3, y3), (x4, y4), 2)
+
+def display_battbar():
+    XY = item_to_pos(msp.OSD_MAIN_BATT_USAGE)
+    if XY is None:
+        return
+    (X,Y) = XY
+    px = X * FontWidth
+    py = Y * FontHeight
+    perc = 100
+    if msp.get('BATTERY_STATE.capacity') > 0:
+        perc = 100 - 100*(float(msp.get('BATTERY_STATE.mah'))/msp.get('BATTERY_STATE.capacity'))
+    draw_gauge(px, py, 100, 12, max(0,perc))
+
+def display_homedir():
+    XY = item_to_pos(msp.OSD_HOME_DIR)
+    if XY is None:
+        return
+    (X,Y) = XY
+    px = X * FontWidth
+    py = Y * FontHeight
+    yaw = msp.get("ATTITUDE.yaw")                       #deg
+    home_angle = msp.get('COMP_GPS.directionToHome')    #deg
+    draw_triangle(px+35, py+4, 10, home_angle - yaw)
+    display_text(msp.OSD_HOME_DIR, "Hdir")
+
+def display_batt_voltage():
+    XY = item_to_pos(msp.OSD_MAIN_BATT_VOLTAGE)
+    if XY is None:
+        return
+    (X,Y) = XY
+    px = X * FontWidth
+    py = Y * FontHeight
+    display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.get('BATTERY_STATE.voltage')*0.1), 12)
+    draw_batt_icon(px,py-6)
+
+def display_cell_voltage():
+    XY = item_to_pos(msp.OSD_AVG_CELL_VOLTAGE)
+    if XY is None:
+        return
+    (X,Y) = XY
+    px = X * FontWidth
+    py = Y * FontHeight
+    display_text(msp.OSD_AVG_CELL_VOLTAGE, "%.02fv" % (0 if msp.get('BATTERY_STATE.cellCount')==0 else msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.cellCount')*0.1), 12)
+    draw_batt_icon(px,py-6)
 
 def display_all():
     '''display all items'''
@@ -128,26 +204,26 @@ def display_all():
     '''
 
     display_text(msp.OSD_POWER, "%03dW" % (0 if msp.get('BATTERY_STATE.voltage')==0 or msp.get('BATTERY_STATE.current')==0 else 0.1*msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.voltage')*msp.get('BATTERY_STATE.current')))
-    display_text(msp.OSD_MAIN_BATT_USAGE, "Batt%%:%d" % (100 if msp.get('BATTERY_STATE.capacity')==0 else (100-(msp.get('BATTERY_STATE.mah')/msp.get('BATTERY_STATE.capacity')))))
-    display_text(msp.OSD_AVG_CELL_VOLTAGE, "VCell:%.02fV" % (0 if msp.get('BATTERY_STATE.cellCount')==0 else msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.cellCount')*0.1))
+    display_battbar()
+    display_cell_voltage()
+    display_batt_voltage()
     display_text(msp.OSD_GPS_LAT, "Lat:%.07f" % (msp.get('RAW_GPS.Lat')*0.0000001))
     display_text(msp.OSD_GPS_LON, "Lon:%.07f" % (msp.get('RAW_GPS.Lon')*0.0000001))
     display_text(msp.OSD_RTC_DATETIME, "%04d-%02d-%02d %02d:%02d:%02d" % (msp.get('RTC.year'),msp.get('RTC.mon'),msp.get('RTC.mday'),msp.get('RTC.hour'),msp.get('RTC.min'),msp.get('RTC.sec')))
     display_text(msp.OSD_DISARMED, "%s" % ("ARMED" if msp.get('STATUS.mode_flags')&0X01==1 else "DISARMED"))
-    display_text(msp.OSD_HOME_DIR, "Hdir:%d" % (msp.get('COMP_GPS.directionToHome')))
-    display_text(msp.OSD_HOME_DIST, "Hdist:%d" % (msp.get('COMP_GPS.distanceToHome')))
+    display_homedir()
+    display_text(msp.OSD_HOME_DIST, "Dist: %dm" % (msp.get('COMP_GPS.distanceToHome')))
     display_text(msp.OSD_RSSI_VALUE, "Rssi:%02d" % (msp.get('ANALOG.rssi')))
     display_text(msp.OSD_GPS_SPEED, "%.1fm/s" % (msp.get('RAW_GPS.Speed')*0.01))
     display_text(msp.OSD_GPS_SATS, "Sats:%u" % msp.get("RAW_GPS.numSat"))
     display_text(msp.OSD_ROLL_ANGLE, "Roll:%.1f" % (msp.get("ATTITUDE.roll")*0.1))
     display_text(msp.OSD_PITCH_ANGLE, "Pitch:%.1f" % (msp.get("ATTITUDE.pitch")*0.1))
     display_text(msp.OSD_CURRENT_DRAW, "%02.2fA" % (msp.get('BATTERY_STATE.current')*0.01))
-    display_text(msp.OSD_MAIN_BATT_VOLTAGE, "%.2fV" % (msp.get('BATTERY_STATE.voltage')*0.1))
     display_text(msp.OSD_ALTITUDE, "%.1fm" % (msp.get("ALTITUDE.alt")*0.01))
     display_text(msp.OSD_NUMERICAL_VARIO, u"↕ %.01fm/s" % (msp.get('ALTITUDE.vspeed')*0.01))
     display_text(msp.OSD_MAH_DRAWN, "%umAh" % (msp.get('BATTERY_STATE.mah')))
     display_text(msp.OSD_CRAFT_NAME, "%s" % (msp.msp_name['name']))
-    
+
 def receive_data():
     '''receive any data from socket'''
     global recv_func, last_read_s
