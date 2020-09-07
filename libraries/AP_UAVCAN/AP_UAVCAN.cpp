@@ -207,7 +207,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     _node->setNodeID(self_node_id);
 
     char ndname[20];
-    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
+    hal.util->snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
 
     uavcan::NodeStatusProvider::NodeName name(ndname);
     _node->setName(name);
@@ -316,7 +316,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     // Spin node for device discovery
     _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
 
-    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+    hal.util->snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         _node->setModeOfflineAndPublish();

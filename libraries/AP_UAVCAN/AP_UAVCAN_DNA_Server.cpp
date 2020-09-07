@@ -667,15 +667,15 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
     case HEALTHY:
         return true;
     case STORAGE_FAILURE: {
-        snprintf(fail_msg, fail_msg_len, "Failed to access storage!");
+        hal.util->snprintf(fail_msg, fail_msg_len, "Failed to access storage!");
         return false;
     }
     case DUPLICATE_NODES: {
-        snprintf(fail_msg, fail_msg_len, "Duplicate Node %s../%d!", fault_node_name, fault_node_id);
+        hal.util->snprintf(fail_msg, fail_msg_len, "Duplicate Node %s../%d!", fault_node_name, fault_node_id);
         return false;
     }
     case FAILED_TO_ADD_NODE: {
-        snprintf(fail_msg, fail_msg_len, "Failed to add Node %d!", fault_node_id);
+        hal.util->snprintf(fail_msg, fail_msg_len, "Failed to add Node %d!", fault_node_id);
         return false;
     }
     }
