@@ -227,11 +227,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
 
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
-    if (plane.control_mode == &plane.mode_qautotune) {
-        plane.quadplane.qautotune.save_tuning_gains();
-    } else {
-        plane.quadplane.qautotune.reset();
-    }
+    plane.quadplane.qautotune.disarmed(plane.control_mode == &plane.mode_qautotune);
 #endif
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
