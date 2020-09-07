@@ -142,7 +142,7 @@ public:
 
 #if HAL_MSP_RANGEFINDER_ENABLED
     // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
-    void handle_msp(const MSP::msp_rangefinder_sensor_t &pkt);
+    void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt);
 #endif
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
