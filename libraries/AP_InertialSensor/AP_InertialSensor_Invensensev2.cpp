@@ -242,7 +242,7 @@ void AP_InertialSensor_Invensensev2::start()
 // get a startup banner to output to the GCS
 bool AP_InertialSensor_Invensensev2::get_output_banner(char* banner, uint8_t banner_len) {
     if (_fast_sampling) {
-        snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
+        hal.util->snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
             _gyro_instance, _gyro_backend_rate_hz * _gyro_fifo_downsample_rate / 1000.0, _gyro_backend_rate_hz / 1000.0);
         return true;
     }
