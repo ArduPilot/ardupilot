@@ -142,10 +142,10 @@ bool GCS_MAVLINK::init(uint8_t instance)
     mavlink_comm_port[chan] = _port;
 
     // create performance counters
-    snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
+    hal.util->snprintf(_perf_packet_name, sizeof(_perf_packet_name), "GCS_Packet_%u", chan);
     _perf_packet = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_packet_name);
 
-    snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
+    hal.util->snprintf(_perf_update_name, sizeof(_perf_update_name), "GCS_Update_%u", chan);
     _perf_update = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, _perf_update_name);
 
     AP_SerialManager::SerialProtocol mavlink_protocol = serial_manager.get_mavlink_protocol(chan);
