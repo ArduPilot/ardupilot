@@ -358,19 +358,19 @@ void NavEKF3_core::SelectMagFusion()
         // fall through to magnetometer fusion
     }
 
-    if (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
-        // check for and read new magnetometer measurements. We don't
-        // real for EXTERNAL_YAW_FALLBACK as it has already been read
-        // above
-        readMagData();
-    }
-
     // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
     if (magHealth) {
         magTimeout = false;
         lastHealthyMagTime_ms = imuSampleTime_ms;
     } else if ((imuSampleTime_ms - lastHealthyMagTime_ms) > frontend->magFailTimeLimit_ms && use_compass()) {
         magTimeout = true;
+    }
+
+    if (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK) {
+        // check for and read new magnetometer measurements. We don't
+        // real for EXTERNAL_YAW_FALLBACK as it has already been read
+        // above
+        readMagData();
     }
 
     // check for availability of magnetometer or other yaw data to fuse
