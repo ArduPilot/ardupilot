@@ -468,12 +468,12 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 
     switch (cmd_msp) {
     case MSP2_SENSOR_RANGEFINDER: {
-        const MSP::msp_rangefinder_sensor_t *pkt = (const MSP::msp_rangefinder_sensor_t *)src->ptr;
+        const MSP::msp_rangefinder_data_message_t *pkt = (const MSP::msp_rangefinder_data_message_t *)src->ptr;
         msp_handle_rangefinder(*pkt);
     }
     break;
     case MSP2_SENSOR_OPTIC_FLOW: {
-        const MSP::msp_opflow_sensor_t *pkt = (const MSP::msp_opflow_sensor_t *)src->ptr;
+        const MSP::msp_opflow_data_message_t *pkt = (const MSP::msp_opflow_data_message_t *)src->ptr;
         msp_handle_opflow(*pkt);
     }
     break;
@@ -497,7 +497,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     return MSP_RESULT_NO_REPLY;
 }
 
-void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt)
+void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
 #if HAL_MSP_OPTICALFLOW_ENABLED
     OpticalFlow *optflow = AP::opticalflow();
@@ -508,7 +508,7 @@ void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_sensor_t &pkt
 #endif
 }
 
-void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_sensor_t &pkt)
+void AP_MSP_Telem_Backend::msp_handle_rangefinder(const MSP::msp_rangefinder_data_message_t &pkt)
 {
 #if HAL_MSP_RANGEFINDER_ENABLED
     RangeFinder *rangefinder = AP::rangefinder();
