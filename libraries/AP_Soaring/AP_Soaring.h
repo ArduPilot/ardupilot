@@ -125,6 +125,8 @@ public:
 
     void set_pilot_desired_state(ActiveStatus pilot_desired_state) {_pilot_desired_state = pilot_desired_state;};
 
+    float get_alt_cutoff() const {return alt_cutoff;}
+
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;
