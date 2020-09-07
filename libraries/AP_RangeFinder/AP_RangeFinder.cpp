@@ -402,8 +402,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             }
         }
         break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     case Type::PX4_PWM:
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifndef HAL_BUILD_AP_PERIPH
         // to ease moving from PX4 to ChibiOS we'll lie a little about
         // the backend driver...
@@ -411,15 +411,15 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height);
         }
 #endif
-        break;
 #endif
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
+        break;
     case Type::BBB_PRU:
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
         if (AP_RangeFinder_BBB_PRU::detect()) {
             drivers[instance] = new AP_RangeFinder_BBB_PRU(state[instance], params[instance]);
         }
-        break;
 #endif
+        break;
     case Type::LWSER:
         if (AP_RangeFinder_LightWareSerial::detect(serial_instance)) {
             drivers[instance] = new AP_RangeFinder_LightWareSerial(state[instance], params[instance], serial_instance++);
@@ -435,14 +435,14 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
             drivers[instance] = new AP_RangeFinder_uLanding(state[instance], params[instance], serial_instance++);
         }
         break;
+    case Type::BEBOP:
 #if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) && defined(HAVE_LIBIIO)
-    case Type::BEBOP:
         if (AP_RangeFinder_Bebop::detect()) {
             drivers[instance] = new AP_RangeFinder_Bebop(state[instance], params[instance]);
         }
-        break;
 #endif
+        break;
     case Type::MAVLink:
 #ifndef HAL_BUILD_AP_PERIPH
         if (AP_RangeFinder_MAVLink::detect()) {
@@ -519,16 +519,16 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     case Type::UAVCAN:
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
         /*
           the UAVCAN driver gets created when we first receive a
           measurement. We take the instance slot now, even if we don't
           yet have the driver
          */
         num_instances = MAX(num_instances, instance+1);
-        break;
 #endif
+        break;
 
     case Type::GYUS42v2:
         if (AP_RangeFinder_GYUS42v2::detect(serial_instance)) {
@@ -536,21 +536,21 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
         break;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case Type::SITL:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         drivers[instance] = new AP_RangeFinder_SITL(state[instance], params[instance], instance);
-        break;
 #endif
+        break;
 
-#if HAL_MSP_RANGEFINDER_ENABLED
     case Type::MSP:
+#if HAL_MSP_RANGEFINDER_ENABLED
         if (AP_RangeFinder_MSP::detect()) {
             drivers[instance] = new AP_RangeFinder_MSP(state[instance], params[instance]);
         }
-        break;
 #endif // HAL_MSP_RANGEFINDER_ENABLED
+        break;
 
-    default:
+    case Type::NONE:
         break;
     }
 
