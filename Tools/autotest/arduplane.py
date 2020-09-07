@@ -2114,3 +2114,8 @@ class AutoTestPlane(AutoTest):
              self.log_upload),
         ])
         return ret
+
+    def disabled_tests(self):
+        return {
+            "Button": "See https://github.com/ArduPilot/ardupilot/issues/15259",
+        }
