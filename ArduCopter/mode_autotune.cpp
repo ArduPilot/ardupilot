@@ -137,19 +137,14 @@ void ModeAutoTune::run()
     copter.autotune.run();
 }
 
-void ModeAutoTune::save_tuning_gains()
+void ModeAutoTune::disarmed(bool save)
 {
-    copter.autotune.save_tuning_gains();
+    copter.autotune.disarmed(save);
 }
 
 void ModeAutoTune::stop()
 {
     copter.autotune.stop();
-}
-
-void ModeAutoTune::reset()
-{
-    copter.autotune.reset();
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED
