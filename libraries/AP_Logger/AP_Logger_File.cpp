@@ -825,7 +825,7 @@ void AP_Logger_File::start_new_log(void)
     }
 
     char buf[30];
-    snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)log_num);
+    hal.util->snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)log_num);
     const ssize_t to_write = strlen(buf);
     const ssize_t written = AP::FS().write(fd, buf, to_write);
     AP::FS().close(fd);
