@@ -2,20 +2,18 @@
 
 namespace MSP
 {
-// inav/src/main/io/rangefinder_msp.c
+// src/main/msp/msp_protocol_v2_sensor_msg.h
 typedef struct PACKED {
     uint8_t quality;    // [0;255]
     int32_t distance_mm; // Negative value for out of range
-} msp_rangefinder_sensor_t;
+} msp_rangefinder_data_message_t;
 
-// inav/src/main/io/opflow_msp.c
 typedef struct PACKED {
     uint8_t quality;    // [0;255]
     int32_t motion_x;
     int32_t motion_y;
-} msp_opflow_sensor_t;
+} msp_opflow_data_message_t;
 
-// inav/src/main/io/gps_msp.c
 typedef struct PACKED {
     uint8_t  instance;                  // sensor instance number to support multi-sensor setups
     uint16_t gps_week;                   // GPS week, 0xFFFF if not available
