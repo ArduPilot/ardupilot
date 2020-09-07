@@ -863,7 +863,7 @@ uint32_t CANIface::get_stats(char* data, uint32_t max_size)
         return 0;
     }
     CriticalSectionLocker lock;
-    uint32_t ret = snprintf(data, max_size,
+    uint32_t ret = hal.util->snprintf(data, max_size,
                             "tx_requests:    %lu\n"
                             "tx_rejected:    %lu\n"
                             "tx_success:     %lu\n"

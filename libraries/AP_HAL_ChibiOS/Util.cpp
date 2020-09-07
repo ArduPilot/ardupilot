@@ -272,7 +272,7 @@ bool Util::get_system_id(char buf[40])
     board_name[13] = 0;
 
     // this format is chosen to match the format used by HAL_PX4
-    snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+    hal.util->snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
              board_name,
              (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0],
              (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4],
@@ -314,7 +314,7 @@ size_t Util::thread_info(char *buf, size_t bufsize)
   size_t total = 0;
 
   // a header to allow for machine parsers to determine format
-  int n = snprintf(buf, bufsize, "ThreadsV1\n");
+  int n = hal.util->snprintf(buf, bufsize, "ThreadsV1\n");
   if (n <= 0) {
       return 0;
   }
@@ -331,7 +331,7 @@ size_t Util::thread_info(char *buf, size_t bufsize)
           p++;
       }
       uint32_t stack_left = ((uint32_t)p) - stklimit;
-      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
+      n = hal.util->snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
       if (n <= 0) {
           break;
       }

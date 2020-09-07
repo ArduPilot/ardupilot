@@ -176,7 +176,7 @@ void Storage::_save_backup(void)
     fname = nullptr;
     if (fd != -1) {
         char buf[10];
-        snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)curr_bak);
+        hal.util->snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)curr_bak);
         const ssize_t to_write = strlen(buf);
         const ssize_t written = AP::FS().write(fd, buf, to_write);
         AP::FS().close(fd);
