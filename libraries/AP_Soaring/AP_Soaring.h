@@ -81,7 +81,8 @@ public:
         THERMAL_WEAK,
         ALT_LOST,
         DRIFT_EXCEEDED,
-        GOOD_TO_KEEP_LOITERING
+        GOOD_TO_KEEP_LOITERING,
+        EXIT_COMMANDED,
     };
 
     enum class ActiveStatus {
@@ -133,4 +134,6 @@ private:
     ActiveStatus _pilot_desired_state = ActiveStatus::AUTO_MODE_CHANGE;
 
     ActiveStatus active_state() const;
+
+    bool _exit_commanded;
 };
