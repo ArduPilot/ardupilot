@@ -603,6 +603,9 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         }
         return MAV_RESULT_ACCEPTED;
 
+    case MAV_CMD_DO_REPOSITION:
+        return handle_command_int_do_reposition(packet);
+
     case MAV_CMD_DO_SET_REVERSE:
         // param1 : Direction (0=Forward, 1=Reverse)
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
@@ -678,6 +681,49 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
+}
+
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
+{
+    const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
+    if (!rover.control_mode->in_guided_mode() && !change_modes) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // sanity check location
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_DENIED;
+    }
+    if (packet.x == 0 && packet.y == 0) {
+        return MAV_RESULT_DENIED;
+    }
+
+    Location request_location {};
+    request_location.lat = packet.x;
+    request_location.lng = packet.y;
+
+    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+        return MAV_RESULT_DENIED;
+    }
+
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
+        return MAV_RESULT_DENIED; // failed as the location is not valid
+    }
+    request_location.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
+
+    if (!rover.control_mode->in_guided_mode()) {
+        if (!rover.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
+    }
+
+    // set the destination
+    if (!rover.mode_guided.set_desired_location(request_location)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    return MAV_RESULT_ACCEPTED;
 }
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
