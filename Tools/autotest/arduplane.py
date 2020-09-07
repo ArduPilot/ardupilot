@@ -843,9 +843,11 @@ class AutoTestPlane(AutoTest):
 
         self.set_parameter("THR_FS_VALUE", 960)
         self.progress("Failing receiver (throttle-to-950)")
+        self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
-        self.wait_mode('CIRCLE') # short failsafe
         self.wait_mode('RTL') # long failsafe
+        if (not self.get_mode_from_mode_mapping("CIRCLE") in [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
+            raise NotAchievedException("Did not go via circle mode")
         self.progress("Ensure we've had our throttle squashed to 950")
         self.wait_rc_channel_value(3, 950)
         self.drain_mav_unparsed()
@@ -878,9 +880,11 @@ class AutoTestPlane(AutoTest):
         self.change_mode('MANUAL')
 
         self.progress("Failing receiver (no-pulses)")
+        self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
-        self.wait_mode('CIRCLE') # short failsafe
         self.wait_mode('RTL') # long failsafe
+        if (not self.get_mode_from_mode_mapping("CIRCLE") in [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
+            raise NotAchievedException("Did not go via circle mode")
         self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         print("%s" % str(m))
@@ -913,20 +917,22 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Ensure long failsafe can trigger when short failsafe disabled")
         self.context_push()
+        self.context_collect("STATUSTEXT")
         ex = None
         try:
             self.set_parameter("FS_SHORT_ACTN", 3) # 3 means disabled
             self.set_parameter("SIM_RC_FAIL", 1)
-            self.wait_statustext("Long event on")
+            self.wait_statustext("Long event on", check_context=True)
             self.wait_mode("RTL")
+#            self.context_clear_collection("STATUSTEXT")
             self.set_parameter("SIM_RC_FAIL", 0)
-            self.wait_text("Long event off")
+            self.wait_text("Long event off", check_context=True)
             self.change_mode("MANUAL")
 
             self.progress("Trying again with THR_FS_VALUE")
             self.set_parameter("THR_FS_VALUE", 960)
             self.set_parameter("SIM_RC_FAIL", 2)
-            self.wait_statustext("Long event on")
+            self.wait_statustext("Long event on", check_context=True)
             self.wait_mode("RTL")
         except Exception as e:
             self.progress("Exception caught:")
