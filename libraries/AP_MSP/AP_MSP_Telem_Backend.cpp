@@ -298,9 +298,9 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
             const int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - ahrs.yaw_sensor);
             const int32_t interval = 36000 / ARRAY_SIZE(arrows);
             uint8_t arrow = arrows[((angle + interval / 2) / interval) % ARRAY_SIZE(arrows)];
-            snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
+            hal.util->snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
         } else {
-            snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s ---%s", notify->get_flight_mode_str(), unit);
+            hal.util->snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%s ---%s", notify->get_flight_mode_str(), unit);
         }
     } else {
         /*
@@ -316,10 +316,10 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, bool wi
 
         char buffer[MSP_TXT_BUFFER_SIZE] {};
         // flightmode
-        const uint8_t used = snprintf(buffer, ARRAY_SIZE(buffer), "%s%s", notify->get_flight_mode_str(), simple_mode_str);
+        const uint8_t used = hal.util->snprintf(buffer, ARRAY_SIZE(buffer), "%s%s", notify->get_flight_mode_str(), simple_mode_str);
         // left pad
         uint8_t left_padded_len = MSP_TXT_VISIBLE_CHARS - (MSP_TXT_VISIBLE_CHARS - used)/2;
-        snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%*s", left_padded_len, buffer);
+        hal.util->snprintf(flight_mode_str, MSP_TXT_BUFFER_SIZE, "%*s", left_padded_len, buffer);
     }
 }
 
