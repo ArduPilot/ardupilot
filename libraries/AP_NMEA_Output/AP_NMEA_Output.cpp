@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <time.h>
 
+extern const AP_HAL::HAL& hal;
+
 AP_NMEA_Output* AP_NMEA_Output::_singleton;
 
 AP_NMEA_Output::AP_NMEA_Output()
@@ -87,11 +89,11 @@ void AP_NMEA_Output::update()
 
     // format time string
     char tstring[11];
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
     // format date string
     char dstring[7];
-    snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
+    hal.util->snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
     AP_AHRS_NavEKF& ahrs = AP::ahrs_navekf();
 
@@ -102,7 +104,7 @@ void AP_NMEA_Output::update()
     // format latitude
     char lat_string[13];
     float deg = fabsf(loc.lat * 1.0e-7f);
-    snprintf(lat_string,
+    hal.util->snprintf(lat_string,
              sizeof(lat_string),
              "%02u%08.5f,%c",
              (unsigned) deg,
@@ -112,7 +114,7 @@ void AP_NMEA_Output::update()
     // format longitude
     char lng_string[14];
     deg = fabsf(loc.lng * 1.0e-7f);
-    snprintf(lng_string,
+    hal.util->snprintf(lng_string,
              sizeof(lng_string),
              "%03u%08.5f,%c",
              (unsigned) deg,
@@ -134,7 +136,7 @@ void AP_NMEA_Output::update()
         return;
     }
     char gga_end[6];
-    snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(gga));
+    hal.util->snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(gga));
 
     // get speed
     Vector2f speed = ahrs.groundspeed_vector();
@@ -157,7 +159,7 @@ void AP_NMEA_Output::update()
         return;
     }
     char rmc_end[6];
-    snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(rmc));
+    hal.util->snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(rmc));
 
     const uint32_t space_required = strlen(gga) + strlen(gga_end) + strlen(rmc) + strlen(rmc_end);
 
