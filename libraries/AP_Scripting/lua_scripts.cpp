@@ -147,7 +147,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         if (filename == nullptr) {
             continue;
         }
-        snprintf(filename, size, "%s/%s", dirname, de->d_name);
+        hal.util->snprintf(filename, size, "%s/%s", dirname, de->d_name);
 
         // we have something that looks like a lua file, attempt to load it
         script_info * script = load_script(L, filename);
