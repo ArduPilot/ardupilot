@@ -339,9 +339,13 @@ void Plane::update_fbwb_speed_height(void)
         }
 
 #if SOARING_ENABLED == ENABLED
-        if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
-            // we're in soaring mode with throttle suppressed
-            set_target_altitude_current();;
+        if (g2.soaring_controller.is_active()) {
+            if (g2.soaring_controller.get_throttle_suppressed()) {
+                // we're in soaring mode with throttle suppressed
+                set_target_altitude_current();
+            } else {
+                target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt;
+            }
         }
 #endif
         
