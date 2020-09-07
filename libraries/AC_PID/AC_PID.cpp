@@ -236,14 +236,6 @@ float AC_PID::get_ff()
     return _target * _kff;
 }
 
-// todo: remove function when it is no longer used.
-float AC_PID::get_ff(float target)
-{
-    float FF_out = (target * _kff);
-    _pid_info.FF = FF_out;
-    return FF_out;
-}
-
 void AC_PID::reset_I()
 {
     _integrator = 0;
