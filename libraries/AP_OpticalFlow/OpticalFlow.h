@@ -77,7 +77,7 @@ public:
 
 #if HAL_MSP_OPTICALFLOW_ENABLED
     // handle optical flow msp messages
-    void handle_msp(const MSP::msp_opflow_sensor_t &pkt);
+    void handle_msp(const MSP::msp_opflow_data_message_t &pkt);
 #endif
 
     // quality - returns the surface quality as a measure from 0 ~ 255

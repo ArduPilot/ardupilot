@@ -91,7 +91,7 @@ void AP_OpticalFlow_MSP::update(void)
 }
 
 // handle OPTICAL_FLOW msp messages
-void AP_OpticalFlow_MSP::handle_msp(const MSP::msp_opflow_sensor_t &pkt)
+void AP_OpticalFlow_MSP::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 {
     // record time message was received
     // ToDo: add jitter correction
