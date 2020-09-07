@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
+extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
 
@@ -50,5 +51,5 @@ void RF_LightWareSerial::update(float range)
 
 uint32_t RF_LightWareSerial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    return snprintf((char*)buffer, buflen, "%f\r", alt_cm / 100.0f); // note tragic lack of snprintf return checking
+    return hal.util->snprintf((char*)buffer, buflen, "%f\r", alt_cm / 100.0f); // note tragic lack of snprintf return checking
 }

@@ -357,7 +357,7 @@ void Webots::output_rover(const struct sitl_input &input)
     // construct a JSON packet for v and w
     char buf[200];
     
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f], \"wnd\": [%f, %f, %f, %f]}\n",
+    const int len = hal.util->snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f], \"wnd\": [%f, %f, %f, %f]}\n",
              motor1, motor2,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     
@@ -385,7 +385,7 @@ void Webots::output_tricopter(const struct sitl_input &input)
 
     // construct a JSON packet for motors
     char buf[200];
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
+    const int len = hal.util->snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
              m_right, m_left, m_servo, m_back,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     //printf("\"eng\": [%.3f, %.3f, %.3f, %.3f]\n",m_right, m_left, m_servo, m_back);
@@ -419,7 +419,7 @@ void Webots::output_quad(const struct sitl_input &input)
 
     // construct a JSON packet for motors
     char buf[200];
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
+    const int len = hal.util->snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
              m_front, m_right, m_back, m_left,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     buf[len] = 0;
@@ -433,7 +433,7 @@ void Webots::output_quad(const struct sitl_input &input)
 void Webots::output_pwm(const struct sitl_input &input)
 {
     char buf[2000];
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0], \"wnd\": [%3.3f, %f, %3.3f, %3.3f]}\n",
+    const int len = hal.util->snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0], \"wnd\": [%3.3f, %f, %3.3f, %3.3f]}\n",
              input.servos[0], input.servos[1], input.servos[2], input.servos[3],
              input.servos[4], input.servos[5], input.servos[6], input.servos[7],
              input.servos[8], input.servos[9], input.servos[10], input.servos[11],

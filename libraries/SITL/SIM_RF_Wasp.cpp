@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 void RF_Wasp::check_configuration()
@@ -59,7 +61,7 @@ void RF_Wasp::check_configuration()
                     strncpy(string_configs[i].value, &_buffer[offs], MIN(ARRAY_SIZE(config.format), unsigned(cr - _buffer - offs - 1))); // -1 for the lf, -1 for the cr
 //                    gcs().send_text(MAV_SEVERITY_INFO, "Wasp: config (%s) (%s)", string_configs[i].name, string_configs[i].value);
                     char response[128];
-                    const size_t x = snprintf(response,
+                    const size_t x = hal.util->snprintf(response,
                                               ARRAY_SIZE(response),
                                               "%s %s\n",
                                               string_configs[i].name,
@@ -82,7 +84,7 @@ void RF_Wasp::check_configuration()
                     *(integer_configs[i].value) = atoi(tmp);
 //                    gcs().send_text(MAV_SEVERITY_INFO, "Wasp: config (%s) (%d)", integer_configs[i].name, *(integer_configs[i].value));
                     char response[128];
-                    const size_t x = snprintf(response,
+                    const size_t x = hal.util->snprintf(response,
                                               ARRAY_SIZE(response),
                                               "%s %d\n",
                                               integer_configs[i].name,
@@ -113,5 +115,5 @@ void RF_Wasp::update(float range)
 
 uint32_t RF_Wasp::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    return snprintf((char*)buffer, buflen, "%f\n", alt_cm/100.0f);
+    return hal.util->snprintf((char*)buffer, buflen, "%f\n", alt_cm/100.0f);
 }

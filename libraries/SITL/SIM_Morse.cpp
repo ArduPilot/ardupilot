@@ -371,7 +371,7 @@ void Morse::output_rover_regular(const struct sitl_input &input)
 
     // construct a JSON packet for steer/force
     char buf[60];
-    snprintf(buf, sizeof(buf)-1, "{\"steer\": %.3f, \"force\": %.2f, \"brake\": %.2f}\n",
+    hal.util->snprintf(buf, sizeof(buf)-1, "{\"steer\": %.3f, \"force\": %.2f, \"brake\": %.2f}\n",
              steer, -force, 0.0);
     buf[sizeof(buf)-1] = 0;
 
@@ -392,7 +392,7 @@ void Morse::output_rover_skid(const struct sitl_input &input)
 
     // construct a JSON packet for v and w
     char buf[60];
-    snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"w\": %.2f}\n",
+    hal.util->snprintf(buf, sizeof(buf)-1, "{\"v\": %.3f, \"w\": %.2f}\n",
              speed_ms, -steering_rps);
     buf[sizeof(buf)-1] = 0;
 
@@ -422,7 +422,7 @@ void Morse::output_quad(const struct sitl_input &input)
 
     // construct a JSON packet for motors
     char buf[60];
-    snprintf(buf, sizeof(buf)-1, "{\"engines\": [%.3f, %.3f, %.3f, %.3f]}\n",
+    hal.util->snprintf(buf, sizeof(buf)-1, "{\"engines\": [%.3f, %.3f, %.3f, %.3f]}\n",
              m_back, m_right, m_front, m_left);
     buf[sizeof(buf)-1] = 0;
 
@@ -436,7 +436,7 @@ void Morse::output_quad(const struct sitl_input &input)
 void Morse::output_pwm(const struct sitl_input &input)
 {
     char buf[200];
-    snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u]}\n",
+    hal.util->snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u]}\n",
              input.servos[0], input.servos[1], input.servos[2], input.servos[3],
              input.servos[4], input.servos[5], input.servos[6], input.servos[7],
              input.servos[8], input.servos[9], input.servos[10], input.servos[11],

@@ -21,10 +21,12 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 uint32_t RF_MaxsonarSerialLV::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
     const float inches = alt_cm / 2.54f;
-    return snprintf((char*)buffer, buflen, "%u\r", (unsigned)inches);
+    return hal.util->snprintf((char*)buffer, buflen, "%u\r", (unsigned)inches);
 }

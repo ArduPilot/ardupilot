@@ -24,6 +24,8 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
 
+extern const AP_HAL::HAL& hal;
+
 namespace SITL {
 
 SITL *_sitl;
@@ -36,7 +38,7 @@ void ADSB_Vehicle::update(float delta_t)
     if (!initialised) {
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
-        snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
+        hal.util->snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
         position.x = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
         position.y = Aircraft::rand_normal(0, _sitl->adsb_radius_m);
         position.z = -fabsf(_sitl->adsb_altitude_m);
