@@ -970,7 +970,6 @@ class AutoTest(ABC):
             self.params = [self.params]
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
-        self.set_parameter('LOG_REPLAY', 1)
         self.set_parameter('LOG_DISARMED', 1)
         if self.force_ahrs_type is not None:
             if self.force_ahrs_type == 2:
