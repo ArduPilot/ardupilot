@@ -208,9 +208,10 @@ for t in $CI_BUILD_TARGET; do
         $waf all
         ccache -s && ccache -z
 
-        if [[ $t == linux ]]; then
+        if [[ $t == "linux" ]]; then
             $waf check
         fi
+        continue
     fi
 done
 
