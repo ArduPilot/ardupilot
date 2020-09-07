@@ -501,7 +501,7 @@ void Display::update_gps(uint8_t r)
             fixname = gpsfixname[0];
             break;
     }
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, (unsigned)AP_Notify::flags.gps_num_sats) ;
+    hal.util->snprintf(msg, DISPLAY_MESSAGE_SIZE, "GPS:%-5s Sats:%2u", fixname, (unsigned)AP_Notify::flags.gps_num_sats) ;
     draw_text(COLUMN(0), ROW(r), msg);
 }
 
@@ -526,7 +526,7 @@ void Display::update_battery(uint8_t r)
     char msg [DISPLAY_MESSAGE_SIZE];
     AP_BattMonitor &battery = AP::battery();
     uint8_t pct = battery.capacity_remaining_pct();
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
+    hal.util->snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 
@@ -534,7 +534,7 @@ void Display::update_mode(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
     if (pNotify->get_flight_mode_str()) {
-        snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", pNotify->get_flight_mode_str()) ;
+        hal.util->snprintf(msg, DISPLAY_MESSAGE_SIZE, "Mode: %s", pNotify->get_flight_mode_str()) ;
         draw_text(COLUMN(0), ROW(r), msg);
     }
 }
@@ -564,7 +564,7 @@ void Display::update_text(uint8_t r)
         return;
     }
 
-    snprintf(txt, sizeof(txt), "%s", pNotify->get_text());
+    hal.util->snprintf(txt, sizeof(txt), "%s", pNotify->get_text());
 
     memset(msg, ' ', sizeof(msg)-1); // leave null termination
     const uint8_t len = strlen(&txt[_mstartpos]);
