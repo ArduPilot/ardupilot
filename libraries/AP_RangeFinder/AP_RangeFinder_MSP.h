@@ -22,7 +22,7 @@ public:
     void update(void) override;
 
     // Get update from msp
-    void handle_msp(const MSP::msp_rangefinder_sensor_t &pkt) override;
+    void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt) override;
 
 protected:
 

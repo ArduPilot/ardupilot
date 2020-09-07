@@ -46,7 +46,7 @@ bool AP_RangeFinder_MSP::detect()
 /*
    Set the distance based on a MSP message
 */
-void AP_RangeFinder_MSP::handle_msp(const MSP::msp_rangefinder_sensor_t &pkt)
+void AP_RangeFinder_MSP::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 {
     state.last_reading_ms = AP_HAL::millis();
     distance_cm = pkt.distance_mm / 10;
