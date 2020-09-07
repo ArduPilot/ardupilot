@@ -340,14 +340,14 @@ bool AP_Generator_RichenPower::pre_arm_check(char *failmsg, uint8_t failmsg_len)
     const uint32_t now = AP_HAL::millis();
 
     if (now - last_reading_ms > 2000) { // we expect @1Hz
-        snprintf(failmsg, failmsg_len, "no messages in %ums", unsigned(now - last_reading_ms));
+        hal.util->snprintf(failmsg, failmsg_len, "no messages in %ums", unsigned(now - last_reading_ms));
         return false;
     }
     if (last_reading.seconds_until_maintenance == 0) {
-        snprintf(failmsg, failmsg_len, "requires maintenance");
+        hal.util->snprintf(failmsg, failmsg_len, "requires maintenance");
     }
     if (SRV_Channels::get_channel_for(SRV_Channel::k_generator_control) == nullptr) {
-        snprintf(failmsg, failmsg_len, "need a servo output channel");
+        hal.util->snprintf(failmsg, failmsg_len, "need a servo output channel");
         return false;
     }
 
@@ -355,26 +355,26 @@ bool AP_Generator_RichenPower::pre_arm_check(char *failmsg, uint8_t failmsg_len)
         for (uint16_t i=0; i<16; i++) {
             if (last_reading.errors & (1U << (uint16_t)i)) {
                 if (i < (uint16_t)Errors::LAST) {
-                    snprintf(failmsg, failmsg_len, "error: %s", error_strings[i]);
+                    hal.util->snprintf(failmsg, failmsg_len, "error: %s", error_strings[i]);
                 } else {
-                    snprintf(failmsg, failmsg_len, "unknown error: 1U<<%u", i);
+                    hal.util->snprintf(failmsg, failmsg_len, "unknown error: 1U<<%u", i);
                 }
             }
         }
         return false;
     }
     if (pilot_desired_runstate != RunState::RUN) {
-        snprintf(failmsg, failmsg_len, "requested state is not RUN");
+        hal.util->snprintf(failmsg, failmsg_len, "requested state is not RUN");
         return false;
     }
     if (commanded_runstate != RunState::RUN) {
-        snprintf(failmsg, failmsg_len, "Generator warming up (%.0f%%)", (heat *100 / heat_required_for_run()));
+        hal.util->snprintf(failmsg, failmsg_len, "Generator warming up (%.0f%%)", (heat *100 / heat_required_for_run()));
         return false;
     }
     if (last_reading.mode != Mode::RUN &&
         last_reading.mode != Mode::CHARGE &&
         last_reading.mode != Mode::BALANCE) {
-        snprintf(failmsg, failmsg_len, "not running");
+        hal.util->snprintf(failmsg, failmsg_len, "not running");
         return false;
     }
 
