@@ -101,7 +101,7 @@ void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
 
     _initialized = true;
 
-    snprintf(_thread_name, sizeof(_thread_name), "PiccoloCAN_%u", driver_index);
+    hal.util->snprintf(_thread_name, sizeof(_thread_name), "PiccoloCAN_%u", driver_index);
 
     debug_can(AP_CANManager::LOG_DEBUG, "PiccoloCAN: init done\n\r");
 }
@@ -525,14 +525,14 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
         if (SRV_Channels::function_assigned(motor_function)) {
 
             if (!is_esc_present(ii)) {
-                snprintf(reason, reason_len, "ESC %u not detected", ii + 1);
+                hal.util->snprintf(reason, reason_len, "ESC %u not detected", ii + 1);
                 return false;
             }
 
             PiccoloESC_Info_t &esc = _esc_info[ii];
 
             if (esc.statusA.status.hwInhibit) {
-                snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
+                hal.util->snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
         }
