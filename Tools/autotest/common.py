@@ -6669,7 +6669,7 @@ switch value'''
         # but it *will* end up as 1<<btn immediately afterwards.  Thus
         # not attempting to fetch the value back here:
         new_mask = 0
-        self.send_set_parameter("SIM_PIN_MASK", new_mask)
+        self.send_set_parameter("SIM_PIN_MASK", new_mask, verbose=True)
         tstart = self.get_sim_time_cached()
         while True:
             now = self.get_sim_time_cached()
