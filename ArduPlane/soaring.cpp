@@ -147,6 +147,9 @@ void Plane::update_soaring() {
         case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
             soaring_restore_mode("Drifted too far", ModeReason::SOARING_DRIFT_EXCEEDED, *exit_mode);
             break;
+        case SoaringController::LoiterStatus::EXIT_COMMANDED:
+            soaring_restore_mode("Exit via RC switch", ModeReason::RC_COMMAND, *exit_mode);
+            break;
         } // switch loiterStatus
 
         break;
