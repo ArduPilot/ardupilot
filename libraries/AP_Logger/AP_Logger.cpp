@@ -319,14 +319,14 @@ bool AP_Logger::labels_string_is_good(const char *labels) const
     // label_offsets.
     char *label_offsets[LS_LABELS_SIZE];
     uint8_t label_offsets_offset = 0;
-    char labels_copy[LS_LABELS_SIZE];
-    strncpy(labels_copy, labels, ARRAY_SIZE(labels_copy));
+    char labels_copy[LS_LABELS_SIZE+1] {};
+    strncpy(labels_copy, labels, LS_LABELS_SIZE);
     if (labels_copy[0] == ',') {
         Debug("Leading comma in (%s)", labels);
         passed = false;
     }
     label_offsets[label_offsets_offset++] = labels_copy;
-    const uint8_t len = strnlen(labels_copy, ARRAY_SIZE(labels_copy));
+    const uint8_t len = strnlen(labels_copy, LS_LABELS_SIZE);
     for (uint8_t i=0; i<len; i++) {
         if (labels_copy[i] == ',') {
             if (labels_copy[i+1] == '\0') {
