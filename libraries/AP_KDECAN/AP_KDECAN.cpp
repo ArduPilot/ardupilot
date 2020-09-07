@@ -162,7 +162,7 @@ void AP_KDECAN::init(uint8_t driver_index, bool enable_filters)
         debug_can(AP_CANManager::LOG_DEBUG, "found ESC id %u", id.source_id);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "kdecan_%u", driver_index);
+    hal.util->snprintf(_thread_name, sizeof(_thread_name), "kdecan_%u", driver_index);
 
     // start thread for receiving and sending CAN frames
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_KDECAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
@@ -629,12 +629,12 @@ bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
 {
     if (!_enum_sem.take(1)) {
         debug_can(AP_CANManager::LOG_DEBUG, "failed to get enumeration semaphore on read");
-        snprintf(reason, reason_len ,"Enumeration state unknown");
+        hal.util->snprintf(reason, reason_len ,"Enumeration state unknown");
         return false;
     }
 
     if (_enumeration_state != ENUMERATION_STOPPED) {
-        snprintf(reason, reason_len ,"Enumeration running");
+        hal.util->snprintf(reason, reason_len ,"Enumeration running");
         _enum_sem.give();
         return false;
     }
@@ -652,17 +652,17 @@ bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
     uint8_t num_present_escs = __builtin_popcount(_esc_present_bitmask);
 
     if (num_present_escs < num_expected_motors) {
-        snprintf(reason, reason_len, "Too few ESCs detected");
+        hal.util->snprintf(reason, reason_len, "Too few ESCs detected");
         return false;
     }
 
     if (num_present_escs > num_expected_motors) {
-        snprintf(reason, reason_len, "Too many ESCs detected");
+        hal.util->snprintf(reason, reason_len, "Too many ESCs detected");
         return false;
     }
 
     if (_esc_max_node_id != num_expected_motors) {
-        snprintf(reason, reason_len, "Wrong node IDs, run enumeration");
+        hal.util->snprintf(reason, reason_len, "Wrong node IDs, run enumeration");
         return false;
     }
 
