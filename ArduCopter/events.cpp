@@ -372,7 +372,7 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
         case Failsafe_Action_Terminate:
 #if ADVANCED_FAILSAFE == ENABLED
             char battery_type_str[17];
-            snprintf(battery_type_str, 17, "%s battery", type_str);
+            hal.util->snprintf(battery_type_str, 17, "%s battery", type_str);
             g2.afs.gcs_terminate(true, battery_type_str);
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
