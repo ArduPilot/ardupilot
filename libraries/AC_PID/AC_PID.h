@@ -50,9 +50,6 @@ public:
     float get_d() const;
     float get_ff();
 
-    // todo: remove function when it is no longer used.
-    float get_ff(float target);
-
     // reset_I - reset the integrator
     void reset_I();
 
