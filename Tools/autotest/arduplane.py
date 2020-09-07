@@ -1750,6 +1750,9 @@ class AutoTestPlane(AutoTest):
 
         self.send_set_rc(rc_chan, 1900)
 
+        # Use trim airspeed.
+        self.send_set_rc(3, 1500)
+
         # Wait to detect thermal
         self.progress("Waiting for thermal")
         self.wait_mode('LOITER',timeout=600)
@@ -1779,6 +1782,9 @@ class AutoTestPlane(AutoTest):
         alt_ctf = self.get_parameter('SOAR_ALT_CUTOFF')
         self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
 
+        # Wait
+        self.delay_sim_time(20)
+
         # Now set FBWB mode
         self.change_mode('FBWB')
         self.delay_sim_time(5)
@@ -1791,17 +1797,11 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("SOAR_ENABLE", 1)
         self.delay_sim_time(10)
 
-        # Now wait for descent and check RTL
+        # Now wait for descent and check throttle up
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
 
-        self.progress("Waiting for RTL")
-        self.wait_mode('RTL')
-
-        alt_rtl = self.get_parameter('ALT_HOLD_RTL')/100
-
-        # Wait for climb to  RTL.
-        self.progress("Waiting for climb to RTL altitude")
-        self.wait_altitude(alt_rtl-5, alt_rtl+5, timeout=60, relative=True)
+        self.progress("Waiting for climn")
+        self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
 
         # Back to auto
         self.change_mode('AUTO')
