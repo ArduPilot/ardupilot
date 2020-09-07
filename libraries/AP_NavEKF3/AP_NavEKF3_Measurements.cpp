@@ -313,11 +313,16 @@ void NavEKF3_core::readMagData()
         InitialiseVariablesMag();
     }
 
-    // check for a failed compass and switch if failed for magFailTimeLimit_ms
-    if (maxCount > 1 &&
-        !compass.healthy(magSelectIndex) &&
-        imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms) {
-        tryChangeCompass();
+    // If the magnetometer has timed out (been rejected for too long), we find another magnetometer to use if available
+    // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
+    // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
+    // if the timeout is due to a sensor failure, then declare a timeout regardless of onground status
+    if (maxCount > 1) {
+        bool fusionTimeout = magTimeout && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000 && !(frontend->_affinity & EKF_AFFINITY_MAG);
+        bool sensorTimeout = !compass.healthy(magSelectIndex) && imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms;
+        if (fusionTimeout || sensorTimeout) {
+            tryChangeCompass();
+        }
     }
 
     // limit compass update rate to prevent high processor loading because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
@@ -325,18 +330,6 @@ void NavEKF3_core::readMagData()
         compass.healthy(magSelectIndex) &&
         ((compass.last_update_usec(magSelectIndex) - lastMagUpdate_us) > 1000 * frontend->sensorIntervalMin_ms)) {
         frontend->logging.log_compass = true;
-
-        // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
-        // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
-        // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
-        if (magTimeout && (maxCount > 1) &&
-            !onGround &&
-            imuSampleTime_ms - ekfStartTime_ms > 30000 &&
-            !(frontend->_affinity & EKF_AFFINITY_MAG)) {
-
-            // this compass has timed out (innovations too large for magFailTimeLimit_ms), try a new compass
-            tryChangeCompass();
-        }
 
         // detect changes to magnetometer offset parameters and reset states
         Vector3f nowMagOffsets = compass.get_offsets(magSelectIndex);
