@@ -568,7 +568,7 @@ uint32_t CANIface::get_stats(char* data, uint32_t max_size)
     if (data == nullptr) {
         return 0;
     }
-    uint32_t ret = snprintf(data, max_size,
+    uint32_t ret = hal.util->snprintf(data, max_size,
                             "tx_requests:    %u\n"
                             "tx_write_fail:  %u\n"
                             "tx_full:        %u\n"

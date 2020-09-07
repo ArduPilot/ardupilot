@@ -662,7 +662,7 @@ void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
     vasprintf(&s, fmt, ap);
     va_end(ap);
     csum = _gps_nmea_checksum(s);
-    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)csum);
+    hal.util->snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)csum);
     _gps_write((const uint8_t*)s, strlen(s), instance);
     _gps_write((const uint8_t*)trailer, 5, instance);
     free(s);
@@ -686,21 +686,21 @@ void SITL_State::_update_gps_nmea(const struct gps_data *d, uint8_t instance)
     tm = gmtime(&tv.tv_sec);
 
     // format time string
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);
+    hal.util->snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + tv.tv_usec*1.0e-6);
 
     // format date string
-    snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
+    hal.util->snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
 
     // format latitude
     double deg = fabs(d->latitude);
-    snprintf(lat_string, sizeof(lat_string), "%02u%08.5f,%c",
+    hal.util->snprintf(lat_string, sizeof(lat_string), "%02u%08.5f,%c",
              (unsigned)deg,
              (deg - int(deg))*60,
              d->latitude<0?'S':'N');
 
     // format longitude
     deg = fabs(d->longitude);
-    snprintf(lng_string, sizeof(lng_string), "%03u%08.5f,%c",
+    hal.util->snprintf(lng_string, sizeof(lng_string), "%03u%08.5f,%c",
              (unsigned)deg,
              (deg - int(deg))*60,
              d->longitude<0?'W':'E');

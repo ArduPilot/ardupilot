@@ -290,7 +290,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             char speedup_string[18];
-            snprintf(speedup_string, sizeof(speedup_string), "SIM_SPEEDUP=%s", gopt.optarg);
+            hal.util->snprintf(speedup_string, sizeof(speedup_string), "SIM_SPEEDUP=%s", gopt.optarg);
             _set_param_default(speedup_string);
             break;
         case 'r':

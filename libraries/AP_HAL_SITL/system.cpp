@@ -84,12 +84,12 @@ void dump_stack_trace()
     }
 
     char output_filepath[30];
-    snprintf(output_filepath,
+    hal.util->snprintf(output_filepath,
              ARRAY_SIZE(output_filepath),
              "dumpstack_%s.%d.out",
              p+1,
              (int)getpid());
-	snprintf(cmd,
+	hal.util->snprintf(cmd,
              sizeof(cmd),
              "sh %s %d >%s 2>&1",
              dumpstack,
