@@ -552,7 +552,7 @@ void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol:
     uavcan::copy(resp.getResponse().hardware_version.unique_id.begin(),
                  resp.getResponse().hardware_version.unique_id.end(),
                  unique_id);
-    strncpy(name, resp.getResponse().name.c_str(), sizeof(name)-1);
+    strncpy_noterm(name, resp.getResponse().name.c_str(), sizeof(name)-1);
     AP::uavcan_dna_server().handleNodeInfo(node_id, unique_id, name);
 }
 
