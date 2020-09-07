@@ -139,7 +139,7 @@ void AP_Proximity_LightWareSF40C_v09::set_forward_direction()
     char request_str[15];
     int16_t yaw_corr = frontend.get_yaw_correction(state.instance);
     yaw_corr = constrain_int16(yaw_corr, -999, 999);
-    snprintf(request_str, sizeof(request_str), "#MBF,%d\r\n", yaw_corr);
+    hal.util->snprintf(request_str, sizeof(request_str), "#MBF,%d\r\n", yaw_corr);
     _uart->write(request_str);
 
     // request update on motor direction
@@ -203,7 +203,7 @@ bool AP_Proximity_LightWareSF40C_v09::send_request_for_distance()
 
     // prepare request
     char request_str[16];
-    snprintf(request_str, sizeof(request_str), "?TS,%u,%u\r\n",
+    hal.util->snprintf(request_str, sizeof(request_str), "?TS,%u,%u\r\n",
              (unsigned int)PROXIMITY_SECTOR_WIDTH_DEG,
              _sector_middle_deg[_last_sector]);
     _uart->write(request_str);
