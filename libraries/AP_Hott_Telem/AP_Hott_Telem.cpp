@@ -360,7 +360,7 @@ void AP_Hott_Telem::send_Vario(void)
             const AP_Mission *mission = AP::mission();
             if (mission) {
                 char wp[10] {};
-                snprintf(wp, sizeof(wp), "WP %3u", mission->get_current_nav_index());
+                hal.util->snprintf(wp, sizeof(wp), "WP %3u", mission->get_current_nav_index());
                 memcpy(msg.text[2], wp, sizeof(msg.text[2]));
             }
         }
