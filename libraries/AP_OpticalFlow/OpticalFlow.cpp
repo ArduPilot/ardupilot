@@ -180,7 +180,7 @@ void OpticalFlow::handle_msg(const mavlink_message_t &msg)
 }
 
 #if HAL_MSP_OPTICALFLOW_ENABLED
-void OpticalFlow::handle_msp(const MSP::msp_opflow_sensor_t &pkt)
+void OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 {
     // exit immediately if not enabled
     if (!enabled()) {
