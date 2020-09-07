@@ -597,7 +597,7 @@ void RangeFinder::handle_msg(const mavlink_message_t &msg)
 }
 
 #if HAL_MSP_RANGEFINDER_ENABLED
-void RangeFinder::handle_msp(const MSP::msp_rangefinder_sensor_t &pkt)
+void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 {
     uint8_t i;
     for (i=0; i<num_instances; i++) {
