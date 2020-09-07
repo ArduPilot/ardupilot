@@ -388,14 +388,14 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
         return getASCIIStatusCode(true);    // Returning success for compatibility reasons
     }
     case 'F': {             // Get status flags
-        resp_len = snprintf((char*)resp_bytes, sizeof(resp_bytes), "F%02X\r", unsigned(0));    // Returning success for compatibility reasons
+        resp_len = hal.util->snprintf((char*)resp_bytes, sizeof(resp_bytes), "F%02X\r", unsigned(0));    // Returning success for compatibility reasons
         if (resp_len > 0) {
             _port->write_locked(resp_bytes, resp_len, _serial_lock_key);
         }
         return nullptr;
     }
     case 'V': {             // HW/SW version
-        resp_len = snprintf((char*)resp_bytes, sizeof(resp_bytes),"V%x%x%x%x\r", 1, 0, 1, 0);
+        resp_len = hal.util->snprintf((char*)resp_bytes, sizeof(resp_bytes),"V%x%x%x%x\r", 1, 0, 1, 0);
         if (resp_len > 0) {
             _port->write_locked(resp_bytes, resp_len, _serial_lock_key);
         }
@@ -414,7 +414,7 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
             }
         }
         *pos++ = '\0';
-        resp_len = snprintf((char*)resp_bytes, sizeof(resp_bytes),"N%s\r", &buf[0]);
+        resp_len = hal.util->snprintf((char*)resp_bytes, sizeof(resp_bytes),"N%s\r", &buf[0]);
         if (resp_len > 0) {
             _port->write_locked(resp_bytes, resp_len, _serial_lock_key);
         }
