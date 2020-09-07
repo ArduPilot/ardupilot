@@ -359,6 +359,9 @@ def run_step(step):
         "extra_configure_args": opts.waf_configure_args,
     }
 
+    if opts.Werror:
+        build_opts['extra_configure_args'].append("--Werror")
+
     vehicle_binary = None
     if step == 'build.Plane':
         vehicle_binary = 'bin/arduplane'
@@ -719,6 +722,10 @@ if __name__ == "__main__":
                       action="store_true",
                       default=False,
                       help="validate vehicle parameter files")
+    parser.add_option("--Werror",
+                      action='store_true',
+                      default=False,
+                      help='configure with --Werror')
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
