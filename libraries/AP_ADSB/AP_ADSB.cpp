@@ -716,7 +716,7 @@ uint8_t AP_ADSB::get_encoded_callsign_null_char()
 
     // using the above logic, we must always assign the squawk. once we get configured
     // externally then get_encoded_callsign_null_char() stops getting called
-    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
+    hal.util->snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
     memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
     encoded_null |= 0x40;
 
@@ -874,7 +874,7 @@ void AP_ADSB::set_callsign(const char* str, const bool append_icao)
     } // for i
 
     if (append_icao) {
-        snprintf(&out_state.cfg.callsign[4], 5, "%04X", unsigned(out_state.cfg.ICAO_id % 0x10000));
+        hal.util->snprintf(&out_state.cfg.callsign[4], 5, "%04X", unsigned(out_state.cfg.ICAO_id % 0x10000));
     }
 }
 
