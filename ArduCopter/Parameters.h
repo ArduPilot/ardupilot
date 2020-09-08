@@ -375,6 +375,7 @@ public:
 
 		k_param_vec_weight,
 		k_param_herelink_enable,
+		k_param_spool_delta,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -470,6 +471,7 @@ public:
 
     AP_Float				vec_weight;
     AP_Int8					herelink_enable;
+    AP_Float				spool_delta;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

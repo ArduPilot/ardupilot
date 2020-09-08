@@ -56,6 +56,8 @@ void Copter::userhook_init()
 	//hal.gpio->pinMode(52, 1);
 	//hal.gpio->write(52, false);
 
+	spoolup_timer = 0;
+	timer_trigger = false;
 
 }
 #endif
@@ -95,6 +97,9 @@ void Copter::userhook_50Hz()
 	////Servo Voltage Watcher///////////
 
 	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
+		spirit_state = spoolup;
+		spoolup_timer = AP_HAL::millis16();
+		gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
 
 	 const float servo_voltage = hal.analogin->servorail_voltage();
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
@@ -133,6 +138,36 @@ void Copter::userhook_50Hz()
 		break;
 
 	case spoolup:
+        attitude_control->reset_rate_controller_I_terms();
+        pos_control->relax_alt_hold_controllers(0.0f);
+
+		//if spoolup doesn't advance complete 5 seconds between rotors:' disarm
+		if(AP_HAL::millis16() - spoolup_timer > (uint16_t)5000){
+			 copter.arming.disarm();
+			 gcs().send_text(MAV_SEVERITY_CRITICAL,"A Rotor Failed to Start: Disarm");
+		}
+
+		_fwd_rpm = rpm_sensor.get_rpm(0);
+		_aft_rpm = rpm_sensor.get_rpm(1);
+
+		if(_fwd_rpm > 1000.0f){
+
+			if(!timer_trigger){
+				spoolup_timer =  AP_HAL::millis16();
+				timer_trigger = true;
+			}
+
+			if(_fwd_rpm >= 1000.0f and _aft_rpm > 1000.0f){  //fully spun up
+				motors->spoolup_complete(true);
+				spirit_state = land;
+				gcs().send_text(MAV_SEVERITY_INFO,"landed");
+				timer_trigger = false;
+
+			}else if((AP_HAL::millis16() - spoolup_timer) > (uint16_t)(g.spool_delta*1000)){
+				motors->enable_aft_rotor(true);
+			}
+		}
+
 		break;
 
 	case takeoff:
