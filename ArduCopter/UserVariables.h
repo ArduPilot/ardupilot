@@ -12,8 +12,6 @@ float _fwd_rpm;
 
 float vehicle_weight;
 
-//uint8_t touchdown_accel_counter;
-
 //bool take_off_complete;
 uint16_t spoolup_timer;
 bool timer_trigger;

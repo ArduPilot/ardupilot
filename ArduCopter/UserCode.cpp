@@ -15,7 +15,7 @@ void Copter::userhook_init()
 	killswitch_counter = 0;
 
 
-	//Herelink Variables
+	//Herelink Gimbal Control Variables
 	ap.gimbal_control_active = false;
 	speed_setting = 1;
 	function_counter = 0;
@@ -50,13 +50,9 @@ void Copter::userhook_init()
 	//System on/off
 	copter.ap.turn_on_critical_systems = false;
 
-	//hal.gpio->pinMode(53, 1);
-	//hal.gpio->write(53, true);
 	// startup spirit state
 	spirit_state = disarm;
 
-	//hal.gpio->pinMode(52, 1);
-	//hal.gpio->write(52, false);
 	//GPIOs for on/off to payload and critical systems
 
 	hal.gpio->pinMode(52, 1);  // Payload, FLASE to turn on
@@ -93,8 +89,6 @@ void Copter::userhook_50Hz()
 	}
 
 
-	//zero out dynamic trim for now
-	motors->set_dynamic_trim(0.0, 0.0);
 	// State Machine
 
 	if(!motors->armed()){
@@ -106,12 +100,10 @@ void Copter::userhook_50Hz()
 		hal.gpio->write(52, false);
 		hal.gpio->write(53, true);
 
-	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
 		spirit_state = spoolup;
 		spoolup_timer = AP_HAL::millis16();
 		gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
 
-	 const float servo_voltage = hal.analogin->servorail_voltage();
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
 
 		spirit_state = takeoff;
@@ -128,15 +120,9 @@ void Copter::userhook_50Hz()
 		spirit_state = land;
 		gcs().send_text(MAV_SEVERITY_INFO,"land");
 
-	 if(servo_voltage < 4.0 ){
-		 copter.arming.disarm();
-		 AP_Notify::flags.low_servo_voltage = true;
-		 gcs().send_text(MAV_SEVERITY_CRITICAL,"LOW SERVO VOLTAGE");
-		}
 	}
 
 
-	//////////////////////////
 	switch(spirit_state){
 
 
@@ -202,6 +188,9 @@ void Copter::userhook_50Hz()
 
 
 
+	}
+
+
 
 	//Spirit_Land_Detector();
 /*
@@ -209,6 +198,7 @@ void Copter::userhook_50Hz()
 		take_off_complete = true;
 	}
 */
+
 
 	//////   ADVANCE RATIO CALC   ///////////
 
@@ -278,6 +268,7 @@ if(copter.position_ok()){
 		motors->set_dynamic_trim(0.0, 0.0);
 	}
 */
+
 
 	motors->set_dynamic_trim(0.0, 0.0);
 

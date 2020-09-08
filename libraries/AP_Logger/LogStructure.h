@@ -1045,8 +1045,8 @@ struct PACKED log_Rate {
     float   accel;
     float   accel_out;
 
-    float pitch_in_FF;
-    float pitch_in_delta_FF;
+ //   float pitch_in_FF;
+  //  float pitch_in_delta_FF;
 };
 
 struct PACKED log_SbpLLH {
@@ -1600,7 +1600,7 @@ struct PACKED log_Arm_Disarm {
     { LOG_GIMBAL3_MSG, sizeof(log_Gimbal3), \
       "GMB3", "Ihhh", "TimeMS,rl_torque_cmd,el_torque_cmd,az_torque_cmd", "s???", "C???" }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-      "RATE", "Qffffffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-o--", "F?????????B--" }, \
+      "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-o--", "F?????????B--" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
