@@ -642,7 +642,7 @@ class AutoTestPlane(AutoTest):
         )
         self.delay_sim_time(10)
         self.progress("Ensuring initial speed is known and relatively constant")
-        initial_speed = 21.5;
+        initial_speed = 21.5
         timeout = 10
         tstart = self.get_sim_time()
         while True:
@@ -976,8 +976,9 @@ class AutoTestPlane(AutoTest):
 
         self.load_fence("CMAC-fence.txt")
 
-        self.set_parameter("FENCE_CHANNEL", 7)
-        self.set_parameter("FENCE_ACTION", 4)
+        self.set_parameter("RC7_OPTION", 11) # AC_Fence uses Aux switch functionality
+        self.set_parameter("FENCE_ACTION", 4) # Fence action Brake
+        self.set_parameter("FENCE_ENABLE", 1)
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
                                present=True,
@@ -1120,27 +1121,27 @@ class AutoTestPlane(AutoTest):
             self.load_fence("CMAC-fence.txt")
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
             if m is not None:
-                raise NotAchievedException("Got FENCE_STATUS unexpectedly");
+                raise NotAchievedException("Got FENCE_STATUS unexpectedly")
             self.drain_mav_unparsed()
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_NONE) # report only
-            self.assert_fence_sys_status(False, False, True)
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL) # report only
+            self.set_parameter("FENCE_ACTION", 0) # report only
+            self.assert_fence_sys_status(True, False, True)
+            self.set_parameter("FENCE_ACTION", 1) # RTL
             self.assert_fence_sys_status(True, False, True)
             self.mavproxy.send('fence enable\n')
             self.mavproxy.expect("fence enabled")
             self.assert_fence_sys_status(True, True, True)
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
             if m is None:
-                raise NotAchievedException("Did not get FENCE_STATUS");
+                raise NotAchievedException("Did not get FENCE_STATUS")
             if m.breach_status:
                 raise NotAchievedException("Breached fence unexpectedly (%u)" %
                                            (m.breach_status))
             self.mavproxy.send('fence disable\n')
             self.mavproxy.expect("fence disabled")
             self.assert_fence_sys_status(True, False, True)
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_NONE)
-            self.assert_fence_sys_status(False, False, True)
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL)
+            self.set_parameter("FENCE_ACTION", 1)
+            self.assert_fence_sys_status(True, False, True)
+            self.set_parameter("FENCE_ACTION", 0)
             self.assert_fence_sys_status(True, False, True)
             self.mavproxy.send("fence clear\n")
             self.mavproxy.expect("fence removed")
@@ -1180,7 +1181,7 @@ class AutoTestPlane(AutoTest):
             expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
             self.set_parameter("RTL_RADIUS", want_radius)
             self.set_parameter("NAVL1_LIM_BANK", 60)
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL)
+            self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
 
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
@@ -1193,7 +1194,7 @@ class AutoTestPlane(AutoTest):
                     raise NotAchievedException("Did not breach fence")
                 m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
                 if m is None:
-                    raise NotAchievedException("Did not get FENCE_STATUS");
+                    raise NotAchievedException("Did not get FENCE_STATUS")
                 if m.breach_status == 0:
                     continue
 
@@ -1774,7 +1775,7 @@ class AutoTestPlane(AutoTest):
         for i in range(8):
             rcx_option = self.get_parameter('RC{0}_OPTION'.format(i+1))
             if rcx_option==88:
-                rc_chan = i+1;
+                rc_chan = i+1
                 break
 
         if rc_chan==0:
@@ -2062,6 +2063,78 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_fence_alt_ceil_floor(self):
+        ex = None
+        target_system = 1
+        target_component = 1
+        try:
+            self.progress("Testing Fence Enable")
+
+            # Load Fence
+            self.load_fence("CMAC-fence.txt")
+            if self.get_parameter("FENCE_TOTAL") == 0:
+                raise NotAchievedException("Expected fence to be present")
+            
+            # Load Mission
+            self.load_mission("CMAC-mission.txt")
+            
+            # Set up fence parameters
+            self.set_parameter("FENCE_AUTOENABLE", 1) # Enable/Disable on Takeoff/Landing
+            self.set_parameter("FENCE_ACTION", 1)     # RTL
+            self.set_parameter("FENCE_TYPE", 13)      # Set Fence Type to Alt Max/Min and Polygon
+            self.set_parameter("FENCE_ALT_MIN", 80)
+            self.set_parameter("FENCE_ALT_MAX", 120)
+
+            # Now we can arm the vehicle and kick off the flight
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode("AUTO")
+
+            # On takeoff complete, check fence is enabled
+            self.progress("Looking for takeoff complete")
+            self.mavproxy.expect("APM: Takeoff complete at [0-9]+\.[0-9]+m")
+            #self.progress("Looking for fence enable")
+            #self.mavproxy.expect("fence enabled")
+
+            # Fly until we breach fence floor where we enter RTL
+            self.progress("Looking for fence breach")
+            self.mavproxy.expect("fence breach")
+            
+            # As we RTL, we should re-enter fence zone. Wait until we're inside
+            self.progress("Waiting for return to altitude")
+            self.wait_altitude(altitude_min=100, altitude_max=110, timeout=30, relative=True)
+
+            # Skip the waypoint outside fence, continue mission
+            self.progress("Skipping to next waypoint")
+            self.mav.waypoint_set_current_send(4)
+            self.change_mode("AUTO")
+            self.drain_mav()
+
+            # Fly until we breach fence ceiling where we enter RTL
+            self.mavproxy.expect("fence breach")
+
+            # As we RTL, we should re-enter fence zone. Wait until we're inside
+            self.wait_altitude(altitude_min=100, altitude_max=110, timeout=60, relative=True)
+
+            # Skip the waypoint outside fence, continue mission
+            self.progress("Skipping to next waypoint")
+            self.mav.waypoint_set_current_send(6)
+            self.change_mode("AUTO")
+            self.drain_mav()
+
+            # Continue through to landing sequence, which disables the fence
+            self.progress("Continuing mission to land")
+            self.mavproxy.expect("APM: Fence disabled \(auto disable\)")
+
+            # Once landed, wait till disarmed
+            self.wait_disarmed(timeout=120)
+        except Exception as e:
+            self.progress("Exception caught:")
+            self.progress(self.get_exception_stacktrace(e))
+            ex = e
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -2130,6 +2203,10 @@ class AutoTestPlane(AutoTest):
             ("FenceRTLRally",
              "Test Fence RTL Rally",
              self.test_fence_rtl_rally),
+
+            ("FenceAltCeilFloor",
+             "Tests the fence ceiling and floor",
+             self.test_fence_alt_ceil_floor),
 
             ("ADSB",
              "Test ADSB",
