@@ -47,11 +47,10 @@ void Copter::userhook_init()
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
 
-	//System on/off
-	copter.ap.turn_on_critical_systems = false;
 
 	// startup spirit state
 	spirit_state = disarm;
+
 
 	//GPIOs for on/off to payload and critical systems
 
@@ -60,7 +59,9 @@ void Copter::userhook_init()
 	hal.gpio->write(52, true);
 	hal.gpio->write(53, false);
 
+	copter.ap.turn_on_critical_systems = false;
 
+	//Spool up support
 	spoolup_timer = 0;
 	timer_trigger = false;
 
@@ -197,7 +198,6 @@ void Copter::userhook_50Hz()
 	if( motors->get_throttle() >= motors->get_throttle_hover() ){
 		take_off_complete = true;
 	}
-*/
 
 
 	//////   ADVANCE RATIO CALC   ///////////
@@ -210,6 +210,7 @@ void Copter::userhook_50Hz()
 	if(rpm_sensor.healthy(1)){
 	_aft_rpm = rpm_sensor.get_rpm(1);
 	}
+	*/
 
 /*
 if(copter.position_ok()){
@@ -267,10 +268,10 @@ if(copter.position_ok()){
 		adv_ratio.y = 0.0;
 		motors->set_dynamic_trim(0.0, 0.0);
 	}
-*/
 
 
 	motors->set_dynamic_trim(0.0, 0.0);
+	*/
 
 	///////  	DETERMINE HOVER RPM		/////
 /*
