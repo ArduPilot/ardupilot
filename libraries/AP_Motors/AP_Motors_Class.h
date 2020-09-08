@@ -116,6 +116,9 @@ public:
     																				_roll_FF_trim = roll_FF_trim;
     																				}
 
+    void				enable_aft_rotor(bool enable){ _enable_aft_rotor = enable; }
+    void				spoolup_complete(bool complete){ _spoolup_complete = complete; }
+    bool				spoolup_complete() const { return _spoolup_complete; }
 
     float				get_pitch_FF_total_values() const {  return _pitch_FF_total_log; }
     float				get_pitch_FF_values() const {  return _pitch_FF_trim; }
@@ -260,6 +263,10 @@ protected:
 
 	bool				_remain_stabilized;
 	uint16_t			_stabilized_counter;
+
+	bool				_enable_aft_rotor;
+	bool				_spoolup_complete;
+
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude

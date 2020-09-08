@@ -50,7 +50,11 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 	_roll_FF_trim = 0;
 	_remain_stabilized = false;
 	_stabilized_counter = 0;
+
+	_spoolup_complete = false;
 }
+
+
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsCoax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
@@ -75,12 +79,11 @@ void AP_MotorsCoax::output_to_motors()
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
 
-        	if(_remain_stabilized){
 
+        	if(_remain_stabilized){
                 for (uint8_t i = 0; i < 2; i++) {
                     rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
                 }
-
                 _stabilized_counter++;
 
                 if(_stabilized_counter > 400){
@@ -98,10 +101,11 @@ void AP_MotorsCoax::output_to_motors()
             rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
 
-            _delay_aft_rotor = true;
-            _spool_up_complete = false;
+            _enable_aft_rotor = false;
+            _spoolup_complete = false;
             _aft_rotor_start = 0;
             break;
+
 
         case SpoolState::GROUND_IDLE:
             // sends output to motors when armed but not flying
@@ -109,44 +113,30 @@ void AP_MotorsCoax::output_to_motors()
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
 
-            if(_delay_aft_rotor){
-
-				rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
-
-	            set_actuator_with_slew(_actuator[3], actuator_spin_up_to_ground_idle());
-				rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
-
-				_aft_rotor_start = 0;
-				_spool_up_complete = false;
-
-				if(_spin_up_ratio >= (_spin_arm / _spin_min)){
-					_delay_aft_rotor = false;
-				}
-
-			}else if(!_spool_up_complete){
-
-				_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
-
-				if(_aft_rotor_start >= _spin_arm){
-					_spool_up_complete = true;
-					_aft_rotor_start = _spin_arm;
-				}
+            // always start fwd rotor
+            set_actuator_with_slew(_actuator[3], actuator_spin_up_to_ground_idle());
+			rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
 
 
-				rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
+			//handle aft rotor spoolup
+		if(_spoolup_complete){
 
-	            set_actuator_with_slew(_actuator[3], actuator_spin_up_to_ground_idle());
-				rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
+            set_actuator_with_slew(_actuator[2], _spin_arm);
+			rc_write(AP_MOTORS_MOT_3,  output_to_pwm(_actuator[2]));
 
-			}else{
+    	}else if(_enable_aft_rotor){
 
-	            set_actuator_with_slew(_actuator[2], actuator_spin_up_to_ground_idle());
-	            set_actuator_with_slew(_actuator[3], actuator_spin_up_to_ground_idle());
+			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
+			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+			rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
 
-				rc_write(AP_MOTORS_MOT_3,  output_to_pwm(_actuator[2]));
-				rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
+		}else{
 
-			}
+			rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
+			 _aft_rotor_start = 0;
+			 _spoolup_complete = false;
+			 _enable_aft_rotor = false;
+		}
 
            break;
 
@@ -160,48 +150,36 @@ void AP_MotorsCoax::output_to_motors()
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
             }
 
-            if(_spool_up_complete){
 
-            	_remain_stabilized = true;
+			//handle aft rotor spoolup
+		if(_spoolup_complete){
 
-				set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_yt_cw));
-				set_actuator_with_slew(_actuator[3], thrust_to_actuator(_thrust_yt_ccw));
+        	_remain_stabilized = true;
 
-				  rc_write(AP_MOTORS_MOT_3, output_to_pwm(_actuator[2]));
-				  rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
-				  break;
-			  }
+			set_actuator_with_slew(_actuator[2], thrust_to_actuator(_thrust_yt_cw));
+			set_actuator_with_slew(_actuator[3], thrust_to_actuator(_thrust_yt_ccw));
 
+			rc_write(AP_MOTORS_MOT_3, output_to_pwm(_actuator[2]));
+			rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
 
-			  if(_delay_aft_rotor){
+			break;
 
-					set_actuator_with_slew(_actuator[3], actuator_spin_up_to_ground_idle());
+    	}else if(_enable_aft_rotor){
 
-				  rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
-				  rc_write(AP_MOTORS_MOT_4, output_to_pwm(_actuator[3]));
+			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
+			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+			rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
 
-				  _aft_rotor_start = 0;
-				  _spool_up_complete = false;
+		}else{
 
-				  if(_spin_up_ratio >= 0.990f){
-					_delay_aft_rotor = false;
-				  }
+			rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
+			 _aft_rotor_start = 0;
+			 _spoolup_complete = false;
+			 _enable_aft_rotor = false;
+		}
 
-			  }else{
+		break;
 
-				_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
-
-				if(_aft_rotor_start >= _spin_arm){
-					_spool_up_complete = true;
-					_aft_rotor_start = _spin_arm;
-				}
-
-				  rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
-				  rc_write(AP_MOTORS_MOT_4, output_to_pwm(actuator_spin_up_to_ground_idle()));
-
-			  }
-
-			  break;
     }
 }
 

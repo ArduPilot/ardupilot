@@ -58,11 +58,6 @@ protected:
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
 
-    float				_rpm_fwd;
-    float				_rpm_aft;
-
-    bool _delay_aft_rotor = true;
-    bool _spool_up_complete = false;
     float _aft_rotor_start = 0.0f;
 
 
