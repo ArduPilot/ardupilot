@@ -2570,7 +2570,7 @@ class AutoTestCopter(AutoTest):
                      0, # compass learning
                      0,
                      timeout=timeout)
-        # long timeouts here because they're a pause before we start motors
+        # long timeouts here because there's a pause before we start motors
         self.wait_servo_channel_value(1, pwm_in, timeout=10)
         self.wait_servo_channel_value(4, pwm_in, timeout=10)
         self.wait_statustext("finished motor test")
@@ -2590,7 +2590,7 @@ class AutoTestCopter(AutoTest):
         # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
         # min/max are used.
         expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
-        self.progress("expected pwm=%f\n" % expected_pwm)
+        self.progress("expected pwm=%f" % expected_pwm)
         self.wait_servo_channel_value(1, expected_pwm, timeout=10)
         self.wait_servo_channel_value(4, expected_pwm, timeout=10)
         self.wait_statustext("finished motor test")

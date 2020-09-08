@@ -4076,14 +4076,17 @@ Also, ignores heartbeats not from our target system'''
             if text.lower() in m.text.lower():
                 self.progress("Received expected text: %s" % m.text.lower())
                 statustext_found = True
-        self.install_message_hook_context(mh)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < tstart + timeout:
-            if statustext_found:
-                return
-            if the_function is not None:
-                the_function()
-            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+        self.install_message_hook(mh)
+        try:
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() < tstart + timeout:
+                if statustext_found:
+                    return
+                if the_function is not None:
+                    the_function()
+                m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
+        finally:
+            self.remove_message_hook(mh)
         raise AutoTestTimeoutException("Failed to receive text: %s" %
                                        text.lower())
 
