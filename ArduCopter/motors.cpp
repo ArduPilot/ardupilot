@@ -60,6 +60,14 @@ void Copter::arm_motors_check()
 
             // reset arming counter if arming fail
             if (!arming.arm(AP_Arming::Method::RUDDER)) {
+
+        	if(!copter.ap.turn_on_critical_systems){
+        		hal.gpio->write(52, false);
+        		hal.gpio->write(53, true);
+        		copter.ap.turn_on_critical_systems = true;
+                arming_counter = 0;
+                arming_hold = true;
+        	}else if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
                 arming_hold = true;
                 AP_Notify::flags.arming_failed = true;
@@ -76,6 +84,8 @@ void Copter::arm_motors_check()
     // full left and rudder disarming is enabled
     } else if ((yaw_in < -4000) && (arming_rudder == AP_Arming::RudderArming::ARMDISARM)) {
         if (!flightmode->has_manual_throttle() && !ap.land_complete) {
+
+    	if (!flightmode->has_manual_throttle() && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
@@ -88,6 +98,10 @@ void Copter::arm_motors_check()
         // disarm the motors
         if (arming_counter == DISARM_DELAY && motors->armed()) {
             arming.disarm();
+        }else if(arming_counter == DISARM_DELAY && !motors->armed()){
+        	copter.ap.turn_on_critical_systems = false;
+    		hal.gpio->write(52, true);
+    		hal.gpio->write(53, false);
         }
 
     // Yaw is centered so reset arming counter

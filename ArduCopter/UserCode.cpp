@@ -47,6 +47,8 @@ void Copter::userhook_init()
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
 
+	//System on/off
+	copter.ap.turn_on_critical_systems = false;
 
 	//hal.gpio->pinMode(53, 1);
 	//hal.gpio->write(53, true);
@@ -55,6 +57,13 @@ void Copter::userhook_init()
 
 	//hal.gpio->pinMode(52, 1);
 	//hal.gpio->write(52, false);
+	//GPIOs for on/off to payload and critical systems
+
+	hal.gpio->pinMode(52, 1);  // Payload, FLASE to turn on
+	hal.gpio->pinMode(53, 1);  // ESCs/Servos, TRUE to turn on
+	hal.gpio->write(52, true);
+	hal.gpio->write(53, false);
+
 
 	spoolup_timer = 0;
 	timer_trigger = false;
@@ -94,7 +103,8 @@ void Copter::userhook_50Hz()
 	// the rest considers the vehicle to be armed
 	}else if(spirit_state == disarm){
 
-	////Servo Voltage Watcher///////////
+		hal.gpio->write(52, false);
+		hal.gpio->write(53, true);
 
 	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
 		spirit_state = spoolup;
