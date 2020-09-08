@@ -891,47 +891,11 @@ float AC_PosControl::time_since_last_xy_update() const
 // write log to dataflash
 void AC_PosControl::write_log()
 {
-    const Vector3f &pos_target = get_pos_target();
-    const Vector3f &vel_target = get_vel_target();
-    const Vector3f &accel_target = get_accel_target();
-    const Vector3f &position = _inav.get_position();
-    const Vector3f &velocity = _inav.get_velocity();
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-// @LoggerMessage: PSC
-// @Description: Position Control data
-// @Field: TimeUS: Time since system startup
-// @Field: TPX: Target position relative to origin, X-axis
-// @Field: TPY: Target position relative to origin, Y-axis
-// @Field: PX: Position relative to origin, X-axis
-// @Field: PY: Position relative to origin, Y-axis
-// @Field: TVX: Target velocity, X-axis
-// @Field: TVY: Target velocity, Y-axis
-// @Field: VX: Velocity, X-axis
-// @Field: VY: Velocity, Y-axis
-// @Field: TAX: Target acceleration, X-axis
-// @Field: TAY: Target acceleration, Y-axis
-// @Field: AX: Acceleration, X-axis
-// @Field: AY: Acceleration, Y-axis
-    AP::logger().Write("PSC",
-                       "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
-                       "smmmmnnnnoooo",
-                       "F000000000000",
-                       "Qffffffffffff",
-                       AP_HAL::micros64(),
-                       double(pos_target.x * 0.01f),
-                       double(pos_target.y * 0.01f),
-                       double(position.x * 0.01f),
-                       double(position.y * 0.01f),
-                       double(vel_target.x * 0.01f),
-                       double(vel_target.y * 0.01f),
-                       double(velocity.x * 0.01f),
-                       double(velocity.y * 0.01f),
-                       double(accel_target.x * 0.01f),
-                       double(accel_target.y * 0.01f),
-                       double(accel_x * 0.01f),
-                       double(accel_y * 0.01f));
+   AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
+
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
