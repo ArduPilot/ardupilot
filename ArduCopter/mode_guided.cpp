@@ -190,11 +190,6 @@ void ModeGuided::angle_control_start()
 // else return false if the waypoint is outside the fence
 bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
 {
-    // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
-        pos_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination);
@@ -204,6 +199,11 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         return false;
     }
 #endif
+
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        pos_control_start();
+    }
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
@@ -229,11 +229,6 @@ bool ModeGuided::get_wp(Location& destination)
 // or if the fence is enabled and guided waypoint is outside the fence
 bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
-    // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
-        pos_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
@@ -243,6 +238,11 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return false;
     }
 #endif
+
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        pos_control_start();
+    }
 
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
@@ -283,11 +283,6 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 // set guided mode posvel target
 bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
-    // check we are in velocity control mode
-    if (guided_mode != Guided_PosVel) {
-        posvel_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination);
@@ -297,6 +292,11 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
         return false;
     }
 #endif
+
+    // check we are in velocity control mode
+    if (guided_mode != Guided_PosVel) {
+        posvel_control_start();
+    }
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
