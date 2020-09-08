@@ -1990,6 +1990,8 @@ class AutoTestPlane(AutoTest):
             self.progress("Caught exception: %s" % self.get_exception_stacktrace(e))
             ex = e
 
+        self.remove_message_hook(statustext_hook)
+
         self.context_pop()
         if ex is not None:
             raise ex
