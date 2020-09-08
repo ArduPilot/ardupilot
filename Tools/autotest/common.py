@@ -2322,6 +2322,18 @@ class AutoTest(ABC):
         content = bytearray(struct.pack('>Q', usec) + msg.get_msgbuf())
         self.tlog.write(content)
 
+    def message_hook_timestamp_updater(self, mav, msg):
+        """Called as each mavlink msg is received."""
+        # swiped from mavutil:
+        if 'usec' in msg.__dict__:
+            mav.autotest_uptime = msg.usec * 1.0e-6
+            self.progress("update from (%s)" % (str(msg),))
+            return
+        if 'time_boot_ms' in msg.__dict__:
+            mav.autotest_uptime = msg.time_boot_ms * 1.0e-3
+            self.progress("update from (%s)" % (str(msg),))
+            return
+
     def expect_callback(self, e):
         """Called when waiting for a expect pattern."""
         for p in self.expect_list:
@@ -2673,18 +2685,23 @@ class AutoTest(ABC):
     #################################################
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
-        self.drain_mav()
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
-        if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
-        return m.time_boot_ms * 1.0e-3
+        old = getattr(self.mav, "autotest_uptime", None)
+        tstart = time.time()
+        self.send_cmd_request_message('SYSTEM_TIME')
+        while True:
+            if time.time() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get timestamp after %f seconds" % timeout)
+            self.mav.recv_match(blocking=True, timeout=1)
+            new = getattr(self.mav, "autotest_uptime", None)
+            if old != new:
+                self.progress("old=%s new=%s" % (str(old), str(new)))
+                return new
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
-        x = self.mav.messages.get("SYSTEM_TIME", None)
-        if x is None:
-            raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        return x.time_boot_ms * 1.0e-3
+        # note that if this attribute doesn't exist on self.mav then
+        # get_sim_time has never been called, and that is all on you.
+        return self.mav.autotest_uptime
 
     def sim_location(self):
         """Return current simulator location."""
@@ -4040,6 +4057,7 @@ class AutoTest(ABC):
     def get_parameter_direct(self, name, attempts=1, timeout=60, verbose=True, timeout_in_wallclock=False):
         while attempts > 0:
             attempts -= 1
+            self.drain_mav(quiet=True)
             if verbose:
                 self.progress("Sending param_request_read for (%s)" % name)
             # we MUST parse here or collections fail where we need
@@ -5254,15 +5272,17 @@ class AutoTest(ABC):
     def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True, verbose=False):
         return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True, verbose=verbose)
 
-    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=False):
+    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=True):
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=5)
         if m is None:
             raise NotAchievedException("Did not receive SYS_STATUS")
-        if verbose:
-            self.progress("Status: %s" % str(mavutil.dump_message_verbose(sys.stdout, m)))
         reported_present = m.onboard_control_sensors_present & sensor
         reported_enabled = m.onboard_control_sensors_enabled & sensor
         reported_healthy = m.onboard_control_sensors_health & sensor
+        if verbose:
+            #            self.progress("Status: %s" % str(mavutil.dump_message_verbose(sys.stdout, m)))
+            self.progress("Status: present=%s enabled=%s healthy=%s" %
+                          (str(reported_present), str(reported_enabled), str(reported_healthy)))
         if present:
             if not reported_present:
                 if do_assert:
@@ -5540,6 +5560,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Failed to start mavlink connection on %s: %s" %
                           (self.autotest_connection_string_to_ardupilot(), msg,))
             raise
+        self.mav.message_hooks.append(self.message_hook_timestamp_updater)
         self.mav.message_hooks.append(self.message_hook)
         self.mav.mav.set_send_callback(self.send_message_hook, self)
         self.mav.idle_hooks.append(self.idle_hook)

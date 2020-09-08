@@ -5795,8 +5795,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Should be healthy while we're sending good messages")
             tstart = self.get_sim_time()
             while True:
-                if self.get_sim_time() - tstart > 5:
-                    raise NotAchievedException("Sensor did not come good")
+                now = self.get_sim_time()
+                if now - tstart > 35:
+                    raise NotAchievedException("Sensor did not come good (tstart=%s now=%s" % (str(tstart), str(now)))
                 self.mav.mav.distance_sensor_send(
                     0,  # time_boot_ms
                     10, # min_distance cm
@@ -5896,8 +5897,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Should be healthy while we're sending good messages")
             tstart = self.get_sim_time()
             while True:
-                if self.get_sim_time() - tstart > 5:
-                    raise NotAchievedException("Sensor did not come good")
+                now = self.get_sim_time()
+                if now - tstart > 5:
+                    raise NotAchievedException("Sensor did not come good (tstart=%s now=%s" % (str(tstart), str(now)))
                 self.mav.mav.distance_sensor_send(
                     0,  # time_boot_ms
                     10, # min_distance
