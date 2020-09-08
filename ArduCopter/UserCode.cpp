@@ -50,6 +50,8 @@ void Copter::userhook_init()
 
 	//hal.gpio->pinMode(53, 1);
 	//hal.gpio->write(53, true);
+	// startup spirit state
+	spirit_state = disarm;
 
 	//hal.gpio->pinMode(52, 1);
 	//hal.gpio->write(52, false);
@@ -74,6 +76,7 @@ void Copter::userhook_FastLoop()
 void Copter::userhook_50Hz()
 {
 
+	//detect button input in Herelink at 50Hz
 	if(g.herelink_enable){
 		Detect_Buttons();
 	}
@@ -81,13 +84,34 @@ void Copter::userhook_50Hz()
 
 	//zero out dynamic trim for now
 	motors->set_dynamic_trim(0.0, 0.0);
+	// State Machine
 
+	if(!motors->armed()){
+		spirit_state = disarm;
+
+	// the rest considers the vehicle to be armed
+	}else if(spirit_state == disarm){
 
 	////Servo Voltage Watcher///////////
 
 	if(ap.land_complete and motors->armed() and !hal.gpio->usb_connected()){
 
 	 const float servo_voltage = hal.analogin->servorail_voltage();
+	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
+
+		spirit_state = takeoff;
+		gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
+
+	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle())){
+
+		spirit_state = hover;
+		gcs().send_text(MAV_SEVERITY_INFO,"hover");
+
+
+	}else if(spirit_state == hover and ap.land_complete){
+
+		spirit_state = land;
+		gcs().send_text(MAV_SEVERITY_INFO,"land");
 
 	 if(servo_voltage < 4.0 ){
 		 copter.arming.disarm();
@@ -98,6 +122,35 @@ void Copter::userhook_50Hz()
 
 
 	//////////////////////////
+	switch(spirit_state){
+
+
+	case disarm:
+
+		//zero out dynamic trim for now
+		motors->set_dynamic_trim(0.0, 0.0);
+
+		break;
+
+	case spoolup:
+		break;
+
+	case takeoff:
+
+		topple_sense();
+
+		break;
+
+	case land:
+
+		topple_sense();
+
+		break;
+
+	case hover:
+
+		break;
+
 
 
 

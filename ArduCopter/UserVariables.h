@@ -51,6 +51,15 @@ bool ch11_button_hold;
 bool ch12_button_hold;
 
 
+enum vehicle_state{
+	disarm,
+	spoolup,
+	takeoff,
+	hover,
+	//fwd_flight,
+	//brake,
+	land
+}spirit_state;
 #if WII_CAMERA == 1
 WiiCamera           ircam;
 int                 WiiRange=0;
