@@ -781,6 +781,8 @@ private:
     void Decode_Buttons();
     void Detect_Buttons();
     void Killswitch();
+    void topple_sense();
+    void servo_voltage_watcher();
     // landing_gear.cpp
     void landinggear_update();
 

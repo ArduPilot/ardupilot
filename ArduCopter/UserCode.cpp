@@ -138,6 +138,10 @@ void Copter::userhook_50Hz()
 		break;
 
 	case spoolup:
+
+		servo_voltage_watcher();
+		topple_sense();
+
         attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0.0f);
 
@@ -347,6 +351,35 @@ void Copter::userhook_auxSwitch3(uint8_t ch_flag)
 }
 #endif
 
+
+
+
+void Copter::topple_sense(){
+
+	if(fabsf(attitude_control->get_att_error_angle_deg()) > 15.0f and ap.land_complete){
+		 copter.arming.disarm();
+		 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple: Disarm");
+
+	}else if(fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f){
+
+		 copter.arming.disarm();
+		 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple: Disarm");
+
+	}
+
+}
+
+
+void Copter::servo_voltage_watcher(){
+
+		 const float servo_voltage = hal.analogin->servorail_voltage();
+
+		 if(servo_voltage < 4.0 ){
+			 copter.arming.disarm();
+			 AP_Notify::flags.low_servo_voltage = true;
+			 gcs().send_text(MAV_SEVERITY_CRITICAL,"LOW SERVO VOLTAGE");
+			}
+}
 
 void Copter::Spirit_Gimbal_Control_Auto(){
 
