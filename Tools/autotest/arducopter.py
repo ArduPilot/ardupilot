@@ -656,7 +656,7 @@ class AutoTestCopter(AutoTest):
         num_wp = self.load_mission("copter_mission.txt")
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
-        self.takeoffAndMoveAway()
+#        self.takeoffAndMoveAway()
         self.change_mode("AUTO")
         self.set_parameter("SIM_RC_FAIL", 1)
         self.delay_sim_time(5)
