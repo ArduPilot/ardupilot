@@ -1288,6 +1288,19 @@ struct PACKED log_PSC {
     float accel_y;
 };
 
+struct PACKED log_PSCP {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float vel_error_x;
+    float vel_xy_p_x;
+    float vel_xy_i_x;
+    float vel_xy_d_x;
+    float vel_error_y;
+    float vel_xy_p_y;
+    float vel_xy_i_y;
+    float vel_xy_d_y;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -2484,6 +2497,18 @@ struct PACKED log_PSC {
 // @Field: AX: Acceleration, X-axis
 // @Field: AY: Acceleration, Y-axis
 
+// @LoggerMessage: PSCP
+// @Description: Position Control velocity PID gains
+// @Field: TimeUS: Time since system startup
+// @Field: EX: Velocity error, X-axis
+// @Field: kPX: Velocity P gain, X-axis
+// @Field: kIX: Velocity I gain, X-axis
+// @Field: kDX: Velocity D gain, X-axis
+// @Field: EY: Velocity error, Y-axis
+// @Field: kPY: Velocity P gain, Y-axis
+// @Field: kIY: Velocity I gain, Y-axis
+// @Field: kDY: Velocity D gain, Y-axis
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -2703,7 +2728,9 @@ struct PACKED log_PSC {
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
     { LOG_PSC_MSG, sizeof(log_PSC), \
-      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }, \
+    { LOG_PSCP_MSG, sizeof(log_PSCP), \
+      "PSCP", "Qffffffff", "TimeUS,EX,kPX,kIX,kDX,EY,kPY,kIY,kDY", "sn---n---", "F00000000"}
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -2866,6 +2893,7 @@ enum LogMessages : uint8_t {
     LOG_SIMPLE_AVOID_MSG,
     LOG_WINCH_MSG,
     LOG_PSC_MSG,
+    LOG_PSCP_MSG,
 
     _LOG_LAST_MSG_
 };
