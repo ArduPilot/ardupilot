@@ -273,7 +273,11 @@ void AP_OSD::update_osd()
         // skip the drawing if we are not using a font based backend. This saves a lot of flash space when
         // using the MSP OSD system on boards that don't have a MAX7456
 #if HAL_WITH_OSD_BITMAP
+#if OSD_PARAM_ENABLED
         get_screen(current_screen).draw();
+#else
+        ((AP_OSD_Screen&)get_screen(current_screen)).draw();
+#endif
 #endif
     }
 
