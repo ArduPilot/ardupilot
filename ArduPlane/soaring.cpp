@@ -120,20 +120,20 @@ void Plane::update_soaring() {
         // Heading lined up and loiter status not good to continue. Need to restore previous mode.
         switch (loiterStatus) {
         case SoaringController::LoiterStatus::ALT_TOO_HIGH:
-            soaring_restore_mode("Too high", ModeReason::SOARING_ALT_TOO_HIGH, *previous_mode);
+            soaring_restore_mode("Too high", ModeReason::SOARING_ALT_TOO_HIGH);
             break;
         case SoaringController::LoiterStatus::ALT_TOO_LOW:
-            soaring_restore_mode("Too low", ModeReason::SOARING_ALT_TOO_LOW, *previous_mode);
+            soaring_restore_mode("Too low", ModeReason::SOARING_ALT_TOO_LOW);
             break;
         default:
         case SoaringController::LoiterStatus::THERMAL_WEAK:
-            soaring_restore_mode("Thermal ended", ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED, *previous_mode);
+            soaring_restore_mode("Thermal ended", ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
             break;
         case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
-            soaring_restore_mode("Drifted too far", ModeReason::SOARING_DRIFT_EXCEEDED, *previous_mode);
+            soaring_restore_mode("Drifted too far", ModeReason::SOARING_DRIFT_EXCEEDED);
             break;
         case SoaringController::LoiterStatus::EXIT_COMMANDED:
-            soaring_restore_mode("Exit via RC switch", ModeReason::RC_COMMAND, *previous_mode);
+            soaring_restore_mode("Exit via RC switch", ModeReason::RC_COMMAND);
             break;
         } // switch loiterStatus
 
@@ -165,10 +165,10 @@ bool Plane::soaring_exit_heading_aligned() const
     return true;
 }
 
-void Plane::soaring_restore_mode(const char *reason, ModeReason modereason, Mode &exit_mode)
+void Plane::soaring_restore_mode(const char *reason, ModeReason modereason)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, exit_mode.name());
-    set_mode(exit_mode, modereason);
+    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, previous_mode->name());
+    set_mode(*previous_mode, modereason);
 }
 
 #endif // SOARING_ENABLED
