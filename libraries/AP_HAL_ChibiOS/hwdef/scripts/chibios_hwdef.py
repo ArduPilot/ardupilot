@@ -815,6 +815,8 @@ def write_ldscript(fname):
     else:
         flash_length = get_config('FLASH_BOOTLOADER_LOAD_KB', type=int)
 
+    env_vars['FLASH_TOTAL'] = flash_length * 1024
+
     print("Generating ldscript.ld")
     f = open(fname, 'w')
     ram0_start = ram_map[0][0]
