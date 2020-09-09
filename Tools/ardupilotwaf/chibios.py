@@ -154,6 +154,8 @@ class generate_apj(Task.Task):
             "summary": self.env.BOARD,
             "version": "0.1",
             "image_size": len(img),
+            "flash_total": int(self.env.FLASH_TOTAL),
+            "flash_free": int(self.env.FLASH_TOTAL) - len(img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
             "board_revision": 0,
             "USBID": self.env.USBID
