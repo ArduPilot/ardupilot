@@ -60,6 +60,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Scheduling options
     // @Description: This controls optional aspects of the scheduler.
+    // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Enable per-task perf info
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Scheduler, _options, 0),
