@@ -1155,3 +1155,20 @@ void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, 
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_Logger::Write_PSCP(const Vector3f &vel_error, const Vector2f &vel_xy_p, const Vector2f &vel_xy_i, const Vector2f &vel_xy_d)
+{
+    struct log_PSCP pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCP_MSG),
+        time_us     : AP_HAL::micros64(),
+        vel_error_x : vel_error.x * 0.01f,
+        vel_xy_p_x  : vel_xy_p.x,
+        vel_xy_i_x  : vel_xy_i.x,
+        vel_xy_d_x  : vel_xy_d.x,
+        vel_error_y : vel_error.y * 0.01f,
+        vel_xy_p_y  : vel_xy_p.y,
+        vel_xy_i_y  : vel_xy_i.y,
+        vel_xy_d_y  : vel_xy_d.y
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
