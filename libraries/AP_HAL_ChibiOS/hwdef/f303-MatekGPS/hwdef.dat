@@ -159,3 +159,7 @@ define HAL_MSP_ENABLED 1
 
 # the GPS is good at 10Hz
 define GPS_MAX_RATE_MS 100
+
+# 10" DLVR sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 9
+define AIRSPEED_MAX_SENSORS 1
