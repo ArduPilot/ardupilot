@@ -412,7 +412,7 @@ size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
     // a header to allow for machine parsers to determine format
     int n = hal.util->snprintf(buf, bufsize, "TasksV1\n");
 
-    if (n <= 0) {
+    if (n < 8) {
         return 0;
     }
 
