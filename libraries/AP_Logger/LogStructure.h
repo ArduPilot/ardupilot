@@ -1271,6 +1271,23 @@ struct PACKED log_Winch {
     int8_t temp;
 };
 
+struct PACKED log_PSC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float pos_target_x;
+    float pos_target_Y;
+    float position_x;
+    float position_y;
+    float vel_target_x;
+    float vel_target_y;
+    float velocity_x;
+    float velocity_y;
+    float accel_target_x;
+    float accel_target_y;
+    float accel_x;
+    float accel_y;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -2451,6 +2468,22 @@ struct PACKED log_Winch {
 // @Field: Vcc: Voltage to Motor
 // @Field: Temp: Motor temperature
 
+// @LoggerMessage: PSC
+// @Description: Position Control data
+// @Field: TimeUS: Time since system startup
+// @Field: TPX: Target position relative to origin, X-axis
+// @Field: TPY: Target position relative to origin, Y-axis
+// @Field: PX: Position relative to origin, X-axis
+// @Field: PY: Position relative to origin, Y-axis
+// @Field: TVX: Target velocity, X-axis
+// @Field: TVY: Target velocity, Y-axis
+// @Field: VX: Velocity, X-axis
+// @Field: VY: Velocity, Y-axis
+// @Field: TAX: Target acceleration, X-axis
+// @Field: TAY: Target acceleration, Y-axis
+// @Field: AX: Acceleration, X-axis
+// @Field: AY: Acceleration, Y-axis
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -2668,7 +2701,9 @@ struct PACKED log_Winch {
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
-      "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }
+      "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
+    { LOG_PSC_MSG, sizeof(log_PSC), \
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -2830,6 +2865,7 @@ enum LogMessages : uint8_t {
     LOG_VISUALVEL_MSG,
     LOG_SIMPLE_AVOID_MSG,
     LOG_WINCH_MSG,
+    LOG_PSC_MSG,
 
     _LOG_LAST_MSG_
 };

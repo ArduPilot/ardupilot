@@ -1134,3 +1134,24 @@ void AP_Logger::Write_Winch(bool healthy, bool thread_end, bool moving, bool clu
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, const Vector3f &vel_target, const Vector3f &velocity, const Vector3f &accel_target, const float &accel_x, const float &accel_y)
+{
+    struct log_PSC pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSC_MSG),
+        time_us         : AP_HAL::micros64(),
+        pos_target_x    : pos_target.x * 0.01f,
+        pos_target_Y    : pos_target.y * 0.01f,
+        position_x      : position.x * 0.01f,
+        position_y      : position.y * 0.01f,
+        vel_target_x    : vel_target.x * 0.01f,
+        vel_target_y    : vel_target.y * 0.01f,
+        velocity_x      : velocity.x * 0.01f,
+        velocity_y      : velocity.y * 0.01f,
+        accel_target_x  : accel_target.x * 0.01f,
+        accel_target_y  : accel_target.y * 0.01f,
+        accel_x         : accel_x * 0.01f,
+        accel_y         : accel_y * 0.01f
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
