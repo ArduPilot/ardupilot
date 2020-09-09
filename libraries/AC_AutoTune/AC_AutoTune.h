@@ -23,6 +23,8 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 
+#define verbose_GCS 0
+
 class AC_AutoTune {
 public:
     // constructor
@@ -101,10 +103,12 @@ private:
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
+#if verbose_GCS
     void send_step_string();
     const char *level_issue_string() const;
     const char * type_string() const;
     void announce_state_to_gcs();
+#endif
     void do_gcs_announcements();
 
     enum struct LevelIssue {

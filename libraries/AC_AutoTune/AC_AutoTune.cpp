@@ -223,6 +223,8 @@ bool AC_AutoTune::start(void)
     return true;
 }
 
+#if verbose_GCS
+
 const char *AC_AutoTune::level_issue_string() const
 {
     switch (level_problem.issue) {
@@ -281,17 +283,25 @@ const char *AC_AutoTune::type_string() const
     return "Bug";
 }
 
+#endif // verbose_GCS
+
+
 void AC_AutoTune::do_gcs_announcements()
 {
     const uint32_t now = AP_HAL::millis();
     if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
+    announce_time = now;
+
+    char axis_char = '?';
+
+#if verbose_GCS
+
     float tune_rp = 0.0f;
     float tune_rd = 0.0f;
     float tune_sp = 0.0f;
     float tune_accel = 0.0f;
-    char axis_char = '?';
     switch (axis) {
     case ROLL:
         tune_rp = tune_roll_rp;
@@ -337,7 +347,22 @@ void AC_AutoTune::do_gcs_announcements()
     }
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", counter, AUTOTUNE_SUCCESS_COUNT);
 
-    announce_time = now;
+#else
+    switch (axis) {
+    case ROLL:
+        axis_char = 'R';
+        break;
+    case PITCH:
+        axis_char = 'P';
+        break;
+    case YAW:
+        axis_char = 'Y';
+        break;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: (%c) success %u/%u", axis_char,  counter, AUTOTUNE_SUCCESS_COUNT);
+
+#endif // verbose_GCS
 }
 
 // run - runs the autotune flight mode
@@ -503,7 +528,9 @@ void AC_AutoTune::control_attitude()
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
+#if verbose_GCS
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
+#endif
             // initiate variables for next step
             step = TWITCHING;
             step_start_time_ms = now;
