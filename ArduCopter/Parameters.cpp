@@ -976,6 +976,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("ACRO_OPTIONS", 39, ParametersG2, acro_options, 0),
 #endif
 
+    // @Param: LAND_REPO_ALT
+    // @DisplayName: Land repositioning altitude minimum
+    // @Description: Pilot can only reposition vehicle in Land, RTL and Auto modes when rangefinder alt is above this altitude. Limiting begins at twice this altitude.
+    // @Units: cm
+    // @Range: 0 10000
+    // @Increment: 10
+    // @User: Advanced
+    AP_GROUPINFO("LAND_REPO_ALT", 40, ParametersG2, land_repo_alt, 0),
+
     AP_GROUPEND
 };
 

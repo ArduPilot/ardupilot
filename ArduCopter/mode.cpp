@@ -608,6 +608,17 @@ void Mode::land_run_horizontal_control()
             // convert pilot input to lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
+            // limit repositioning at low altitudes (using rangefinder)
+            if ((g2.land_repo_alt > 0) && copter.rangefinder_alt_ok()) {
+                const float rngfnd_alt = copter.rangefinder_state.alt_cm_filt.get();
+                if (rngfnd_alt < g2.land_repo_alt * 2.0f) {
+                    // roll and pitch are scaled down starting at 2x land_repo_alt
+                    const float repo_scaler = linear_interpolate(0.0f, 1.0f, rngfnd_alt, g2.land_repo_alt, (g2.land_repo_alt * 2.0f));
+                    target_roll *= repo_scaler;
+                    target_pitch *= repo_scaler;
+                }
+            }
+
             // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
                 if (!copter.ap.land_repo_active) {
