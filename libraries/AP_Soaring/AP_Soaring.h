@@ -4,7 +4,7 @@
   Provides a layer between the thermal centring algorithm and the main
   code for managing navigation targets, data logging, tuning parameters,
   algorithm inputs and eventually other soaring strategies such as
-  speed-to-fly. AP_TECS libary used for reference.
+  speed-to-fly. AP_TECS library used for reference.
 */
 
 #pragma once
