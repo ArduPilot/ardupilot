@@ -5917,7 +5917,7 @@ Also, ignores heartbeats not from our target system'''
                 rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
                 self.progress("Want=%u got=%u" % (want_rate, rate))
                 if rate != want_rate:
-                    raise NotAchievedException("Did not get expected rate")
+                    raise NotAchievedException("Did not get expected rate (want=%u got=%u" % (want_rate, rate))
 
 
             self.progress("try at the main loop rate")
@@ -5936,9 +5936,6 @@ Also, ignores heartbeats not from our target system'''
 
             self.drain_mav()
 
-            self.progress("Resetting CAMERA_FEEDBACK rate to zero")
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
-
             non_existant_id = 145
             self.send_get_message_interval(non_existant_id)
             m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
@@ -5952,6 +5949,9 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
+
+        self.progress("Resetting CAMERA_FEEDBACK rate to zero")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
 
         # tell MAVProxy to start stuffing around with the rates:
         sr = self.sitl_streamrate()
