@@ -415,12 +415,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 #endif
         break;
 
-    case MSG_FENCE_STATUS:
 #if GEOFENCE_ENABLED == ENABLED
+    case MSG_FENCE_STATUS:
         CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         plane.send_fence_status(chan);
-#endif
         break;
+#endif
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
@@ -1050,7 +1050,9 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
 
+#if GEOFENCE_ENABLED == ENABLED
     case MAV_CMD_DO_FENCE_ENABLE:
+    
         if (!plane.geofence_present()) {
             gcs().send_text(MAV_SEVERITY_NOTICE,"Fence not configured");
             return MAV_RESULT_FAILED;
@@ -1076,6 +1078,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             break;
         }
         return MAV_RESULT_FAILED;
+#endif
 
     case MAV_CMD_DO_SET_HOME: {
         // param1 : use current (1=use current location, 0=use specified location)

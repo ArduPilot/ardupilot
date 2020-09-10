@@ -20,9 +20,12 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
+
+#if GEOFENCE_ENABLED == ENABLED
     if (plane.geofence_present()) {
         control_sensors_present |= MAV_SYS_STATUS_GEOFENCE;
     }
+#endif
 
     if (plane.have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;
@@ -32,9 +35,11 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
     }
 
+#if GEOFENCE_ENABLED == ENABLED
     if (plane.geofence_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_GEOFENCE;
     }
+#endif
 
     control_sensors_present |=
         MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL |
