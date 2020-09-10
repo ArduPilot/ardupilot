@@ -834,7 +834,6 @@ private:
     void calc_nav_yaw_ground(void);
 
     // GCS_Mavlink.cpp
-    void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
 
     // Log.cpp
@@ -930,28 +929,6 @@ private:
     // fence.cpp
     void fence_check();
     bool fence_stickmixing() const;
-#endif
-
-#if GEOFENCE_ENABLED == ENABLED
-    // geofence.cpp
-    uint8_t max_fencepoints(void) const;
-    Vector2l get_fence_point_with_index(uint8_t i) const;
-    void set_fence_point_with_index(const Vector2l &point, unsigned i);
-    void geofence_load(void);
-    bool geofence_present(void) const;
-    void geofence_update_pwm_enabled_state();
-    bool geofence_set_enabled(bool enable);
-    bool geofence_enabled(void);
-    bool geofence_set_floor_enabled(bool floor_enable);
-    bool geofence_check_minalt(void);
-    bool geofence_check_maxalt(void);
-    void geofence_check(bool altitude_check_only);
-    bool geofence_prearm_check(void);
-    bool geofence_stickmixing(void);
-    void geofence_send_status(mavlink_channel_t chan);
-    bool geofence_breached(void);
-    void geofence_disable_and_send_error_msg(const char *errorMsg);
-    void disable_fence_for_landing(void);
 #endif
 
     // ArduPlane.cpp
