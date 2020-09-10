@@ -23,7 +23,6 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Fence Type
     // @Description: Enabled fence types held as bitmask
-    // @Values: 0:None,1:Altitude,2:Circle,3:Altitude and Circle,4:Polygon,5:Altitude and Polygon,6:Circle and Polygon,7:All
     // @Bitmask: 0:Altitude,1:Circle,2:Polygon
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_DEFAULT),
