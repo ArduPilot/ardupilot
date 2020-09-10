@@ -19,7 +19,7 @@ public:
     /// Constructor for PID
     AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
 
-    /// update_leaky_i - replacement for get_i but output is leaded at leak_rate
+    /// update_leaky_i - replacement for get_i but output is leaked at leak_rate
     void       update_leaky_i(float leak_rate);
 
     static const struct AP_Param::GroupInfo        var_info[];
