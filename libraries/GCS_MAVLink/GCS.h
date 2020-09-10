@@ -825,8 +825,6 @@ private:
     // no idea where we are:
     struct Location global_position_current_loc;
 
-    void zero_rc_outputs();
-
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
     uint16_t out_of_space_to_send_count; // number of times HAVE_PAYLOAD_SPACE and friends have returned false
