@@ -152,14 +152,6 @@ void GCS_MAVLINK_Plane::send_aoa_ssa()
         ahrs.getSSA());
 }
 
-#if GEOFENCE_ENABLED == ENABLED
-void Plane::send_fence_status(mavlink_channel_t chan)
-{
-    geofence_send_status(chan);
-}
-#endif
-
-
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
     if (plane.control_mode == &plane.mode_manual) {
@@ -414,13 +406,6 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         }
 #endif
         break;
-
-#if GEOFENCE_ENABLED == ENABLED
-    case MSG_FENCE_STATUS:
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
-        plane.send_fence_status(chan);
-        break;
-#endif
 
     case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
@@ -1050,36 +1035,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
 
-#if GEOFENCE_ENABLED == ENABLED
-    case MAV_CMD_DO_FENCE_ENABLE:
-    
-        if (!plane.geofence_present()) {
-            gcs().send_text(MAV_SEVERITY_NOTICE,"Fence not configured");
-            return MAV_RESULT_FAILED;
-        }
-        switch((uint16_t)packet.param1) {
-        case 0:
-            if (! plane.geofence_set_enabled(false)) {
-                return MAV_RESULT_FAILED;
-            }
-            return MAV_RESULT_ACCEPTED;
-        case 1:
-            if (! plane.geofence_set_enabled(true)) {
-                return MAV_RESULT_FAILED;
-            }
-            return MAV_RESULT_ACCEPTED;
-        case 2: //disable fence floor only
-            if (! plane.geofence_set_floor_enabled(false)) {
-                return MAV_RESULT_FAILED;
-            }
-            gcs().send_text(MAV_SEVERITY_NOTICE,"Fence floor disabled");
-            return MAV_RESULT_ACCEPTED;
-        default:
-            break;
-        }
-        return MAV_RESULT_FAILED;
-#endif
-
     case MAV_CMD_DO_SET_HOME: {
         // param1 : use current (1=use current location, 0=use specified location)
         // param5 : latitude
@@ -1177,39 +1132,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
-#if GEOFENCE_ENABLED == ENABLED
-    // receive a fence point from GCS and store in EEPROM
-    case MAVLINK_MSG_ID_FENCE_POINT: {
-        mavlink_fence_point_t packet;
-        mavlink_msg_fence_point_decode(&msg, &packet);
-        if (plane.g.fence_action != FENCE_ACTION_NONE) {
-            send_text(MAV_SEVERITY_WARNING,"Fencing must be disabled");
-        } else if (packet.count != plane.g.fence_total) {
-            send_text(MAV_SEVERITY_WARNING,"Bad fence point");
-        } else if (!check_latlng(packet.lat,packet.lng)) {
-            send_text(MAV_SEVERITY_WARNING,"Invalid fence point, lat or lng too large");
-        } else {
-            plane.set_fence_point_with_index(Vector2l(packet.lat*1.0e7f, packet.lng*1.0e7f), packet.idx);
-        }
-        break;
-    }
-
-    // send a fence point to GCS
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT: {
-        mavlink_fence_fetch_point_t packet;
-        mavlink_msg_fence_fetch_point_decode(&msg, &packet);
-        if (packet.idx >= plane.g.fence_total) {
-            send_text(MAV_SEVERITY_WARNING,"Bad fence point");
-        } else {
-            Vector2l point = plane.get_fence_point_with_index(packet.idx);
-            mavlink_msg_fence_point_send(chan, msg.sysid, msg.compid, packet.idx, plane.g.fence_total,
-                                             point.x*1.0e-7f, point.y*1.0e-7f);
-        }
-        break;
-    }
-#endif // GEOFENCE_ENABLED
-
-    
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
         if (msg.sysid != plane.g.sysid_my_gcs) {

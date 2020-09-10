@@ -246,23 +246,9 @@
  # define SCALING_SPEED          15.0
 #endif
 
-#if 1
-// Use AC_FENCE
-#define AC_FENCE ENABLED
-#define GEOFENCE_ENABLED DISABLED
-#else
-// Use GEOFENCE
-#define AC_FENCE DISABLED
-#define GEOFENCE_ENABLED ENABLED
-#endif
-
-#ifndef AC_FENCE
- # define AC_FENCE DISABLED
-#endif
-
 // use this to disable geo-fencing
-#ifndef GEOFENCE_ENABLED
- # define GEOFENCE_ENABLED ENABLED
+#ifndef AC_FENCE
+ # define AC_FENCE ENABLED
 #endif
 
 // pwm value on FENCE_CHANNEL to use to enable fenced mode

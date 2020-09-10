@@ -398,17 +398,6 @@ public:
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
 
-#if GEOFENCE_ENABLED == ENABLED
-    AP_Int8 fence_action;
-    AP_Int8 fence_total;
-    AP_Int8 fence_channel;
-    AP_Int16 fence_minalt;    // meters
-    AP_Int16 fence_maxalt;    // meters
-    AP_Int16 fence_retalt;    // meters
-    AP_Enum<FenceAutoEnable> fence_autoenable;
-    AP_Int8 fence_ret_rally;
-#endif
-
     // Fly-by-wire
     //
     AP_Int8 flybywire_elev_reverse;

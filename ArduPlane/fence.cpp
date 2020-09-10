@@ -20,7 +20,7 @@ void Plane::fence_check()
             case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
             case AC_FENCE_ACTION_RTL_AND_LAND:
                 if (plane.control_mode_reason == ModeReason::FENCE_BREACHED &&
-                    (control_mode == &mode_guided || control_mode == &mode_avoidADSB)) {
+                    control_mode->is_guided_mode()) {
                     set_mode(*previous_mode, ModeReason::FENCE_RETURN_PREVIOUS_MODE);
                 }
                 break;
@@ -118,7 +118,7 @@ bool Plane::fence_stickmixing(void) const
 {
     if (fence.enabled() &&
         fence.get_breaches() &&
-        (control_mode == &mode_guided || control_mode == &mode_avoidADSB))
+        control_mode->is_guided_mode())
     {
         // don't mix in user input
         return false;

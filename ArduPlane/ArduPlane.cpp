@@ -406,11 +406,6 @@ void Plane::update_GPS_10Hz(void)
             }
         }
 
-#if GEOFENCE_ENABLED == ENABLED
-        // see if we've breached the geo-fence
-        geofence_check(false);
-#endif
-
         // update wind estimate
         ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
@@ -494,9 +489,6 @@ void Plane::update_alt()
     auto_state.sink_rate = 0.8f * auto_state.sink_rate + 0.2f*sink_rate;
 #if PARACHUTE == ENABLED
     parachute.set_sink_rate(auto_state.sink_rate);
-#endif
-#if GEOFENCE_ENABLED == ENABLED
-    geofence_check(true);
 #endif
 
     update_flight_stage();
