@@ -156,6 +156,9 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
             break;
         case FPORT_PRIM_READ:
         case FPORT_PRIM_WRITE:
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL        
+            AP_Frsky_Telem::set_telem_data(frame.downlink.prim, frame.downlink.appid, le32toh_ptr(frame.downlink.data));
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL            
             // do not respond to 0x30 and 0x31
             return;
     }
