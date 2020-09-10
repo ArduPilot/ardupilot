@@ -328,3 +328,17 @@ void SRV_Channels::push()
     }
 #endif // HAL_NUM_CAN_IFACES
 }
+
+void SRV_Channels::zero_rc_outputs()
+{
+    /* Send an invalid signal to the motors to prevent spinning due to
+     * neutral (1500) pwm pulse being cut short.  For that matter,
+     * send an invalid signal to all channels to prevent
+     * undesired/unexpected behavior
+     */
+    cork();
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        hal.rcout->write(i, 0);
+    }
+    push();
+}
