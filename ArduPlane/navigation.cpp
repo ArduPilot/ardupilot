@@ -344,6 +344,8 @@ void Plane::update_fbwb_speed_height(void)
                 // we're in soaring mode with throttle suppressed
                 set_target_altitude_current();
             } else {
+                // we're in soaring mode climbing back to altitude. Set target to SOAR_ALT_CUTOFF plus 10m to ensure we positively climb
+                // through SOAR_ALT_CUTOFF, thus triggering throttle suppression and return to glide.
                 target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt;
             }
         }
