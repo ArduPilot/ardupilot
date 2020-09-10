@@ -28,6 +28,7 @@ public:
     void start_new_log(void) override;
     uint32_t bufferspace_available() override;
     void stop_logging(void) override;
+    void stop_logging_async(void) override;
     bool logging_failed() const override;
     bool logging_started(void) const override { return log_write_started; }
 
@@ -112,6 +113,8 @@ private:
     volatile bool erase_started;
     // were we logging before the erase started?
     volatile bool new_log_pending;
+    // have we been asked to stop logging safely?
+    volatile bool stop_log_pending;
     // latch to make sure we only write out the full message once
     volatile bool chip_full;
     // io thread health
