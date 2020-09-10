@@ -73,9 +73,7 @@ class AP_OSD_AbstractScreen
 public:
     // constructor
     AP_OSD_AbstractScreen() {}
-#if OSD_PARAM_ENABLED
-    virtual void draw(void) = 0;
-#endif
+    virtual void draw(void) {}
 
     void set_backend(AP_OSD_Backend *_backend);
 
@@ -111,10 +109,11 @@ class AP_OSD_Screen : public AP_OSD_AbstractScreen
 public:
     // constructor
     AP_OSD_Screen();
-#if OSD_PARAM_ENABLED
+
+    // skip the drawing if we are not using a font based backend. This saves a lot of flash space when
+    // using the MSP OSD system on boards that don't have a MAX7456
+#if HAL_WITH_OSD_BITMAP
     void draw(void) override;
-#else
-    void draw(void);
 #endif
 
     // User settable parameters
@@ -269,11 +268,19 @@ public:
         uint8_t values_max;
         const char** values;
     };
+    // compact structure used to hold default values for static initialization
+    struct Initializer {
+        uint8_t index;
+        AP_Param::ParamToken token;
+        int8_t type;
+    };
 
     static const ParamMetadata _param_metadata[];
 
     AP_OSD_ParamSetting(uint8_t param_number, bool enabled, uint8_t x, uint8_t y, int16_t key, int8_t idx, int32_t group,
         int8_t type = OSD_PARAM_NONE, float min = 0.0f, float max = 1.0f, float incr = 0.001f);
+    AP_OSD_ParamSetting(uint8_t param_number);
+    AP_OSD_ParamSetting(const Initializer& initializer);
 
     // initialize the setting from the configured information
     void update();
@@ -300,7 +307,7 @@ private:
 class AP_OSD_ParamScreen : public AP_OSD_AbstractScreen
 {
 public:
-    AP_OSD_ParamScreen();
+    AP_OSD_ParamScreen(uint8_t index);
 
     enum class Event {
         NONE,
@@ -331,17 +338,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_OSD_ParamSetting params[NUM_PARAMS] = {
-        {1, true, 2, 2, 102, 0, 4034 },   // ATC_RAT_PIT_P
-        {2, true, 2, 3, 102, 0, 130  },   // ATC_RAT_PIT_D
-        {3, true, 2, 4, 102, 0, 4033 },   // ATC_RAT_RLL_P
-        {4, true, 2, 5, 102, 0, 129  },   // ATC_RAT_RLL_D
-        {5, true, 2, 6, 102, 0, 4035 },   // ATC_RAT_YAW_P
-        {6, true, 2, 7, 102, 0, 131  },   // ATC_RAT_YAW_D
-        {7, true, 2, 8, 6, 0, 25041, OSD_PARAM_AUX_FUNCTION }, // RC7_OPTION
-        {8, true, 2, 9, 6, 0, 25105, OSD_PARAM_AUX_FUNCTION }, // RC8_OPTION
-        {9, true, 2, 10, 36, 0, 1047, OSD_PARAM_FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
-    };
+    AP_OSD_ParamSetting params[NUM_PARAMS] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
     void update_state_machine();
     void draw_parameter(uint8_t param_number, uint8_t x, uint8_t y);
@@ -443,7 +440,7 @@ public:
 
     AP_OSD_Screen screen[AP_OSD_NUM_DISPLAY_SCREENS];
 #if OSD_PARAM_ENABLED
-    AP_OSD_ParamScreen param_screen[AP_OSD_NUM_PARAM_SCREENS];
+    AP_OSD_ParamScreen param_screen[AP_OSD_NUM_PARAM_SCREENS] { 0, 1 };
 #endif
     struct NavInfo {
         float wp_distance;

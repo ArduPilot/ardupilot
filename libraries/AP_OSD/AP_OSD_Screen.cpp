@@ -1692,6 +1692,7 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
 
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
+#if HAL_WITH_OSD_BITMAP
 void AP_OSD_Screen::draw(void)
 {
     if (!enabled || !backend) {
@@ -1746,4 +1747,4 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
 }
-
+#endif
