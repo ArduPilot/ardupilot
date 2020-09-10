@@ -161,6 +161,23 @@ public:
     // call @10Hz to check for fence load being valid
     void update();
 
+#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
+    // get_return_point - returns latitude/longitude of return point.
+    // This works with storage - the returned vector is absolute
+    // lat/lon.
+    bool get_return_point(Vector2l &ret) WARN_IF_UNUSED;
+#endif
+
+    // return total number of fences - polygons and circles
+    uint16_t total_fence_count() const {
+        return (get_exclusion_polygon_count() +
+                get_inclusion_polygon_count() +
+                get_exclusion_circle_count() +
+                get_inclusion_circle_count());
+    }
+
+
+
 private:
 
     // multi-thread access support
@@ -355,13 +372,6 @@ private:
 
     // methods to write specific types of fencepoint out:
     bool write_eos_to_storage(uint16_t &offset);
-
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-    // get_return_point - returns latitude/longitude of return point.
-    // This works with storage - the returned vector is absolute
-    // lat/lon.
-    bool get_return_point(Vector2l &ret) WARN_IF_UNUSED;
-#endif
 
     // _total - reference to FENCE_TOTAL parameter.  This is used
     // solely for compatability with the FENCE_POINT protocol
