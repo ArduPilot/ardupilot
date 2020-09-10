@@ -165,15 +165,7 @@ void AP_VisualOdom_NoopLoop::parse_msgbuf()
     const int32_t pos_z = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ] << 8) >> 8;
 
     // position scaled to meters in NED
-    const Vector3f pos_m {pos_x * 0.001f, pos_y * 0.001f, -pos_z * 0.001f};
-
-    // x,y,z velocity in m/s*10000 in NEU
-    const int32_t vel_x = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELX+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELX+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELX] << 8) >> 8;
-    const int32_t vel_y = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELY+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELY+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELY] << 8) >> 8;
-    const int32_t vel_z = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELZ+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELZ+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_VELZ] << 8) >> 8;
-
-    // velocity scaled to m/s in NED
-    const Vector3f vel_ms {vel_x * 0.0001f, vel_y * 0.0001f, -vel_z * 0.0001f};
+    const Vector3f pos_m {pos_y * 0.001f, pos_x * 0.001f, -pos_z * 0.001f};
 
     // sensor does not provide accurate attitude or reset information
     const Quaternion att_none;
@@ -182,11 +174,9 @@ void AP_VisualOdom_NoopLoop::parse_msgbuf()
 
     // write data to EKF
     AP::ahrs().writeExtNavData(pos_m, att_none, pos_err, att_err, now_ms, _frontend.get_delay_ms(), reset_counter);
-    AP::ahrs().writeExtNavVelData(vel_ms, _frontend.get_vel_noise(), now_ms, _frontend.get_delay_ms());
 
     // log sensor data
     AP::logger().Write_VisualPosition(remote_systime_us, now_ms, pos_m.x, pos_m.y, pos_m.z, 0.0f, 0.0f, 0.0f, pos_err, att_err, reset_counter);
-    AP::logger().Write_VisualVelocity(remote_systime_us, now_ms, vel_ms, _frontend.get_vel_noise(), reset_counter);
 
     // debug
     /*static uint8_t counter = 0;
