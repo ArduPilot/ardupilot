@@ -504,6 +504,8 @@ public:
         return _singleton;
     }
 
+    static void zero_rc_outputs();
+
 private:
 
     static bool disabled_passthrough;
