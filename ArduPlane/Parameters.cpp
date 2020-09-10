@@ -215,7 +215,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
     // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. Note that reverse thrust is only ever auto-enabled in auto-throttle modes. In modes where throttle control is pilot controlled the ability to do reverse thrust is controlled by throttle stick input. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages.
-    // @Values: 0:Never,1:AutoAlways,2:AutoLanding
     // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
@@ -701,7 +700,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all log types by setting this to 65535. The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
-    // @Values: 0:Disabled,65535:All-Default
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
@@ -852,7 +850,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: CRASH_DETECT
     // @DisplayName: Crash Detection
     // @Description: Automatically detect a crash during AUTO flight and perform the bitmask selected action(s). Disarm will turn off motor for safety and to help against burning out ESC and motor. Set to 0 to disable crash detection.
-    // @Values: 0:Disabled
     // @Bitmask: 0:Disarm
     // @User: Advanced
     ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
@@ -1228,7 +1225,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: DSPOILER_OPTS
     // @DisplayName: Differential spoiler and crow flaps options
     // @Description: Differential spoiler and crow flaps options
-    // @Values: 0: none, 1: D spoilers have pitch input, 2: use both control surfaces on each wing for roll, 4: Progressive crow flaps only first (0-50% flap in) then crow flaps (50 - 100% flap in)
     // @Bitmask: 0:pitch control, 1:full span, 2:Progressive crow
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_OPTS", 20, ParametersG2, crow_flap_options, 3),
