@@ -232,7 +232,68 @@ static const char* event_names[5] = {
 #define debug(fmt, args ...)
 #endif
 
-AP_OSD_ParamScreen::AP_OSD_ParamScreen() {
+static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SCREENS][AP_OSD_ParamScreen::NUM_PARAMS] {
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+    {
+        { 1, { 102, 0, 4033 }, OSD_PARAM_NONE },            // ATC_RAT_RLL_P
+        { 2, { 102, 0, 129  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_D
+        { 3, { 102, 0, 705  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_FLTD
+        { 4, { 102, 0, 4034 }, OSD_PARAM_NONE },            // ATC_RAT_PIT_P
+        { 5, { 102, 0, 130  }, OSD_PARAM_NONE },            // ATC_RAT_PIT_D
+        { 6, { 102, 0, 706  }, OSD_PARAM_NONE },            // ATC_RAT_PIT_FLTD
+        { 7, { 102, 0, 4035 }, OSD_PARAM_NONE },            // ATC_RAT_YAW_P
+        { 8, { 102, 0, 131  }, OSD_PARAM_NONE },            // ATC_RAT_YAW_D
+        { 9, { 102, 0, 643  }, OSD_PARAM_NONE }             // ATC_RAT_YAW_FLTE
+    },
+    {
+        { 1, { 3, 0, 231 }, OSD_PARAM_NONE },               // INS_LOG_BAT_OPT
+        { 2, { 3, 0, 167 }, OSD_PARAM_NONE },               // INS_LOG_BAT_MASK
+        { 3, { 60, 0, 0  }, OSD_PARAM_NONE },               // LOG_BITMASK
+        { 4, { 3, 0, 18  }, OSD_PARAM_NONE },               // INS_GYRO_FILT
+        { 5, { 102, 0, 6 }, OSD_PARAM_NONE },               // ATC_THR_MIX_MAN
+        { 6, { 102, 0, 5 }, OSD_PARAM_NONE },               // ATC_THR_MIX_MAX
+        { 7, { 6, 0, 25041 }, OSD_PARAM_AUX_FUNCTION },     // RC7_OPTION
+        { 8, { 6, 0, 25105 }, OSD_PARAM_AUX_FUNCTION },     // RC8_OPTION
+        { 9, { 36, 0, 1047 }, OSD_PARAM_FAILSAFE_ACTION_2 } // BATT_FS_LOW_ACT
+    }
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    {
+        { 1, { 232, 0, 1 }, OSD_PARAM_NONE },               // RLL2SRV_P
+        { 2, { 232, 0, 3 }, OSD_PARAM_NONE },               // RLL2SRV_I
+        { 3, { 232, 0, 2 }, OSD_PARAM_NONE },               // RLL2SRV_D
+        { 4, { 233, 0, 1 }, OSD_PARAM_NONE },               // PTCH2SRV_P
+        { 5, { 233, 0, 3 }, OSD_PARAM_NONE },               // PTCH2SRV_I
+        { 6, { 233, 0, 2 }, OSD_PARAM_NONE },               // PTCH2SRV_D
+        { 7, { 233, 0, 6 }, OSD_PARAM_NONE },               // PTCH2SRV_RLL
+        { 8, { 199, 0, 1 }, OSD_PARAM_NONE },               // TUNE_PARAM
+        { 9, { 199, 0, 320 }, OSD_PARAM_NONE }              // TUNE_RANGE
+    },
+    {
+        { 1, { 185, 0, 0 }, OSD_PARAM_NONE },               // TRIM_THROTTLE
+        { 2, { 155, 0, 0 }, OSD_PARAM_NONE },               // TRIM_ARSPD_CM
+        { 3, { 4, 0, 1094 }, OSD_PARAM_NONE },              // SERVO_AUTO_TRIM
+        { 4, { 120, 0, 0 }, OSD_PARAM_NONE},                // ARSPD_FBW_MIN
+        { 5, { 121, 0, 0 }, OSD_PARAM_NONE },               // ARSPD_FBW_MAX
+        { 6, { 156, 0, 0 }, OSD_PARAM_NONE },               // ALT_HOLD_RTL
+        { 7, { 140, 2, 8 }, OSD_PARAM_NONE },               // AHRS_TRIM_Y
+        { 8, { 182, 0, 0 }, OSD_PARAM_NONE },               // THR_MAX
+        { 9, { 189, 0, 0 }, OSD_PARAM_NONE }                // THR_SLEWRATE
+    }
+#else
+    {
+        { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 }, { 7 }, { 8 }, { 9 },
+    },
+    {
+        { 1 }, { 2 }, { 3 }, { 4 }, { 5 }, { 6 }, { 7 }, { 8 }, { 9 }
+    }
+#endif
+};
+
+AP_OSD_ParamScreen::AP_OSD_ParamScreen(uint8_t index)
+{
+    for (uint8_t i = 0; i < NUM_PARAMS; i++) {
+        params[i] = PARAM_DEFAULTS[index][i];
+    }
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -703,4 +764,3 @@ bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) con
     // if we got this far everything must be ok
     return true;
 }
-
