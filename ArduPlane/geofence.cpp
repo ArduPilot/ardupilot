@@ -53,6 +53,7 @@ Vector2l Plane::get_fence_point_with_index(uint8_t i) const
 {
     if (i > (uint8_t)g.fence_total || i >= max_fencepoints()) {
         return Vector2l(0,0);
+
     }
 
     // read fence point
@@ -532,7 +533,7 @@ void Plane::disable_fence_for_landing(void)
 
 
 #else // GEOFENCE_ENABLED
-
+#if 0
 void Plane::geofence_check(bool altitude_check_only) {
 }
 bool Plane::geofence_stickmixing(void) {
@@ -558,6 +559,7 @@ bool Plane::geofence_breached(void)
 {
     return false;
 }
+#endif
 
 void Plane::disable_fence_for_landing(void)
 {
