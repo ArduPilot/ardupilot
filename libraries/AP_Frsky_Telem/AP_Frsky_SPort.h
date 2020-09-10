@@ -11,6 +11,16 @@ public:
 
     void send() override;
 
+    typedef union {
+        struct PACKED {
+            uint8_t sensor;
+            uint8_t frame;
+            uint16_t appid;
+            uint32_t data;
+        };
+        uint8_t raw[8];
+    } sport_packet_t;
+
 protected:
 
     void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
