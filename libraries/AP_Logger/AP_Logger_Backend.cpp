@@ -57,7 +57,7 @@ void AP_Logger_Backend::periodic_1Hz()
     if (_rotate_pending && !logging_enabled()) {
         _rotate_pending = false;
         // handle log rotation once we stop logging
-        stop_logging();
+        stop_logging_async();
     }
     df_stats_log();
 }
