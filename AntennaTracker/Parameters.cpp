@@ -246,7 +246,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 127:Default,0:Disabled
     // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS,6:Battery
     // @User: Standard
     GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
@@ -439,7 +438,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @DisplayName: GCS PID tuning mask
     // @Description: bitmask of PIDs to send MAVLink PID_TUNING messages for
     // @User: Advanced
-    // @Values: 0:None,1:Pitch,2:Yaw
     // @Bitmask: 0:Pitch,1:Yaw
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
