@@ -1770,7 +1770,7 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("SIM_THML_SCENARI", 0)
 
 
-       # Wait to descent to SOAR_ALT_MIN
+        # Wait to descend to SOAR_ALT_MIN
         self.progress("Waiting for glide to min altitude")
         alt_min = self.get_parameter('SOAR_ALT_MIN')
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
@@ -1782,7 +1782,7 @@ class AutoTestPlane(AutoTest):
         alt_ctf = self.get_parameter('SOAR_ALT_CUTOFF')
         self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
 
-        # Wait
+        # Allow time to suppress throttle and start descent.
         self.delay_sim_time(20)
 
         # Now set FBWB mode
@@ -1800,7 +1800,7 @@ class AutoTestPlane(AutoTest):
         # Now wait for descent and check throttle up
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
 
-        self.progress("Waiting for climn")
+        self.progress("Waiting for climb")
         self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
 
         # Back to auto
