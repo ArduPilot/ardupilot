@@ -526,18 +526,21 @@ uint16_t AP_Logger_Block::get_num_logs(void)
     return (last - first + 1);
 }
 
-// stop logging and flush any remaining data
+// stop logging immediately
 void AP_Logger_Block::stop_logging(void)
 {
     WITH_SEMAPHORE(sem);
 
     log_write_started = false;
 
-    // complete writing any previous log
-    while (writebuf.available()) {
-        write_log_page();
-    }
+    // nuke writing any previous log
     writebuf.clear();
+}
+
+// stop logging and flush any remaining data
+void AP_Logger_Block::stop_logging_async(void)
+{
+    stop_log_pending = true;
 }
 
 // This function starts a new log file in the AP_Logger
@@ -887,12 +890,26 @@ void AP_Logger_Block::io_timer(void)
         return;
     }
 
+    // we have been asked to stop logging, flush everything
+    if (stop_log_pending) {
+        WITH_SEMAPHORE(sem);
+
+        log_write_started = false;
+
+        // complete writing any previous log
+        while (writebuf.available()) {
+            write_log_page();
+        }
+        writebuf.clear();
+        stop_log_pending = false;
+
     // write at most one page
-    if (writebuf.available() >= df_PageSize - sizeof(struct PageHeader)) {
+    } else if (writebuf.available() >= df_PageSize - sizeof(struct PageHeader)) {
         WITH_SEMAPHORE(sem);
 
         write_log_page();
     }
+
 }
 
 // write out a page of log data
