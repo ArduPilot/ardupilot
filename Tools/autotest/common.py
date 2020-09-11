@@ -4989,8 +4989,9 @@ Also, ignores heartbeats not from our target system'''
                         for param_name in param_names:
                             self.progress("%s=%f" % (param_name, self.get_parameter(param_name)))
                         if m.cal_status == mavutil.mavlink.MAG_CAL_SUCCESS:
-                            if reached_pct[m.compass_id] < 98:
-                                raise NotAchievedException("Mag calibration report SUCCESS without 100%% completion")
+                            threshold = 95
+                            if reached_pct[m.compass_id] < threshold:
+                                raise NotAchievedException("Mag calibration report SUCCESS without >=%f%% completion (got %f%%)" % (threshold, reached_pct[m.compass_id]))
                             report_get[m.compass_id] = 1
                         else:
                             raise NotAchievedException(
