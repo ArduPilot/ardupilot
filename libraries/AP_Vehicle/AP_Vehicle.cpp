@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @DisplayName:
     // @Path: ../libraries/AP_SmartAudio/AP_SmartAudio.cpp
     // @User: Standard
-    AP_SUBGROUPINFO(smartaudio, "VTX_SM_",  40, AP_Vehicle, AP_SmartAudio),
+    AP_SUBGROUPINFO(smartaudio, "VTX_SM_",  6, AP_Vehicle, AP_SmartAudio),
 #endif
 
     AP_GROUPEND
