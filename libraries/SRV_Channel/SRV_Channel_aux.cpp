@@ -60,7 +60,8 @@ void SRV_Channel::output_ch(void)
         }
     }
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
-        hal.rcout->write(ch_num, output_pwm);
+        uint16_t servoPWM = constrain_int16(output_pwm, SRV_Channels::channels[ch_num].servo_min, SRV_Channels::channels[ch_num].servo_max);
+        hal.rcout->write(ch_num, servoPWM);
     }
 }
 
