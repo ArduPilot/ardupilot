@@ -148,6 +148,9 @@ enum class LogEvent : uint8_t {
     STANDBY_ENABLE = 74,
     STANDBY_DISABLE = 75,
 
+    FENCE_FLOOR_ENABLE = 80,
+    FENCE_FLOOR_DISABLE = 81,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
