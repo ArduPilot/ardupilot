@@ -204,8 +204,8 @@ static const char* FLTMODES[] = {
 };
 
 static const char* FS_OPTIONS[] = {
-    "NONE", "CONT_RCFS", "CONT_GCSFS", "CONT_RC/GCSFS", "", "", "", "CONT_LAND", "",
-    "", "", "", "", "", "", "CONT_CTRL_GCS", "", "", "CONTNUE"
+    "NONE", "CONT_RCFS", "CONT_GCSFS", "CONT_RC/GCSFS", "CONT_GUID_RC", "", "", "", "CONT_LAND", "",
+    "", "", "", "", "", "CONT_CTRL_GCS", "", "", "CONTNUE"
 };
 
 static const char* THR_FS_ACT[] = {
