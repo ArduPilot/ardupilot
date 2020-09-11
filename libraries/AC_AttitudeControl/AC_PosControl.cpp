@@ -896,8 +896,6 @@ void AC_PosControl::write_log()
 
    AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
 
-   AP::logger().Write_PSCP(_vel_error, _vel_xy_p, _vel_xy_i, _vel_xy_d);
-
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
@@ -1040,7 +1038,7 @@ void AC_PosControl::run_xy_controller(float dt)
 
     // the following section converts desired velocities in lat/lon directions to accelerations in lat/lon frame
 
-    Vector2f accel_target;
+    Vector2f accel_target, vel_xy_p, vel_xy_i, vel_xy_d;
 
     // check if vehicle velocity is being overridden
     if (_flags.vehicle_horiz_vel_override) {
@@ -1059,22 +1057,22 @@ void AC_PosControl::run_xy_controller(float dt)
     _pid_vel_xy.set_input(_vel_error);
 
     // get p
-    _vel_xy_p = _pid_vel_xy.get_p();
+    vel_xy_p = _pid_vel_xy.get_p();
 
     // update i term if we have not hit the accel or throttle limits OR the i term will reduce
     // TODO: move limit handling into the PI and PID controller
     if (!_limit.accel_xy && !_motors.limit.throttle_upper) {
-        _vel_xy_i = _pid_vel_xy.get_i();
+        vel_xy_i = _pid_vel_xy.get_i();
     } else {
-       _vel_xy_i = _pid_vel_xy.get_i_shrink();
+        vel_xy_i = _pid_vel_xy.get_i_shrink();
     }
 
     // get d
-    _vel_xy_d = _pid_vel_xy.get_d();
+    vel_xy_d = _pid_vel_xy.get_d();
 
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-    accel_target.x = (_vel_xy_p.x + _vel_xy_i.x + _vel_xy_d.x) * ekfNavVelGainScaler;
-    accel_target.y = (_vel_xy_p.y + _vel_xy_i.y + _vel_xy_d.y) * ekfNavVelGainScaler;
+    accel_target.x = (vel_xy_p.x + vel_xy_i.x + vel_xy_d.x) * ekfNavVelGainScaler;
+    accel_target.y = (vel_xy_p.y + vel_xy_i.y + vel_xy_d.y) * ekfNavVelGainScaler;
 
     // reset accel to current desired acceleration
     if (_flags.reset_accel_to_lean_xy) {
