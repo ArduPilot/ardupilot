@@ -3973,6 +3973,8 @@ Also, ignores heartbeats not from our target system'''
         tstart = time.time()
         while True:
             if time.time() - tstart > orig_timeout:
+                if not self.sitl_is_running():
+                    self.progress("SITL is not running")
                 raise AutoTestTimeoutException("Did not receive heartbeat")
             m = self.mav.wait_heartbeat(*args, **x)
             if m is None:
@@ -4312,7 +4314,7 @@ Also, ignores heartbeats not from our target system'''
         self.expect_list_add(self.sitl)
 
     def sitl_is_running(self):
-        return self.sitl.is_alive()
+        return self.sitl.isalive()
 
     def init(self):
         """Initilialize autotest feature."""
@@ -4347,6 +4349,12 @@ Also, ignores heartbeats not from our target system'''
         self.wait_heartbeat()
         self.progress("Sim time: %f" % (self.get_sim_time(),))
         self.apply_defaultfile_parameters()
+
+        if not self.sitl_is_running():
+            # we run this just to make sure exceptions are likely to
+            # work OK.
+            raise NotAchievedException("SITL is not running")
+        self.progress("SITL is running")
 
         self.progress("Ready to start testing!")
 
@@ -5514,7 +5522,14 @@ Also, ignores heartbeats not from our target system'''
             # make sure we have finished logging
             self.delay_sim_time(15)
             self.mavproxy.send("log list\n")
-            self.mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+            try:
+                self.mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+            except pexpect.TIMEOUT as e:
+                if self.sitl_is_running():
+                    self.progress("SITL is running")
+                else:
+                    self.progress("SITL is NOT running")
+                raise NotAchievedException("Received %s" % str(e))
             if int(self.mavproxy.match.group(2)) != 2:
                 raise NotAchievedException("Expected 2 logs")
 
