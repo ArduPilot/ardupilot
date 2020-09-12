@@ -1,6 +1,8 @@
 
 #include "GPIO.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
@@ -108,3 +110,4 @@ void DigitalSource::toggle()
 {
     return hal.gpio->write(_pin, !hal.gpio->read(_pin));
 }
+#endif

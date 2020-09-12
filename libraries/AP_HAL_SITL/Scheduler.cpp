@@ -153,11 +153,15 @@ void Scheduler::system_initialized() {
     // i386 with gcc doesn't work with FE_INVALID
     exceptions |= FE_INVALID;
 #endif
+#if !defined(HAL_BUILD_AP_PERIPH)
     if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
         feenableexcept(exceptions);
     } else {
         feclearexcept(exceptions);
     }
+#else
+    feclearexcept(exceptions);
+#endif
     _initialized = true;
 }
 
@@ -241,14 +245,18 @@ void Scheduler::_run_io_procs()
     hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
 
+#ifndef HAL_BUILD_AP_PERIPH
     // in lieu of a thread-per-bus:
     ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
+#endif
 
 #if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     AP::RC().update();
+#endif
 }
 
 /*

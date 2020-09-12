@@ -19,6 +19,8 @@
 #include <inttypes.h>
 
 #include <AP_HAL/HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
@@ -125,3 +127,4 @@ protected:
     #define NUM_SITL_I2C_BUSES 4
     static I2CBus buses[];
 };
+#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
