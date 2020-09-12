@@ -213,6 +213,9 @@ public:
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
 
+    // bitmask for filtering whether to send statustext
+    AP_Int32 _mav_text_option;
+
 protected:
 
     virtual void init_ardupilot() = 0;
