@@ -1839,6 +1839,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
         memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
 
+        // not send if severity level lower than MAV_TEXT_SEV
+        const AP_Vehicle *vehicle = AP::vehicle();
+        if (severity > constrain_int16(vehicle->_mav_severity, -1, MAV_SEVERITY_ENUM_END-1)) {
+            break;
+        }
+
         // filter destination ports to only allow active ports.
         statustext_t statustext{};
         if (update_send_has_been_called) {
