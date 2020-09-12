@@ -18,7 +18,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_Periph.h"
-#include "hal.h"
 #include <canard.h>
 #include <uavcan/protocol/dynamic_node_id/Allocation.h>
 #include <uavcan/protocol/NodeStatus.h>
@@ -45,14 +44,20 @@
 #include <uavcan/equipment/gnss/RTCMStream.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
-#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
-#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <drivers/stm32/canard_stm32.h>
 #include <AP_HAL/I2CDevice.h>
-#include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL_ChibiOS/CANIface.h>
+#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/CANSocketIface.h>
+#endif
+
 
 #include "i2c.h"
 #include <utility>
@@ -80,8 +85,11 @@ static uint8_t transfer_id;
 #define CAN_PROBE_CONTINUOUS 0
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 static ChibiOS::CANIface can_iface(0);
-
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+static HALSITL::CANIface can_iface(0);
+#endif
 /*
  * Variables used for dynamic node ID allocation.
  * RTFM at http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
@@ -366,8 +374,10 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
 
     // instant reboot, with backup register used to give bootloader
     // the node_id
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     set_fast_reboot((rtc_boot_magic)(RTC_BOOT_CANBL | canardGetLocalNodeID(ins)));
     NVIC_SystemReset();
+#endif
 }
 
 static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -669,7 +679,11 @@ static void onTransferReceived(CanardInstance* ins,
     case UAVCAN_PROTOCOL_RESTARTNODE_ID:
         printf("RestartNode\n");
         hal.scheduler->delay(10);
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         NVIC_SystemReset();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        HAL_SITL::actually_reboot();
+#endif
         break;
 
     case UAVCAN_PROTOCOL_PARAM_GETSET_ID:
@@ -909,13 +923,14 @@ static void process1HzTasks(uint64_t timestamp_usec)
         while (true) ;
     }
 #endif
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (AP_HAL::millis() > 30000) {
         // use RTC to mark that we have been running fine for
         // 30s. This is used along with watchdog resets to ensure the
         // user has a chance to load a fixed firmware
         set_fast_reboot(RTC_BOOT_FWOK);
     }
+#endif
 }
 
 /*
@@ -950,7 +965,12 @@ static void can_wait_node_id(void)
 
             if (now - last_led_change > led_change_period) {
                 // blink LED in recognisable pattern while waiting for DNA
+#ifdef HAL_GPIO_PIN_LED
                 palWriteLine(HAL_GPIO_PIN_LED, (led_pattern & (1U<<led_idx))?1:0);
+#else
+                (void)led_pattern;
+                (void)led_idx;
+#endif
                 led_idx = (led_idx+1) % 32;
                 last_led_change = now;
             }

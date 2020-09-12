@@ -22,10 +22,12 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Periph.h"
-#include "hal.h"
 #include <stdio.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -35,6 +37,11 @@ void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+void stm32_watchdog_init() {}
+void stm32_watchdog_pat() {}
+#endif
 
 void setup(void)
 {
@@ -51,10 +58,15 @@ static uint32_t start_ms;
 /*
   declare constant app_descriptor in flash
  */
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor")));
+#else
+const struct app_descriptor app_descriptor;
+#endif
 
 void AP_Periph_FW::init()
 {
+    
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
     stm32_watchdog_init();
@@ -208,7 +220,9 @@ void AP_Periph_FW::update()
     uint32_t now = AP_HAL::millis();
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
+#ifdef HAL_GPIO_PIN_LED
         palToggleLine(HAL_GPIO_PIN_LED);
+#endif
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
         hal.uartA->printf("GPS status: %u\n", (unsigned)gps.status());
