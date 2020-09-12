@@ -1294,7 +1294,7 @@ struct PACKED log_PSC {
 
 #define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
 #define ACC_FMT   "QQfff"
-#define ACC_UNITS "ssnnn"
+#define ACC_UNITS "ssooo"
 #define ACC_MULTS "FF000"
 
 // see "struct sensor" in AP_Baro.h and "Write_Baro":
