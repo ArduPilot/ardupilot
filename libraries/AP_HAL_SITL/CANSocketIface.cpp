@@ -469,6 +469,8 @@ bool CANIface::select(bool &read_select, bool &write_select,
 {
     // Detecting whether we need to block at all
     bool need_block = !write_select;    // Write queue is infinite
+    // call poll here to flush some tx
+    _poll(true, true);
 
     if (read_select && _hasReadyRx()) {
         need_block = false;
