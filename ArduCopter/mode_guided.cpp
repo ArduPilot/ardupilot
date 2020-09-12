@@ -52,46 +52,50 @@ bool ModeGuided::init(bool ignore_checks)
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
 
+    // Spool up before initializing the WP_NAV
     if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        // TODO: Add the checks for terrain here
+        /*
+         * If terrain checks fail, return false
+         */
         guided_mode = Guided_PreTakeOff;
         _takeoff_alt_cm = takeoff_alt_cm;
         return true;
-    } else {
+    }
 
-        guided_mode = Guided_TakeOff;
+    guided_mode = Guided_TakeOff;
 
-        // initialise wpnav destination
-        Location target_loc = copter.current_loc;
-        Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
-        if (wp_nav->rangefinder_used_and_healthy() &&
-                wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
-                takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
-            // can't takeoff downwards
-            if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
-                return false;
-            }
-            frame = Location::AltFrame::ABOVE_TERRAIN;
-        }
-        target_loc.set_alt_cm(takeoff_alt_cm, frame);
-
-        if (!wp_nav->set_wp_destination(target_loc)) {
-            // failure to set destination can only be because of missing terrain data
-            AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
-            // failure is propagated to GCS with NAK
+    // initialise wpnav destination
+    Location target_loc = copter.current_loc;
+    Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
+    if (wp_nav->rangefinder_used_and_healthy() &&
+            wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
+            takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
+        // can't takeoff downwards
+        if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
             return false;
         }
-
-        // initialise yaw
-        auto_yaw.set_mode(AUTO_YAW_HOLD);
-
-        // clear i term when we're taking off
-        set_throttle_takeoff();
-
-        // get initial alt for WP_NAVALT_MIN
-        auto_takeoff_set_start_alt();
-
-        return true;
+        frame = Location::AltFrame::ABOVE_TERRAIN;
     }
+    target_loc.set_alt_cm(takeoff_alt_cm, frame);
+
+    if (!wp_nav->set_wp_destination(target_loc)) {
+        // failure to set destination can only be because of missing terrain data
+        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+
+    // initialise yaw
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
+
+    // clear i term when we're taking off
+    set_throttle_takeoff();
+
+    // get initial alt for WP_NAVALT_MIN
+    auto_takeoff_set_start_alt();
+
+    return true;
 }
 
 // initialise guided mode's position controller
@@ -412,8 +416,10 @@ void ModeGuided::pretakeoff_run()
         pos_control->update_z_controller();
 
     } else {
-        if (do_user_takeoff_start(_takeoff_alt_cm)) {
-            guided_mode = Guided_TakeOff;
+        if (!do_user_takeoff_start(_takeoff_alt_cm)) {
+            // Required so the heli spools down and can't takeoff if function fails
+            make_safe_spool_down();
+            copter.set_auto_armed(false);
         }
     }
 
