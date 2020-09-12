@@ -57,6 +57,7 @@ public:
 
 #if !defined(HAL_BUILD_AP_PERIPH)
     enum safety_state safety_switch_state(void) override;
+    void set_cmdline_parameters() override;
 #endif
 
     bool trap() const override {
@@ -70,7 +71,6 @@ public:
 #endif
     }
 
-    void set_cmdline_parameters() override;
 private:
     SITL_State *sitlState;
 
