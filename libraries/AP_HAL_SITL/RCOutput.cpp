@@ -1,4 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
+
+#if !defined(HAL_BUILD_AP_PERIPH)
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "RCOutput.h"
@@ -130,7 +133,7 @@ void RCOutput::serial_led_send(const uint16_t chan)
     }
 }
 
-#endif
+#endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 void RCOutput::force_safety_off(void)
 {
@@ -149,3 +152,5 @@ bool RCOutput::force_safety_on(void)
     }
     return sitl->force_safety_on();
 }
+
+#endif //!defined(HAL_BUILD_AP_PERIPH)

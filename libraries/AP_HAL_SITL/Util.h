@@ -55,7 +55,9 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override { return getenv("SITL_WATCHDOG_RESET") != nullptr; }
 
+#if !defined(HAL_BUILD_AP_PERIPH)
     enum safety_state safety_switch_state(void) override;
+#endif
 
     bool trap() const override {
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)

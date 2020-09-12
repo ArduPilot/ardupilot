@@ -43,7 +43,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANLinuxIface", fmt, ##args); } while (0)
+#else
+#define Debug(fmt, args...)
+#endif
 
 CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
