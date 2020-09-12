@@ -157,7 +157,7 @@ void AP_Periph_FW::init()
     msp_init(hal.uartD);
 #endif
     
-    start_ms = AP_HAL::millis();
+    start_ms = AP_HAL::native_millis();
 }
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) && HAL_PERIPH_NEOPIXEL_COUNT == 8
@@ -170,7 +170,7 @@ static void update_rainbow()
     if (rainbow_done) {
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now-start_ms > 1500) {
         rainbow_done = true;
         hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN, -1, 0, 0, 0);
@@ -217,7 +217,7 @@ static void update_rainbow()
 void AP_Periph_FW::update()
 {
     static uint32_t last_led_ms;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED

@@ -132,7 +132,7 @@ static void handle_get_node_info(CanardInstance* ins,
     uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE] {};
     uavcan_protocol_GetNodeInfoResponse pkt {};
 
-    node_status.uptime_sec = AP_HAL::millis() / 1000U;
+    node_status.uptime_sec = AP_HAL::native_millis() / 1000U;
 
     pkt.status = node_status;
     pkt.software_version.major = AP::fwversion().major;
@@ -384,7 +384,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
 {
     // Rule C - updating the randomized time interval
     send_next_node_id_allocation_request_at_ms =
-        AP_HAL::millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
+        AP_HAL::native_millis() + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
         get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
     if (transfer->source_node_id == CANARD_BROADCAST_NODE_ID)
@@ -462,7 +462,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
     }
     fix_float16(req.frequency);
     fix_float16(req.duration);
-    buzzer_start_ms = AP_HAL::millis();
+    buzzer_start_ms = AP_HAL::native_millis();
     buzzer_len_ms = req.duration*1000;
     float volume = constrain_float(periph.g.buzz_volume/100.0, 0, 1);
     hal.util->toneAlarm_set_buzzer_tone(req.frequency, volume, uint32_t(req.duration*1000));
@@ -474,7 +474,7 @@ static void handle_beep_command(CanardInstance* ins, CanardRxTransfer* transfer)
 static void can_buzzer_update(void)
 {
     if (buzzer_start_ms != 0) {
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
         if (now - buzzer_start_ms > buzzer_len_ms) {
             hal.util->toneAlarm_set_buzzer_tone(0, 0, 0);
             buzzer_start_ms = 0;
@@ -585,7 +585,7 @@ static void can_safety_LED_update(void)
         palWriteLine(HAL_GPIO_PIN_SAFE_LED, SAFE_LED_ON);
         break;
     case ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_ON: {
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
         if (now - last_update_ms > 100) {
             last_update_ms = now;
             static uint8_t led_counter;
@@ -614,7 +614,7 @@ static void can_safety_button_update(void)
 {
     static uint32_t last_update_ms;
     static uint8_t counter;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     // send at 10Hz when pressed
     if (palReadLine(HAL_GPIO_PIN_SAFE_BUTTON) != HAL_SAFE_BUTTON_ON) {
         counter = 0;
@@ -801,8 +801,8 @@ static void processTx(void)
         txmsg.dlc = txf->data_len;
         memcpy(txmsg.data, txf->data, 8);
         txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
-        // push message with 1s timeout
-        if (can_iface.send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0) {
+        // push message with 1s timeout        
+        if (can_iface.send(txmsg, AP_HAL::native_micros64() + 1000000, 0) > 0) {
             canardPopTxQueue(&canard);
             fail_count = 0;
         } else {
@@ -876,7 +876,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
      */
     {
         uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
-        node_status.uptime_sec = AP_HAL::millis() / 1000U;
+        node_status.uptime_sec = AP_HAL::native_millis() / 1000U;
 
         node_status.vendor_specific_status_code = hal.util->available_memory();
 
@@ -919,12 +919,12 @@ static void process1HzTasks(uint64_t timestamp_usec)
 
 #if 0
     // test code for watchdog reset
-    if (AP_HAL::millis() > 15000) {
+    if (AP_HAL::native_millis() > 15000) {
         while (true) ;
     }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    if (AP_HAL::millis() > 30000) {
+    if (AP_HAL::native_millis() > 30000) {
         // use RTC to mark that we have been running fine for
         // 30s. This is used along with watchdog resets to ensure the
         // user has a chance to load a fixed firmware
@@ -941,7 +941,7 @@ static void can_wait_node_id(void)
     uint8_t node_id_allocation_transfer_id = 0;
     const uint32_t led_pattern = 0xAAAA;
     uint8_t led_idx = 0;
-    uint32_t last_led_change = AP_HAL::millis();
+    uint32_t last_led_change = AP_HAL::native_millis();
     const uint32_t led_change_period = 50;
 
     while (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID)
@@ -949,18 +949,18 @@ static void can_wait_node_id(void)
         printf("Waiting for dynamic node ID allocation... (pool %u)\n", pool_peak_percent());
 
         stm32_watchdog_pat();
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
 
         send_next_node_id_allocation_request_at_ms =
             now + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS +
             get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
-        while (((now=AP_HAL::millis()) < send_next_node_id_allocation_request_at_ms) &&
+        while (((now=AP_HAL::native_millis()) < send_next_node_id_allocation_request_at_ms) &&
                (canardGetLocalNodeID(&canard) == CANARD_BROADCAST_NODE_ID))
         {
             processTx();
             processRx();
-            canardCleanupStaleTransfers(&canard, AP_HAL::micros64());
+            canardCleanupStaleTransfers(&canard, AP_HAL::native_micros64());
             stm32_watchdog_pat();
 
             if (now - last_led_change > led_change_period) {
@@ -1034,7 +1034,7 @@ void AP_Periph_FW::can_start()
 {
     node_status.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_INITIALIZATION;
-    node_status.uptime_sec = AP_HAL::millis() / 1000U;
+    node_status.uptime_sec = AP_HAL::native_millis() / 1000U;
 
     if (g.can_node >= 0 && g.can_node < 128) {
         PreferredNodeID = g.can_node;
@@ -1082,7 +1082,7 @@ void AP_Periph_FW::pwm_irq_handler(uint8_t pin, bool pin_state, uint32_t timesta
 
 void AP_Periph_FW::pwm_hardpoint_update()
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     // send at 10Hz
     void *save = hal.scheduler->disable_interrupts_save();
     uint16_t value = pwm_hardpoint.highest_pwm;
@@ -1146,10 +1146,10 @@ void AP_Periph_FW::hwesc_telem_update()
 void AP_Periph_FW::can_update()
 {
     static uint32_t last_1Hz_ms;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now - last_1Hz_ms >= 1000) {
         last_1Hz_ms = now;
-        process1HzTasks(AP_HAL::micros64());
+        process1HzTasks(AP_HAL::native_micros64());
     }
     can_mag_update();
     can_gps_update();
@@ -1192,7 +1192,7 @@ void AP_Periph_FW::can_mag_update(void)
 #if CAN_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
             compass.init();
@@ -1250,7 +1250,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Location &loc = gps.location();
         const Vector3f &vel = gps.velocity();
 
-        pkt.timestamp.usec = AP_HAL::micros64();
+        pkt.timestamp.usec = AP_HAL::native_micros64();
         pkt.gnss_timestamp.usec = gps.time_epoch_usec();
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
@@ -1333,7 +1333,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Location &loc = gps.location();
         const Vector3f &vel = gps.velocity();
 
-        pkt.timestamp.usec = AP_HAL::micros64();
+        pkt.timestamp.usec = AP_HAL::native_micros64();
         pkt.gnss_timestamp.usec = gps.time_epoch_usec();
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
@@ -1515,7 +1515,7 @@ void AP_Periph_FW::can_airspeed_update(void)
     }
 #if CAN_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
@@ -1523,7 +1523,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         }
     }
 #endif
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now - last_airspeed_update_ms < 50) {
         // max 20Hz data
         return;
@@ -1579,7 +1579,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
 #if CAN_PROBE_CONTINUOUS
     if (rangefinder.num_sensors() == 0) {
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
@@ -1587,7 +1587,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
         }
     }
 #endif
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     static uint32_t last_update_ms;
     if (now - last_update_ms < 20) {
         // max 50Hz data
