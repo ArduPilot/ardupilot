@@ -205,7 +205,10 @@ public:
     void write_notch_log_messages() const;
     // update the harmonic notch
     virtual void update_dynamic_notch() {};
-    
+
+    // MAV_SEVERITY level for filtering whether to send statustext to GCS
+    AP_Int8 _mav_severity;
+
 protected:
 
     virtual void init_ardupilot() = 0;
