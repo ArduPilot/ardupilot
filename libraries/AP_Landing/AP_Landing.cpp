@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Units: %
     // @Range: 0 127
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("THR_SLEW", 9, AP_Landing, throttle_slewrate, 0),
 
     // @Param: DISARMDELAY
