@@ -39,13 +39,19 @@ def run_program(cmd_list):
     return True
 
 def build_board(board):
-    if not run_program(["./waf", "configure", "--board", board, "--bootloader", "--no-submodule-update", "--Werror"]):
+    if not run_program(["./waf", "configure", "--board", board, "--bootloader", "--no-submodule-update", "--Werror"] + sys.argv[2:]):
         return False
     if not run_program(["./waf", "clean"]):
         return False
     if not run_program(["./waf", "bootloader"]):
         return False
     return True
+
+secure_bootloader = False
+for opts in sys.argv[2:]:
+    if "--secure-key" in opts:
+        print("Generating Secure Bootloader...")
+        secure_bootloader = True
 
 for board in get_board_list():
     if not fnmatch.fnmatch(board, board_pattern):
@@ -54,11 +60,19 @@ for board in get_board_list():
     if not build_board(board):
         failed_boards.add(board)
         continue
-    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
-    if not run_program(["Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board]):
-        failed_boards.add(board)
-        continue
-    shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_bl.elf' % board)
+    if not secure_bootloader:
+        shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
+        if not run_program(["Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board]):
+            failed_boards.add(board)
+            continue
+        shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_bl.elf' % board)
+    else:
+        shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_securebl.bin' % board)
+    
+        if not run_program(["Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_securebl.bin' % board, 'Tools/bootloaders/%s_securebl.hex' % board]):
+            failed_boards.add(board)
+            continue
+        shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_securebl.elf' % board)
 
 if len(failed_boards):
     print("Failed boards: %s" % list(failed_boards))
