@@ -169,7 +169,7 @@ void UARTDriver::thread_rx_init(void)
                                               "UART_RX",
                                               APM_UART_PRIORITY,
                                               uart_rx_thread,
-                                              nullptr);
+                                              nullptr, 0);
         if (uart_rx_thread_ctx == nullptr) {
             AP_HAL::panic("Could not create UART RX thread\n");
         }
@@ -187,7 +187,7 @@ void UARTDriver::thread_init(void)
                                               uart_thread_name,
                                               unbuffered_writes ? APM_UART_UNBUFFERED_PRIORITY : APM_UART_PRIORITY,
                                               uart_thread_trampoline,
-                                              this);
+                                              this, 0);
         if (uart_thread_ctx == nullptr) {
             AP_HAL::panic("Could not create UART TX thread\n");
         }

@@ -38,8 +38,8 @@
 
 #ifndef WOLFSSL_HELPERS_H
 #define WOLFSSL_HELPERS_H
-#include <stdint.h>
-#include <stddef.h>
+#include "stdio.h"
+#include "hwdef.h"
 
 /* HW RNG support */
 ///@brief make sure we use our strerror_r function
@@ -49,28 +49,39 @@
 #define XMALLOC_OVERRIDE
 #define NO_CRYPT_BENCHMARK
 #define NO_CRYPT_TEST
+#define WOLFCRYPT_ONLY
+#define NO_HMAC
+#define NO_MD5
+#define NO_OLD_TLS
+
+#ifdef HAL_BOOTLOADER_BUILD
+#define NO_ERROR_STRINGS
+#define NO_RSA
+#define WOLFSSL_SMALL_STACK
+#else
+#define SHOW_GEN
+#endif
+
+#define NO_AES_CBC
+#define NO_WOLFSSL_SERVER
 
 #define CUSTOM_RAND_GENERATE chibios_rand_generate
 #define CUSTOM_RAND_TYPE uint32_t
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-unsigned int chibios_rand_generate(void);
-int custom_rand_generate_block(unsigned char* output, unsigned int sz);
-void *malloc(size_t size);
-void *calloc(size_t nmemb, size_t size);
-void *realloc (void *addr, size_t size);
-void free(void *addr);
-void show_gen_printf(const char* chr);
-#ifdef __cplusplus
-}
-#endif
+#define WOLFSSL_STM32H7
+#define NO_STM32_CRYPTO
+#define NO_STM32_RNG
+
+
+#define HASH_AlgoSelection_SHA1     0UL
+#define HASH_AlgoSelection_MD5      HASH_CR_ALGO_0
+#define HASH_AlgoSelection_SHA224   HASH_CR_ALGO_1
+#define HASH_AlgoSelection_SHA256   HASH_CR_ALGO
+
 
 /* Realloc (to use without USE_FAST_MATH) */
 
-#define XREALLOC(p,n,h,t) realloc( (p) , (n) )
-#define XMALLOC(s,h,t) malloc(s)
+#define XREALLOC(p,n,h,t) wolfssl_realloc( (p) , (n) )
+#define XMALLOC(s,h,t) malloc_secure(s)
 #define XFREE(p,h,t)   free(p)
-#define SHOW_GEN        1
 #endif

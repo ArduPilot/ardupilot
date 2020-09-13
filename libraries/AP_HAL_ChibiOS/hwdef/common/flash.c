@@ -152,6 +152,13 @@ static bool flash_keep_unlocked;
 #define FLASH_KEY2      0xCDEF89AB
 #endif
 
+#ifndef FLASH_OPT_KEY1
+#define FLASH_OPT_KEY1  0x08192A3B
+#endif
+#ifndef FLASH_OPT_KEY2
+#define FLASH_OPT_KEY2  0x4C5D6E7F
+#endif
+
 /* Some compiler options will convert short loads and stores into byte loads
  * and stores.  We don't want this to happen for IO reads and writes!
  */
@@ -268,6 +275,32 @@ void stm32_flash_lock(void)
 #endif
 }
 
+
+static void stm32_flash_opt_unlock(void)
+{
+    stm32_flash_wait_idle();
+
+#if defined(STM32H7)
+    if (FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) {
+        /* Unlock sequence */
+        FLASH->OPTKEYR = FLASH_OPT_KEY1;
+        FLASH->OPTKEYR = FLASH_OPT_KEY2;
+    }
+
+#endif
+}
+
+void stm32_flash_opt_confirm(void)
+{
+#if defined(STM32H7)
+    FLASH->OPTCR |= FLASH_OPTCR_OPTSTART; // This affirms the Flash Option changes
+    stm32_flash_wait_idle();
+    while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        //noop
+    }
+    FLASH->OPTCR |= FLASH_OPTCR_OPTLOCK;
+#endif
+}
 
 
 /*
@@ -701,6 +734,63 @@ void stm32_flash_keep_unlocked(bool set)
         flash_keep_unlocked = false;
         stm32_flash_lock();        
     }
+}
+
+bool stm32_flash_is_rdp_enabled()
+{
+    // clear any previous errors
+    stm32_flash_clear_errors();
+    if ((FLASH->OPTSR_CUR & FLASH_OPTSR_RDP) != 0xAA00U) {
+        return true;
+    }
+    return false;
+}
+
+void stm32_flash_enable_rdp()
+{
+    // clear any previous errors
+    stm32_flash_clear_errors();
+
+#if defined(STM32H7)
+    // Check ReadOut Protection Level
+    // Anything but 0xCC00 or 0xAA00 will enable Level 1 RDP
+    // In RDP level 1 Flash and Backup SRAM is inaccessible
+    if ((FLASH->OPTSR_CUR & FLASH_OPTSR_RDP) == 0x5500U) {
+        return;
+    }
+    stm32_flash_opt_unlock();
+
+    if ((FLASH->OPTSR_PRG & FLASH_OPTSR_RDP) != 0x5500U) {
+        // We want RDP Level 1
+        stm32_flash_wait_idle();
+        FLASH->OPTSR_PRG = (FLASH->OPTSR_PRG & ~FLASH_OPTSR_RDP) | 0x5500U;
+    }
+    stm32_flash_opt_confirm();
+#endif
+}
+
+void stm32_flash_disable_rdp()
+{
+    // clear any previous errors
+    stm32_flash_clear_errors();
+
+#if defined(STM32H7)
+    // Check ReadOut Protection Level
+    if ((FLASH->OPTSR_CUR & FLASH_OPTSR_RDP) == 0xAA00U) {
+        return;
+    }
+
+    stm32_flash_opt_unlock();
+
+    // Check ReadOut Protection Level
+    if ((FLASH->OPTSR_PRG & FLASH_OPTSR_RDP) != 0xAA00U) {
+        // We want RDP Level 2
+        stm32_flash_wait_idle();
+        FLASH->OPTSR_PRG &= ~FLASH_OPTSR_RDP;
+        FLASH->OPTSR_PRG |= 0xAA00U;
+    }
+    stm32_flash_opt_confirm();
+#endif
 }
 
 #ifndef HAL_BOOTLOADER_BUILD

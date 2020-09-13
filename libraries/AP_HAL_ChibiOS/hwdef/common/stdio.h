@@ -45,8 +45,16 @@ void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *ptr);
 void *realloc(void* ptr, size_t size) __attribute__((deprecated));
+void *malloc_secure(size_t size);
+void disable_malloc_secure(uint8_t disable);
+void *wolfssl_realloc(void *addr, size_t size);
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 void malloc_check(const void *ptr);
+
+// Wolfssl methods
+unsigned int chibios_rand_generate(void);
+int custom_rand_generate_block(unsigned char* output, unsigned int sz);
+void show_gen_printf(const char* chr);
 
 #define L_tmpnam 32
 

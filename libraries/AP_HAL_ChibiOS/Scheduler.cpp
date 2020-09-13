@@ -629,10 +629,16 @@ void Scheduler::thread_create_trampoline(void *ctx)
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority,
+AP_HAL::Util::Memory_Type mem_type)
 {
     // take a copy of the MemberProc, it is freed after thread exits
-    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    AP_HAL::MemberProc *tproc;
+    if (mem_type == AP_HAL::Util::MEM_SECURE) {
+        tproc = (AP_HAL::MemberProc *)malloc_secure(sizeof(proc));
+    } else {
+        tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    }
     if (!tproc) {
         return false;
     }
@@ -655,6 +661,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         { PRIORITY_UART, APM_UART_PRIORITY},
         { PRIORITY_STORAGE, APM_STORAGE_PRIORITY},
         { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY},
+        { PRIORITY_KEYMGR, APM_KEYMGR_PRIORITY},
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
@@ -662,11 +669,16 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
+    uint32_t alloc_flags = 0;
+
+    if (mem_type == AP_HAL::Util::MEM_SECURE) {
+        alloc_flags = MEM_REGION_FLAG_SECURE;
+    }
     thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
                                                name,
                                                thread_priority,
                                                thread_create_trampoline,
-                                               tproc);
+                                               tproc, alloc_flags);
     if (thread_ctx == nullptr) {
         free(tproc);
         return false;

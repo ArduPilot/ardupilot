@@ -2,7 +2,7 @@
 # for H743 bootloader
 
 # MCU class and specific type
-MCU STM32H7xx STM32H743xx
+MCU STM32H7xx STM32H753xx
 
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
@@ -60,3 +60,12 @@ PD10 FRAM_CS CS SPEED_VERYLOW
 # disable peripheral and sensor power in the bootloader
 PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+# HASH peripheral available
+env STM32_HASH_AVAILABLE 1
+
+# we run everything on main inside bootloader
+# so let's go nuts, we might need it for Secure boot
+PROCESS_STACK 0x4000
+
+# Hold Flash at the end for keystore
+FLASH_RESERVE_END_KB 128

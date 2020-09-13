@@ -27,6 +27,10 @@ bool stm32_flash_erasepage(uint32_t page);
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count);
 void stm32_flash_keep_unlocked(bool set);
 bool stm32_flash_ispageerased(uint32_t page);
+void stm32_flash_enable_rdp(void);
+void stm32_flash_disable_rdp(void);
+bool stm32_flash_is_rdp_enabled(void);
+void stm32_flash_opt_confirm(void);
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif

@@ -36,10 +36,6 @@
 #pragma GCC optimize("Og")
 #endif
 
-#define MEM_REGION_FLAG_DMA_OK 1
-#define MEM_REGION_FLAG_FAST   2
-#define MEM_REGION_FLAG_SDCARD 4
-
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
 #endif
@@ -141,6 +137,10 @@ static void *malloc_flags(size_t size, uint32_t flags)
 
     // try with matching flags
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
+        if ((flags & MEM_REGION_FLAG_SECURE) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_SECURE)) {
+            continue;
+        }
         if ((flags & MEM_REGION_FLAG_DMA_OK) &&
             !(memory_regions[i].flags & MEM_REGION_FLAG_DMA_OK)) {
             continue;
@@ -159,8 +159,8 @@ static void *malloc_flags(size_t size, uint32_t flags)
         }
     }
 
-    // if this is a not a DMA request then we can fall back to any heap
-    if (!(flags & dma_flags)) {
+    // if this is a not a DMA request or Secure Memory then we can fall back to any heap
+    if (!(flags & dma_flags) && !(flags & MEM_REGION_FLAG_SECURE)) {
         for (i=1; i<NUM_MEMORY_REGIONS; i++) {
             p = chHeapAllocAligned(&heaps[i], size, alignment);
             if (p) {
@@ -176,10 +176,12 @@ static void *malloc_flags(size_t size, uint32_t flags)
 
 #if DMA_RESERVE_SIZE != 0
     // fall back to DMA reserve
-    p = chHeapAllocAligned(&dma_reserve_heap, size, alignment);
-    if (p) {
-        memset(p, 0, size);
-        return p;
+    if (!(flags & MEM_REGION_FLAG_SECURE)) {
+        p = chHeapAllocAligned(&dma_reserve_heap, size, alignment);
+        if (p) {
+            memset(p, 0, size);
+            return p;
+        }
     }
 #endif
 
@@ -373,6 +375,30 @@ void *malloc_fastmem(size_t size)
     return malloc_flags(size, MEM_REGION_FLAG_FAST);
 }
 
+static uint8_t allow_unsecure = 0;
+/*
+  allocate secure memory
+ */
+void *malloc_secure(size_t size)
+{
+    if (!allow_unsecure) {
+        return malloc_flags(size, MEM_REGION_FLAG_SECURE);
+    }
+    void* ptr = malloc_flags(size, MEM_REGION_FLAG_SECURE);
+    if (ptr == NULL) {
+        return malloc(size);
+    }
+    return ptr;
+}
+
+/*
+  allow spilover into unsecure memory
+ */
+void disable_malloc_secure(uint8_t disable)
+{
+    allow_unsecure = disable;
+}
+
 void *calloc(size_t nmemb, size_t size)
 {
     return malloc(nmemb * size);
@@ -425,18 +451,24 @@ size_t mem_available(void)
  */
 thread_t *thread_create_alloc(size_t size,
                               const char *name, tprio_t prio,
-                              tfunc_t pf, void *arg)
+                              tfunc_t pf, void *arg, uint32_t flags)
 {
     thread_t *ret;
     // first try default heap
-    ret = chThdCreateFromHeap(NULL, size, name, prio, pf, arg);
-    if (ret != NULL) {
-        return ret;
+    if (!(flags & MEM_REGION_FLAG_SECURE)) {
+        ret = chThdCreateFromHeap(NULL, size, name, prio, pf, arg);
+        if (ret != NULL) {
+            return ret;
+        }
     }
 
     // now try other heaps
     uint8_t i;
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
+        if ((flags & MEM_REGION_FLAG_SECURE) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_SECURE)) {
+            continue;
+        }
         ret = chThdCreateFromHeap(&heaps[i], size, name, prio, pf, arg);
         if (ret != NULL) {
             return ret;
@@ -482,4 +514,46 @@ char *strdup(const char *str)
     memcpy(ret, str, len);
     ret[len] = 0;
     return ret;
+}
+
+/*
+  realloc implementation thanks to wolfssl, used by AP_Scripting, and secure BL
+ */
+void *wolfssl_realloc(void *addr, size_t size)
+{
+    union heap_header *hp;
+    size_t prev_size, new_size;
+
+    void *ptr;
+
+    if(addr == NULL) {
+        return malloc_secure(size);
+    }
+
+    /* previous allocated segment is preceded by an heap_header */
+    hp = addr - sizeof(union heap_header);
+    prev_size = hp->used.size; /* size is always multiple of 8 */
+
+    /* check new size memory alignment */
+    if(size % 8 == 0) {
+        new_size = size;
+    }
+    else {
+        new_size = ((int) (size / 8)) * 8 + 8;
+    }
+
+    if(prev_size >= new_size) {
+        return addr;
+    }
+
+    ptr = malloc_secure(size);
+    if(ptr == NULL) {
+        return NULL;
+    }
+
+    memcpy(ptr, addr, prev_size);
+
+    free(addr);
+
+    return ptr;
 }

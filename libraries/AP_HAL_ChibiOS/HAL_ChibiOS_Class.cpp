@@ -35,7 +35,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <hwdef.h>
-
+#if defined(SECURE) && SECURE==1 && !defined(HAL_BOOTLOADER_BUILD)
+#include <AP_Security/KeyManager.h>
+#endif
 #ifndef HAL_NO_UARTDRIVER
 static HAL_UARTA_DRIVER;
 static HAL_UARTB_DRIVER;
@@ -244,6 +246,12 @@ static void main_loop()
     schedulerInstance.watchdog_pat();
 
     hal.scheduler->set_system_initialized();
+
+
+#if defined(SECURE) && SECURE==1 && !defined(HAL_BOOTLOADER_BUILD)
+    //Initialise Key Manager
+    AP::keymgr().init();
+#endif
 
     thread_running = true;
     chRegSetThreadName(SKETCHNAME);

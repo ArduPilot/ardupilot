@@ -19,6 +19,8 @@ parser.add_argument(
 parser.add_argument(
     '--bootloader', action='store_true', default=False, help='configure for bootloader')
 parser.add_argument(
+    '--secure', action='store_true', default=False, help='configure for secure BL/FW')
+parser.add_argument(
     'hwdef', type=str, default=None, help='hardware definition file')
 parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
@@ -810,8 +812,6 @@ def write_mcu_config(f):
 #define CH_CFG_USE_MEMPOOLS FALSE
 #define CH_CFG_USE_OBJ_FIFOS FALSE
 #define CH_DBG_FILL_THREADS FALSE
-#define CH_CFG_USE_SEMAPHORES FALSE
-#define CH_CFG_USE_HEAP FALSE
 #define CH_CFG_USE_MUTEXES FALSE
 #define CH_CFG_USE_CONDVARS FALSE
 #define CH_CFG_USE_CONDVARS_TIMEOUT FALSE
@@ -820,7 +820,6 @@ def write_mcu_config(f):
 #define CH_CFG_USE_MESSAGES FALSE
 #define CH_CFG_USE_MAILBOXES FALSE
 #define CH_CFG_USE_FACTORY FALSE
-#define CH_CFG_USE_MEMCORE FALSE
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
@@ -831,6 +830,13 @@ def write_mcu_config(f):
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
+    
+    if not args.secure and args.bootloader:
+        f.write('''
+#define CH_CFG_USE_HEAP FALSE
+#define CH_CFG_USE_MEMCORE FALSE
+#define CH_CFG_USE_SEMAPHORES FALSE
+''')
 
     if not args.bootloader:
         f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
@@ -1638,6 +1644,7 @@ def bootloader_path():
     this_dir = os.path.realpath(__file__)
     rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
     hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+
     bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
     bootloader_path = os.path.join(rootdir,
                                    "Tools",
@@ -1648,12 +1655,32 @@ def bootloader_path():
 
     return None
 
+def secure_bootloader_path():
+    if not args.secure:
+        return None
+    # always embed a bootloader if it is available
+    this_dir = os.path.realpath(__file__)
+    rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
+    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+
+    bootloader_filename = "%s_securebl.bin" % (hwdef_dirname,)
+    bootloader_path = os.path.join(rootdir,
+                                   "Tools",
+                                   "bootloaders",
+                                   bootloader_filename)
+    if os.path.exists(bootloader_path):
+        return os.path.realpath(bootloader_path)
+
+    return None
 
 def add_bootloader():
     '''added bootloader to ROMFS'''
     bp = bootloader_path()
     if bp is not None:
         romfs["bootloader.bin"] = bp
+    sbp = secure_bootloader_path()
+    if sbp is not None:
+        romfs["securebootloader.bin"] = sbp
 
 
 def write_ROMFS(outdir):
@@ -1749,7 +1776,10 @@ def write_hwdef_header(outfilename):
 #endif
 
 ''')
-
+    if args.secure:
+        f.write('''
+#define SECURE 1
+''')
     write_mcu_config(f)
     write_SPI_config(f)
     write_ADC_config(f)

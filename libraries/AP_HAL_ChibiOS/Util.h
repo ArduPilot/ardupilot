@@ -112,7 +112,7 @@ private:
      */
     uint64_t get_hw_rtc() const override;
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
-    FlashBootloader flash_bootloader() override;
+    FlashBootloader flash_bootloader(bool secure_bl = false) override;
 #endif
 
 #ifdef ENABLE_HEAP

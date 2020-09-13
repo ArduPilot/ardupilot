@@ -463,4 +463,47 @@ uint32_t stack_free(void *stack_base)
     }
     return ((uint32_t)p) - (uint32_t)stack_base;
 }
+
 #endif
+
+#if defined(SECURE) && SECURE==1
+#define CUSTOM_RAND_TYPE uint32_t
+
+unsigned int chibios_rand_generate(void)
+{
+  static unsigned int last_value=0;
+  static unsigned int new_value=0;
+  unsigned int error_bits = 0;
+  error_bits = RNG_SR_SEIS | RNG_SR_CEIS;
+  while (new_value==last_value) {
+    /* Check for error flags and if data is ready. */
+    if ( ((RNG->SR & error_bits) == 0) && ( (RNG->SR & RNG_SR_DRDY) == 1 ) )
+      new_value=RNG->DR;
+  }
+  last_value=new_value;
+  return new_value;
+}
+
+int custom_rand_generate_block(unsigned char* output, unsigned int sz)
+{
+    uint32_t i = 0;
+
+    while (i < sz)
+    {
+        /* If not aligned or there is odd/remainder */
+        if( (i + sizeof(CUSTOM_RAND_TYPE)) > sz ||
+            ((uint32_t)&output[i] % sizeof(CUSTOM_RAND_TYPE)) != 0
+        ) {
+            /* Single byte at a time */
+            output[i++] = (unsigned char)chibios_rand_generate();
+        }
+        else {
+            /* Use native 8, 16, 32 or 64 copy instruction */
+            *((CUSTOM_RAND_TYPE*)&output[i]) = chibios_rand_generate();
+            i += sizeof(CUSTOM_RAND_TYPE);
+        }
+    }
+    return 0;
+}
+
+#endif //#if defined(SECURE) && SECURE==1
