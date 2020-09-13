@@ -203,6 +203,7 @@ private:
 
     void board_setup_drivers(void);
     bool spi_check_register(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
+    bool spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
     void board_autodetect(void);
     bool check_ms5611(const char* devname);
