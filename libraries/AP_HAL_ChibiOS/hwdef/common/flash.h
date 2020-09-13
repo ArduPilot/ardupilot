@@ -23,6 +23,7 @@ extern "C" {
 uint32_t stm32_flash_getpageaddr(uint32_t page);
 uint32_t stm32_flash_getpagesize(uint32_t page);
 uint32_t stm32_flash_getnumpages(void);
+void stm32_flash_program_option_bytes(uint32_t data);
 bool stm32_flash_erasepage(uint32_t page);
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count);
 void stm32_flash_keep_unlocked(bool set);

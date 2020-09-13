@@ -483,3 +483,24 @@ char *strdup(const char *str)
     ret[len] = 0;
     return ret;
 }
+
+/*
+  realloc implementation thanks to wolfssl, used by AP_Scripting, and secure BL
+ */
+void *wolfssl_realloc(void *addr, size_t size)
+{
+    if (size == 0) {
+       free(addr);
+       return NULL;
+    }
+    if (addr == NULL) {
+        return malloc(size);
+    }
+    void *new_mem = malloc(size);
+    if (new_mem != NULL) {
+        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
+        free(addr);
+    }
+    return new_mem;
+
+}

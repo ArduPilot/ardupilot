@@ -131,6 +131,9 @@ extern uint32_t __main_stack_end__;
 extern uint32_t __main_thread_stack_base__;
 extern uint32_t __main_thread_stack_end__;
 
+unsigned int chibios_rand_generate(void);
+int custom_rand_generate_block(unsigned char* output, unsigned int sz);
+
 #ifdef __cplusplus
 }
 #endif

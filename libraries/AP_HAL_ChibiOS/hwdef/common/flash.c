@@ -692,6 +692,11 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 #endif
 }
 
+void stm32_flash_program_option_bytes(uint32_t data)
+{
+	// TODO: Too scared to test this just yet. we will do it later
+}
+
 void stm32_flash_keep_unlocked(bool set)
 {
     if (set && !flash_keep_unlocked) {
