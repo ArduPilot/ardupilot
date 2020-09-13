@@ -307,6 +307,21 @@ def is_number(numberString):
         return False
 
 
+def clean_param(param):
+    if (hasattr(param, "Values")):
+        valueList = param.Values.split(",")
+        new_valueList = []
+        for i in valueList:
+            (start, sep, end) = i.partition(":")
+            if sep != ":":
+                raise ValueError("Expected a colon seperator in (%s)" % (i,))
+            if len(end) == 0:
+                raise ValueError("Expected a colon-separated string, got (%s)" % i)
+            end = end.strip()
+            start = start.strip()
+            new_valueList.append(":".join([start, end]))
+        param.Values = ",".join(new_valueList)
+
 def validate(param):
     """
     Validates the parameter meta data.
@@ -344,6 +359,9 @@ def validate(param):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
             error("unknown units field '%s'" % param.__dict__["Units"])
 
+for vehicle in vehicles:
+    for param in vehicle.params:
+        clean_param(param)
 
 for vehicle in vehicles:
     for param in vehicle.params:
@@ -365,6 +383,10 @@ for library in libraries:
         else:
             # not a duplicate, so delete attribute.
             delattr(param, "path")
+
+for library in libraries:
+    for param in library.params:
+        clean_param(param)
 
 for library in libraries:
     for param in library.params:
