@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: Maximum demanded descent rate. Do not set higher than the vertical speed the aircraft can maintain at THR_MIN, TECS_PITCH_MIN, and ARSPD_FBW_MAX.
     // @Increment: 0.1
     // @Range: 0.0 20.0
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("SINK_MAX",  11, AP_TECS, _maxSinkRate, 5.0f),
 
     // @Param: LAND_ARSPD
@@ -118,7 +118,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is not used during landing.
     // @Range: -1 127
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("LAND_ARSPD", 12, AP_TECS, _landAirspeed, -1),
 
     // @Param: LAND_THR
@@ -126,7 +126,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Description: Use this parameter instead of LAND_ARSPD if your platform does not have an airspeed sensor.  It is the cruise throttle during landing approach.  If this value is negative then it is disabled and TECS_LAND_ARSPD is used instead.
     // @Range: -1 100
     // @Increment: 0.1
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("LAND_THR", 13, AP_TECS, _landThrottle, -1),
 
     // @Param: LAND_SPDWGT
