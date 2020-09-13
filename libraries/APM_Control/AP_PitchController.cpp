@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Description: Proportional gain from pitch angle demands to elevator. Higher values allow more servo response but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
 	// @Range: 0.1 3.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("P",        1, AP_PitchController, gains.P,          1.0f),
 
 	// @Param: D
@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Description: Damping gain from pitch acceleration to elevator. Higher values reduce pitching in turbulence, but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
 	// @Range: 0 0.2
 	// @Increment: 0.01
-	// @User: User
+	// @User: Standard
     AP_GROUPINFO("D",        2, AP_PitchController, gains.D,        0.04f),
 
 	// @Param: I
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Description: Integrator gain from long-term pitch angle offsets to elevator. Higher values "trim" out offsets faster but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
 	// @Range: 0 0.5
 	// @Increment: 0.05
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("I",        3, AP_PitchController, gains.I,        0.3f),
 
 	// @Param: RMAX_UP
@@ -79,7 +79,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Description: Gain added to pitch to keep aircraft from descending or ascending in turns. Increase in increments of 0.05 to reduce altitude loss. Decrease for altitude gain.
 	// @Range: 0.7 1.5
 	// @Increment: 0.05
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("RLL",      6, AP_PitchController, _roll_ff,        1.0f),
 
 	// @Param: IMAX
@@ -95,7 +95,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 	// @Description: Gain from demanded rate to elevator output.
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("FF",        8, AP_PitchController, gains.FF,       0.0f),
 
     // @Param: SRMAX
