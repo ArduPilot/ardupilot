@@ -123,7 +123,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: m/s
     // @Range: 0 30
     // @Increment: 0.1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_throttle_min_speed,     "TKOFF_THR_MINSPD",  0),
 
     // @Param: TKOFF_THR_MINACC
@@ -132,7 +132,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: m/s/s
     // @Range: 0 30
     // @Increment: 0.1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_throttle_min_accel,     "TKOFF_THR_MINACC",  0),
 
     // @Param: TKOFF_THR_DELAY
@@ -141,7 +141,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: ds
     // @Range: 0 127
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
     // @Param: TKOFF_TDRAG_ELEV
@@ -150,7 +150,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: %
     // @Range: -100 100
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_tdrag_elevator,     "TKOFF_TDRAG_ELEV",  0),
 
     // @Param: TKOFF_TDRAG_SPD1
@@ -159,7 +159,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: m/s
     // @Range: 0 30
     // @Increment: 0.1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_tdrag_speed1,     "TKOFF_TDRAG_SPD1",  0),
 
     // @Param: TKOFF_ROTATE_SPD
@@ -168,7 +168,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: m/s
     // @Range: 0 30
     // @Increment: 0.1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_rotate_speed,     "TKOFF_ROTATE_SPD",  0),
 
     // @Param: TKOFF_THR_SLEW
@@ -177,7 +177,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: %/s
     // @Range: -1 127
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
 
     // @Param: TKOFF_PLIM_SEC
@@ -209,7 +209,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Units: deg
     // @Range: 0 45
     // @Increment: 1
-    // @User: User
+    // @User: Standard
     GSCALAR(level_roll_limit,              "LEVEL_ROLL_LIMIT",   5),
 
     // @Param: USE_REV_THRUST
@@ -665,14 +665,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Mixing Gain
     // @Description: The gain for the Vtail and elevon output mixers. The default is 0.5, which ensures that the mixer doesn't saturate, allowing both input channels to go to extremes while retaining control over the output. Hardware mixers often have a 1.0 gain, which gives more servo throw, but can saturate. If you don't have enough throw on your servos with VTAIL_OUTPUT or ELEVON_OUTPUT enabled then you can raise the gain using MIXING_GAIN. The mixer allows outputs in the range 900 to 2100 microseconds.
     // @Range: 0.5 1.2
-    // @User: User
+    // @User: Standard
     GSCALAR(mixing_gain,            "MIXING_GAIN",    0.5f),
 
     // @Param: RUDDER_ONLY
     // @DisplayName: Rudder only aircraft
     // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the RCMAP_YAW channel (normally channel 4). The rudder servo should be attached to the RCMAP_YAW channel as well. Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
     // @Values: 0:Disabled,1:Enabled
-    // @User: User
+    // @User: Standard
     GSCALAR(rudder_only,             "RUDDER_ONLY",  0),
 
     // @Param: MIXING_OFFSET
@@ -680,7 +680,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The offset for the Vtail and elevon output mixers, as a percentage. This can be used in combination with MIXING_GAIN to configure how the control surfaces respond to input. The response to aileron or elevator input can be increased by setting this parameter to a positive or negative value. A common usage is to enter a positive value to increase the aileron response of the elevons of a flying wing. The default value of zero will leave the aileron-input response equal to the elevator-input response.
     // @Units: d%
     // @Range: -1000 1000
-    // @User: User
+    // @User: Standard
     GSCALAR(mixing_offset,          "MIXING_OFFSET",  0),
 
     // @Param: DSPOILR_RUD_RATE
@@ -688,7 +688,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Sets the amount of deflection that the rudder output will apply to the differential spoilers, as a percentage. The default value of 100 results in full rudder applying full deflection. A value of 0 will result in the differential spoilers exactly following the elevons (no rudder effect).
     // @Units: %
     // @Range: -100 100
-    // @User: User
+    // @User: Standard
     GSCALAR(dspoiler_rud_rate,      "DSPOILR_RUD_RATE",  DSPOILR_RUD_RATE_DEFAULT),
 
     // @Param: SYS_NUM_RESETS
@@ -722,7 +722,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Target airspeed
     // @Description: Target airspeed in cm/s in automatic throttle modes. Value is as an indicated (calibrated/apparent) airspeed.
     // @Units: cm/s
-    // @User: User
+    // @User: Standard
     ASCALAR(airspeed_cruise_cm,     "TRIM_ARSPD_CM",  AIRSPEED_CRUISE_CM),
 
     // @Param: SCALING_SPEED
@@ -750,14 +750,14 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: RTL altitude
     // @Description: Target altitude above home for RTL mode. Maintains current altitude if set to -1. Rally point altitudes are used if plane does not return to home.
     // @Units: cm
-    // @User: User
+    // @User: Standard
     GSCALAR(RTL_altitude_cm,        "ALT_HOLD_RTL",   ALT_HOLD_HOME_CM),
 
     // @Param: ALT_HOLD_FBWCM
     // @DisplayName: Minimum altitude for FBWB mode
     // @Description: This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
     // @Units: cm
-    // @User: User
+    // @User: Standard
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
     // @Param: FLAP_1_PERCNT
@@ -1191,7 +1191,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Takeoff throttle acceleration count
     // @Description: This is the number of acceleration events to require for arming with TKOFF_THR_MINACC. The default is 1, which means a single forward acceleration above TKOFF_THR_MINACC will arm. By setting this higher than 1 you can require more forward/backward movements to arm.
     // @Range: 1 10
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("TKOFF_ACCEL_CNT", 15, ParametersG2, takeoff_throttle_accel_count, 1),
 
 #if LANDING_GEAR_ENABLED == ENABLED
@@ -1224,7 +1224,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 120
     // @Increment: 1
     // @Units: s
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("TKOFF_TIMEOUT", 19, ParametersG2, takeoff_timeout, 0),
 
     // @Param: DSPOILER_OPTS
