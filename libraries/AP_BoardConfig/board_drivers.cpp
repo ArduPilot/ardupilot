@@ -137,7 +137,42 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     }
     dev->set_read_flag(read_flag);
     dev->get_semaphore()->take_blocking();
+    dev->set_speed(AP_HAL::Device::SPEED_LOW);
     uint8_t v;
+    if (!dev->read_registers(regnum, &v, 1)) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
+#endif
+        dev->get_semaphore()->give();
+        return false;
+    }
+    dev->get_semaphore()->give();
+#if SPI_PROBE_DEBUG
+    hal.console->printf("%s: reg %02x expected:%02x got:%02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
+#endif
+    return v == value;
+}
+
+
+#define INV2REG_BANK_SEL 0x7F
+/*
+  check a SPI device for a register value
+ */
+bool AP_BoardConfig::spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag)
+{
+    auto dev = hal.spi->get_device(devname);
+    if (!dev) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: no device\n", devname);
+#endif
+        return false;
+    }
+    dev->set_read_flag(read_flag);
+    dev->get_semaphore()->take_blocking();
+    dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    uint8_t v;
+    // select bank 0 for who am i
+    dev->write_register(INV2REG_BANK_SEL, 0, false);
     if (!dev->read_registers(regnum, &v, 1)) {
 #if SPI_PROBE_DEBUG
         hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
@@ -224,6 +259,7 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define LSM_WHOAMI_L3GD20 0xd4
 
 #define INV2REG_WHOAMI 0x00
+
 #define INV2_WHOAMI_ICM20948 0xEA
 #define INV2_WHOAMI_ICM20649 0xE1
 
@@ -245,7 +281,7 @@ void AP_BoardConfig::validate_board_type(void)
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
          spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
         (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
-         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
+         spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
@@ -298,7 +334,7 @@ void AP_BoardConfig::board_autodetect(void)
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
          spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
         (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
-         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
+         spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Detected PIXHAWK2\n");
