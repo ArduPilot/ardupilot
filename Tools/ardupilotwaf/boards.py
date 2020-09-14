@@ -131,6 +131,8 @@ class Board:
                 AP_SCRIPTING_CHECKS = 1,
                 )
 
+        cfg.msg("CXX Compiler", "%s %s"  % (cfg.env.COMPILER_CXX, ".".join(cfg.env.CC_VERSION)))
+
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
