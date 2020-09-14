@@ -421,7 +421,6 @@ bool CANTester::test_busoff_recovery()
 
 bool CANTester::test_uavcan_dna()
 {
-
     uavcan::CanIfaceMgr _uavcan_iface_mgr {};
 
     if (!_uavcan_iface_mgr.add_interface(_can_ifaces[0])) {
@@ -429,8 +428,11 @@ bool CANTester::test_uavcan_dna()
         return false;
     }
 
-    uavcan::Node<0> node(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
-    node.setName("org.ardupilot.dnatest");
+    auto *node = new uavcan::Node<0>(_uavcan_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
+    if (!node) {
+        return false;
+    }
+    node->setName("org.ardupilot.dnatest");
 
     uavcan::protocol::HardwareVersion hw_version;
     const uint8_t uid_buf_len = hw_version.unique_id.capacity();
@@ -442,14 +444,15 @@ bool CANTester::test_uavcan_dna()
         uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
     }
 
-    node.setHardwareVersion(hw_version); // Copying the value to the node's internals
+    node->setHardwareVersion(hw_version); // Copying the value to the node's internals
 
     /*
      * Starting the node normally, in passive mode (i.e. without node ID assigned).
      */
-    const int node_start_res = node.start();
+    const int node_start_res = node->start();
     if (node_start_res < 0) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to start the node");
+        delete node;
         return false;
     }
 
@@ -458,10 +461,14 @@ bool CANTester::test_uavcan_dna()
      * By default, the client will use TransferPriority::OneHigherThanLowest for communications with the allocator;
      * this can be overriden through the third argument to the start() method.
      */
-    uavcan::DynamicNodeIDClient client(node);
+    auto *client = new uavcan::DynamicNodeIDClient(*node);
+    if (!client) {
+        delete node;
+        return false;
+    }
     int expected_node_id = 100;
-    int client_start_res = client.start(node.getHardwareVersion().unique_id,    // USING THE SAME UNIQUE ID AS ABOVE
-                                        expected_node_id);
+    int client_start_res = client->start(node->getHardwareVersion().unique_id,    // USING THE SAME UNIQUE ID AS ABOVE
+                                         expected_node_id);
     if (client_start_res < 0) {
         gcs().send_text(MAV_SEVERITY_ALERT,"Failed to start the dynamic node");
     }
@@ -472,19 +479,23 @@ bool CANTester::test_uavcan_dna()
      */
     gcs().send_text(MAV_SEVERITY_ALERT, "Allocation is in progress");
     uint32_t num_runs = 100;
-    while (!client.isAllocationComplete() && num_runs--) {
-        const int res = node.spin(uavcan::MonotonicDuration::fromMSec(200));    // Spin duration doesn't matter
+    while (!client->isAllocationComplete() && num_runs--) {
+        const int res = node->spin(uavcan::MonotonicDuration::fromMSec(200));    // Spin duration doesn't matter
         if (res < 0) {
             gcs().send_text(MAV_SEVERITY_ALERT, "Transient failure");
         }
     }
     gcs().send_text(MAV_SEVERITY_ALERT, "Dynamic NodeID %d allocated node ID %d",
-                    int(client.getAllocatedNodeID().get()),
-                    int(client.getAllocatorNodeID().get()));
-    if (client.getAllocatedNodeID().get() != expected_node_id) {
+                    int(client->getAllocatedNodeID().get()),
+                    int(client->getAllocatorNodeID().get()));
+    if (client->getAllocatedNodeID().get() != expected_node_id) {
         gcs().send_text(MAV_SEVERITY_ALERT, "Unexpected Node Id, expected %d", expected_node_id);
+        delete client;
+        delete node;
         return false;
     }
+    delete client;
+    delete node;
     return true;
 }
 
