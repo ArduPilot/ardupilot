@@ -3010,7 +3010,13 @@ class AutoTest(ABC):
         old_value = self.get_parameter(name, attempts=2)
         for i in range(1, retries+2):
             self.send_set_parameter(name, value)
-            returned_value = self.get_parameter(name, verbose=verbose)
+            # ArduPilot instantly volunteers the new value:
+            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=5)
+            if verbose:
+                self.progress("set_parameter(%s): %s" % (name, str(m), ))
+            if m is None:
+                raise NotAchievedException("Did not receive volunteered parameter %s" % str(name))
+            returned_value = m.param_value
             delta = float(value) - returned_value
             if abs(delta) < epsilon:
                 # yes, near-enough-to-equal.
