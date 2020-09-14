@@ -624,6 +624,19 @@ class chibios(Board):
             cfg.srcnode.find_dir('libraries/AP_GyroFFT/CMSIS_5/include').abspath()
         ]
 
+        # whitelist of compilers which we should build with -Werror
+        gcc_whitelist = [
+            ('4','9','3'),
+            ('6','3','1'),
+        ]
+
+        if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
+            cfg.msg("Enabling -Werror", "yes")
+            if '-Werror' not in env.CXXFLAGS:
+                env.CXXFLAGS += [ '-Werror' ]
+        else:
+            cfg.msg("Enabling -Werror", "no")
+
         try:
             import intelhex
             env.HAVE_INTEL_HEX = True
