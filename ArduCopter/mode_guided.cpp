@@ -51,18 +51,6 @@ bool ModeGuided::init(bool ignore_checks)
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
-
-    // Spool up before initializing the WP_NAV
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        // TODO: Add the checks for terrain here
-        /*
-         * If terrain checks fail, return false
-         */
-        guided_mode = Guided_PreTakeOff;
-        _takeoff_alt_cm = takeoff_alt_cm;
-        return true;
-    }
-
     guided_mode = Guided_TakeOff;
 
     // initialise wpnav destination
@@ -84,6 +72,13 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
         return false;
+    }
+
+    // Spool up before going to takeoff
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        guided_mode = Guided_PreTakeOff;
+        _takeoff_alt_cm = takeoff_alt_cm;
+        return true;
     }
 
     // initialise yaw
@@ -405,7 +400,6 @@ void ModeGuided::run()
 //      called by guided_run at 100hz or more
 void ModeGuided::pretakeoff_run()
 {
-
     if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -422,7 +416,6 @@ void ModeGuided::pretakeoff_run()
             copter.set_auto_armed(false);
         }
     }
-
 }
 
 // guided_takeoff_run - takeoff in guided mode
