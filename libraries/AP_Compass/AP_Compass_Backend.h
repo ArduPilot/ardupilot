@@ -22,7 +22,7 @@
 #include "AP_Compass.h"
 
 #ifndef HAL_MSP_COMPASS_ENABLED
-#define HAL_MSP_COMPASS_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#define HAL_MSP_COMPASS_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 class Compass;  // forward declaration
