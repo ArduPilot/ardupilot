@@ -7,7 +7,7 @@
 #include <AP_MSP/msp.h>
 
 #ifndef HAL_MSP_BARO_ENABLED
-#define HAL_MSP_BARO_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 // maximum number of sensor instances
