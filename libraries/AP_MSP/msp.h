@@ -1,7 +1,14 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
 #ifndef HAL_MSP_ENABLED
 #define HAL_MSP_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+// define for enabling MSP sensor drivers
+#ifndef HAL_MSP_SENSORS_ENABLED
+#define HAL_MSP_SENSORS_ENABLED defined(HAL_MSP_ENABLED) && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
 #endif
 
 #include <AP_HAL/UARTDriver.h>
