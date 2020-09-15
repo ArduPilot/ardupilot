@@ -595,6 +595,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
         for breakpoint in opts.breakpoint:
             gdb_commands_file.write("b %s\n" % (breakpoint,))
+        if opts.disable_breakpoints:
+            gdb_commands_file.write("disable\n")
         if not opts.gdb_stopped:
             gdb_commands_file.write("r\n")
         gdb_commands_file.close()
@@ -954,6 +956,10 @@ group_sim.add_option("-B", "--breakpoint",
                      action="append",
                      default=[],
                      help="add a breakpoint at given location in debugger")
+group_sim.add_option("--disable-breakpoints",
+                     default=False,
+                     action='store_true',
+                     help="disable all breakpoints before starting")
 group_sim.add_option("-M", "--mavlink-gimbal",
                      action='store_true',
                      default=False,
