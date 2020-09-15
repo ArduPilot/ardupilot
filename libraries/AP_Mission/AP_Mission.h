@@ -529,6 +529,11 @@ public:
         _flags.in_landing_sequence = flag;
     }
 
+    // get in_landing_sequence flag
+    bool get_in_landing_sequence_flag() const {
+        return _flags.in_landing_sequence;
+    }
+
     // force mission to resume when start_or_resume() is called
     void set_force_resume(bool force_resume)
     {
