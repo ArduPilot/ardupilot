@@ -176,9 +176,7 @@ void Sub::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // disable safety if requested
-    BoardConfig.init_safety();    
-    
-    hal.console->print("\nInit complete");
+    BoardConfig.init_safety();
 
     // flag that initialisation has completed
     ap.initialised = true;
