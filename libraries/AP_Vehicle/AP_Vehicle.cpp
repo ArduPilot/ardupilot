@@ -103,6 +103,7 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
