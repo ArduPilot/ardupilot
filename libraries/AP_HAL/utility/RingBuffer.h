@@ -267,7 +267,7 @@ public:
     }
 
     // return size of ringbuffer
-    uint32_t get_size(void) const {
+    uint32_t get_size(void) {
         WITH_SEMAPHORE(sem);
         return buffer->get_size() / sizeof(T);
     }
