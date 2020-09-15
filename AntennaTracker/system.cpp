@@ -79,7 +79,6 @@ void Tracker::init_ardupilot()
         get_home_eeprom(current_loc);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     Mode *newmode = mode_from_mode_num((Mode::Number)g.initial_mode.get());
