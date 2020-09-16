@@ -6,6 +6,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Vehicle/ModeReason.h>
 
 class Mode
 {
@@ -550,6 +551,9 @@ public:
     void navigate() override;
 
 protected:
+
+    bool exit_heading_aligned() const;
+    void restore_mode(const char *reason, ModeReason modereason);
 
     bool _enter() override;
 };
