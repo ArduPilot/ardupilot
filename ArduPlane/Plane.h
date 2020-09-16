@@ -1076,8 +1076,6 @@ private:
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
-    bool soaring_exit_heading_aligned() const;
-    void soaring_restore_mode(const char *reason, ModeReason modereason);
 #endif
 
     // reverse_thrust.cpp
