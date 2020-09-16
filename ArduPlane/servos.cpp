@@ -80,7 +80,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
+    bool has_ground_movement = ahrs.groundspeed() >= 5;
     
     if ((control_mode == &mode_auto &&
          auto_state.takeoff_complete == false) ||
@@ -91,7 +91,7 @@ bool Plane::suppress_throttle(void)
             millis() - started_flying_ms > MAX(launch_duration_ms, 5000U) && // been flying >5s in any mode
             adjusted_relative_altitude_cm() > 500 && // are >5m above AGL/home
             labs(ahrs.pitch_sensor) < 3000 && // not high pitch, which happens when held before launch
-            gps_movement) { // definite gps movement
+            has_ground_movement) { // definite gps movement
             // we're already flying, do not suppress the throttle. We can get
             // stuck in this condition if we reset a mission and cmd 1 is takeoff
             // but we're currently flying around below the takeoff altitude
@@ -114,7 +114,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    if (gps_movement) {
+    if (has_ground_movement) {
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
