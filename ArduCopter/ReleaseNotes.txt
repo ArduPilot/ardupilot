@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.4 16-Sep-2020
+Changes from 4.0.4-rc4
+1) Matek H743, 765-Wing and F405-Wing get DPS310 Baro support 
+------------------------------------------------------------------
 Copter 4.0.4-rc4 28-Aug-2020
 Changes from 4.0.4-rc3
 1) Bug fixes:
