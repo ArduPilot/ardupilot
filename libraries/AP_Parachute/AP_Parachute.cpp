@@ -134,25 +134,25 @@ void AP_Parachute::update()
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
-    
+
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
                 SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
-            }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+            } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
                 _relay.on(_release_type);
             }
             _release_in_progress = true;
             _released = true;
         }
-    }else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    } else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
-        }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+        } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
             _relay.off(_release_type);
         }
