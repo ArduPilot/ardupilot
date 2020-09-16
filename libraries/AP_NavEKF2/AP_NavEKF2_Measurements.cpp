@@ -269,13 +269,6 @@ void NavEKF2_core::readMagData()
         }
     }
 
-    // check for a failed compass and switch if failed for magFailTimeLimit_ms
-    if (maxCount > 1 &&
-        !compass.healthy(magSelectIndex) &&
-        imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms) {
-        tryChangeCompass();
-    }
-    
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() &&
