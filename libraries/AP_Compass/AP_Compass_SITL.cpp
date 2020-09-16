@@ -35,7 +35,13 @@ AP_Compass_SITL::AP_Compass_SITL()
                 _compass.set_offsets(i, _sitl->mag_ofs[i]);
             }
         }
-        
+
+        // we want to simulate a calibrated compass by default, so set
+        // scale to 1
+        AP_Param::set_default_by_name("COMPASS_SCALE", 1);
+        AP_Param::set_default_by_name("COMPASS_SCALE2", 1);
+        AP_Param::set_default_by_name("COMPASS_SCALE3", 1);
+
         // make first compass external
         set_external(_compass_instance[0], true);
 
