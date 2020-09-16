@@ -159,6 +159,7 @@ public:
     friend class ModeQAcro;
     friend class ModeQAutotune;
     friend class ModeTakeoff;
+    friend class ModeThermal;
 
     Plane(void);
 
@@ -279,6 +280,9 @@ private:
     ModeQAcro mode_qacro;
     ModeQAutotune mode_qautotune;
     ModeTakeoff mode_takeoff;
+#if SOARING_ENABLED == ENABLED
+    ModeThermal mode_thermal;
+#endif
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
