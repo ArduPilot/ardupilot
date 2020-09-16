@@ -63,7 +63,7 @@ Changes from 4.0.3
     c) MatekSys H743
     e) mRo Nexus
     d) R9Pilot
-5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 and M9 GPSs
+5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 GPSs
 6) Graupner Hott telemetry support
 7) Landing detector filter improvement improves detection on hard surfaces
 8) Object Avoidances Fixes and improvements:
