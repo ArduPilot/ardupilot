@@ -1868,20 +1868,30 @@ void NavEKF3_core::setYawFromMag()
     // read the magnetometer data
     readMagData();
 
-    // rotate the magnetic field into NED axes
-    Vector3f euler321;
-    stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
-
-    // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
+    // use best of either 312 or 321 rotation sequence when calculating yaw
+    rotationOrder order;
+    bestRotationOrder(order);
+    Vector3f eulerAngles;
     Matrix3f Tbn_zeroYaw;
-    Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+    if (order == rotationOrder::TAIT_BRYAN_321) {
+        // rolled more than pitched so use 321 rotation order
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        Tbn_zeroYaw.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
+    } else if (order == rotationOrder::TAIT_BRYAN_312) {
+        // pitched more than rolled so use 312 rotation order
+        eulerAngles = stateStruct.quat.to_vector312();
+        Tbn_zeroYaw.from_euler312(eulerAngles.x, eulerAngles.y, 0.0f);
+    } else {
+        // rotation order not supported
+        return;
+    }
 
     //Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
 
     // update quaternion states and covariances
-    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)));
+    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)), order);
 }
 
 // update mag field states and associated variances using magnetomer and declination data
@@ -1969,4 +1979,15 @@ Vector3f NavEKF3_core::calcRotVecVariances()
     }
 
     return rotVarVec;
+}
+
+void NavEKF3_core::bestRotationOrder(rotationOrder &order)
+{
+    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+        // rolled more than pitched so use 321 sequence
+        order = rotationOrder::TAIT_BRYAN_321;
+    } else {
+        // pitched more than rolled so use 312 sequence
+        order = rotationOrder::TAIT_BRYAN_312;
+    }
 }

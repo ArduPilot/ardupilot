@@ -658,6 +658,12 @@ private:
         EXTNAV=7        // Use external nav data
     };
 
+    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
+    enum class rotationOrder {
+        TAIT_BRYAN_321=0,
+        TAIT_BRYAN_312=1
+    };
+
     // update the navigation filter status
     void updateFilterStatus(void);
 
@@ -901,6 +907,9 @@ private:
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
     void fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor);
 
+    // return the best Tait-Bryan rotation order to use
+    void bestRotationOrder(rotationOrder &order);
+
     // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
     // Input is 1-sigma uncertainty in published declination
     void FuseDeclination(float declErr);
@@ -964,7 +973,8 @@ private:
     // reset the quaternion state covariances using the supplied yaw variance
     // yaw          : new yaw angle (rad)
     // yaw_variance : variance of new yaw angle (rad^2)
-    void resetQuatStateYawOnly(float yaw, float yawVariance);
+    // order : enum defining Tait-Bryan rotation order used in calculation of the yaw angle
+    void resetQuatStateYawOnly(float yaw, float yawVariance, rotationOrder order);
 
     // attempt to reset the yaw to the EKF-GSF value
     // returns false if unsuccessful
