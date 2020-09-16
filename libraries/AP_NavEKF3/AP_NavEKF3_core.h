@@ -139,7 +139,7 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
-    // return tilt error convergence metric
+    // return estimated 1-sigma tilt error in radians
     void getTiltError(float &ang) const;
 
     // reset body axis gyro bias estimates
@@ -942,8 +942,8 @@ private:
     // effective value of MAG_CAL
     MagCal effective_magCal(void) const;
 
-    // calculate the variances for the rotation vector equivalent
-    Vector3f calcRotVecVariances(void);
+    // calculate the tilt error variance)
+    void calcTiltErrorVariance(void);
     
     // update timing statistics structure
     void updateTimingStatistics(void);
@@ -1149,6 +1149,7 @@ private:
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
+    float tiltErrorVariance;        // variance of the angular uncertainty measured perpendicular to the vertical (rad^2)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
     struct {
