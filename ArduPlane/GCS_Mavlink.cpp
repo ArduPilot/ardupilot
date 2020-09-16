@@ -715,7 +715,7 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 
 bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
 {
-    if (!plane.set_home_persistently(AP::gps().location())) {
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D || !plane.set_home_persistently(AP::gps().location())) {
         return false;
     }
     if (_lock) {
@@ -1077,7 +1077,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         // param6 : longitude
         // param7 : altitude (absolute)
         if (is_equal(packet.param1,1.0f)) {
-            if (!plane.set_home_persistently(AP::gps().location())) {
+            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D || !plane.set_home_persistently(AP::gps().location())) {
                 return MAV_RESULT_FAILED;
             }
             AP::ahrs().lock_home();
