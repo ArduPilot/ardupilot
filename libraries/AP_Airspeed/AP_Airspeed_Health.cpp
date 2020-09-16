@@ -36,7 +36,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     // update state[i].failures.health_probability via LowPassFilter
     float speed_accuracy;
     const AP_GPS &gps = AP::gps();
-    if (gps.speed_accuracy(speed_accuracy)) {
+    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.speed_accuracy(speed_accuracy)) {
         const float gnd_speed = gps.ground_speed();
 
         if (aspeed > (gnd_speed + wind_max) || aspeed < (gnd_speed - wind_max)) {
