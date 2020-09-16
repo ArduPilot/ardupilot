@@ -118,19 +118,7 @@ void AP_Parachute::update()
     if (_enabled <= 0) {
         return;
     }
-    // check if the plane is sinking too fast for more than a second and release parachute
-    uint32_t time = AP_HAL::millis();
-    if((_critical_sink > 0) && (_sink_rate > _critical_sink) && !_release_initiated && _is_flying) {
-        if(_sink_time == 0) {
-            _sink_time = AP_HAL::millis();
-        }
-        if((time - _sink_time) >= 1000) {
-            release();
-        }
-    } else {
-        _sink_time = 0;
-    }
-    
+
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
@@ -161,6 +149,41 @@ void AP_Parachute::update()
         _release_time = 0;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
+    }
+}
+
+// set_sink_rate - set vehicle sink rate
+void AP_Parachute::set_sink_rate(float sink_rate)
+{
+    // reset sink time if critical sink rate check is disabled or vehicle is not flying
+    if ((_critical_sink <= 0) || !_is_flying) {
+        _sink_time_ms = 0;
+        return;
+    }
+
+    // reset sink_time if vehicle is not sinking too fast
+    if (sink_rate <= _critical_sink) {
+        _sink_time_ms = 0;
+        return;
+    }
+
+    // start time when sinking too fast
+    if (_sink_time_ms == 0) {
+        _sink_time_ms = AP_HAL::millis();
+    }
+}
+
+// trigger parachute release if sink_rate is below critical_sink_rate for 1sec
+void AP_Parachute::check_sink_rate()
+{
+    // return immediately if parachute is being released or vehicle is not flying
+    if (_release_initiated || !_is_flying) {
+        return;
+    }
+
+    // if vehicle is sinking too fast for more than a second release parachute
+    if ((_sink_time_ms > 0) && ((AP_HAL::millis() - _sink_time_ms) > 1000)) {
+        release();
     }
 }
 
