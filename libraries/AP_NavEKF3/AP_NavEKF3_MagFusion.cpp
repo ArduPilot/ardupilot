@@ -157,7 +157,9 @@ void NavEKF3_core::realignYawGPS()
             }
 
             // keep roll and pitch and reset yaw
-            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
+            rotationOrder order;
+            bestRotationOrder(order);
+            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)), order);
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
             ResetVelocity(resetDataSource::GPS);
@@ -1449,7 +1451,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG))) {
 
         // keep roll and pitch and reset yaw
-        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
+        rotationOrder order;
+        bestRotationOrder(order);
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, order);
 
         // record the emergency reset event
         EKFGSF_yaw_reset_request_ms = 0;
@@ -1484,22 +1488,25 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
 }
 
-void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
+void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, rotationOrder order)
 {
     Quaternion quatBeforeReset = stateStruct.quat;
 
-    // check if we should use a 321 or 312 Rotation sequence and update the quaternion
+    // check if we should use a 321 or 312 Rotation order and update the quaternion
     // states using the preferred yaw definition
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
     Vector3f eulerAngles;
-    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+    if (order == rotationOrder::TAIT_BRYAN_321) {
         // rolled more than pitched so use 321 rotation order
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
         stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
-    } else {
+    } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // pitched more than rolled so use 312 rotation order
         eulerAngles = stateStruct.quat.to_vector312();
         stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
+    } else {
+        // rotation order not supported
+        return;
     }
 
     // Update the rotation matrix
