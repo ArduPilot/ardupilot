@@ -21,46 +21,15 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 
+#if HAL_PLUSCODE_ENABLE
 // This is a port of https://github.com/google/open-location-code/blob/master/c/olc.c
 // to avoid double floating point math and use integer math as much as possible.
 
-static constexpr uint8_t SEPARATOR_CHAR = '+';
-static constexpr uint8_t SEPARATOR_POS = 8;
-static constexpr uint8_t PADDING_CHAR = '0';
+const int32_t AP_OLC::initial_exponent  = floorf(logf(2 * (LON_MAX / OLC_DEG_MULTIPLIER)) / logf(ENCODING_BASE));
+const int32_t AP_OLC::grid_size = (1 / powf(ENCODING_BASE, PAIR_CODE_LEN / 2 - (initial_exponent + 1))) * OLC_DEG_MULTIPLIER;
+const int32_t AP_OLC::initial_resolution = powf(ENCODING_BASE, initial_exponent) * OLC_DEG_MULTIPLIER;
 
-static constexpr uint8_t ENCODING_BASE = 20;
-static constexpr uint8_t PAIR_CODE_LEN = 10;
-static constexpr uint8_t CODE_LEN_MAX = 15;
-
-static constexpr uint8_t GRID_COLS = 4;
-static constexpr uint8_t GRID_ROWS = ENCODING_BASE / GRID_COLS;
-
-
-static constexpr int32_t LAT_MAX = 90 * OLC_DEG_MULTIPLIER;
-static constexpr int32_t LON_MAX = 180 * OLC_DEG_MULTIPLIER;
-
-int32_t AP_OLC::grid_size;
-int32_t AP_OLC::initial_resolution;
-const char alphabet[] = "23456789CFGHJMPQRVWX";
-
-bool AP_OLC::inited = false;
-
-void AP_OLC::init_constants(void)
-{
-    if (inited) {
-        return;
-    }
-    inited = true;
-
-    // Work out the encoding base exponent necessary to represent 360 degrees.
-    int32_t initial_exponent = floorf(logf(2 * (LON_MAX / OLC_DEG_MULTIPLIER)) / logf(ENCODING_BASE));
-
-    // Work out the enclosing resolution (in degrees) for the grid algorithm.
-    AP_OLC::grid_size = (1 / powf(ENCODING_BASE, PAIR_CODE_LEN / 2 - (initial_exponent + 1))) * OLC_DEG_MULTIPLIER;
-
-    // Work out the initial resolution
-    AP_OLC::initial_resolution = powf(ENCODING_BASE, initial_exponent) * OLC_DEG_MULTIPLIER;
-}
+constexpr char AP_OLC::olc_alphabet[];
 
 // Compute the latitude precision value for a given code length.  Lengths <= 10
 // have the same precision for latitude and longitude, but lengths > 10 have
@@ -77,12 +46,9 @@ float AP_OLC::compute_precision_for_length(int length)
 
 int32_t AP_OLC::adjust_latitude(int32_t lat, size_t code_len)
 {
-    if (lat < -LAT_MAX) {
-        lat = -LAT_MAX;
-    }
-    if (lat > LAT_MAX) {
-        lat = LAT_MAX;
-    }
+
+    lat = constrain_int32(lat, -LAT_MAX, LAT_MAX);
+
     if (lat >= LAT_MAX) {
         // Subtract half the code precision to get the latitude into the code area.
         int32_t precision = compute_precision_for_length(code_len) * OLC_DEG_MULTIPLIER;
@@ -116,7 +82,7 @@ unsigned AP_OLC::encode_pairs(uint32_t lat, uint32_t lon, size_t length, char *b
     }
 
     unsigned pos = 0;
-    int32_t resolution = AP_OLC::initial_resolution;
+    int32_t resolution = initial_resolution;
     // Add two digits on each pass.
     for (size_t digit_count = 0;
          digit_count < length;
@@ -127,13 +93,13 @@ unsigned AP_OLC::encode_pairs(uint32_t lat, uint32_t lon, size_t length, char *b
         // for the next digit.
         digit_value = lat / resolution;
         lat -= digit_value * resolution;
-        buf[pos++] = alphabet[digit_value];
+        buf[pos++] = olc_alphabet[digit_value];
 
         // Do the longitude - gets the digit for this place and subtracts that
         // for the next digit.
         digit_value = lon / resolution;
         lon -= digit_value * resolution;
-        buf[pos++] = alphabet[digit_value];
+        buf[pos++] = olc_alphabet[digit_value];
 
         // Should we add a separator here?
         if (pos == SEPARATOR_POS && pos < length) {
@@ -173,8 +139,8 @@ int AP_OLC::encode_grid(uint32_t lat, uint32_t lon, size_t length,
 
     int pos = 0;
 
-    int32_t lat_grid_size = AP_OLC::grid_size;
-    int32_t lon_grid_size = AP_OLC::grid_size;
+    int32_t lat_grid_size = grid_size;
+    int32_t lon_grid_size = grid_size;
 
     lat %= lat_grid_size;
     lon %= lon_grid_size;
@@ -196,7 +162,7 @@ int AP_OLC::encode_grid(uint32_t lat, uint32_t lon, size_t length,
         lon_grid_size /= GRID_COLS;
         lat -= row * lat_grid_size;
         lon -= col * lon_grid_size;
-        buf[pos++] = alphabet[row * GRID_COLS + col];
+        buf[pos++] = olc_alphabet[row * GRID_COLS + col];
     }
     buf[pos] = '\0';
     return pos;
@@ -212,8 +178,6 @@ int AP_OLC::olc_encode(int32_t lat, int32_t lon, size_t length, char *buf, size_
     uint32_t alat = adjust_latitude(lat, length) + LAT_MAX;
     uint32_t alon = normalize_longitude(lon) + LON_MAX;
 
-    init_constants();
-
     pos += encode_pairs(alat, alon, MIN(length, PAIR_CODE_LEN), buf + pos, bufsize - pos);
     // If the requested length indicates we want grid refined codes.
     if (length > PAIR_CODE_LEN) {
@@ -222,3 +186,5 @@ int AP_OLC::olc_encode(int32_t lat, int32_t lon, size_t length, char *buf, size_
     buf[pos] = '\0';
     return pos;
 }
+
+#endif 
