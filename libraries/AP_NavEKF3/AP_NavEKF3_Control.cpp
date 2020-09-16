@@ -411,8 +411,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
     // Once the tilt variances have reduced to equivalent of 3deg uncertainty, re-set the yaw and magnetic field states
     // and declare the tilt alignment complete
     if (!tiltAlignComplete) {
-        Vector3f angleErrVarVec = calcRotVecVariances();
-        if ((angleErrVarVec.x + angleErrVarVec.y) < sq(0.05235f)) {
+        if (tiltErrorVariance < sq(radians(3.0f))) {
             tiltAlignComplete = true;
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete",(unsigned)imu_index);
         }

@@ -188,8 +188,8 @@ void NavEKF3_core::alignYawAngle()
     }
 
     // set the yaw angle variance reflect the yaw sensor single sample uncertainty in yaw
-    // TODO get alignment uncertainty rel to gravity vector and use to set horizontal variances
-    Vector3f angleErrVarVec = Vector3f(sq(radians(3.0f)),sq(radians(3.0f)),sq(yawAngDataDelayed.yawAngErr));
+    // assume tilt uncertainty split equally between roll and pitch
+    Vector3f angleErrVarVec = Vector3f(0.5f * tiltErrorVariance, 0.5f * tiltErrorVariance, sq(yawAngDataDelayed.yawAngErr));
     CovariancePrediction(&angleErrVarVec);
 
     // send yaw alignment information to console
@@ -1559,8 +1559,8 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, rotationO
     Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
 
-    // TODO get alignment uncertainty rel to gravity vector and use to set horizontal variances
-    Vector3f angleErrVarVec = Vector3f(sq(radians(3.0f)),sq(radians(3.0f)),yawVariance);
+    // assume tilt uncertainty split equally between roll and pitch
+    Vector3f angleErrVarVec = Vector3f(0.5f * tiltErrorVariance, 0.5f * tiltErrorVariance, yawVariance);
     CovariancePrediction(&angleErrVarVec);
 
     // record the yaw reset event

@@ -1133,7 +1133,7 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     }
 }
 
-// return tilt error convergence metric for the specified instance
+// return estimated 1-sigma tilt error for the specified instance in radians
 void NavEKF3::getTiltError(int8_t instance, float &ang) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
