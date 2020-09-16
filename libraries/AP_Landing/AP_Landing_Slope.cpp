@@ -22,7 +22,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
 
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
@@ -89,8 +88,6 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     const bool below_flare_sec = (flare_sec > 0 && height <= sink_rate * flare_sec);
     const bool probably_crashed = (aparm.crash_detection_enable && fabsf(sink_rate) < 0.2f && !is_flying);
 
-    const AP_GPS &gps = AP::gps();
-
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
@@ -99,11 +96,11 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)ahrs.groundspeed());
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO, "Flare %.1fm sink=%.2f speed=%.1f dist=%.1f",
                                   (double)height, (double)sink_rate,
-                                  (double)gps.ground_speed(),
+                                  (double)ahrs.groundspeed(),
                                   (double)current_loc.get_distance(next_WP_loc));
             }
             
@@ -118,7 +115,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             }
         }
 
-        if (gps.ground_speed() < 3) {
+        if (ahrs.groundspeed() < 3) {
             // reload any airspeed or groundspeed parameters that may have
             // been set for landing. We don't do this till ground
             // speed drops below 3.0 m/s as otherwise we will change
@@ -159,8 +156,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
 
     if (mission.continue_after_land() &&
         type_slope_stage == SLOPE_STAGE_FINAL &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
-        gps.ground_speed() < 1) {
+        ahrs.groundspeed() < 1) {
         /*
           user has requested to continue with mission after a
           landing. Return true to allow for continue
