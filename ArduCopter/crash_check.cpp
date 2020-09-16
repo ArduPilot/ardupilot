@@ -178,6 +178,12 @@ void Copter::parachute_check()
         return;
     }
 
+    // pass is_flying to parachute library
+    parachute.set_is_flying(!ap.land_complete);
+
+    // pass sink rate to parachute library
+    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01f);
+
     // exit immediately if in standby
     if (standby_active) {
         return;
@@ -214,9 +220,9 @@ void Copter::parachute_check()
         return;
     }
 
-    // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01);
-    
+    // trigger parachute release based on sink rate
+    parachute.check_sink_rate();
+
     // check for angle error over 30 degrees
     const float angle_error = attitude_control->get_att_error_angle_deg();
     if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
