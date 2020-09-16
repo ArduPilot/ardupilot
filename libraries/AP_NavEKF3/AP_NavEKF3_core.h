@@ -665,7 +665,9 @@ private:
     void UpdateStrapdownEquationsNED();
 
     // calculate the predicted state covariance matrix
-    void CovariancePrediction();
+    // Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
+    // used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
+    void CovariancePrediction(Vector3f *rotVarVecPtr);
 
     // force symmetry on the state covariance matrix
     void ForceSymmetry();
@@ -934,9 +936,6 @@ private:
     // calculate the variances for the rotation vector equivalent
     Vector3f calcRotVecVariances(void);
     
-    // initialise the quaternion covariances using rotation vector variances
-    void initialiseQuatCovariances(const Vector3f &rotVarVec);
-
     // update timing statistics structure
     void updateTimingStatistics(void);
 

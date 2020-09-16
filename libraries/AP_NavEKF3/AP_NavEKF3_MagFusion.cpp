@@ -178,10 +178,6 @@ void NavEKF3_core::realignYawGPS()
 
 void NavEKF3_core::alignYawAngle()
 {
-    // calculate the variance for the rotation estimate expressed as a rotation vector
-    // this will be used later to reset the quaternion state covariances
-    Vector3f angleErrVarVec = calcRotVecVariances();
-
     if (yawAngDataDelayed.type == 2) {
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
@@ -191,13 +187,10 @@ void NavEKF3_core::alignYawAngle()
         stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
     }
 
-    // set the yaw angle variance to a larger value to reflect the uncertainty in yaw
-    angleErrVarVec.z = sq(yawAngDataDelayed.yawAngErr);
-
-    // reset the quaternion covariances using the rotation vector variances
-    zeroRows(P,0,3);
-    zeroCols(P,0,3);
-    initialiseQuatCovariances(angleErrVarVec);
+    // set the yaw angle variance reflect the yaw sensor single sample uncertainty in yaw
+    // TODO get alignment uncertainty rel to gravity vector and use to set horizontal variances
+    Vector3f angleErrVarVec = Vector3f(sq(radians(3.0f)),sq(radians(3.0f)),sq(yawAngDataDelayed.yawAngErr));
+    CovariancePrediction(&angleErrVarVec);
 
     // send yaw alignment information to console
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
@@ -1494,7 +1487,6 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
 {
     Quaternion quatBeforeReset = stateStruct.quat;
-    Vector3f angleErrVarVec = calcRotVecVariances();
 
     // check if we should use a 321 or 312 Rotation sequence and update the quaternion
     // states using the preferred yaw definition
@@ -1519,11 +1511,9 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
     Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
 
-    // update the yaw angle variance using the variance of the EKF-GSF estimate
-    angleErrVarVec.z = yawVariance;
-    zeroRows(P,0,3);
-    zeroCols(P,0,3);
-    initialiseQuatCovariances(angleErrVarVec);
+    // TODO get alignment uncertainty rel to gravity vector and use to set horizontal variances
+    Vector3f angleErrVarVec = Vector3f(sq(radians(3.0f)),sq(radians(3.0f)),yawVariance);
+    CovariancePrediction(&angleErrVarVec);
 
     // record the yaw reset event
     yawResetAngle += deltaYaw;
