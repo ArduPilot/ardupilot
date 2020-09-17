@@ -88,6 +88,7 @@ bool AP_SmartAudio::init()
         _port->set_stop_bits(AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS);
         _port->set_flow_control(AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL);
         _port->set_options(AP_SERIALMANAGER_SMARTAUDIO_OPTIONS);
+      
 
         return true;
     }
@@ -115,11 +116,10 @@ void AP_SmartAudio::loop(){
 
         // command to process
         packet _current_command;
-        // printf(" time-passed-since-last-request:%d %20s %d ",now-last_request_sended_at,"packet-processed:",packet_processed);
 
         // Proccess response in the next 200 milis from the request are sent.
-        if(_now-last_request_sended_at<=200 && is_waiting_response){
-            printf("%20s %d and %d ms more","I'M WAITING RESPONSE SINCE",last_request_sended_at,200-(_now-last_request_sended_at));
+        if(_now-last_request_sended_at>100 && _now-last_request_sended_at<=1200 && is_waiting_response){
+            printf("\n%20s %d and %d ms more","I'M WAITING RESPONSE SINCE",last_request_sended_at,1200-(_now-last_request_sended_at));
             // allocate response buffer
             uint8_t _response_buffer[AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX];
             // setup to zero because the
@@ -209,6 +209,7 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame,uint8_t size)
     // write request
     for (int i = 0; i < size; ++i) {
         _port->write(request[i]);
+         printf("\n REQ-SEND bytes:%02X",request[i]);
     }
     printf("-------------->");print_bytes_to_hex_string(request,size);
 }
@@ -230,10 +231,10 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer
         return;
     }
 
-
+    printf("\n READ RESPONSE incoming_bytes_count:%d",_incoming_bytes_count);
     for (int i = 0; i < _incoming_bytes_count; ++i) {
         uint8_t _response_in_bytes = _port->read();
-
+        printf("\n READ RESPONSE _response_in_bytes:%02X",_response_in_bytes);
         if ((inline_buffer_length == 0 && _response_in_bytes != SMARTAUDIO_SYNC_BYTE)
             || (inline_buffer_length == 1 && _response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
             inline_buffer_length = 0;
@@ -283,6 +284,8 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         smartaudioSettings_t _vtx_settings;
         // process response buffer
         if(!smartaudioParseResponseBuffer(&_vtx_settings,buffer)){
+            printf("%20s","Unparseable buffer response");
+             print_bytes_to_hex_string(const_cast<uint8_t*>(buffer),sizeof(buffer));
             return false;
         }
 
@@ -463,7 +466,7 @@ uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_leve
  * */
 void AP_SmartAudio::request_settings()
 {
-    printf("%80s::request_settings()\t",TAG);
+    printf("\n%20s::request_settings()\t",TAG);
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetSettings(&request);
     packet command;

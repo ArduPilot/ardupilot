@@ -179,16 +179,16 @@ bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t
 u_int16_t applyBigEndian16(u_int16_t bytes);
 
 // crc8 from betaflight
-uint8_t static crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
-{
-    const uint8_t *p = (const uint8_t *)data;
-    const uint8_t *pend = p + length;
+// uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
+// {
+//     const uint8_t *p = (const uint8_t *)data;
+//     const uint8_t *pend = p + length;
 
-    for (; p != pend; p++) {
+//     for (; p != pend; p++) {
 
-        // printf("CURRENT_BYTE:%02x",*p);
-        crc = crc8_dvb(crc, *p, 0xD5);
-        //  printf("CURRENT_CRC_BYTE:%02x",crc);
-    }
-    return crc;
-}
+//         // printf("CURRENT_BYTE:%02x",*p);
+//         crc = crc8_dvb(crc, *p, 0xD5);
+//         //  printf("CURRENT_CRC_BYTE:%02x",crc);
+//     }
+//     return crc;
+// }
