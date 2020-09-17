@@ -222,6 +222,9 @@ void NavEKF2_core::tryChangeCompass(void)
             magStateResetRequest = true;
             // declare the field unlearned so that the reset request will be obeyed
             magFieldLearned = false;
+
+            // reset body mag variances on next CovariancePrediction
+            needMagBodyVarReset = true;
             return;
         }
     }
@@ -285,6 +288,10 @@ void NavEKF2_core::readMagData()
             stateStruct.body_magfield.zero();
             // clear the measurement buffer
             storedMag.reset();
+            // reset body mag variances on next
+            // CovariancePrediction. This copes with possible errors
+            // in the new offsets
+            needMagBodyVarReset = true;
         }
         lastMagOffsets = nowMagOffsets;
         lastMagOffsetsValid = true;
