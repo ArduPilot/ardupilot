@@ -824,10 +824,8 @@ bool AP_Logger_Block::logging_failed() const
 
 bool AP_Logger_Block::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in 5s it is dead
-    // the timeout is longer than might be otherwise required to allow for the FFT running
-    // at the same priority
-    return (AP_HAL::millis() - io_timer_heartbeat) < 5000U;
+    // if the io thread hasn't had a heartbeat in 1s it is dead
+    return (AP_HAL::millis() - io_timer_heartbeat) < 1000U;
 }
 
 /*
@@ -896,12 +894,13 @@ void AP_Logger_Block::io_timer(void)
 
         log_write_started = false;
 
-        // complete writing any previous log
-        while (writebuf.available()) {
+        // complete writing any previous log, a page at a time to avoid holding the lock for too long
+        if (writebuf.available()) {
             write_log_page();
+        } else {
+            writebuf.clear();
+            stop_log_pending = false;
         }
-        writebuf.clear();
-        stop_log_pending = false;
 
     // write at most one page
     } else if (writebuf.available() >= df_PageSize - sizeof(struct PageHeader)) {
@@ -909,7 +908,6 @@ void AP_Logger_Block::io_timer(void)
 
         write_log_page();
     }
-
 }
 
 // write out a page of log data
