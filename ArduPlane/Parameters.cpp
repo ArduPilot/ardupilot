@@ -1355,13 +1355,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: STALL_ALGORITHM1
     // @DisplayName: Stall recovery algorithm1
-    // @Description: Stall recovery algorithm1.
+    // @Description: Stall recovery algorithm1. Each enabled option is checked during Phase 1 of the stall recovery. If the aircraft meets all of the criteria it will bypass the timer and proceed to phase 2
+    // @Bitmask: 0:Airspeed min reached,1:yaw rate is less than STALL_SPIN_RATE,2:sink rate is less than STALL_SINK_RATE
     // @User: Advanced
     AP_GROUPINFO("STALL_ALGORITHM1", 33, ParametersG2, stall_recovery_algorithm1, 0),
 
     // @Param: STALL_ALGORITHM2
     // @DisplayName: Stall recovery algorithm2
-    // @Description: Stall recovery algorithm2.
+    // @Description: Stall recovery algorithm2. Each enabled option is checked during Phase 2 of the stall recovery. If the aircraft meets all of the criteria it will bypass the timer and proceed to
+    // @Bitmask: 0:Airspeed above cruise (TRIM_ARSPD_CM),1:Airspeed above 95% of cruise,2:Airspeed above 90% of cruise
     // @User: Advanced
     AP_GROUPINFO("STALL_ALGORITHM2", 34, ParametersG2, stall_recovery_algorithm2, 0),
 

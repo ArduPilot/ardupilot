@@ -100,13 +100,13 @@ bool ModeStallRecovery::is_recovered_early()
     plane.ahrs.airspeed_estimate(airspeed);
 
     if (plane.is_stalled) {
-        if (algorithm_bits & 0x01) {
+        if (algorithm_bits & STALL_RECOVERY_1_AIRSPEED_MIN) {
             if ((airspeed > 0) && (plane.aparm.airspeed_min > 0) && (airspeed >= plane.aparm.airspeed_min)) {
                 is_recovered_bits |= 0x01;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sarspd %.1f >= %d", gcsStrHeader, (double)airspeed, plane.aparm.airspeed_min.get());
             }
         }
-        if (algorithm_bits & 0x02) {
+        if (algorithm_bits & STALL_RECOVERY_1_SPIN_RATE_PARAM) {
             const float threshold = plane.g2.stall_recovery_spin_rate;
             const float spin_rate = fabsf(degrees(plane.ahrs.get_gyro().z));
             if (!is_zero(threshold) && (spin_rate < threshold)) {
@@ -114,7 +114,7 @@ bool ModeStallRecovery::is_recovered_early()
                 gcs().send_text(MAV_SEVERITY_INFO, "%sspin %.1f < %.1f", gcsStrHeader, (double)spin_rate, (double)threshold);
             }
         }
-        if (algorithm_bits & 0x04) {
+        if (algorithm_bits & STALL_RECOVERY_1_SINK_RATE_PARAM) {
             const float threshold = plane.g2.stall_recovery_sink_rate;
             if (!is_zero(threshold) && (plane.auto_state.sink_rate < threshold)) {
                 is_recovered_bits |= 0x04;
@@ -124,21 +124,21 @@ bool ModeStallRecovery::is_recovered_early()
 
     } else {
         const float airspeed_cruise = plane.aparm.airspeed_cruise_cm * 0.01f;
-        if (algorithm_bits & 0x01) {
-            const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
+        if (algorithm_bits & STALL_RECOVERY_2_AIRSPEED_CRUISE) {
+            const float airspeed_cruise_thresh = airspeed_cruise;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
                 is_recovered_bits |= 0x01;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sA arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
             }
         }
-        if (algorithm_bits & 0x02) {
+        if (algorithm_bits & STALL_RECOVERY_2_AIRSPEED_CRUISE_95PCT) {
             const float airspeed_cruise_thresh = airspeed_cruise * 0.95f;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
                 is_recovered_bits |= 0x02;
                 gcs().send_text(MAV_SEVERITY_INFO, "%sB arspd %.1f >= %.1f", gcsStrHeader, (double)airspeed, (double)airspeed_cruise_thresh);
             }
         }
-        if (algorithm_bits & 0x04) {
+        if (algorithm_bits & STALL_RECOVERY_2_AIRSPEED_CRUISE_90PCT) {
             const float airspeed_cruise_thresh = airspeed_cruise * 0.90f;
             if ((airspeed > 0) && (airspeed_cruise_thresh > 0) && (airspeed >= airspeed_cruise_thresh)) {
                 is_recovered_bits |= 0x04;
