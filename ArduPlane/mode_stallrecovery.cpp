@@ -188,7 +188,7 @@ void ModeStallRecovery::set_servo_behavior()
         plane.calc_throttle();
 
     } else {
-        throttle = constrain_int16(throttle, 0, throttle_max);
+        throttle = constrain_int16(throttle, 0, plane.aparm.throttle_max);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
     }
 
