@@ -77,6 +77,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (plane.quadplane.available() && !plane.quadplane.motors->initialised_ok()) {
+        check_failed(display_failure, "Quadplane: check motor setup");
+        ret = false;
+    }
+
     if (plane.quadplane.enabled() && plane.quadplane.available()) {
         // ensure controllers are OK with us arming:
         char failure_msg[50];
