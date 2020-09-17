@@ -1335,7 +1335,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STALL_ELEV", 30, ParametersG2, stall_recovery_elevator, -10),
 
-    // @Param: STALL_DUR1
+    // @Param: STALL_DUR1MAX
     // @DisplayName: Stall recovery duration1 max
     // @Description: The maximum duration that we'll attempt to recover from a stall before leveling wings. Use -1 to never timeout.
     // @Units: s
@@ -1344,7 +1344,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("STALL_DUR1MAX", 31, ParametersG2, stall_recovery_duration1_max, 10.0f),
 
-    // @Param: STALL_DUR2
+    // @Param: STALL_DUR2MAX
     // @DisplayName: Stall recovery duration2 max
     // @Description: The maximum duration that we'll attempt to level wings after a stall to gain airspeed before resuming previous mode. Use -1 to never timeout.
     // @Units: s
