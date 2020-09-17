@@ -108,6 +108,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
     if (!inhibitMagStates && setMagInhibit) {
         inhibitMagStates = true;
         updateStateIndexLim();
+        // variances will be reset in CovariancePrediction
     } else if (inhibitMagStates && !setMagInhibit) {
         inhibitMagStates = false;
         updateStateIndexLim();
@@ -164,6 +165,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
     if (onGround) {
         finalInflightYawInit = false;
         finalInflightMagInit = false;
+        magFieldLearned = false;
     }
 
     updateStateIndexLim();
