@@ -147,6 +147,24 @@ enum {
     USE_REVERSE_THRUST_AUTO_LANDING_PATTERN     = (1<<11),
 };
 
+enum class Stall_Detect {
+    NEVER                                       = 0,
+    BAD_DESCENT                                 = (1<<0),
+    SINKRATE_2X_MAX                             = (1<<1),
+    SINKRATE_4X_MAX                             = (1<<2),
+    BAD_ROLL_20DEG                              = (1<<3),
+    BAD_ROLL_30DEG                              = (1<<4),
+    BAD_ROLL_45DEG                              = (1<<5),
+    BAD_PITCH_10DEG                             = (1<<6),
+    BAD_PITCH_20DEG                             = (1<<7),
+    BAD_PITCH_30DEG                             = (1<<8),
+    BAD_PITCH_40DEG                             = (1<<9),
+    BAD_ALT_10m                                 = (1<<10),
+    BAD_ALT_20m                                 = (1<<11),
+    BAD_ALT_40m                                 = (1<<12),
+    BAD_ALT_60m                                 = (1<<13),
+};
+
 enum FlightOptions {
     DIRECT_RUDDER_ONLY   = (1 << 0),
     CRUISE_TRIM_THROTTLE = (1 << 1),

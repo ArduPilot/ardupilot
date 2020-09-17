@@ -570,6 +570,55 @@ private:
         uint32_t impact_timer_ms;
     } crash_state;
 
+    class StallState {
+        // stall_detection.cpp
+    public:
+        // params
+        // var_info for holding parameter information
+        static const struct AP_Param::GroupInfo var_info[];
+
+        void detection_update();
+
+    private:
+
+        void detection_log();
+        bool detect_stall(bool allow_changing_state);
+        bool detection_single_check(const Stall_Detect _bitmask, const bool check);
+
+        // true if there is high confidence that he aircraft is currently stalled
+        bool is_stalled() { return (confidence > 0.5f); }
+        void stall_start() { confidence = 1; stall_start_ms = AP_HAL::millis(); count++; }
+        void stall_clear() { confidence = 0; stall_start_ms = 0; last_detection = false; }
+        uint32_t stall_duration_ms() { return is_stalled() ? (AP_HAL::millis() - stall_start_ms) : 0; }
+        uint32_t stall_start_ms;
+
+        // 0.0 to 1.0 metric where 1 means very confident that the aircraft is stalling
+        float confidence;
+
+        // LowPass Filter coef of confidence. Higher means confidence changes faster
+        const float LPFcoef = 0.2f;
+
+        const float definitely_not_stalling_sink_rate = -3.0f;
+
+        // keep track of how many times we've stalled
+        uint32_t count;
+
+        // store last detection. This is only for logging
+        bool last_detection;
+        // previous update time
+        uint32_t last_update_ms;
+        // previous rate-limited nav roll angle
+        float last_limited_nav_roll;
+
+        // stalls detected if all features enabled. Used for logging
+        uint32_t detection_bitmask_if_everything_enabled;
+
+        // notify GCS timer so we dont's spam
+        uint32_t detect_notify_gcs_last_ms;
+
+        AP_Int32 detection_bitmask;
+    } stall_state;
+
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 	
@@ -1086,6 +1135,7 @@ private:
         Failsafe_Action_QLand     = 4,
         Failsafe_Action_Parachute = 5
     };
+
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
