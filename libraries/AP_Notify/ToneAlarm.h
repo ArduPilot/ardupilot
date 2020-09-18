@@ -59,6 +59,7 @@ private:
         uint16_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
         uint16_t failsafe_radio        : 1;    // 1 if radio failsafe
         uint16_t failsafe_gcs          : 1;    // 1 if gcs failsafe
+        uint16_t failsafe_ekf          : 1;    // 1 if ekf failsafe
         uint16_t vehicle_lost          : 1;    // 1 if lost copter tone requested
         uint16_t compass_cal_running   : 1;    // 1 if compass calibration is running
         uint16_t waiting_for_throw     : 1;    // 1 if waiting for copter throw launch
