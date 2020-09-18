@@ -191,6 +191,10 @@ void Copter::failsafe_ekf_event()
             set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             break;
     }
+
+    // set true if ekf action is triggered
+    AP_Notify::flags.failsafe_ekf = true;
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
@@ -202,6 +206,10 @@ void Copter::failsafe_ekf_off_event(void)
     }
 
     failsafe.ekf = false;
+    if (AP_Notify::flags.failsafe_ekf) {
+        AP_Notify::flags.failsafe_ekf = false;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
+    }
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
