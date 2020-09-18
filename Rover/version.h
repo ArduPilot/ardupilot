@@ -15,3 +15,5 @@
 #define FW_MINOR 1
 #define FW_PATCH 0
 #define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
+
+#include <AP_Common/AP_FWVersionDefine.h>
