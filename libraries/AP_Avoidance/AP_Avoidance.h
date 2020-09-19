@@ -27,6 +27,8 @@
 
 #include <AP_ADSB/AP_ADSB.h>
 
+#if HAL_ADSB_ENABLED
+
 #define AP_AVOIDANCE_STATE_RECOVERY_TIME_MS                 2000    // we will not downgrade state any faster than this (2 seconds)
 
 #define AP_AVOIDANCE_ESCAPE_TIME_SEC                        2       // vehicle runs from thread for 2 seconds
@@ -229,3 +231,6 @@ float closest_approach_z(const Location &my_loc,
 namespace AP {
     AP_Avoidance *ap_avoidance();
 };
+
+#endif
+

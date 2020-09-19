@@ -1,5 +1,7 @@
 #include "AP_Avoidance.h"
 
+#if HAL_ADSB_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 #include <limits>
@@ -680,3 +682,5 @@ AP_Avoidance *ap_avoidance()
 }
 
 }
+
+#endif // HAL_ADSB_ENABLED
