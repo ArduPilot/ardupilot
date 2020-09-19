@@ -1,26 +1,11 @@
-#pragma once
-/**
- *
-    _____            .___   __________.__.__          __
-  /  _  \_______  __| _/_ _\______   \__|  |   _____/  |_
- /  /_\  \_  __ \/ __ |  |  \     ___/  |  |  /  _ \   __\
-/    |    \  | \/ /_/ |  |  /    |   |  |  |_(  <_> )  |
-\____|__  /__|  \____ |____/|____|   |__|____/\____/|__|
-        \/           \/
-*
-*
-* */
-
-
 #include "AP_SmartAudio.h"
+#include <AP_Math/crc.h>
 
-#include <stdio.h>
-
-#define AP_VTX_DEV_MODE     // DEV TESTS ACTIVATE
+//#define AP_VTX_DEV_MODE     // DEV TESTS ACTIVATE
 #ifdef AP_VTX_DEV_MODE
 # define debug(fmt, args...)	hal.console->printf("\t':-), " fmt "\n", ##args)
 #else
-# define debug(fmt, args...)	do {} while(0)
+//# define debug(fmt, args...)	do {} while(0)
 #endif
 
 extern const AP_HAL::HAL &hal;
@@ -70,7 +55,7 @@ bool AP_SmartAudio::init()
 {
 
     if(smartaudio_params.enabled.get()==0){
-        debug("SmartAudio protocol it's not active");
+        //debug("SmartAudio protocol it's not active");
         return false;
     }
 
@@ -85,9 +70,9 @@ bool AP_SmartAudio::init()
             }
 
         // setup port options
-        _port->set_stop_bits(AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS);
-        _port->set_flow_control(AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL);
-        _port->set_options(AP_SERIALMANAGER_SMARTAUDIO_OPTIONS);
+        _port->set_stop_bits(2);
+        //_port->set_flow_control(AP_HAL::UAR );
+        //_port->set_options(AP_SERIALMANAGER_SMARTAUDIO_OPTIONS);
       
 
         return true;
@@ -119,7 +104,7 @@ void AP_SmartAudio::loop(){
 
         // Proccess response in the next 200 milis from the request are sent.
         if(_now-last_request_sended_at>100 && _now-last_request_sended_at<=1200 && is_waiting_response){
-            printf("\n%20s %d and %d ms more","I'M WAITING RESPONSE SINCE",last_request_sended_at,1200-(_now-last_request_sended_at));
+            //printf("\n%20s %d and %d ms more","I'M WAITING RESPONSE SINCE",last_request_sended_at,1200-(_now-last_request_sended_at));
             // allocate response buffer
             uint8_t _response_buffer[AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX];
             // setup to zero because the
@@ -138,7 +123,7 @@ void AP_SmartAudio::loop(){
             last_request_sended_at=AP_HAL::millis();
             is_waiting_response=true;
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
-            printf(" delay: %d",100);
+            //printf(" delay: %d",100);
             hal.scheduler->delay(100);
         }
 
@@ -194,12 +179,13 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame,uint8_t size)
 {
 
     if (size<=0) {
-        debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
-        printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
+        //debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
+        //printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, REQUEST IS EMPTY");
+        return;
     }
     if (_port==nullptr) {
-        debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
-        printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
+        //debug("%s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
+        //printf("ERROR - %s HW: %s",TAG,"CANNOT SEND REQUEST, UART NOT CONNECTED");
         return;
     }
 
@@ -209,9 +195,9 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame,uint8_t size)
     // write request
     for (int i = 0; i < size; ++i) {
         _port->write(request[i]);
-         printf("\n REQ-SEND bytes:%02X",request[i]);
+         //printf("\n REQ-SEND bytes:%02X",request[i]);
     }
-    printf("-------------->");print_bytes_to_hex_string(request,size);
+    //printf("-------------->");print_bytes_to_hex_string(request,size);
 }
 
 /**
@@ -226,19 +212,19 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer
 
     // check if it is a response in the wire
     if (_incoming_bytes_count < 1) {
-        debug("%s HW: %s",TAG,"EMPTY WIRE");
-        printf(" WARNING - %s HW: %s",TAG,"EMPTY WIRE");
+       // debug("%s HW: %s",TAG,"EMPTY WIRE");
+       // printf(" WARNING - %s HW: %s",TAG,"EMPTY WIRE");
         return;
     }
 
-    printf("\n READ RESPONSE incoming_bytes_count:%d",_incoming_bytes_count);
+    //printf("\n READ RESPONSE incoming_bytes_count:%d",_incoming_bytes_count);
     for (int i = 0; i < _incoming_bytes_count; ++i) {
         uint8_t _response_in_bytes = _port->read();
-        printf("\n READ RESPONSE _response_in_bytes:%02X",_response_in_bytes);
+       // printf("\n READ RESPONSE _response_in_bytes:%02X",_response_in_bytes);
         if ((inline_buffer_length == 0 && _response_in_bytes != SMARTAUDIO_SYNC_BYTE)
             || (inline_buffer_length == 1 && _response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
             inline_buffer_length = 0;
-        } else if (inline_buffer_length < AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX) {
+        } else if (inline_buffer_length < 16) {
             response_buffer[inline_buffer_length++] = _response_in_bytes;
         }
     }
@@ -263,8 +249,9 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer
     uint8_t crc = response_buffer[inline_buffer_length-1];
     if (crc != crc8_dvb_s2(*response_buffer, inline_buffer_length-1)) {
         // crc missmatch
-        debug("%s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
-        printf(" ERROR - %s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
+       // debug("%s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
+       // printf(" ERROR - %s HW: %s",TAG,"BAD CRC CHECK IN RESPONSE");
+       return;
 
     } else {
         parse_frame_response(response_buffer);
@@ -284,8 +271,8 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         smartaudioSettings_t _vtx_settings;
         // process response buffer
         if(!smartaudioParseResponseBuffer(&_vtx_settings,buffer)){
-            printf("%20s","Unparseable buffer response");
-             print_bytes_to_hex_string(const_cast<uint8_t*>(buffer),sizeof(buffer));
+        //    printf("%20s","Unparseable buffer response");
+        //     print_bytes_to_hex_string(const_cast<uint8_t*>(buffer),sizeof(buffer));
             return false;
         }
 
@@ -368,8 +355,8 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         return true;
     }
 
-    debug("%s HW: %s",TAG,"EMPTY RESPONSE");
-    printf("%s HW: %s",TAG,"EMPTY RESPONSE");
+   // debug("%s HW: %s",TAG,"EMPTY RESPONSE");
+   // printf("%s HW: %s",TAG,"EMPTY RESPONSE");
 
     return false;
 }
@@ -466,7 +453,7 @@ uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_leve
  * */
 void AP_SmartAudio::request_settings()
 {
-    printf("\n%20s::request_settings()\t",TAG);
+   // printf("\n%20s::request_settings()\t",TAG);
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetSettings(&request);
     packet command;
@@ -483,9 +470,9 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
     // peek from buffer
    vtx_states_queue.peek(&_current_state,1);
 
-    printf("\n%80s::set_operation_mode(%02X)\t",TAG,mode);
+  //  printf("\n%80s::set_operation_mode(%02X)\t",TAG,mode);
     if (_current_state.version<2) {
-        debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
+  //      debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
         return;
     }
     smartaudioSettings_t settings;
@@ -510,7 +497,7 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
      */
 void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
 {
-    printf("%80s::set_frequency(%d,%d)\t",TAG,frecuency,isPitModeFreq);
+   // printf("%80s::set_frequency(%d,%d)\t",TAG,frecuency,isPitModeFreq);
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameSetFrequency(&request,frecuency,isPitModeFreq);
     packet command;
@@ -521,7 +508,7 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
 
 // enqueue a set channel request
 void AP_SmartAudio::set_channel(uint8_t chan_idx){
-        printf("\n%80s::set_channel(%d)\t",TAG,chan_idx);
+     //   printf("\n%80s::set_channel(%d)\t",TAG,chan_idx);
         smartaudioFrame_t request;
         uint8_t frame_size=smartaudioFrameSetChannel(&request,chan_idx);
          packet command;
@@ -534,7 +521,7 @@ void AP_SmartAudio::set_channel(uint8_t chan_idx){
  * Request pitMode Frequency setted into the vtx hardware
  * */
 void AP_SmartAudio::get_pit_mode_frequency(){
-    printf("%80s::","get_pit_mode_frequency()\t");
+ //   printf("%80s::","get_pit_mode_frequency()\t");
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetPitmodeFrequency(&request);
     packet command;
@@ -555,7 +542,7 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
     smartaudioFrame_t request;
     uint8_t frame_size=0;
 
-    printf("\n%80s::set_power_dbm(%d)\t",TAG,power);
+ //   printf("\n%80s::set_power_dbm(%d)\t",TAG,power);
     frame_size=smartaudioFrameSetPower(&request,_get_power_level_from_dbm(_current_state.version,power));
      packet command;
      command.frame=request;
@@ -627,17 +614,6 @@ uint8_t AP_SmartAudio::_get_power_level_from_dbm(uint8_t sma_version,uint8_t pow
      return 0;
 
 }
-
-
-
-
-//          __________        __         ___________.__  .__       .__     __
-//          \______   \ _____/  |______  \_   _____/|  | |__| ____ |  |___/  |_
-//          |    |  _// __ \   __\__  \  |    __)  |  | |  |/ ___\|  |  \   __\
-//          |    |   \  ___/|  |  / __ \_|     \   |  |_|  / /_/  >   Y  \  |
-//          |______  /\___  >__| (____  /\___  /   |____/__\___  /|___|  /__|
-//          \/     \/          \/     \/           /_____/      \/
-
 
 /*
  * This file is part of Cleanflight and Betaflight.
@@ -796,32 +772,33 @@ size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const
     return sizeof(smartaudioU8Frame_t);
 }
 
- /**
-     *
-     * */
-    void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
-    {
-        int i;
-        for (i = 0; i < x; i++) {
-            if (i > 0) {
-                printf(":");
-            }
-            printf("%02X", buf[i]);
-        }
-        printf("\n");
-    }
+//  /**
+//      *
+//      * */
+//     void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
+//     {
+//         int i;
+//         for (i = 0; i < x; i++) {
+//             if (i > 0) {
+//      //           printf(":");
+//                 break;
+//             }
+//             //printf("%02X", buf[i]);
+//         }
+//        // printf("\n");
+//     }
 
 bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
 {
-    print_bytes_to_hex_string(const_cast <uint8_t*>(buffer),16);
+  //  print_bytes_to_hex_string(const_cast <uint8_t*>(buffer),16);
 
     const smartaudioFrameHeader_t *header = (const smartaudioFrameHeader_t *)buffer;
     const uint8_t fullFrameLength = sizeof(smartaudioFrameHeader_t) + header->length;
     const uint8_t headerPayloadLength = fullFrameLength - 1; // subtract crc byte from length
     const uint8_t *startPtr = buffer + 2;
     const uint8_t *endPtr = buffer + headerPayloadLength;
-    printf(" CRC BYTE:%02X",*endPtr);
-    printf(" CRC CHECK:%02X\n",crc8_dvb_s2_update(0x00,startPtr, headerPayloadLength-2));
+   // printf(" CRC BYTE:%02X",*endPtr);
+   // printf(" CRC CHECK:%02X\n",crc8_dvb_s2_update(0x00,startPtr, headerPayloadLength-2));
     if (crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr) || header->headerByte != SMARTAUDIO_HEADER_BYTE || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
         return false;
     }

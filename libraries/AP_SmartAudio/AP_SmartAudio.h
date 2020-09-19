@@ -13,7 +13,6 @@
 #define SMARTAUDIO_BUFFER_CAPACITY 5
 
 #include "smartaudio_protocol.h"
-#include "AP_Vtx_Params.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_RCTelemetry/AP_VideoTX.h>
@@ -106,17 +105,17 @@ public:
     /**
      *
      * */
-    void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
-    {
-        int i;
-        for (i = 0; i < x; i++) {
-            if (i > 0) {
-                printf(":");
-            }
-            printf("%02X", buf[i]);
-        }
-        printf("\n");
-    }
+    // void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
+    // {
+    //     int i;
+    //     for (i = 0; i < x; i++) {
+    //         if (i > 0) {
+    //             printf(":");
+    //         }
+    //         printf("%02X", buf[i]);
+    //     }
+    //     printf("\n");
+    // }
 
        // utility method to get power in dbm unit from the settled power level
     static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm);

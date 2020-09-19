@@ -20,12 +20,6 @@
 
 #pragma once
 
-// NOT AVAILABLE IN AP
-//#include "drivers/serial.h"
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_Math/crc.h>
-
-
 #define SMARTAUDIO_SYNC_BYTE            0xAA
 #define SMARTAUDIO_HEADER_BYTE          0x55
 #define SMARTAUDIO_START_CODE           SMARTAUDIO_SYNC_BYTE + SMARTAUDIO_HEADER_BYTE
