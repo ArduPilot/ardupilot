@@ -105,13 +105,11 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
+
 // SmartAudio Protocol
 #define AP_SERIALMANAGER_SMARTAUDIO_BAUD            4800
-#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX      16
-#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX      16
-#define AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS       2
-#define AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL    AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE
-#define AP_SERIALMANAGER_SMARTAUDIO_OPTIONS         AP_HAL::UARTDriver::OPTION_HDPLEX
+#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX      0
+#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX      0
 
 
 class AP_SerialManager {
@@ -159,7 +157,7 @@ public:
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
         SerialProtocol_Sagetech = 34,
-        SerialProtocol_SmartAudio=35
+        SerialProtocol_SmartAudio=35,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
