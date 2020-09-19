@@ -842,6 +842,10 @@ group_build.add_option("-N", "--no-rebuild",
                        action='store_true',
                        default=False,
                        help="don't rebuild before starting ardupilot")
+group_build.add_option("--only-build", 
+                       action="store_true", 
+                       default=False, 
+                       help="build ardupilot without start")
 group_build.add_option("-D", "--debug",
                        action='store_true',
                        default=False,
@@ -1070,7 +1074,7 @@ group_sim.add_option("--mav_host",
 group_sim.add_option("--sim_host",
                      type='string',
                      default="127.0.0.1",
-                     help="simulation host")                              
+                     help="simulation host") 
 parser.add_option_group(group_sim)
 
 
@@ -1325,10 +1329,11 @@ else:
         print("Vehicle binary (%s) does not exist" % (vehicle_binary,))
         sys.exit(1)
 
-    start_vehicle(vehicle_binary,
-                  cmd_opts,
-                  frame_infos,
-                  spawns=spawns)
+    if not cmd_opts.only_build:
+        start_vehicle(vehicle_binary,
+                    cmd_opts,
+                    frame_infos,
+                    spawns=spawns)
 
 
 if cmd_opts.delay_start:
@@ -1390,17 +1395,18 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
     run_in_terminal_window('SCRIMMAGE', ['scrimmage', tmp[1]])
 
 
-if cmd_opts.delay_start:
+if cmd_opts.delay_start and not cmd_opts.only_build:
     progress("Sleeping for %f seconds" % (cmd_opts.delay_start,))
     time.sleep(float(cmd_opts.delay_start))
 
 try:
-    if cmd_opts.no_mavproxy:
-        time.sleep(3)  # output our message after run_in_terminal_window.sh's
-        progress("Waiting for SITL to exit")
-        wait_unlimited()
-    else:
-        start_mavproxy(cmd_opts, frame_infos)
+    if not cmd_opts.only_build:
+        if cmd_opts.no_mavproxy:
+            time.sleep(3)  # output our message after run_in_terminal_window.sh's
+            progress("Waiting for SITL to exit")
+            wait_unlimited()
+        else:
+            start_mavproxy(cmd_opts, frame_infos)
 except KeyboardInterrupt:
     progress("Keyboard Interrupt received ...")
 
