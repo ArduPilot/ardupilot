@@ -14,6 +14,9 @@
  */
 
 #include "AP_ADSB_Sagetech.h"
+
+#if HAL_ADSB_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RTC/AP_RTC.h>
@@ -747,5 +750,7 @@ const char* AP_ADSB_Sagetech::systemStatsBits_to_str(const SystemStateBits syste
     default: return "Unknown";
     }
 }
+
+#endif // HAL_ADSB_ENABLED
 
 
