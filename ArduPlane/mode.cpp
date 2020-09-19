@@ -72,8 +72,9 @@ bool Mode::enter()
 
         // start with throttle suppressed in auto_throttle modes
         plane.throttle_suppressed = plane.auto_throttle_mode;
-
+#if HAL_ADSB_ENABLED
         plane.adsb.set_is_auto_mode(plane.auto_navigation_mode);
+#endif
 
         // reset steering integrator on mode change
         plane.steerController.reset_I();

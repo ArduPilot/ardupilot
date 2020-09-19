@@ -434,8 +434,10 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         break;
 
     case MSG_ADSB_VEHICLE:
+#if HAL_ADSB_ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
+#endif
         break;
 
     case MSG_AOA_SSA:
@@ -708,7 +710,9 @@ MAV_RESULT GCS_MAVLINK_Plane::_handle_command_preflight_calibration(const mavlin
 void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
                                        const mavlink_message_t &msg)
 {
+#if HAL_ADSB_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -1475,7 +1479,9 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
+#if HAL_ADSB_ENABLED    
         plane.adsb.handle_message(chan, msg);
+#endif
         break;
 
     default:
