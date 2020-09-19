@@ -16,6 +16,8 @@
 
 #include "AP_ADSB.h"
 
+#if HAL_ADSB_ENABLED
+
 class AP_ADSB_Backend
 {
 public:
@@ -41,3 +43,5 @@ protected:
 private:
 
 };
+
+#endif // HAL_ADSB_ENABLED
