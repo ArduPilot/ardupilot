@@ -108,7 +108,9 @@
 
 #include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
+#if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
+#endif
 #include "AP_Arming.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -632,11 +634,12 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
             FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
             FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
-
+#if HAL_ADSB_ENABLED
     AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vheicles)
     AP_Avoidance_Plane avoidance_adsb{adsb};
+#endif
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
