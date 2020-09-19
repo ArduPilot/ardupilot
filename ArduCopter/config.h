@@ -253,12 +253,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// ADSB support
-#ifndef ADSB_ENABLED
-# define ADSB_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
  # define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
@@ -731,7 +725,7 @@
   #error SmartRTL requires ModeRTL which is disabled
 #endif
 
-#if ADSB_ENABLED && !MODE_GUIDED_ENABLED
+#if HAL_ADSB_ENABLED && !MODE_GUIDED_ENABLED
   #error ADSB requires ModeGuided which is disabled
 #endif
 
