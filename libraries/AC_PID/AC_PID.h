@@ -77,6 +77,7 @@ public:
     AP_Float &kP() { return _kp; }
     AP_Float &kI() { return _ki; }
     AP_Float &kD() { return _kd; }
+    AP_Float &kIMAX() { return _kimax; }
     AP_Float &ff() { return _kff;}
     AP_Float &filt_T_hz() { return _filt_T_hz; }
     AP_Float &filt_E_hz() { return _filt_E_hz; }
