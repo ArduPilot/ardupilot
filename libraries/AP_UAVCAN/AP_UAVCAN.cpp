@@ -750,6 +750,7 @@ void AP_UAVCAN::handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Butto
  */
 void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb)
 {
+#if HAL_ADSB_ENABLED
     AP_ADSB *adsb = AP::ADSB();
     if (!adsb || !adsb->enabled()) {
         // ADSB not enabled
@@ -809,6 +810,7 @@ void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, con
 
     vehicle.last_update_ms = AP_HAL::native_millis() - (vehicle.info.tslc * 1000);
     adsb->handle_adsb_vehicle(vehicle);
+#endif
 }
 
 /*
