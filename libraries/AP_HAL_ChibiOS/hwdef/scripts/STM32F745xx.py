@@ -28,8 +28,8 @@ mcu = {
     # this board has M7 instructions, but single precision only FPU
     # we build as m4 as it makes for a smaller build, and given the 1M
     # flash limit we care more about size
-    'CORTEX'    : 'cortex-m4',
-    'CPU_FLAGS' : '-mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard'
+    'CORTEX'    : 'cortex-m7',
+    'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 }
 
 DMA_Map = {
