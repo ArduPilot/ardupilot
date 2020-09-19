@@ -15,6 +15,7 @@
 
 #include "AP_ADSB_Backend.h"
 
+#if HAL_ADSB_ENABLED
 /*
   base class constructor.
   This incorporates initialisation as well.
@@ -23,4 +24,6 @@ AP_ADSB_Backend::AP_ADSB_Backend(AP_ADSB &_frontend) :
     frontend(_frontend)
 {
 }
+
+#endif // HAL_ADSB_ENABLED
 
