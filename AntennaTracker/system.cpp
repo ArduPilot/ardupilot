@@ -247,6 +247,7 @@ bool Tracker::should_log(uint32_t mask)
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
-
+#if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
+#endif
