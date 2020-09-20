@@ -36,6 +36,8 @@ const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEFAULTS",     3, AP_SmartAudio::configured_smartaudio_params, setup_defaults, 0),
 
+    AP_GROUPEND
+
 };
 /**
  * Constructor
