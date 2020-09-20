@@ -220,10 +220,10 @@ public:
 
     // CAN Peripheral register structure
     static constexpr bxcan::CanType* const Can[HAL_NUM_CAN_IFACES] = {
-        reinterpret_cast<bxcan::CanType*>(0x40006400)
+        reinterpret_cast<bxcan::CanType*>(uintptr_t(0x40006400U))
 #if HAL_NUM_CAN_IFACES > 1
         ,
-        reinterpret_cast<bxcan::CanType*>(0x40006800)
+        reinterpret_cast<bxcan::CanType*>(uintptr_t(0x40006800U))
 #endif
     };
 };
