@@ -206,6 +206,47 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+    // @Param: YAW_SV_PIN
+    // @DisplayName: Tricopter Yaw Servo analogue feedback pin
+    // @Description: Tricopter Yaw Servo analogue feedback pin
+    // @User: Standard
+    // @Values: 11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:PixhawkAUX1,51:PixhawkAUX2,52:PixhawkAUX3,53:PixhawkAUX4,54:PixhawkAUX5,55:PixhawkAUX6,103:Pixhawk SBUS
+    AP_GROUPINFO_FRAME("YAW_SV_PIN", 43, AP_MotorsMulticopter, _yaw_servo_pin, 0, AP_PARAM_FRAME_TRICOPTER),
+
+    // @Param: YAW_SV_MIN_V
+    // @DisplayName: Tricopter Yaw Servo analogue feedback min voltage
+    // @Description: The Voltage measured when the yaw servo is at is min position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO_FRAME("YAW_SV_MIN_V", 44, AP_MotorsMulticopter, _yaw_servo_min_voltage, 0, AP_PARAM_FRAME_TRICOPTER),
+
+    // @Param: YAW_SV_MID_V
+    // @DisplayName: Tricopter Yaw Servo analogue feedback trim voltage
+    // @Description: The Voltage measured when the yaw servo is at is trim position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO_FRAME("YAW_SV_MID_V", 45, AP_MotorsMulticopter, _yaw_servo_mid_voltage, 0, AP_PARAM_FRAME_TRICOPTER),
+
+    // @Param: YAW_SV_MAX_V
+    // @DisplayName: Tricopter Yaw Servo analogue feedback max voltage
+    // @Description: The Voltage measured when the yaw servo is at is max position
+    // @Units: V
+    // @Increment: 0.01
+    // @Range: 0 5.0
+    // @User: Standard
+    AP_GROUPINFO_FRAME("YAW_SV_MAX_V", 46, AP_MotorsMulticopter, _yaw_servo_max_voltage, 0, AP_PARAM_FRAME_TRICOPTER),
+
+    // @Param: YAW_SV_SPEED
+    // @DisplayName: Tricopter Yaw Servo analogue feedback pin
+    // @Description: The speed the yaw servo moves at, set to -1 to calibrate speed and voltages
+    // @User: Standard
+    // @Units: deg/s
+    AP_GROUPINFO_FRAME("YAW_SV_SPEED", 47, AP_MotorsMulticopter, _yaw_servo_speed, 0, AP_PARAM_FRAME_TRICOPTER),
+
     AP_GROUPEND
 };
 
