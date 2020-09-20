@@ -143,6 +143,7 @@ int __wrap_scanf(const char *fmt, ...)
 }
 
 extern "C" {
-    // alias fiprintf() to fprintf(). This saves flash space
-    int __wrap_fiprintf(const char *fmt, ...) __attribute__((alias("__wrap_fprintf")));
+    // empty function fiprintf(), saves flash space for unused code path
+    int __wrap_fiprintf(const char *fmt, ...);
+    int __wrap_fiprintf(const char *fmt, ...) { return -1; }
 }
