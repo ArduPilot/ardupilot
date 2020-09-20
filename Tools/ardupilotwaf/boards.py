@@ -628,6 +628,8 @@ class chibios(Board):
         gcc_whitelist = [
             ('4','9','3'),
             ('6','3','1'),
+            ('9','2','1'),
+            ('9','3','1'),
         ]
 
         if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
