@@ -1448,7 +1448,7 @@ struct PACKED log_PSC {
 // @Field: CurrTot: current * time
 // @Field: EnrgTot: energy this battery has produced
 // @Field: Temp: measured temperature
-// @Field: Res: estimated temperature resistance
+// @Field: Res: estimated battery resistance
 
 // @LoggerMessage: BCL
 // @Description: Battery cell voltage information
