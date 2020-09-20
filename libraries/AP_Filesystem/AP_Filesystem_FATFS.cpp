@@ -751,7 +751,7 @@ struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
         return nullptr;
     }
     len = strlen(fno.fname);
-    strncpy(d->de.d_name,fno.fname,len);
+    strncpy_noterm(d->de.d_name,fno.fname,len);
     d->de.d_name[len] = 0;
     if (fno.fattrib & AM_DIR) {
         d->de.d_type = DT_DIR;
