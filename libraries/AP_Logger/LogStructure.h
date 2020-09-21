@@ -648,6 +648,7 @@ struct PACKED log_VisualPosition {
     float pos_err;  // meters
     float ang_err;  // radians
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_VisualVelocity {
@@ -660,6 +661,7 @@ struct PACKED log_VisualVelocity {
     float vel_z;
     float vel_err;
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_ekfBodyOdomDebug {
@@ -2268,7 +2270,8 @@ struct PACKED log_PSC {
 // @Field: Yaw: Yaw angle
 // @Field: PErr: Position estimate error
 // @Field: AErr: Attitude estimate error
-// @Field: RstCnt: Position reset counter
+// @Field: Rst: Position reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: VISV
 // @Description: Vision Velocity
@@ -2279,7 +2282,8 @@ struct PACKED log_PSC {
 // @Field: VY: Velocity Y-axis (East-West)
 // @Field: VZ: Velocity Z-axis (Down-Up)
 // @Field: VErr: Velocity estimate error
-// @Field: RstCnt: Velocity reset counter
+// @Field: Rst: Velocity reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -2685,9 +2689,9 @@ struct PACKED log_PSC {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
+      "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
