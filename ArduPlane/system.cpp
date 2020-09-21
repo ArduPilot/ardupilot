@@ -459,12 +459,14 @@ void Plane::update_dynamic_notch()
     }
 
     switch (ins.get_gyro_harmonic_notch_tracking_mode()) {
-        case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
+        case HarmonicNotchDynamicMode::UpdateThrottle: { // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
-            if (quadplane.available()) {
-                ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(quadplane.motors->get_throttle_out() / ref)));
+            AP_Motors* motors = AP::motors();
+            if (motors != nullptr && motors->in_use()) {
+                ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(motors->get_throttle_out() / ref)));
             }
             break;
+        }
 
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
             float rpm;

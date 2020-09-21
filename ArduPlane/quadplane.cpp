@@ -1578,6 +1578,7 @@ void QuadPlane::update_transition(void)
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
         assisted_flight = false;
+        motors->set_in_use(false);
         return;
     }
 
@@ -1609,6 +1610,7 @@ void QuadPlane::update_transition(void)
         (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
         // the quad should provide some assistance to the plane
         assisted_flight = true;
+        motors->set_in_use(true);
         if (!is_tailsitter()) {
             // update tansition state for vehicles using airspeed wait
             if (transition_state != TRANSITION_AIRSPEED_WAIT) {
@@ -1621,6 +1623,7 @@ void QuadPlane::update_transition(void)
         }
     } else {
         assisted_flight = false;
+        motors->set_in_use(false);
     }
 
     if (is_tailsitter()) {
@@ -1675,6 +1678,7 @@ void QuadPlane::update_transition(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         assisted_flight = true;
+        motors->set_in_use(true);
 
         // do not allow a climb on the quad motors during transition
         // a climb would add load to the airframe, and prolongs the
@@ -1730,6 +1734,7 @@ void QuadPlane::update_transition(void)
             throttle_scaled = 0.01;
         }
         assisted_flight = true;
+        motors->set_in_use(true);
         hold_stabilize(throttle_scaled);
 
         // set desired yaw to current yaw in both desired angle and
@@ -1744,6 +1749,7 @@ void QuadPlane::update_transition(void)
     case TRANSITION_ANGLE_WAIT_FW: {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         assisted_flight = true;
+        motors->set_in_use(true);
         // calculate transition rate in degrees per
         // millisecond. Assume we want to get to the transition angle
         // in half the transition time
@@ -1829,6 +1835,7 @@ void QuadPlane::update(void)
         const uint32_t now = AP_HAL::millis();
 
         assisted_flight = false;
+        motors->set_in_use(false);
 
         // output to motors
         motors_output();
@@ -1850,6 +1857,7 @@ void QuadPlane::update(void)
             if (assistance_safe() && (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE ||
                 (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED && assistance_needed(aspeed, have_airspeed)))) {
                 assisted_flight = true;
+                motors->set_in_use(true);
             }
             if (tailsitter_transition_vtol_complete()) {
                 /*
