@@ -244,7 +244,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value
     // @Description: The PWM level in microseconds on channel 3 below which throttle failsafe triggers
-    // @Range: 925 1100
+    // @Range: 910 1100
     // @Units: PWM
     // @Increment: 1
     // @User: Standard
