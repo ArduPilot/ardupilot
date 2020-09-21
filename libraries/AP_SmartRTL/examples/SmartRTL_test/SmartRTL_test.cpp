@@ -129,4 +129,7 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
     }
 }
 
+// gcc9 produces a large frame
+#pragma GCC diagnostic ignored "-Wframe-larger-than="
+
 AP_HAL_MAIN();
