@@ -51,6 +51,7 @@ public:
         SITL    = 10,
         MorseSITL = 11,
         AirSimSITL = 12,
+        GazeboSITL = 13,
 #endif
     };
 
