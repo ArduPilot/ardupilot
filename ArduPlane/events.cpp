@@ -164,6 +164,11 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_Land:
             if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland) {
                 // never stop a landing if we were already committed
+                if (plane.mission.is_best_land_sequence()) {
+                    // continue mission as it will reach a landing in less distance
+                    plane.mission.set_in_landing_sequence_flag(true);
+                    break;
+                }
                 if (plane.mission.jump_to_landing_sequence()) {
                     plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE);
                     break;
@@ -171,8 +176,13 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
         case Failsafe_Action_RTL:
-            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland ) {
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND && control_mode != &mode_qland && !quadplane.in_vtol_land_sequence()) {
                 // never stop a landing if we were already committed
+                if (g.rtl_autoland == 2 && plane.mission.is_best_land_sequence()) {
+                    // continue mission as it will reach a landing in less distance
+                    plane.mission.set_in_landing_sequence_flag(true);
+                    break;
+                }
                 set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
             }
@@ -184,7 +194,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             snprintf(battery_type_str, 17, "%s battery", type_str);
             afs.gcs_terminate(true, battery_type_str);
 #else
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
             break;
 

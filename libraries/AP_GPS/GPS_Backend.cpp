@@ -252,7 +252,12 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         const uint32_t gps_min_period_ms = 50;
 
         // get the time the packet arrived on the UART
-        uint64_t uart_us = port->receive_time_constraint_us(msg_length);
+        uint64_t uart_us;
+        if (port) {
+            uart_us = port->receive_time_constraint_us(msg_length);
+        } else {
+            uart_us = AP_HAL::micros64();
+        }
 
         uint32_t now = AP_HAL::millis();
         uint32_t dt_ms = now - _last_ms;
@@ -287,5 +292,19 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // use msg arrival time, and correct for jitter
         uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
         state.uart_timestamp_ms = local_us / 1000U;
+
+        // look for lagged data from the GPS. This is meant to detect
+        // the case that the GPS is trying to push more data into the
+        // UART than can fit (eg. with GPS_RAW_DATA at 115200).
+        float expected_lag;
+        if (gps.get_lag(state.instance, expected_lag)) {
+            float lag_s = (now - state.uart_timestamp_ms) * 0.001;
+            if (lag_s > expected_lag+0.05) {
+                // more than 50ms over expected lag, increment lag counter
+                state.lagged_sample_count++;
+            } else {
+                state.lagged_sample_count = 0;
+            }
+        }
     }
 }

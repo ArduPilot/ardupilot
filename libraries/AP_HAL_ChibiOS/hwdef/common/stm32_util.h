@@ -78,8 +78,16 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
 iomode_t palReadLineMode(ioline_t line);
+
+enum PalPushPull {
+    PAL_PUSHPULL_NOPULL=0,
+    PAL_PUSHPULL_PULLUP=1,
+    PAL_PUSHPULL_PULLDOWN=2
+};
+
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp);
 #endif
 
 // set n RTC backup registers starting at given idx
@@ -99,6 +107,9 @@ void fault_printf(const char *fmt, ...);
 // halt hook for printing panic message
 void system_halt_hook(void);
 
+// hook for stack overflow
+void stack_overflow(thread_t *tp);
+    
 #ifdef __cplusplus
 }
 #endif

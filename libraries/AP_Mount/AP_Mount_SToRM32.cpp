@@ -1,7 +1,7 @@
 #include "AP_Mount_SToRM32.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -157,3 +157,4 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     // store time of send
     _last_send = AP_HAL::millis();
 }
+#endif // HAL_MOUNT_ENABLED

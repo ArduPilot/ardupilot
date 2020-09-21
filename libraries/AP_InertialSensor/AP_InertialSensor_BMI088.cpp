@@ -56,6 +56,9 @@
 #define REGG_FIFO_CONFIG_1 0x3E
 #define REGG_FIFO_DATA     0x3F
 
+#define ACCEL_BACKEND_SAMPLE_RATE   1600
+#define GYRO_BACKEND_SAMPLE_RATE    2000
+
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_BMI088::AP_InertialSensor_BMI088(AP_InertialSensor &imu,
@@ -94,17 +97,17 @@ AP_InertialSensor_BMI088::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI088::start()
 {
-    accel_instance = _imu.register_accel(1600, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI088));
-    gyro_instance = _imu.register_gyro(2000,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI088));
+    accel_instance = _imu.register_accel(ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI088));
+    gyro_instance = _imu.register_gyro(GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI088));
 
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
-    
+
     // setup callbacks
-    dev_accel->register_periodic_callback(1000000UL / 1600,
+    dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
                                           FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI088::read_fifo_accel, void));
-    dev_gyro->register_periodic_callback(1000000UL / 2000,
+    dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
                                          FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI088::read_fifo_gyro, void));
 }
 
@@ -220,10 +223,12 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    if (!dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6)) {
-        return false;
-    }
-    hal.scheduler->delay(10);
+    /* Soft-reset gyro
+        Return value of 'write_register()' is not checked.
+        This commands has the tendency to fail upon soft-reset.
+    */
+    dev_gyro->write_register(REGG_BGW_SOFTRESET, 0xB6);
+    hal.scheduler->delay(30);
 
     dev_gyro->setup_checked_registers(5, 20);
     

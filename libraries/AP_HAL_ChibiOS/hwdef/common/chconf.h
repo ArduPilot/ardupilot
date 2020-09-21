@@ -266,7 +266,7 @@
  * @note    Requires @p CH_CFG_USE_MUTEXES.
  */
 #if !defined(CH_CFG_USE_MUTEXES_RECURSIVE)
-#define CH_CFG_USE_MUTEXES_RECURSIVE        FALSE
+#define CH_CFG_USE_MUTEXES_RECURSIVE        TRUE
 #endif
 
 /**
@@ -575,7 +575,7 @@
  *          @p panic_msg variable set to @p NULL.
  */
 #if !defined(CH_DBG_ENABLE_STACK_CHECK)
-#define CH_DBG_ENABLE_STACK_CHECK           FALSE
+#define CH_DBG_ENABLE_STACK_CHECK           TRUE
 #endif
 
 /**
@@ -729,6 +729,15 @@
         system_halt_hook(); \
 } while(0)
 #endif
+
+/**
+ * @brief   stack overflow event hook.
+ * @details This hook is invoked when we have a stack overflow on task switch
+ */
+#define CH_CFG_STACK_OVERFLOW_HOOK(tp) {                                         \
+  extern void stack_overflow(thread_t *tp); \
+  stack_overflow(tp); \
+}
 
 /**
  * @brief   Trace hook.

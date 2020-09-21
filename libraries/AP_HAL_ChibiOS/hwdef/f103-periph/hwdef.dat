@@ -27,11 +27,9 @@ define CH_CFG_ST_FREQUENCY 1000
 # assume the 128k flash part for now
 FLASH_SIZE_KB 128
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER EMPTY USART1
+SERIAL_ORDER EMPTY EMPTY EMPTY USART1
 
 # a LED to flash
 PA4 LED OUTPUT LOW
@@ -133,14 +131,13 @@ define HAL_I2C_INTERNAL_MASK 0
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
+define HAL_WITH_DSP FALSE
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
-
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

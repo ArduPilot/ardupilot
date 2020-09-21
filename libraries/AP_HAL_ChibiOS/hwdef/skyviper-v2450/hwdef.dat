@@ -27,7 +27,7 @@ undef SDIO
 undef HAL_BOARD_LOG_DIRECTORY
 undef HAL_BOARD_TERRAIN_DIRECTORY
 
-UART_ORDER OTG1 UART4 USART2
+SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
 define HAL_RCINPUT_WITH_AP_RADIO 1
@@ -52,10 +52,13 @@ SPIDEV pixartflow SPI4 DEVID13 MPU_EXT_CS  MODE3  2*MHZ  2*MHZ
 
 # SPI2 for the cypress needs exclusive access or we will end up with
 # lost packets
-DMA_PRIORITY SPI2_*
+DMA_PRIORITY SPI2_* SPI* ADC*
 DMA_NOSHARE SPI2_*
 undef PA1
 PA1 UART4_RX UART4 NODMA
+
+# use flash storage
+define STORAGE_FLASH_PAGE 22
 
 env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
 

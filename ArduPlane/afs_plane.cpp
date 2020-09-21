@@ -53,7 +53,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     plane.quadplane.afs_terminate();
     
     // also disarm to ensure that ignition is cut
-    plane.arming.disarm();
+    plane.arming.disarm(AP_Arming::Method::AFS);
 }
 
 void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)

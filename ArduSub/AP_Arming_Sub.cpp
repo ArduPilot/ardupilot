@@ -139,8 +139,6 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     // finally actually arm the motors
     sub.motors.armed(true);
 
-    AP::logger().Write_Event(LogEvent::ARMED);
-
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
 
@@ -157,14 +155,14 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     return true;
 }
 
-bool AP_Arming_Sub::disarm()
+bool AP_Arming_Sub::disarm(const AP_Arming::Method method)
 {
     // return immediately if we are already disarmed
     if (!sub.motors.armed()) {
         return false;
     }
 
-    if (!AP_Arming::disarm()) {
+    if (!AP_Arming::disarm(method)) {
         return false;
     }
 
@@ -183,8 +181,6 @@ bool AP_Arming_Sub::disarm()
             }
         }
     }
-
-    AP::logger().Write_Event(LogEvent::DISARMED);
 
     // send disarm command to motors
     sub.motors.armed(false);

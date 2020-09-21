@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -55,7 +54,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     // This check can only be used when the vehicle is stationary
     const AP_GPS &gps = AP::gps();
 
-    const struct Location &gpsloc = gps.location(); // Current location
+    const struct Location &gpsloc = gps.location(preferred_gps); // Current location
     const float posFiltTimeConst = 10.0f; // time constant used to decay position drift
     // calculate time lapsed since last update and limit to prevent numerical errors
     float deltaTime = constrain_float(float(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);
@@ -83,18 +82,18 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    if (gps.have_vertical_velocity() && onGround) {
+    if (gps.have_vertical_velocity(preferred_gps) && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend->_fusionModeGPS == 0) && !gps.have_vertical_velocity()) {
+    } else if ((frontend->_fusionModeGPS == 0) && !gps.have_vertical_velocity(preferred_gps)) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
         // if we have a 3D fix with no vertical velocity and
         // EK3_GPS_TYPE=0 then change it to 1. It means the GPS is not
         // capable of giving a vertical velocity
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (gps.status(preferred_gps) >= AP_GPS::GPS_OK_FIX_3D) {
             frontend->_fusionModeGPS.set(1);
             gcs().send_text(MAV_SEVERITY_WARNING, "EK3: Changed EK3_GPS_TYPE to 1");
         }
@@ -136,7 +135,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     // fail if horiziontal position accuracy not sufficient
     float hAcc = 0.0f;
     bool hAccFail;
-    if (gps.horizontal_accuracy(hAcc)) {
+    if (gps.horizontal_accuracy(preferred_gps, hAcc)) {
         hAccFail = (hAcc > 5.0f*checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     } else {
         hAccFail =  false;
@@ -156,7 +155,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     // Check for vertical GPS accuracy
     float vAcc = 0.0f;
     bool vAccFail = false;
-    if (gps.vertical_accuracy(vAcc)) {
+    if (gps.vertical_accuracy(preferred_gps, vAcc)) {
         vAccFail = (vAcc > 7.5f * checkScaler)  && (frontend->_gpsCheck & MASK_GPS_POS_ERR);
     }
     // Report check result as a text string and bitmask
@@ -183,24 +182,24 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     }
 
     // fail if satellite geometry is poor
-    bool hdopFail = (gps.get_hdop() > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
+    bool hdopFail = (gps.get_hdop(preferred_gps) > 250)  && (frontend->_gpsCheck & MASK_GPS_HDOP);
 
     // Report check result as a text string and bitmask
     if (hdopFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * gps.get_hdop()));
+                           "GPS HDOP %.1f (needs 2.5)", (double)(0.01f * gps.get_hdop(preferred_gps)));
         gpsCheckStatus.bad_hdop = true;
     } else {
         gpsCheckStatus.bad_hdop = false;
     }
 
     // fail if not enough sats
-    bool numSatsFail = (gps.num_sats() < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
+    bool numSatsFail = (gps.num_sats(preferred_gps) < 6) && (frontend->_gpsCheck & MASK_GPS_NSATS);
 
     // Report check result as a text string and bitmask
     if (numSatsFail) {
         hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string),
-                           "GPS numsats %u (needs 6)", gps.num_sats());
+                           "GPS numsats %u (needs 6)", gps.num_sats(preferred_gps));
         gpsCheckStatus.bad_sats = true;
     } else {
         gpsCheckStatus.bad_sats = false;
@@ -266,7 +265,7 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
 
     // get the receivers reported speed accuracy
     float gpsSpdAccRaw;
-    if (!AP::gps().speed_accuracy(gpsSpdAccRaw)) {
+    if (!AP::gps().speed_accuracy(preferred_gps, gpsSpdAccRaw)) {
         gpsSpdAccRaw = 0.0f;
     }
 
@@ -326,9 +325,9 @@ void NavEKF3_core::detectFlight()
         bool largeHgtChange = false;
 
         // trigger at 8 m/s airspeed
-        if (_ahrs->airspeed_sensor_enabled()) {
-            const AP_Airspeed *airspeed = _ahrs->get_airspeed();
-            if (airspeed->get_airspeed() * AP::ahrs().get_EAS2TAS() > 10.0f) {
+        const auto *arsp = AP::airspeed();
+        if (arsp && arsp->healthy(selected_airspeed) && arsp->use(selected_airspeed)) {
+            if (arsp->get_airspeed(selected_airspeed) * _ahrs->get_EAS2TAS() > 10.0f) {
                 highAirSpd = true;
             }
         }
@@ -343,24 +342,18 @@ void NavEKF3_core::detectFlight()
             largeHgtChange = true;
         }
 
-        // Determine to a high certainty we are flying
-        if (motorsArmed && highGndSpd && (highAirSpd || largeHgtChange)) {
+        if (motorsArmed) {
             onGround = false;
-            inFlight = true;
-        }
-
-        // if is possible we are in flight, set the time this condition was last detected
-        if (motorsArmed && (highGndSpd || highAirSpd || largeHgtChange)) {
-            airborneDetectTime_ms = imuSampleTime_ms;
-            onGround = false;
-        }
-
-        // Determine to a high certainty we are not flying
-        // after 5 seconds of not detecting a possible flight condition or we are disarmed, we transition to on-ground mode
-        if(!motorsArmed || ((imuSampleTime_ms - airborneDetectTime_ms) > 5000)) {
+            if (highGndSpd && (highAirSpd || largeHgtChange)) {
+                // to a high certainty we are flying
+                inFlight = true;
+            }
+        } else {
+            // to a high certainty we are not flying
             onGround = true;
             inFlight = false;
         }
+
     } else {
         // Non fly forward vehicle, so can only use height and motor arm status
 
@@ -385,16 +378,13 @@ void NavEKF3_core::detectFlight()
 
             // If more than 5 seconds since likely_flying was set
             // true, then set inFlight true
-            if (_ahrs->get_time_flying_ms() > 5000) {
+            const AP_Vehicle *vehicle = AP::vehicle();
+            if (vehicle->get_time_flying_ms() > 5000) {
                 inFlight = true;
             }
         }
 
     }
-
-    // store current on-ground  and in-air status for next time
-    prevOnGround = onGround;
-    prevInFlight = inFlight;
 
     // Store vehicle height and range prior to takeoff for use in post takeoff checks
     if (onGround) {
@@ -411,30 +401,58 @@ void NavEKF3_core::detectFlight()
         }
     }
 
-}
+    // check if vehicle control code has told the EKF to prepare for takeoff or landing
+    // and if rotor-wash ground interaction is expected to cause Baro errors
+    expectGndEffectTakeoff = updateTakeoffExpected() && !assume_zero_sideslip();
+    updateTouchdownExpected();
 
-
-// determine if a takeoff is expected so that we can compensate for expected barometer errors due to ground effect
-bool NavEKF3_core::getTakeoffExpected()
-{
-    if (expectGndEffectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
-        expectGndEffectTakeoff = false;
+    // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
+    if (!prevOnGround && onGround) {
+        // landed so disable filter bank
+        EKFGSF_run_filterbank = false;
+    } else if (yawEstimator && !EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || expectTakeoff)) {
+        // started flying so reset counters and enable filter bank
+        EKFGSF_yaw_reset_ms = 0;
+        EKFGSF_yaw_reset_request_ms = 0;
+        EKFGSF_yaw_reset_count = 0;
+        EKFGSF_yaw_valid_count = 0;
+        EKFGSF_run_filterbank = true;
+        Vector3f gyroBias;
+        getGyroBias(gyroBias);
+        yawEstimator->setGyroBias(gyroBias);
     }
 
-    return expectGndEffectTakeoff;
+    // store current on-ground  and in-air status for next time
+    prevOnGround = onGround;
+    prevInFlight = inFlight;
+
+}
+
+// update and return the status that indicates takeoff is expected so that we can compensate for expected
+// barometer errors due to rotor-wash ground interaction and start the EKF-GSF yaw estimator prior to
+// takeoff movement
+bool NavEKF3_core::updateTakeoffExpected()
+{
+    if (expectTakeoff && imuSampleTime_ms - takeoffExpectedSet_ms > frontend->gndEffectTimeout_ms) {
+        expectTakeoff = false;
+    }
+
+    return expectTakeoff;
 }
 
 // called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to ground effect
+// causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
+// causes the EKF to start the EKF-GSF yaw estimator
 void NavEKF3_core::setTakeoffExpected(bool val)
 {
     takeoffExpectedSet_ms = imuSampleTime_ms;
-    expectGndEffectTakeoff = val;
+    expectTakeoff = val;
 }
 
 
-// determine if a touchdown is expected so that we can compensate for expected barometer errors due to ground effect
-bool NavEKF3_core::getTouchdownExpected()
+// update and return the status that indicates touchdown is expected so that we can compensate for expected
+// barometer errors due to rotor-wash ground interaction
+bool NavEKF3_core::updateTouchdownExpected()
 {
     if (expectGndEffectTouchdown && imuSampleTime_ms - touchdownExpectedSet_ms > frontend->gndEffectTimeout_ms) {
         expectGndEffectTouchdown = false;
@@ -453,10 +471,10 @@ void NavEKF3_core::setTouchdownExpected(bool val)
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
-// cannot be used as a height reference
+// cannot be used as a height reference. Use to prevent range finder operation otherwise
+// enabled by the combination of EK3_RNG_USE_HGT and EK3_RNG_USE_SPD parameters.
 void NavEKF3_core::setTerrainHgtStable(bool val)
 {
-    terrainHgtStableSet_ms = imuSampleTime_ms;
     terrainHgtStable = val;
 }
 

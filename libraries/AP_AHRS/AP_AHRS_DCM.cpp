@@ -473,6 +473,13 @@ bool AP_AHRS_DCM::use_compass(void)
     return true;
 }
 
+// return the quaternion defining the rotation from NED to XYZ (body) axes
+bool AP_AHRS_DCM::get_quaternion(Quaternion &quat) const
+{
+    quat.from_rotation_matrix(_dcm_matrix);
+    return true;
+}
+
 // yaw drift correction using the compass or GPS
 // this function prodoces the _omega_yaw_P vector, and also
 // contributes to the _omega_I.z long term yaw drift estimate
@@ -1039,40 +1046,38 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
 }
 
 // return an airspeed estimate if available
-bool AP_AHRS_DCM::airspeed_estimate(float *airspeed_ret) const
+bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
-    bool ret = false;
-    if (airspeed_sensor_enabled()) {
-        *airspeed_ret = _airspeed->get_airspeed();
-        return true;
-    }
+    return airspeed_estimate(_airspeed?_airspeed->get_primary():0, airspeed_ret);
+}
 
-    if (!_flags.wind_estimation) {
+// return an airspeed estimate from a specific airspeed sensor instance if available
+bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const
+{
+    if (airspeed_sensor_enabled(airspeed_index)) {
+        airspeed_ret = _airspeed->get_airspeed(airspeed_index);
+    } else if (_flags.wind_estimation && have_gps()) {
+        // estimate it via GPS speed and wind
+        airspeed_ret = _last_airspeed;
+    } else {
+        // give the last estimate, but return false. This is used by
+        // dead-reckoning code
+        airspeed_ret = _last_airspeed;
         return false;
     }
 
-    // estimate it via GPS speed and wind
-    if (have_gps()) {
-        *airspeed_ret = _last_airspeed;
-        ret = true;
-    }
-
-    if (ret && _wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
         const float gnd_speed = AP::gps().ground_speed();
-        float true_airspeed = *airspeed_ret * get_EAS2TAS();
+        float true_airspeed = airspeed_ret * get_EAS2TAS();
         true_airspeed = constrain_float(true_airspeed,
                                         gnd_speed - _wind_max,
                                         gnd_speed + _wind_max);
-        *airspeed_ret = true_airspeed / get_EAS2TAS();
+        airspeed_ret = true_airspeed / get_EAS2TAS();
     }
-    if (!ret) {
-        // give the last estimate, but return false. This is used by
-        // dead-reckoning code
-        *airspeed_ret = _last_airspeed;
-    }
-    return ret;
+
+    return true;
 }
 
 bool AP_AHRS_DCM::set_home(const Location &loc)

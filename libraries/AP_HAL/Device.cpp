@@ -59,12 +59,17 @@ bool AP_HAL::Device::setup_checked_registers(uint8_t nregs, uint8_t frequency)
  */
 void AP_HAL::Device::set_checked_register(uint8_t reg, uint8_t val)
 {
+    set_checked_register(0, reg, val);
+}
+
+void AP_HAL::Device::set_checked_register(uint8_t bank, uint8_t reg, uint8_t val)
+{
     if (_checked.regs == nullptr) {
         return;
     }
     struct checkreg *regs = _checked.regs;
     for (uint8_t i=0; i<_checked.n_set; i++) {
-        if (regs[i].regnum == reg) {
+        if (regs[i].regnum == reg && regs[i].bank == bank) {
             regs[i].value = val;
             return;
         }
@@ -74,6 +79,7 @@ void AP_HAL::Device::set_checked_register(uint8_t reg, uint8_t val)
                (unsigned)reg, (unsigned)get_bus_id());
         return;
     }
+    regs[_checked.n_set].bank = bank;
     regs[_checked.n_set].regnum = reg;
     regs[_checked.n_set].value = val;
     _checked.n_set++;
@@ -94,6 +100,19 @@ bool AP_HAL::Device::check_next_register(void)
 
     struct checkreg &reg = _checked.regs[_checked.next];
     uint8_t v;
+
+    if (_bank_select) {
+        if (!_bank_select(reg.bank)) {
+        // Cannot set bank
+#if 0
+        printf("Device 0x%x set bank 0x%02x\n",
+               (unsigned)get_bus_id(),
+               (unsigned)reg.bank);
+#endif
+            return false;
+        }
+    }
+
     if (!read_registers(reg.regnum, &v, 1) || v != reg.value) {
         // a register has changed value unexpectedly. Try changing it back
         // and re-check it next time

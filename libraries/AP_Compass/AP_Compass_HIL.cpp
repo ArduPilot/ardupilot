@@ -48,9 +48,12 @@ AP_Compass_Backend *AP_Compass_HIL::detect()
 bool
 AP_Compass_HIL::init(void)
 {
-    // register two compass instances
+    // register compass instances
     for (uint8_t i=0; i<HIL_NUM_COMPASSES; i++) {
-        _compass_instance[i] = register_compass();
+        uint32_t dev_id = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, i, 0, DEVTYPE_SITL);
+        if (!register_compass(dev_id, _compass_instance[i])) {
+            return false;
+        }
     }
     return true;
 }

@@ -254,14 +254,8 @@ void Sub::auto_spline_run()
 //  we assume the caller has performed all required GPS_ok checks
 void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radius_m)
 {
-    // convert location to vector from ekf origin
-    Vector3f circle_center_neu;
-    if (!circle_center.get_vector_from_origin_NEU(circle_center_neu)) {
-        // default to current position and log error
-        circle_center_neu = inertial_nav.get_position();
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_CIRCLE_INIT);
-    }
-    circle_nav.set_center(circle_center_neu);
+    // set circle center
+    circle_nav.set_center(circle_center);
 
     // set circle radius
     if (!is_zero(radius_m)) {
@@ -291,6 +285,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &circle_center_neu = circle_nav.get_center();
         const Vector3f &curr_pos = inertial_nav.get_position();
         float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
@@ -311,7 +306,7 @@ void Sub::auto_circle_start()
     auto_mode = Auto_Circle;
 
     // initialise circle controller
-    circle_nav.init(circle_nav.get_center());
+    circle_nav.init(circle_nav.get_center(), circle_nav.center_is_terrain_alt());
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -319,7 +314,7 @@ void Sub::auto_circle_start()
 void Sub::auto_circle_run()
 {
     // call circle controller
-    circle_nav.update();
+    failsafe_terrain_set_status(circle_nav.update());
 
     float lateral_out, forward_out;
     translate_circle_nav_rp(lateral_out, forward_out);
@@ -541,14 +536,14 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
     if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
         if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
             camera_mount.set_mode_to_default();
         }
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     } else {
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!camera_mount.has_pan_control()) {
             roi_WP = pv_location_to_vector(roi_location);
@@ -567,7 +562,7 @@ void Sub::set_auto_yaw_roi(const Location &roi_location)
         // if we have no camera mount aim the quad at the location
         roi_WP = pv_location_to_vector(roi_location);
         set_auto_yaw_mode(AUTO_YAW_ROI);
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     }
 }
 

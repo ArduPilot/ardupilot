@@ -91,6 +91,12 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     return true;
 }
 
+void SoftSigReader::disable(void)
+{
+    icuStopCapture(_icu_drv);
+    dmaStreamDisable(dma);
+}
+
 void SoftSigReader::_irq_handler(void* self, uint32_t flags)
 {
     SoftSigReader* sig_reader = (SoftSigReader*)self;

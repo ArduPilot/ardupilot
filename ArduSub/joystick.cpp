@@ -24,7 +24,6 @@ const uint8_t SERVO_CHAN_1 = 9; // Pixhawk Aux1
 const uint8_t SERVO_CHAN_2 = 10; // Pixhawk Aux2
 const uint8_t SERVO_CHAN_3 = 11; // Pixhawk Aux3
 
-uint8_t roll_pitch_flag = false; // Flag to adjust roll/pitch instead of forward/lateral
 bool controls_reset_since_input_hold = true;
 }
 
@@ -145,7 +144,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
         if (motors.armed()) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::MAVLINK);
         } else {
             arming.arm(AP_Arming::Method::MAVLINK);
         }
@@ -154,7 +153,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         arming.arm(AP_Arming::Method::MAVLINK);
         break;
     case JSButton::button_function_t::k_disarm:
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::MAVLINK);
         break;
 
     case JSButton::button_function_t::k_mode_manual:
@@ -183,7 +182,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         break;
 
     case JSButton::button_function_t::k_mount_center:
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         camera_mount.set_angle_targets(0, 0, 0);
         // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
         camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
@@ -562,6 +561,12 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
             roll_pitch_flag = !roll_pitch_flag;
+            if (roll_pitch_flag) {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
+            }
         }
         break;
 

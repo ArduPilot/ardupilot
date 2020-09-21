@@ -31,6 +31,8 @@ public:
     uint32_t txspace() override;
     int16_t read() override;
 
+    bool discard_input() override;
+
     /* Linux implementations of Print virtual methods */
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;

@@ -96,6 +96,13 @@ void Sub::althold_run()
         }
     }
 
+    control_depth();
+
+    motors.set_forward(channel_forward->norm_input());
+    motors.set_lateral(channel_lateral->norm_input());
+}
+
+void Sub::control_depth() {
     // Hold actual position until zero derivative is detected
     static bool engageStopZ = true;
     // Get last user velocity direction to check for zero derivative points
@@ -125,7 +132,4 @@ void Sub::althold_run()
 
         pos_control.update_z_controller();
     }
-
-    motors.set_forward(channel_forward->norm_input());
-    motors.set_lateral(channel_lateral->norm_input());
 }

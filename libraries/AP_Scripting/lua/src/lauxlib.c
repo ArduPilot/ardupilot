@@ -26,6 +26,9 @@
 
 #include "lauxlib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
 
 /*
 ** {======================================================
@@ -1005,29 +1008,29 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s, const char *p,
 }
 
 
-static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
-  (void)ud; (void)osize;  /* not used */
-  if (nsize == 0) {
-    free(ptr);
-    return NULL;
-  }
-  else
-    return realloc(ptr, nsize);
-}
+// static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
+//   (void)ud; (void)osize;  /* not used */
+//   if (nsize == 0) {
+//     free(ptr);
+//     return NULL;
+//   }
+//   else
+//     return realloc(ptr, nsize);
+// }
 
 
-static int panic (lua_State *L) {
-  lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
-                        lua_tostring(L, -1));
-  return 0;  /* return to Lua to abort */
-}
+// static int panic (lua_State *L) {
+//   lua_writestringerror("PANIC: unprotected error in call to Lua API (%s)\n",
+//                         lua_tostring(L, -1));
+//   return 0;  /* return to Lua to abort */
+// }
 
 
-LUALIB_API lua_State *luaL_newstate (void) {
-  lua_State *L = lua_newstate(l_alloc, NULL);
-  if (L) lua_atpanic(L, &panic);
-  return L;
-}
+// LUALIB_API lua_State *luaL_newstate (void) {
+//   lua_State *L = lua_newstate(l_alloc, NULL);
+//   if (L) lua_atpanic(L, &panic);
+//   return L;
+// }
 
 
 LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {

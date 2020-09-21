@@ -11,3 +11,9 @@ void ModeAvoidADSB::update()
     plane.mode_guided.update();
 }
 
+void ModeAvoidADSB::navigate()
+{
+    // Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(0);
+}
+

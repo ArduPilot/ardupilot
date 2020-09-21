@@ -1,6 +1,7 @@
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AC_Avoidance/AC_Avoid.h>
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_long_t &packet)
 {
@@ -62,10 +63,22 @@ void GCS_MAVLINK::send_fence_status() const
         mavlink_breach_type = FENCE_BREACH_BOUNDARY;
     }
 
+    // report on Avoidance liminting
+    uint8_t breach_mitigation = FENCE_MITIGATE_UNKNOWN;
+    const AC_Avoid* avoid =  AC_Avoid::get_singleton();
+    if (avoid != nullptr) {
+        if (avoid->limits_active()) {
+            breach_mitigation = FENCE_MITIGATE_VEL_LIMIT;
+        } else {
+            breach_mitigation = FENCE_MITIGATE_NONE;
+        }
+    }
+
     // send status
     mavlink_msg_fence_status_send(chan,
                                   static_cast<int8_t>(fence->get_breaches() != 0),
                                   fence->get_breach_count(),
                                   mavlink_breach_type,
-                                  fence->get_breach_time());
+                                  fence->get_breach_time(),
+                                  breach_mitigation);
 }

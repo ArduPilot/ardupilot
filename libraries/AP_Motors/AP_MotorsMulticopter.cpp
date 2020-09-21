@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsMulticopter.cpp - ArduCopter multicopter motors library
- *       Code by Randy Mackay and Robert Lefebvre. DIYDrones.com
- *
- */
-
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -266,6 +260,8 @@ void AP_MotorsMulticopter::output_boost_throttle(void)
     if (_boost_scale > 0) {
         float throttle = constrain_float(get_throttle() * _boost_scale, 0, 1);
         SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, throttle * 1000);
+    } else {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_boost_throttle, 0);
     }
 }
 
@@ -481,6 +477,27 @@ int16_t AP_MotorsMulticopter::get_pwm_output_max() const
         return _pwm_max;
     }
     return _throttle_radio_max;
+}
+
+// parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
+bool AP_MotorsMulticopter::check_mot_pwm_params() const
+{
+    // both must be zero or both non-zero:
+    if (_pwm_min == 0 && _pwm_max != 0) {
+        return false;
+    }
+    if (_pwm_min != 0 && _pwm_max == 0) {
+        return false;
+    }
+    // sanity says that minimum should be less than maximum:
+    if (_pwm_min != 0 && _pwm_min >= _pwm_max) {
+        return false;
+    }
+    // negative values are out-of-range:
+    if (_pwm_min < 0 || _pwm_max < 0) {
+        return false;
+    }
+    return true;
 }
 
 // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
@@ -732,9 +749,12 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // the range 0 to 1
 void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
 {
+    const int16_t pwm_min = get_pwm_output_min();
+    const int16_t pwm_range = get_pwm_output_max() - pwm_min;
+
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            if (mask & (1U << i)) {
+            if ((mask & (1U << i)) && armed()) {
                 /*
                  apply rudder mixing differential thrust
                  copter frame roll is plane frame yaw as this only
@@ -742,10 +762,10 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                  */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
                 set_actuator_with_slew(_actuator[i], thrust_to_actuator(thrust + diff_thrust));
-                int16_t pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * _actuator[i];
+                int16_t pwm_output = pwm_min + pwm_range * _actuator[i];
                 rc_write(i, pwm_output);
             } else {
-                rc_write(i, get_pwm_output_min());
+                rc_write(i, pwm_min);
             }
         }
     }

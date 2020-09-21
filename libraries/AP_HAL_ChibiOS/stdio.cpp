@@ -29,6 +29,10 @@
 #include <ctype.h>
 #include "hwdef/common/stdio.h"
 #include <AP_HAL/AP_HAL.h>
+#if HAL_USE_SERIAL_USB == TRUE
+#include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
+#include "UARTDriver.h"
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -80,7 +84,10 @@ int __wrap_asprintf(char **strp, const char *fmt, ...)
 int __wrap_vprintf(const char *fmt, va_list arg)
 {
 #ifdef HAL_STDOUT_SERIAL
-  return chvprintf ((BaseSequentialStream*)&HAL_STDOUT_SERIAL, fmt, arg);
+  return chvprintf((BaseSequentialStream*)&HAL_STDOUT_SERIAL, fmt, arg);
+#elif HAL_USE_SERIAL_USB == TRUE
+  usb_initialise();
+  return chvprintf((BaseSequentialStream*)&SDU1, fmt, arg);
 #else
   (void)arg;
   return strlen(fmt);

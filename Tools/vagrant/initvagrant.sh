@@ -26,27 +26,15 @@ cd /home/$VAGRANT_USER
 # artful rootfs is 2GB without resize:
 sudo resize2fs /dev/sda1
 
-usermod -a -G dialout $VAGRANT_USER
-
 echo "calling pre-reqs script..."
 sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 echo "...pre-reqs script done... initvagrant.sh continues."
-
-# run-in-terminal-window uses xterm:
-apt-get install -y xterm
 
 # valgrind support:
 apt-get install -y valgrind
 
 # gdb support:
 apt-get install -y gdb
-
-# gcov support:
-apt-get install -y gcovr lcov
-
-# install pexpect for autotest.py
-pip install pexpect
-
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 

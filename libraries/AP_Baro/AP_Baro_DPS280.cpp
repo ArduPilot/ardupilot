@@ -131,9 +131,10 @@ void AP_Baro_DPS280::set_config_registers(void)
 
 bool AP_Baro_DPS280::init()
 {
-    if (!dev || !dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev) {
         return false;
     }
+    dev->get_semaphore()->take_blocking();
 
     // setup to allow reads on SPI
     if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
@@ -162,6 +163,9 @@ bool AP_Baro_DPS280::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_DPS280);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     // request 64Hz update. New data will be available at 32Hz

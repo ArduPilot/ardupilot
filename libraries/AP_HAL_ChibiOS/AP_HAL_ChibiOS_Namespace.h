@@ -4,6 +4,7 @@ namespace ChibiOS {
     class AnalogIn;
     class AnalogSource;
     class DigitalSource;
+    class DSP;
     class GPIO;
     class I2CBus;
     class I2CDevice;
@@ -13,7 +14,7 @@ namespace ChibiOS {
     class RCOutput;
     class Scheduler;
     class Semaphore;
-    class Semaphore_Recursive;
+    class EventSource;
     class SPIBus;
     class SPIDesc;
     class SPIDevice;
@@ -25,6 +26,6 @@ namespace ChibiOS {
     class Shared_DMA;
     class SoftSigReader;
     class SoftSigReaderInt;
-    class CANManager;
+    class CANIface;
     class Flash;
 }

@@ -20,6 +20,7 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 #endif
+        set_bus_id(_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, _instance, DEVTYPE_BARO_SITL));
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
     }
 }
@@ -54,16 +55,16 @@ void AP_Baro_SITL::_timer()
 
     float sim_alt = _sitl->state.altitude;
 
-    if (_sitl->baro_disable) {
+    if (_sitl->baro_disable[_instance]) {
         // barometer is disabled
         return;
     }
 
-    sim_alt += _sitl->baro_drift * now / 1000.0f;
-    sim_alt += _sitl->baro_noise * rand_float();
+    sim_alt += _sitl->baro_drift[_instance] * now / 1000.0f;
+    sim_alt += _sitl->baro_noise[_instance] * rand_float();
 
     // add baro glitch
-    sim_alt += _sitl->baro_glitch;
+    sim_alt += _sitl->baro_glitch[_instance];
 
     // add delay
     uint32_t best_time_delta = 200;  // initialise large time representing buffer entry closest to current time - delay.
@@ -75,6 +76,14 @@ void AP_Baro_SITL::_timer()
         if (_store_index > _buffer_length - 1) {  // reset buffer index if index greater than size of buffer
             _store_index = 0;
         }
+
+        // if freezed barometer, report altitude to last recorded altitude
+        if (_sitl->baro_freeze[_instance] == 1) {
+            sim_alt = _last_altitude;
+        } else {
+            _last_altitude = sim_alt;
+        }
+
         _buffer[_store_index].data = sim_alt;  // add data to current index
         _buffer[_store_index].time = _last_store_time;  // add time_stamp to current index
         _store_index = _store_index + 1;  // increment index
@@ -116,6 +125,12 @@ void AP_Baro_SITL::_timer()
     _recent_press = p;
     _recent_temp = T;
     _has_sample = true;
+}
+
+// unhealthy if baro is turned off or beyond supported instances
+bool AP_Baro_SITL::healthy(uint8_t instance) 
+{
+    return !_sitl->baro_disable[instance];
 }
 
 // Read the sensor

@@ -27,12 +27,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MAX_LOG_FILES 500U
 #define LOGGER_PAGE_SIZE 1024UL
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
 #endif
+
+#define MB_to_B 1000000
+#define B_to_MB 0.000001
 
 /*
   constructor
@@ -55,10 +57,8 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
 }
 
 
-void AP_Logger_File::Init()
+void AP_Logger_File::ensure_log_directory_exists()
 {
-    AP_Logger_Backend::Init();
-    // create the log directory if need be
     int ret;
     struct stat st;
 
@@ -75,7 +75,10 @@ void AP_Logger_File::Init()
     if (ret == -1 && errno != EEXIST) {
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
     }
+}
 
+void AP_Logger_File::Init()
+{
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
     if (bufsize > 64) {
@@ -129,11 +132,7 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 
 void AP_Logger_File::periodic_1Hz()
 {
-    if (_rotate_pending && !logging_enabled()) {
-        _rotate_pending = false;
-        // handle log rotation once we stop logging
-        stop_logging();
-    }
+    AP_Logger_Backend::periodic_1Hz();
 
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
@@ -153,7 +152,6 @@ void AP_Logger_File::periodic_1Hz()
         _write_fd = -1;
         _initialised = false;
     }
-    df_stats_log();
 }
 
 void AP_Logger_File::periodic_fullrate()
@@ -164,7 +162,7 @@ void AP_Logger_File::periodic_fullrate()
 uint32_t AP_Logger_File::bufferspace_available()
 {
     const uint32_t space = _writebuf.space();
-    const uint32_t crit = critical_message_reserved_space();
+    const uint32_t crit = critical_message_reserved_space(_writebuf.get_size());
 
     return (space > crit) ? space - crit : 0;
 }
@@ -190,22 +188,6 @@ int64_t AP_Logger_File::disk_space()
     return AP::FS().disk_space(_log_directory);
 }
 
-// returns the available space in _log_directory as a percentage
-// returns -1.0f on error
-float AP_Logger_File::avail_space_percent()
-{
-    int64_t avail = disk_space_avail();
-    if (avail == -1) {
-        return -1.0f;
-    }
-    int64_t space = disk_space();
-    if (space == -1) {
-        return -1.0f;
-    }
-
-    return (avail/(float)space) * 100;
-}
-
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
 uint16_t AP_Logger_File::find_oldest_log()
@@ -225,7 +207,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
     EXPECT_DELAY_MS(3000);
-    DIR *d = AP::FS().opendir(_log_directory);
+    auto *d = AP::FS().opendir(_log_directory);
     if (d == nullptr) {
         // SD card may have died?  On linux someone may have rm-rf-d
         return 0;
@@ -286,32 +268,34 @@ void AP_Logger_File::Prep_MinSpace()
         return;
     }
 
+    const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+
     _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
     uint16_t count = 0;
     do {
-        float avail = avail_space_percent();
-        if (is_equal(avail, -1.0f)) {
+        int64_t avail = disk_space_avail();
+        if (avail == -1) {
             break;
         }
-        if (avail >= min_avail_space_percent) {
+        if (avail >= target_free) {
             break;
         }
         if (count++ > MAX_LOG_FILES+10) {
             // *way* too many deletions going on here.  Possible internal error.
-            AP::internalerror().error(AP_InternalError::error_t::logger_too_many_deletions);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
             break;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
-            AP::internalerror().error(AP_InternalError::error_t::logger_bad_getfilename);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_getfilename);
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.2f%% < %.0f%%)\n",
-                                filename_to_remove, (double)avail, (double)min_avail_space_percent);
+            hal.console->printf("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
+                                filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
@@ -352,7 +336,12 @@ bool AP_Logger_File::NeedPrep()
         return false;
     }
 
-    if (avail_space_percent() < min_avail_space_percent) {
+    const int64_t actual = disk_space_avail();
+    if (actual == -1) {
+        return false;
+    }
+
+    if (actual < (int64_t)_front._params.min_MB_free * MB_to_B) {
         return true;
     }
 
@@ -499,7 +488,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         const uint32_t now = AP_HAL::millis();
         const bool must_dribble = (now - last_messagewrite_message_sent) > 100;
         if (!must_dribble &&
-            space < non_messagewriter_message_reserved_space()) {
+            space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
             semaphore.give();
             return false;
@@ -507,7 +496,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         last_messagewrite_message_sent = now;
     } else {
         // we reserve some amount of space for critical messages:
-        if (!is_critical && space < critical_message_reserved_space()) {
+        if (!is_critical && space < critical_message_reserved_space(_writebuf.get_size())) {
             _dropped++;
             semaphore.give();
             return false;
@@ -523,7 +512,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
-    df_stats_gather(size);
+    df_stats_gather(size, _writebuf.space());
     semaphore.give();
     return true;
 }
@@ -608,33 +597,11 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
 }
 
 /*
-  convert a list entry number back into a log number (which can then
-  be converted into a filename).  A "list entry number" is a sequence
-  where the oldest log has a number of 1, the second-from-oldest 2,
-  and so on.  Thus the highest list entry number is equal to the
-  number of logs.
-*/
-uint16_t AP_Logger_File::_log_num_from_list_entry(const uint16_t list_entry)
-{
-    uint16_t oldest_log = find_oldest_log();
-    if (oldest_log == 0) {
-        // We don't have any logs...
-        return 0;
-    }
-
-    uint32_t log_num = oldest_log + list_entry - 1;
-    if (log_num > MAX_LOG_FILES) {
-        log_num -= MAX_LOG_FILES;
-    }
-    return (uint16_t)log_num;
-}
-
-/*
   find the number of pages in a log
  */
 void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
 {
-    const uint16_t log_num = _log_num_from_list_entry(list_entry);
+    const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         start_page = 0;
@@ -655,7 +622,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         return -1;
     }
 
-    const uint16_t log_num = _log_num_from_list_entry(list_entry);
+    const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         return -1;
@@ -689,31 +656,6 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     }
     uint32_t ofs = page * (uint32_t)LOGGER_PAGE_SIZE + offset;
 
-    /*
-      this rather strange bit of code is here to work around a bug
-      in file offsets in NuttX. Every few hundred blocks of reads
-      (starting at around 350k into a file) NuttX will get the
-      wrong offset for sequential reads. The offset it gets is
-      typically 128k earlier than it should be. It turns out that
-      calling lseek() with 0 offset and SEEK_CUR works around the
-      bug. We can remove this once we find the real bug.
-    */
-    if (ofs / 4096 != (ofs+len) / 4096) {
-        off_t seek_current = AP::FS().lseek(_read_fd, 0, SEEK_CUR);
-        if (seek_current == (off_t)-1) {
-            AP::FS().close(_read_fd);
-            _read_fd = -1;
-            return -1;
-        }
-        if (seek_current != (off_t)_read_offset) {
-            if (AP::FS().lseek(_read_fd, _read_offset, SEEK_SET) == (off_t)-1) {
-                AP::FS().close(_read_fd);
-                _read_fd = -1;
-                return -1;
-            }
-        }
-    }
-
     if (ofs != _read_offset) {
         if (AP::FS().lseek(_read_fd, ofs, SEEK_SET) == (off_t)-1) {
             AP::FS().close(_read_fd);
@@ -734,7 +676,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
  */
 void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
-    uint16_t log_num = _log_num_from_list_entry(list_entry);
+    uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
         // that failed - probably no logs
         size = 0;
@@ -790,28 +732,28 @@ void AP_Logger_File::stop_logging(void)
     }
 }
 
-void AP_Logger_File::PrepForArming()
-{
-    if (logging_started()) {
-        return;
-    }
-    start_new_log();
-}
-
 /*
   start writing to a new log file
  */
-uint16_t AP_Logger_File::start_new_log(void)
+void AP_Logger_File::start_new_log(void)
 {
-    stop_logging();
-
-    start_new_log_reset_variables();
-
     if (_open_error) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
-        return 0xFFFF;
+        return;
     }
+
+    // set _open_error here to avoid infinite recursion.  Simply
+    // writing a prioritised block may try to open a log - which means
+    // if anything in the start_new_log path does a gcs().send_text()
+    // (for example), you will end up recursing if we don't take
+    // precautions.  We will reset _open_error if we actually manage
+    // to open the log...
+    _open_error = true;
+
+    stop_logging();
+
+    start_new_log_reset_variables();
 
     if (_read_fd != -1) {
         AP::FS().close(_read_fd);
@@ -820,8 +762,7 @@ uint16_t AP_Logger_File::start_new_log(void)
 
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
         hal.console->printf("Out of space for logging\n");
-        _open_error = true;
-        return 0xffff;
+        return;
     }
 
     uint16_t log_num = find_last_log();
@@ -833,8 +774,7 @@ uint16_t AP_Logger_File::start_new_log(void)
         log_num = 1;
     }
     if (!write_fd_semaphore.take(1)) {
-        _open_error = true;
-        return 0xFFFF;
+        return;
     }
     if (_write_filename) {
         free(_write_filename);
@@ -842,9 +782,8 @@ uint16_t AP_Logger_File::start_new_log(void)
     }
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
-        _open_error = true;
         write_fd_semaphore.give();
-        return 0xFFFF;
+        return;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -853,20 +792,22 @@ uint16_t AP_Logger_File::start_new_log(void)
     _need_rtc_update = !AP::rtc().get_utc_usec(utc_usec);
 #endif
 
+    // create the log directory if need be
+    ensure_log_directory_exists();
+
     EXPECT_DELAY_MS(3000);
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
         _initialised = false;
-        _open_error = true;
         write_fd_semaphore.give();
         int saved_errno = errno;
         ::printf("Log open fail for %s - %s\n",
                  _write_filename, strerror(saved_errno));
         hal.console->printf("Log open fail for %s - %s\n",
                             _write_filename, strerror(saved_errno));
-        return 0xFFFF;
+        return;
     }
     _last_write_ms = AP_HAL::millis();
     _write_offset = 0;
@@ -876,14 +817,11 @@ uint16_t AP_Logger_File::start_new_log(void)
     // now update lastlog.txt with the new log number
     char *fname = _lastlog_file_name();
 
-    // we avoid fopen()/fprintf() here as it is not available on as many
-    // systems as open/write
     EXPECT_DELAY_MS(3000);
     int fd = AP::FS().open(fname, O_WRONLY|O_CREAT);
     free(fname);
     if (fd == -1) {
-        _open_error = true;
-        return 0xFFFF;
+        return;
     }
 
     char buf[30];
@@ -893,11 +831,11 @@ uint16_t AP_Logger_File::start_new_log(void)
     AP::FS().close(fd);
 
     if (written < to_write) {
-        _open_error = true;
-        return 0xFFFF;
+        return;
     }
+    _open_error = false;
 
-    return log_num;
+    return;
 }
 
 
@@ -920,7 +858,7 @@ void AP_Logger_File::flush(void)
         }
         write_fd_semaphore.give();
     } else {
-        AP::internalerror().error(AP_InternalError::error_t::logger_flushing_without_sem);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_flushing_without_sem);
     }
 }
 #else
@@ -1039,16 +977,6 @@ void AP_Logger_File::_io_timer(void)
     hal.util->perf_end(_perf_write);
 }
 
-// this sensor is enabled if we should be logging at the moment
-bool AP_Logger_File::logging_enabled() const
-{
-    if (hal.util->get_soft_armed() ||
-        _front.log_while_disarmed()) {
-        return true;
-    }
-    return false;
-}
-
 bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full seconds then it is dead
@@ -1075,57 +1003,6 @@ bool AP_Logger_File::logging_failed() const
 
     return false;
 }
-
-
-void AP_Logger_File::vehicle_was_disarmed()
-{
-    if (_front._params.file_disarm_rot) {
-        // rotate our log.  Closing the current one and letting the
-        // logging restart naturally based on log_disarmed should do
-        // the trick:
-        _rotate_pending = true;
-    }
-}
-
-void AP_Logger_File::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
-{
-    struct log_DSF pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
-        time_us         : AP_HAL::micros64(),
-        dropped         : _dropped,
-        blocks          : _stats.blocks,
-        bytes           : _stats.bytes,
-        buf_space_min   : _stats.buf_space_min,
-        buf_space_max   : _stats.buf_space_max,
-        buf_space_avg   : (_stats.blocks) ? (_stats.buf_space_sigma / _stats.blocks) : 0,
-
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger_File::df_stats_gather(const uint16_t bytes_written) {
-    const uint32_t space_remaining = _writebuf.space();
-    if (space_remaining < stats.buf_space_min) {
-        stats.buf_space_min = space_remaining;
-    }
-    if (space_remaining > stats.buf_space_max) {
-        stats.buf_space_max = space_remaining;
-    }
-    stats.buf_space_sigma += space_remaining;
-    stats.bytes += bytes_written;
-    stats.blocks++;
-}
-
-void AP_Logger_File::df_stats_clear() {
-    memset(&stats, '\0', sizeof(stats));
-    stats.buf_space_min = -1;
-}
-
-void AP_Logger_File::df_stats_log() {
-    Write_AP_Logger_Stats_File(stats);
-    df_stats_clear();
-}
-
 
 #endif // HAVE_FILESYSTEM_SUPPORT
 

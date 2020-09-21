@@ -5,9 +5,10 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Common/AP_FWVersion.h>
-#include "version.h"
+#include <AP_MSP/AP_MSP.h>
+#include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
+#include "hwing_esc.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED)
 #define AP_PERIPH_HAVE_LED
@@ -52,6 +53,22 @@ public:
     AP_Baro baro;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_MSP
+    struct {
+        AP_MSP msp;
+        MSP::msp_port_t port;
+        uint32_t last_gps_ms;
+        uint32_t last_baro_ms;
+        uint32_t last_mag_ms;
+    } msp;
+    void msp_init(AP_HAL::UARTDriver *_uart);
+    void msp_sensor_update(void);
+    void send_msp_packet(uint16_t cmd, void *p, uint16_t size);
+    void send_msp_GPS(void);
+    void send_msp_compass(void);
+    void send_msp_baro(void);
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_ADSB
     void adsb_init();
     void adsb_update();
@@ -68,6 +85,24 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    void pwm_irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp);
+    void pwm_hardpoint_init();
+    void pwm_hardpoint_update();
+    struct {
+        uint8_t last_state;
+        uint32_t last_ts_us;
+        uint32_t last_send_ms;
+        uint16_t pwm_value;
+        uint16_t highest_pwm;
+    } pwm_hardpoint;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_HWESC
+    HWESC_Telem hwesc_telem;
+    void hwesc_telem_update();
 #endif
     
     // setup the var_info table

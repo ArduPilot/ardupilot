@@ -17,12 +17,11 @@ void Copter::read_inertia()
         return;
     }
 
-    if (ahrs.home_is_set()) {
-        current_loc.set_alt_cm(inertial_nav.get_altitude(),
-                               Location::AltFrame::ABOVE_HOME);
-    } else {
-        // without home use alt above the EKF origin
-        current_loc.set_alt_cm(inertial_nav.get_altitude(),
-                               Location::AltFrame::ABOVE_ORIGIN);
+    // current_loc.alt is alt-above-home, converted from inertial nav's alt-above-ekf-origin
+    const int32_t alt_above_origin_cm = inertial_nav.get_altitude();
+    current_loc.set_alt_cm(alt_above_origin_cm, Location::AltFrame::ABOVE_ORIGIN);
+    if (!ahrs.home_is_set() || !current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
+        // if home has not been set yet we treat alt-above-origin as alt-above-home
+        current_loc.set_alt_cm(alt_above_origin_cm, Location::AltFrame::ABOVE_HOME);
     }
 }

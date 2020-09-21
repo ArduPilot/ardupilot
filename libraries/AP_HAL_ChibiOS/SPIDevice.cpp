@@ -125,6 +125,7 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     asprintf(&pname, "SPI:%s:%u:%u",
              device_desc.name,
              (unsigned)bus.bus, (unsigned)device_desc.device);
+    AP_HAL::SPIDevice::setup_bankselect_callback(device_desc.bank_select_cb);
     //printf("SPI device %s on %u:%u at speed %u mode %u\n",
     //       device_desc.name,
     //       (unsigned)bus.bus, (unsigned)device_desc.device,
@@ -185,7 +186,10 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
         }
     }
 #else
-    bus.bouncebuffer_setup(send, len, recv, len);
+    if (!bus.bouncebuffer_setup(send, len, recv, len)) {
+        set_chip_select(old_cs_forced);
+        return false;
+    }
     osalSysLock();
     hal.util->persistent_data.spi_count++;
     if (send == nullptr) {
@@ -204,7 +208,9 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
-        AP::internalerror().error(AP_InternalError::error_t::spi_fail);
+        if (!hal.scheduler->in_expected_delay()) {
+            INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
+        }
         spiAbort(spi_devices[device_desc.bus].driver);
     }
     bus.bouncebuffer_finish(send, recv, len);
@@ -217,7 +223,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
 {
     if (!cs_forced) {
         //special mode to init sdcard without cs asserted
-        bus.semaphore.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+        bus.semaphore.take_blocking();
         acquire_bus(true, true);
         spiIgnore(spi_devices[device_desc.bus].driver, n);
         acquire_bus(false, true);
@@ -426,11 +432,11 @@ void SPIDevice::test_clock_freq(void)
     hal.console->printf("Waiting for USB\n");
     for (uint8_t i=0; i<3; i++) {
         hal.scheduler->delay(1000);
-        hal.console->printf("Waiting %u\n", AP_HAL::millis());
+        hal.console->printf("Waiting %u\n", (unsigned)AP_HAL::millis());
     }
     hal.console->printf("CLOCKS=\n");
     for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
-        hal.console->printf("%u:%u ", i+1, bus_clocks[i]);
+        hal.console->printf("%u:%u ", unsigned(i+1), unsigned(bus_clocks[i]));
     }
     hal.console->printf("\n");
 
@@ -465,7 +471,7 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t1 = AP_HAL::micros();
         spiStop(spi_devices[i].driver);
         spiReleaseBus(spi_devices[i].driver);
-        hal.console->printf("SPI[%u] clock=%u\n", spi_devices[i].busid, unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
+        hal.console->printf("SPI[%u] clock=%u\n", unsigned(spi_devices[i].busid), unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
     }
     hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
     hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);

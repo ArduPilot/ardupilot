@@ -30,6 +30,7 @@ void panic(const char *errormsg, ...)
     va_list ap;
 
     fflush(stdout);
+    printf("PANIC: ");
     va_start(ap, errormsg);
     vprintf(errormsg, ap);
     va_end(ap);
@@ -49,11 +50,12 @@ void panic(const char *errormsg, ...)
 void dump_stack_trace()
 {
     // find dumpstack command:
-    const char *dumpstack = "dumpstack"; // if we can't find it trust in PATH
+    const char *dumpstack = "dumpstack.sh"; // if we can't find it trust in PATH
     struct stat statbuf;
     const char *paths[] {
-        "Tools/scripts/dumpstack",
-        "APM/Tools/scripts/dumpstack", // for autotest server
+        "Tools/scripts/dumpstack.sh",
+        "APM/Tools/scripts/dumpstack.sh", // for autotest server
+        "../Tools/scripts/dumpstack.sh", // when run from e.g. ArduCopter subdirectory
     };
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
         if (::stat(paths[i], &statbuf) != -1) {
@@ -75,12 +77,16 @@ void dump_stack_trace()
 	progname[n] = 0;
 
 	p = strrchr(progname, '/');
-	*p = 0;
+    if (p != nullptr) {
+	    *p = 0;
+    } else {
+        p = progname;
+    }
 
     char output_filepath[30];
     snprintf(output_filepath,
              ARRAY_SIZE(output_filepath),
-             "segv_%s.%d.out",
+             "dumpstack_%s.%d.out",
              p+1,
              (int)getpid());
 	snprintf(cmd,
@@ -170,5 +176,46 @@ uint64_t millis64()
                            (state.start_time.tv_usec*1.0e-6)));
     return ret;
 }
+
+
+uint32_t native_micros()
+{
+    return native_micros64() & 0xFFFFFFFF;
+}
+
+uint32_t native_millis()
+{
+    return native_millis64() & 0xFFFFFFFF;
+}
+
+/*
+  we define a millis16() here to avoid an issue with sitl builds in cygwin
+ */
+uint16_t native_millis16()
+{
+    return native_millis64() & 0xFFFF;
+}
+    
+
+uint64_t native_micros64()
+{
+    struct timeval tp;
+    gettimeofday(&tp, nullptr);
+    uint64_t ret = 1.0e6 * ((tp.tv_sec + (tp.tv_usec * 1.0e-6)) -
+                            (state.start_time.tv_sec +
+                             (state.start_time.tv_usec * 1.0e-6)));
+    return ret;
+}
+
+uint64_t native_millis64()
+{
+    struct timeval tp;
+    gettimeofday(&tp, nullptr);
+    uint64_t ret = 1.0e3*((tp.tv_sec + (tp.tv_usec*1.0e-6)) -
+                          (state.start_time.tv_sec +
+                           (state.start_time.tv_usec*1.0e-6)));
+    return ret;
+}
+
 
 } // namespace AP_HAL

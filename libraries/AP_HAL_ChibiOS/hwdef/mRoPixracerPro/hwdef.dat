@@ -1,0 +1,276 @@
+###########################################################################################################################################################
+# mRo Pixracer Pro Flight Controller
+# STM32H753IIK6
+# 8 PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
+# Exposed JST GH Connectors: GPS UART+I2C connector, 5 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, Power with analog current and voltage sense
+# 3 IMUs (ICM20602 6DOF, ICM20948 9DOF, BMI088 6DOF)
+# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG
+# Onboard 3 color LED and buzzer
+# 36mm x 36mm, 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
+# M10064B - Initial Release
+###########################################################################################################################################################
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1017
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+FLASH_SIZE_KB 2048
+
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O2
+
+# start on 2th sector (1st sector for bootloader)
+FLASH_RESERVE_START_KB 128
+
+# use FRAM for storage
+define HAL_STORAGE_SIZE 16384
+define HAL_WITH_RAMTRON 1
+
+# USB setup
+USB_STRING_MANUFACTURER "mRo"
+
+# RC Input set for Interrupt not DMA
+PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW # also USART6_RX for serial RC
+
+# Control of Spektrum power pin
+PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
+define HAL_GPIO_SPEKTRUM_PWR 70
+
+# Spektrum Power is Active Low
+define HAL_SPEKTRUM_PWR_ENABLED 0
+
+# Spektrum RC Input pin, used as GPIO for bind for Satellite Receivers
+PB0 SPEKTRUM_RC INPUT PULLUP GPIO(71)
+define HAL_GPIO_SPEKTRUM_RC 71
+
+# Order of I2C buses
+I2C_ORDER I2C1
+
+# this board only has a single I2C bus so make it external
+define HAL_I2C_INTERNAL_MASK 0
+
+# order of UARTs (and USB) and suggested usage
+# UART4 GPS
+# USART2 Telem 1 (Flow Control)
+# USART3 Telem 2 (Flow Control)
+# UART8 FRSKY Telem
+# USART6 RC input (Only RX pin is connected)
+# USART1 Additional UART
+# UART7 Additional UART
+
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7 OTG2
+
+# default the 2nd interface to MAVLink2
+define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
+
+# Another USART, this one for telem1. This one has RTS and CTS lines.
+# USART2 telem1
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# The telem2 USART, this one for telem2. This one has RTS and CTS lines.
+# USART3 telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+PD11 USART3_CTS USART3
+PD12 USART3_RTS USART3
+
+# UART4 GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4
+
+# USART1 Spare
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# UART7 Spare or Debug Console
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# UART8 FrSky Telemetry
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+
+# RSSI Analog Input
+PC1 RSSI_IN ADC1
+
+# Analog current and voltage sense pins.
+PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Now the VDD sense pin. This is used to sense primary board voltage.
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+#SPI1 ICM_20602 / ICM_20948
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+#SPI2 FRAM / DPS310
+PB10 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+#SPI5 BMI088
+PF7 SPI5_SCK SPI5
+PF8 SPI5_MISO SPI5
+PF9 SPI5_MOSI SPI5
+
+#SPI6 EXTERNAL
+PG13 SPI6_SCK SPI6
+PG12 SPI6_MISO SPI6
+PG14 SPI6_MOSI SPI6
+
+# This is the pin that senses USB being connected. It is an input pin
+# setup as OPENDRAIN.
+PA9 VBUS INPUT OPENDRAIN
+
+# This input pin is used to detect that power is valid on USB.
+PC0 VBUS_VALID INPUT
+
+# Now we define the pins that USB is connected on.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+# Now the first I2C bus. The pin speeds are automatically setup
+# correctly, but can be overridden here if needed.
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# Now setup the pins for the microSD card, if available.
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# More CS pins for more sensors. The labels for all CS pins need to
+# match the SPI device table later in this file.
+PC2 ICM_20602_CS CS
+PD7 BARO_CS CS
+PD10 FRAM_CS CS SPEED_VERYLOW
+PE15 ICM_20948_CS CS
+PF10 BMI088_GYRO_CS CS
+PF6 BMI088_ACCEL_CS CS
+PG9 EXT_SPI_CS CS
+
+# the first CAN bus
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+PF11 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(72)
+
+# This defines the pins for the 2nd CAN interface, OEM Only.
+PB13 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
+
+PF14 GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(73)
+
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set BRD_PWM_COUNT to choose how many of the PWM
+# outputs on the primary MCU are setup as PWM and how many as
+# GPIOs. To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+PI5  TIM8_CH1 TIM8 PWM(7) GPIO(56)
+PI6  TIM8_CH2 TIM8 PWM(8) GPIO(57)
+
+define BOARD_PWM_COUNT_DEFAULT 8
+
+# This is the invensense data-ready pin. We don't use it in the
+# default driver.
+PD15 MPU_DRDY INPUT
+
+# This is the pin to enable the sensors rail. It can be used to power
+# cycle sensors to recover them in case there are problems with power on
+# timing affecting sensor stability. We pull it high by default.
+PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# 1.8V Sensor Level Shifter Output Enable. We pull it high by default.
+PI3 VDD_1V8_SENSORS_EN OUTPUT HIGH
+
+# Pin for PWM Voltage Selection, 0 means 3.3v, 1 means 5v
+PG6 PWM_VOLT_SEL OUTPUT LOW GPIO(74)
+define HAL_GPIO_PWM_VOLT_PIN 74
+define HAL_GPIO_PWM_VOLT_3v3 0
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp.
+PB5 VDD_BRICK_VALID INPUT PULLUP
+
+SPIDEV icm20948 SPI1 DEVID1  ICM_20948_CS    MODE3  2*MHZ  4*MHZ
+SPIDEV icm20608 SPI1 DEVID2  ICM_20602_CS    MODE3  2*MHZ  8*MHZ
+SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
+SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
+SPIDEV bmi088_g SPI5 DEVID1  BMI088_GYRO_CS  MODE3 10*MHZ 10*MHZ
+SPIDEV bmi088_a SPI5 DEVID2  BMI088_ACCEL_CS MODE3 10*MHZ 10*MHZ
+
+# Now some defines for logging and terrain data files.
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
+
+# Now setup the default battery pins driver analog pins and default
+# scaling for the power brick.
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# No hardware safety pin, CAN safety switch only
+# define HAL_HAVE_SAFETY_SWITCH 0
+
+# Pixracer Pro has a TriColor LED, Red, Green, Blue
+define HAL_HAVE_PIXRACER_LED
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+# LED setup for PixracerLED driver
+PB11 LED_R OUTPUT HIGH GPIO(0)
+PB1  LED_G OUTPUT HIGH GPIO(1)
+PB3  LED_B OUTPUT HIGH GPIO(2)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+# DMA_PRIORITY SDMMC*
+# DMA_NOSHARE SPI1* SPI2* SPI3*
+
+# 3 IMUs
+IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
+IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
+IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 5
+
+# 1 baro
+BARO DPS280  SPI:dps310
+
+# 1 compass
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES

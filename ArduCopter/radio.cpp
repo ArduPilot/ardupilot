@@ -31,12 +31,6 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
 
-    // set auxiliary servo ranges
-    rc().channel(CH_5)->set_range(1000);
-    rc().channel(CH_6)->set_range(1000);
-    rc().channel(CH_7)->set_range(1000);
-    rc().channel(CH_8)->set_range(1000);
-
     // set default dead zones
     default_dead_zones();
 
@@ -186,7 +180,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // and we are flying. Immediately set as non-zero
     if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
         (ap.using_interlock && motors->get_interlock()) ||
-        ap.armed_with_switch) {
+        ap.armed_with_switch || air_mode == AirMode::AIRMODE_ENABLED) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {

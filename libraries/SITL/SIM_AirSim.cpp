@@ -12,7 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/* 
+/*
 	Simulator Connector for AirSim
 */
 
@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/replace.h>
 
+#define UDP_TIMEOUT_MS 100
+
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
@@ -34,7 +36,16 @@ AirSim::AirSim(const char *frame_str) :
 	Aircraft(frame_str),
 	sock(true)
 {
-	printf("Starting SITL Airsim\n");
+    if (strstr(frame_str, "-copter")) {
+        output_type = OutputType::Copter;
+    } else if (strstr(frame_str, "-rover")) {
+        output_type = OutputType::Rover;
+    } else {
+        // default to copter
+        output_type = OutputType::Copter;
+    }
+
+	printf("Starting SITL Airsim type %u\n", (unsigned)output_type);
 }
 
 /*
@@ -61,9 +72,9 @@ void AirSim::set_interface_ports(const char* address, const int port_in, const i
 /*
 	Decode and send servos
 */
-void AirSim::send_servos(const struct sitl_input &input)
+void AirSim::output_copter(const sitl_input& input)
 {
-	servo_packet pkt{0};
+    servo_packet pkt;
 
 	for (uint8_t i=0; i<kArduCopterRotorControlCount; i++) {
 		pkt.pwm[i] = input.servos[i];
@@ -78,6 +89,40 @@ void AirSim::send_servos(const struct sitl_input &input)
 			printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
 		}
 	}
+}
+
+void AirSim::output_rover(const sitl_input& input)
+{
+    rover_packet pkt;
+
+    pkt.steering = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
+    pkt.throttle = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+
+    ssize_t send_ret = sock.sendto(&pkt, sizeof(pkt), airsim_ip, airsim_control_port);
+    if (send_ret != sizeof(pkt)) {
+        if (send_ret <= 0) {
+            printf("Unable to send control output to %s:%u - Error: %s, Return value: %ld\n",
+                     airsim_ip, airsim_control_port, strerror(errno), (long)send_ret);
+        } else {
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
+        }
+    }
+}
+
+/*
+    Wrapper function to send servo output
+*/
+void AirSim::output_servos(const sitl_input& input)
+{
+    switch (output_type) {
+    case OutputType::Copter:
+        output_copter(input);
+        break;
+
+    case OutputType::Rover:
+        output_rover(input);
+        break;
+    }
 }
 
 /*
@@ -139,7 +184,7 @@ bool AirSim::parse_sensors(const char *json)
                     return false;
                 }
                 uint16_t n = 0;
-                struct vector3f_array *v = (struct vector3f_array *)key.ptr;
+                vector3f_array *v = (vector3f_array *)key.ptr;
                 while (true) {
                     if (n >= v->length) {
                         Vector3f *d = (Vector3f *)realloc(v->data, sizeof(Vector3f)*(n+1));
@@ -185,7 +230,7 @@ bool AirSim::parse_sensors(const char *json)
                     return false;
                 }
                 uint16_t n = 0;
-                struct float_array *v = (struct float_array *)key.ptr;
+                float_array *v = (float_array *)key.ptr;
                 while (true) {
                     if (n >= v->length) {
                         float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
@@ -215,13 +260,23 @@ bool AirSim::parse_sensors(const char *json)
 	Receive new sensor data from simulator
 	This is a blocking function
 */
-void AirSim::recv_fdm()
+void AirSim::recv_fdm(const sitl_input& input)
 {
     // Receive sensor packet
-    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 100);
+    ssize_t ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+    uint32_t wait_ms = UDP_TIMEOUT_MS;
     while (ret <= 0) {
-        printf("No sensor message received - %s\n", strerror(errno));
-        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 100);
+        // printf("No sensor message received - %s\n", strerror(errno));
+        ret = sock.recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, UDP_TIMEOUT_MS);
+        wait_ms += UDP_TIMEOUT_MS;
+
+        // If no sensor message is received after 1 second, resend servos
+        // this helps if messages are lost on the way, and both AP & Airsim are waiting for each ther
+        if (wait_ms > 1000) {
+            wait_ms = 0;
+            printf("No sensor message received in last 1s, error - %s, resending servos\n", strerror(errno));
+            output_servos(input);
+        }
     }
 
     // convert '\n' into nul
@@ -244,21 +299,15 @@ void AirSim::recv_fdm()
     memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
     sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
 
-    accel_body = Vector3f(state.imu.linear_acceleration[0],
-                          state.imu.linear_acceleration[1],
-                          state.imu.linear_acceleration[2]);
-
-    gyro = Vector3f(state.imu.angular_velocity[0],
-                    state.imu.angular_velocity[1],
-                    state.imu.angular_velocity[2]);
-
-    velocity_ef = Vector3f(state.velocity.world_linear_velocity[0],
-                           state.velocity.world_linear_velocity[1],
-                           state.velocity.world_linear_velocity[0]);
+    accel_body = state.imu.linear_acceleration;
+    gyro = state.imu.angular_velocity;
+    velocity_ef = state.velocity.world_linear_velocity;
 
     location.lat = state.gps.lat * 1.0e7;
     location.lng = state.gps.lon * 1.0e7;
     location.alt = state.gps.alt * 100.0f;
+
+    position = home.get_distance_NED(location);
 
     dcm.from_euler(state.pose.roll, state.pose.pitch, state.pose.yaw);
 
@@ -276,12 +325,29 @@ void AirSim::recv_fdm()
 
     scanner.points = state.lidar.points;
 
-    rcin_chan_count = state.rc.rc_channels.length < 8 ? state.rc.rc_channels.length : 8;
+    // Update RC input, max 12 channels
+    rcin_chan_count = MIN(state.rc.rc_channels.length, 12);
     for (uint8_t i=0; i < rcin_chan_count; i++) {
         rcin[i] = state.rc.rc_channels.data[i];
     }
 
+    // Update Rangefinder data, max sensors limit as defined
+    uint8_t rng_sensor_count = MIN(state.rng.rng_distances.length, RANGEFINDER_MAX_INSTANCES);
+    for (uint8_t i=0; i<rng_sensor_count; i++) {
+        rangefinder_m[i] = state.rng.rng_distances.data[i];
+    }
+
 #if 0
+// @LoggerMessage: ASM1
+// @Description: AirSim simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: TUS: Simulation's timestamp
+// @Field: R: Simulation's roll
+// @Field: P: Simulation's pitch
+// @Field: Y: Simulation's yaw
+// @Field: GX: Simulated gyroscope, X-axis
+// @Field: GY: Simulated gyroscope, Y-axis
+// @Field: GZ: Simulated gyroscope, Z-axis
     AP::logger().Write("ASM1", "TimeUS,TUS,R,P,Y,GX,GY,GZ",
                        "QQffffff",
                        AP_HAL::micros64(),
@@ -294,8 +360,21 @@ void AirSim::recv_fdm()
                        degrees(gyro.z));
 
     Vector3f velocity_bf = dcm.transposed() * velocity_ef;
-    position = home.get_distance_NED(location);
 
+// @LoggerMessage: ASM2
+// @Description: More AirSim simulation data
+// @Field: TimeUS: Time since system startup
+// @Field: AX: simulation's acceleration, X-axis
+// @Field: AY: simulation's acceleration, Y-axis
+// @Field: AZ: simulation's acceleration, Z-axis
+// @Field: VX: simulation's velocity, X-axis
+// @Field: VY: simulation's velocity, Y-axis
+// @Field: VZ: simulation's velocity, Z-axis
+// @Field: PX: simulation's position, X-axis
+// @Field: PY: simulation's position, Y-axis
+// @Field: PZ: simulation's position, Z-axis
+// @Field: Alt: simulation's gps altitude
+// @Field: SD: simulation's earth-frame speed-down
     AP::logger().Write("ASM2", "TimeUS,AX,AY,AZ,VX,VY,VZ,PX,PY,PZ,Alt,SD",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
@@ -318,10 +397,13 @@ void AirSim::recv_fdm()
 /*
   update the AirSim simulation by one time step
 */
-void AirSim::update(const struct sitl_input &input)
+void AirSim::update(const sitl_input& input)
 {
-	send_servos(input);
-    recv_fdm();
+    // Send servos to AirSim
+    output_servos(input);
+
+    // Receive sensor data
+    recv_fdm(input);
 
     // update magnetic field
     update_mag_field_bf();

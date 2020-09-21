@@ -7,18 +7,13 @@ MCU STM32F4xx STM32F405xx
 # board ID for firmware load
 APJ_BOARD_ID 12
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_CRAZYFLIE2
-
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 define STM32_ST_USE_TIMER 5
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # use USB for stdout
 #STDOUT_SERIAL SD3
@@ -95,7 +90,7 @@ I2C_ORDER I2C3 I2C1
 define HAL_I2C_MAX_CLOCK 400000
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 USART2 USART3 USART6
+SERIAL_ORDER OTG1 USART3 USART6 USART2
 
 define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 1
@@ -103,10 +98,16 @@ define STORAGE_FLASH_PAGE 1
 # reserve 32k for bootloader and 32k for flash storage
 FLASH_RESERVE_START_KB 64
 
-# one IMU
+# One IMU for Crazyflie 2.1 - I2C
+IMU BMI088 I2C:0:0x18 I2C:0:0x69 ROTATION_ROLL_180
+
+# One IMU for Crazyflie 2.0 - I2C
 IMU Invensense I2C:0:0x69 ROTATION_YAW_180
 
-# one baro, attached via I2C on IMU
+# One baro for Crazyflie 2.1
+BARO BMP388 I2C:0:0x77
+
+# One bare for Crazyflie 2.0
 BARO LPS2XH:probe_InvensenseIMU I2C:0:0x5D 0x69
 
 # no built-in compass, but probe the i2c bus for all possible

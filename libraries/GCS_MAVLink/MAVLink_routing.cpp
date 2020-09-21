@@ -97,6 +97,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    // don't ever forward data from a private channel
+    if ((GCS_MAVLINK::is_private(in_channel))) {
+        return true;
+    }
+
     // learn new routes
     learn_route(in_channel, msg);
 
@@ -139,13 +144,6 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
     for (uint8_t i=0; i<num_routes; i++) {
-    
-        // Skip if channel is private and the target system or component IDs do not match
-        if ((GCS_MAVLINK::is_private(routes[i].channel)) &&
-            (target_system != routes[i].sysid ||
-             target_component != routes[i].compid)) {
-            continue;
-        }
 
         if (broadcast_system || (target_system == routes[i].sysid &&
                                  (broadcast_component || 
@@ -214,7 +212,7 @@ void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entr
         }
 #if ROUTING_DEBUG
         ::printf("send msg %u on chan %u sysid=%u compid=%u\n",
-                 msg.msgid,
+                 entry->msgid,
                  (unsigned)routes[i].channel,
                  (unsigned)routes[i].sysid,
                  (unsigned)routes[i].compid);
@@ -301,8 +299,8 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 */
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t &msg)
 {
-    uint16_t mask = GCS_MAVLINK::active_channel_mask();
-    
+    uint16_t mask = GCS_MAVLINK::active_channel_mask() & ~GCS_MAVLINK::private_channel_mask();
+
     // don't send on the incoming channel. This should only matter if
     // the routing table is full
     mask &= ~(1U<<(in_channel-MAVLINK_COMM_0));

@@ -16,7 +16,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
 #include "AP_Proximity_LightWareSF40C.h"
 
@@ -24,30 +23,6 @@ extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_SF40C_HEADER                  0xAA
 #define PROXIMITY_SF40C_DESIRED_OUTPUT_RATE     3
-#define PROXIMITY_SF40C_UART_RX_SPACE           1280
-
-/* 
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_LightWareSF40C::AP_Proximity_LightWareSF40C(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (_uart != nullptr) {
-        // start uart with larger receive buffer
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), PROXIMITY_SF40C_UART_RX_SPACE, 0);
-    }
-}
-
-// detect if a Lightware proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_LightWareSF40C::detect()
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
 
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C::update(void)
@@ -73,10 +48,8 @@ void AP_Proximity_LightWareSF40C::update(void)
 // initialise sensor
 void AP_Proximity_LightWareSF40C::initialise()
 {
-    // initialise sectors
-    if (!_sector_initialised) {
-        init_sectors();
-    }
+    // initialise boundary
+    init_boundary();
 
     // exit immediately if we've sent initialisation requests in the last second
     uint32_t now_ms = AP_HAL::millis();
@@ -135,66 +108,6 @@ void AP_Proximity_LightWareSF40C::restart_sensor()
     _sensor_state.motor_state = MotorState::UNKNOWN;
     _sensor_state.streaming = false;
     _sensor_state.output_rate = 0;
-}
-
-// initialise sector angles using user defined ignore areas
-void AP_Proximity_LightWareSF40C::init_sectors()
-{
-    // use defaults if no ignore areas defined
-    uint8_t ignore_area_count = get_ignore_area_count();
-    if (ignore_area_count == 0) {
-        _sector_initialised = true;
-        return;
-    }
-
-    uint8_t sector = 0;
-
-    for (uint8_t i=0; i<ignore_area_count; i++) {
-
-        // get ignore area info
-        uint16_t ign_area_angle;
-        uint8_t ign_area_width;
-        if (get_ignore_area(i, ign_area_angle, ign_area_width)) {
-
-            // calculate how many degrees of space we have between this end of this ignore area and the start of the end
-            int16_t start_angle, end_angle;
-            get_next_ignore_start_or_end(1, ign_area_angle, start_angle);
-            get_next_ignore_start_or_end(0, start_angle, end_angle);
-            int16_t degrees_to_fill = wrap_360(end_angle - start_angle);
-
-            // divide up the area into sectors
-            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SECTORS_MAX)) {
-                uint16_t sector_size;
-                if (degrees_to_fill >= 90) {
-                    // set sector to maximum of 45 degrees
-                    sector_size = 45;
-                } else if (degrees_to_fill > 45) {
-                    // use half the remaining area to optimise size of this sector and the next
-                    sector_size = degrees_to_fill / 2.0f;
-                } else  {
-                    // 45 degrees or less are left so put it all into the next sector
-                    sector_size = degrees_to_fill;
-                }
-                // record the sector middle and width
-                _sector_middle_deg[sector] = wrap_360(start_angle + sector_size / 2.0f);
-                _sector_width_deg[sector] = sector_size;
-
-                // move onto next sector
-                start_angle += sector_size;
-                sector++;
-                degrees_to_fill -= sector_size;
-            }
-        }
-    }
-
-    // set num sectors
-    _num_sectors = sector;
-
-    // re-initialise boundary because sector locations have changed
-    init_boundary();
-
-    // record success
-    _sector_initialised = true;
 }
 
 // send message to sensor
@@ -287,7 +200,6 @@ void AP_Proximity_LightWareSF40C::process_replies()
 }
 
 // process one byte received on serial port
-// returns true if a message has been successfully parsed
 // state is stored in _msg structure
 void AP_Proximity_LightWareSF40C::parse_byte(uint8_t b)
 {
@@ -390,9 +302,9 @@ void AP_Proximity_LightWareSF40C::process_message()
         }
 
         // prepare to push to object database
-        Location current_loc;
-        float current_vehicle_bearing;
-        const bool database_ready = database_prepare_for_push(current_loc, current_vehicle_bearing);
+        Vector3f current_pos;
+        Matrix3f body_to_ned;
+        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
@@ -400,35 +312,58 @@ void AP_Proximity_LightWareSF40C::process_message()
         const float angle_correction = frontend.get_yaw_correction(state.instance);
         const uint16_t dist_min_cm = distance_min() * 100;
         const uint16_t dist_max_cm = distance_max() * 100;
+
+        // mini sectors are used to combine several readings together
+        uint8_t combined_count = 0;
+        float combined_angle_deg = 0;
+        float combined_dist_m = INT16_MAX;
         for (uint16_t i = 0; i < point_count; i++) {
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            uint8_t sector;
-            if (convert_angle_to_sector(angle_deg, sector)) {
-                if (sector != _last_sector) {
-                    // update boundary used for avoidance
-                    if (_last_sector != UINT8_MAX) {
-                        update_boundary_for_sector(_last_sector, false);
-                    }
-                    _last_sector = sector;
-                    // init for new sector
-                    _distance[sector] = INT16_MAX;
-                    _distance_valid[sector] = false;
+            const uint8_t sector = convert_angle_to_sector(angle_deg);
+
+            // if we've entered a new sector then finish off previous sector
+            if (sector != _last_sector) {
+                // update boundary used for avoidance
+                if (_last_sector != UINT8_MAX) {
+                    update_boundary_for_sector(_last_sector, false);
                 }
+                // init for new sector
+                _last_sector = sector;
+                _distance[sector] = INT16_MAX;
+                _distance_valid[sector] = false;
+            }
+
+            // check reading is not within an ignore zone
+            if (!ignore_reading(angle_deg)) {
+                // check distance reading is valid
                 if ((dist_cm >= dist_min_cm) && (dist_cm <= dist_max_cm)) {
-                    // use shortest valid distance for this sector's distance
                     const float dist_m = dist_cm * 0.01f;
+
+                    // update shortest distance for this sector
                     if (dist_m < _distance[sector]) {
                         _angle[sector] = angle_deg;
                         _distance[sector] = dist_m;
                         _distance_valid[sector] = true;
                     }
-                    // send point to object avoidance database
-                    if (database_ready) {
-                        database_push(angle_deg, dist_m, _last_distance_received_ms, current_loc, current_vehicle_bearing);
+
+                    // calculate shortest of last few readings
+                    if (dist_m < combined_dist_m) {
+                        combined_dist_m = dist_m;
+                        combined_angle_deg = angle_deg;
                     }
+                    combined_count++;
                 }
+            }
+
+            // send combined distance to object database
+            if ((i+1 >= point_count) || (combined_count >= PROXIMITY_SF40C_COMBINE_READINGS)) {
+                if ((combined_dist_m < INT16_MAX) && database_ready) {
+                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_pos,body_to_ned);
+                }
+                combined_count = 0;
+                combined_dist_m = INT16_MAX;
             }
         }
         break;

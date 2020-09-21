@@ -65,6 +65,7 @@ import time
 import array
 import os
 import platform
+import re
 
 from sys import platform as _platform
 
@@ -571,7 +572,7 @@ class uploader(object):
         # get the bootloader protocol ID first
         self.bl_rev = self.__getInfo(uploader.INFO_BL_REV)
         if (self.bl_rev < uploader.BL_REV_MIN) or (self.bl_rev > uploader.BL_REV_MAX):
-            print("Unsupported bootloader protocol %d" % uploader.INFO_BL_REV)
+            print("Unsupported bootloader protocol %d" % self.bl_rev)
             raise RuntimeError("Bootloader protocol mismatch")
 
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
@@ -658,7 +659,7 @@ class uploader(object):
                 if rev in revs:
                     (label, flawed) = revs[rev]
                     if flawed and family == 0x419:
-                        print("  %x %s rev%s (flawed; 1M limit)" % (chip, mcu, label,))
+                        print("  %x %s rev%s (flawed; 1M limit, see STM32F42XX Errata sheet sec. 2.1.10)" % (chip, mcu, label,))
                     elif family == 0x419:
                         print("  %x %s rev%s (no 1M flaw)" % (chip, mcu, label,))
                     else:
@@ -672,10 +673,56 @@ class uploader(object):
 
         print("Info:")
         print("  flash size: %u" % self.fw_maxsize)
-        print("  board_type: %u" % self.board_type)
+        name = self.board_name_for_board_id(self.board_type)
+        if name is not None:
+            print("  board_type: %u (%s)" % (self.board_type, name))
+        else:
+            print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
 
         print("Identification complete")
+
+    def board_name_for_board_id(self, board_id):
+        '''return name for board_id, None if it can't be found'''
+        shared_ids = {
+            9: "fmuv3",
+            50: "fmuv5",
+        }
+        if board_id in shared_ids:
+            return shared_ids[board_id]
+
+        try:
+            ret = []
+
+            hwdef_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
+            # uploader.py is swiped into other places, so if the dir
+            # doesn't exist then fail silently
+            if os.path.exists(hwdef_dir):
+                dirs = [x if (x not in ["scripts","common","STM32CubeConf"] and os.path.isdir(os.path.join(hwdef_dir, x))) else None for x in os.listdir(hwdef_dir)]
+                for adir in dirs:
+                    if adir is None:
+                        continue
+                    filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+                    if not os.path.exists(filepath):
+                        continue
+                    fh = open(filepath)
+                    if fh is None:
+#                        print("Failed to open (%s)" % filepath)
+                        continue
+                    text = fh.readlines()
+                    for line in text:
+                        m = re.match("^\s*APJ_BOARD_ID\s+(\d+)\s*$", line)
+                        if m is None:
+                            continue
+                        if int(m.group(1)) == board_id:
+                            ret.append(adir)
+            if len(ret) == 0:
+                return None
+            return " or ".join(ret)
+        except Exception as e:
+            print("Failed to get name: %s" % str(e))
+        return None
 
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):
@@ -692,8 +739,11 @@ class uploader(object):
                     print("INFO: %s" % msg)
                     incomp = False
             if incomp:                        
-                msg = "Firmware not suitable for this board (board_type=%u board_id=%u)" % (
-                    self.board_type, fw.property('board_id'))
+                msg = "Firmware not suitable for this board (board_type=%u (%s) board_id=%u (%s))" % (
+                    self.board_type,
+                    self.board_name_for_board_id(self.board_type),
+                    fw.property('board_id'),
+                    self.board_name_for_board_id(fw.property('board_id')))
                 print("WARNING: %s" % msg)
                 
                 if force:

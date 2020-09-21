@@ -1,8 +1,5 @@
 #include "GCS_Mavlink.h"
-
 #include "Tracker.h"
-
-#include <AP_Camera/AP_Camera.h>
 
 /*
  *  !!NOTE!!
@@ -310,7 +307,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
@@ -616,37 +612,6 @@ mission_failed:
     } // end switch
 } // end handle mavlink
 
-
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
-void Tracker::mavlink_delay_cb()
-{
-    static uint32_t last_1hz, last_50hz, last_5s;
-
-    logger.EnableWrites(false);
-
-    uint32_t tnow = AP_HAL::millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs().update_receive();
-        gcs().update_send();
-        notify.update();
-    }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
-    logger.EnableWrites(true);
-}
 
 // send position tracker is using
 void GCS_MAVLINK_Tracker::send_global_position_int()

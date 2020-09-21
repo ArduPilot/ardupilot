@@ -51,7 +51,8 @@ struct SPIDesc {
             uint32_t _mode, uint32_t _lowspeed, uint32_t _highspeed)
         : name(_name), bus(_bus), device(_device),
           pal_line(_pal_line), mode(_mode),
-          lowspeed(_lowspeed), highspeed(_highspeed)
+          lowspeed(_lowspeed), highspeed(_highspeed),
+          bank_select_cb(nullptr)
     {
     }
 
@@ -62,6 +63,7 @@ struct SPIDesc {
     uint32_t mode;
     uint32_t lowspeed;
     uint32_t highspeed;
+    AP_HAL::Device::BankSelectCb bank_select_cb;
 };
 
 
@@ -81,6 +83,25 @@ public:
     /* See AP_HAL::SPIDevice::transfer_fullduplex() */
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
+
+    /*
+        Links the bank select callback to the spi bus, so that even when
+        used outside of the driver bank selection can be done.
+    */
+    void setup_bankselect_callback(BankSelectCb bank_select) override {
+        device_desc.bank_select_cb = bank_select;
+        AP_HAL::SPIDevice::setup_bankselect_callback(bank_select);
+    }
+
+    /* 
+       Ensure to deregister bankselect callback in destructor of user 
+       that could potentially be deleted. otherewise the orphaned functor
+       can be called causing memory corruption.
+    */
+    void deregister_bankselect_callback() override {
+        device_desc.bank_select_cb = nullptr;
+        AP_HAL::SPIDevice::deregister_bankselect_callback();
+    }
 
     /*
      *  send N bytes of clock pulses without taking CS. This is used

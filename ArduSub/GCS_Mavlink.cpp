@@ -107,7 +107,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         AP_HAL::millis(),
         0,
         0,
-        sub.celsius.temperature() * 100);
+        sub.celsius.temperature() * 100,
+        0); // TODO: use differential pressure temperature
 }
 
 bool GCS_MAVLINK_Sub::send_info()
@@ -139,6 +140,9 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("InputHold", sub.input_hold_engaged);
+
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("RollPitch", sub.roll_pitch_flag);
 
     return true;
 }
@@ -350,7 +354,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_PID_TUNING
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -716,11 +719,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_DISTANCE_SENSOR: {
-        sub.rangefinder.handle_msg(msg);
-        break;
-    }
-
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -790,42 +788,9 @@ void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
-void Sub::mavlink_delay_cb()
-{
-    static uint32_t last_1hz, last_50hz, last_5s;
-
-    logger.EnableWrites(false);
-
-    uint32_t tnow = AP_HAL::millis();
-    if (tnow - last_1hz > 1000) {
-        last_1hz = tnow;
-        gcs().send_message(MSG_HEARTBEAT);
-        gcs().send_message(MSG_SYS_STATUS);
-    }
-    if (tnow - last_50hz > 20) {
-        last_50hz = tnow;
-        gcs().update_receive();
-        gcs().update_send();
-        notify.update();
-    }
-    if (tnow - last_5s > 5000) {
-        last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
-    }
-
-    logger.EnableWrites(true);
-}
-
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
     if (packet.param1 > 0.5f) {
-        sub.arming.disarm();
+        sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;

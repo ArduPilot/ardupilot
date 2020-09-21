@@ -4,6 +4,10 @@
 ** See Copyright Notice in lua.h
 */
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
 #define lundump_c
 #define LUA_CORE
 

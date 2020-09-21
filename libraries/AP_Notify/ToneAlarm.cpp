@@ -299,6 +299,23 @@ void AP_ToneAlarm::update()
         }
     }
 
+    // notify the user when GCS failsafe is triggered
+    if (flags.failsafe_gcs != AP_Notify::flags.failsafe_gcs) {
+        flags.failsafe_gcs = AP_Notify::flags.failsafe_gcs;
+        if (flags.failsafe_gcs) {
+            // armed case handled by events.failsafe_mode_change
+            if (!AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_QUIET_NEG_FEEDBACK);
+            }
+        } else {
+            if (AP_Notify::flags.armed) {
+                play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
+            } else {
+                play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+            }
+        }
+    }
+
     // notify the user when pre_arm checks are passing
     if (flags.pre_arm_check != AP_Notify::flags.pre_arm_check) {
         flags.pre_arm_check = AP_Notify::flags.pre_arm_check;

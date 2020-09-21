@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_WheelEncoder_Quadrature::AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state) :
-	AP_WheelEncoder_Backend(frontend, instance, state)
+    AP_WheelEncoder_Backend(frontend, instance, state)
 {
 }
 

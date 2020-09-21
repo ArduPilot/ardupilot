@@ -281,6 +281,7 @@ dsm_decode(uint64_t frame_time, const uint8_t dsm_frame[16], uint16_t *values, u
 
 		case 2:
 			channel = 1;
+            break;
 
 		default:
 			break;

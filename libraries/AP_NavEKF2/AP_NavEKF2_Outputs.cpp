@@ -1,12 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_GPS/AP_GPS.h>
-
-#include <stdio.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -103,7 +100,12 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow only navigation
     if (frontend->_fusionModeGPS == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        height = MAX(float(frontend->_rng.max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+        const RangeFinder *_rng = AP::rangefinder();
+        if (_rng == nullptr) {
+            // we really, really shouldn't be here.
+            return false;
+        }
+        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->_altSource != 1) {
             height -= terrainState;
@@ -343,7 +345,13 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             } else {
                 // if no GPS fix, provide last known position before entering the mode
                 // correct for IMU offset (EKF calculations are at the IMU position)
-                loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                loc.lat = EKF_origin.lat;
+                loc.lng = EKF_origin.lng;
+                if (PV_AidingMode == AID_NONE) {
+                    loc.offset((lastKnownPositionNE.x + posOffsetNED.x), (lastKnownPositionNE.y + posOffsetNED.y));
+                } else {
+                    loc.offset((outputDataNew.position.x + posOffsetNED.x), (outputDataNew.position.y + posOffsetNED.y));
+                }
                 return false;
             }
         }
@@ -472,9 +480,9 @@ return the filter fault status as a bitmasked integer
  1 = velocities are NaN
  2 = badly conditioned X magnetometer fusion
  3 = badly conditioned Y magnetometer fusion
- 5 = badly conditioned Z magnetometer fusion
- 6 = badly conditioned airspeed fusion
- 7 = badly conditioned synthetic sideslip fusion
+ 4 = badly conditioned Z magnetometer fusion
+ 5 = badly conditioned airspeed fusion
+ 6 = badly conditioned synthetic sideslip fusion
  7 = filter is not initialised
 */
 void  NavEKF2_core::getFilterFaults(uint16_t &faults) const
@@ -537,7 +545,7 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
 }
 
 // send an EKF_STATUS message to GCS
-void NavEKF2_core::send_status_report(mavlink_channel_t chan)
+void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
 {
     // prepare flags
     uint16_t flags = 0;
@@ -571,12 +579,17 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     if (filterStatus.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
+    if (!filterStatus.flags.initalized) {
+        flags |= EKF_UNINITIALIZED;
+    }
 
     // get variances
     float velVar, posVar, hgtVar, tasVar;
     Vector3f magVar;
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+
+    const float mag_max = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
 
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
@@ -589,7 +602,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan)
     }
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, magVar.length(), temp, tasVar);
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
 }
 
 // report the reason for why the backend is refusing to initialise
@@ -622,3 +635,10 @@ bool NavEKF2_core::isExtNavUsedForYaw()
     return extNavUsedForYaw;
 }
 
+bool NavEKF2_core::getDataEKFGSF(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
+{
+    if (yawEstimator != nullptr) {
+        return yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, innov_VN, innov_VE, weight);
+    }
+    return false;
+}

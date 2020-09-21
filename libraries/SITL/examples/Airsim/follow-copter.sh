@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Example script for multi-vehicle simulation with AirSim
-# see http://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details
+# see https://ardupilot.org/dev/docs/sitl-with-airsim.html#multi-vehicle-simulation for details
 
 # Usage - From ardupilot root directory, run - libraries/SITL/examples/Airsim/follow-copter.sh $GCS_IP
 # $GCS_IP is the IP address of the system running the GCs, by default is 127.0.0.1
@@ -38,9 +38,7 @@ elif [ "$(expr substr $unameOut 1 6)" == "CYGWIN" ]; then
     MCAST_IP_PORT="0.0.0.0:14550"
 fi
 
-
-
-BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/libraries/SITL/examples/Airsim/quadX.parm"
+BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm,$ROOTDIR/Tools/autotest/default_params/airsim-quadX.parm"
 
 [ -x "$COPTER" ] || {
 	./waf configure --board sitl

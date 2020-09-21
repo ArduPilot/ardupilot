@@ -49,27 +49,34 @@
 #include <unistd.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 
-class ReplayVehicle {
+class ReplayVehicle : public AP_Vehicle {
 public:
-    ReplayVehicle() { unused = -1; }
-    void setup();
-    void load_parameters(void);
+    friend class Replay;
 
-    AP_InertialSensor ins;
-    AP_Baro barometer;
-    AP_GPS gps;
-    Compass compass;
-    AP_SerialManager serial_manager;
-    RangeFinder rng;
-    NavEKF2 EKF2{&ahrs, rng};
-    NavEKF3 EKF3{&ahrs, rng};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3};
+    ReplayVehicle() { unused = -1; }
+    // HAL::Callbacks implementation.
+    void load_parameters(void) override;
+    void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
+                             uint8_t &task_count,
+                             uint32_t &log_bit) override {
+        tasks = nullptr;
+        task_count = 0;
+        log_bit = 0;
+    };
+
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) override { return true; }
+    virtual uint8_t get_mode() const override { return 0; }
+
     AP_Vehicle::FixedWing aparm;
     AP_Airspeed airspeed;
     AP_Int32 unused; // logging is magic for Replay; this is unused
     struct LogStructure log_structure[256] = {
     };
     AP_Logger logger{unused};
+
+protected:
+
+    void init_ardupilot() override;
 
 private:
     Parameters g;
@@ -173,7 +180,7 @@ private:
 
     void usage(void);
     void set_user_parameters(void);
-    void read_sensors(const char *type);
+    void read_sensors(const char *type, uint8_t core);
     void write_ekf_logs(void);
     void log_check_generate();
     void log_check_solution();

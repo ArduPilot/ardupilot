@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import os
 
-from apmrover2 import AutoTestRover
+from rover import AutoTestRover
 from common import AutoTest
 
 from common import NotAchievedException
@@ -19,7 +19,7 @@ def log_name(self):
 class AutoTestBalanceBot(AutoTestRover):
 
     def vehicleinfo_key(self):
-        return "APMrover2"
+        return "Rover"
 
     def init(self):
         if self.frame is None:
@@ -115,10 +115,6 @@ inherit Rover's tests!'''
 
             ("GetBanner", "Get Banner", self.do_get_banner),
 
-            ("GetCapabilities",
-             "Get Capabilities",
-             self.test_get_autopilot_capabilities),
-
             ("DO_SET_MODE",
              "Set mode via MAV_COMMAND_DO_SET_MODE",
              self.test_do_set_mode_via_command_long),
@@ -127,10 +123,9 @@ inherit Rover's tests!'''
              "Test ServoRelayEvents",
              self.test_servorelayevents),
 
-            ("DownLoadLogs", "Download logs", lambda:
-             self.log_download(
-                 self.buildlogs_path("APMrover2-log.bin"),
-                 upload_logs=len(self.fail_list) > 0)),
+            ("LogUpload",
+             "Upload logs",
+             self.log_upload),
         ])
         return ret
 

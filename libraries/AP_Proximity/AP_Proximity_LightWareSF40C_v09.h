@@ -1,20 +1,16 @@
 #pragma once
 
 #include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
+#include "AP_Proximity_Backend_Serial.h"
 
 #define PROXIMITY_SF40C_TIMEOUT_MS            200                               // requests timeout after 0.2 seconds
 
-class AP_Proximity_LightWareSF40C_v09 : public AP_Proximity_Backend
+class AP_Proximity_LightWareSF40C_v09 : public AP_Proximity_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_Proximity_LightWareSF40C_v09(AP_Proximity &_frontend,
-                                AP_Proximity::Proximity_State &_state);
 
-    // static detection function
-    static bool detect();
+    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -36,7 +32,6 @@ private:
 
     // initialise sensor (returns true if sensor is successfully initialised)
     bool initialise();
-    void init_sectors();
     void set_motor_speed(bool on_off);
     void set_motor_direction();
     void set_forward_direction();
@@ -52,7 +47,6 @@ private:
     void clear_buffers();
 
     // reply related variables
-    AP_HAL::UARTDriver *uart = nullptr;
     char element_buf[2][10];
     uint8_t element_len[2];
     uint8_t element_num;
@@ -93,5 +87,4 @@ private:
     uint8_t _motor_speed;               // motor speed as reported by lidar
     uint8_t _motor_direction = 99;      // motor direction as reported by lidar
     int16_t _forward_direction = 999;   // forward direction as reported by lidar
-    bool _sector_initialised = false;
 };

@@ -22,6 +22,7 @@
 // definitions that are independent of main loop rate
 #define POSHOLD_STICK_RELEASE_SMOOTH_ANGLE      1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX    10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
+#define POSHOLD_WIND_COMP_LEAN_PCT_MAX          0.6666f // wind compensation no more than 2/3rds of angle max to ensure pilot can always override
 
 // poshold_init - initialise PosHold controller
 bool ModePosHold::init(bool ignore_checks)
@@ -150,7 +151,7 @@ void ModePosHold::run()
         loiter_nav->init_target();
         loiter_nav->update();
         attitude_control->set_yaw_target_to_current_heading();
-        // FALLTHROUGH
+        FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms();
@@ -594,6 +595,13 @@ void ModePosHold::update_wind_comp_estimate()
     } else {
         // low pass filter the position controller's lean angle output
         wind_comp_ef.y = (1.0f-TC_WIND_COMP)*wind_comp_ef.y + TC_WIND_COMP*accel_target.y;
+    }
+
+    // limit acceleration
+    const float accel_lim_cmss = tanf(radians(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max * 0.01f)) * 981.0f;
+    const float wind_comp_ef_len = wind_comp_ef.length();
+    if (!is_zero(accel_lim_cmss) && (wind_comp_ef_len > accel_lim_cmss)) {
+        wind_comp_ef *= accel_lim_cmss / wind_comp_ef_len;
     }
 }
 

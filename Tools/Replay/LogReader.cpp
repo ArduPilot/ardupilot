@@ -9,6 +9,8 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_HAL_Linux/Scheduler.h>
+
 #include "LogReader.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -116,9 +118,9 @@ static const char *generated_names[] = {
     "FMT",
     "FMTU",
     "NKF1", "NKF2", "NKF3", "NKF4", "NKF5", "NKF6", "NKF7", "NKF8", "NKF9", "NKF0",
-    "NKQ1", "NKQ2",
+    "NKQ", "NKQ1", "NKQ2",
     "XKF1", "XKF2", "XKF3", "XKF4", "XKF5", "XKF6", "XKF7", "XKF8", "XKF9", "XKF0",
-    "XKQ1", "XKQ2", "XKFD", "XKV1", "XKV2",
+    "XKQ", "XKQ1", "XKQ2", "XKFD", "XKV1", "XKV2",
     "AHR2",
     "ORGN",
     "POS",
@@ -182,6 +184,12 @@ void LogReader::initialise_fmt_map()
                 // with....
                 continue;
             }
+            if (strncmp(*name, "NK", 2)==0 || strncmp(*name, "XK", 2) == 0) {
+                // cope with older logs.  Really old logs only had EKF
+                // messages, newer logs have an instance number rather
+                // than having NKF1 and NKF6.
+                continue;
+            }
             ::fprintf(stderr, "Failed to find apparently-generated-name (%s) in COMMON_LOG_STRUCTURES\n", *name);
             abort();
         }
@@ -202,7 +210,7 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         return mapped_msgid[intype];
     }
     for (uint8_t n=next_msgid; n<255; n++) {
-        ::fprintf(stderr, "next_msgid=%u\n", next_msgid);
+        ::fprintf(stderr, "next_msgid=%u\n", n);
         bool already_mapped = false;
         for (uint16_t i=0; i<sizeof(mapped_msgid); i++) {
             if (mapped_msgid[i] == n) {
@@ -284,9 +292,9 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         pkt.msgid = LOG_FORMAT_MSG;
         pkt.type = s.msg_type;
         pkt.length = s.msg_len;
-        strncpy(pkt.name, s.name, sizeof(pkt.name));
-        strncpy(pkt.format, s.format, sizeof(pkt.format));
-        strncpy(pkt.labels, s.labels, sizeof(pkt.labels));
+        memcpy(pkt.name, s.name, sizeof(pkt.name));
+        memcpy(pkt.format, s.format, sizeof(pkt.format));
+        memcpy(pkt.labels, s.labels, sizeof(pkt.labels));
         logger.WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 
@@ -405,7 +413,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         return true;
 }
 
-bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
+bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) {
     char name[5];
     memset(name, '\0', 5);
     memcpy(name, f.name, 4);
@@ -425,7 +433,7 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
         // a MsgHandler would probably have found a timestamp and
         // caled stop_clock.  This runs IO, clearing logger's
         // buffer.
-        hal.scheduler->stop_clock(last_timestamp_usec);
+        hal.scheduler->stop_clock(((Linux::Scheduler*)hal.scheduler)->stopped_clock_usec());
     }
 
     LR_MsgHandler *p = msgparser[f.type];
@@ -433,24 +441,10 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
 	return true;
     }
 
-    p->process_message(msg);
+    p->process_message(msg, core);
 
     maybe_install_vehicle_specific_parsers();
 
-    return true;
-}
-
-bool LogReader::wait_type(const char *wtype)
-{
-    while (true) {
-        char type[5];
-        if (!update(type)) {
-            return false;
-        }
-        if (streq(type,wtype)) {
-            break;
-        }
-    }
     return true;
 }
 

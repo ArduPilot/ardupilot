@@ -46,7 +46,7 @@ void EFI_MegaSquirt::update()
     if (!connected) {
         return;
     }
-    float rpm = sitl->state.rpm1;
+    float rpm = sitl->state.rpm[0];
 
     table7.rpm = rpm;
     table7.fuelload = 20;

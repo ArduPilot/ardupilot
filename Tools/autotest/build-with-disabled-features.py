@@ -200,7 +200,7 @@ class BuilderCopter(Builder):
 specs = [
     {
         "config": 'ArduCopter/config.h',
-        "autotest_target": "build.ArduCopter",
+        "autotest_target": "build.Copter",
         "target_binary": "bin/arducopter",
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
@@ -243,19 +243,19 @@ specs = [
     },
     {
         "config": 'ArduPlane/config.h',
-        "autotest_target": "build.ArduPlane",
+        "autotest_target": "build.Plane",
         "target_binary": "bin/arduplane",
         "reverse-deps": {
         },
     }, {
-        "config": 'APMrover2/config.h',
-        "autotest_target": "build.APMrover2",
+        "config": 'Rover/config.h',
+        "autotest_target": "build.Rover",
         "target_binary": "bin/ardurover",
         "reverse-deps": {
         },
     }, {
         "config": 'ArduSub/config.h',
-        "autotest_target": "build.ArduSub",
+        "autotest_target": "build.Sub",
         "target_binary": "bin/ardusub",
         "reverse-deps": {
             "AC_FENCE": ["AVOIDANCE_ENABLED"],
@@ -264,7 +264,7 @@ specs = [
         },
     }, {
         "config": 'AntennaTracker/config.h',
-        "autotest_target": "build.AntennaTracker",
+        "autotest_target": "build.Tracker",
         "target_binary": "bin/antennatracker",
         "reverse-deps": {
         },

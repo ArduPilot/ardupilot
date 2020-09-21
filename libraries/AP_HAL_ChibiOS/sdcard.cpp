@@ -56,7 +56,9 @@ bool sdcard_init()
 #if HAL_USE_SDC
 
     if (SDCD1.bouncebuffer == nullptr) {
-        bouncebuffer_init(&SDCD1.bouncebuffer, 512, true);
+        // allocate 4k bouncebuffer for microSD to match size in
+        // AP_Logger
+        bouncebuffer_init(&SDCD1.bouncebuffer, 4096, true);
     }
 
     if (sdcard_running) {

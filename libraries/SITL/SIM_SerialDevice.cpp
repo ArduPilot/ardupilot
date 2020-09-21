@@ -16,7 +16,11 @@
   base class for serially-attached simulated devices
 */
 
+#include <AP_HAL/AP_HAL.h>
+#include <SITL/SITL.h>
+
 #include "SIM_SerialDevice.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -75,9 +79,10 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size)
 {
     const ssize_t ret = ::read(read_fd_my_end, buffer, size);
     // if (ret > 0) {
-    //     ::fprintf(stderr, "SIM_SerialDevice: read from autopilot: (");
+    //     ::fprintf(stderr, "SIM_SerialDevice: read from autopilot (%u): (", (unsigned)ret);
     //     for (ssize_t i=0; i<ret; i++) {
-    //         ::fprintf(stderr, "%02X", buffer[i]);
+    //         const uint8_t x = buffer[i];
+    //         ::fprintf(stderr, "%02X", (unsigned)x);
     //     }
     //     ::fprintf(stderr, " ");
     //     for (ssize_t i=0; i<ret; i++) {

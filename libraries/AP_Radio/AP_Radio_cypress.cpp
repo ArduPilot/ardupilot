@@ -282,9 +282,7 @@ bool AP_Radio_cypress::init(void)
  */
 bool AP_Radio_cypress::reset(void)
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     /*
       to reset radio hold reset high for 0.5s, then low for 0.5s
@@ -1439,10 +1437,7 @@ void AP_Radio_cypress::dsm_choose_channel(void)
  */
 void AP_Radio_cypress::start_recv_bind(void)
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        // shouldn't be possible
-        return;
-    }
+    dev->get_semaphore()->take_blocking();
 
     Debug(1, "Cypress: start_recv_bind\n");
 

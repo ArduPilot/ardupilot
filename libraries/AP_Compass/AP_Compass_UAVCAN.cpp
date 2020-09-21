@@ -15,11 +15,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include "AP_Compass_UAVCAN.h"
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
@@ -27,9 +27,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_mag_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { printf(fmt, ##args); }} while (0)
-
-
+#define LOG_TAG "COMPASS"
 // Frontend Registry Binders
 UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
 UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
@@ -37,10 +35,11 @@ UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
-AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
+AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
     : _ap_uavcan(ap_uavcan)
     , _node_id(node_id)
     , _sensor_id(sensor_id)
+    , _devid(devid)
 {
 }
 
@@ -69,44 +68,42 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 }
 
-AP_Compass_Backend* AP_Compass_UAVCAN::probe()
+AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
 {
-    WITH_SEMAPHORE(_sem_registry);
-
     AP_Compass_UAVCAN* driver = nullptr;
-    for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
-        if (!_detected_modules[i].driver && _detected_modules[i].ap_uavcan) {
-            // Register new Compass mode to a backend
-            driver = new AP_Compass_UAVCAN(_detected_modules[i].ap_uavcan, _detected_modules[i].node_id, _detected_modules[i].sensor_id);
-            if (driver) {
-                _detected_modules[i].driver = driver;
-                driver->init();
-                debug_mag_uavcan(2,
-                                 _detected_modules[i].ap_uavcan->get_driver_index(),
-                                 "Found Mag Node %d on Bus %d Sensor ID %d\n",
-                                 _detected_modules[i].node_id,
-                                 _detected_modules[i].ap_uavcan->get_driver_index(),
-                                 _detected_modules[i].sensor_id);
+    if (!_detected_modules[index].driver && _detected_modules[index].ap_uavcan) {
+        WITH_SEMAPHORE(_sem_registry);
+        // Register new Compass mode to a backend
+        driver = new AP_Compass_UAVCAN(_detected_modules[index].ap_uavcan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
+        if (driver) {
+            if (!driver->init()) {
+                delete driver;
+                return nullptr;
             }
-            break;
+            _detected_modules[index].driver = driver;
+            AP::can().log_text(AP_CANManager::LOG_INFO,
+                                LOG_TAG,
+                                "Found Mag Node %d on Bus %d Sensor ID %d\n",
+                                _detected_modules[index].node_id,
+                                _detected_modules[index].ap_uavcan->get_driver_index(),
+                                _detected_modules[index].sensor_id);
         }
     }
     return driver;
 }
 
-void AP_Compass_UAVCAN::init()
+bool AP_Compass_UAVCAN::init()
 {
-    _instance = register_compass();
+    // Adding 1 is necessary to allow backward compatibilty, where this field was set as 1 by default
+    if (!register_compass(_devid, _instance)) {
+        return false;
+    }
 
-    uint32_t devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
-                                                 _ap_uavcan->get_driver_index(),
-                                                 _node_id,
-                                                 1); // the 1 is arbitrary
-
-    set_dev_id(_instance, devid);
+    set_dev_id(_instance, _devid);
     set_external(_instance, true);
 
-    debug_mag_uavcan(2, _ap_uavcan->get_driver_index(),  "AP_Compass_UAVCAN loaded\n\r");
+    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG,  "AP_Compass_UAVCAN loaded\n\r");
+    return true;
 }
 
 AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
@@ -140,7 +137,26 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
                 _detected_modules[i].ap_uavcan = ap_uavcan;
                 _detected_modules[i].node_id = node_id;
                 _detected_modules[i].sensor_id = sensor_id;
+                _detected_modules[i].devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                                                 ap_uavcan->get_driver_index(),
+                                                 node_id,
+                                                 sensor_id + 1); // we use sensor_id as devtype
                 break;
+            }
+        }
+    }
+
+    struct DetectedModules tempslot;
+    // Sort based on the node_id, larger values first
+    // we do this, so that we have repeatable compass
+    // registration, especially in cases of extraneous
+    // CAN compass is connected.
+    for (uint8_t i = 1; i < COMPASS_MAX_BACKEND; i++) {
+        for (uint8_t j = i; j > 0; j--) {
+            if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
+                tempslot = _detected_modules[j];
+                _detected_modules[j] = _detected_modules[j-1];
+                _detected_modules[j-1] = tempslot;
             }
         }
     }

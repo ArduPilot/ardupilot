@@ -62,6 +62,11 @@ _depends_on_vehicle_cache = {}
 def _depends_on_vehicle(bld, source_node):
     path = source_node.srcpath()
 
+    if not bld.env.BUILDROOT:
+        bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
+    if path.startswith(bld.env.BUILDROOT) or path.startswith("build/"):
+        _depends_on_vehicle_cache[path] = False
+
     if path not in _depends_on_vehicle_cache:
         s = _remove_comments(source_node.read())
         _depends_on_vehicle_cache[path] = _macros_re.search(s) is not None
@@ -95,6 +100,12 @@ def ap_library(bld, library, vehicle):
         bld.fatal('ap_library: %s not found' % library)
 
     src = library_dir.ant_glob(wildcard)
+
+    # allow for dynamically generated sources in a library that inherit the
+    # dependencies and includes
+    if library in bld.env.AP_LIB_EXTRA_SOURCES:
+        for s in bld.env.AP_LIB_EXTRA_SOURCES[library]:
+            src.append(bld.bldnode.find_or_declare(os.path.join('libraries', library, s)))
 
     if not common_tg:
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
@@ -140,6 +151,7 @@ class ap_library_check_headers(Task.Task):
     dispatched_headers = set()
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
+        'libraries/AP_Camera/AP_RunCam.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -193,11 +205,33 @@ class ap_library_check_headers(Task.Task):
     def keyword(self):
         return 'Checking included headers'
 
+def double_precision_check(tasks):
+    '''check for tasks marked as double precision'''
+
+    for t in tasks:
+        if len(t.inputs) == 1:
+            # get a list of tasks we need to change to be double precision
+            double_tasks = []
+            for library in t.env.DOUBLE_PRECISION_SOURCES.keys():
+                for s in t.env.DOUBLE_PRECISION_SOURCES[library]:
+                    double_tasks.append([library, s])
+
+            src = str(t.inputs[0]).split('/')[-2:]
+            if src in double_tasks:
+                single_precision_option='-fsingle-precision-constant'
+                t.env.CXXFLAGS = t.env.CXXFLAGS[:]
+                if single_precision_option in t.env.CXXFLAGS:
+                    t.env.CXXFLAGS.remove(single_precision_option)
+                t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+
+    
 @feature('ap_library_object')
 @after_method('process_source')
 def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
         return
+
+    double_precision_check(self.compiled_tasks)
 
     if not self.env.ENABLE_HEADER_CHECKS:
         return
@@ -208,3 +242,5 @@ def ap_library_register_for_check(self):
 
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
+    cfg.env.AP_LIB_EXTRA_SOURCES = dict()
+    cfg.env.DOUBLE_PRECISION_SOURCES = dict()

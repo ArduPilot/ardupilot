@@ -33,6 +33,8 @@ public:
         return true;
     }
 
+    ssize_t get_system_outqueue_length() const;
+
     void set_blocking_writes(bool blocking) override
     {
         _nonblocking_writes = !blocking;
@@ -46,6 +48,8 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+
+    bool discard_input() override;
 
     /* Implementations of Print virtual methods */
     size_t write(uint8_t c) override;
@@ -87,6 +91,7 @@ private:
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
     int _listen_fd;  // socket we are listening on
+    struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
     bool _nonblocking_writes;

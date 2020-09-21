@@ -57,6 +57,11 @@ public:
 //      TODO: TYPE_HELICAL,
     };
 
+    // we support upto 32 boolean bits for users wanting to change landing behaviour.
+    enum OptionsMask {
+        ON_LANDING_FLARE_USE_THR_MIN                   = (1<<0),   // If set then set trottle to thr_min instead of zero on final flare
+    };
+
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
     bool verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
             const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed);
@@ -72,6 +77,7 @@ public:
     bool is_ground_steering_allowed(void) const;
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
+    bool use_thr_min_during_flare(void) const; //defaults to false, but _options bit zero enables it.
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
@@ -114,6 +120,8 @@ private:
         // are we in auto and flight_stage is LAND
         bool in_progress:1;
     } flags;
+
+    AP_Int16 _options;    // user-configurable bitmask options, via a parameter, for landing
 
     // same as land_slope but sampled once before a rangefinder changes the slope. This should be the original mission planned slope
     float initial_slope;

@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -84,6 +84,9 @@
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
 
+#define AP_SERIALMANAGER_SAGETECH_BUFSIZE_RX    128
+#define AP_SERIALMANAGER_SAGETECH_BUFSIZE_TX    128
+
 // MegaSquirt EFI protocol
 #define AP_SERIALMANAGER_EFI_MS_BAUD           115
 #define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
@@ -97,6 +100,11 @@
 #define AP_SERIALMANAGER_SLCAN_BAUD             115200
 #define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
 #define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
+
+// MSP protocol default buffer sizes
+#define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
+#define AP_SERIALMANAGER_MSP_BAUD           115200
 
 class AP_SerialManager {
 public:
@@ -134,6 +142,16 @@ public:
         SerialProtocol_RCIN = 23,
         SerialProtocol_EFI_MS = 24,                   // MegaSquirt EFI serial protocol
         SerialProtocol_LTM_Telem = 25,
+        SerialProtocol_RunCam = 26,
+        SerialProtocol_Hott = 27,
+        SerialProtocol_Scripting = 28,
+        SerialProtocol_CRSF = 29,
+        SerialProtocol_Generator = 30,
+        SerialProtocol_Winch = 31,
+        SerialProtocol_MSP = 32,
+        SerialProtocol_DJI_FPV = 33,
+        SerialProtocol_Sagetech = 34,
+        SerialProtocol_NumProtocols                    // must be the last value
     };
 
     // get singleton instance
@@ -161,6 +179,9 @@ public:
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns true if a channel is found, false if not
     bool get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const;
+
+    // should_forward_mavlink_telemetry - returns true if this port should forward telemetry
+    bool should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const;
 
     // get_mavlink_protocol - provides the specific MAVLink protocol for a
     // given channel, or SerialProtocol_None if not found
@@ -211,7 +232,7 @@ private:
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
     // setup any special options
-    void set_options(uint8_t i);
+    void set_options(uint16_t i);
 };
 
 namespace AP {

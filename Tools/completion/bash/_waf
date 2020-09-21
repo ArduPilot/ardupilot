@@ -46,15 +46,14 @@ _waf()
     for i in $( seq 0 $lim )
     do
         if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
-          opts=${opts/" ${COMP_WORDS[i]}"}
-          opts=${opts/" --${COMP_WORDS[i]}"}
+          opts=${opts//${COMP_WORDS[i]}/}
+          opts=${opts//--${COMP_WORDS[i]}/}
         fi
     done
 
-    case $prev in 
+    case $prev in
       --board)
-        # get options between board and debug, remove everything before "are", remove everything after "--debug", remove final dot, remove all comma
-        opts=$(./waf --help | sed -n '/--board=/,/--debug/p' | sed -e 's/.*are //g' -e 's/\(--debug.*\)//g' -e 's/[.]//g' -e 's/[,]//g')
+        opts=$(./waf list_boards | sed -e '$d')
         COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
         return 0
         ;;

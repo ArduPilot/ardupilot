@@ -80,10 +80,21 @@ void flash_init(void)
 {
     uint32_t reserved = 0;
     num_pages = stm32_flash_getnumpages();
+    /*
+      advance flash_base_page to account for FLASH_BOOTLOADER_LOAD_KB
+     */
     while (reserved < FLASH_BOOTLOADER_LOAD_KB * 1024U &&
            flash_base_page < num_pages) {
         reserved += stm32_flash_getpagesize(flash_base_page);
         flash_base_page++;
+    }
+    /*
+      reduce num_pages to account for FLASH_RESERVE_END_KB
+     */
+    reserved = 0;
+    while (reserved < FLASH_RESERVE_END_KB * 1024U) {
+        reserved += stm32_flash_getpagesize(num_pages-1);
+        num_pages--;
     }
 }
 

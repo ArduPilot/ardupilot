@@ -1,16 +1,13 @@
 #compdef sim_vehicle.py
 #autoload
 
-local temp_word
-local cur cword prev
 local -a vehicles
 
 _sim_vehicle() {
   typeset -A opt_args
   local context state state_descr line curcontext="$curcontext"
-    cur=${words[CURRENT]}
-    prev=${words[CURRENT-1]}
-  _arguments -C -A -s -S \
+
+  _arguments -C \
     '(- 1 *)'{-h,--help}'[show help options and exit]' \
     '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
     '(-N --no-rebuild)'{-N,--no-rebuild}'[do not rebuild before starting ardupilot]' \
@@ -54,17 +51,14 @@ _sim_vehicle() {
     '--aircraft=[store state and logs in named directory]:AIRCRAFT:' \
     '--moddebug=[mavproxy module debug]:int:' \
     '(-v --vehicle)'{-v,--vehicle}'[vehicle type]:vehicle:_sim_vehicle_vehicles' \
-    '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_copter_frames' \
+    '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_vehicle_frames' \
   && ret=0
-  
+
 
 }
 
 _get_vehicle_type() {
-  # get the calling program, remove anything after the space == all commands arguments
-  local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
-  # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
-  vehicles=( $($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g') )
+  vehicles=( $($caller --list-vehicle) )
 }
 
 (( $+functions[_sim_vehicle_vehicles] )) ||
@@ -73,8 +67,8 @@ _sim_vehicle_vehicles() {
   _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
 }
 
-(( $+functions[_copter_frames] )) ||
-_copter_frames() {
+(( $+functions[_vehicle_frames] )) ||
+_vehicle_frames() {
 search_vehicle=true
 local_current=$CURRENT
 vehicle=''
@@ -95,27 +89,12 @@ do
     local_current=$(( $local_current - 1 ))
 done
 
-# get the calling program, remove anything after the space == all commands arguments
-local caller; caller=$(echo ${words[@]} | sed 's/ .*//g');
 
-# to get the vehicle list :
-# Get everything between "frame type" and "-C", remove first and last line, get line starting with caracters and ": " sequence, remove spaces and :
-local supported_vehicle_list=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' | sed  -n 's/\(.*: \).*/\1/p' | sed -e 's/ //g' -e 's/://g'))
-
-local frames;
-local count=1;
-for v in $supported_vehicle_list
-do
-  if [ "$v" = "$vehicle" ]
-  then
-      # Get everything between "frame type" and "-C", remove first and last line and change starting space by " :", change newlines to space, remove spaces then change vehicle type enclose by ":" by newline and change "|" by space, remove first line, get line "count" that match supported_vehicle_list[count]
-      frames=($($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' -e 's/^\s*A/ :A/g' | tr '\n' ' ' | sed -e 's/ //g' -e 's/:\w*:/\n/g' -e 's/[|]/ /g' | sed '1d' | sed "${count}q;d"))
-      break
-  fi
-  count=$(( $count + 1 ))
-done
+  frames=( $($caller --list-frame $vehicle) )
 
   _describe -t frames 'frame' frames "$@" && ret=0
 }
 
+# get the calling program, remove anything after the space == all commands arguments
+caller=$(echo ${words[@]} | sed 's/ .*//g');
 _sim_vehicle "$@"

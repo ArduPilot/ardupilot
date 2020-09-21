@@ -5,7 +5,8 @@ include ../f103-periph/hwdef.dat
 
 define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_adsb"
 
-define HAL_CAN_DEFAULT_NODE_ID 116
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
 
 define HAL_AIRSPEED_BUS_DEFAULT 0
 define AIRSPEED_MAX_SENSORS 1

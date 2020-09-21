@@ -1,5 +1,5 @@
 #include "AP_Mount_Alexmos.h"
-#include <AP_GPS/AP_GPS.h>
+#if HAL_MOUNT_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
@@ -293,3 +293,4 @@ void AP_Mount_Alexmos::read_incoming()
         }
     }
 }
+#endif // HAL_MOUNT_ENABLED

@@ -24,14 +24,19 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    bool disarm() override;
+    bool disarm(AP_Arming::Method method) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
     void update_soft_armed();
+    bool get_delay_arming() { return delay_arming; };
 
 protected:
     bool ins_checks(bool report) override;
 
 private:
     void change_arm_state(void);
+
+    // oneshot with duration AP_ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
+    // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
+    bool delay_arming;
 };

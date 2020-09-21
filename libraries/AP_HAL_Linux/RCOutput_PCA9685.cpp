@@ -54,7 +54,7 @@ using namespace Linux;
 
 #define PWM_CHAN_COUNT 16
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                    bool external_clock,

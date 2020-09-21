@@ -19,6 +19,8 @@ def build(bld):
             'AP_TemperatureSensor',
             'AP_Arming',
             'AP_KDECAN',
+            'AP_RCMapper',
+            'AP_OSD',
         ],
     )
 

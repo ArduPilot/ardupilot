@@ -183,7 +183,10 @@ void Storage::init()
  */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-    uint16_t end = loc + length;
+    if (length == 0) {
+        return;
+    }
+    uint16_t end = loc + length - 1;
     for (uint8_t line=loc>>LINUX_STORAGE_LINE_SHIFT;
          line <= end>>LINUX_STORAGE_LINE_SHIFT;
          line++) {

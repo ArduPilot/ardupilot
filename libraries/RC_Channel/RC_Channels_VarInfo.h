@@ -1,10 +1,13 @@
 #pragma once
 
+#include "RC_Channel.h"
+
+
 /*
   this header file is expected to be #included by Vehicle subclasses
   of RC_Channels after defining RC_CHANNELS_SUBCLASS and
   RC_CHANNEL_SUBCLASS - for example, Rover defines
-  RC_CHANNELS_SUBCLASS to be RC_Channels_Rover in APMrover2/RC_Channels.cpp, and then includes this header.
+  RC_CHANNELS_SUBCLASS to be RC_Channels_Rover in Rover/RC_Channels.cpp, and then includes this header.
 
   This scheme reduces code duplicate between the Vehicles, and avoids the chance of things getting out of sync.
 */
@@ -86,8 +89,15 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @DisplayName: RC options
     // @Description: RC input options
     // @User: Advanced
-    // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe
-    AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, 0),
+    // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe, 3:FPort Pad, 4:Log RC input bytes, 5:Arming check throttle for 0 input, 6:Skip the arming check for neutral Roll/Pitch/Yay sticks, 7:Allow Switch reverse
+    AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, (uint32_t)RC_Channels::Option::ARMING_CHECK_THROTTLE),
 
+    // @Param: _PROTOCOLS
+    // @DisplayName: RC protocols enabled
+    // @Description: Bitmask of enabled RC protocols. Allows narrowing the protocol detection to only specific types of RC receivers which can avoid issues with incorrect detection. Set to 1 to enable all protocols.
+    // @User: Advanced
+    // @Bitmask: 0:All,1:PPM,2:IBUS,3:SBUS,4:SBUS_NI,5:DSM,6:SUMD,7:SRXL,8:SRXL2,9:CRSF,10:ST24,11:FPORT
+    AP_GROUPINFO("_PROTOCOLS", 34, RC_CHANNELS_SUBCLASS, _protocols, 1),
+    
     AP_GROUPEND
 };

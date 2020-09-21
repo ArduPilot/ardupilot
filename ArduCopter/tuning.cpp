@@ -149,37 +149,6 @@ void Copter::tuning()
         break;
 #endif
 
-#if 0
-        // disabled for now - we need accessor functions
-    case TUNING_EKF_VERTICAL_POS:
-        // Tune the EKF that is being used
-        // EKF's baro vs accel (higher rely on accels more, baro impact is reduced)
-        if (!ahrs.get_NavEKF2().enabled()) {
-            ahrs.get_NavEKF()._gpsVertPosNoise = tuning_value;
-        } else {
-            ahrs.get_NavEKF2()._gpsVertPosNoise = tuning_value;
-        }
-        break;
-
-    case TUNING_EKF_HORIZONTAL_POS:
-        // EKF's gps vs accel (higher rely on accels more, gps impact is reduced)
-        if (!ahrs.get_NavEKF2().enabled()) {
-            ahrs.get_NavEKF()._gpsHorizPosNoise = tuning_value;
-        } else {
-            ahrs.get_NavEKF2()._gpsHorizPosNoise = tuning_value;
-        }
-        break;
-
-    case TUNING_EKF_ACCEL_NOISE:
-        // EKF's accel noise (lower means trust accels more, gps & baro less)
-        if (!ahrs.get_NavEKF2().enabled()) {
-            ahrs.get_NavEKF()._accNoise = tuning_value;
-        } else {
-            ahrs.get_NavEKF2()._accNoise = tuning_value;
-        }
-        break;
-#endif
-
     case TUNING_RC_FEEL_RP:
         attitude_control->set_input_tc(tuning_value);
         break;
@@ -217,16 +186,6 @@ void Copter::tuning()
      case TUNING_RATE_YAW_FILT:
          attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
          break;
-
-#if WINCH_ENABLED == ENABLED
-     case TUNING_WINCH:
-         // add small deadzone
-         if (fabsf(tuning_value) < 0.05f) {
-             tuning_value = 0;
-         }
-         g2.winch.set_desired_rate(tuning_value);
-         break;
-#endif
 
      case TUNING_SYSTEM_ID_MAGNITUDE:
 #if MODE_SYSTEMID_ENABLED == ENABLED

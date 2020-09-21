@@ -64,6 +64,8 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override { return 1; }
+
     GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
         return new GCS_MAVLINK_Dummy(params, uart);
@@ -72,20 +74,24 @@ protected:
 private:
     GCS_MAVLINK_Dummy *chan(const uint8_t ofs) override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Dummy *)_chan[ofs];
     };
     const GCS_MAVLINK_Dummy *chan(const uint8_t ofs) const override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Dummy *)_chan[ofs];
     };
 
-    void send_statustext(MAV_SEVERITY severity, uint8_t dest_bitmask, const char *text) override { hal.console->printf("TOGCS: %s\n", text); }
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override {
+        hal.console->printf("TOGCS: ");
+        hal.console->vprintf(fmt, arg_list);
+        hal.console->printf("\n");
+    }
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number

@@ -103,7 +103,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-float expo_curve(float alpha, float x)
+constexpr float expo_curve(float alpha, float x)
 {
     return (1.0f - alpha) * x + alpha * x * x * x;
 }
@@ -126,6 +126,23 @@ float throttle_curve(float thr_mid, float alpha, float thr_in)
         thr_out = linear_interpolate(thr_mid, 1.0f, expo_curve(alpha2, t), 0.0f, 1.0f);
     }
     return thr_out;
+}
+
+/*
+ * Convert any base number to any base number. Example octal(8) to decimal(10)
+ * baseIn: base of input number
+ * baseOut: base of output number
+ * inputNumber: value currently in base "baseIn" to be converted to base "baseOut"
+ */
+uint32_t convertMathBase(const uint8_t baseIn, const uint8_t baseOut, uint32_t inputNumber)
+{
+    uint32_t outputNumber = 0;
+
+    for (uint8_t i=0; inputNumber != 0; i++) {
+        outputNumber += (inputNumber % baseOut) * powf(float(baseIn), i);
+        inputNumber /= baseOut;
+    }
+    return outputNumber;
 }
 
 template <typename T>
@@ -266,7 +283,7 @@ T constrain_value(const T amt, const T low, const T high)
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-        AP::internalerror().error(AP_InternalError::error_t::constraining_nan);
+        INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
         return (low + high) / 2;
     }
 
@@ -338,6 +355,23 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2)
     return (v1 - v2).length() < 0.001;
 }
 
+/*
+ * return a velocity correction (in m/s in NED) for a sensor's position given it's position offsets
+ * this correction should be added to the sensor NED measurement
+ * sensor_offset_bf is in meters in body frame (Foward, Right, Down)
+ * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
+ * angular_rate is rad/sec
+ */
+Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate)
+{
+    if (sensor_offset_bf.is_zero()) {
+        return Vector3f();
+    }
+
+    // correct velocity
+    const Vector3f vel_offset_body = angular_rate % sensor_offset_bf;
+    return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
+}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL

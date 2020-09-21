@@ -23,6 +23,8 @@
 #include "ltm.h"
 #include "lvm.h"
 
+// lua code does lots of casting, these warnings are not helpful
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 static const char udatatypename[] = "userdata";
 

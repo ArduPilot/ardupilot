@@ -39,6 +39,11 @@ bool HALSITL::Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
         if (ret <= 0) {
             continue;
         }
+        if (ret == len) {
+            cbuf[len-1] = '\0';
+        } else {
+            cbuf[ret] = '\0';
+        }
         len = ret;
         char *p = strchr(cbuf, '\n');
         if (p) {

@@ -40,11 +40,6 @@ extern const AP_HAL::HAL& hal;
 // i2c address
 #define LL40LS_ADDR   0x62
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                                              RangeFinder::RangeFinder_State &_state,
                                                              AP_RangeFinder_Params &_params,
@@ -159,9 +154,10 @@ static const struct settings_table settings_v3hp[] = {
  */
 bool AP_RangeFinder_PulsedLightLRF::init(void)
 {
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    _dev->get_semaphore()->take_blocking();
     _dev->set_retries(3);
 
     // LidarLite needs split transfers

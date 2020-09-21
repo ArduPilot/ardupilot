@@ -22,29 +22,28 @@ define HAL_WATCHDOG_ENABLED_DEFAULT true
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-define CH_CFG_ST_FREQUENCY 1000
+define CH_CFG_ST_FREQUENCY 100000
+define CH_CFG_ST_TIMEDELTA 0
 
 # assume the 256k flash part for now
 FLASH_SIZE_KB 256
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER USART2 USART1
+SERIAL_ORDER USART2 EMPTY EMPTY USART1
 
 # a LED to flash
 PA4 LED OUTPUT LOW
 
+define HAL_CAN_POOL_SIZE 6000
+
 # USART1, connected to GPS
-PA9  USART1_TX USART1 SPEED_HIGH NODMA
-PA10 USART1_RX USART1 SPEED_HIGH NODMA
+PA9  USART1_TX USART1 SPEED_HIGH
+PA10 USART1_RX USART1 SPEED_HIGH
 
 # USART2 for debug
 PA2 USART2_TX USART2 SPEED_HIGH NODMA
 PA3 USART2_RX USART2 SPEED_HIGH NODMA
-
-define HAL_UART_NODMA
 
 # only one I2C bus in normal config
 PB6 I2C1_SCL I2C1
@@ -64,13 +63,10 @@ define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_GPIO_IRQ
-define CH_CFG_ST_TIMEDELTA 0
-#define CH_CFG_USE_DYNAMIC FALSE
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
 
 # avoid timer and RCIN threads to save memory
-define HAL_NO_TIMER_THREAD
 define HAL_NO_RCIN_THREAD
 
 define HAL_USE_RTC FALSE
@@ -85,7 +81,7 @@ define PERIPH_FW TRUE
 MAIN_STACK 0x80
 
 # PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0x600
+PROCESS_STACK 0x800
 define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
@@ -94,6 +90,10 @@ PA12 CAN_TX CAN
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
 define HAL_USE_I2C TRUE
 define STM32_I2C_USE_I2C1 TRUE
 
@@ -101,6 +101,7 @@ define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
 define HAL_UART_STACK_SIZE 256
+
 define STORAGE_THD_WA_SIZE 256
 define IO_THD_WA_SIZE      256
 
@@ -133,8 +134,6 @@ env APP_DESCRIPTOR MissionPlanner
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
-
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

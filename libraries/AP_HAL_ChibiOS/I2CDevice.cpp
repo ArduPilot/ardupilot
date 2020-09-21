@@ -54,6 +54,9 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #define HAL_I2C_F7_100_TIMINGR 0x20404768
 #define HAL_I2C_F7_400_TIMINGR 0x6000030D
 
+#define HAL_I2C_H7_100_TIMINGR 0x00707CBB
+#define HAL_I2C_H7_400_TIMINGR 0x00300F38
+
 /*
   enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low
  */
@@ -123,7 +126,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32F3)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -131,7 +134,15 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
-#else
+#elif defined(STM32H7)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_H7_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_H7_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#else // F1 or F4
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
         businfo[i].i2ccfg.clock_speed = businfo[i].busclock;
         if (businfo[i].i2ccfg.clock_speed <= 100000) {
@@ -247,7 +258,10 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 {
     i2cAcquireBus(I2CD[bus.busnum].i2c);
 
-    bus.bouncebuffer_setup(send, send_len, recv, recv_len);
+    if (!bus.bouncebuffer_setup(send, send_len, recv, recv_len)) {
+        i2cReleaseBus(I2CD[bus.busnum].i2c);
+        return false;
+    }
 
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
@@ -280,7 +294,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         bus.dma_handle->unlock();
 
         if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
-            AP::internalerror().error(AP_InternalError::error_t::i2c_isr);
+            INTERNAL_ERROR(AP_InternalError::error_t::i2c_isr);
             break;
         }
 

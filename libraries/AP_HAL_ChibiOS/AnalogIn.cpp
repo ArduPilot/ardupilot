@@ -69,14 +69,8 @@ adcsample_t *AnalogIn::samples;
 uint32_t AnalogIn::sample_sum[ADC_GRP1_NUM_CHANNELS];
 uint32_t AnalogIn::sample_count;
 
-AnalogSource::AnalogSource(int16_t pin, float initial_value) :
-    _pin(pin),
-    _value(initial_value),
-    _value_ratiometric(initial_value),
-    _latest_value(initial_value),
-    _sum_count(0),
-    _sum_value(0),
-    _sum_ratiometric(0)
+AnalogSource::AnalogSource(int16_t pin) :
+    _pin(pin)
 {
 }
 
@@ -351,7 +345,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
 {
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource(pin, 0.0f);
+            _channels[j] = new AnalogSource(pin);
             return _channels[j];
         }
     }
@@ -366,50 +360,120 @@ void AnalogIn::update_power_flags(void)
 {
     uint16_t flags = 0;
 
-#ifdef HAL_GPIO_PIN_VDD_BRICK_VALID
-    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID)) {
+    /*
+      primary "brick" power supply valid pin. Some boards have this
+      active high, some active low. Use nVALID for active low, VALID
+      for active high
+    */
+#if defined(HAL_GPIO_PIN_VDD_BRICK_VALID)
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID) == 1) {
+        flags |= MAV_POWER_STATUS_BRICK_VALID;
+    }
+#elif defined(HAL_GPIO_PIN_VDD_BRICK_nVALID)
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_nVALID) == 0) {
         flags |= MAV_POWER_STATUS_BRICK_VALID;
     }
 #endif
 
-#ifdef HAL_GPIO_PIN_VDD_SERVO_VALID
-    if (!palReadLine(HAL_GPIO_PIN_VDD_SERVO_VALID)) {
+    /*
+      secondary "brick" power supply valid pin. This is servo rail
+      power valid on some boards. Some boards have this active high,
+      some active low. Use nVALID for active low, VALID for active
+      high. This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
+      (as this was first added for older boards that used servo rail
+      for backup power)
+    */
+#if defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK_VALID) == 1) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
-#elif defined(HAL_GPIO_PIN_VDD_BRICK2_VALID)
-    // some boards defined BRICK2 instead of servo valid
-    if (!palReadLine(HAL_GPIO_PIN_VDD_BRICK2_VALID)) {
+#elif defined(HAL_GPIO_PIN_VDD_BRICK2_nVALID)
+    if (palReadLine(HAL_GPIO_PIN_VDD_BRICK2_nVALID) == 0) {
         flags |= MAV_POWER_STATUS_SERVO_VALID;
     }
 #endif
 
-#ifdef HAL_GPIO_PIN_VBUS
-	if (palReadLine(HAL_GPIO_PIN_VBUS)) {
+    /*
+      USB power. This can be VBUS_VALID, VBUS_nVALID or just
+      VBUS. Some boards have both a valid pin and VBUS. The VBUS pin
+      is an analog pin that could be used to read USB voltage.
+     */
+#if defined(HAL_GPIO_PIN_VBUS_VALID)
+    if (palReadLine(HAL_GPIO_PIN_VBUS_VALID) == 1) {
         flags |= MAV_POWER_STATUS_USB_CONNECTED;
     }
-#elif defined(HAL_GPIO_PIN_nVBUS)
-    if (!palReadLine(HAL_GPIO_PIN_nVBUS)) {
+#elif defined(HAL_GPIO_PIN_VBUS_nVALID)
+    if (palReadLine(HAL_GPIO_PIN_VBUS_nVALID) == 0) {
+        flags |= MAV_POWER_STATUS_USB_CONNECTED;
+    }
+#elif defined(HAL_GPIO_PIN_VBUS)
+    if (palReadLine(HAL_GPIO_PIN_VBUS) == 1) {
         flags |= MAV_POWER_STATUS_USB_CONNECTED;
     }
 #endif
 
-#ifdef HAL_GPIO_PIN_VDD_5V_HIPOWER_OC
-    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_OC)) {
+    /*
+      overcurrent on "high power" peripheral rail.
+     */
+#if defined(HAL_GPIO_PIN_VDD_5V_HIPOWER_OC)
+    if (palReadLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_OC) == 1) {
+        flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
+    }
+#elif defined(HAL_GPIO_PIN_VDD_5V_HIPOWER_nOC)
+    if (palReadLine(HAL_GPIO_PIN_VDD_5V_HIPOWER_nOC) == 0) {
         flags |= MAV_POWER_STATUS_PERIPH_HIPOWER_OVERCURRENT;
     }
 #endif
 
-#ifdef HAL_GPIO_PIN_VDD_5V_PERIPH_OC
-    if (!palReadLine(HAL_GPIO_PIN_VDD_5V_PERIPH_OC)) {
+    /*
+      overcurrent on main peripheral rail.
+     */
+#if defined(HAL_GPIO_PIN_VDD_5V_PERIPH_OC)
+    if (palReadLine(HAL_GPIO_PIN_VDD_5V_PERIPH_OC) == 1) {
+        flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
+    }
+#elif defined(HAL_GPIO_PIN_VDD_5V_PERIPH_bOC)
+    if (palReadLine(HAL_GPIO_PIN_VDD_5V_PERIPH_nOC) == 0) {
         flags |= MAV_POWER_STATUS_PERIPH_OVERCURRENT;
     }
 #endif
+
+#if defined(HAL_GPIO_PIN_VDD_SERVO_VALID)
+#error "building with old hwdef.dat"
+#endif
+
+#if 0
+    /*
+      this bit of debug code is useful when testing the polarity of
+      VALID pins for power sources. It allows you to see the change on
+      USB with a 3s delay, so you can see USB changes by unplugging
+      and re-inserting USB power
+     */
+    static uint32_t last_change_ms;
+    uint32_t now = AP_HAL::millis();
+    if (_power_flags != flags) {
+        if (last_change_ms == 0) {
+            last_change_ms = now;
+        } else if (now - last_change_ms > 3000) {
+            last_change_ms = 0;
+            hal.console->printf("POWR: 0x%02x -> 0x%02x\n", _power_flags, flags);
+            _power_flags = flags;
+        }
+        if (hal.util->get_soft_armed()) {
+            // the power status has changed while armed
+            flags |= MAV_POWER_STATUS_CHANGED;
+        }
+        return;
+    }
+#endif
+
     if (_power_flags != 0 &&
         _power_flags != flags &&
         hal.util->get_soft_armed()) {
         // the power status has changed while armed
         flags |= MAV_POWER_STATUS_CHANGED;
     }
+    _accumulated_power_flags |= flags;
     _power_flags = flags;
 }
 #endif // HAL_USE_ADC

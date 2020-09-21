@@ -15,9 +15,6 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
-        // set land_complete to false to stop us zeroing the throttle
-        auto_state.sink_rate = 0;
-
         // set takeoff_complete to true so we don't add extra elevator
         // except in a takeoff
         auto_state.takeoff_complete = true;
@@ -75,7 +72,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(mode_rtl, ModeReason::UNKNOWN);
+        set_mode(mode_rtl, ModeReason::MISSION_CMD);
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -155,7 +152,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         autotune_enable(cmd.p1);
         break;
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // Sets the region of interest (ROI) for a sensor set or the
     // vehicle itself. This can then be used by the vehicles control
     // system to control the vehicle attitude and the attitude of various
@@ -559,7 +556,7 @@ bool Plane::verify_takeoff()
             uint32_t now = AP_HAL::millis();
             if (now - takeoff_state.start_time_ms > (uint32_t)(1000U * g2.takeoff_timeout)) {
                 gcs().send_text(MAV_SEVERITY_INFO, "Takeoff timeout at %.1f m/s", ground_speed);
-                plane.arming.disarm();
+                plane.arming.disarm(AP_Arming::Method::TAKEOFFTIMEOUT);
                 mission.reset();
             }
         }
@@ -660,14 +657,8 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
-    if (cmd.p1 <= 1 && abs(g.rtl_radius) > 1) {
-        // if mission radius is 0,1, and rtl_radius is valid, use rtl_radius.
-        loiter.direction = (g.rtl_radius < 0) ? -1 : 1;
-        update_loiter(abs(g.rtl_radius));
-    } else {
-        // else use mission radius
-        update_loiter(cmd.p1);
-    }
+    // else use mission radius
+    update_loiter(cmd.p1);
     return false;
 }
 
@@ -1074,47 +1065,9 @@ bool Plane::verify_loiter_heading(bool init)
         return true;
     }
 
-    if (next_WP_loc.get_distance(next_nav_cmd.content.location) < abs(aparm.loiter_radius)) {
-        /* Whenever next waypoint is within the loiter radius,
-           maintaining loiter would prevent us from ever pointing toward the next waypoint.
-           Hence break out of loiter immediately
-         */
-        return true;
-    }
-
-    // Bearing in degrees
-    int32_t bearing_cd = current_loc.get_bearing_to(next_nav_cmd.content.location);
-
-    // get current heading.
-    int32_t heading_cd = gps.ground_course_cd();
-
-    int32_t heading_err_cd = wrap_180_cd(bearing_cd - heading_cd);
-
     if (init) {
         loiter.sum_cd = 0;
     }
 
-    /*
-      Check to see if the the plane is heading toward the land
-      waypoint. We use 20 degrees (+/-10 deg) of margin so that
-      we can handle 200 degrees/second of yaw.
-
-      After every full circle, extend acceptance criteria to ensure
-      aircraft will not loop forever in case high winds are forcing
-      it beyond 200 deg/sec when passing the desired exit course
-    */
-
-    // Use integer division to get discrete steps
-    int32_t expanded_acceptance = 1000 * (loiter.sum_cd / 36000);
-
-    if (labs(heading_err_cd) <= 1000 + expanded_acceptance) {
-        // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
-
-        // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
-        if (next_WP_loc.loiter_xtrack) {
-            next_WP_loc = current_loc;
-        }
-        return true;
-    }
-    return false;
+    return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, next_nav_cmd.content.location);
 }

@@ -26,8 +26,6 @@ extern const AP_HAL::HAL& hal;
 // initialisation
 void AP_Logger_MAVLink::Init()
 {
-    AP_Logger_Backend::Init();
-
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
         _blocks = (struct dm_block *) calloc(_blockcount, sizeof(struct dm_block));
@@ -149,7 +147,7 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             _current_block = next_block();
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
-                AP::internalerror().error(AP_InternalError::error_t::logger_bad_current_block);
+                INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_current_block);
                 semaphore.give();
                 return false;
             }
@@ -325,7 +323,7 @@ void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
     }
     const struct log_MAV_Stats pkt{
         LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
-        timestamp         : AP_HAL::millis(),
+        timestamp         : AP_HAL::micros64(),
         seqno             : logger_mav._next_seq_num-1,
         dropped           : logger_mav._dropped,
         retries           : logger_mav._blocks_retry.sent_count,
@@ -401,7 +399,7 @@ void AP_Logger_MAVLink::stats_collect()
     uint8_t sfree = stack_size(_blocks_free);
 
     if (sfree != _blockcount_free) {
-        AP::internalerror().error(AP_InternalError::error_t::logger_blockcount_mismatch);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_blockcount_mismatch);
     }
     semaphore.give();
 
@@ -456,7 +454,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
-            AP::internalerror().error(AP_InternalError::error_t::logger_dequeue_failure);
+            INTERNAL_ERROR(AP_InternalError::error_t::logger_dequeue_failure);
         }
     }
     return true;
@@ -534,11 +532,6 @@ void AP_Logger_MAVLink::periodic_1Hz()
         return;
     }
     stats_log();
-}
-
-void AP_Logger_MAVLink::periodic_fullrate()
-{
-    push_log_blocks();
 }
 
 //TODO: handle full txspace properly

@@ -3,9 +3,9 @@
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -51,8 +51,8 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
      */
 
     // Calculate the expected EKF time step
-    if (AP::ins().get_sample_rate() > 0) {
-        dtEkfAvg = 1.0f / AP::ins().get_sample_rate();
+    if (AP::ins().get_loop_rate_hz() > 0) {
+        dtEkfAvg = 1.0f / AP::ins().get_loop_rate_hz();
         dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
     } else {
         return false;
@@ -70,7 +70,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if (frontend->_fusionModeGPS != 3) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
-        if (!AP::gps().get_lag(gps_delay_sec)) {
+        if (!AP::gps().get_lag(selected_gps, gps_delay_sec)) {
             if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
                 lastInitFailReport_ms = AP_HAL::millis();
                 // provide an escalating series of messages
@@ -93,6 +93,14 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 
+#if HAL_VISUALODOM_ENABLED
+    // include delay from visual odometry if enabled
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if ((visual_odom != nullptr) && visual_odom->enabled()) {
+        maxTimeDelay_ms = MAX(maxTimeDelay_ms, MIN(visual_odom->get_delay_ms(), 250));
+    }
+#endif
+
     // calculate the IMU buffer length required to accommodate the maximum delay with some allowance for jitter
     imu_buffer_length = (maxTimeDelay_ms / (uint16_t)(EKF_TARGET_DT_MS)) + 1;
 
@@ -107,6 +115,12 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 
     // calculate buffer size for optical flow data
     const uint8_t flow_buffer_length = MIN((ekf_delay_ms / frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
+
+    // calculate buffer size for external nav data
+    const uint8_t extnav_buffer_length = MIN((ekf_delay_ms / frontend->extNavIntervalMin_ms) + 1, imu_buffer_length);
+
+    // buffer size for external yaw
+    const uint8_t yaw_angle_buffer_length = MAX(obs_buffer_length, extnav_buffer_length);
 
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
@@ -129,7 +143,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedWheelOdm.init(imu_buffer_length)) { // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
-    if(!storedYawAng.init(obs_buffer_length)) {
+    if(!storedYawAng.init(yaw_angle_buffer_length)) {
         return false;
     }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
@@ -137,7 +151,13 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
-    if(!storedRangeBeacon.init(imu_buffer_length)) {
+    if(!storedRangeBeacon.init(imu_buffer_length+1)) {
+        return false;
+    }
+    if (!storedExtNav.init(extnav_buffer_length)) {
+        return false;
+    }
+    if (!storedExtNavVel.init(extnav_buffer_length)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -146,12 +166,29 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffers IMU=%u OBS=%u OF=%u, dt=%.4f",
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u, dt=%.4f",
                     (unsigned)imu_index,
                     (unsigned)imu_buffer_length,
                     (unsigned)obs_buffer_length,
                     (unsigned)flow_buffer_length,
+                    (unsigned)extnav_buffer_length,
                     (double)dtEkfAvg);
+
+    if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
+        // check if there is enough memory to create the EKF-GSF object
+        if (hal.util->available_memory() < sizeof(EKFGSF_yaw) + 1024) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u GSF: not enough memory",(unsigned)imu_index);
+            return false;
+        }
+
+        // try to instantiate
+        yawEstimator = new EKFGSF_yaw();
+        if (yawEstimator == nullptr) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
+            return false;
+        }
+    }
+
     return true;
 }
     
@@ -177,7 +214,7 @@ void NavEKF3_core::InitialiseVariables()
     lastPosPassTime_ms = 0;
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
-    lastSynthYawTime_ms = imuSampleTime_ms;
+    lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
@@ -196,7 +233,6 @@ void NavEKF3_core::InitialiseVariables()
     lastVelReset_ms = 0;
     lastPosResetD_ms = 0;
     lastRngMeasTime_ms = 0;
-    terrainHgtStableSet_ms = 0;
 
     // initialise other variables
     gpsNoiseScaler = 1.0f;
@@ -241,8 +277,9 @@ void NavEKF3_core::InitialiseVariables()
     gndOffsetValid =  false;
     validOrigin = false;
     takeoffExpectedSet_ms = 0;
-    expectGndEffectTakeoff = false;
+    expectTakeoff = false;
     touchdownExpectedSet_ms = 0;
+    expectGndEffectTakeoff = false;
     expectGndEffectTouchdown = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
@@ -313,11 +350,9 @@ void NavEKF3_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
-    posResetSource = DEFAULT;
-    velResetSource = DEFAULT;
+    memset(&velPosObs, 0, sizeof(velPosObs));
 
     // range beacon fusion variables
-    memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
     memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
     rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
@@ -366,13 +401,22 @@ void NavEKF3_core::InitialiseVariables()
     bodyOdmMeasTime_ms = 0;
     bodyVelFusionDelayed = false;
     bodyVelFusionActive = false;
-    usingWheelSensors = false;
-    wheelOdmMeasTime_ms = 0;
 
     // yaw sensor fusion
     yawMeasTime_ms = 0;
     memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
+
+    // external nav data fusion
+    extNavDataDelayed = {};
+    extNavMeasTime_ms = 0;
+    extNavLastPosResetTime_ms = 0;
+    extNavDataToFuse = false;
+    extNavUsedForPos = false;
+    extNavVelDelayed = {};
+    extNavVelToFuse = false;
+    useExtNavVel = false;
+    extNavVelMeasTime_ms = 0;
 
     // zero data buffers
     storedIMU.reset();
@@ -384,11 +428,22 @@ void NavEKF3_core::InitialiseVariables()
     storedRangeBeacon.reset();
     storedBodyOdm.reset();
     storedWheelOdm.reset();
+    storedExtNav.reset();
+    storedExtNavVel.reset();
 
     // initialise pre-arm message
     hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
 
     InitialiseVariablesMag();
+
+    // emergency reset of yaw to EKFGSF estimate
+    EKFGSF_yaw_reset_ms = 0;
+    EKFGSF_yaw_reset_request_ms = 0;
+    EKFGSF_yaw_reset_count = 0;
+    EKFGSF_run_filterbank = false;
+    EKFGSF_yaw_valid_count = 0;
+
+    effectiveMagCal = effective_magCal();
 }
 
 
@@ -406,9 +461,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     mag_state.DCM.identity();
     inhibitMagStates = true;
     magStoreIndex = 0;
-    if (_ahrs->get_compass()) {
-        magSelectIndex = _ahrs->get_compass()->get_primary();
-    }
+    magSelectIndex = 0;
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
     magStateInitComplete = false;
@@ -421,12 +474,20 @@ void NavEKF3_core::InitialiseVariablesMag()
     storedYawAng.reset();
 }
 
-// Initialise the states from accelerometer and magnetometer data (if present)
-// This method can only be used when the vehicle is static
+/*
+Initialise the states from accelerometer data. This assumes measured acceleration 
+is dominated by gravity. If this assumption is not true then the EKF will require
+timee to reduce the resulting tilt error. Yaw alignment is not performed by this
+function, but is perfomred later and initiated the SelectMagFusion() function
+after the tilt has stabilised.
+*/
 bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
+    // update sensor selection (for affinity)
+    update_sensor_selection();
+
     // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (assume_zero_sideslip() && AP::gps().status(preferred_gps) < AP_GPS::GPS_OK_FIX_3D) {
         hal.util->snprintf(prearm_fail_string,
                     sizeof(prearm_fail_string),
                     "EKF3 init failure: No GPS lock");
@@ -491,8 +552,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     stateStruct.body_magfield.zero();
 
     // set the position, velocity and height
-    ResetVelocity();
-    ResetPosition();
+    ResetVelocity(resetDataSource::DEFAULT);
+    ResetPosition(resetDataSource::DEFAULT);
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame
@@ -588,6 +649,9 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     fill_scratch_variables();
 
+    // update sensor selection (for affinity)
+    update_sensor_selection();
+
     // TODO - in-flight restart method
 
     // Check arm status and perform required checks and mode changes
@@ -604,11 +668,21 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Predict the covariance growth
         CovariancePrediction();
 
+        // Run the IMU prediction step for the GSF yaw estimator algorithm
+        // using IMU and optionally true airspeed data.
+        // Must be run before SelectMagFusion() to provide an up to date yaw estimate
+        runYawEstimatorPrediction();
+
         // Update states using  magnetometer or external yaw sensor data
         SelectMagFusion();
 
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
+
+        // Run the GPS velocity correction step for the GSF yaw estimator algorithm
+        // and use the yaw estimate to reset the main EKF yaw if requested
+        // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
+        runYawEstimatorCorrection();
 
         // Update states using range beacon data
         SelectRngBcnFusion();
@@ -948,12 +1022,28 @@ void NavEKF3_core::CovariancePrediction()
         }
     }
 
+    if (!inhibitMagStates && lastInhibitMagStates) {
+        // when starting 3D fusion we want to reset body mag variances
+        needMagBodyVarReset = true;
+    }
+
+    if (needMagBodyVarReset) {
+        // reset body mag variances
+        needMagBodyVarReset = false;
+        zeroCols(P,19,21);
+        zeroRows(P,19,21);
+        P[19][19] = sq(frontend->_magNoise);
+        P[20][20] = P[19][19];
+        P[21][21] = P[19][19];
+    }
+
     if (!inhibitMagStates) {
         float magEarthVar = sq(dt * constrain_float(frontend->_magEarthProcessNoise, 0.0f, 1.0f));
         float magBodyVar  = sq(dt * constrain_float(frontend->_magBodyProcessNoise, 0.0f, 1.0f));
         for (uint8_t i=6; i<=8; i++) processNoiseVariance[i] = magEarthVar;
         for (uint8_t i=9; i<=11; i++) processNoiseVariance[i] = magBodyVar;
     }
+    lastInhibitMagStates = inhibitMagStates;
 
     if (!inhibitWindStates) {
         float windVelVar  = sq(dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate)));
@@ -1601,89 +1691,60 @@ void NavEKF3_core::calcEarthRateNED(Vector3f &omega, int32_t latitude) const
     omega.z  = -earthRate*sinf(lat_rad);
 }
 
-// initialise the earth magnetic field states using declination, supplied roll/pitch
-// and magnetometer measurements and return initial attitude quaternion
-Quaternion NavEKF3_core::calcQuatAndFieldStates(float roll, float pitch)
+// set yaw from a single magnetometer sample
+void NavEKF3_core::setYawFromMag()
 {
-    // declare local variables required to calculate initial orientation and magnetic field
-    float yaw;
-    Matrix3f Tbn;
-    Vector3f initMagNED;
-    Quaternion initQuat;
-
-    if (use_compass()) {
-        // calculate rotation matrix from body to NED frame
-        Tbn.from_euler(roll, pitch, 0.0f);
-
-        // read the magnetometer data
-        readMagData();
-
-        // rotate the magnetic field into NED axes
-        initMagNED = Tbn * magDataDelayed.mag;
-
-        // calculate heading of mag field rel to body heading
-        float magHeading = atan2f(initMagNED.y, initMagNED.x);
-
-        // get the magnetic declination
-        float magDecAng = MagDeclination();
-
-        // calculate yaw angle rel to true north
-        yaw = magDecAng - magHeading;
-
-        // calculate initial filter quaternion states using yaw from magnetometer
-        // store the yaw change so that it can be retrieved externally for use by the control loops to prevent yaw disturbances following a reset
-        Vector3f tempEuler;
-        stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
-        // this check ensures we accumulate the resets that occur within a single iteration of the EKF
-        if (imuSampleTime_ms != lastYawReset_ms) {
-            yawResetAngle = 0.0f;
-        }
-        yawResetAngle += wrap_PI(yaw - tempEuler.z);
-        lastYawReset_ms = imuSampleTime_ms;
-        // calculate an initial quaternion using the new yaw value
-        initQuat.from_euler(roll, pitch, yaw);
-        // zero the attitude covariances because the correlations will now be invalid
-        zeroAttCovOnly();
-
-        // calculate initial Tbn matrix and rotate Mag measurements into NED
-        // to set initial NED magnetic field states
-        // don't do this if the earth field has already been learned
-        if (!magFieldLearned) {
-            initQuat.rotation_matrix(Tbn);
-            if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
-                stateStruct.earth_magfield = table_earth_field_ga;
-            } else {
-                stateStruct.earth_magfield = Tbn * magDataDelayed.mag;
-            }
-
-            // set the NE earth magnetic field states using the published declination
-            // and set the corresponding variances and covariances
-            alignMagStateDeclination();
-
-            // set the remaining variances and covariances
-            zeroRows(P,18,21);
-            zeroCols(P,18,21);
-            P[18][18] = sq(frontend->_magNoise);
-            P[19][19] = P[18][18];
-            P[20][20] = P[18][18];
-            P[21][21] = P[18][18];
-
-        }
-
-        // record the fact we have initialised the magnetic field states
-        recordMagReset();
-
-        // clear mag state reset request
-        magStateResetRequest = false;
-
-    } else {
-        // this function should not be called if there is no compass data but if it is, return the
-        // current attitude
-        initQuat = stateStruct.quat;
+    if (!use_compass()) {
+        return;
     }
 
-    // return attitude quaternion
-    return initQuat;
+    // read the magnetometer data
+    readMagData();
+
+    // rotate the magnetic field into NED axes
+    Vector3f euler321;
+    stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
+
+    // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
+    Matrix3f Tbn_zeroYaw;
+    Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+
+    //Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
+    Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
+    float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
+
+    // update quaternion states and covariances
+    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)));
+}
+
+// update mag field states and associated variances using magnetomer and declination data
+void NavEKF3_core::resetMagFieldStates()
+{
+    // Rotate Mag measurements into NED to set initial NED magnetic field states
+
+    // update rotation matrix from body to NED frame
+    stateStruct.quat.inverse().rotation_matrix(prevTnb);
+
+    if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
+        stateStruct.earth_magfield = table_earth_field_ga;
+    } else {
+        stateStruct.earth_magfield = prevTnb.transposed() * magDataDelayed.mag;
+    }
+
+    // set the NE earth magnetic field states using the published declination
+    // and set the corresponding variances and covariances
+    alignMagStateDeclination();
+
+    // set the remaining variances and covariances
+    zeroRows(P,18,21);
+    zeroCols(P,18,21);
+    P[18][18] = sq(frontend->_magNoise);
+    P[19][19] = P[18][18];
+    P[20][20] = P[18][18];
+    P[21][21] = P[18][18];
+
+    // record the fact we have initialised the magnetic field states
+    recordMagReset();
 }
 
 // zero the attitude covariances, but preserve the variances

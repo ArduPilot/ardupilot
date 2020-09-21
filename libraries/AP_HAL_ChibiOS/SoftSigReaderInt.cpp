@@ -90,6 +90,11 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     eicuEnable(_icu_drv);
 }
 
+void SoftSigReaderInt::disable(void)
+{
+    eicuDisable(_icu_drv);
+}
+
 void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel)
 {
     eicuchannel_t channel = get_pair_channel(aux_channel);

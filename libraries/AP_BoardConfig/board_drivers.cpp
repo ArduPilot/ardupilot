@@ -136,9 +136,8 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
         return false;
     }
     dev->set_read_flag(read_flag);
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
+    dev->set_speed(AP_HAL::Device::SPEED_LOW);
     uint8_t v;
     if (!dev->read_registers(regnum, &v, 1)) {
 #if SPI_PROBE_DEBUG
@@ -154,8 +153,42 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
     return v == value;
 }
 
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-static bool check_ms5611(const char* devname) {
+
+#define INV2REG_BANK_SEL 0x7F
+/*
+  check a SPI device for a register value
+ */
+bool AP_BoardConfig::spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag)
+{
+    auto dev = hal.spi->get_device(devname);
+    if (!dev) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: no device\n", devname);
+#endif
+        return false;
+    }
+    dev->set_read_flag(read_flag);
+    dev->get_semaphore()->take_blocking();
+    dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    uint8_t v;
+    // select bank 0 for who am i
+    dev->write_register(INV2REG_BANK_SEL, 0, false);
+    if (!dev->read_registers(regnum, &v, 1)) {
+#if SPI_PROBE_DEBUG
+        hal.console->printf("%s: reg %02x read fail\n", devname, (unsigned)regnum);
+#endif
+        dev->get_semaphore()->give();
+        return false;
+    }
+    dev->get_semaphore()->give();
+#if SPI_PROBE_DEBUG
+    hal.console->printf("%s: reg %02x expected:%02x got:%02x\n", devname, (unsigned)regnum, (unsigned)value, (unsigned)v);
+#endif
+    return v == value;
+}
+
+#if defined(HAL_VALIDATE_BOARD)
+bool AP_BoardConfig::check_ms5611(const char* devname) {
     auto dev = hal.spi->get_device(devname);
     if (!dev) {
 #if SPI_PROBE_DEBUG
@@ -166,9 +199,10 @@ static bool check_ms5611(const char* devname) {
 
     AP_HAL::Semaphore *dev_sem = dev->get_semaphore();
 
-    if (!dev_sem || !dev_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev_sem) {
         return false;
     }
+    dev_sem->take_blocking();
 
     static const uint8_t CMD_MS56XX_RESET = 0x1E;
     static const uint8_t CMD_MS56XX_PROM = 0xA0;
@@ -212,7 +246,7 @@ static bool check_ms5611(const char* devname) {
 
     return true;
 }
-#endif
+#endif // HAL_VALIDATE_BOARD
 
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
@@ -225,7 +259,9 @@ static bool check_ms5611(const char* devname) {
 #define LSM_WHOAMI_L3GD20 0xd4
 
 #define INV2REG_WHOAMI 0x00
+
 #define INV2_WHOAMI_ICM20948 0xEA
+#define INV2_WHOAMI_ICM20649 0xE1
 
 /*
   validation of the board type
@@ -245,7 +281,7 @@ void AP_BoardConfig::validate_board_type(void)
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
          spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
         (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
-         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
+         spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
@@ -263,39 +299,19 @@ void AP_BoardConfig::validate_board_type(void)
 #endif
 }
 
-
-void AP_BoardConfig::check_cubeblack(void)
-{
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    if (state.board_type != PX4_BOARD_PIXHAWK2) {
-        state.board_type.set(PX4_BOARD_PIXHAWK2);
-    }
-
-    bool success = true;
-    if (!spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)) { success = false; }
-    if (!spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) &&
-        !spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) { success = false; }
-    if (!(spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20) && 
-          spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)) &&
-        !spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)) { success = false; }
-    if (!check_ms5611("ms5611")) { success = false; }
-    if (!check_ms5611("ms5611_ext")) { success = false; }
-
-    if (!success) {
-        config_error("Failed to init CubeBlack - sensor mismatch");
-    }
-#endif
-}
-
-
 /*
   auto-detect board type
  */
 void AP_BoardConfig::board_autodetect(void)
 {
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    check_cubeblack();
-    return;
+#if defined(HAL_VALIDATE_BOARD)
+    const char* errored_check = HAL_VALIDATE_BOARD;
+    if (errored_check == nullptr) {
+        return;
+    } else {
+        config_error("Board Validation %s Failed", errored_check);
+        return;
+    }
 #endif
 
     if (state.board_type != PX4_BOARD_AUTO) {
@@ -318,7 +334,7 @@ void AP_BoardConfig::board_autodetect(void)
          spi_check_register("icm20608_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602) ||
          spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)) &&
         (spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D) ||
-         spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
+         spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948))) {
         // Pixhawk2 has LSM303D and MPUxxxx on external bus
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         hal.console->printf("Detected PIXHAWK2\n");
@@ -448,9 +464,9 @@ void AP_BoardConfig::board_setup()
 
 #ifdef HAL_GPIO_PWM_VOLT_PIN
     if (_pwm_volt_sel == 0) {
-        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 1); //set pin for 3.3V PWM Output
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, HAL_GPIO_PWM_VOLT_3v3); //set pin for 3.3V PWM Output
     } else if (_pwm_volt_sel == 1) {
-        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, 0); //set pin for 5V PWM Output
+        hal.gpio->write(HAL_GPIO_PWM_VOLT_PIN, !HAL_GPIO_PWM_VOLT_3v3); //set pin for 5V PWM Output
     }
 #endif
     board_setup_uart();

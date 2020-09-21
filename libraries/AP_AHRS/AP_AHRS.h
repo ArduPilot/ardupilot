@@ -96,38 +96,6 @@ public:
         return _flags.fly_forward;
     }
 
-    /*
-      set the "likely flying" flag. This is not guaranteed to be
-      accurate, but is the vehicle codes best guess as to the whether
-      the vehicle is currently flying
-     */
-    void set_likely_flying(bool b) {
-        if (b && !_flags.likely_flying) {
-            _last_flying_ms = AP_HAL::millis();
-        }
-        _flags.likely_flying = b;
-    }
-
-    /*
-      get the likely flying status. Returns true if the vehicle code
-      thinks we are flying at the moment. Not guaranteed to be
-      accurate
-     */
-    bool get_likely_flying(void) const {
-        return _flags.likely_flying;
-    }
-
-    /*
-      return time in milliseconds since likely_flying was set
-      true. Returns zero if likely_flying is currently false
-    */
-    uint32_t get_time_flying_ms(void) const {
-        if (!_flags.likely_flying) {
-            return 0;
-        }
-        return AP_HAL::millis() - _last_flying_ms;
-    }
-
     AHRS_VehicleClass get_vehicle_class(void) const {
         return _vehicle_class;
     }
@@ -168,6 +136,9 @@ public:
     const AP_Airspeed *get_airspeed(void) const {
         return _airspeed;
     }
+
+    // return the index of the primary core or -1 if no primary core selected
+    virtual int8_t get_primary_core_index() const { return -1; }
 
     // get the index of the current primary accelerometer sensor
     virtual uint8_t get_primary_accel_index(void) const {
@@ -215,7 +186,13 @@ public:
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
+
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    virtual bool is_ext_nav_used_for_yaw(void) const { return false; }
     
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    virtual void request_yaw_reset(void) {}
+
     // Euler angles (radians)
     float roll;
     float pitch;
@@ -233,6 +210,11 @@ public:
     // return a smoothed and corrected gyro vector in radians/second
     virtual const Vector3f &get_gyro(void) const = 0;
 
+    // return primary accels, for lua
+    const Vector3f &get_accel(void) const {
+        return AP::ins().get_accel();
+    }
+    
     // return a smoothed and corrected gyro vector in radians/second using the latest ins data (which may not have been consumed by the EKF yet)
     Vector3f get_gyro_latest(void) const;
 
@@ -257,10 +239,10 @@ public:
     // since last call
     virtual float get_error_yaw(void) const = 0;
 
-    // return a DCM rotation matrix representing our current attitude
+    // return a DCM rotation matrix representing our current attitude in NED frame
     virtual const Matrix3f &get_rotation_body_to_ned(void) const = 0;
 
-    // return a Quaternion representing our current attitude
+    // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const {
         quat.from_rotation_matrix(get_rotation_body_to_ned());
     }
@@ -283,17 +265,23 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    virtual bool airspeed_estimate(float *airspeed_ret) const WARN_IF_UNUSED;
+    virtual bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED = 0;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_estimate_true(float *airspeed_ret) const WARN_IF_UNUSED {
+    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
         if (!airspeed_estimate(airspeed_ret)) {
             return false;
         }
-        *airspeed_ret *= get_EAS2TAS();
+        airspeed_ret *= get_EAS2TAS();
         return true;
     }
+
+    // return a synthetic airspeed estimate (one derived from sensors
+    // other than an actual airspeed sensor), if available. return
+    // true if we have a synthetic airspeed.  ret will not be modified
+    // on failure.
+    virtual bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED = 0;
 
     // get apparent to true airspeed ratio
     float get_EAS2TAS(void) const;
@@ -302,6 +290,12 @@ public:
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+    }
+
+    // return true if airspeed comes from a specific airspeed sensor, as
+    // opposed to an IMU estimate
+    bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
+        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
     // return the parameter AHRS_WIND_MAX in metres per second
@@ -421,8 +415,8 @@ public:
         return _sin_yaw;
     }
 
-    // for holding parameters
-    static const struct AP_Param::GroupInfo var_info[];
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
     // return secondary attitude solution if available, as eulers in radians
     virtual bool get_secondary_attitude(Vector3f &eulers) const WARN_IF_UNUSED {
@@ -497,13 +491,13 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastYawResetAngle(float &yawAng) const {
+    virtual uint32_t getLastYawResetAngle(float &yawAng) {
         return 0;
     };
 
     // return the amount of NE position change in metres due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) const WARN_IF_UNUSED {
+    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
         return 0;
     };
 
@@ -515,7 +509,7 @@ public:
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosDownReset(float &posDelta) const WARN_IF_UNUSED {
+    virtual uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
         return 0;
     };
 
@@ -566,12 +560,22 @@ public:
 
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
-    Vector2f rotate_earth_to_body2D(const Vector2f &ef_vector) const;
+    Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
 
     // rotate a 2D vector from earth frame to body frame
     // in input, x is forward, y is right
-    Vector2f rotate_body_to_earth2D(const Vector2f &bf) const;
+    Vector2f body_to_earth2D(const Vector2f &bf) const;
 
+    // convert a vector from body to earth frame
+    Vector3f body_to_earth(const Vector3f &v) const {
+        return v * get_rotation_body_to_ned();
+    }
+
+    // convert a vector from earth to body frame
+    Vector3f earth_to_body(const Vector3f &v) const {
+        return get_rotation_body_to_ned().mul_transpose(v);
+    }
+    
     virtual void update_AOA_SSA(void);
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
@@ -579,19 +583,35 @@ public:
     // false when no limiting is required
     virtual bool get_hgt_ctrl_limit(float &limit) const WARN_IF_UNUSED { return false; };
 
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // this is not related to terrain following
+    virtual void set_terrain_hgt_stable(bool stable) {}
+
     // Write position and quaternion data from an external navigation system
-    virtual void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) { }
+    virtual void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) { }
+
+    // Write velocity data from an external navigation system
+    virtual void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) { }
+
+    // return current vibration vector for primary IMU
+    Vector3f get_vibration(void) const;
+
+    // set and save the alt noise parameter value
+    virtual void set_alt_measurement_noise(float noise) {};
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
     }
 
+    // for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
     void update_nmea_out();
 
     // multi-thread access support
-    HAL_Semaphore_Recursive _rsem;
+    HAL_Semaphore _rsem;
 
     AHRS_VehicleClass _vehicle_class;
 
@@ -620,11 +640,7 @@ protected:
         uint8_t fly_forward             : 1;    // 1 if we can assume the aircraft will be flying forward on its X axis
         uint8_t correct_centrifugal     : 1;    // 1 if we should correct for centrifugal forces (allows arducopter to turn this off when motors are disarmed)
         uint8_t wind_estimation         : 1;    // 1 if we should do wind estimation
-        uint8_t likely_flying           : 1;    // 1 if vehicle is probably flying
     } _flags;
-
-    // time when likely_flying last went true
-    uint32_t _last_flying_ms;
 
     // calculate sin/cos of roll/pitch/yaw from rotation
     void calc_trig(const Matrix3f &rot,

@@ -47,7 +47,7 @@ const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 */
 const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
 {
-    uint32_t compressed_size;
+    uint32_t compressed_size = 0;
     const uint8_t *compressed_data = find_file(name, compressed_size);
     if (!compressed_data) {
         return nullptr;
@@ -112,4 +112,22 @@ void AP_ROMFS::free(const uint8_t *data)
 #ifndef HAL_ROMFS_UNCOMPRESSED
     ::free(const_cast<uint8_t *>(data));
 #endif
+}
+
+/*
+  directory listing interface. Start with ofs=0. Returns pathnames
+  that match dirname prefix. Ends with nullptr return when no more
+  files found
+*/
+const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
+{
+    const size_t dlen = strlen(dirname);
+    for ( ; ofs < ARRAY_SIZE(files); ofs++) {
+        if (strncmp(dirname, files[ofs].filename, dlen) == 0 &&
+            files[ofs].filename[dlen] == '/') {
+            // found one
+            return files[ofs++].filename;
+        }
+    }
+    return nullptr;
 }

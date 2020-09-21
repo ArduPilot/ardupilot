@@ -88,3 +88,10 @@ void ModeAuto::update()
     }
 }
 
+void ModeAuto::navigate()
+{
+    if (AP::ahrs().home_is_set()) {
+        plane.mission.update();
+    }
+}
+

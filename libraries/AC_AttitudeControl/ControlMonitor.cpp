@@ -41,6 +41,14 @@ void AC_AttitudeControl::control_monitor_update(void)
  */
 void AC_AttitudeControl::control_monitor_log(void)
 {
+// @LoggerMessage: CTRL
+// @Description: Attitude Control oscillation monitor diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: RMSRollP: LPF Root-Mean-Squared Roll Rate controller P gain
+// @Field: RMSRollD: LPF Root-Mean-Squared Roll rate controller D gain
+// @Field: RMSPitchP: LPF Root-Mean-Squared Pitch Rate controller P gain
+// @Field: RMSPitchD: LPF Root-Mean-Squared Pitch Rate controller D gain
+// @Field: RMSYaw: LPF Root-Mean-Squared Yaw Rate controller P+D gain
     AP::logger().Write("CTRL", "TimeUS,RMSRollP,RMSRollD,RMSPitchP,RMSPitchD,RMSYaw", "Qfffff",
                                            AP_HAL::micros64(),
                                            (double)safe_sqrt(_control_monitor.rms_roll_P),

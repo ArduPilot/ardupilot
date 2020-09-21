@@ -12,14 +12,14 @@ public:
     // return GCS link at offset ofs
     GCS_MAVLINK_Copter *chan(const uint8_t ofs) override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Copter *)_chan[ofs];
     }
     const GCS_MAVLINK_Copter *chan(const uint8_t ofs) const override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Copter *)_chan[ofs];
@@ -38,6 +38,8 @@ public:
     bool supersimple_input_active() const override;
 
 protected:
+
+    uint8_t sysid_this_mav() const override;
 
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any

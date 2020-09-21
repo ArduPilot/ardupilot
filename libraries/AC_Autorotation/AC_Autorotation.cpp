@@ -219,10 +219,9 @@ float AC_Autorotation::get_rpm(bool update_counter)
 
         //Get RPM value
         uint8_t instance = _param_rpm_instance;
-        current_rpm = rpm->get_rpm(instance);
 
         //Check RPM sesnor is returning a healthy status
-        if (current_rpm <= -1) {
+        if (!rpm->get_rpm(instance, current_rpm) || current_rpm <= -1) {
             //unhealthy, rpm unreliable
             _flags.bad_rpm = true;
         }
@@ -252,6 +251,22 @@ float AC_Autorotation::get_rpm(bool update_counter)
 
 void AC_Autorotation::Log_Write_Autorotation(void)
 {
+// @LoggerMessage: AROT
+// @Description: Helicopter AutoRotation information
+// @Field: TimeUS: Time since system startup
+// @Field: P: P-term for headspeed controller response
+// @Field: hserr: head speed error; difference between current and desired head speed
+// @Field: ColOut: Collective Out
+// @Field: FFCol: FF-term for headspeed controller response
+// @Field: CRPM: current headspeed RPM
+// @Field: SpdF: current forward speed
+// @Field: CmdV: desired forward speed
+// @Field: p: p-term of velocity response
+// @Field: ff: ff-term of velocity response
+// @Field: AccO: forward acceleration output
+// @Field: AccT: forward acceleration target
+// @Field: PitT: pitch target
+
     //Write to data flash log
     AP::logger().Write("AROT",
                        "TimeUS,P,hserr,ColOut,FFCol,CRPM,SpdF,CmdV,p,ff,AccO,AccT,PitT",

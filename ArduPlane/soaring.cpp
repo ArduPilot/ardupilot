@@ -9,6 +9,10 @@
 */
 void Plane::update_soaring() {
     
+    // Check if soaring is active. Also sets throttle suppressed
+    // status on active state changes.
+    plane.g2.soaring_controller.update_active_state();
+
     if (!g2.soaring_controller.is_active()) {
         return;
     }
@@ -18,22 +22,17 @@ void Plane::update_soaring() {
     // Check for throttle suppression change.
     switch (control_mode->mode_number()) {
     case Mode::Number::AUTO:
-        g2.soaring_controller.suppress_throttle();
-        break;
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
-        if (!g2.soaring_controller.suppress_throttle()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
-            set_mode(mode_rtl, ModeReason::SOARING_FBW_B_WITH_MOTOR_RUNNING);
-        }
+        g2.soaring_controller.suppress_throttle();
         break;
     case Mode::Number::LOITER:
-        // Do nothing. We will switch back to auto/rtl before enabling throttle.
+        // Never use throttle in LOITER with soaring active.
+        g2.soaring_controller.set_throttle_suppressed(true);
         break;
     default:
-        // This does not affect the throttle since suppressed is only checked in the above three modes. 
-        // It ensures that the soaring always starts with throttle suppressed though.
-        g2.soaring_controller.set_throttle_suppressed(true);
+        // In any other mode allow throttle.
+        g2.soaring_controller.set_throttle_suppressed(false);
         break;
     }
 
@@ -43,6 +42,9 @@ void Plane::update_soaring() {
     }
 
     switch (control_mode->mode_number()) {
+    default:
+        // nothing to do
+        break;
     case Mode::Number::AUTO:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
@@ -50,50 +52,124 @@ void Plane::update_soaring() {
         g2.soaring_controller.update_cruising();
 
         if (g2.soaring_controller.check_thermal_criteria()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_loiter.name());
             set_mode(mode_loiter, ModeReason::SOARING_THERMAL_DETECTED);
         }
         break;
 
-    case Mode::Number::LOITER:
+    case Mode::Number::LOITER: {
         // Update thermal estimate and check for switch back to AUTO
         g2.soaring_controller.update_thermalling();  // Update estimate
 
-        if (g2.soaring_controller.check_cruise_criteria()) {
-            // Exit as soon as thermal state estimate deteriorates
-            switch (previous_mode->mode_number()) {
-            case Mode::Number::FLY_BY_WIRE_B:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
-                set_mode(mode_rtl, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
-
-            case Mode::Number::CRUISE: {
-                // return to cruise with old ground course
-                CruiseState cruise = cruise_state;
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
-                set_mode(mode_cruise, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                cruise_state = cruise;
-                set_target_altitude_current();
-                break;
-            }
-
-            case Mode::Number::AUTO:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
-                set_mode(mode_auto, ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
-
-            default:
-                break;
-            }
-        } else {
-            // still in thermal - need to update the wp location
-            g2.soaring_controller.get_target(next_WP_loc);
+        // Thermalling is done in a home-relative coordinate system, so we need home to be set.
+        Vector3f position;
+        if (!ahrs.get_relative_position_NED_home(position)) {
+            return;
         }
+
+        // Check distance to home against MAX_RADIUS.
+        if (g2.soaring_controller.max_radius >= 0 &&
+            sq(position.x)+sq(position.y) > sq(g2.soaring_controller.max_radius) &&
+            previous_mode->mode_number()!=Mode::Number::AUTO) {
+            // Some other loiter status, and outside of maximum soaring radius, and previous mode wasn't AUTO
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Outside SOAR_MAX_RADIUS, RTL");
+            set_mode(mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED);
+            break;
+        }
+
+        // If previous mode was AUTO and there was a previous NAV command, we can use previous and next wps for drift calculation
+        // with respect to the desired direction of travel. If these vectors are zero, drift will be calculated from thermal start
+        // position only, without taking account of the desired direction of travel.
+        Vector2f prev_wp, next_wp;
+
+        if (previous_mode == &mode_auto) {
+            AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();
+            AP_Mission::Mission_Command prev_nav_cmd;
+
+            if (!(mission.get_next_nav_cmd(mission.get_prev_nav_cmd_with_wp_index(), prev_nav_cmd) &&
+                prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
+                current_nav_cmd.content.location.get_vector_xy_from_origin_NE(next_wp))) {
+                prev_wp.zero();
+                next_wp.zero();
+            }
+        }
+
+        // Get the status of the soaring controller cruise checks.
+        const SoaringController::LoiterStatus loiterStatus = g2.soaring_controller.check_cruise_criteria(prev_wp/100, next_wp/100);
+
+        if (loiterStatus == SoaringController::LoiterStatus::GOOD_TO_KEEP_LOITERING) {
+            // Reset loiter angle, so that the loiter exit heading criteria
+            // only starts expanding when we're ready to exit.
+            plane.loiter.sum_cd = 0;
+            plane.soaring_mode_timer_ms = AP_HAL::millis();
+
+            //update the wp location
+            g2.soaring_controller.get_target(next_WP_loc);
+
+            break;
+        }
+
+        // Some other loiter status, we need to think about exiting loiter.
+        const uint32_t time_in_loiter_ms = AP_HAL::millis() - plane.soaring_mode_timer_ms;
+        const uint32_t timeout = MIN(1000*g2.soaring_controller.get_circling_time(), 20000);
+
+        if (!soaring_exit_heading_aligned() && loiterStatus != SoaringController::LoiterStatus::ALT_TOO_LOW && time_in_loiter_ms < timeout) {
+            // Heading not lined up, and not timed out or in a condition requiring immediate exit.
+            break;
+        }
+
+        // Heading lined up and loiter status not good to continue. Need to restore previous mode.
+        switch (loiterStatus) {
+        case SoaringController::LoiterStatus::ALT_TOO_HIGH:
+            soaring_restore_mode("Too high", ModeReason::SOARING_ALT_TOO_HIGH);
+            break;
+        case SoaringController::LoiterStatus::ALT_TOO_LOW:
+            soaring_restore_mode("Too low", ModeReason::SOARING_ALT_TOO_LOW);
+            break;
+        default:
+        case SoaringController::LoiterStatus::THERMAL_WEAK:
+            soaring_restore_mode("Thermal ended", ModeReason::SOARING_THERMAL_ESTIMATE_DETERIORATED);
+            break;
+        case SoaringController::LoiterStatus::DRIFT_EXCEEDED:
+            soaring_restore_mode("Drifted too far", ModeReason::SOARING_DRIFT_EXCEEDED);
+            break;
+        case SoaringController::LoiterStatus::EXIT_COMMANDED:
+            soaring_restore_mode("Exit via RC switch", ModeReason::RC_COMMAND);
+            break;
+        } // switch loiterStatus
+
         break;
+       
+    } // case loiter
+    } // switch control_mode
+}
+
+
+bool Plane::soaring_exit_heading_aligned() const
+{
+    // Return true if the current heading is aligned with the next objective.
+    // If home is not set, or heading not locked, return true to avoid delaying mode change.
+    switch (previous_mode->mode_number()) {
+    case Mode::Number::AUTO: {
+        //Get the lat/lon of next Nav waypoint after this one:
+        AP_Mission::Mission_Command current_nav_cmd = mission.get_current_nav_cmd();;
+        return plane.mode_loiter.isHeadingLinedUp(next_WP_loc, current_nav_cmd.content.location);
+    }
+    case Mode::Number::FLY_BY_WIRE_B:
+        return (!AP::ahrs().home_is_set() || plane.mode_loiter.isHeadingLinedUp(next_WP_loc, AP::ahrs().get_home()));
+    case Mode::Number::CRUISE:
+        int32_t target_heading_cd;
+        return (!plane.mode_cruise.get_target_heading_cd(target_heading_cd) || plane.mode_loiter.isHeadingLinedUp_cd(target_heading_cd));
     default:
-        // nothing to do
         break;
     }
+    return true;
+}
+
+void Plane::soaring_restore_mode(const char *reason, ModeReason modereason)
+{
+    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, previous_mode->name());
+    set_mode(*previous_mode, modereason);
 }
 
 #endif // SOARING_ENABLED

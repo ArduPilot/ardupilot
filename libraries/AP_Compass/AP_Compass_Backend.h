@@ -21,6 +21,10 @@
 
 #include "AP_Compass.h"
 
+#ifndef HAL_MSP_COMPASS_ENABLED
+#define HAL_MSP_COMPASS_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
+
 class Compass;  // forward declaration
 class AP_Compass_Backend
 {
@@ -58,9 +62,12 @@ public:
         DEVTYPE_MAG3110  = 0x0E,
         DEVTYPE_SITL  = 0x0F,
         DEVTYPE_IST8308 = 0x10,
-		DEVTYPE_RM3100 = 0x11,
+        DEVTYPE_RM3100 = 0x11,
     };
 
+#if HAL_MSP_COMPASS_ENABLED
+    virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
+#endif
 
 protected:
 
@@ -88,7 +95,7 @@ protected:
     void drain_accumulated_samples(uint8_t instance, const Vector3f *scale = NULL);
 
     // register a new compass instance with the frontend
-    uint8_t register_compass(void) const;
+    bool register_compass(int32_t dev_id, uint8_t& instance) const;
 
     // set dev_id for an instance
     void set_dev_id(uint8_t instance, uint32_t dev_id);
@@ -112,7 +119,7 @@ protected:
     Compass &_compass;
 
     // semaphore for access to shared frontend data
-    HAL_Semaphore_Recursive _sem;
+    HAL_Semaphore _sem;
 
     // Check that the compass field is valid by using a mean filter on the vector length
     bool field_ok(const Vector3f &field);

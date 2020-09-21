@@ -51,9 +51,9 @@ int main(void)
 {
     board_info.board_type = APJ_BOARD_ID;
     board_info.board_rev = 0;
-    board_info.fw_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
+    board_info.fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB))*1024;
     if (BOARD_FLASH_SIZE > 1024 && check_limit_flash_1M()) {
-        board_info.fw_size = (1024 - FLASH_BOOTLOADER_LOAD_KB)*1024;        
+        board_info.fw_size = (1024 - FLASH_BOOTLOADER_LOAD_KB)*1024;
     }
 
     bool try_boot = false;

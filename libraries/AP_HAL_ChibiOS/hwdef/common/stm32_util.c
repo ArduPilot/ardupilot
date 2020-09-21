@@ -321,7 +321,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
@@ -342,7 +342,18 @@ iomode_t palReadLineMode(ioline_t line)
     }
     return ret;
 }
-#endif
+
+/*
+  set pin as pullup, pulldown or floating
+ */
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
+{
+    ioportid_t port = PAL_PORT(line);
+    uint8_t pad = PAL_PAD(line);
+    port->PUPDR = (port->PUPDR & ~(3<<(pad*2))) | (pp<<(pad*2));
+}
+
+#endif // F7, H7, F4
 
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {
@@ -424,3 +435,17 @@ void system_halt_hook(void)
 #endif
 }
 
+// hook for stack overflow
+void stack_overflow(thread_t *tp)
+{
+#if !defined(HAL_BOOTLOADER_BUILD) && !defined(IOMCU_FW)
+    extern void AP_stack_overflow(const char *thread_name);
+    AP_stack_overflow(tp->name);
+    // if we get here then we are armed and got a stack overflow. We
+    // will report an internal error and keep trying to fly. We are
+    // quite likely to crash anyway due to memory corruption. The
+    // watchdog data should record the thread name and fault type
+#else
+    (void)tp;
+#endif
+}

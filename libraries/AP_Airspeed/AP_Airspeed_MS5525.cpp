@@ -71,9 +71,7 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            continue;
-        }
+        dev->get_semaphore()->take_blocking();
 
         // lots of retries during probe
         dev->set_retries(5);

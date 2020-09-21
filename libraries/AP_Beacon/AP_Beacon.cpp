@@ -272,7 +272,7 @@ void AP_Beacon::update_boundary_points()
 
     bool boundary_success = false;  // true once the boundary has been successfully found
     bool boundary_failure = false;  // true if we fail to build the boundary
-    float start_angle = 0.0f;		// starting angle used when searching for next boundary point, on each iteration this climbs but never climbs past PI * 2
+    float start_angle = 0.0f;       // starting angle used when searching for next boundary point, on each iteration this climbs but never climbs past PI * 2
     while (!boundary_success && !boundary_failure) {
         // look for next outer point
         uint8_t next_idx;
