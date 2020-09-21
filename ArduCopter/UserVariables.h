@@ -10,13 +10,11 @@ uint8_t killswitch_counter;
 float _aft_rpm;
 float _fwd_rpm;
 
-float vehicle_weight;
-
 //bool take_off_complete;
 uint16_t spoolup_timer;
 bool timer_trigger;
 
-Vector2f adv_ratio;
+uint16_t spoolup_watcher;
 
 uint32_t ch9_timer;
 uint32_t ch10_timer;
@@ -50,6 +48,7 @@ bool ch10_button_hold;
 bool ch11_button_hold;
 bool ch12_button_hold;
 
+bool no_RC_in;
 
 enum vehicle_state{
 	disarm,
@@ -58,6 +57,7 @@ enum vehicle_state{
 	hover,
 	//fwd_flight,
 	//brake,
+	landing,
 	land
 }spirit_state;
 #if WII_CAMERA == 1

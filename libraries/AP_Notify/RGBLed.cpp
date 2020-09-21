@@ -273,6 +273,14 @@ uint32_t RGBLed::get_colour_sequence(void)// const
         return sequence_failsafe_battery;
     }
 
+
+    if(AP_Notify::flags.no_RC_in and AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D){
+      	return sequence_no_RC_in_GPS;
+      }else if(AP_Notify::flags.no_RC_in){
+    	  return sequence_no_RC_in_no_GPS;
+      }
+
+
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
         // solid green if armed with GPS 3d lock

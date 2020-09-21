@@ -57,15 +57,16 @@ void Copter::arm_motors_check()
         if (arming_counter == ARM_DELAY && !motors->armed()) {
 
         	AP_Notify::flags.arming = false;
-
-
+    		hal.gpio->write(52, false);
+    		hal.gpio->write(53, true);
+/*
         	if(!copter.ap.turn_on_critical_systems){
         		hal.gpio->write(52, false);
         		hal.gpio->write(53, true);
         		copter.ap.turn_on_critical_systems = true;
                 arming_counter = 0;
                 arming_hold = true;
-        	}else if (!arming.arm(AP_Arming::Method::RUDDER)) {
+        	}else */if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
                 arming_hold = true;
                 AP_Notify::flags.arming_failed = true;

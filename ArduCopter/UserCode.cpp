@@ -56,13 +56,11 @@ void Copter::userhook_init()
 
 	hal.gpio->pinMode(52, 1);  // Payload, FLASE to turn on
 	hal.gpio->pinMode(53, 1);  // ESCs/Servos, TRUE to turn on
-	hal.gpio->write(52, true);
-	hal.gpio->write(53, false);
 
-	copter.ap.turn_on_critical_systems = false;
+	hal.gpio->write(52, true);	// Payload Power off at startup
+	hal.gpio->write(53, true);  //Turn ESC/Servos on at startup
 
 	//Spool up support
-	spoolup_timer = 0;
 	timer_trigger = false;
 
 }
@@ -75,7 +73,6 @@ void Copter::userhook_FastLoop()
 
 
 }
-
 
 
 #endif
@@ -96,30 +93,38 @@ void Copter::userhook_50Hz()
 		spirit_state = disarm;
 
 	// the rest considers the vehicle to be armed
+		//always move through spoolup
 	}else if(spirit_state == disarm){
 
 		hal.gpio->write(52, false);
 		hal.gpio->write(53, true);
 
 		spirit_state = spoolup;
-		spoolup_timer = AP_HAL::millis16();
-		gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
+		spoolup_watcher = AP_HAL::millis16();
+	//	gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
 
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
 
 		spirit_state = takeoff;
-		gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
+	//	gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
 
-	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle())){
+	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle()) ){
 
 		spirit_state = hover;
-		gcs().send_text(MAV_SEVERITY_INFO,"hover");
+	//	gcs().send_text(MAV_SEVERITY_INFO,"hover");
 
 
-	}else if(spirit_state == hover and ap.land_complete){
+	}else if((spirit_state == hover or spirit_state == landing) and ap.land_complete){
 
 		spirit_state = land;
-		gcs().send_text(MAV_SEVERITY_INFO,"land");
+	//	gcs().send_text(MAV_SEVERITY_INFO,"land");
+
+	}
+
+
+	if((control_mode == Mode::Number::LAND or copter.flightmode->is_landing()) and !ap.land_complete){
+
+		spirit_state = landing;
 
 	}
 
@@ -132,18 +137,22 @@ void Copter::userhook_50Hz()
 		//zero out dynamic trim for now
 		motors->set_dynamic_trim(0.0, 0.0);
 
+		if(RC_Channels::rc_channel(CH_3)->get_radio_in() == 0){
+			AP_Notify::flags.no_RC_in = true;
+		}else{
+			AP_Notify::flags.no_RC_in = false;
+		}
+
 		break;
 
 	case spoolup:
 
+		//Looks for issues with startup
 		servo_voltage_watcher();
 		topple_sense();
 
-        attitude_control->reset_rate_controller_I_terms();
-        pos_control->relax_alt_hold_controllers(0.0f);
-
-		//if spoolup doesn't advance complete 5 seconds between rotors:' disarm
-		if(AP_HAL::millis16() - spoolup_timer > (uint16_t)5000){
+		//Spoolup Watcher.  Disarm if 4 seconds passes without advancing
+		if(AP_HAL::millis16() - spoolup_watcher > (uint16_t)4000){
 			 copter.arming.disarm();
 			 gcs().send_text(MAV_SEVERITY_CRITICAL,"A Rotor Failed to Start: Disarm");
 		}
@@ -155,19 +164,25 @@ void Copter::userhook_50Hz()
 
 			if(!timer_trigger){
 				spoolup_timer =  AP_HAL::millis16();
+				spoolup_watcher = AP_HAL::millis16();
 				timer_trigger = true;
 			}
 
-			if(_fwd_rpm >= 1000.0f and _aft_rpm > 1000.0f){  //fully spun up
+			if(_fwd_rpm >= 1000.0f and _aft_rpm >= 1000.0f){  //fully spun up
 				motors->spoolup_complete(true);
 				spirit_state = land;
-				gcs().send_text(MAV_SEVERITY_INFO,"landed");
+				//gcs().send_text(MAV_SEVERITY_INFO,"landed");
 				timer_trigger = false;
 
 			}else if((AP_HAL::millis16() - spoolup_timer) > (uint16_t)(g.spool_delta*1000)){
 				motors->enable_aft_rotor(true);
+			}else{
+				spoolup_watcher = AP_HAL::millis16();
 			}
 		}
+
+        attitude_control->reset_rate_controller_I_terms();
+        pos_control->relax_alt_hold_controllers(0.0f);
 
 		break;
 
@@ -187,110 +202,14 @@ void Copter::userhook_50Hz()
 
 		break;
 
+	case landing:
 
+
+
+		break;
 
 	}
 
-
-
-	//Spirit_Land_Detector();
-/*
-	if( motors->get_throttle() >= motors->get_throttle_hover() ){
-		take_off_complete = true;
-	}
-
-
-	//////   ADVANCE RATIO CALC   ///////////
-
-
-	if(rpm_sensor.healthy(0)){
-	_fwd_rpm = rpm_sensor.get_rpm(0);
-	}
-
-	if(rpm_sensor.healthy(1)){
-	_aft_rpm = rpm_sensor.get_rpm(1);
-	}
-	*/
-
-/*
-if(copter.position_ok()){
-
-		Vector3f _vel = inertial_nav.get_velocity();
-		float vel_fw = (_vel.x*ahrs.cos_yaw() + _vel.y*ahrs.sin_yaw())/100;
-		float vel_right = (-_vel.x*ahrs.sin_yaw() + _vel.y*ahrs.cos_yaw())/100;
-
-
-		float trim_ff_pitch, trim_ff_roll;
-
-
-		if(vel_fw > 2.0f){
-			trim_ff_pitch = (vel_fw/HIGH_POINT)*MAX_PARAMETER;
-		}
-		if(vel_fw > HIGH_POINT){
-			trim_ff_pitch =- ((vel_fw - HIGH_POINT) / 20.0f)*0.5*MAX_PARAMETER;
-		}else{
-			trim_ff_pitch = 0;
-		}
-
-
-		if(rpm_sensor.healthy(1)){
-
-			float rad_per_s_aft = (_aft_rpm/60.0f)*2.0f*3.1415f;
-
-			adv_ratio.x = -2.0f*(ahrs.cos_pitch()) * ( vel_fw / (rad_per_s_aft*0.3048) )  ;
-			adv_ratio.y = 2.0f*(ahrs.cos_roll())  * ( vel_right / (rad_per_s_aft*0.3048) ) ;
-
-			adv_ratio.x = constrain_float(adv_ratio.x, -0.30f, 0.30f);
-			adv_ratio.y = constrain_float(adv_ratio.y, -0.30f, 0.30f);
-
-		}else{
-
-			//adv_ratio.x = -((ahrs.cos_pitch()) * ( vel_fw / (100.0f) ))  ;
-			//adv_ratio.y = ((ahrs.cos_roll())  * ( vel_right / (100.0f) )) ;
-
-			//adv_ratio.x = constrain_float(adv_ratio.x, -0.20f, 0.20f);
-			//adv_ratio.y = constrain_float(adv_ratio.y, -0.20f, 0.20f);
-
-			adv_ratio.x = 0.001;
-			adv_ratio.y = 0.001;
-
-		}
-
-		if((RC_Channels::rc_channel(CH_7)->get_radio_in() > 1700) and (g.herelink_enable == 0)){
-			motors->set_dynamic_trim(adv_ratio.x, adv_ratio.y);
-		}else{
-			motors->set_dynamic_trim(0.0, 0.0);
-		}
-
-	}else{
-
-		adv_ratio.x = 0.0;
-		adv_ratio.y = 0.0;
-		motors->set_dynamic_trim(0.0, 0.0);
-	}
-
-
-	motors->set_dynamic_trim(0.0, 0.0);
-	*/
-
-	///////  	DETERMINE HOVER RPM		/////
-/*
-	 if (fabsf(inertial_nav.get_velocity_z()) < 60  and  labs(ahrs.roll_sensor) < 500 and labs(ahrs.pitch_sensor) < 500) {
-
-		 float ave_rpm = ((_aft_rpm + _fwd_rpm)/2.0f);
-		 hover_rpm.apply(ave_rpm);
-	 }
-*/
-
-	 ////   THRUST CALC   //////
-
-	 float accel = copter.ins.get_accel().z + GRAVITY_MSS;
-
-	 float thrust = -accel*(g.vec_weight/32.2);
-
-	 Log_Write_Vehicle_State(adv_ratio.x, adv_ratio.y, 0, thrust);//hover_rpm.get() 0, thrust);
-
-	//motors->set_dynamic_trim(0.0, 0.0);
 
 }
 #endif
@@ -324,6 +243,16 @@ void Copter::userhook_SlowLoop()
 	}
 
 
+	//Payload power control while not armed
+
+	if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1700 and !motors->armed()){
+		hal.gpio->write(52, false);
+	}else{
+		hal.gpio->write(52, true);
+
+	}
+
+
 }
 #endif
 
@@ -331,7 +260,6 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
-
 
 }
 #endif
@@ -372,6 +300,7 @@ void Copter::topple_sense(){
 }
 
 
+
 void Copter::servo_voltage_watcher(){
 
 		 const float servo_voltage = hal.analogin->servorail_voltage();
@@ -382,6 +311,8 @@ void Copter::servo_voltage_watcher(){
 			 gcs().send_text(MAV_SEVERITY_CRITICAL,"LOW SERVO VOLTAGE");
 			}
 }
+
+
 
 void Copter::Spirit_Gimbal_Control_Auto(){
 
@@ -410,8 +341,6 @@ void Copter::Killswitch(){
 		killswitch_counter = 0;
 		return;
 	}
-
-	///// KILL SWITCH ///////
 
 	if(RC_Channels::rc_channel(CH_8)->get_radio_in() < 1700){
 			killswitch_counter = 0;
@@ -442,7 +371,6 @@ void Copter::Killswitch(){
 
 
 void Copter::Detect_Buttons(){
-
 
 	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800){
 				if(!ch9_button_hold){
@@ -622,129 +550,3 @@ void Copter::Decode_Buttons(){
 
 }
 
-
-
-
-
-/*
-//void Copter::Spirit_Land_Detector()
-{
-
-	//////// LAND DETECTOR ////////
-
-	bool near_home;
-	bool touchdown_accel;
-	bool hover_speed;
-	bool touchdown;
-	bool topple;
-
-
-
-
-	if(!motors->armed()){
-		return;
-	}
-
-
-
-	if(!take_off_complete){
-
-		near_home = false;
-		touchdown_accel = false;
-		hover_speed = false;
-		touchdown = false;
-		topple = false;
-
-		return;
-
-	}
-
-
-	bool motors_low = ( motors->get_throttle() <= (motors->get_throttle_hover()/2.0f) );
-	bool accel_stationary = (land_accel_ef_filter.get().length() <= 1.00f);
-	float altitude = inertial_nav.get_position().z;
-
-	if(position_ok()){
-
-		Location current_position;
-		ahrs.get_position(current_position);
-
-		if(current_position.get_distance(ahrs.get_home()) < 10){
-			near_home = true;
-		}else{
-			near_home = false;
-		}
-
-		hover_speed = (inertial_nav.get_speed_xy() <= 100.0f);
-
-	}else{
-		hover_speed = false;
-		near_home = false;
-	}
-
-
-	if( (motors->get_throttle() < motors->get_throttle_hover()) and (ahrs.get_accel_ef_blended().z <= -15.0f) ){
-
-			touchdown_accel_counter = 0;
-			touchdown_accel = true;
-		}
-
-
-	if(touchdown_accel_counter > 50){
-
-		touchdown_accel_counter = 0;
-		touchdown_accel = false;
-
-	}else{
-
-		touchdown_accel_counter++;
-	}
-
-
-	if(motors_low and accel_stationary){
-		touchdown = true;
-	}else if(near_home and (altitude <= 3.00f) and touchdown_accel and hover_speed){
-		touchdown = true;
-	}else if( touchdown_accel and (inertial_nav.get_velocity_z() - pos_control->get_vel_target_z()) > 200.0f  ){
-		touchdown = true;
-	}
-
-	if(fabsf(attitude_control->get_att_error_angle_deg()) > 25.0f){
-
-		topple = true;
-
-	}else{
-
-		topple = false;
-	}
-
-
-	bool const a1a = near_home;
-	bool const a1b = motors_low;
-	bool const a1c = accel_stationary;
-	bool const a1d = hover_speed;
-	bool const a1e = touchdown_accel;
-	bool const a1f = touchdown;
-	bool const a1g = topple;
-
-
-
-
-	        AP::logger().Write(
-	            "LAND",
-	            "TimeUS,hom,low,acc,speed,TD_ac,TD,top",
-	            "s-------",
-	            "F-------",
-	            "Qbbbbbbb",
-	            AP_HAL::micros64(),
-				a1a,
-				a1b,
-				a1c,
-				a1d,
-				a1e,
-				a1f,
-				a1g
-	        );
-}
-
-*/
