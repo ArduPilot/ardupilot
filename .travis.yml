@@ -71,10 +71,10 @@ matrix:
       env: CI_BUILD_TARGET="sitltest-quadplane sitltest-plane"
     - if: type != cron
       compiler: "clang-7"
-      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub""
+      env: CI_BUILD_TARGET="sitltest-rover sitltest-sub"
     - if: type != cron
       compiler: "clang-7"
-      env: CI_BUILD_TARGET="sitl""
+      env: CI_BUILD_TARGET="sitl"
     - language: python
       python: 3.7
       addons:  # speedup: This test does not need addons
