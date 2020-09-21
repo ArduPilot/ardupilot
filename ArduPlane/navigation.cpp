@@ -12,6 +12,10 @@ void Plane::set_nav_controller(void)
     case AP_Navigation::CONTROLLER_L1:
         nav_controller = &L1_controller;
         break;
+
+    case AP_Navigation::CONTROLLER_LQR:
+        nav_controller = &g2.LQR_controller;
+        break;
     }
 }
 
