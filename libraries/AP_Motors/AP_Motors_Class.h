@@ -96,6 +96,7 @@ public:
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
     void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
+    void                set_in_use(bool inuse) { _in_use = inuse; }
 
     // accessors for roll, pitch, yaw and throttle inputs to motors
     float               get_roll() const { return _roll_in; }
@@ -107,6 +108,7 @@ public:
     float               get_forward() const { return _forward_in; }
     float               get_lateral() const { return _lateral_in; }
     virtual float       get_throttle_hover() const = 0;
+    bool                in_use() const { return _in_use; }
 
     // motor failure handling
     void                set_thrust_boost(bool enable) { _thrust_boost = enable; }
@@ -259,9 +261,9 @@ private:
     bool _armed;             // 0 if disarmed, 1 if armed
     bool _interlock;         // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     bool _initialised_ok;    // 1 if initialisation was successful
+    bool _in_use;
 
     static AP_Motors *_singleton;
-
 };
 
 namespace AP {
