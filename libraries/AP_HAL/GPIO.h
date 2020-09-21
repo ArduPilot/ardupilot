@@ -98,4 +98,7 @@ public:
 
     /* return true if USB cable is connected */
     virtual bool    usb_connected(void) = 0;
+
+    // optional timer tick
+    virtual void timer_tick(void) {};
 };
