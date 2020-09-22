@@ -41,8 +41,11 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
         ret = &mode_loiter;
         break;
     case Mode::Number::AVOID_ADSB:
+#if HAL_ADSB_ENABLED
         ret = &mode_avoidADSB;
         break;
+#endif
+    // if ADSB is not compiled in then fallthrough to guided
     case Mode::Number::GUIDED:
         ret = &mode_guided;
         break;
