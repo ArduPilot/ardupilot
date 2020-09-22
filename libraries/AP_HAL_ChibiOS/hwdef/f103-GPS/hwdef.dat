@@ -11,8 +11,6 @@ COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
 
 # and support all external compass types
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_DISABLE_I2C_MAGS_BY_DEFAULT
-define HAL_USE_I2C_MAG_HMC5843
 
 # increase TX size for RTCM
 undef HAL_UART_MIN_TX_SIZE
