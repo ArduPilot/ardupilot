@@ -472,6 +472,8 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+    needMagBodyVarReset = false;
+    needEarthBodyVarReset = false;
 }
 
 /*
@@ -1025,8 +1027,9 @@ void NavEKF3_core::CovariancePrediction()
     }
 
     if (!inhibitMagStates && lastInhibitMagStates) {
-        // when starting 3D fusion we want to reset body mag variances
+        // when starting 3D fusion we want to reset mag variances
         needMagBodyVarReset = true;
+        needEarthBodyVarReset = true;
     }
 
     if (needMagBodyVarReset) {
@@ -1037,6 +1040,17 @@ void NavEKF3_core::CovariancePrediction()
         P[19][19] = sq(frontend->_magNoise);
         P[20][20] = P[19][19];
         P[21][21] = P[19][19];
+    }
+
+    if (needEarthBodyVarReset) {
+        // reset mag earth field variances
+        needEarthBodyVarReset = false;
+        zeroCols(P,16,18);
+        zeroRows(P,16,18);
+        P[16][16] = sq(frontend->_magNoise);
+        P[17][17] = P[16][16];
+        P[18][18] = P[16][16];
+        FuseDeclination(0.34f);
     }
 
     if (!inhibitMagStates) {
