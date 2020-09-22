@@ -94,13 +94,13 @@ void NavEKF3_core::controlMagYawReset()
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
     if (magYawResetRequest && use_compass()) {
-        // set yaw from a single mag sample
-        setYawFromMag();
-
         // send initial alignment status to console
         if (!yawAlignComplete) {
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
         }
+
+        // set yaw from a single mag sample
+        setYawFromMag();
 
         // send in-flight yaw alignment status to console
         if (finalResetRequest) {
