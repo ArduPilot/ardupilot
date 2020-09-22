@@ -2565,7 +2565,7 @@ class AutoTestCopter(AutoTest):
                      2, # start motor
                      mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
                      pwm_in, # pwm-to-output
-                     1, # timeout in seconds
+                     2, # timeout in seconds
                      2, # number of motors to output
                      0, # compass learning
                      0,
@@ -2578,19 +2578,19 @@ class AutoTestCopter(AutoTest):
 
         self.start_subtest("Testing percentage output")
         percentage = 90.1
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
-                     2, # start motor
-                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
-                     percentage, # pwm-to-output
-                     1, # timeout in seconds
-                     2, # number of motors to output
-                     0, # compass learning
-                     0,
-                     timeout=timeout)
         # since MOT_SPIN_MIN and MOT_SPIN_MAX are not set, the RC3
         # min/max are used.
         expected_pwm = 1000 + (self.get_parameter("RC3_MAX") - self.get_parameter("RC3_MIN")) * percentage/100.0
         self.progress("expected pwm=%f" % expected_pwm)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     2, # start motor
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
+                     percentage, # pwm-to-output
+                     2, # timeout in seconds
+                     2, # number of motors to output
+                     0, # compass learning
+                     0,
+                     timeout=timeout)
         self.wait_servo_channel_value(1, expected_pwm, timeout=10)
         self.wait_servo_channel_value(4, expected_pwm, timeout=10)
         self.wait_statustext("finished motor test")
