@@ -11,7 +11,7 @@ Please check this [page](https://www.cyberbotics.com/download "page"). The steps
 
 1- open webots and open file libraries/SITL/examples/Webots/worlds/webots_quadPlus.wbt 
 2- press "run" button.
-3- run  ./libraries/SITL/examples/Webots/drone.sh 
+3- run  ./libraries/SITL/examples/Webots/dronePlus.sh 
 
 please note that to re-run the simulator you need to stop ardupilot SITL then stop webots simulator "stop button". then press "run" button on webots and then rerun ardupilot SITL.
 
