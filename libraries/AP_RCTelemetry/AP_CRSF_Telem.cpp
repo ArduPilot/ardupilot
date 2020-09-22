@@ -384,7 +384,7 @@ void AP_CRSF_Telem::calc_attitude()
     const int16_t INT_PI = 31415;
     // units are radians * 10000
     _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.roll) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.pitch) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(-_ahrs.pitch) * 10000.0f), -INT_PI, INT_PI));
     _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.yaw) * 10000.0f), -INT_PI, INT_PI));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
