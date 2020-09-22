@@ -46,8 +46,6 @@
  #define HIL_MODE        HIL_MODE_DISABLED
 #endif
 
-#define MAGNETOMETER ENABLED
-
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -189,12 +187,6 @@
 
 #ifndef EKF_ORIGIN_MAX_DIST_M
  # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-//  MAGNETOMETER
-#ifndef MAGNETOMETER
- # define MAGNETOMETER                   ENABLED
 #endif
 
 #ifndef COMPASS_CAL_STICK_GESTURE_TIME
