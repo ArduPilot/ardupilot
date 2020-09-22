@@ -113,9 +113,6 @@
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AP_IRLock/AP_IRLock.h>
 #endif
-#if HAL_ADSB_ENABLED
- # include <AP_ADSB/AP_ADSB.h>
-#endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
