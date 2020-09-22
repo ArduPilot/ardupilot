@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <AP_Common/Location.h>
 #include <AP_Soaring/AP_Soaring.h>
+#include <AP_ADSB/AP_ADSB.h>
 
 class Mode
 {
@@ -72,6 +73,8 @@ public:
     virtual bool is_vtol_mode() const { return false; }
     virtual bool is_vtol_man_throttle() const { return false; }
     virtual bool is_vtol_man_mode() const { return false; }
+    // guided or adsb mode
+    virtual bool is_guided_mode() const { return false; }
 
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
@@ -154,6 +157,8 @@ public:
     void update() override;
 
     void navigate() override;
+
+    virtual bool is_guided_mode() const override { return true; }
 
 protected:
 
@@ -342,6 +347,7 @@ protected:
     uint32_t lock_timer_ms;
 };
 
+#if HAL_ADSB_ENABLED
 class ModeAvoidADSB : public Mode
 {
 public:
@@ -354,10 +360,14 @@ public:
     void update() override;
 
     void navigate() override;
+
+    virtual bool is_guided_mode() const override { return true; }
+
 protected:
 
     bool _enter() override;
 };
+#endif
 
 class ModeQStabilize : public Mode
 {

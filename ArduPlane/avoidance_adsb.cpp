@@ -203,5 +203,5 @@ bool AP_Avoidance_Plane::handle_avoidance_horizontal(const AP_Avoidance::Obstacl
     return false;
 }
 
-#endif
+#endif // HAL_ADSB_ENABLED
 

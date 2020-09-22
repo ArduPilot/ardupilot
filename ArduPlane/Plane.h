@@ -268,7 +268,9 @@ private:
     ModeAuto mode_auto;
     ModeRTL mode_rtl;
     ModeLoiter mode_loiter;
+#if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoidADSB;
+#endif
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
@@ -641,7 +643,7 @@ private:
 #if HAL_ADSB_ENABLED
     AP_ADSB adsb;
 
-    // avoidance of adsb enabled vehicles (normally manned vheicles)
+    // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Plane avoidance_adsb{adsb};
 #endif
 
