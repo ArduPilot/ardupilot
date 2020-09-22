@@ -329,7 +329,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -2462,6 +2462,9 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_LAND_FINAL:
         pos_control->set_alt_target_from_climb_rate(-land_speed_cms, plane.G_Dt, true);
+        if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
+            ahrs.setTouchdownExpected(true);
+        }
         break;
         
     case QPOS_LAND_COMPLETE:
@@ -2749,6 +2752,11 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
         takeoff_start_time_ms = now;
     }
 
+    if (now - takeoff_start_time_ms < 3000 &&
+        (options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
+        ahrs.setTakeoffExpected(true);
+    }
+    
     // check for failure conditions
     if (is_positive(takeoff_failure_scalar) && ((now - takeoff_start_time_ms) > takeoff_time_limit_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
@@ -3210,6 +3218,9 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     guided_start();
     guided_takeoff = true;
+    if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
+        ahrs.setTakeoffExpected(true);
+    }
     return true;
 }
 
