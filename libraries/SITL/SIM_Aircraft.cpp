@@ -41,25 +41,7 @@ using namespace SITL;
  */
 
 Aircraft::Aircraft(const char *frame_str) :
-    ground_level(0.0f),
-    frame_height(0.0f),
-    dcm(),
-    gyro(),
-    velocity_ef(),
-    mass(0.0f),
-    accel_body(0.0f, 0.0f, -GRAVITY_MSS),
-    time_now_us(0),
-    gyro_noise(radians(0.1f)),
-    accel_noise(0.3f),
-    rate_hz(1200.0f),
-    autotest_dir(nullptr),
-    frame(frame_str),
-    num_motors(1),
-#if defined(__CYGWIN__) || defined(__CYGWIN64__)
-    min_sleep_time(20000)
-#else
-    min_sleep_time(5000)
-#endif
+    frame(frame_str)
 {
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
@@ -67,7 +49,6 @@ Aircraft::Aircraft(const char *frame_str) :
     set_speedup(1.0f);
 
     last_wall_time_us = get_wall_time_us();
-    frame_counter = 0;
 
     // allow for orientation settings, such as with tailsitters
     enum ap_var_type ptype;
