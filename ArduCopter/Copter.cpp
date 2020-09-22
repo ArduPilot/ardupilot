@@ -638,14 +638,14 @@ void Copter::publish_osd_info()
 Copter::Copter(void)
     : logger(g.log_bitmask),
     flight_modes(&g.flight_mode1),
-    control_mode(Mode::Number::STABILIZE),
+    control_mode(Mode::Number::ALT_HOLD),
     simple_cos_yaw(1.0f),
     super_simple_cos_yaw(1.0),
     land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
     param_loader(var_info),
-    flightmode(&mode_stabilize)
+    flightmode(&mode_althold)
 {
     // init sensor error logging flags
     sensor_health.baro = true;
