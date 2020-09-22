@@ -572,6 +572,7 @@ private:
         OPTION_DISARMED_TILT=(1<<10),
         OPTION_DELAY_ARMING=(1<<11),
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
+        OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
     };
 
     AP_Float takeoff_failure_scalar;
