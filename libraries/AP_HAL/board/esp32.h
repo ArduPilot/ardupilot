@@ -12,10 +12,12 @@
 #define HAL_HAVE_SAFETY_SWITCH 0
 #define HAL_HAVE_BOARD_VOLTAGE 0
 #define HAL_HAVE_SERVO_VOLTAGE 0
+
+#define HAL_WITH_IO_MCU 0
+
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
 
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
 #define HAL_Semaphore ESP32::Semaphore
-#define HAL_Semaphore_Recursive ESP32::Semaphore_Recursive
