@@ -58,7 +58,10 @@ using namespace ESP32;
    for voltage dividers on the board.
    */
 const AnalogIn::pin_info AnalogIn::pin_config[] = {
-	{ADC_CHANNEL_6, 11}
+	{ADC1_GPIO36_CHANNEL, 11},
+	{ADC1_GPIO32_CHANNEL, 11}
+
+
 };
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
@@ -96,7 +99,6 @@ AnalogSource::AnalogSource(int16_t pin, float initial_value, uint8_t unit) :
 float AnalogSource::read_average()
 {
 	WITH_SEMAPHORE(_semaphore);
-
 
 	if (_sum_count == 0) {
         uint32_t adc_reading = 0;
