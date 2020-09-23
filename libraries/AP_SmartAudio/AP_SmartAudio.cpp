@@ -95,7 +95,7 @@ bool AP_SmartAudio::init()
 void AP_SmartAudio::loop(){
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
-    _port->begin(AP_SERIALMANAGER_SMARTAUDIO_BAUD, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX);
+    _port->begin(AP_SMARTAUDIO_UART_BAUD , AP_SMARTAUDIO_UART_BUFSIZE_RX, AP_SMARTAUDIO_UART_BUFSIZE_TX);
 
 
      while (true) {
@@ -122,7 +122,7 @@ void AP_SmartAudio::loop(){
             #endif
             //debug("\nI'M WAITING RESPONSE ");
             // allocate response buffer
-            uint8_t _response_buffer[AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX];
+            uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
             // setup to zero because the
             uint8_t _inline_buffer_length=0;
             // setup sheduler delay to 50 ms again after response processes

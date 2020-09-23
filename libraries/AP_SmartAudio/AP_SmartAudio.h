@@ -16,6 +16,11 @@
 #if SMARTAUDIO_ENABLED
 #define SMARTAUDIO_BUFFER_CAPACITY 5
 
+// SmartAudio Serial Protocol
+#define AP_SMARTAUDIO_UART_BAUD            4800
+#define AP_SMARTAUDIO_UART_BUFSIZE_RX      16
+#define AP_SMARTAUDIO_UART_BUFSIZE_TX      16
+
 #include "smartaudio_protocol.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
