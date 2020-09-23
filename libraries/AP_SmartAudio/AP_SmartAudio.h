@@ -105,7 +105,7 @@ public:
     /**
      *
      * */
-    // void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
+    void print_bytes_to_hex_string(uint8_t buf[],uint8_t x);
     // {
     //     int i;
     //     for (i = 0; i < x; i++) {
@@ -134,12 +134,22 @@ private:
     static AP_SmartAudio* singleton;
 
     // get current state, first on fifo queue
-    smartaudioSettings_t* _get_current_state(){
-         smartaudioSettings_t *_current_state=nullptr;
-        // peek from buffer
-        vtx_states_queue.peek(_current_state,1);
-        return _current_state;
+    smartaudioSettings_t* _get_current_state(smartaudioSettings_t *stateStorage){
+         
+         
+         if(!vtx_states_queue.is_empty()){
+            
+            vtx_states_queue.peek(stateStorage,1);
+         }else{
+             stateStorage=nullptr;
+         }
+         
+        return stateStorage;
     }
+
+    void _print_state(smartaudioSettings_t *state);
+
+
 
 static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
      switch (power) {

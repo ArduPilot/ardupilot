@@ -70,7 +70,7 @@ typedef struct smartaudioSettings_s {
 
     uint16_t pitmodeFrequency=0;
     bool userFrequencyMode=false;     // user is setting freq
-    bool pitmodeDisabled=false;
+    bool pitModeRunning=false;
     bool pitmodeInRangeActive=false;
     bool pitmodeOutRangeActive=false;
 
