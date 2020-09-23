@@ -60,6 +60,10 @@
 #define BLEND_MASK_USE_SPD_ACC      4
 #define BLEND_COUNTER_FAILURE_INCREMENT 10
 
+#ifndef HAL_GPS_COM_PORT_DEFAULT
+#define HAL_GPS_COM_PORT_DEFAULT 1
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
@@ -309,7 +313,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("COM_PORT", 23, AP_GPS, _com_port[0], 1),
+    AP_GROUPINFO("COM_PORT", 23, AP_GPS, _com_port[0], HAL_GPS_COM_PORT_DEFAULT),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Param: COM_PORT2
@@ -319,7 +323,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], 1),
+    AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], HAL_GPS_COM_PORT_DEFAULT),
 #endif
 
 #if GPS_MOVING_BASELINE
