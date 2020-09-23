@@ -1137,7 +1137,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels_Plane),
     
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     // @Group: SOAR_
     // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
     AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
@@ -1300,7 +1300,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 ParametersG2::ParametersG2(void) :
     ice_control(plane.rpm_sensor)
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
     ,button_ptr(&plane.button)

@@ -524,7 +524,7 @@ protected:
     bool _enter() override;
 };
 
-#if SOARING_ENABLED
+#if HAL_SOARING_ENABLED
 
 class ModeThermal: public Mode
 {
