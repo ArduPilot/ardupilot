@@ -18,12 +18,12 @@
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 #if defined(__APPLE__)
 #include <sys/mount.h>
 #else
-#include <sys/vfs.h>
+//#include <sys/vfs.h>
 #endif
 #include <utime.h>
 
@@ -123,23 +123,28 @@ int AP_Filesystem_Posix::closedir(void *dirp)
 // return free disk space in bytes
 int64_t AP_Filesystem_Posix::disk_free(const char *path)
 {
-    path = map_filename(path);
+   /* path = map_filename(path);
     struct statfs stats;
     if (::statfs(path, &stats) < 0) {
         return -1;
     }
     return (((int64_t)stats.f_bavail) * stats.f_bsize);
+	*/
+	return 99999;
 }
 
 // return total disk space in bytes
 int64_t AP_Filesystem_Posix::disk_space(const char *path)
 {
+/*
     path = map_filename(path);
     struct statfs stats;
     if (::statfs(path, &stats) < 0) {
         return -1;
     }
     return (((int64_t)stats.f_blocks) * stats.f_bsize);
+	*/
+	return 9999;
 }
 
 
