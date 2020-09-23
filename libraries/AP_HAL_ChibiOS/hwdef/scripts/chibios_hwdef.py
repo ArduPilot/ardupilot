@@ -1252,7 +1252,8 @@ def write_UART_config_bootloader(f):
             unum = int(u[-1])
             devlist.append('(BaseChannel *)&SD%u' % unum)
             have_uart = True
-    f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
+    if len(devlist) > 0:
+        f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
     if OTG2_index is not None:
         f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
     if not have_uart:
