@@ -16,8 +16,8 @@
 #include "Variometer.h"
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 
-#ifndef SOARING_ENABLED
- #define SOARING_ENABLED !HAL_MINIMIZE_FEATURES
+#ifndef HAL_SOARING_ENABLED
+ #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #define INITIAL_THERMAL_STRENGTH 2.0

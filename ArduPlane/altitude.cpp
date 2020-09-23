@@ -61,7 +61,7 @@ void Plane::adjust_altitude_target()
         landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
     } else if (landing.get_target_altitude_location(target_location)) {
        set_target_altitude_location(target_location);
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     } else if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
        // Reset target alt to current alt, to prevent large altitude errors when gliding.
        set_target_altitude_location(current_loc);

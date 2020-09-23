@@ -278,7 +278,7 @@ private:
     ModeQAcro mode_qacro;
     ModeQAutotune mode_qautotune;
     ModeTakeoff mode_takeoff;
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
 
@@ -1069,7 +1069,7 @@ private:
 #endif
 
     // soaring.cpp
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     void update_soaring();
     bool soaring_exit_heading_aligned() const;
     void soaring_restore_mode(const char *reason, ModeReason modereason);
