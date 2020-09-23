@@ -19,6 +19,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
@@ -397,6 +398,7 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
+    IntelligentEnergy24 ie24_sim;
 
     struct {
         // LED state, for serial LED emulation
