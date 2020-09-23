@@ -43,6 +43,8 @@ public:
 
 	virtual ~UARTDriver() = default;
 
+	void vprintf(const char *fmt, va_list ap) override;
+
     void begin(uint32_t b) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
     void end() override;

@@ -18,9 +18,21 @@
 
 #include "esp_log.h"
 
+extern const AP_HAL::HAL& hal;
+
 namespace ESP32 {
 
 UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
+
+void UARTDriver::vprintf(const char *fmt, va_list ap)
+{
+
+	uart_port_t p = uart_desc[uart_num].port;
+	if (p == 0)
+		esp_log_writev(ESP_LOG_INFO, "", fmt, ap);
+	else
+		AP_HAL::UARTDriver::vprintf(fmt, ap);
+}
 
 void UARTDriver::begin(uint32_t b)
 {
@@ -50,17 +62,11 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
+
             _initialized = true;
         } else {
+			flush();
             uart_set_baudrate(p, b);
-			uart_config_t config = {
-                .baud_rate = (int)b,
-                .data_bits = UART_DATA_8_BITS,
-                .parity = UART_PARITY_DISABLE,
-                .stop_bits = UART_STOP_BITS_1,
-                .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-            };
-            uart_param_config(p, &config);
 
         }
     }
@@ -78,6 +84,8 @@ void UARTDriver::end()
 
 void UARTDriver::flush()
 {
+	uart_port_t p = uart_desc[uart_num].port;
+	uart_flush(p);
 }
 
 bool UARTDriver::is_initialized()
@@ -103,7 +111,6 @@ uint32_t UARTDriver::available()
     }
     return _readbuf.available();
 }
-
 
 uint32_t UARTDriver::txspace()
 {
@@ -174,9 +181,10 @@ size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_initialized) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
+
+    _write_mutex.take_blocking();
+
+
     size_t ret = _writebuf.write(buffer, size);
     _write_mutex.give();
     return ret;
@@ -184,7 +192,8 @@ size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
 
 bool UARTDriver::discard_input()
 {
-	return false;
+    uart_port_t p = uart_desc[uart_num].port;
+	return uart_flush_input(p) == ESP_OK;
 }
 
 }
