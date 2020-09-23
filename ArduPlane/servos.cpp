@@ -187,106 +187,33 @@ void Plane::flaperon_update(int8_t flap_percent)
 
 
 /*
-  setup differential spoiler output channels
-
-  Differential spoilers are a type of elevon that is split on each
-  wing to give yaw control, mixed from rudder
+  setup differential outputs for SilentArrow
  */
 void Plane::dspoiler_update(void)
 {
-    // just check we have a left dspoiler, and if so calculate all outputs
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_dspoilerLeft1)) {
-        return;
-    }
-
-    const int8_t bitmask = g2.crow_flap_options.get();
-    const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
-    const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
-    //progressive crow when option is set or RC switch is set to progressive 
-    const bool progressive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0  || crow_mode == CrowMode::PROGRESSIVE; 
-
-    // if flying wing use elevons else use ailerons
-    float elevon_left;
-    float elevon_right;
-    if (flying_wing) {
-        elevon_left = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left);
-        elevon_right = SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right);
+    float roll_in = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float pitch_in = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+    float dspoiler_front_left = g.mixing_gain * (pitch_in + roll_in);  // S3
+    float dspoiler_front_right = g.mixing_gain * (pitch_in - roll_in); // S1
+    float dspoiler_back_left = g.mixing_gain * (pitch_in - roll_in);   // S2
+    float dspoiler_back_right = g.mixing_gain * (pitch_in + roll_in);  // S4
+    float differential = constrain_float(roll_in * g.kff_rudder_mix * g.mixing_gain, -4500, 4500);
+    if (differential > 0) {
+        dspoiler_front_left -= differential;
+        dspoiler_back_left += differential;
     } else {
-        const float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-        elevon_left = -aileron;
-        elevon_right = aileron;
+        dspoiler_front_right += differential;
+        dspoiler_back_right -= differential;
     }
+    dspoiler_front_left = constrain_float(dspoiler_front_left, -4500, 4500);
+    dspoiler_front_right = constrain_float(dspoiler_front_right, -4500, 4500);
+    dspoiler_back_left = constrain_float(dspoiler_back_left, -4500, 4500);
+    dspoiler_back_right = constrain_float(dspoiler_back_right, -4500, 4500);
 
-    const float rudder_rate = g.dspoiler_rud_rate * 0.01f;
-    const float rudder = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) * rudder_rate;
-    float dspoiler_outer_left = elevon_left;
-    float dspoiler_outer_right = elevon_right;
-
-    float dspoiler_inner_left = 0;
-    float dspoiler_inner_right = 0;
-
-    // full span ailerons / elevons
-    if (full_span_aileron) {
-        dspoiler_inner_left = elevon_left;
-        dspoiler_inner_right = elevon_right;
-    }
-
-    if (rudder > 0) {
-        // apply rudder to right wing
-        dspoiler_outer_right = constrain_float(dspoiler_outer_right + rudder, -4500, 4500);
-        dspoiler_inner_right = constrain_float(dspoiler_inner_right - rudder, -4500, 4500);
-    } else {
-        // apply rudder to left wing
-        dspoiler_outer_left = constrain_float(dspoiler_outer_left - rudder, -4500, 4500);
-        dspoiler_inner_left = constrain_float(dspoiler_inner_left + rudder, -4500, 4500);
-    }
-
-    // limit flap throw used for aileron
-    const int8_t aileron_matching = g2.crow_flap_aileron_matching.get();
-    if (aileron_matching < 100) {
-        // only do matching if it will make a difference
-        const float aileron_matching_scaled = aileron_matching * 0.01;
-        if (is_negative(dspoiler_inner_left)) {
-            dspoiler_inner_left *= aileron_matching_scaled;
-        }
-        if (is_negative(dspoiler_inner_right)) {
-            dspoiler_inner_right *= aileron_matching_scaled;
-        }
-    }
-
-    int16_t weight_outer = g2.crow_flap_weight_outer.get();
-    if (crow_mode == Plane::CrowMode::CROW_DISABLED) {   //override totally aileron crow if crow RC switch set to disabled
-        weight_outer = 0;
-    }
-    const int16_t weight_inner = g2.crow_flap_weight_inner.get();
-    if (weight_outer > 0 || weight_inner > 0) {
-        /*
-          apply crow flaps by apply the same split of the differential
-          spoilers to both wings. Get flap percentage from k_flap_auto, which is set
-          in set_servos_flaps() as the maximum of manual and auto flap control
-         */
-        const int16_t flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto);
-
-        if (flap_percent > 0) {
-            float inner_flap_scaled = (float)flap_percent;
-            float outer_flap_scaled = (float)flap_percent;
-            if (progressive_crow) {
-                // apply 0 - full inner from 0 to 50% flap then add in outer above 50%
-                inner_flap_scaled = constrain_float(inner_flap_scaled * 2, 0,100);
-                outer_flap_scaled = constrain_float(outer_flap_scaled - 50, 0,50) * 2;
-            }
-            // scale flaps so when weights are 100 they give full up or down
-            dspoiler_outer_left  = constrain_float(dspoiler_outer_left  + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
-            dspoiler_inner_left  = constrain_float(dspoiler_inner_left  - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
-            dspoiler_outer_right = constrain_float(dspoiler_outer_right + outer_flap_scaled * weight_outer * 0.45, -4500, 4500);
-            dspoiler_inner_right = constrain_float(dspoiler_inner_right - inner_flap_scaled * weight_inner * 0.45, -4500, 4500);
-        }
-    }
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler_outer_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler_inner_left);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler_outer_right);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler_inner_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft1, dspoiler_front_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerLeft2, dspoiler_back_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight1, dspoiler_front_right);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_dspoilerRight2, dspoiler_back_right);
 }
 
 /*
