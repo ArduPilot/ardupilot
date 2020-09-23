@@ -36,12 +36,25 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
         instance            : instance,
         voltage             : _state.voltage
     };
-    for (uint8_t i = 0; i < ARRAY_SIZE(_state.cell_voltages.cells); i++) {
-        cell_pkt.cell_voltages[i] = _state.cell_voltages.cells[i] + 1;
+    for (uint8_t i = 0; i < ARRAY_SIZE(cell_pkt.cell_voltages); i++) {
+        cell_pkt.cell_voltages[i] = _state.cell_voltages.cells[i] + 1; // add 1mv
     }
     AP::logger().WriteBlock(&cell_pkt, sizeof(cell_pkt));
 
-    // check battery structure can hold all cells  
-    static_assert(ARRAY_SIZE(_state.cell_voltages.cells) == ARRAY_SIZE(cell_pkt.cell_voltages),
-                    "Battery cell number doesn't match in library and log structure");
+    if (_state.cell_voltages.cells[12] != UINT16_MAX || _state.cell_voltages.cells[13] != UINT16_MAX)
+    {
+        struct log_BCL2 cell_pkt2{
+            LOG_PACKET_HEADER_INIT(LOG_BCL2_MSG),
+            time_us             : time_us,
+            instance            : instance
+        };
+        for (uint8_t i = 0; i < ARRAY_SIZE(cell_pkt2.cell_voltages); i++) {
+            cell_pkt2.cell_voltages[i] = _state.cell_voltages.cells[ARRAY_SIZE(cell_pkt.cell_voltages)+i] + 1; // add 1mv
+        }
+        AP::logger().WriteBlock(&cell_pkt2, sizeof(cell_pkt2));
+
+        // check battery structure can hold all cells
+        static_assert(ARRAY_SIZE(_state.cell_voltages.cells) == ARRAY_SIZE(cell_pkt.cell_voltages) + ARRAY_SIZE(cell_pkt2.cell_voltages),
+                        "Battery cell number doesn't match in library and log structures");
+    }
 }
