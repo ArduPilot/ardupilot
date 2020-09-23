@@ -158,6 +158,27 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Units: km
     AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
     
+    // @Param: TERM_POS_AIL
+    // @DisplayName: Aileron Aeroterminate Position
+    // @Description: This is the position the aileron will go to during an aerotermination
+    // @User: Advanced
+    // @Units: Percentage (-100 to 100, default 100)
+    AP_GROUPINFO("TERM_POS_AIL",   23, AP_AdvancedFailsafe, _term_pos_ail,    100),
+
+    // @Param: TERM_POS_RUD
+    // @DisplayName: Rudder Aeroterminate Position
+    // @Description: This is the position the rudder will go to during an aerotermination
+    // @User: Advanced
+    // @Units: Percentage (-100 to 100, default 100)
+    AP_GROUPINFO("TERM_POS_RUD",   24, AP_AdvancedFailsafe, _term_pos_rud,    100),
+
+    // @Param: TERM_POS_ELE
+    // @DisplayName: Elevator Aeroterminate Position
+    // @Description: This is the position the elevator will go to during an aerotermination
+    // @User: Advanced
+    // @Units: Percentage (-100 to 100, default 100)
+    AP_GROUPINFO("TERM_POS_ELE",   25, AP_AdvancedFailsafe, _term_pos_ele,    100),
+
     AP_GROUPEND
 };
 
