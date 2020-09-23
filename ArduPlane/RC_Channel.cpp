@@ -98,7 +98,7 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
 
 void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
 {
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     SoaringController::ActiveStatus desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
 
     switch (ch_flag) {

@@ -1,7 +1,7 @@
 #include "mode.h"
 #include "Plane.h"
 
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
 
 bool ModeThermal::_enter()
 {
