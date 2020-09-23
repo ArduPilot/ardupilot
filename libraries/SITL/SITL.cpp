@@ -226,6 +226,9 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
+    // @Path: ./SIM_IntelligentEnergy24.cpp
+    AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SITL, IntelligentEnergy24),
+
     // user settable parameters for the 1st barometer
     AP_GROUPINFO("BARO_RND",      35, SITL,  baro_noise[0], 0.2f),
     AP_GROUPINFO("BARO_DRIFT",    36, SITL,  baro_drift[0], 0),
