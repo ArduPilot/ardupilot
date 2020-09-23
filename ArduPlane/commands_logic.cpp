@@ -838,7 +838,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     auto_state.highest_baro_alt = MAX(auto_state.highest_baro_alt, baro_alt);
 
     float aspeed;
-    if (cmd.content.altitude_wait.airspeed > 0 && ahrs.airspeed_estimate(&aspeed)) {
+    if (cmd.content.altitude_wait.airspeed > 0 && ahrs.airspeed_estimate(aspeed)) {
         if (aspeed >= cmd.content.altitude_wait.airspeed) {
             gcs().send_text(MAV_SEVERITY_INFO, "Reached airspeed %.1fm/s", aspeed);
             return true;

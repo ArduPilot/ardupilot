@@ -124,9 +124,7 @@ void Plane::update_home()
             terrain.height_amsl(current_loc, terrain_amsl, false) &&
             ahrs.get_position(loc) &&
             !ahrs.home_is_locked()) {
-            const Location &gps_loc = gps.location();
-            float height_above_ground = gps_loc.alt*0.01 - terrain_amsl;
-            barometer.update_calibration(height_above_ground);
+            barometer.update_calibration();
             ahrs.resetHeightDatum();
             loc.alt = terrain_amsl * 100;
             if (!AP::ahrs().set_home(loc)) {
