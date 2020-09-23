@@ -115,7 +115,11 @@ void AP_SmartAudio::loop(){
         // Proccess response in the next 200 milis from the request are sent.
         debug("LOOP: Checking Responses");
         if(_now-last_request_sended_at>100 && _now-last_request_sended_at<=1000 && is_waiting_response){
+            #ifdef BOARD_IS_SITL
+            debug("I'M WAITING RESPONSE SINCE %u and %u ms more",last_request_sended_at,1000-(_now-last_request_sended_at));
+            #else
             debug("I'M WAITING RESPONSE SINCE %lu and %lu ms more",last_request_sended_at,1000-(_now-last_request_sended_at));
+            #endif
             //debug("\nI'M WAITING RESPONSE ");
             // allocate response buffer
             uint8_t _response_buffer[AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX];
@@ -136,7 +140,11 @@ void AP_SmartAudio::loop(){
         // when pending request and last request sended is timeout, take another packet to send
         debug("LOOP: Checking Request");
         if(!packet_processed && requests_queue.pop(_current_command)){
+            #ifdef BOARD_IS_SITL
+            debug(" LOOP MAKING REQUEST TO SEND AT %u ms ",AP_HAL::millis());
+            #else
             debug(" LOOP MAKING REQUEST TO SEND AT %lu ms ",AP_HAL::millis());
+            #endif
             send_request(_current_command.frame,_current_command.frame_size);
             _current_command.sended_at=AP_HAL::millis();
             last_request_sended_at=AP_HAL::millis();
