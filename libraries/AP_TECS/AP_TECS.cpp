@@ -1162,6 +1162,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 
     if (_options & OPTION_GLIDER_ONLY) {
         _flags.badDescent = false;        
+        _flags.underspeed = false;
     }
 
     // Calculate pitch demand
