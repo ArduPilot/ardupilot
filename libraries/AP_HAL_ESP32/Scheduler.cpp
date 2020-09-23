@@ -16,6 +16,7 @@
 #include "AP_HAL_ESP32/Scheduler.h"
 #include "AP_HAL_ESP32/RCInput.h"
 #include "AP_HAL_ESP32/AnalogIn.h"
+#include "AP_Math/AP_Math.h"
 #include "SdCard.h"
 #include "Profile.h"
 
@@ -44,6 +45,64 @@ void Scheduler::init()
     xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
     xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
 //    xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
+}
+
+template <typename T>
+void executor(T oui)
+{
+	oui();
+}
+
+void Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+}
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    uint8_t thread_priority = IO_PRIO;
+    static const struct {
+        priority_base base;
+        uint8_t p;
+    } priority_map[] = {
+        { PRIORITY_BOOST, IO_PRIO},
+        { PRIORITY_MAIN, MAIN_PRIO},
+        { PRIORITY_SPI, SPI_PRIORITY},
+        { PRIORITY_I2C, I2C_PRIORITY},
+        { PRIORITY_CAN, IO_PRIO},
+        { PRIORITY_TIMER, TIMER_PRIO},
+        { PRIORITY_RCIN, RCIN_PRIO},
+        { PRIORITY_IO, IO_PRIO},
+        { PRIORITY_UART, UART_PRIO},
+        { PRIORITY_STORAGE, STORAGE_PRIO},
+        { PRIORITY_SCRIPTING, IO_PRIO},
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
+        if (priority_map[i].base == base) {
+            thread_priority = constrain_int16(priority_map[i].p + priority, 1, 25);
+            break;
+        }
+    }
+
+	void* xhandle;
+    BaseType_t xReturned = xTaskCreate(thread_create_trampoline, name, stack_size, tproc, thread_priority, &xhandle);
+    if (xReturned != pdPASS) {
+        free(tproc);
+        return false;
+    }
+    return true;
 }
 
 void Scheduler::delay(uint16_t ms)
@@ -421,8 +480,9 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
     hal.rcout->init();
 
     sched->callbacks->setup();
-    hal.rcout->init();
+		printf("test\n");
     sched->system_initialized();
+		printf("inited\n");
 
 
     while (true) {

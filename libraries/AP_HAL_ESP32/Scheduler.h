@@ -42,6 +42,9 @@ public:
     bool     in_main_thread() const override;
     void     system_initialized() override;
 
+	static void thread_create_trampoline(void *ctx);
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+
     static const int SPI_PRIORITY = 21;
     static const int MAIN_PRIO = 20;
     static const int I2C_PRIORITY = 25;
