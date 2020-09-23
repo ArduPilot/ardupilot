@@ -533,7 +533,7 @@ void Plane::update_flight_stage(void)
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
             } else if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
-            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+            } else if (in_auto_land()) {
                 if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
@@ -661,4 +661,41 @@ bool Plane::get_target_location(Location& target_loc)
     return false;
 }
 
+/*
+  check if we should be in auto land (fixed wing) mode. Allows for
+  land mid-waypoint based on rangefinder data
+ */
+bool Plane::in_auto_land(void)
+{
+    if (control_mode != &mode_auto) {
+        auto_state.started_landing = false;
+        return false;
+    }
+    if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+        return true;
+    }
+    if (mission.get_current_nav_cmd().id != MAV_CMD_NAV_WAYPOINT) {
+        return false;
+    }
+    if (!(g2.flight_options & FlightOptions::AUTO_LAND_ALT)) {
+        auto_state.started_landing = false;
+        return false;
+    }
+
+    // check if we have dropped below preflare height while flying, if
+    // so then start landing immediately
+    if (auto_state.started_landing ||
+        (g.rangefinder_landing && rangefinder_state.in_range &&
+         rangefinder_state.height_estimate < landing.get_preflare_alt() &&
+         smoothed_airspeed >= aparm.airspeed_min)) {
+        if (!auto_state.started_landing) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Emergency Land: %.1fm", rangefinder_state.height_estimate);
+            auto_state.started_landing = true;
+        }
+        return true;
+    }
+    return false;
+}
+
 AP_HAL_MAIN_CALLBACKS(&plane);
+

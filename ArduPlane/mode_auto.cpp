@@ -35,7 +35,7 @@ void ModeAuto::_exit()
     if (plane.mission.state() == AP_Mission::MISSION_RUNNING) {
         plane.mission.stop();
 
-        if (plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND &&
+        if (plane.in_auto_land() &&
             !plane.quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))
         {
             plane.landing.restart_landing_sequence();
@@ -63,7 +63,7 @@ void ModeAuto::update()
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
         plane.calc_throttle();
-    } else if (nav_cmd_id == MAV_CMD_NAV_LAND) {
+    } else if (plane.in_auto_land()) {
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
 

@@ -207,7 +207,11 @@ Return true if we do not recognize the command so that we move on to the next co
 
 bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Returns true if command complete
 {
-    switch(cmd.id) {
+    uint16_t id = cmd.id;
+    if (in_auto_land()) {
+        id = MAV_CMD_NAV_LAND;
+    }
+    switch(id) {
 
     case MAV_CMD_NAV_TAKEOFF:
         if (quadplane.is_vtol_takeoff(cmd.id)) {
@@ -354,6 +358,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    auto_state.started_landing = false;
     set_next_WP(cmd.content.location);
 }
 

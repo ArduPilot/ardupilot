@@ -21,6 +21,8 @@ bool Mode::enter()
     // reset landing check
     plane.auto_state.checked_for_autoland = false;
 
+    plane.auto_state.started_landing = false;
+
     // zero locked course
     plane.steer_state.locked_course_err = 0;
 
