@@ -610,6 +610,7 @@ def write_fullresults():
     results.addglob('DataFlash Log', '*-log.bin')
     results.addglob("MAVLink log", '*.tlog')
     results.addglob("GPX track", '*.gpx')
+    results.addfile('Firmware sizes', 'firmware_sizes.json')
 
     # results common to all vehicles:
     vehicle_files = [('{vehicle} defaults', '{vehicle}-defaults.parm'),
