@@ -158,6 +158,30 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
     // @Units: km
     AP_GROUPINFO("MAX_RANGE",   20, AP_AdvancedFailsafe, _max_range_km,    0),
     
+    // @Param: TERM_POS_AIL
+    // @DisplayName: Terminate Aileron Position
+    // @Description: This is the position the aileron will go to during an aerotermination. 0 means neutral deflection, default is 100.
+    // @User: Advanced
+    // @Units: %
+    // @Range: -100 100
+    AP_GROUPINFO("TERM_POS_AIL",   21, AP_AdvancedFailsafe, _terminate_pos_ail,    100),
+
+    // @Param: TERM_POS_RUD
+    // @DisplayName: Terminate Rudder Position
+    // @Description: This is the position the rudder will go to during an aerotermination. 0 means neutral deflection, default is 100.
+    // @User: Advanced
+    // @Units: %
+    // @Range: -100 100
+    AP_GROUPINFO("TERM_POS_RUD",   22, AP_AdvancedFailsafe, _terminate_pos_rud,    100),
+
+    // @Param: TERM_POS_ELE
+    // @DisplayName: Terminate Elevator Position
+    // @Description: This is the position the elevator will go to during an aerotermination. 0 means neutral deflection, default is 100.
+    // @User: Advanced
+    // @Units: %
+    // @Range: -100 100
+    AP_GROUPINFO("TERM_POS_ELE",   23, AP_AdvancedFailsafe, _terminate_pos_ele,    100),
+
     AP_GROUPEND
 };
 

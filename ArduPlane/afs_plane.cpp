@@ -30,9 +30,9 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
         // aerodynamic termination is the default approach to termination
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX * _terminate_pos_ail/100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX * _terminate_pos_rud/100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX * _terminate_pos_ele/100);
         if (plane.have_reverse_thrust()) {
             // configured for reverse thrust, use TRIM
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::TRIM);
