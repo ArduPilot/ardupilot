@@ -270,6 +270,9 @@ userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
 userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
 -- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
 
+include AP_Mount/AP_Mount.h
+singleton AP_Mount alias mount
+singleton AP_Mount method set_angle_targets void float -90 90 float -90 90 float -180 180
 
 include AP_RPM/AP_RPM.h
 singleton AP_RPM alias RPM
