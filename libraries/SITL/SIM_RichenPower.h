@@ -24,6 +24,7 @@ param set SERVO8_FUNCTION 42
 param fetch
 param set SIM_RICH_CTRL 8
 param set RC9_OPTION 85
+param set GEN_TYPE 3
 
 reboot
 
