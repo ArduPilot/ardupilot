@@ -1,0 +1,9 @@
+SETUP
+SMAUD_ENABLED: 0 | 1
+SMAUD_TRAILZERO: 0 (TO REMOVE)
+SERIAL_PROTOCOL: 32 (TEMP VALUE SMART AUDIO)
+
+| FRONTEND | <=> |BACKEND|
+| -> SmartAudioBackend
+| -> SerialBackend
+|-> Vtx_Backend

@@ -105,6 +105,14 @@
 #define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
 #define AP_SERIALMANAGER_MSP_BAUD           115200
+// SmartAudio Protocol
+#define AP_SERIALMANAGER_SMARTAUDIO_BAUD            4900
+#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX      16
+#define AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX      16
+#define AP_SERIALMANAGER_SMARTAUDIO_STOP_BITS       2
+#define AP_SERIALMANAGER_SMARTAUDIO_FLOW_CONTROL    AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE
+#define AP_SERIALMANAGER_SMARTAUDIO_OPTIONS         AP_HAL::UARTDriver::OPTION_HDPLEX
+
 
 class AP_SerialManager {
 public:
@@ -151,6 +159,7 @@ public:
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
         SerialProtocol_Sagetech = 34,
+        SerialProtocol_SmartAudio=35
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -158,7 +167,7 @@ public:
     static AP_SerialManager *get_singleton(void) {
         return _singleton;
     }
-    
+
     // init_console - initialise console at default baud rate
     void init_console();
 
@@ -186,7 +195,7 @@ public:
     // get_mavlink_protocol - provides the specific MAVLink protocol for a
     // given channel, or SerialProtocol_None if not found
     SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;
-    
+
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
@@ -209,7 +218,7 @@ public:
 
 private:
     static AP_SerialManager *_singleton;
-    
+
     // array of uart info
     struct UARTState {
         AP_Int8 protocol;

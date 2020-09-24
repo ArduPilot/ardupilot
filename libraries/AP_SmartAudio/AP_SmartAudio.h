@@ -1,148 +1,177 @@
 #pragma once
 
-/// UTILS
-#include <stdio.h>
-#include <iostream>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef SMARTAUDIO_ENABLED
+#define SMARTAUDIO_ENABLED !HAL_MINIMIZE_FEATURES && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#endif
+
+#if SMARTAUDIO_ENABLED
+
 
 #include "smartaudio_protocol.h"
-
-
-//
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include "SPEC_SmartAudioDevice.h"
-
-#define SA_IO_TIMEOUT_MS 200 // DOUBLE THAN RECOMMENDED ON THE TBS SMARTAUDIO DOCUMENT <100ms
-#define SA_BUFFER_SIZE 16    // Not used to init uart ?
-#define DBM_MAX_ARRAY_SIZE 6    // Max side for the array containing the power modes based in dbm
-
-#define SA_SPEC_PROTOCOL_v1  0
-#define SA_SPEC_PROTOCOL_v2  1
-#define SA_SPEC_PROTOCOL_v21 2
-
-/// Internal auto discovery behaviours
-#define AUTO_DISCOVERY_PENDING  0x00
-#define AUTO_DISCOVERY_SUCCESS  0x01
-#define AUTO_DISCOVERY_FAILED   0x02
-
-/// COMMANDS
-#define SA_SPEC_CMD_GET_SETTINGS     0x01
-#define SA_SPEC_CMD_SET_POWER        0x02
-#define SA_SPEC_CMD_SET_CHANNEL      0x03
-#define SA_SPEC_CMD_SET_FRECUENCY    0x04
-
-#define SA_SPEC_V2_CMD_SET_MODE         0x05        // Available only in v2
-
-#define LOG_TAG "AP_SmartAudio"
-
-
-
-/// MODE FLAGS
-#define SA_SPEC_V21_MODE_PIT_IN_RANGE   0x01
-#define SA_SPEC_V21_MODE_PIT_OUT_RANGE  0x02
-#define SA_SPEC_V21_MODE_PIT__DISABLE   0x04
-#define SA_SPEC_V21_MODE_LOCK_TOGGLE    0x08
-
+#include "AP_Vtx_Params.h"
+#include "AP_SmartAudioBackend.h"
 
 
 class AP_SmartAudio
 {
 
 public:
+    /** Operation modes types **/
+    enum OperationMode {
+        in_range_pit_mode=0,
+        out_range_pit_mode,
+        disabled_pit_mode,
+        locked,
+        unlocked
+    };
+
+    // Subclass from the Vtx_State at the deep end to return the readings from frontend.
+    struct SmartAudioState : public AP_Vtx_SerialBackend::Vtx_Serial_State {
+        bool         initialized=false;
+        bool         is_in_range_pit_mode=false;
+        bool         is_out_range_pit_mode=false;
+        bool         is_pit_mode_disabled=false;
+        bool         is_locked=false;
+
+        uint8_t      version=0;
+        uint8_t      current_band=0;
+        uint8_t      current_channel=0;
+        uint32_t     current_frequency=0;
+        uint8_t      current_power_db=0;
+        uint16_t     current_power_mw=0;
+    };
+
+
+
+
+    AP_Int8 setting_low_race;     // Low race setting hv race can use it.
+    AP_Int8 ov_settings_enable; // Enable overrides
+    AP_Int8 ov_version;          // Protocol version overrides
+
     AP_SmartAudio();
+    static AP_SmartAudio *get_singleton(void)
+    {
+        return singleton;
+    }
 
     /* Do not allow copies */
     AP_SmartAudio(const AP_SmartAudio &other) = delete;
     AP_SmartAudio &operator=(const AP_SmartAudio&) = delete;
-
     static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Vtx_Params params;
 
     void init();
     void update();
+    SmartAudioState get_readings();
+    void update_readings();
 
 
-    void set_power_level(uint8_t level) { power_level_request = level; }
-    uint8_t get_power_level() const { return power_level; }
+    /**
+     * Get settings from vtx.
+     * Depends on protocol version.
+     * Features:
+     *  -> Retrieve frec info.
+     *  -> Retrive chan info.
+     *  -> Retrieve power info.
+     *  -> Retrieve mode info.
+    */
+    void request_settings();
+    /**
+     * Set operation mode.
+     * Only works with smaraudio protocols since 2.0
+     * Features:
+     *  -> Disable pit mode;
+     *  -> Unlock/lock vtx power levels.
+     *  -> Enable pit mode out of band, setting  5584 MHz via hardware
+     *  -> Enable pit mode in band. Frecuency is not changed
+     */
+    void set_operation_mode(OperationMode mode,bool locked);
+    /**
+     *
+     **/
 
-    void refresh_settings() { get_settings_request = true; }
 
-    static AP_SmartAudio *get_singleton(void) { return singleton; }
-
-    // SPEC FEATURES
-    void getSettings();
-    void setChannel(uint8_t channel);
-    uint8_t getChannel();
-    uint16_t getPower();
-    void setPower(uint8_t powerLevel);
-    void setFrecuency(uint16_t frec,bool isPitModeFrec);
-    uint16_t getFrecuency();
+    /**
+     * Sets the frecuency to transmit in the vtx.
+     * When isPitModeFreq active the frec will be set to be used when in pitmode (in range)
+     *
+     * Features:
+     *  - Set frequency
+     *  - Set pit mode frequency
+     */
+    void set_frequency(uint16_t frecuency,bool isPitModeFreq);
 
 
+    /**
+     * Set the power to the vtx device returning the dbm.
+     *
+     *
+     *
+     */
+    void set_power_dbm(uint8_t power);
+
+
+
+
+protected:
+    AP_Vtx_Params vtx_params;
+    SmartAudioState vtx_state;
+    AP_SmartAudioBackend *backend;
 private:
-    // Pointer to singleton
+    //Pointer to singleton
     static AP_SmartAudio* singleton;
-    AP_HAL::UARTDriver* port;
-
-    // Device specification ( or setup )
-    SPEC_SmartAudioDevice* device;
-
-    // CURRENT COMMAND FUNCTION POINTER
-     uint8_t *currentCommand;
-     uint8_t *lastExecutedCommand;
-
-    const uint8_t header_size = 4; // header bytes number of the request and response
-    uint8_t buffer[SA_BUFFER_SIZE];
-    uint8_t buffer_len;
-    uint32_t last_io_time;
-
-    void initPort();
-    void beforeSend();
-    void autoDiscoverSpec();
-
-    void parseSettings(smartaudioSettingsResponseFrame_s response);
-
-    void send_frame(uint8_t frameBuffer[],uint8_t size);
-    void parseFrameResponse(uint8_t frameBuffer[]);
-
-    void read_response();
 
 
-    bool is_waiting_response() const { return AP_HAL::millis() - last_io_time < SA_IO_TIMEOUT_MS; }
+    void monkey_testing()
+    {
+        const int operation=rand() % 20;
+        switch (operation) {
+        case SMARTAUDIO_CMD_GET_SETTINGS:
+            printf("\n");
+            request_settings();
+            break;
+        case SMARTAUDIO_CMD_SET_MODE:
+            switch (rand() % 4) {
+            case 0:
+                set_operation_mode(OperationMode::in_range_pit_mode,rand() %1==1);
+                break;
+            case 1:
+                set_operation_mode(OperationMode::out_range_pit_mode,rand() %1==1);
+                break;
+            case 2:
+                set_operation_mode(OperationMode::disabled_pit_mode,rand() %1==1);
+                break;
+            case 3:
+                set_operation_mode(OperationMode::locked,rand() %1==1);
+                break;
+            case 4:
+                set_operation_mode(OperationMode::unlocked,rand() %1==1);
+                break;
+            };
+            break;
+        case SMARTAUDIO_CMD_SET_FREQUENCY:
+            printf("\n");
+            set_frequency(rand() % 5865,rand() %1==1);
+            break;
+        case SMARTAUDIO_CMD_SET_POWER:
+            printf("\n");
+            set_power_dbm(23);
+            break;
 
-    void logToStdOut(char *message){std::cout << "AP_SmartAudio -> "<< message << std::endl;}
-
-
-
-
-    // desired values
-    bool get_settings_request;
-    int8_t power_level_request;
-
-    // actual values
-    uint8_t protocol;
-    uint8_t channel;
-    uint8_t power_level;
-    uint8_t power_dBm;
-    uint8_t power_levels_count;
-
-    uint8_t operation_mode;
-    uint8_t frequency;
-
-    //AP_Int8 protocol_version;
-    AP_Int8 enabled;
-    AP_Int8 use_trailing_zero;
-
-
-void print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
-{
-  int i;
-    for (i = 0; i < x; i++)
-        {
-         if (i > 0) printf(":");
-            printf("%02X", buf[i]);
+        case 18:
+            get_readings();
+            break;
+        case 19:
+            backend->set_io_status(AP_Vtx_SerialBackend::RqStatus::idle);
+            backend->set_status(AP_Vtx_Backend::Status::idle);
+            break;
         }
-    printf("\n");
     }
 
 };
+
+#endif
