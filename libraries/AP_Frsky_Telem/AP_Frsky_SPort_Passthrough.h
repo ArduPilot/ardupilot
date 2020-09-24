@@ -9,6 +9,8 @@
 #include "AP_Frsky_Telem.h"
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+#include "AP_Frsky_MAVlite_SPortToMAVlite.h"
+#include "AP_Frsky_MAVlite_MAVliteToSPort.h"
 #define FRSKY_WFQ_TIME_SLOT_MAX     12U
 #define SPORT_TX_PACKET_DUPLICATES          1   // number of duplicates packets we send (fport only)
 #else
@@ -116,7 +118,8 @@ private:
     } _SPort_bidir;
 
     AP_Frsky_SPortParser _sport_handler;
-    AP_Frsky_MAVlite _mavlite_handler;
+    AP_Frsky_MAVlite_SPortToMAVlite sport_to_mavlite;
+    AP_Frsky_MAVlite_MAVliteToSPort mavlite_to_sport;
 
     void set_sensor_id(AP_Int8 idx, uint8_t &sensor);
     // tx/rx sport packet processing
@@ -125,13 +128,13 @@ private:
     void process_tx_queue(void);
 
     // mavlite messages tx/rx methods
-    bool mavlite_send_message(AP_Frsky_MAVlite::mavlite_message_t &txmsg);
-    void mavlite_process_message(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg);
+    bool mavlite_send_message(AP_Frsky_MAVlite_Message &txmsg);
+    void mavlite_process_message(const AP_Frsky_MAVlite_Message &rxmsg);
 
     // gcs mavlite methods
-    void mavlite_handle_param_request_read(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg);
-    void mavlite_handle_param_set(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg);
-    void mavlite_handle_command_long(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg);
+    void mavlite_handle_param_request_read(const AP_Frsky_MAVlite_Message &rxmsg);
+    void mavlite_handle_param_set(const AP_Frsky_MAVlite_Message &rxmsg);
+    void mavlite_handle_command_long(const AP_Frsky_MAVlite_Message &rxmsg);
     void mavlite_send_command_ack(const MAV_RESULT mav_result, const uint16_t cmdid);
     MAV_RESULT mavlite_handle_command_preflight_calibration_baro();
     MAV_RESULT mavlite_handle_command_do_fence_enable(uint16_t param1);

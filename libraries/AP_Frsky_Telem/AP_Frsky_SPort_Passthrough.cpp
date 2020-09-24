@@ -674,9 +674,9 @@ void AP_Frsky_SPort_Passthrough::process_rx_queue()
     AP_Frsky_SPort::sport_packet_t packet;
     uint8_t loop_count = 0; // prevent looping forever
     while (_SPort_bidir.rx_packet_queue.pop(packet) && loop_count++ < MAVLITE_MSG_SPORT_PACKETS_COUNT(MAVLITE_MAX_PAYLOAD_LEN)) {
-        AP_Frsky_MAVlite::mavlite_message_t rxmsg;
+        AP_Frsky_MAVlite_Message rxmsg;
 
-        if (_mavlite_handler.parse(rxmsg, packet)) {
+        if (sport_to_mavlite.process(rxmsg, packet)) {
             mavlite_process_message(rxmsg);
             break; // process only 1 mavlite message each call
         }
@@ -711,19 +711,26 @@ void AP_Frsky_SPort_Passthrough::process_tx_queue()
  * Handle the COMMAND_LONG mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_command_long(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg)
+void AP_Frsky_SPort_Passthrough::mavlite_handle_command_long(const AP_Frsky_MAVlite_Message &rxmsg)
 {
     mavlink_command_long_t mav_command_long {};
 
     uint8_t cmd_options;
     float params[7] {};
 
-    AP_Frsky_MAVlite::mavlite_msg_get_uint16(mav_command_long.command, rxmsg, 0);
-    AP_Frsky_MAVlite::mavlite_msg_get_uint8(cmd_options, rxmsg, 2);
-    uint8_t param_count = AP_Frsky_MAVlite::bit8_unpack(cmd_options, 3, 0);               // first 3 bits
+    if (!rxmsg.get_uint16(mav_command_long.command, 0)) {
+        return;
+    }
+    if (!rxmsg.get_uint8(cmd_options, 2)) {
+        return;
+    }
+    uint8_t param_count = AP_Frsky_MAVlite_Message::bit8_unpack(cmd_options, 3, 0);               // first 3 bits
 
     for (uint8_t cmd_idx=0; cmd_idx<param_count; cmd_idx++) {
-        AP_Frsky_MAVlite::mavlite_msg_get_float(params[cmd_idx], rxmsg, 3+(4*cmd_idx));   // base offset is 3, relative offset is 4*cmd_idx
+        // base offset is 3, relative offset is 4*cmd_idx
+        if (!rxmsg.get_float(params[cmd_idx], 3+(4*cmd_idx))) {
+            return;
+        }
     }
 
     mav_command_long.param1 = params[0];
@@ -796,10 +803,14 @@ void AP_Frsky_SPort_Passthrough::mavlite_handle_command_long(const AP_Frsky_MAVl
 
 void AP_Frsky_SPort_Passthrough::mavlite_send_command_ack(const MAV_RESULT mav_result, const uint16_t cmdid)
 {
-    AP_Frsky_MAVlite::mavlite_message_t txmsg;
+    AP_Frsky_MAVlite_Message txmsg;
     txmsg.msgid = MAVLINK_MSG_ID_COMMAND_ACK;
-    AP_Frsky_MAVlite::mavlite_msg_set_uint16(txmsg, cmdid, 0);
-    AP_Frsky_MAVlite::mavlite_msg_set_uint8(txmsg, (uint8_t)mav_result, 2);
+    if (!txmsg.set_uint16(cmdid, 0)) {
+        return;
+    }
+    if (!txmsg.set_uint8((uint8_t)mav_result, 2)) {
+        return;
+    }
     mavlite_send_message(txmsg);
 }
 
@@ -844,20 +855,26 @@ MAV_RESULT AP_Frsky_SPort_Passthrough::mavlite_handle_command_do_fence_enable(ui
  * Handle the PARAM_REQUEST_READ mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_param_request_read(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg)
+void AP_Frsky_SPort_Passthrough::mavlite_handle_param_request_read(const AP_Frsky_MAVlite_Message &rxmsg)
 {
     float param_value;
     char param_name[AP_MAX_NAME_SIZE+1];
-    AP_Frsky_MAVlite::mavlite_msg_get_string(param_name, rxmsg, 0);
+    if (!rxmsg.get_string(param_name, 0)) {
+        return;
+    }
     // find existing param
     if (!AP_Param::get(param_name,param_value)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
-    AP_Frsky_MAVlite::mavlite_message_t txmsg;
+    AP_Frsky_MAVlite_Message txmsg;
     txmsg.msgid = MAVLINK_MSG_ID_PARAM_VALUE;
-    AP_Frsky_MAVlite::mavlite_msg_set_float(txmsg, param_value, 0);
-    AP_Frsky_MAVlite::mavlite_msg_set_string(txmsg, param_name, 4);
+    if (!txmsg.set_float(param_value, 0)) {
+        return;
+    }
+    if (!txmsg.set_string(param_name, 4)) {
+        return;
+    }
     mavlite_send_message(txmsg);
 }
 
@@ -865,13 +882,17 @@ void AP_Frsky_SPort_Passthrough::mavlite_handle_param_request_read(const AP_Frsk
  * Handle the PARAM_SET mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_param_set(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg)
+void AP_Frsky_SPort_Passthrough::mavlite_handle_param_set(const AP_Frsky_MAVlite_Message &rxmsg)
 {
     float param_value;
     char param_name[AP_MAX_NAME_SIZE+1];
     // populate packet with mavlite payload
-    AP_Frsky_MAVlite::mavlite_msg_get_float(param_value, rxmsg, 0);
-    AP_Frsky_MAVlite::mavlite_msg_get_string(param_name, rxmsg, 4);
+    if (!rxmsg.get_float(param_value, 0)) {
+        return;
+    }
+    if (!rxmsg.get_string(param_name, 4)) {
+        return;
+    }
     // find existing param so we can get the old value
     enum ap_var_type var_type;
     // set parameter
@@ -891,10 +912,14 @@ void AP_Frsky_SPort_Passthrough::mavlite_handle_param_set(const AP_Frsky_MAVlite
         gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
         return;
     }
-    AP_Frsky_MAVlite::mavlite_message_t txmsg;
+    AP_Frsky_MAVlite_Message txmsg;
     txmsg.msgid = MAVLINK_MSG_ID_PARAM_VALUE;
-    AP_Frsky_MAVlite::mavlite_msg_set_float(txmsg, param_value, 0);
-    AP_Frsky_MAVlite::mavlite_msg_set_string(txmsg, param_name, 4);
+    if (!txmsg.set_float(param_value, 0)) {
+        return;
+    }
+    if (!txmsg.set_string(param_name, 4)) {
+        return;
+    }
     mavlite_send_message(txmsg);
 }
 
@@ -945,7 +970,7 @@ MAV_RESULT AP_Frsky_SPort_Passthrough::mavlite_handle_command_preflight_reboot(v
  * Process an incoming mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_SPort_Passthrough::mavlite_process_message(const AP_Frsky_MAVlite::mavlite_message_t &rxmsg)
+void AP_Frsky_SPort_Passthrough::mavlite_process_message(const AP_Frsky_MAVlite_Message &rxmsg)
 {
     switch (rxmsg.msgid) {
         case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
@@ -965,9 +990,9 @@ void AP_Frsky_SPort_Passthrough::mavlite_process_message(const AP_Frsky_MAVlite:
  * Message is chunked in sport packets pushed in the tx queue
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-bool AP_Frsky_SPort_Passthrough::mavlite_send_message(AP_Frsky_MAVlite::mavlite_message_t &txmsg)
+bool AP_Frsky_SPort_Passthrough::mavlite_send_message(AP_Frsky_MAVlite_Message &txmsg)
 {
-    return _mavlite_handler.encode(_SPort_bidir.tx_packet_queue, txmsg);
+    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
 }
 
 
