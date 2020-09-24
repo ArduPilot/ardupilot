@@ -1,20 +1,16 @@
 #include "GCS.h"
 #include <AP_Common/AP_FWVersion.h>
 
-const AP_FWVersion AP_FWVersion::fwver
-{
-    major: 3,
-    minor: 1,
-    patch: 4,
-    fw_type: FIRMWARE_VERSION_TYPE_DEV,
-    fw_string: "Dummy GCS",
-    fw_hash_str: "",
-    middleware_name: "",
-    middleware_hash_str: "",
-    os_name: "",
-    os_hash_str: "",
-    os_sw_version: 0
-};
+#define THISFIRMWARE "GCSDummy V3.1.4-dev"
+
+#define FW_MAJOR 3
+#define FW_MINOR 1
+#define FW_PATCH 4
+#define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
+
+#define FORCE_VERSION_H_INCLUDE
+#include <AP_Common/AP_FWVersionDefine.h>
+#undef FORCE_VERSION_H_INCLUDE
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
 
