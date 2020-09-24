@@ -95,7 +95,7 @@ public:
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Write_Mode(uint8_t mode, const ModeReason reason = ModeReason::UNKNOWN);
+    bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
