@@ -969,6 +969,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("STANDBY_PIN",  38, ParametersG2, standby_pin, -1),
 
+#if MODE_AUTO_ENABLED == ENABLED
+    // @Param: AUTO_OPTIONS
+    // @DisplayName: Auto mode options
+    // @Description: A range of options that can be applied to change auto mode behaviour. Allow Arming allows the copter to be armed in Auto. Allow Takeoff Without Raising Throttle allows takeoff without the pilot having to raise the throttle
+    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
+#endif
+
     AP_GROUPEND
 };
 

@@ -623,6 +623,11 @@ public:
 
     // pin to enable standby mode
     AP_Int8 standby_pin;
+
+#if MODE_AUTO_ENABLED == ENABLED
+    AP_Int32 auto_options;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
