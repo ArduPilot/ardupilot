@@ -619,6 +619,10 @@ public:
     AP_Int8 acro_options;
 #endif
 
+#if MODE_AUTO_ENABLED == ENABLED
+    AP_Int32 auto_options;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
