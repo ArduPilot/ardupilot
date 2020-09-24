@@ -976,6 +976,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("ACRO_OPTIONS", 39, ParametersG2, acro_options, 0),
 #endif
 
+#if MODE_AUTO_ENABLED == ENABLED
+    // @Param: AUTO_OPTIONS
+    // @DisplayName: Auto mode options
+    // @Description: A range of options that can be applied to change auto mode behaviour. Allow arming allows the copter to be armed while in auto. Allow taking off without throttle to takeoff allows the copter to takeoff without having to raise the throttle.
+    // @Bitmask: 0:Allow arming,1:Allow taking off without throttle
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
+#endif
+
     AP_GROUPEND
 };
 
