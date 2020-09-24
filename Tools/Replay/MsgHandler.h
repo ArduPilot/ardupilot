@@ -19,7 +19,7 @@ public:
     MsgHandler(const struct log_Format &f);
 
     // retrieve a comma-separated list of all labels
-    void string_for_labels(char *buffer, uint bufferlen);
+    void string_for_labels(char *buffer, uint32_t bufferlen);
 
     // field_value - retrieve the value of a field from the supplied message
     // these return false if the field was not found
