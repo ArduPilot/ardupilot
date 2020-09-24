@@ -42,11 +42,8 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_RCTelemetry/AP_VideoTX.h>
-#include <AP_MSP/AP_MSP.h>
-
-#if SMARTAUDIO_ENABLED == ENABLED
 #include <AP_SmartAudio/AP_SmartAudio.h>
-#endif
+
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 

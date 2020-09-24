@@ -24,14 +24,7 @@
 //#include "drivers/serial.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
-#include <stdio.h>
 
-
-
-#define SMARTAUDIO_SERIAL_OPTIONS   SERIAL_NOT_INVERTED | SERIAL_BIDIR_NOPULL | SERIAL_STOPBITS_2
-#define SMARTAUDIO_DEFAULT_BAUD     4900
-#define SMARTAUDIO_MIN_BAUD         4800
-#define SMARTAUDIO_MAX_BAUD         4950
 
 #define SMARTAUDIO_SYNC_BYTE            0xAA
 #define SMARTAUDIO_HEADER_BYTE          0x55
@@ -63,10 +56,10 @@
 // POWER LEVELS: 3 protocols, 4 readings for output in mw
 const uint16_t POWER_LEVELS[3][4] =
 {
-//   25      200   500   800  mw
-//   14      23     27    29  dbm
-    { 7 , 16, 25, 40}, /* Version 1 */
-    { 0 , 1 , 2 , 3 }, /* Version 2 */
+    //   25      200   500      800  mw
+    //   14      23     27      29  dbm
+    {    7 ,     16,    25,     40}, /* Version 1 */
+    {    0 ,     1 ,    2 ,     3 }, /* Version 2 */
 };
 
 typedef struct smartaudioSettings_s {
@@ -178,13 +171,15 @@ typedef union smartaudioFrame_u {
 size_t smartaudioFrameGetSettings(smartaudioFrame_t *smartaudioFrame);
 size_t smartaudioFrameGetPitmodeFrequency(smartaudioFrame_t *smartaudioFrame);
 size_t smartaudioFrameSetPower(smartaudioFrame_t *smartaudioFrame, const uint8_t power);
+size_t smartaudioFrameSetChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t channel);
 size_t smartaudioFrameSetBandChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t band, const uint8_t channel);
 size_t smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uint16_t frequency, const bool pitmodeFrequency);
 size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings);
 bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer);
 u_int16_t applyBigEndian16(u_int16_t bytes);
+
 // crc8 from betaflight
-uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
+uint8_t static crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
 {
     const uint8_t *p = (const uint8_t *)data;
     const uint8_t *pend = p + length;

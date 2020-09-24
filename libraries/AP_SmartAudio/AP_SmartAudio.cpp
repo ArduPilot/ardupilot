@@ -1,9 +1,21 @@
 #pragma once
+/**
+ *
+    _____            .___   __________.__.__          __
+  /  _  \_______  __| _/_ _\______   \__|  |   _____/  |_
+ /  /_\  \_  __ \/ __ |  |  \     ___/  |  |  /  _ \   __\
+/    |    \  | \/ /_/ |  |  /    |   |  |  |_(  <_> )  |
+\____|__  /__|  \____ |____/|____|   |__|____/\____/|__|
+        \/           \/
+*
+*
+* */
 
 
 #include "AP_SmartAudio.h"
 
 #include <stdio.h>
+
 #define AP_VTX_DEV_MODE     // DEV TESTS ACTIVATE
 #ifdef AP_VTX_DEV_MODE
 # define debug(fmt, args...)	hal.console->printf("\t':-), " fmt "\n", ##args)
@@ -51,6 +63,7 @@ AP_SmartAudio::AP_SmartAudio()
 }
 
 AP_SmartAudio *AP_SmartAudio::singleton;
+AP_VideoTX *ap_video_tx=AP_VideoTX::get_singleton();
 
 // initialization start making a request settings to the vtx
 bool AP_SmartAudio::init()
@@ -87,23 +100,19 @@ void AP_SmartAudio::loop(){
     _port->begin(AP_SERIALMANAGER_SMARTAUDIO_BAUD, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_RX, AP_SERIALMANAGER_SMARTAUDIO_BUFSIZE_TX);
 
     // initialize AP_VideoTx settings
-        request_settings();
-        if(!smartaudio_params.setup_defaults){
-            get_readings(AP_VideoTX::get_singleton());
-        }else{
-            // setup values defined in vtx params
-            set_frequency(AP_VideoTX::get_frequency_mhz(AP_VideoTX::get_singleton()->get_band()
-            ,AP_VideoTX::get_singleton()->get_channel()),AP_VideoTX::get_singleton()->get_options()==0);
-        }
+    request_settings();
 
      while (true) {
+
         // now time to control loop switching
         uint32_t _now=AP_HAL::millis();
+
         // when one packet is processed in the iteration will be true.
         bool packet_processed=false;
-        monkey_testing();
+
         // setup a queue polling delay of 20 ms.
         hal.scheduler->delay(20);
+
         // command to process
         packet _current_command;
         // printf(" time-passed-since-last-request:%d %20s %d ",now-last_request_sended_at,"packet-processed:",packet_processed);
@@ -132,7 +141,48 @@ void AP_SmartAudio::loop(){
             printf(" delay: %d",100);
             hal.scheduler->delay(100);
         }
+
+        update(false);
      }
+}
+
+// updates the smartaudio state in sync whith AP_VideoTX
+bool AP_SmartAudio::update(bool force)
+{
+    if(vtx_states_queue.available()==0){
+        if(!hal.util->get_soft_armed()) {
+            request_settings();
+        }
+        return false;
+    }
+
+    if(_get_current_state()->userFrequencyMode && _get_current_state()->frequency!=ap_video_tx->get_frequency_mhz()){
+        set_frequency(ap_video_tx->get_frequency_mhz(),!_get_current_state()->pitmodeDisabled);
+    }
+
+    if(!_get_current_state()->userFrequencyMode && _get_current_state()->channel!=ap_video_tx->get_channel() && _get_current_state()->band!=ap_video_tx->get_band()){
+        set_channel((ap_video_tx->get_band()*8)+ap_video_tx->get_channel());
+    }
+
+    if(_get_current_state()->version==SMARTAUDIO_SPEC_PROTOCOL_v21 && _get_power_in_mw_from_dbm(_get_current_state()->power_in_dbm)!= ap_video_tx->get_power_mw()){
+        set_power_mw(ap_video_tx->get_power_mw());
+    }
+
+    if(_get_current_state()->version!=SMARTAUDIO_SPEC_PROTOCOL_v21
+    && ap_video_tx->get_power_mw()!=_get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(_get_current_state()->power,_get_current_state()->version))){
+        set_power_mw(ap_video_tx->get_power_mw());
+    }
+
+    if( (ap_video_tx->get_options()==0 && !_get_current_state()->pitmodeDisabled) || (ap_video_tx->get_options()==1 && _get_current_state()->pitmodeDisabled) ){
+        uint8_t operation_mode= 0x00;
+        operation_mode = _get_current_state()->pitmodeInRangeActive && 1<<0;
+        operation_mode = _get_current_state()->pitmodeInRangeActive && 1<<1;
+        operation_mode = ap_video_tx->get_options()==0 && 1<<2;
+        operation_mode = _get_current_state()->unlocked==0 && 1<<3;
+        set_operation_mode(operation_mode);
+    }
+
+    return true;
 }
 
 /**
@@ -253,8 +303,8 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
             }
 
             if( _vtx_settings.update_flags & (1 << 1)){ // channel has changed
-                _current_vtx_settings.frequency=_vtx_settings.frequency;
-                _current_vtx_settings.userFrequencyMode=_vtx_settings.userFrequencyMode;
+                _current_vtx_settings.band=_vtx_settings.channel/8;
+                _current_vtx_settings.channel=_vtx_settings.channel%8;
             }
 
 
@@ -375,8 +425,14 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
    return !vtx_states_queue.is_empty();
 }
 
+// utility method to get power in dbm mapping to power levels
+uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version)
+{
+    uint8_t power_in_dbm=0;
+    return _get_power_in_dbm_from_vtx_power_level(power_level,protocol_version,power_in_dbm);
+}
 // returns the dbs associated by power-level input
-bool AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm)
+uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm)
 {
 
     for (uint8_t j = 0; j < 4; j++) {
@@ -395,14 +451,10 @@ bool AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, 
             case 3:
                 power_in_dbm=29;
                 break;
-            default:
-                return false;
             }
-
-            return true;
         }
     }
-    return false;
+ return power_in_dbm;
 }
 
 
@@ -421,75 +473,6 @@ void AP_SmartAudio::request_settings()
 }
 
 
-/**
- * Set operation mode.
- * Only works with smaraudio protocols since 2.0
- * Features:
- *  -> Disable pit mode;
- *  -> Unlock/lock vtx power levels.
- *  -> Enable pit mode out of band, setting  5584 MHz via hardware
- *  -> Enable pit mode in band. Frecuency is not changed
- */
-void AP_SmartAudio::set_operation_mode(OperationMode mode,bool locked)
-{
-     // take the first register from the output buffer
-   smartaudioSettings_t _current_state;
-
-    // peek from buffer
-   vtx_states_queue.peek(&_current_state,1);
-
-    printf("%80s::set_operation_mode(%d,%d)\t",TAG,mode,locked);
-    if (_current_state.version<2) {
-        debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
-    }
-
-
-
-    smartaudioSettings_t settings;
-    switch (mode) {
-    case OperationMode::in_range_pit_mode:
-        settings.pitmodeInRangeActive=true;
-        settings.pitmodeOutRangeActive=false;
-        settings.pitmodeDisabled=false;
-        settings.unlocked=!locked;
-        break;
-    case OperationMode::out_range_pit_mode:
-        settings.pitmodeInRangeActive=false;
-        settings.pitmodeOutRangeActive=true;
-        settings.pitmodeDisabled=false;
-        settings.unlocked=!locked;
-        settings.pitmodeOutRangeActive=true;
-        break;
-    case OperationMode::disabled_pit_mode:
-        settings.pitmodeInRangeActive=false;
-        settings.pitmodeOutRangeActive=false;
-        settings.pitmodeDisabled=true;
-        settings.unlocked=!locked;
-        break;
-    case OperationMode::locked:
-        settings.pitmodeInRangeActive=false;
-        settings.pitmodeOutRangeActive=false;
-        settings.pitmodeDisabled=false;
-        settings.unlocked=false;
-        break;
-    case OperationMode::unlocked:
-        settings.pitmodeInRangeActive=false;
-        settings.pitmodeOutRangeActive=false;
-        settings.pitmodeDisabled=false;
-        settings.unlocked=true;
-        break;
-    default:
-        debug("%s HW: %s",TAG,"Operation mode not supported");
-        return;
-    };
-    smartaudioFrame_t request;
-    uint8_t frame_size=smartaudioFrameSetOperationMode(&request,&settings);
-    packet command;
-    command.frame=request;
-    command.frame_size=frame_size;
-    requests_queue.push_force(command);
-}
-
 void AP_SmartAudio::set_operation_mode(uint8_t mode){
      // take the first register from the output buffer
    smartaudioSettings_t _current_state;
@@ -500,6 +483,7 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
     printf("\n%80s::set_operation_mode(%02X)\t",TAG,mode);
     if (_current_state.version<2) {
         debug("%s HW: %s",TAG,"Device can't change operation mode. Spec protocol not supported");
+        return;
     }
     smartaudioSettings_t settings;
     settings.pitmodeInRangeActive=mode & 1<<0;
@@ -530,6 +514,17 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
     command.frame=request;
     command.frame_size=frame_size;
     requests_queue.push_force(command);
+}
+
+// enqueue a set channel request
+void AP_SmartAudio::set_channel(uint8_t chan_idx){
+        printf("\n%80s::set_channel(%d)\t",TAG,chan_idx);
+        smartaudioFrame_t request;
+        uint8_t frame_size=smartaudioFrameSetChannel(&request,chan_idx);
+         packet command;
+        command.frame=request;
+        command.frame_size=frame_size;
+        requests_queue.push_force(command);
 }
 
 /**
@@ -563,6 +558,12 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
      command.frame=request;
      command.frame_size=frame_size;
      requests_queue.push_force(command);
+}
+
+// send vtx request to set power defined in mw
+void AP_SmartAudio::set_power_mw(uint16_t power_mw){
+    set_power_dbm(_get_power_in_dbm_from_mw(power_mw));
+    return;
 }
 
 // returns the power_level applicable when request set power, version 2.1 return the MSB power bit masked at 1
@@ -622,5 +623,256 @@ uint8_t AP_SmartAudio::_get_power_level_from_dbm(uint8_t sma_version,uint8_t pow
     }
      return 0;
 
+}
+
+
+
+
+//          __________        __         ___________.__  .__       .__     __
+//          \______   \ _____/  |______  \_   _____/|  | |__| ____ |  |___/  |_
+//          |    |  _// __ \   __\__  \  |    __)  |  | |  |/ ___\|  |  \   __\
+//          |    |   \  ___/|  |  / __ \_|     \   |  |_|  / /_/  >   Y  \  |
+//          |______  /\___  >__| (____  /\___  /   |____/__\___  /|___|  /__|
+//          \/     \/          \/     \/           /_____/      \/
+
+
+/*
+ * This file is part of Cleanflight and Betaflight.
+ *
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+static void smartaudioFrameInit(const uint8_t command, smartaudioFrameHeader_t *header, const uint8_t payloadLength)
+{
+    header->syncByte = SMARTAUDIO_SYNC_BYTE;
+    header->headerByte= SMARTAUDIO_HEADER_BYTE;
+    header->length = payloadLength;
+    header->command = command;
+
+}
+
+static void smartaudioUnpackOperationMode(smartaudioSettings_t *settings, const uint8_t operationMode, const bool settingsResponse)
+{
+    if (settingsResponse) {
+        // operation mode bit order is different between 'Get Settings' and 'Set Mode' responses.
+        settings->userFrequencyMode = operationMode & 0x01;
+        settings->pitmodeDisabled = operationMode & 0x02;
+        settings->pitmodeInRangeActive = operationMode & 0x04;
+        settings->pitmodeOutRangeActive = operationMode & 0x08;
+        settings->unlocked = operationMode & 0x10;
+    } else {
+        settings->pitmodeInRangeActive = operationMode & 0x01;
+        settings->pitmodeOutRangeActive = operationMode & 0x02;
+        settings->pitmodeDisabled = operationMode & 0x04;
+        settings->unlocked = operationMode & 0x08;
+    }
+}
+
+static void smartaudioUnpackFrequency(smartaudioSettings_t *settings, const uint16_t frequency)
+{
+    if (applyBigEndian16(frequency) & SMARTAUDIO_GET_PITMODE_FREQ) {
+        settings->pitmodeFrequency = applyBigEndian16(frequency);
+    } else {
+        settings->frequency = applyBigEndian16(frequency);
+    }
+}
+
+static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsResponseFrame_t *frame)
+{
+    settings->channel = frame->channel;
+    settings->power = frame->power;
+    smartaudioUnpackFrequency(settings, frame->frequency);
+    smartaudioUnpackOperationMode(settings, frame->operationMode, true);
+}
+
+static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsExtendedResponseFrame_t *frame)
+{
+    settings->channel = frame->channel;
+    settings->power = frame->power;
+    settings->power_in_dbm=frame->power_dbm;
+    smartaudioUnpackFrequency(settings, frame->frequency);
+    smartaudioUnpackOperationMode(settings, frame->operationMode, true);
+}
+
+static uint8_t smartaudioPackOperationMode(const smartaudioSettings_t *settings)
+{
+    uint8_t operationMode = 0;
+    operationMode |= settings->pitmodeInRangeActive << 0;
+    operationMode |= settings->pitmodeOutRangeActive << 1;
+    operationMode |= settings->pitmodeDisabled << 2;
+    operationMode |= settings->unlocked << 3;
+    return operationMode;
+}
+
+
+
+size_t smartaudioFrameGetSettings(smartaudioFrame_t *smartaudioFrame)
+{
+    smartaudioCommandOnlyFrame_t *frame = (smartaudioCommandOnlyFrame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_GET_SETTINGS, &frame->header, 0);
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioCommandOnlyFrame_t) - sizeof(frame->crc));
+    //frame->crc=crc8_dvb_s2(*(const uint8_t *)frame, sizeof(smartaudioCommandOnlyFrame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioCommandOnlyFrame_t);
+}
+
+size_t smartaudioFrameGetPitmodeFrequency(smartaudioFrame_t *smartaudioFrame)
+{
+    smartaudioU16Frame_t *frame = (smartaudioU16Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_FREQUENCY, &frame->header, sizeof(frame->payload));
+    frame->payload = SMARTAUDIO_GET_PITMODE_FREQ;
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU16Frame_t) - sizeof(frame->crc));
+    //frame->crc = crc8_dvb_s2(*(const uint8_t *)frame, sizeof(smartaudioU16Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU16Frame_t);
+}
+
+size_t smartaudioFrameSetPower(smartaudioFrame_t *smartaudioFrame, const uint8_t power)
+{
+    smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_POWER, &frame->header, sizeof(frame->payload));
+    frame->payload = power;
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    //frame->crc = crc8_dvb_s2(*(const uint8_t *)frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU8Frame_t);
+}
+
+size_t smartaudioFrameSetBandChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t band, const uint8_t channel)
+{
+    smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_CHANNEL, &frame->header, sizeof(frame->payload));
+    frame->payload = SMARTAUDIO_BANDCHAN_TO_INDEX(band, channel);
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    //frame->crc = crc8_dvb_s2( *(const uint8_t *)frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU8Frame_t);
+}
+
+size_t smartaudioFrameSetChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t channel)
+{
+    smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_CHANNEL, &frame->header, sizeof(frame->payload));
+    frame->payload = channel;
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    //frame->crc = crc8_dvb_s2( *(const uint8_t *)frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU8Frame_t);
+}
+
+size_t smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uint16_t frequency, const bool pitmodeFrequency)
+{
+    smartaudioU16Frame_t *frame = (smartaudioU16Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_FREQUENCY, &frame->header, sizeof(frame->payload));
+    frame->payload = applyBigEndian16(frequency | (pitmodeFrequency ? SMARTAUDIO_SET_PITMODE_FREQ : 0x00));
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU16Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU16Frame_t);
+}
+
+/** Addition because the define macro seems that's not working. TODO: Refactor this using AP routines.*/
+uint16_t applyBigEndian16(uint16_t bytes)
+{
+    return (bytes << 8) | ((bytes >> 8) & 0xFF);
+}
+
+size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings)
+{
+    smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
+    smartaudioFrameInit(SMARTAUDIO_CMD_SET_MODE, &frame->header, sizeof(frame->payload));
+    frame->payload = smartaudioPackOperationMode(settings);
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU8Frame_t) - sizeof(frame->crc));
+    return sizeof(smartaudioU8Frame_t);
+}
+
+ /**
+     *
+     * */
+    void static print_bytes_to_hex_string(uint8_t buf[],uint8_t x)
+    {
+        int i;
+        for (i = 0; i < x; i++) {
+            if (i > 0) {
+                printf(":");
+            }
+            printf("%02X", buf[i]);
+        }
+        printf("\n");
+    }
+
+bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
+{
+    print_bytes_to_hex_string(const_cast <uint8_t*>(buffer),16);
+
+    const smartaudioFrameHeader_t *header = (const smartaudioFrameHeader_t *)buffer;
+    const uint8_t fullFrameLength = sizeof(smartaudioFrameHeader_t) + header->length;
+    const uint8_t headerPayloadLength = fullFrameLength - 1; // subtract crc byte from length
+    const uint8_t *startPtr = buffer + 2;
+    const uint8_t *endPtr = buffer + headerPayloadLength;
+    printf(" CRC BYTE:%02X",*endPtr);
+    printf(" CRC CHECK:%02X\n",crc8_dvb_s2_update(0x00,startPtr, headerPayloadLength-2));
+    if (crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr) || header->headerByte != SMARTAUDIO_HEADER_BYTE || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
+        return false;
+    }
+
+    switch (header->command) {
+    case SMARTAUDIO_RSP_GET_SETTINGS_V1: {
+        const smartaudioSettingsResponseFrame_t *resp = (const smartaudioSettingsResponseFrame_t *)buffer;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v1;
+        smartaudioUnpackSettings(settings, resp);
+        settings->update_flags=0x0F;
+    }
+    break;
+    case SMARTAUDIO_RSP_GET_SETTINGS_V2: {
+        const smartaudioSettingsResponseFrame_t *resp = (const smartaudioSettingsResponseFrame_t *)buffer;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v2;
+        smartaudioUnpackSettings(settings, resp);
+        settings->update_flags=0x0F;
+    }
+    break;
+    case SMARTAUDIO_RSP_GET_SETTINGS_V21: {
+        const smartaudioSettingsExtendedResponseFrame_t *resp = (const smartaudioSettingsExtendedResponseFrame_t *)buffer;
+        settings->version = SMARTAUDIO_SPEC_PROTOCOL_v21;
+        smartaudioUnpackSettings(settings, resp);
+        settings->update_flags=0x0F;
+    }
+    break;
+    case SMARTAUDIO_RSP_SET_FREQUENCY: {
+        const smartaudioU16ResponseFrame_t *resp = (const smartaudioU16ResponseFrame_t *)buffer;
+        smartaudioUnpackFrequency(settings, resp->payload);
+       settings->update_flags=0x01;
+    }
+    break;
+    case SMARTAUDIO_RSP_SET_CHANNEL: {
+        const smartaudioU8ResponseFrame_t *resp = (const smartaudioU8ResponseFrame_t *)buffer;
+        settings->channel = resp->payload;
+        settings->update_flags=0x02;
+    }
+    break;
+    case SMARTAUDIO_RSP_SET_POWER: {
+        const smartaudioU16ResponseFrame_t *resp = (const smartaudioU16ResponseFrame_t *)buffer;
+        settings->channel = (resp->payload >> 8) & 0xFF;
+        settings->power = resp->payload & 0xFF;
+        settings->update_flags=0x04;
+    }
+    break;
+    case SMARTAUDIO_RSP_SET_MODE: {
+        const smartaudioU8ResponseFrame_t *resp = (const smartaudioU8ResponseFrame_t*)buffer;
+        smartaudioUnpackOperationMode(settings, resp->payload, false);
+        settings->update_flags=0x08;
+    }
+    break;
+    default:
+        return false;
+    }
+    return true;
 }
 
