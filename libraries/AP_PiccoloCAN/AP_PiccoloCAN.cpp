@@ -280,12 +280,12 @@ void AP_PiccoloCAN::update()
             if (esc.newTelemetry) {
 
                 logger->Write_ESC(i, timestamp,
-                                  (int32_t) esc.statusA.rpm * 100,
-                                  esc.statusB.voltage,
-                                  esc.statusB.current,
-                                  (int16_t) esc.statusB.escTemperature,
+                                  (int32_t) esc.rpm * 100,
+                                  esc.voltage,
+                                  esc.current,
+                                  (int16_t) esc.fetTemperature,
                                   0,  // TODO - Accumulated current
-                                  (int16_t) esc.statusB.motorTemperature);
+                                  (int16_t) esc.motorTemperature);
 
                 esc.newTelemetry = false;
             }
@@ -321,11 +321,11 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         if (is_esc_present(ii)) {
             dataAvailable = true;
 
-            temperature[idx] = esc.statusB.escTemperature;
-            voltage[idx] = esc.statusB.voltage;
-            current[idx] = esc.statusB.current;
+            temperature[idx] = esc.fetTemperature;
+            voltage[idx] = esc.voltage;
+            current[idx] = esc.current;
             totalcurrent[idx] = 0;
-            rpm[idx] = esc.statusA.rpm;
+            rpm[idx] = esc.rpm;
             count[idx] = 0;
         } else {
             temperature[idx] = 0;
@@ -475,10 +475,47 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
     bool result = true;
 
+    /*
+     * The STATUS_A packet has slight variations between Gen-1 and Gen-2 ESCs.
+     * We can differentiate between the different versions,
+     * and coerce the "legacy" values into the modern values
+     * Legacy STATUS_A packet variables
+     */
+    ESC_LegacyStatusBits_t legacyStatus;
+    ESC_LegacyWarningBits_t legacyWarnings;
+    ESC_LegacyErrorBits_t legacyErrors;
+
     // Throw the packet against each decoding routine
-    if (decodeESC_StatusAPacketStructure(&frame, &esc.statusA)) {
+    if (decodeESC_StatusAPacket(&frame, &esc.mode, &esc.status, &esc.setpoint, &esc.rpm)) {
         esc.newTelemetry = true;
-    } else if (decodeESC_StatusBPacketStructure(&frame, &esc.statusB)) {
+    } else if (decodeESC_LegacyStatusAPacket(&frame, &esc.mode, &legacyStatus, &legacyWarnings, &legacyErrors, &esc.setpoint, &esc.rpm)) {
+        // The status / warning / error bits need to be converted to modern values
+        // Note: Not *all* of the modern status bits are available in the Gen-1 packet
+        esc.status.hwInhibit = legacyStatus.hwInhibit;
+        esc.status.swInhibit = legacyStatus.swInhibit;
+        esc.status.afwEnabled = legacyStatus.afwEnabled;
+        esc.status.direction = legacyStatus.timeout;
+        esc.status.timeout = legacyStatus.timeout;
+        esc.status.starting = legacyStatus.starting;
+        esc.status.commandSource = legacyStatus.commandSource;
+        esc.status.running = legacyStatus.running;
+
+        // Copy the legacy warning information across
+        esc.warnings.overspeed = legacyWarnings.overspeed;
+        esc.warnings.overcurrent = legacyWarnings.overcurrent;
+        esc.warnings.escTemperature = legacyWarnings.escTemperature;
+        esc.warnings.motorTemperature = legacyWarnings.motorTemperature;
+        esc.warnings.undervoltage = legacyWarnings.undervoltage;
+        esc.warnings.overvoltage = legacyWarnings.overvoltage;
+        esc.warnings.invalidPWMsignal = legacyWarnings.invalidPWMsignal;
+        esc.warnings.settingsChecksum = legacyErrors.settingsChecksum;
+
+        // There are no common error bits between the Gen-1 and Gen-2 ICD
+    } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
+        esc.newTelemetry = true;
+    } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
+        esc.newTelemetry = true;
+    } else if (decodeESC_WarningErrorStatusPacket(&frame, &esc.warnings, &esc.errors)) {
         esc.newTelemetry = true;
     } else if (decodeESC_FirmwarePacketStructure(&frame, &esc.firmware)) {
         // TODO
@@ -564,7 +601,7 @@ bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
 
     PiccoloESC_Info_t &esc = _esc_info[chan];
 
-    if (esc.statusA.status.hwInhibit || esc.statusA.status.swInhibit) {
+    if (esc.status.hwInhibit || esc.status.swInhibit) {
         return false;
     }
 
@@ -589,7 +626,7 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 
             PiccoloESC_Info_t &esc = _esc_info[ii];
 
-            if (esc.statusA.status.hwInhibit) {
+            if (esc.status.hwInhibit) {
                 snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
