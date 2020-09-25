@@ -288,7 +288,7 @@ protected:
     AP_Generator_RichenPower generator;
 #endif
 
-#if SMARTAUDIO_ENABLED
+#if HAL_SMARTAUDIO_ENABLED
     AP_SmartAudio smartaudio;
 #endif
 

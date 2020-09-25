@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
 #endif
 
-#if SMARTAUDIO_ENABLED
+#if HAL_SMARTAUDIO_ENABLED
     // @Group: VTX_SM
     // @DisplayName:
     // @Path: ../libraries/AP_SmartAudio/AP_SmartAudio.cpp
@@ -128,7 +128,7 @@ void AP_Vehicle::setup()
     visual_odom.init();
 #endif
 
-#if SMARTAUDIO_ENABLED
+#if HAL_SMARTAUDIO_ENABLED
     smartaudio.init();
 #endif
 
