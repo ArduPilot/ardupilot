@@ -86,6 +86,7 @@ public:
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required();
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
+    virtual bool arm_force(AP_Arming::Method method) { return arm(method, false); }
     virtual bool disarm(AP_Arming::Method method);
     bool is_armed();
 
