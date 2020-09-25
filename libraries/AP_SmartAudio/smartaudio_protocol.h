@@ -57,18 +57,18 @@ const uint16_t POWER_LEVELS[3][4] =
 };
 
 typedef struct smartaudioSettings_s {
-    uint8_t  version=0;
-    uint8_t  unlocked=0;
-    uint8_t  channel=0;
-    uint8_t  power=0;
-    uint16_t frequency=0;
-    uint8_t  band=0;
+    uint8_t  version;
+    uint8_t  unlocked;
+    uint8_t  channel;
+    uint8_t  power;
+    uint16_t frequency;
+    uint8_t  band;
 
     uint8_t* power_levels=nullptr;
-    uint8_t  power_in_dbm=0;
+    uint8_t  power_in_dbm;
 
 
-    uint16_t pitmodeFrequency=0;
+    uint16_t pitmodeFrequency;
     bool userFrequencyMode=false;     // user is setting freq
     bool pitModeRunning=false;
     bool pitmodeInRangeActive=false;
