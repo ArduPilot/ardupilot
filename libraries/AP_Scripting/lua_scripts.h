@@ -79,7 +79,7 @@ private:
 
     void reset_loop_overtime(lua_State *L);
 
-    void load_all_scripts_in_dir(lua_State *L, const char *dirname);
+    bool load_all_scripts_in_dir(lua_State *L, const char *dirname);
 
     void run_next_script(lua_State *L);
 
