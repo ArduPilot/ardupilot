@@ -1951,3 +1951,9 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed)
         }
     }
 }
+
+// return error score for currently active lane
+float NavEKF3::errorScore(void) const
+{
+    return core[primary].errorScore();
+}
