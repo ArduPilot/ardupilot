@@ -2941,6 +2941,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
         speed_scaler        : last_spd_scaler,
+        transition_state    : static_cast<uint8_t>(transition_state)
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 
