@@ -93,7 +93,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
 
     if ((on_approach_stage && below_flare_alt) ||
         (on_approach_stage && below_flare_sec && (wp_proportion > 0.5)) ||
-        (!rangefinder_state_in_range && wp_proportion >= 1) ||
+        //(!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
         if (type_slope_stage != SLOPE_STAGE_FINAL) {
