@@ -1,6 +1,50 @@
-<Protocol api="61" comment="This is the ICD for the Gen-2 Currawong Engineering Electronic Speed Controller (ESCVelocity). This document details the ESCVelocity command and packet structure for communication with and configuration of the ESC. Note that there may be some differences between this ICD and the ICD for the Gen-1 ESCVelocity. Please refer to the old ICD for the Gen-1 device." endian="big" file="ESCPackets" mapfile="ESC_SettingsMap" name="ESCVelocity" prefix="ESC_" supportBool="true" supportFloat64="false" supportInt64="false" supportSpecialFloat="false" verifyfile="ESC_SettingsVerify" version="3.40"><Include comment="C string manipulation function header" global="true" name="string.h" />
+<Protocol api="62" comment="This is the ICD for the Gen-2 Currawong Engineering Electronic Speed Controller (ESCVelocity). This document details the ESCVelocity command and packet structure for communication with and configuration of the ESC. Note that there may be some differences between this ICD and the ICD for the Gen-1 ESCVelocity. Please refer to the old ICD for the Gen-1 device." endian="big" file="ESCPackets" mapfile="ESC_SettingsMap" name="ESCVelocity" prefix="ESC_" supportBool="true" supportFloat64="false" supportInt64="false" supportSpecialFloat="false" verifyfile="ESC_SettingsVerify" version="3.41"><Include comment="C string manipulation function header" global="true" name="string.h" />
 
     
+    <Structure comment="Status bits associated with the legacy (gen-1) ESC" file="LegacyESCDefines" name="LegacyStatusBits">
+        <Data comment="1 = Hardware inhibit is active (ESC is disabled)" inMemoryType="bitfield1" name="hwInhibit" />
+        <Data comment="1 = Software inhibit is active (ESC is disabled)" inMemoryType="bitfield1" name="swInhibit" />
+        <Data comment="0 = Active Freewheeling is not enabled, 1 = Active Freewheeling is enabled" inMemoryType="bitfield1" name="afwEnabled" />
+        <Data comment="0 = Motor direction is FORWARDS, 1= Motor direction is REVERSE" inMemoryType="bitfield1" name="direction" />
+        <Data comment="Set if the ESC command timeout period has elapsed (and the ESC is in STANDBY mode)" inMemoryType="bitfield1" name="timeout" />
+        <Data comment="1 = in starting mode (0 = stopped or running)" inMemoryType="bitfield1" name="starting" />
+        <Data comment="0 = most recent command from CAN, 1 = most recent command from PWM" inMemoryType="bitfield1" name="commandSource" />
+        <Data comment="ESC is running" inMemoryType="bitfield1" name="running" />
+    </Structure>
+    
+    <Structure comment="Warning bits associated with the legacy (gen-1) ESC" file="LegacyESCDefines" name="LegacyWarningBits">    
+        <Data comment="Set if RPM signal is not detected" inMemoryType="bitfield1" name="noRPMSignal" />
+        <Data comment="Set if the ESC motor speed exceeds the configured warning threshold" inMemoryType="bitfield1" name="overspeed" />
+        <Data comment="Set if the ESC motor current (positive or negative) exceeds the configured warning threshold" inMemoryType="bitfield1" name="overcurrent" />
+        <Data comment="Set if the internal ESC temperature is above the warning threshold" inMemoryType="bitfield1" name="escTemperature" />
+        <Data comment="Set if the motor temperature is above the warning threshold" inMemoryType="bitfield1" name="motorTemperature" />
+        <Data comment="Set if the input voltage is below the minimum threshold" inMemoryType="bitfield1" name="undervoltage" />
+        <Data comment="Set if the input voltage is above the maximum threshold" inMemoryType="bitfield1" name="overvoltage" />    
+        <Data comment="Set if hardware PWM input is enabled but invalid" inMemoryType="bitfield1" name="invalidPWMsignal" />
+    </Structure>
+    
+    <Structure comment="Error bits associated with the legacy (gen-1) ESC" file="LegacyESCDefines" name="LegacyErrorBits">
+        <Data comment="Set if communication link to the motor controller is lost" inMemoryType="bitfield1" name="linkError" />
+        <Data comment="Set if the ESC has detected an overcurrent event and is actively folding back duty cycle" inMemoryType="bitfield1" name="foldback" />
+        <Data comment="Set if the settings checksum does not match the programmed values" inMemoryType="bitfield1" name="settingsChecksum" />
+        <Data comment="Set if the motor settings are invalid" inMemoryType="bitfield1" name="motorSettings" />
+        <Data comment="Reserved for future use" inMemoryType="bitfield1" name="reservedD" />
+        <Data comment="Reserved for future use" inMemoryType="bitfield1" name="reservedE" />
+        <Data comment="Reserved for future use" inMemoryType="bitfield1" name="reservedF" />
+        <Data comment="Reserved for future use" inMemoryType="bitfield1" name="reservedG" />
+    </Structure>
+
+    
+    <Packet ID="PKT_ESC_STATUS_A" comment="Legacy (gen-1) definition for the STATUS_A packet" file="LegacyESCPackets" name="LegacyStatusA" parameterInterface="true">
+        <Data checkConstant="true" comment="Set to 0 to indicate a Gen-2 ESC" constant="0" encodedType="bitfield1" inMemoryType="null" name="version" />
+        <Data comment="ESC operating mode. The lower four bits indicate the operational mode of the ESC, in accordance with the ESCOperatingModes enumeration. The upper 3 bits are used for debugging and should be ignored for general use." encodedType="bitfield7" inMemoryType="unsigned8" name="mode" />
+        <Data comment="ESC status bits" name="status" struct="LegacyStatusBits" />
+        <Data comment="ESC warning bits" name="warnings" struct="LegacyWarningBits" />
+        <Data comment="ESC *error* bits" name="errors" struct="LegacyErrorBits" />
+        <Data comment="ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM" inMemoryType="unsigned16" name="command" />
+        <Data comment="Motor speed" inMemoryType="unsigned16" name="rpm" units="1RPM per bit" />
+    </Packet>
+
     <Enum comment="Constant values required for sending a disable (inhibit) command" description="These values are required for the DISABLE command" name="ESCDisableSequence">
         <Value comment="Constant value required for disabling the ESC" name="ESC_DISABLE_A" value="0xAA" />
         <Value comment="Constant value required for disabling the ESC" name="ESC_DISABLE_B" value="0xC3" />
@@ -246,7 +290,8 @@
         <Value comment="Exit debug mode" hidden="true" name="EXIT_DEBUG" />
          
         <Value comment="Unlock ESC nonvolatile settings" name="UNLOCK_SETTINGS" value="0xF5" />
-        <Value comment="Lock ESC nonvolatile settings" name="LOCK_SETTINGS" />
+        <Value comment="Lock ESC nonvolatile settings" name="LOCK_SETTINGS" value="0xF6" />
+        <value comment="Mark the current settings as valid" name="VALIDATE_SETTINGS" value="0xF7" />
         
         <Value comment="Reset motor run time" name="RESET_MOTOR_RUN_TIME" value="0xFA" />
  
@@ -278,7 +323,7 @@
     </Structure>
     
     <Structure comment="The *warning* bits enumerate various system warnings/errors of which the user (or user software) should be made aware. These *warning* bits are transmitted in the telemetry packets such that user software is aware of any these *warning* conditions and can poll the ESC for particular packets if any further information is needed. The ESC will continue to function in the case of a *warning* state" file="ESCDefines" map="false" name="WarningBits">
-        <Data comment="Reserved for future use" constant="0" encodedType="bitfield1" inMemoryType="bool" name="reserved" />
+        <Data comment="Reserved for future use" constant="0" encodedType="bitfield1" inMemoryType="null" name="reserved" />
         <Data comment="Set if the ESC motor speed exceeds the configured warning threshold" encodedType="bitfield1" inMemoryType="bool" name="overspeed" />
         <Data comment="Set if the ESC motor current (positive or negative) exceeds the configured warning threshold" encodedType="bitfield1" inMemoryType="bool" name="overcurrent" />
         <Data comment="Set if the internal ESC temperature is above the warning threshold" encodedType="bitfield1" inMemoryType="bool" name="escTemperature" />
@@ -292,19 +337,20 @@
         <Data comment="Set if a zero-crossing measurement was missed" encodedType="bitfield1" inMemoryType="bool" name="missedZeroCrossing" />
         <Data comment="Motor is spinning in the wrong direction" encodedType="bitfield1" inMemoryType="bool" name="spinningReversed" />
         <Data comment="Motor has reached maximum allowable commutation speed" encodedType="bitfield1" inMemoryType="bool" name="commSpeedLimit" />
-        <Data comment="Reserved for future use" constant="0" encodedType="bitfield2" inMemoryType="null" name="reservedBits" />
+        <Data comment="Settings checksum does not match programmed value" encodedType="bitfield1" inMemoryType="bool" name="settingsChecksum" />
+        <Data comment="Reserved for future use" constant="0" encodedType="bitfield1" inMemoryType="null" name="reservedBits" />
     </Structure>
-
     
     <Structure comment="The *error* bits enumerate critical system errors that will cause the ESC to stop functioning until the error cases are alleviated" file="ESCDefines" map="false" name="ErrorBits">
-        <Data comment="Set if the ESC failed to start the motor" encodedType="bitfield1" inMemoryType="unsigned8" name="failedStart" />
-        <Data comment="Lost commutation" encodedType="bitfield1" inMemoryType="unsigned8" name="commutation" />
-        <Data comment="Set if hall sensor error detected" encodedType="bitfield1" inMemoryType="unsigned8" name="hallSensor" />
-        <Data comment="Current exceeded hard-limit" encodedType="bitfield1" inMemoryType="unsigned8" name="overcurrent" />
-        <Data comment="Temperature exceeded hard-limit" encodedType="bitfield1" inMemoryType="unsigned8" name="overtemperature" />
-        <Data comment="Motor commutation speed exceeded hard-limit" encodedType="bitfield1" inMemoryType="unsigned8" name="overspeed" />
-        <Data comment="Motor stopped due to high demag angle" encodedType="bitfield1" inMemoryType="unsigned8" name="demag" />
-        <Data comment="Reserved for future use" constant="0" encodedType="unsigned8" inMemoryType="null" name="reserved" />
+        <Data comment="Set if the ESC failed to start the motor" encodedType="bitfield1" inMemoryType="bool" name="failedStart" />
+        <Data comment="Lost commutation" encodedType="bitfield1" inMemoryType="bool" name="commutation" />
+        <Data comment="Set if hall sensor error detected" encodedType="bitfield1" inMemoryType="bool" name="hallSensor" />
+        <Data comment="Current exceeded hard-limit" encodedType="bitfield1" inMemoryType="bool" name="overcurrent" />
+        <Data comment="Temperature exceeded hard-limit" encodedType="bitfield1" inMemoryType="bool" name="overtemperature" />
+        <Data comment="Motor commutation speed exceeded hard-limit" encodedType="bitfield1" inMemoryType="bool" name="overspeed" />
+        <Data comment="Motor stopped due to high demag angle" encodedType="bitfield1" inMemoryType="bool" name="demag" />
+        <Data comment="Reserved for future use" constant="0" encodedType="bitfield8" inMemoryType="null" name="reservedA" />
+        <Data comment="Reserved for future use" constant="0" encodedType="bitfield1" inMemoryType="null" name="reservedB" />
     </Structure>
     
     
@@ -332,7 +378,7 @@
     
     
     
-    <Packet ID="PKT_ESC_SETPOINT_1" comment="Send this packet to command ESCs which have CAN ID values in the range {1,4} (inclusive). This packet must be sent as a broadcast packet (address = 0xFF) such that all ESCs can receive it. Similiar commands are available for commanding ESCs with ID values up to 64, using different ESC_SETPOINT_x packet ID values." name="CommandMultipleESCs" parameterInterface="true">
+    <Packet ID="PKT_ESC_SETPOINT_1 PKT_ESC_SETPOINT_2 PKT_ESC_SETPOINT_3 PKT_ESC_SETPOINT_4 PKT_ESC_SETPOINT_5 PKT_ESC_SETPOINT_6 PKT_ESC_SETPOINT_7 PKT_ESC_SETPOINT_8 PKT_ESC_SETPOINT_9 PKT_ESC_SETPOINT_10 PKT_ESC_SETPOINT_11 PKT_ESC_SETPOINT_12 PKT_ESC_SETPOINT_13 PKT_ESC_SETPOINT_14 PKT_ESC_SETPOINT_15 PKT_ESC_SETPOINT_16" comment="Send this packet to command ESCs which have CAN ID values in the range {1,4} (inclusive). This packet must be sent as a broadcast packet (address = 0xFF) such that all ESCs can receive it. Similiar commands are available for commanding ESCs with ID values up to 64, using different ESC_SETPOINT_x packet ID values." name="CommandMultipleESCs" parameterInterface="true">
         <Data comment="The PWM (pulse width) command for ESC with CAN ID 1" inMemoryType="unsigned16" name="pwmValueA" units="1us per bit" />
         <Data comment="The PWM (pulse width) command for ESC with CAN ID 2" inMemoryType="unsigned16" name="pwmValueB" units="1us per bit" />
         <Data comment="The PWM (pulse width) command for ESC with CAN ID 3" inMemoryType="unsigned16" name="pwmValueC" units="1us per bit" />
@@ -379,6 +425,7 @@
     
     
     <Packet ID="PKT_ESC_STATUS_C" map="false" name="StatusC" parameterInterface="true">
+        
         <Data comment="Reserved for future use" constant="0" encodedType="signed16" inMemoryType="null" name="reserved" />
         <Data comment="ESC Phase Board Temperature" encodedType="unsigned8" inMemoryType="float" max="205" min="-50" name="fetTemperature" />
         <Data comment="Current motor PWM frequency (10 Hz per bit)" inMemoryType="unsigned16" name="pwmFrequency" />
@@ -431,6 +478,13 @@
         <Data checkConstant="true" constant="0x0C" encodedType="unsigned8" inMemoryType="null" name="lockSeqC" />
     </Packet>
     
+    <Packet ID="PKT_ESC_SYSTEM_CMD" file="ESCCommands" map="false" name="ValidateSettings">
+        <Data checkConstant="true" constant="CMD_ESC_VALIDATE_SETTINGS" encodedType="unsigned8" inMemoryType="null" name="command" />
+        <Data checkConstant="true" constant="0x1A" encodedType="unsigned8" inMemoryType="null" name="validateSeqA" />
+        <Data checkConstant="true" constant="0x2B" encodedType="unsigned8" inMemoryType="null" name="validateSeqB" />
+        <Data checkConstant="true" constant="0x3C" encodedType="unsigned8" inMemoryType="null" name="validateSeqC" />
+    </Packet>
+    
    <Packet ID="PKT_ESC_SYSTEM_CMD" file="ESCCommands" map="false" name="ResetMotorRunTime">
         <Data checkConstant="true" constant="CMD_ESC_RESET_MOTOR_RUN_TIME" encodedType="unsigned8" inMemoryType="null" name="command" />
         <Data checkConstant="true" comment="This byte is required for the command to be accepted" constant="0xAB" encodedType="unsigned8" inMemoryType="null" name="resetSeqA" />
@@ -474,7 +528,7 @@
         <Data comment="Motor beep volume" encodedType="bitfield5" inMemoryType="unsigned8" initialValue="20" name="motorBeepVolume" units="5% per bit" verifyMaxValue="30" verifyMinValue="1" />
     </Packet>
     
-    <Packet ID="PKT_ESC_SERIAL_NUMBER" comment="This packet contains the serial number for the ESC. Additionally there are two extra values (each 16-bit) which can be programmed by the user for any purpose." name="Address" packetType="config" parameterInterface="true">
+    <Packet ID="PKT_ESC_SERIAL_NUMBER" comment="This packet contains the serial number for the ESC. Additionally there are two extra values (each 16-bit) which can be programmed by the user for any purpose." name="Address" packetType="config" parameterInterface="true" structureInterface="true">
 		
 		<Data comment="ESC hardware revision (OTP - not configurable by user)" inMemoryType="unsigned8" name="HardwareRevision" />
         <Data comment="ESC model (OTP - not configurable by user)" inMemoryType="unsigned8" name="Model" />
@@ -487,7 +541,7 @@
         <Data array="8" comment="Description of this ESC" inMemoryType="unsigned8" name="ESCTitle" />
     </Packet>
     
-    <Packet ID="PKT_ESC_FIRMWARE" comment="This packet contains the firmware version of the ESC" name="Firmware" packetType="config" parameterInterface="true">
+    <Packet ID="PKT_ESC_FIRMWARE" comment="This packet contains the firmware version of the ESC" name="Firmware" packetType="config" parameterInterface="true" structureInterface="true">
         <Data comment="Major firmware version number" inMemoryType="unsigned8" name="versionMajor" />
         <Data comment="Minor firmware version numner" inMemoryType="unsigned8" name="versionMinor" />
         <Data comment="Firmware release date, day-of-month" inMemoryType="unsigned8" name="versionDay" range="1-31" />
@@ -496,7 +550,7 @@
         <Data comment="Firmware checksum" inMemoryType="unsigned16" name="firmwareChecksum" />
     </Packet>
     
-    <Packet ID="PKT_ESC_SYSTEM_INFO" comment="This packet contains system runtime information" name="SystemInfo" parameterInterface="true">
+    <Packet ID="PKT_ESC_SYSTEM_INFO" comment="This packet contains system runtime information" name="SystemInfo" parameterInterface="true" structureInterface="true">
         <Data comment="Number of milliseconds since the ESC last experienced a reset/power-on event" inMemoryType="unsigned32" name="millisecondsSinceReset" />
         <Data comment="Number of power cycle events that the ESC has experienced" inMemoryType="unsigned16" name="powerCycles" />
         <Data comment="Processor RESET code for debug purposes" inMemoryType="unsigned8" name="resetCode" />
@@ -515,12 +569,12 @@
         <Data array="5" comment="The API version of the ESC" constant="getESCVelocityVersion()" inMemoryType="string" name="apiVersion" />
     </Packet>
     
-    <Packet ID="PKT_ESC_EEPROM" comment="This packet contains information on the non-volatile ESC settings" name="EEPROMSettings" parameterInterface="true">
-        <Data comment="Set if the ESC settings are locked" encodedType="bitfield1" inMemoryType="unsigned8" name="settingsLocked" />
-        <Data comment="Version of EEPROM data" encodedType="bitfield1" inMemoryType="unsigned8" name="version" />
+    <Packet ID="PKT_ESC_EEPROM" comment="This packet contains information on the non-volatile ESC settings" name="EEPROMSettings" parameterInterface="true" structureInterface="true">
+        <Data comment="Set if the ESC settings are locked" encodedType="bitfield1" inMemoryType="bool" name="settingsLocked" />
+        <Data comment="Version of EEPROM data" encodedType="bitfield7" inMemoryType="unsigned8" name="version" range="1 to 127" />
         <Data comment="Size of settings data" inMemoryType="unsigned16" name="size" />
         <Data comment="Settings checksum" inMemoryType="unsigned16" name="checksum" />
-
+        <Data comment="Validated settings checksum" default="0" inMemoryType="unsigned16" name="validatedChecksum" />
     </Packet>
     
     <Packet ID="PKT_ESC_TELLTALES" name="TelltaleValues" parameterInterface="true" structureInterface="true">
