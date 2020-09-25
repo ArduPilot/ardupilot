@@ -349,9 +349,11 @@ private:
         uint32_t s_acc; 
         uint32_t head_acc; 
         uint16_t p_dop; 
-        uint8_t reserved1[6]; 
-        uint32_t headVeh;
-        uint8_t reserved2[4]; 
+        uint8_t flags3;
+        uint8_t reserved1[5];
+        int32_t headVeh;
+        int16_t magDec;
+        uint16_t magAcc;
     };
     struct PACKED ubx_nav_relposned {
         uint8_t version;
