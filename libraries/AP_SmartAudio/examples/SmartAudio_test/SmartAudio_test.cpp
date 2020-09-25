@@ -363,7 +363,7 @@ void loop()
 
     // utility method to assert the equality of the last inserted request at buffer
     bool SmartAudioTest::assert_request_last_inserted(uint8_t *expectedRequest,uint8_t const size){
-        AP_SmartAudio::packet commands[AP_SmartAudio::get_singleton()->requests_queue.available()];
+        AP_SmartAudio::Packet commands[AP_SmartAudio::get_singleton()->requests_queue.available()];
         AP_SmartAudio::get_singleton()->requests_queue.peek(commands,AP_SmartAudio::get_singleton()->requests_queue.available());
 
         for(uint8_t i=0;i<size;i++){

@@ -57,15 +57,15 @@ AP_VideoTX *ap_video_tx=AP_VideoTX::get_singleton();
 // initialization start making a request settings to the vtx
 bool AP_SmartAudio::init()
 {
-        
+
         debug("SmartAudio init");
 
     if(smartaudio_params.enabled.get()==0){
-        
+
         debug("SmartAudio protocol it's not active");
         return false;
     }
-        
+
         debug("SmartAudio protocol is active");
 
     // init uart
@@ -83,9 +83,9 @@ bool AP_SmartAudio::init()
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         _port->set_options(AP_HAL::UARTDriver::OPTION_HDPLEX);
 
-        
+
         // initialize AP_VideoTx settings
-        request_settings();      
+        request_settings();
 
         return true;
     }
@@ -110,8 +110,8 @@ void AP_SmartAudio::loop(){
         hal.scheduler->delay(50);
 
         // command to process
-        packet _current_command;
-        
+        Packet _current_command;
+
         // Proccess response in the next 200 milis from the request are sent.
         debug("LOOP: Checking Responses");
         if(_now-last_request_sended_at>100 && _now-last_request_sended_at<=1000 && is_waiting_response){
@@ -204,7 +204,7 @@ bool AP_SmartAudio::update(bool force)
     }
     smartaudioSettings_t _current_state;
     _get_current_state(&_current_state);
-     
+
      debug("is_waiting_response:%u",is_waiting_response);
     if((is_waiting_response || _get_current_state(&_current_state)==nullptr) && !force){
         debug("Breaking the update ...");
@@ -255,14 +255,14 @@ bool AP_SmartAudio::update(bool force)
         );
 
         operation_mode |= _current_state.pitmodeInRangeActive<<0;
-       
+
         operation_mode |= _current_state.pitmodeOutRangeActive<<1;
-       
+
         operation_mode |= ap_video_tx->get_options()<<2;
-       
+
         // 1 unlocked 0 locked
         operation_mode |= ap_video_tx->get_locking()<<3;
-       
+
         set_operation_mode(operation_mode);
     }
 
@@ -349,11 +349,11 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer,uint8_t inline_buffer
         inline_buffer_length = payload_len + _response_header_size;
     }
     is_waiting_response=false;
-   
+
     debug(" PARSING FRAME RESPONSE");
     parse_frame_response(response_buffer);
     debug(" PARSING FRAME RESPONSE ENDED");
- 
+
     response_buffer=nullptr;
 }
 
@@ -375,7 +375,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
 
         debug("%80s %02X","selecting update path using:",_vtx_settings.update_flags);
         // if partial updates because setters method to vtx.
-        if(_vtx_settings.update_flags!=0x0F){ 
+        if(_vtx_settings.update_flags!=0x0F){
             debug("%80s","parse_frame_response:: overall update flow path");
 
             smartaudioSettings_t _current_vtx_settings;
@@ -443,7 +443,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         if(vtx_states_queue.is_empty()){
             debug("%80s","parse_frame_response:: insert state into ringbuffer");
 
-            vtx_states_queue.push_force(_vtx_settings);            
+            vtx_states_queue.push_force(_vtx_settings);
 
         }else{
             debug("%80s","parse_frame_response:: insert second state into ringbuffer and advance");
@@ -557,7 +557,7 @@ void AP_SmartAudio::request_settings()
     debug("%80s::request_settings()\t",TAG);
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetSettings(&request);
-    packet command;
+    Packet command;
     command.frame=request;
     command.frame_size=frame_size;
     requests_queue.push_force(command);
@@ -585,7 +585,7 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
 
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameSetOperationMode(&request,&settings);
-    packet command;
+    Packet command;
     command.frame=request;
     command.frame_size=frame_size;
     requests_queue.push_force(command);
@@ -602,7 +602,7 @@ void AP_SmartAudio::set_frequency(uint16_t frecuency,bool isPitModeFreq)
     debug("%80s::set_frequency(%d,%d)\t",TAG,frecuency,isPitModeFreq);
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameSetFrequency(&request,frecuency,isPitModeFreq);
-    packet command;
+    Packet command;
     command.frame=request;
     command.frame_size=frame_size;
     requests_queue.push_force(command);
@@ -613,7 +613,7 @@ void AP_SmartAudio::set_channel(uint8_t chan_idx){
         debug("%80s::set_channel(%d)\t",TAG,chan_idx);
         smartaudioFrame_t request;
         uint8_t frame_size=smartaudioFrameSetChannel(&request,chan_idx);
-         packet command;
+         Packet command;
         command.frame=request;
         command.frame_size=frame_size;
         requests_queue.push_force(command);
@@ -626,7 +626,7 @@ void AP_SmartAudio::get_pit_mode_frequency(){
     debug("%80s::","get_pit_mode_frequency()\t");
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetPitmodeFrequency(&request);
-    packet command;
+    Packet command;
     command.frame=request;
     command.frame_size=frame_size;
     requests_queue.push_force(command);
@@ -646,7 +646,7 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
 
     debug("%80s::set_power_dbm(%d)\t",TAG,power);
     frame_size=smartaudioFrameSetPower(&request,_get_power_level_from_dbm(_current_state.version,power));
-     packet command;
+     Packet command;
      command.frame=request;
      command.frame_size=frame_size;
      requests_queue.push_force(command);

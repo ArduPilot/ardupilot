@@ -33,7 +33,7 @@ class AP_SmartAudio
 public:
 
     // request packet to be processed
-    struct packet{
+    struct Packet{
         smartaudioFrame_t frame;
         uint8_t frame_size=0;
         uint32_t sended_at=0;
@@ -70,7 +70,7 @@ public:
     bool update(bool force);
 
     // RingBuffer to store outgoing request.
-    ObjectBuffer<packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
+    ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
 
     // time the last_request is process
     uint32_t last_request_sended_at=0;
@@ -144,15 +144,15 @@ private:
 
     // get current state, first on fifo queue
     smartaudioSettings_t* _get_current_state(smartaudioSettings_t *stateStorage){
-         
-         
+
+
          if(!vtx_states_queue.is_empty()){
-            
+
             vtx_states_queue.peek(stateStorage,1);
          }else{
              stateStorage=nullptr;
          }
-         
+
         return stateStorage;
     }
 
