@@ -141,15 +141,11 @@ void AP_PiccoloCAN::loop()
     uint8_t frame_id_group;     // Piccolo message group
     uint16_t frame_id_device;   // Device identifier
 
-    uint64_t timeout;
-
-    uint16_t escCmdRateMs;
-
     while (true) {
 
         _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
 
-        escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
+        uint16_t escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
 
         if (!_initialized) {
             debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
@@ -157,10 +153,10 @@ void AP_PiccoloCAN::loop()
             continue;
         }
 
-        timeout = AP_HAL::micros() + 250;
+        uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
-        hal.scheduler->delay_microseconds(1 * 1000);
+        hal.scheduler->delay_microseconds(1000);
 
         // Transmit ESC commands at regular intervals
         if (esc_tx_counter++ > escCmdRateMs) {
@@ -372,7 +368,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
 {
     AP_HAL::CANFrame txFrame;
 
-    uint64_t timeout = AP_HAL::micros() + 1000;
+    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
@@ -574,7 +570,7 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 
     uint64_t now = AP_HAL::micros64();
 
-    uint64_t timeout_us = timeout_ms * 1000;
+    uint64_t timeout_us = timeout_ms * 1000ULL;
 
     if (now > (esc.last_rx_msg_timestamp + timeout_us)) {
         return false;
