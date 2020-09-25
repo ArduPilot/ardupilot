@@ -180,9 +180,9 @@ u_int16_t applyBigEndian16(u_int16_t bytes);
 
 //     for (; p != pend; p++) {
 
-//         // printf("CURRENT_BYTE:%02x",*p);
+//         // printf("CURRENT_BYTE:%02x", *p);
 //         crc = crc8_dvb(crc, *p, 0xD5);
-//         //  printf("CURRENT_CRC_BYTE:%02x",crc);
+//         //  printf("CURRENT_CRC_BYTE:%02x", crc);
 //     }
 //     return crc;
 // }
