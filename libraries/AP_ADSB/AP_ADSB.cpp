@@ -314,7 +314,7 @@ void AP_ADSB::update(void)
 #ifndef ADSB_STATIC_CALLSIGN
         set_callsign("APM ", true);
 #endif
-        gcs().send_text(MAV_SEVERITY_INFO, "%sUsing ICAO_id %d and Callsign %s", GcsHeader, (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+        //gcs().send_text(MAV_SEVERITY_INFO, "%sUsing ICAO_id %d and Callsign %s", GcsHeader, (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
