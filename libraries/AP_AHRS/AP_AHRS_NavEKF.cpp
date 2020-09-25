@@ -27,6 +27,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
@@ -146,6 +147,23 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
 #if HAL_NAVEKF2_AVAILABLE
         update_EKF2();
 #endif
+    }
+
+    if ((_ekf_type == 2 || _ekf_type == 3) && _ekf2_started && _ekf3_started) {
+        const float score2 = EKF2.errorScore();
+        const float score3 = EKF3.errorScore();
+        nav_filter_status filt_state2;
+        nav_filter_status filt_state3;
+        EKF2.getFilterStatus(-1,filt_state2);
+        EKF3.getFilterStatus(-1,filt_state3);
+        if (_ekf_type == 3 && score2 > 0 && filt_state2.flags.using_gps && ((score2+0.2) < 0.5 * score3 || !filt_state3.flags.using_gps)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Switching to EKF2 %.1f %.1f", score2, score3);
+            _ekf_type.set_and_notify(2);
+        }
+        if (_ekf_type == 2 && score3 > 0 && filt_state3.flags.using_gps && ((score3+0.2) < 0.5 * score2 || !filt_state2.flags.using_gps)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Switching to EKF3 %.1f %.1f", score2, score3);
+            _ekf_type.set_and_notify(3);
+        }
     }
 
 #if AP_MODULE_SUPPORTED
