@@ -380,6 +380,9 @@ public:
     // return false if data not available
     bool getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
+    // return error score for currently active lane
+    float errorScore(void) const;
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -560,7 +563,7 @@ private:
     // return true if a new core has a better score than an existing core, including
     // checks for alignment
     bool coreBetterScore(uint8_t new_core, uint8_t current_core);
-    
+
     // logging functions shared by cores:
     void Log_Write_NKF1(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF2(uint8_t core, uint64_t time_us) const;
