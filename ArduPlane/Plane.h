@@ -305,6 +305,7 @@ private:
 
     // last time we ran roll/pitch stabilization
     uint32_t last_stabilize_ms;
+    bool righting_mode;
     
     // Failsafe
     struct {

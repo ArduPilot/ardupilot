@@ -95,6 +95,19 @@ void Plane::stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
+    if (!fly_inverted() && !righting_mode && labs(ahrs.roll_sensor) > 9500) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Auto righting start roll=%d pitch=%d",
+                        int(ahrs.roll_sensor/100),
+                        int(ahrs.pitch_sensor/100));
+        righting_mode = true;
+    }
+    if (righting_mode && labs(ahrs.roll_sensor) < 6000) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Auto righting done roll=%d pitch=%d",
+                        int(ahrs.roll_sensor/100),
+                        int(ahrs.pitch_sensor/100));
+        righting_mode = false;
+    }
+
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
@@ -123,6 +136,12 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
+
+    if (righting_mode) {
+        // try to put nose down 45 degrees
+        nav_pitch_cd = demanded_pitch = -4500;
+    }
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                                            speed_scaler, 
                                                                                            disable_integrator));
