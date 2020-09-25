@@ -95,6 +95,7 @@ public:
     bool in_vtol_mode(void) const;
     bool in_vtol_posvel_mode(void) const;
     void update_throttle_hover();
+    bool show_vtol_view() const;
 
     // vtol help for is_flying()
     bool is_flying(void);

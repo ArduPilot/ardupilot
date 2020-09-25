@@ -3380,3 +3380,23 @@ bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
 }
+
+// return true if we should show VTOL view
+bool QuadPlane::show_vtol_view() const
+{
+    bool show_vtol = in_vtol_mode();
+
+    if (is_tailsitter() && hal.util->get_soft_armed()) {
+        if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
+            // in a vtol mode but still transitioning from forward flight
+            return false;
+        }
+
+        if (!show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_FW)) {
+            // not in VTOL mode but still transitioning from VTOL
+            return true;
+        }
+    }
+
+    return show_vtol;
+}
