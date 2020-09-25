@@ -157,7 +157,7 @@ void AP_PiccoloCAN::loop()
             continue;
         }
 
-        timeout = AP_HAL::micros64() + 250;
+        timeout = AP_HAL::micros() + 250;
 
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1 * 1000);
@@ -171,6 +171,8 @@ void AP_PiccoloCAN::loop()
 
         // Look for any message responses on the CAN bus
         while (read_frame(rxFrame, timeout)) {
+
+            // Extract group and device ID values from the frame identifier
             frame_id_group = (rxFrame.id >> 24) & 0x1F;
             frame_id_device = (rxFrame.id >> 8) & 0xFF;
 
@@ -212,13 +214,12 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 
     bool read_select = false;
     bool write_select = true;
-    bool ret;
-    do {
-        ret = _can_iface->select(read_select, write_select, &out_frame, timeout);
-        if (!ret || !write_select) {
-            hal.scheduler->delay_microseconds(50);
-        }
-    } while (!ret || !write_select);
+    
+    bool ret =  _can_iface->select(read_select, write_select, &out_frame, timeout);
+
+    if (!ret || !write_select) {
+        return false;
+    }
 
     return (_can_iface->send(out_frame, timeout, AP_HAL::CANIface::AbortOnError) == 1);
 }
@@ -233,6 +234,7 @@ bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
     bool read_select = true;
     bool write_select = false;
     bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+
     if (!ret || !read_select) {
         // No frame available
         return false;
@@ -370,10 +372,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
 {
     AP_HAL::CANFrame txFrame;
 
-    uint64_t timeout = AP_HAL::micros64() + 250;
-
-    // TODO - How to buffer CAN messages properly?
-    // Sending more than 2 messages at each loop instance means that sometimes messages are dropped
+    uint64_t timeout = AP_HAL::micros() + 1000;
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
