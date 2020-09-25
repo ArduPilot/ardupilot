@@ -159,6 +159,7 @@ public:
         int16_t  climb_rate;
         float    throttle_mix;
         float    speed_scaler;
+        uint8_t  transition_state;
     };
 
     MAV_TYPE get_mav_type(void) const;
