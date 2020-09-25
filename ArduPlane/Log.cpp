@@ -17,7 +17,7 @@ void Plane::Log_Write_Attitude(void)
         targets.z = 0;
     }
 
-    if (quadplane.tailsitter_active() || quadplane.in_vtol_mode()) {
+    if (quadplane.show_vtol_view()) {
         // we need the attitude targets from the AC_AttitudeControl controller, as they
         // account for the acceleration limits.
         // Also, for bodyframe roll input types, _attitude_target_euler_angle is not maintained
