@@ -1674,6 +1674,8 @@ class AutoTest(ABC):
         tstart = time.time()
         while mav.recv_match(blocking=False) is not None:
             count += 1
+        if quiet:
+            return
         tdelta = time.time() - tstart
         if tdelta == 0:
             rate = "instantly"
