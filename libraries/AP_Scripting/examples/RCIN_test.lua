@@ -8,6 +8,9 @@ function update()
   pwm2 = rc:get_pwm(2)
   pwm3 = rc:get_pwm(3)
   pwm4 = rc:get_pwm(4)
+  if not rc:has_valid_input() then
+     gcs:send_text(0, "RCIN INVALID")
+  end
   gcs:send_text(0, "RCIN 1:" .. tostring(pwm1) .. " 2:" .. tostring(pwm2).. " 3:" .. tostring(pwm3).. " 4:" .. tostring(pwm4))
 
   -- read normalized input from designated scripting RCx_OPTION
