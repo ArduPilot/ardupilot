@@ -2,8 +2,8 @@
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define AP_VTX_DEV_MODE     // DEV TESTS ACTIVATE
-#ifdef AP_VTX_DEV_MODE
+#define SA_DEBUG     // DEV TESTS ACTIVATE
+#ifdef SA_DEBUG
 # define debug(fmt, args...)	hal.console->printf("\r " fmt "\n", ##args)
 //#define debug(fmt, args...) gcs().send_text(MAV_SEVERITY_DEBUG , fmt, ##args);
 #else
@@ -41,9 +41,7 @@ const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
     AP_GROUPEND
 
 };
-/**
- * Constructor
- */
+
 AP_SmartAudio::AP_SmartAudio()
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -52,7 +50,6 @@ AP_SmartAudio::AP_SmartAudio()
 }
 
 AP_SmartAudio *AP_SmartAudio::singleton;
-AP_VideoTX *ap_video_tx=AP_VideoTX::get_singleton();
 
 // initialization start making a request settings to the vtx
 bool AP_SmartAudio::init()
@@ -213,43 +210,43 @@ bool AP_SmartAudio::update(bool force)
     _print_state(&current_state);
 
     // send request update for freq with ap_vtx values
-    if(current_state.userFrequencyMode && current_state.frequency!=ap_video_tx->get_frequency_mhz()){
+    if (current_state.userFrequencyMode && current_state.frequency!=AP::vtx().get_frequency_mhz()){
         debug("UPDATE AP_VTX->HW_VTX: FREQ");
-        set_frequency(ap_video_tx->get_frequency_mhz(), current_state.pitModeRunning);
+        set_frequency(AP::vtx().get_frequency_mhz(), current_state.pitModeRunning);
     }
 
     // send request update channel  with ap_vtx values
-    if(!current_state.userFrequencyMode && (current_state.channel!=ap_video_tx->get_channel() || current_state.band!=ap_video_tx->get_band())){
+    if (!current_state.userFrequencyMode && (current_state.channel!=AP::vtx().get_channel() || current_state.band!=AP::vtx().get_band())){
         debug("UPDATE AP_VTX->HW_VTX: CHAN");
-        set_channel((ap_video_tx->get_band()*8)+ap_video_tx->get_channel());
+        set_channel((AP::vtx().get_band()*8)+AP::vtx().get_channel());
     }
 
     // send request update for power with ap_vtx values
-    if(current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v21 && _get_power_in_mw_from_dbm(current_state.power_in_dbm)!= ap_video_tx->get_power_mw()){
+    if (current_state.version==SMARTAUDIO_SPEC_PROTOCOL_v21 && _get_power_in_mw_from_dbm(current_state.power_in_dbm)!= AP::vtx().get_power_mw()){
         debug("UPDATE AP_VTX->HW_VTX: POW IN MW FROM DBM");
-        set_power_mw(ap_video_tx->get_power_mw());
+        set_power_mw(AP::vtx().get_power_mw());
     }
 
     // send request update for power with ap_vtx values
     if(current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21
-    && ap_video_tx->get_power_mw()!=_get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))){
+    && AP::vtx().get_power_mw()!=_get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))){
         debug("UPDATE AP_VTX->HW_VTX: POW IN MW FROM PWLEVEL %d -> %d"
-        , ap_video_tx->get_power_mw()
+        , AP::vtx().get_power_mw()
         , _get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))
         );
 
-        set_power_mw(ap_video_tx->get_power_mw());
+        set_power_mw(AP::vtx().get_power_mw());
     }
 
     // send request update for options with ap_vtx values
-    if( (ap_video_tx->get_options()==0 && current_state.pitModeRunning) || (ap_video_tx->get_options()==1 && !current_state.pitModeRunning) ){
+    if ( (AP::vtx().get_options()==0 && current_state.pitModeRunning) || (AP::vtx().get_options()==1 && !current_state.pitModeRunning) ){
         debug("UPDATE AP_VTX->HW_VTX: OPTIONS");
         uint8_t operation_mode= 0x00;
 
-        debug("UPDATE AP_VTX->HW_VTX: OPTIONS LOCKING %u %u", ap_video_tx->get_locking(), ap_video_tx->get_locking()<<3);
+        debug("UPDATE AP_VTX->HW_VTX: OPTIONS LOCKING %u %u", AP::vtx().get_locking(), AP::vtx().get_locking()<<3);
         debug("OPERATION MODE TO UPDATE:%u %u %u %u"
-        , 0x0F & ap_video_tx->get_locking()<<3
-        , 0X0F & ap_video_tx->get_options()<<2
+        , 0x0F & AP::vtx().get_locking()<<3
+        , 0X0F & AP::vtx().get_options()<<2
         , 0X0F & current_state.pitmodeOutRangeActive<<1
         , 0X0F & current_state.pitmodeInRangeActive<<0
         );
@@ -258,10 +255,10 @@ bool AP_SmartAudio::update(bool force)
 
         operation_mode |= current_state.pitmodeOutRangeActive<<1;
 
-        operation_mode |= ap_video_tx->get_options()<<2;
+        operation_mode |= AP::vtx().get_options()<<2;
 
         // 1 unlocked 0 locked
-        operation_mode |= ap_video_tx->get_locking()<<3;
+        operation_mode |= AP::vtx().get_locking()<<3;
 
         set_operation_mode(operation_mode);
     }
@@ -646,7 +643,7 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
     uint8_t frame_size=0;
 
     debug("%80s::set_power_dbm(%d)\t", TAG, power);
-    frame_size=smartaudioFrameSetPower(&request, _get_power_level_from_dbm(current_state.version, power));
+    frame_size=smartaudioFrameSetPower(&request, AP_SmartAudio::_get_power_level_from_dbm(current_state.version, power));
      Packet command;
      command.frame=request;
      command.frame_size=frame_size;
@@ -657,65 +654,6 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
 void AP_SmartAudio::set_power_mw(uint16_t power_mw){
     set_power_dbm(_get_power_in_dbm_from_mw(power_mw));
     return;
-}
-
-// returns the power_level applicable when request set power, version 2.1 return the MSB power bit masked at 1
-uint8_t AP_SmartAudio::_get_power_level_from_dbm(uint8_t sma_version, uint8_t power){
-    uint16_t powerLevel=0x00;
-    if (sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v1 && sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v2 && sma_version!=SMARTAUDIO_SPEC_PROTOCOL_v21) {
-        return 0;
-    }
-
-    // version 1
-    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v1) {
-        if (power==14) {
-            powerLevel=7;
-        }
-        if (power==23) {
-            powerLevel=16;
-        }
-        if (power==27) {
-            powerLevel=25;
-        }
-        if (power==29) {
-            powerLevel=40;
-        }
-       return powerLevel;
-    }
-    // hardcoded protocol version 2
-    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v2) {
-        if (power==14) {
-            powerLevel=0;
-        }
-        if (power==23) {
-            powerLevel=1;
-        }
-        if (power==27) {
-            powerLevel=2;
-        }
-        if (power==29) {
-            powerLevel=3;
-        }
-       return powerLevel;
-    }
-    // hardcoded protocol version 2.1
-    if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v21) {
-        if (power==14) {
-            powerLevel=14;
-        }
-        if (power==23) {
-            powerLevel=23;
-        }
-        if (power==27) {
-            powerLevel=27;
-        }
-        if (power==29) {
-            powerLevel=29;
-        }
-        return powerLevel|=128;
-    }
-     return 0;
-
 }
 
 /*

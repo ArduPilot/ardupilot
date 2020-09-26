@@ -1,4 +1,5 @@
 #include "SmartAudio_test.h"
+#include <AP_SmartAudio/AP_SmartAudio.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -42,7 +43,7 @@ void loop()
             break;
 
         case SMARTAUDIO_CMD_SET_CHANNEL:
-            for(int i=0;i<40;i++){
+            for(uint8_t i=0;i<40;i++){
                 test_set_chan_req(i);
                 test_set_chan_res(i);
             }
@@ -50,7 +51,7 @@ void loop()
 
         case SMARTAUDIO_CMD_SET_FREQUENCY:
             printf("\n");
-            for(int i=0;i<6;i++){
+            for(uint8_t i=0;i<6;i++){
                 for(int j=0;j<8;j++){
                 test_set_freq_req(AP_VideoTX::VIDEO_CHANNELS[i][j], true);
                 test_set_freq_req(AP_VideoTX::VIDEO_CHANNELS[i][j], false);
@@ -103,7 +104,7 @@ void loop()
             break;
         case SMARTAUDIO_CMD_SET_MODE:
             uint8_t sm_mode=0x00;
-            for(int i=0;i<4;i++){
+            for(uint8_t i=0;i<4;i++){
                 sm_mode=sm_mode | 1 << (rand() % 4);
                 test_set_mode_req(sm_mode);
                 test_set_mode_res(sm_mode);
@@ -322,7 +323,7 @@ void loop()
 
     // unit testing the set power request
     bool SmartAudioTest::test_set_power_req(uint8_t sm_version, uint8_t power){
-        uint8_t expected_req[6]={0xAA, 0x55, 0x05, 0x01, AP_SmartAudio::get_singleton()->_get_power_level_from_dbm(sm_version, power), 0x00};
+        uint8_t expected_req[6]={0xAA, 0x55, 0x05, 0x01, AP_SmartAudio::_get_power_level_from_dbm(sm_version, power), 0x00};
         uint8_t crc=crc8_dvb_s2_update(0, expected_req, 5);
         expected_req[5]=crc;
 
@@ -335,7 +336,7 @@ void loop()
 
     // unit testing the set power response, power in dbm
     bool SmartAudioTest::test_set_power_res(uint8_t sm_version, uint8_t power){
-        uint8_t response_set_power[7]={0xAA, 0x55, 0x02, 0x03, sm_version!=SMARTAUDIO_SPEC_PROTOCOL_v21?AP_SmartAudio::get_singleton()->_get_power_level_from_dbm(sm_version, power):power, 0x01, 0xFF};
+        uint8_t response_set_power[7]={0xAA, 0x55, 0x02, 0x03, sm_version!=SMARTAUDIO_SPEC_PROTOCOL_v21?AP_SmartAudio::_get_power_level_from_dbm(sm_version, power):power, 0x01, 0xFF};
 
          uint8_t crc=crc8_dvb_s2_update(0, response_set_power+2, 4);
          response_set_power[6]=crc;

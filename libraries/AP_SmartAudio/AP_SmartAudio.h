@@ -118,9 +118,6 @@ public:
     // utility method to get power in dbm unit from the settled power level
     static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version);
 
-    // utility method to get power level which corresponds to a dbm power defined
-    static uint8_t _get_power_level_from_dbm(uint8_t sma_version, uint8_t power);
-
 private:
     // serial interface
     AP_HAL::UARTDriver *_port;                  // UART used to send data to SmartAudio VTX
@@ -151,7 +148,7 @@ private:
 
     // utility method to get dbm transformation from power
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
-        for(int i=0;i<7;i++){
+        for (uint8_t i=0;i<7;i++){
             if (POW_MW_DBM_REL_TABLE[0][i]==uint16_t(power)){
                 return POW_MW_DBM_REL_TABLE[0][i];
             }
@@ -163,13 +160,36 @@ private:
 
     // utility method to get mw transformation from power
     static uint16_t _get_power_in_dbm_from_mw(uint16_t power){
-        for(int i=0;i<7;i++){
+        for (uint8_t i=0;i<7;i++){
             if (POW_MW_DBM_REL_TABLE[1][i]==uint16_t(power)){
                 return POW_MW_DBM_REL_TABLE[1][i];
             }
         }
 
         return uint16_t(roundf(powf(10, power / 10.0f)));
+    }
+
+    // returns the power_level applicable when request set power, version 2.1 return the MSB power bit masked at 1
+    static uint8_t _get_power_level_from_dbm(uint8_t sma_version, uint8_t power){
+        uint16_t powerLevel=0x00;
+
+        // check valid version spec note sma_version is unsigned
+        if (sma_version>SMARTAUDIO_SPEC_PROTOCOL_v21) {
+            return 0;
+        }
+
+        if(sma_version==SMARTAUDIO_SPEC_PROTOCOL_v21){
+            // set MSB BIT TO ONE AS SPEC SAYS
+            return power|=128;
+        }
+
+        // SEARCH IN POWER_LEVELS TABLE
+        for (uint8_t i=0;i<4 && sma_version<3;i++){
+            if (POWER_LEVELS[2][i]==uint16_t(power)){
+                powerLevel=POWER_LEVELS[sma_version][i];
+            }
+        }
+       return powerLevel;
     }
 
 };

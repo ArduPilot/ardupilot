@@ -54,6 +54,7 @@ const uint16_t POWER_LEVELS[3][4] =
     //   14      23     27      29  dbm
     {    7 ,     16,    25,     40}, /* Version 1 */
     {    0 ,     1 ,    2 ,     3 }, /* Version 2 */
+    {    14 ,    23 ,   27 ,    29 } /* Version 2.1 DBM MSB MUST BE SET TO 1 */
 };
 
 const uint16_t POW_MW_DBM_REL_TABLE[2][6]=
