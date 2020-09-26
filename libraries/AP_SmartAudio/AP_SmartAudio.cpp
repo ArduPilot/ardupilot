@@ -290,7 +290,7 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
     // pull line low
     _port->write((uint8_t)0);
     // write request
-    for (int i = 0; i < size; ++i) {
+    for (uint8_t i= 0; i < size; ++i) {
         _port->write(request[i]);
          debug(" REQ-SEND bytes:%02X", request[i]);
     }
@@ -315,7 +315,7 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
     }
 
     debug("%80s %d", "READ RESPONSE incoming_bytes_count:", incoming_bytes_count);
-    for (int i = 0; i < incoming_bytes_count; ++i) {
+    for (uint8_t i= 0; i < incoming_bytes_count; ++i) {
         uint8_t response_in_bytes = _port->read();
         debug(" READ RESPONSE response_in_bytes:%02X", response_in_bytes);
         if ((inline_buffer_length == 0 && response_in_bytes != SMARTAUDIO_SYNC_BYTE)
@@ -676,7 +676,7 @@ void AP_SmartAudio::set_power_mw(uint16_t power_mw){
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-static void smartaudioFrameInit(const uint8_t command, smartaudioFrameHeader_t *header, const uint8_t payloadLength)
+void AP_SmartAudio::smartaudioFrameInit(const uint8_t command, smartaudioFrameHeader_t *header, const uint8_t payloadLength)
 {
     header->syncByte = SMARTAUDIO_SYNC_BYTE;
     header->headerByte= SMARTAUDIO_HEADER_BYTE;
@@ -685,7 +685,7 @@ static void smartaudioFrameInit(const uint8_t command, smartaudioFrameHeader_t *
 
 }
 
-static void smartaudioUnpackOperationMode(smartaudioSettings_t *settings, const uint8_t operationMode, const bool settingsResponse)
+void AP_SmartAudio::smartaudioUnpackOperationMode(smartaudioSettings_t *settings, const uint8_t operationMode, const bool settingsResponse)
 {
     if (settingsResponse) {
         // operation mode bit order is different between 'Get Settings' and 'Set Mode' responses.
@@ -702,7 +702,7 @@ static void smartaudioUnpackOperationMode(smartaudioSettings_t *settings, const 
     }
 }
 
-static void smartaudioUnpackFrequency(smartaudioSettings_t *settings, const uint16_t frequency)
+void AP_SmartAudio::smartaudioUnpackFrequency(AP_SmartAudio::smartaudioSettings_t *settings, const uint16_t frequency)
 {
     if (applyBigEndian16(frequency) & SMARTAUDIO_GET_PITMODE_FREQ) {
         settings->pitmodeFrequency = applyBigEndian16(frequency);
@@ -711,7 +711,7 @@ static void smartaudioUnpackFrequency(smartaudioSettings_t *settings, const uint
     }
 }
 
-static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsResponseFrame_t *frame)
+void AP_SmartAudio::smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsResponseFrame_t *frame)
 {
     settings->channel = frame->channel;
     settings->power = frame->power;
@@ -719,7 +719,7 @@ static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smart
     smartaudioUnpackOperationMode(settings, frame->operationMode, true);
 }
 
-static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsExtendedResponseFrame_t *frame)
+void AP_SmartAudio::smartaudioUnpackSettings(smartaudioSettings_t *settings, const smartaudioSettingsExtendedResponseFrame_t *frame)
 {
     settings->channel = frame->channel;
     settings->power = frame->power;
@@ -728,7 +728,7 @@ static void smartaudioUnpackSettings(smartaudioSettings_t *settings, const smart
     smartaudioUnpackOperationMode(settings, frame->operationMode, true);
 }
 
-static uint8_t smartaudioPackOperationMode(const smartaudioSettings_t *settings)
+uint8_t AP_SmartAudio::smartaudioPackOperationMode(const smartaudioSettings_t *settings)
 {
     uint8_t operationMode = 0;
     operationMode |= settings->pitmodeInRangeActive << 0;
@@ -740,18 +740,18 @@ static uint8_t smartaudioPackOperationMode(const smartaudioSettings_t *settings)
 
 
 
-size_t smartaudioFrameGetSettings(smartaudioFrame_t *smartaudioFrame)
+size_t AP_SmartAudio::smartaudioFrameGetSettings(AP_SmartAudio::smartaudioFrame_t *smartaudioFrame)
 {
-    smartaudioCommandOnlyFrame_t *frame = (smartaudioCommandOnlyFrame_t *)smartaudioFrame;
+    AP_SmartAudio::smartaudioCommandOnlyFrame_t *frame = (AP_SmartAudio::smartaudioCommandOnlyFrame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_GET_SETTINGS, &frame->header, 0);
-    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioCommandOnlyFrame_t) - sizeof(frame->crc));
+    frame->crc = crc8_dvb_s2_update(0, frame, sizeof(AP_SmartAudio::smartaudioCommandOnlyFrame_t) - sizeof(frame->crc));
     //frame->crc=crc8_dvb_s2(*(const uint8_t *)frame, sizeof(smartaudioCommandOnlyFrame_t) - sizeof(frame->crc));
-    return sizeof(smartaudioCommandOnlyFrame_t);
+    return sizeof(AP_SmartAudio::smartaudioCommandOnlyFrame_t);
 }
 
-size_t smartaudioFrameGetPitmodeFrequency(smartaudioFrame_t *smartaudioFrame)
+size_t AP_SmartAudio::smartaudioFrameGetPitmodeFrequency(AP_SmartAudio::smartaudioFrame_t *smartaudioFrame)
 {
-    smartaudioU16Frame_t *frame = (smartaudioU16Frame_t *)smartaudioFrame;
+    AP_SmartAudio::smartaudioU16Frame_t *frame = (smartaudioU16Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_FREQUENCY, &frame->header, sizeof(frame->payload));
     frame->payload = SMARTAUDIO_GET_PITMODE_FREQ;
     frame->crc = crc8_dvb_s2_update(0, frame, sizeof(smartaudioU16Frame_t) - sizeof(frame->crc));
@@ -759,7 +759,7 @@ size_t smartaudioFrameGetPitmodeFrequency(smartaudioFrame_t *smartaudioFrame)
     return sizeof(smartaudioU16Frame_t);
 }
 
-size_t smartaudioFrameSetPower(smartaudioFrame_t *smartaudioFrame, const uint8_t power)
+size_t AP_SmartAudio::smartaudioFrameSetPower(smartaudioFrame_t *smartaudioFrame, const uint8_t power)
 {
     smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_POWER, &frame->header, sizeof(frame->payload));
@@ -769,7 +769,7 @@ size_t smartaudioFrameSetPower(smartaudioFrame_t *smartaudioFrame, const uint8_t
     return sizeof(smartaudioU8Frame_t);
 }
 
-size_t smartaudioFrameSetBandChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t band, const uint8_t channel)
+size_t AP_SmartAudio::smartaudioFrameSetBandChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t band, const uint8_t channel)
 {
     smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_CHANNEL, &frame->header, sizeof(frame->payload));
@@ -779,7 +779,7 @@ size_t smartaudioFrameSetBandChannel(smartaudioFrame_t *smartaudioFrame, const u
     return sizeof(smartaudioU8Frame_t);
 }
 
-size_t smartaudioFrameSetChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t channel)
+size_t AP_SmartAudio::smartaudioFrameSetChannel(smartaudioFrame_t *smartaudioFrame, const uint8_t channel)
 {
     smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_CHANNEL, &frame->header, sizeof(frame->payload));
@@ -789,7 +789,7 @@ size_t smartaudioFrameSetChannel(smartaudioFrame_t *smartaudioFrame, const uint8
     return sizeof(smartaudioU8Frame_t);
 }
 
-size_t smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uint16_t frequency, const bool pitmodeFrequency)
+size_t AP_SmartAudio::smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uint16_t frequency, const bool pitmodeFrequency)
 {
     smartaudioU16Frame_t *frame = (smartaudioU16Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_FREQUENCY, &frame->header, sizeof(frame->payload));
@@ -799,12 +799,12 @@ size_t smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uin
 }
 
 /** Addition because the define macro seems that's not working. TODO: Refactor this using AP routines.*/
-uint16_t applyBigEndian16(uint16_t bytes)
+uint16_t AP_SmartAudio::applyBigEndian16(uint16_t bytes)
 {
     return (bytes << 8) | ((bytes >> 8) & 0xFF);
 }
 
-size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings)
+size_t AP_SmartAudio::smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings)
 {
     smartaudioU8Frame_t *frame = (smartaudioU8Frame_t *)smartaudioFrame;
     smartaudioFrameInit(SMARTAUDIO_CMD_SET_MODE, &frame->header, sizeof(frame->payload));
@@ -826,7 +826,7 @@ void AP_SmartAudio::_print_bytes_to_hex_string(uint8_t buf[], uint8_t x)
     debug("\n");
 }
 
-bool  smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
+bool  AP_SmartAudio::smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
 {
     const smartaudioFrameHeader_t *header = (const smartaudioFrameHeader_t *)buffer;
     const uint8_t fullFrameLength = sizeof(smartaudioFrameHeader_t) + header->length;
