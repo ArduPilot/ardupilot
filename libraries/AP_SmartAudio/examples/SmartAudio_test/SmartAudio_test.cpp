@@ -32,11 +32,11 @@ void loop()
     void  SmartAudioTest::monkey_testing()
     {
         const int operation=rand() % 20;
-        printf("Free mem: %d\n", AP_HAL::get_HAL().util->available_memory());
+        hal.console->printf("Free mem: %d\n", AP_HAL::get_HAL().util->available_memory());
 
         switch (operation) {
         case SMARTAUDIO_CMD_GET_SETTINGS:
-            printf("\n");
+            hal.console->printf("\n");
             test_get_settings_res(SMARTAUDIO_RSP_GET_SETTINGS_V1);
             test_get_settings_res(SMARTAUDIO_RSP_GET_SETTINGS_V2);
             test_get_settings_res(SMARTAUDIO_RSP_GET_SETTINGS_V21);
@@ -50,7 +50,7 @@ void loop()
         break;
 
         case SMARTAUDIO_CMD_SET_FREQUENCY:
-            printf("\n");
+            hal.console->printf("\n");
             for(uint8_t i=0;i<6;i++){
                 for(int j=0;j<8;j++){
                 test_set_freq_req(AP_VideoTX::VIDEO_CHANNELS[i][j], true);
@@ -344,7 +344,7 @@ void loop()
          AP_SmartAudio::get_singleton()->parse_frame_response(response_set_power);
 
          AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
-         printf("%d", uint16_t(roundf(powf(10, power / 10.0f))));
+         hal.console->printf("%d", uint16_t(roundf(powf(10, power / 10.0f))));
          if (AP_VideoTX::get_singleton()->get_power_mw()-uint16_t(roundf(powf(10, power / 10.0f)))>10){
             AP_HAL::panic("Response MISTMACH in power");
          }
@@ -369,10 +369,10 @@ void loop()
 
         for(uint8_t i=0;i<size;i++){
              if (reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame)[i]!=expectedRequest[i]){
-                 printf("\nREQUEST_QUEUE AVAIL():%d   SPACE():%d\n", AP_SmartAudio::get_singleton()->requests_queue.available(), AP_SmartAudio::get_singleton()->requests_queue.space());
-                 printf("Result: ");
+                 hal.console->printf("\nREQUEST_QUEUE AVAIL():%d   SPACE():%d\n", AP_SmartAudio::get_singleton()->requests_queue.available(), AP_SmartAudio::get_singleton()->requests_queue.space());
+                 hal.console->printf("Result: ");
                  AP_SmartAudio::get_singleton()->_print_bytes_to_hex_string(reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame), size);
-                 printf("Expected: ");
+                 hal.console->printf("Expected: ");
                  AP_SmartAudio::get_singleton()->_print_bytes_to_hex_string(expectedRequest, size);
                  AP_HAL::panic("Request settings is different from expected at %d result: %02X  expected: %02X", i, reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame)[i], expectedRequest[i]);
                  return false;
