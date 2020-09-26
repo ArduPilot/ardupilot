@@ -61,7 +61,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     static const float RE_ENABLE_PROB_THRESH_OK = 0.95f;
 
     // if "disable" option is allowed and sensor is enabled
-    if (param[i].use > 0 && (AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE & _options)) {
+    if (param[i].use > 0) {
         // and is probably not healthy
         if (state[i].failures.health_probability < DISABLE_PROB_THRESH_CRIT) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed sensor %d failure. Disabling", i+1);

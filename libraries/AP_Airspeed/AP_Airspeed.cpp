@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
     // @Description: Bitmask of options to use with airspeed.
-    // @Bitmask: 0:Disable on sensor failure,1:Re-enable on sensor recovery
+    // @Bitmask: 1:Re-enable on sensor recovery
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, 0),
 #endif
