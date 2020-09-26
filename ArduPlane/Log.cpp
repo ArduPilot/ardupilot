@@ -8,14 +8,7 @@ void Plane::Log_Write_Attitude(void)
     Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
     targets.x = nav_roll_cd;
     targets.y = nav_pitch_cd;
-
-    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
-        // when VTOL active log the copter target yaw
-        targets.z = wrap_360_cd(quadplane.attitude_control->get_att_target_euler_cd().z);
-    } else {
-        //Plane does not have the concept of navyaw. This is a placeholder.
-        targets.z = 0;
-    }
+    targets.z = 0; //Plane does not have the concept of navyaw. This is a placeholder.
 
     if (quadplane.show_vtol_view()) {
         // we need the attitude targets from the AC_AttitudeControl controller, as they
