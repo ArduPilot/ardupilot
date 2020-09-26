@@ -94,7 +94,7 @@ typedef struct smartaudioSettings_s {
 
     // true when settings are from parsing response.
     void overall_updated(bool value){
-        if(value){
+        if (value){
             update_flags=0x0F;
             }
     }

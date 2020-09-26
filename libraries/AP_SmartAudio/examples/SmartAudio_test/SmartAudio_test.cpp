@@ -136,35 +136,35 @@ void loop()
         AP_SmartAudio::get_singleton()->parse_frame_response(response_expected);
         AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
 
-        if(sm_mode==0){
+        if (sm_mode==0){
           return true;
         }
 
-        if((sm_mode & 1<<0) && !(sm_mode & 1 << 2)){ //PIR MODE && !POR MODE && !PIT MODE DISABLED
-            if(AP_VideoTX::get_singleton()->get_options()!=1){
+        if ((sm_mode & 1<<0) && !(sm_mode & 1 << 2)){ //PIR MODE && !POR MODE && !PIT MODE DISABLED
+            if (AP_VideoTX::get_singleton()->get_options()!=1){
                 AP_HAL::panic("Expected mode pir mode on");
             }
         }
 
-        if((sm_mode & 1<<1) && !(sm_mode & 1<<2)){ //P0R MODE && !PI R MODE && !PIT MODE DISABLED
-            if(AP_VideoTX::get_singleton()->get_options()!=1
+        if ((sm_mode & 1<<1) && !(sm_mode & 1<<2)){ //P0R MODE && !PI R MODE && !PIT MODE DISABLED
+            if (AP_VideoTX::get_singleton()->get_options()!=1
             ){
                 AP_HAL::panic("Expected mode por mode on");
             }
         }
 
-        if(sm_mode & 1<<2){  //PIt MODE && !POR MODE && !PIT MODE DISABLED
-            if(AP_VideoTX::get_singleton()->get_options()!=0){
+        if (sm_mode & 1<<2){  //PIt MODE && !POR MODE && !PIT MODE DISABLED
+            if (AP_VideoTX::get_singleton()->get_options()!=0){
                 AP_HAL::panic("Expected mode pit mode disabled");
             }
         }
 
-        if(sm_mode & 1<<3){ //LOCKED MODE
-            if(AP_VideoTX::get_singleton()->get_locking()!=0){
+        if (sm_mode & 1<<3){ //LOCKED MODE
+            if (AP_VideoTX::get_singleton()->get_locking()!=0){
                 AP_HAL::panic("Expected mode unlocked");
             }
         }else{
-            if(AP_VideoTX::get_singleton()->get_locking()!=1){
+            if (AP_VideoTX::get_singleton()->get_locking()!=1){
                 AP_HAL::panic("Expected mode locked");
             }
         }
@@ -186,77 +186,77 @@ void loop()
         uint8_t response_settings_v2[10]={0xAA, 0x55, 0x09, 0x06, 0x01, 0x00, 0x1A, 0x16, 0xE9, 0x0A};
         uint8_t response_settings_v3[16]={0xAA, 0x55, 0x11, 0x0C, 0x00, 0x00, 0x00, 0x16, 0xE9, 0x0E, 0x03, 0x00, 0x0E, 0x14, 0x1A, 0x01};
 
-        if(version==SMARTAUDIO_SPEC_PROTOCOL_v1){
+        if (version==SMARTAUDIO_SPEC_PROTOCOL_v1){
          AP_SmartAudio::get_singleton()->parse_frame_response(response_settings_v1);
             AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
             // asserts
-            if(AP_VideoTX::get_singleton()->get_band()!=0){
+            if (AP_VideoTX::get_singleton()->get_band()!=0){
                 AP_HAL::panic("Band is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_channel()!=0){
+            if (AP_VideoTX::get_singleton()->get_channel()!=0){
                 AP_HAL::panic("Channel is not correct with response package ");
             }
-            if(AP_VideoTX::get_singleton()->get_frequency_mhz()!=5865){
+            if (AP_VideoTX::get_singleton()->get_frequency_mhz()!=5865){
                 AP_HAL::panic("Frequency is not correct with response package  %d vs %d", 5865, AP_VideoTX::get_singleton()->get_frequency_mhz());
             }
-            if(AP_VideoTX::get_singleton()->get_locking()!=1){
+            if (AP_VideoTX::get_singleton()->get_locking()!=1){
                 AP_HAL::panic("Locking is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_power_mw()!=25){
+            if (AP_VideoTX::get_singleton()->get_power_mw()!=25){
                 AP_HAL::panic("Power is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_options()!=1){
+            if (AP_VideoTX::get_singleton()->get_options()!=1){
                 AP_HAL::panic("Options is not correct with response package");
             }
         }
-        if(version==SMARTAUDIO_SPEC_PROTOCOL_v2){
+        if (version==SMARTAUDIO_SPEC_PROTOCOL_v2){
 
             AP_SmartAudio::get_singleton()->parse_frame_response(response_settings_v2);
             AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
 
              // asserts
-            if(AP_VideoTX::get_singleton()->get_band()!=0){
+            if (AP_VideoTX::get_singleton()->get_band()!=0){
                 AP_HAL::panic("Band is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_channel()!=1){
+            if (AP_VideoTX::get_singleton()->get_channel()!=1){
                 AP_HAL::panic("Channel is not correct with response package ");
             }
             // is setted by channel not by freq, so, must be 5845 not 5865 wich is defined in the packet
-            if(AP_VideoTX::get_singleton()->get_frequency_mhz()!=5845){
+            if (AP_VideoTX::get_singleton()->get_frequency_mhz()!=5845){
                 AP_HAL::panic("Frequency is not correct with response package  %d vs %d", 5865, AP_VideoTX::get_singleton()->get_frequency_mhz());
             }
-            if(AP_VideoTX::get_singleton()->get_locking()!=0){
+            if (AP_VideoTX::get_singleton()->get_locking()!=0){
                 AP_HAL::panic("Locking is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_power_mw()!=25){
+            if (AP_VideoTX::get_singleton()->get_power_mw()!=25){
                 AP_HAL::panic("Power is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_options()!=0){
+            if (AP_VideoTX::get_singleton()->get_options()!=0){
                  AP_HAL::panic("Options is not correct with response package");
              }
         }
-        if(version==SMARTAUDIO_SPEC_PROTOCOL_v21){
+        if (version==SMARTAUDIO_SPEC_PROTOCOL_v21){
 
             AP_SmartAudio::get_singleton()->parse_frame_response(response_settings_v3);
             AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
 
                // asserts
-            if(AP_VideoTX::get_singleton()->get_band()!=0){
+            if (AP_VideoTX::get_singleton()->get_band()!=0){
                 AP_HAL::panic("Band is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_channel()!=0){
+            if (AP_VideoTX::get_singleton()->get_channel()!=0){
                 AP_HAL::panic("Channel is not correct with response package ");
             }
-            if(AP_VideoTX::get_singleton()->get_frequency_mhz()!=5865){
+            if (AP_VideoTX::get_singleton()->get_frequency_mhz()!=5865){
                 AP_HAL::panic("Frequency is not correct with response package  %d vs %d", 5865, AP_VideoTX::get_singleton()->get_frequency_mhz());
             }
-            if(AP_VideoTX::get_singleton()->get_locking()!=1){
+            if (AP_VideoTX::get_singleton()->get_locking()!=1){
                 AP_HAL::panic("Locking is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_power_mw()!=25){
+            if (AP_VideoTX::get_singleton()->get_power_mw()!=25){
                 AP_HAL::panic("Power is not correct with response package");
             }
-            if(AP_VideoTX::get_singleton()->get_options()!=3){
+            if (AP_VideoTX::get_singleton()->get_options()!=3){
                  AP_HAL::panic("Options is not correct with response package");
             }
         }
@@ -283,7 +283,7 @@ void loop()
         AP_SmartAudio::get_singleton()->parse_frame_response(expected_response);
         AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
 
-        if(freq!=AP_VideoTX::get_singleton()->get_frequency_mhz()){
+        if (freq!=AP_VideoTX::get_singleton()->get_frequency_mhz()){
              AP_HAL::panic("Response MISTMACH in channel");
         }
         return true;
@@ -307,7 +307,7 @@ void loop()
          AP_SmartAudio::get_singleton()->parse_frame_response(expected_res);
          AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
 
-         if(AP_VideoTX::get_singleton()->get_channel()!=chan_idx%8 && AP_VideoTX::get_singleton()->get_band()){
+         if (AP_VideoTX::get_singleton()->get_channel()!=chan_idx%8 && AP_VideoTX::get_singleton()->get_band()){
             AP_HAL::panic(" Channel parsed response is not equals than expected");
          }
          return true;
@@ -345,7 +345,7 @@ void loop()
 
          AP_SmartAudio::get_singleton()->get_readings(AP_VideoTX::get_singleton());
          printf("%d", uint16_t(roundf(powf(10, power / 10.0f))));
-         if(AP_VideoTX::get_singleton()->get_power_mw()-uint16_t(roundf(powf(10, power / 10.0f)))>10){
+         if (AP_VideoTX::get_singleton()->get_power_mw()-uint16_t(roundf(powf(10, power / 10.0f)))>10){
             AP_HAL::panic("Response MISTMACH in power");
          }
         return true;
@@ -368,7 +368,7 @@ void loop()
         AP_SmartAudio::get_singleton()->requests_queue.peek(commands, AP_SmartAudio::get_singleton()->requests_queue.available());
 
         for(uint8_t i=0;i<size;i++){
-             if(reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame)[i]!=expectedRequest[i]){
+             if (reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame)[i]!=expectedRequest[i]){
                  printf("\nREQUEST_QUEUE AVAIL():%d   SPACE():%d\n", AP_SmartAudio::get_singleton()->requests_queue.available(), AP_SmartAudio::get_singleton()->requests_queue.space());
                  printf("Result: ");
                  AP_SmartAudio::get_singleton()->_print_bytes_to_hex_string(reinterpret_cast<uint8_t*>(&commands[AP_SmartAudio::get_singleton()->requests_queue.available()-1].frame.u8RequestFrame), size);

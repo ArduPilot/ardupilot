@@ -129,7 +129,7 @@ private:
     smartaudioSettings_t* _get_current_state(smartaudioSettings_t *stateStorage){
 
 
-         if(!vtx_states_queue.is_empty()){
+         if (!vtx_states_queue.is_empty()){
 
             vtx_states_queue.peek(stateStorage, 1);
          }else{
@@ -178,7 +178,7 @@ private:
             return 0;
         }
 
-        if(sma_version==SMARTAUDIO_SPEC_PROTOCOL_v21){
+        if (sma_version==SMARTAUDIO_SPEC_PROTOCOL_v21){
             // set MSB BIT TO ONE AS SPEC SAYS
             return power|=128;
         }

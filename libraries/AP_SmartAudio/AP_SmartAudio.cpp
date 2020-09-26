@@ -57,7 +57,7 @@ bool AP_SmartAudio::init()
 
     debug("SmartAudio init");
 
-    if(_smart_audio_param_enabled.get()==0){
+    if (_smart_audio_param_enabled.get()==0){
 
         debug("SmartAudio protocol it's not active");
         return false;
@@ -67,7 +67,7 @@ bool AP_SmartAudio::init()
 
     // init uart
     _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
-    if(_port!=nullptr){
+    if (_port!=nullptr){
 
           if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
@@ -111,7 +111,7 @@ void AP_SmartAudio::loop(){
 
         // Proccess response in the next 200 milis from the request are sent.
         debug("LOOP: Checking Responses");
-        if(now-last_request_sended_at>100 && now-last_request_sended_at<=1000 && is_waiting_response){
+        if (now-last_request_sended_at>100 && now-last_request_sended_at<=1000 && is_waiting_response){
             #ifdef BOARD_IS_SITL
             debug("I'M WAITING RESPONSE SINCE %u and %u ms more", last_request_sended_at, 1000-(now-last_request_sended_at));
             #else
@@ -136,7 +136,7 @@ void AP_SmartAudio::loop(){
 
         // when pending request and last request sended is timeout, take another packet to send
         debug("LOOP: Checking Request");
-        if(!packet_processed && requests_queue.pop(current_command)){
+        if (!packet_processed && requests_queue.pop(current_command)){
             #ifdef BOARD_IS_SITL
             debug(" LOOP MAKING REQUEST TO SEND AT %u ms ", AP_HAL::millis());
             #else
@@ -158,7 +158,7 @@ void AP_SmartAudio::loop(){
 }
 
 void AP_SmartAudio::_print_state(smartaudioSettings_t *state){
-    if(state!=nullptr){
+    if (state!=nullptr){
     debug("{version:%u\r"
     ", \nchannel:%u\r"
     ", \npower:%u\r"
@@ -193,8 +193,8 @@ bool AP_SmartAudio::update(bool force)
 {
 
 
-    if(vtx_states_queue.is_empty() && requests_queue.is_empty() && !is_waiting_response){
-        if(!hal.util->get_soft_armed()) {
+    if (vtx_states_queue.is_empty() && requests_queue.is_empty() && !is_waiting_response){
+        if (!hal.util->get_soft_armed()) {
             request_settings();
         }
         return false;
@@ -203,7 +203,7 @@ bool AP_SmartAudio::update(bool force)
     _get_current_state(&current_state);
 
      debug("is_waiting_response:%u", is_waiting_response);
-    if((is_waiting_response || _get_current_state(&current_state)==nullptr) && !force){
+    if ((is_waiting_response || _get_current_state(&current_state)==nullptr) && !force){
         debug("Breaking the update ...");
         return false;
     }
@@ -228,7 +228,7 @@ bool AP_SmartAudio::update(bool force)
     }
 
     // send request update for power with ap_vtx values
-    if(current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21
+    if (current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21
     && AP::vtx().get_power_mw()!=_get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))){
         debug("UPDATE AP_VTX->HW_VTX: POW IN MW FROM PWLEVEL %d -> %d"
         , AP::vtx().get_power_mw()
@@ -365,14 +365,14 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
 
         smartaudioSettings_t vtx_settings;
         // process response buffer
-        if(!smartaudioParseResponseBuffer(&vtx_settings, buffer)){
+        if (!smartaudioParseResponseBuffer(&vtx_settings, buffer)){
             debug("%80s", "Unparseable buffer response");
             return false;
         }
 
         debug("%80s %02X", "selecting update path using:", vtx_settings.update_flags);
         // if partial updates because setters method to vtx.
-        if(vtx_settings.update_flags!=0x0F){
+        if (vtx_settings.update_flags!=0x0F){
             debug("%80s", "parse_frame_response:: overall update flow path");
 
             smartaudioSettings_t current_vtx_settings;
@@ -384,32 +384,32 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
             current_vtx_settings.update_flags=vtx_settings.update_flags;
 
             // freq has changed
-            if( vtx_settings.update_flags & (1 << 0)){
+            if ( vtx_settings.update_flags & (1 << 0)){
                 debug("%80s", "parse_frame_response:: freq update flow path");
                 current_vtx_settings.frequency=vtx_settings.frequency;
                 current_vtx_settings.userFrequencyMode=vtx_settings.userFrequencyMode;
             }
 
             // channel has changed
-            if( vtx_settings.update_flags & (1 << 1)){
+            if ( vtx_settings.update_flags & (1 << 1)){
                 debug("%80s", "parse_frame_response:: band chan update flow path");
                 current_vtx_settings.band=vtx_settings.channel/8;
                 current_vtx_settings.channel=vtx_settings.channel%8;
             }
 
             // power has changed
-            if( vtx_settings.update_flags & (1 << 2)){
+            if ( vtx_settings.update_flags & (1 << 2)){
                 debug("%80s", "parse_frame_response:: pow update flow path");
                 current_vtx_settings.power=vtx_settings.power;
 
-                if(current_vtx_settings.version==SMARTAUDIO_SPEC_PROTOCOL_v21){
+                if (current_vtx_settings.version==SMARTAUDIO_SPEC_PROTOCOL_v21){
                     current_vtx_settings.power_in_dbm=vtx_settings.power;
                 }
 
             }
 
             // mode has changed
-            if( vtx_settings.update_flags & (1 << 3)){
+            if ( vtx_settings.update_flags & (1 << 3)){
                 debug("%80s", "parse_frame_response:: mode update flow path");
                 current_vtx_settings.pitModeRunning=vtx_settings.pitModeRunning;
                 current_vtx_settings.pitmodeInRangeActive=vtx_settings.pitmodeInRangeActive;
@@ -422,7 +422,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         }
 
         // update bands and channels accordily when frequency changes
-        if((vtx_settings.update_flags & 1<<0) && vtx_settings.userFrequencyMode){
+        if ((vtx_settings.update_flags & 1<<0) && vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: band update in user freq mode");
             AP_VideoTX::VideoBand video_band;
 
@@ -432,7 +432,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         }
 
         // update band and frequency accorly when channel updates
-        if( (vtx_settings.update_flags & 1<<1) && !vtx_settings.userFrequencyMode){
+        if ( (vtx_settings.update_flags & 1<<1) && !vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: freq update from band and chan settings");
             vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(vtx_settings.band, vtx_settings.channel);
         }
@@ -440,7 +440,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         // reset vtx_settings_change_control variables
         vtx_settings.update_flags=0x00;
 
-        if(vtx_states_queue.is_empty()){
+        if (vtx_states_queue.is_empty()){
             debug("%80s", "parse_frame_response:: insert state into ringbuffer");
             vtx_states_queue.push_force(vtx_settings);
         }else{
@@ -486,11 +486,11 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
     vtx_dest->set_options(0);
 
       // pitmode enabled
-   if(current_state.pitmodeOutRangeActive ||  current_state.pitmodeInRangeActive || !current_state.pitModeRunning){
+   if (current_state.pitmodeOutRangeActive ||  current_state.pitmodeInRangeActive || !current_state.pitModeRunning){
        vtx_dest->set_options(1);
    }
     // pitmode disabled only by this option
-   if(current_state.pitModeRunning){
+   if (current_state.pitModeRunning){
        vtx_dest->set_options(0);
    }
 
@@ -501,9 +501,9 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
    vtx_dest->set_power_dbm(current_state.power_in_dbm);
 
    // specs 1 and 2 power-levels need transformation to dbm power
-   if(current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21){
+   if (current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21){
        // search in power tables
-        if(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version, current_state.power_in_dbm)){
+        if (_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version, current_state.power_in_dbm)){
             vtx_dest->set_power_dbm(current_state.power_in_dbm);
         }else{
             _get_power_in_dbm_from_vtx_power_level(POWER_LEVELS[current_state.version][0], current_state.version, current_state.power_in_dbm);
