@@ -434,7 +434,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
             vtx_settings.band=(int)video_band;
         }
 
-        // update band and frecuency accorly when channel updates
+        // update band and frequency accorly when channel updates
         if( (vtx_settings.update_flags & 1<<1) && !vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: freq update from band and chan settings");
             vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(vtx_settings.band, vtx_settings.channel);
@@ -475,7 +475,7 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
     // peek from buffer
    vtx_states_queue.peek(&current_state, 1);
 
-   // setting frecuency
+   // setting frequency
     vtx_dest->set_frequency_mhz(current_state.frequency);
 
     // set channel
@@ -595,14 +595,14 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
 
 
 /**
-     * Sets the frecuency to transmit in the vtx.
-     * When isPitModeFreq active the frec will be set to be used when in pitmode (in range)
+     * Sets the frequency to transmit in the vtx.
+     * When isPitModeFreq active the freq will be set to be used when in pitmode (in range)
      */
-void AP_SmartAudio::set_frequency(uint16_t frecuency, bool isPitModeFreq)
+void AP_SmartAudio::set_frequency(uint16_t frequency, bool isPitModeFreq)
 {
-    debug("%80s::set_frequency(%d, %d)\t", TAG, frecuency, isPitModeFreq);
+    debug("%80s::set_frequency(%d, %d)\t", TAG, frequency, isPitModeFreq);
     smartaudioFrame_t request;
-    uint8_t frame_size=smartaudioFrameSetFrequency(&request, frecuency, isPitModeFreq);
+    uint8_t frame_size=smartaudioFrameSetFrequency(&request, frequency, isPitModeFreq);
     Packet command;
     command.frame=request;
     command.frame_size=frame_size;

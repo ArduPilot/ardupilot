@@ -97,8 +97,8 @@ public:
 
     void set_operation_mode(uint8_t mode);
 
-    // enqueue a set frecuency request, specifiying if the setted frequency is for pit mode or not
-    void set_frequency(uint16_t frecuency, bool isPitModeFreq);
+    // enqueue a set frequency request, specifiying if the setted frequency is for pit mode or not
+    void set_frequency(uint16_t frequency, bool isPitModeFreq);
 
     // enqueue a set channel request
     void set_channel(uint8_t chan);
