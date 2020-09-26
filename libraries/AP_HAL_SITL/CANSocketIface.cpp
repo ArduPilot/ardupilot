@@ -213,7 +213,7 @@ void CANIface::_poll(bool read, bool write)
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
                               const std::uint16_t num_configs)
 {
-    if (filter_configs == nullptr) {
+    if (filter_configs == nullptr || mode_ != FilteredMode) {
         return false;
     }
     _hw_filters_container.clear();
@@ -443,7 +443,8 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 {
     char iface_name[16];
     sprintf(iface_name, "vcan%u", _self_index);
-
+    bitrate_ = bitrate;
+    mode_ = mode;
     if (_initialized) {
         return _initialized;
     }
