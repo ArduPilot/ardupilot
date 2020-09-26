@@ -104,7 +104,7 @@ public:
     void set_channel(uint8_t chan);
 
     // enqueue a get pit mode frequency request
-    void get_pit_mode_frequency();
+    void request_pit_mode_frequency();
 
     // enqueue a set power request using dbm
     void set_power_dbm(uint8_t power);
@@ -156,6 +156,7 @@ private:
                 return POW_MW_DBM_REL_TABLE[0][i];
             }
         }
+
         return uint16_t(roundf(powf(10, power / 10.0f)));
     }
 
@@ -167,7 +168,8 @@ private:
                 return POW_MW_DBM_REL_TABLE[1][i];
             }
         }
-            return uint16_t(roundf(powf(10, power / 10.0f)));
+
+        return uint16_t(roundf(powf(10, power / 10.0f)));
     }
 
 };

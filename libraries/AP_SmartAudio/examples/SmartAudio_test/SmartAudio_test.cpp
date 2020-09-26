@@ -315,7 +315,7 @@ void loop()
     // unit testing the get pit mode frequency request
     bool SmartAudioTest::test_get_pit_mode_freq_req(){
         uint8_t expected_req[7]={0xAA, 0x55, 0x09, 0x02, 0x00, 0x40, 0xE1};
-        AP_SmartAudio::get_singleton()->get_pit_mode_frequency();
+        AP_SmartAudio::get_singleton()->request_pit_mode_frequency();
         assert_request_last_inserted(expected_req, 7);
         return true;
     }

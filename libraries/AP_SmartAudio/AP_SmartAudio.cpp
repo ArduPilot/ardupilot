@@ -623,8 +623,8 @@ void AP_SmartAudio::set_channel(uint8_t chan_idx){
 /**
  * Request pitMode Frequency setted into the vtx hardware
  * */
-void AP_SmartAudio::get_pit_mode_frequency(){
-    debug("%80s::", "get_pit_mode_frequency()\t");
+void AP_SmartAudio::request_pit_mode_frequency(){
+    debug("%80s::", "request_pit_mode_frequency()\t");
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetPitmodeFrequency(&request);
     Packet command;
