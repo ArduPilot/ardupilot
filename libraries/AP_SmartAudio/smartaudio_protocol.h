@@ -56,6 +56,13 @@ const uint16_t POWER_LEVELS[3][4] =
     {    0 ,     1 ,    2 ,     3 }, /* Version 2 */
 };
 
+const uint16_t POW_MW_DBM_REL_TABLE[2][6]=
+{
+    {14,  20 ,  23 , 26 , 27 , 29 },    /* DBM */
+    {25,  100,  200, 400, 500, 800}     /* MW  */
+};
+
+
 typedef struct smartaudioSettings_s {
     uint8_t  version;
     uint8_t  unlocked;

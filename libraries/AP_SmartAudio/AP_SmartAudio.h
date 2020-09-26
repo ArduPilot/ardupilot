@@ -151,53 +151,23 @@ private:
 
     // utility method to get dbm transformation from power
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
-        switch (power) {
-        case 14:
-            return  25;
-
-        case 20:
-            return  100;
-
-        case 23:
-            return  200;
-
-        case 26:
-            return  400;
-
-        case 27:
-            return  500;
-
-        case 29:
-            return  800;
-
-        default:
-            return uint16_t(roundf(powf(10, power / 10.0f)));
+        for(int i=0;i<7;i++){
+            if (POW_MW_DBM_REL_TABLE[0][i]==uint16_t(power)){
+                return POW_MW_DBM_REL_TABLE[0][i];
+            }
         }
+        return uint16_t(roundf(powf(10, power / 10.0f)));
     }
+
+
     // utility method to get mw transformation from power
     static uint16_t _get_power_in_dbm_from_mw(uint16_t power){
-        switch (power) {
-        case 25:
-            return  14;
-
-        case 100:
-            return  20;
-
-        case 200:
-            return  23;
-
-        case 400:
-            return  26;
-
-        case 500:
-            return  27;
-
-        case 800:
-            return  29;
-
-        default:
-            return uint16_t(roundf(powf(10, power / 10.0f)));
+        for(int i=0;i<7;i++){
+            if (POW_MW_DBM_REL_TABLE[1][i]==uint16_t(power)){
+                return POW_MW_DBM_REL_TABLE[1][i];
+            }
         }
+            return uint16_t(roundf(powf(10, power / 10.0f)));
     }
 
 };
