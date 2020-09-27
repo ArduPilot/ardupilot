@@ -77,6 +77,16 @@
 class AP_SmartAudio
 {
 public:
+        // Proposed to be into AP_VideoTX
+        enum class HWVtxUpdates {
+            OVERALL_UPD = 0X0F,
+            FREQ_UPD = 1 << 0,
+            CHAN_UPD = 1 << 1,
+            POW_UPD  =  1 << 2,
+            MODE_UPD =  1 << 3,
+            NO_UPD   = 0
+        };
+
      // FROM BETAFLIGHT
 
      typedef struct smartaudioSettings_s {

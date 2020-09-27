@@ -228,10 +228,10 @@ bool AP_SmartAudio::update(bool force)
 
         debug("UPDATE AP_VTX->HW_VTX: OPTIONS LOCKING %u %u", AP::vtx().get_locking(), AP::vtx().get_locking()<<3);
         debug("OPERATION MODE TO UPDATE:%u %u %u %u"
-        , 0x0F & AP::vtx().get_locking()<<3
-        , 0X0F & AP::vtx().get_options()<<2
-        , 0X0F & current_state.pitmodeOutRangeActive<<1
-        , 0X0F & current_state.pitmodeInRangeActive<<0
+        , 0x0F & (AP::vtx().get_locking()<<3)
+        , 0X0F & (AP::vtx().get_options()<<2)
+        , 0X0F & (current_state.pitmodeOutRangeActive<<1)
+        , 0X0F & (current_state.pitmodeInRangeActive<<0)
         );
 
         operation_mode |= (current_state.pitmodeInRangeActive<<0);
@@ -355,7 +355,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
 
         debug("%80s %02X", "selecting update path using:", vtx_settings.update_flags);
         // if partial updates because setters method to vtx.
-        if (vtx_settings.update_flags!=0x0F){
+        if (vtx_settings.update_flags != uint8_t(AP_SmartAudio::HWVtxUpdates::OVERALL_UPD) ){
             debug("%80s", "parse_frame_response:: overall update flow path");
 
             smartaudioSettings_t current_vtx_settings;
@@ -367,21 +367,21 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
             current_vtx_settings.update_flags=vtx_settings.update_flags;
 
             // freq has changed
-            if ( vtx_settings.update_flags & (1 << 0)){
+            if ( vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::FREQ_UPD)){
                 debug("%80s", "parse_frame_response:: freq update flow path");
                 current_vtx_settings.frequency=vtx_settings.frequency;
                 current_vtx_settings.userFrequencyMode=vtx_settings.userFrequencyMode;
             }
 
             // channel has changed
-            if ( vtx_settings.update_flags & (1 << 1)){
+            if ( vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::CHAN_UPD)){
                 debug("%80s", "parse_frame_response:: band chan update flow path");
                 current_vtx_settings.band=vtx_settings.channel/8;
                 current_vtx_settings.channel=vtx_settings.channel%8;
             }
 
             // power has changed
-            if ( vtx_settings.update_flags & (1 << 2)){
+            if ( vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::POW_UPD)){
                 debug("%80s", "parse_frame_response:: pow update flow path");
                 current_vtx_settings.power=vtx_settings.power;
 
@@ -392,7 +392,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
             }
 
             // mode has changed
-            if ( vtx_settings.update_flags & (1 << 3)){
+            if ( vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::MODE_UPD)){
                 debug("%80s", "parse_frame_response:: mode update flow path");
                 current_vtx_settings.pitModeRunning=vtx_settings.pitModeRunning;
                 current_vtx_settings.pitmodeInRangeActive=vtx_settings.pitmodeInRangeActive;
@@ -405,7 +405,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         }
 
         // update bands and channels accordily when frequency changes
-        if ((vtx_settings.update_flags & 1<<0) && vtx_settings.userFrequencyMode){
+        if ((vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::FREQ_UPD)) && vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: band update in user freq mode");
             AP_VideoTX::VideoBand video_band;
 
@@ -415,13 +415,13 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         }
 
         // update band and frequency accorly when channel updates
-        if ( (vtx_settings.update_flags & 1<<1) && !vtx_settings.userFrequencyMode){
+        if ( (vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::CHAN_UPD)) && !vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: freq update from band and chan settings");
             vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(vtx_settings.band, vtx_settings.channel);
         }
 
         // reset vtx_settings_change_control variables
-        vtx_settings.update_flags=0x00;
+        vtx_settings.update_flags=uint8_t(AP_SmartAudio::HWVtxUpdates::NO_UPD);
 
         if (vtx_states_queue.is_empty()){
             debug("%80s", "parse_frame_response:: insert state into ringbuffer");
@@ -559,9 +559,9 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
         return;
     }
     smartaudioSettings_t settings;
-    settings.pitmodeInRangeActive=mode & 1<<0;
-    settings.pitmodeOutRangeActive=mode & 1<<1;
-    settings.pitModeRunning=mode & 1<<2;
+    settings.pitmodeInRangeActive=mode & (1<<0);
+    settings.pitmodeOutRangeActive=mode & (1<<1);
+    settings.pitModeRunning=mode & (1<<2);
     settings.unlocked=(mode & 1<<3)!=0?1:0;
 
     smartaudioFrame_t request;
@@ -714,10 +714,10 @@ void AP_SmartAudio::smartaudioUnpackSettings(smartaudioSettings_t *settings, con
 uint8_t AP_SmartAudio::smartaudioPackOperationMode(const smartaudioSettings_t *settings)
 {
     uint8_t operationMode = 0;
-    operationMode |= settings->pitmodeInRangeActive << 0;
-    operationMode |= settings->pitmodeOutRangeActive << 1;
-    operationMode |= settings->pitModeRunning << 2;
-    operationMode |= settings->unlocked << 3;
+    operationMode |= (settings->pitmodeInRangeActive << 0);
+    operationMode |= (settings->pitmodeOutRangeActive << 1);
+    operationMode |= (settings->pitModeRunning << 2);
+    operationMode |= (settings->unlocked << 3);
     return operationMode;
 }
 
