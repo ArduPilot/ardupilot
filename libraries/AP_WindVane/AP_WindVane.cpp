@@ -331,6 +331,12 @@ void AP_WindVane::send_wind(mavlink_channel_t chan)
         wrap_360(degrees(get_true_wind_direction_rad())),
         get_true_wind_speed(),
         0);
+
+    // send apparent wind using named floats
+    // TODO: create a dedicated MAVLink message
+    gcs().send_named_float("AppWndSpd", get_apparent_wind_speed());
+    gcs().send_named_float("AppWndDir", degrees(get_apparent_wind_direction_rad()));
+
 }
 
 // calculate true wind speed and direction from apparent wind
