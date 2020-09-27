@@ -189,13 +189,9 @@ public:
     struct Packet{
         smartaudioFrame_t frame;
         uint8_t frame_size;
-        uint32_t sended_at;
+        uint32_t sended_at_ms;
     } PACKED;
 
-    // Enable SmartAudio Protocol by param
-    AP_Int8 _smart_audio_param_enabled;
-    // Set protocol version NOT USED YET
-    AP_Int8 _smart_audio_param_protocol_version;
     // When enabled the settings returned from hw vtx are settled into ap_videoTx params NOT USED YET
     AP_Int8 _smart_audio_param_setup_defaults;
 
@@ -226,7 +222,7 @@ public:
     ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
 
     // time the last_request is process
-    uint32_t last_request_sended_at;
+    uint32_t last_request_sended_at_ms;
     // loops is waiting a response after a request
     bool is_waiting_response=false;
 

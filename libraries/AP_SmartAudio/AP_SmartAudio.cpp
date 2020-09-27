@@ -17,20 +17,6 @@ const char *TAG="VTX-SMARTAUDIO ";
 // table of user settable parameters
 const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
 
-    // @Param: ENABLED
-    // @DisplayName: Enable SmartAudio protocol on VTX
-    // @Description: Enable SmartAudio protocol on VTX
-    // @Values: 0:Disabled, 1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLED", 1, AP_SmartAudio, _smart_audio_param_enabled, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: VERSION
-    // @DisplayName: SmartAudio version
-    // @Description: SmartAudio version
-    // @Values: 0: Version 1, 1:Version 2, 3: Version 2.1
-    // @User: Advanced
-    AP_GROUPINFO("VERSION", 2, AP_SmartAudio, _smart_audio_param_protocol_version, 0),
-
     // @Param: DEFAULTS
     // @DisplayName: VTX will be configured with VTX params defined by default.
     // @Description: VTX will be configured with VTX params defined by default.
@@ -57,13 +43,10 @@ bool AP_SmartAudio::init()
 
     debug("SmartAudio init");
 
-    if (_smart_audio_param_enabled.get()==0){
-
+    if (AP::vtx().get_enabled()==0){
         debug("SmartAudio protocol it's not active");
         return false;
     }
-
-        debug("SmartAudio protocol is active");
 
     // init uart
     _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
@@ -71,7 +54,7 @@ bool AP_SmartAudio::init()
 
           if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_SmartAudio::loop, void),
                                           "SmartAudio",
-                                          1024, AP_HAL::Scheduler::PRIORITY_IO, 60)) {
+                                          256, AP_HAL::Scheduler::PRIORITY_IO, -1)) {
             return false;
             }
 
@@ -111,13 +94,13 @@ void AP_SmartAudio::loop(){
 
         // Proccess response in the next 200 milis from the request are sent.
         debug("LOOP: Checking Responses");
-        if (now-last_request_sended_at>100 && now-last_request_sended_at<=1000 && is_waiting_response){
+        if (now-last_request_sended_at_ms>100 && now-last_request_sended_at_ms<=1000 && is_waiting_response){
             #ifdef BOARD_IS_SITL
-            debug("I'M WAITING RESPONSE SINCE %u and %u ms more", last_request_sended_at, 1000-(now-last_request_sended_at));
+            debug("I'M WAITING RESPONSE SINCE %u and %u ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
             #else
-            debug("I'M WAITING RESPONSE SINCE %lu and %lu ms more", last_request_sended_at, 1000-(now-last_request_sended_at));
+            debug("I'M WAITING RESPONSE SINCE %lu and %lu ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
             #endif
-            //debug("\nI'M WAITING RESPONSE ");
+
             // allocate response buffer
             uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
             // setup to zero because the
@@ -143,8 +126,8 @@ void AP_SmartAudio::loop(){
             debug(" LOOP MAKING REQUEST TO SEND AT %lu ms ", AP_HAL::millis());
             #endif
             send_request(current_command.frame, current_command.frame_size);
-            current_command.sended_at=AP_HAL::millis();
-            last_request_sended_at=AP_HAL::millis();
+            current_command.sended_at_ms=AP_HAL::millis();
+            last_request_sended_at_ms=AP_HAL::millis();
             is_waiting_response=true;
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
             debug(" NEXT LOOP DELAYED %d ms", 100);
@@ -251,14 +234,14 @@ bool AP_SmartAudio::update(bool force)
         , 0X0F & current_state.pitmodeInRangeActive<<0
         );
 
-        operation_mode |= current_state.pitmodeInRangeActive<<0;
+        operation_mode |= (current_state.pitmodeInRangeActive<<0);
 
-        operation_mode |= current_state.pitmodeOutRangeActive<<1;
+        operation_mode |= (current_state.pitmodeOutRangeActive<<1);
 
-        operation_mode |= AP::vtx().get_options()<<2;
+        operation_mode |= (AP::vtx().get_options()<<2);
 
         // 1 unlocked 0 locked
-        operation_mode |= AP::vtx().get_locking()<<3;
+        operation_mode |= (AP::vtx().get_locking()<<3);
 
         set_operation_mode(operation_mode);
     }
