@@ -433,12 +433,13 @@ void Mode::navigate_to_waypoint()
         calc_steering_to_heading(desired_heading_cd, turn_rate);
     } else {
         // call turn rate steering controller
-        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), desired_speed, g2.wp_nav.get_reversed());
+        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads());
     }
 }
 
-// calculate steering output given a turn rate and speed
-void Mode::calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed)
+// calculate steering output given a turn rate
+// desired turn rate in radians/sec. Positive to the right.
+void Mode::calc_steering_from_turn_rate(float turn_rate)
 {
     // calculate and send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_rate(turn_rate,
