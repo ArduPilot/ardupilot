@@ -77,6 +77,8 @@
 class AP_SmartAudio
 {
 public:
+AP_        
+
         // Proposed to be into AP_VideoTX
         enum class HWVtxUpdates {
             OVERALL_UPD = 0X0F,
@@ -205,6 +207,18 @@ public:
     // When enabled the settings returned from hw vtx are settled into ap_videoTx params NOT USED YET
     AP_Int8 _smart_audio_param_setup_defaults;
 
+    // to prevent use of semaphores use an vtx_states_queue with 2 elements, so one buffered reading
+    ObjectBuffer<smartaudioSettings_s> vtx_states_queue{2};
+
+     // RingBuffer to store outgoing request.
+    ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
+
+    // time the last_request is process
+    uint32_t last_request_sended_at_ms;
+
+    // loops is waiting a response after a request
+    bool is_waiting_response=false;
+
     AP_SmartAudio();
 
     static AP_SmartAudio *get_singleton(void)
@@ -227,15 +241,7 @@ public:
 
     // updates the smartaudio state in sync whith AP_VideoTX
     bool update(bool force);
-
-    // RingBuffer to store outgoing request.
-    ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
-
-    // time the last_request is process
-    uint32_t last_request_sended_at_ms;
-    // loops is waiting a response after a request
-    bool is_waiting_response=false;
-
+   
     // sends a frame over the wire
     void send_request(smartaudioFrame_t requestFrame, uint8_t size);
 
@@ -244,9 +250,6 @@ public:
 
     // parses the response and updates the AP_VTX readings
     bool parse_frame_response(const uint8_t *buffer);
-
-    // to prevent use of semaphores use an vtx_states_queue with 2 elements, so one buffered reading
-    ObjectBuffer<smartaudioSettings_s> vtx_states_queue{2};
 
     // get last reading from the fifo queue
     bool get_readings(AP_VideoTX *vtx_dest);
@@ -271,10 +274,6 @@ public:
     // enqueue a set power request using mw
     void set_power_mw(uint16_t power_mw);
 
-
-
-
-
 private:
 
     // FOR ARDUPILOT
@@ -287,10 +286,7 @@ private:
 
     // get current state, first on fifo queue
     smartaudioSettings_t* _get_current_state(smartaudioSettings_t *stateStorage){
-
-
          if (!vtx_states_queue.is_empty()){
-
             vtx_states_queue.peek(stateStorage, 1);
          }else{
              stateStorage=nullptr;
@@ -304,7 +300,6 @@ private:
 
     // utility method for debugging.
     void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
-
 
     // utility method to get mw transformation from power in dbm
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
