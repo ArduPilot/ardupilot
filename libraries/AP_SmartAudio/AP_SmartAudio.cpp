@@ -4,7 +4,7 @@
 
 #define SA_DEBUG     // DEV TESTS ACTIVATE
 #ifdef SA_DEBUG
-# define debug(fmt, args...)	hal.console->printf("\r " fmt "\n", ##args)
+# define debug(fmt, args...)	hal.console->printf(" " fmt "\n", ##args)
 //#define debug(fmt, args...) gcs().send_text(MAV_SEVERITY_DEBUG , fmt, ##args);
 #else
 //# define debug(fmt, args...)	do {} while(0)
@@ -93,13 +93,13 @@ void AP_SmartAudio::loop(){
         hal.scheduler->delay(50);
 
         // Proccess response in the next 200 milis from the request are sent.
-        debug("LOOP: Checking Responses");
+        //debug("LOOP: Checking Responses");
         if (now-last_request_sended_at_ms>100 && now-last_request_sended_at_ms<=1000 && is_waiting_response){
-            #ifdef BOARD_IS_SITL
-            debug("I'M WAITING RESPONSE SINCE %u and %u ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
-            #else
-            debug("I'M WAITING RESPONSE SINCE %lu and %lu ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
-            #endif
+            // #ifdef BOARD_IS_SITL
+            // debug("I'M WAITING RESPONSE SINCE %u and %u ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
+            // #else
+            // debug("I'M WAITING RESPONSE SINCE %lu and %lu ms more", last_request_sended_at_ms, 1000-(now-last_request_sended_at_ms));
+            // #endif
 
             // allocate response buffer
             uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
@@ -107,10 +107,10 @@ void AP_SmartAudio::loop(){
             uint8_t _inline_buffer_length=0;
             // setup sheduler delay to 50 ms again after response processes
             read_response(_response_buffer, _inline_buffer_length);
-            debug("LOOP: scheduler delay 1000");
+            // debug("LOOP: scheduler delay 1000");
             hal.scheduler->delay(500);
             // prevent to proccess any queued request from the ring buffer
-            debug("LOOP: Packet Processed");
+            // debug("LOOP: Packet Processed");
             packet_processed=true;
         }else{
             debug("LOOP: Disabling waiting response");
@@ -120,17 +120,17 @@ void AP_SmartAudio::loop(){
         // when pending request and last request sended is timeout, take another packet to send
         debug("LOOP: Checking Request");
         if (!packet_processed && requests_queue.pop(current_command)){
-            #ifdef BOARD_IS_SITL
-            debug(" LOOP MAKING REQUEST TO SEND AT %u ms ", AP_HAL::millis());
-            #else
-            debug(" LOOP MAKING REQUEST TO SEND AT %lu ms ", AP_HAL::millis());
-            #endif
+            // #ifdef BOARD_IS_SITL
+            // debug(" LOOP MAKING REQUEST TO SEND AT %u ms ", AP_HAL::millis());
+            // #else
+            // debug(" LOOP MAKING REQUEST TO SEND AT %lu ms ", AP_HAL::millis());
+            // #endif
             send_request(current_command.frame, current_command.frame_size);
             current_command.sended_at_ms=AP_HAL::millis();
             last_request_sended_at_ms=AP_HAL::millis();
             is_waiting_response=true;
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
-            debug(" NEXT LOOP DELAYED %d ms", 100);
+            // debug(" NEXT LOOP DELAYED %d ms", 100);
             hal.scheduler->delay(100);
         }
 
@@ -142,17 +142,17 @@ void AP_SmartAudio::loop(){
 
 void AP_SmartAudio::_print_state(smartaudioSettings_t *state){
     if (state!=nullptr){
-    debug("{version:%u\r"
-    ", \nchannel:%u\r"
-    ", \npower:%u\r"
-    ", \nfreq:%d\r"
-    ", \nband:%u\r"
-    ", \nuserFrequencyMode:%u\r"
-    ", \npitmodeRunning:%u\r"
-    ", \npitmodeInRangeActive:%u\r"
-    ", \npitmodeOutRangeActive:%u\r"
-    ", \nunlocked:%u\r"
-    ", \r\n}"
+    debug("{version:%u"
+    ", \nchannel:%u"
+    ", \npower:%u"
+    ", \nfreq:%d"
+    ", \nband:%u"
+    ", \nuserFrequencyMode:%u"
+    ", \npitmodeRunning:%u"
+    ", \npitmodeInRangeActive:%u"
+    ", \npitmodeOutRangeActive:%u"
+    ", \nunlocked:%u"
+    ", \n}"
     , state->version
     , state->channel
     , state->power
@@ -213,7 +213,7 @@ bool AP_SmartAudio::update(bool force)
     // send request update for power with ap_vtx values
     if (current_state.version!=SMARTAUDIO_SPEC_PROTOCOL_v21
     && AP::vtx().get_power_mw()!=_get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))){
-        debug("UPDATE AP_VTX->HW_VTX: POW IN MW FROM PWLEVEL %d -> %d"
+        debug("UPDATE AP_VTX->HW_VTX: POW IN MW FROM PWLEVEL %d mw -> %d mw"
         , AP::vtx().get_power_mw()
         , _get_power_in_mw_from_dbm(_get_power_in_dbm_from_vtx_power_level(current_state.power, current_state.version))
         );
@@ -256,7 +256,7 @@ bool AP_SmartAudio::update(bool force)
  */
 void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
 {
-    debug(" REQ-SEND %d bytes", size);
+    //debug(" REQ-SEND %d bytes", size);
 
     if (size<=0) {
         //debug("%s HW: %s", TAG, "CANNOT SEND REQUEST, REQUEST IS EMPTY");
@@ -275,9 +275,9 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
     // write request
     for (uint8_t i= 0; i < size; ++i) {
         _port->write(request[i]);
-         debug(" REQ-SEND bytes:%02X", request[i]);
+         //debug("\r REQ-SEND bytes:%02X", request[i]);
     }
-    debug("-------------->");
+    //debug("-------------->");
     AP_SmartAudio::_print_bytes_to_hex_string(request, size);
 }
 
@@ -293,14 +293,14 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
 
     // check if it is a response in the wire
     if (incoming_bytes_count < 1) {
-        debug(" WARNING - %s HW: %s", TAG, "EMPTY WIRE");
+       //debug(" WARNING - %s HW: %s", TAG, "EMPTY WIRE");
         return;
     }
 
     debug("%80s %d", "READ RESPONSE incoming_bytes_count:", incoming_bytes_count);
     for (uint8_t i= 0; i < incoming_bytes_count; ++i) {
         uint8_t response_in_bytes = _port->read();
-        debug(" READ RESPONSE response_in_bytes:%02X", response_in_bytes);
+        debug(" \r READ RESPONSE response_in_bytes:%02X", response_in_bytes);
         if ((inline_buffer_length == 0 && response_in_bytes != SMARTAUDIO_SYNC_BYTE)
             || (inline_buffer_length == 1 && response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
             debug(" READ RESPONSE byte discard:%02X", response_in_bytes);
@@ -330,9 +330,9 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
     }
     is_waiting_response=false;
 
-    debug(" PARSING FRAME RESPONSE");
+    //debug(" PARSING FRAME RESPONSE");
     parse_frame_response(response_buffer);
-    debug(" PARSING FRAME RESPONSE ENDED");
+    //debug(" PARSING FRAME RESPONSE ENDED");
 
     response_buffer=nullptr;
 }
@@ -497,37 +497,6 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
    return !vtx_states_queue.is_empty();
 }
 
-// utility method to get power in dbm mapping to power levels
-uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version)
-{
-    uint8_t power_in_dbm=0;
-    return _get_power_in_dbm_from_vtx_power_level(power_level, protocol_version, power_in_dbm);
-}
-// returns the dbs associated by power-level input
-uint8_t AP_SmartAudio::_get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm)
-{
-
-    for (uint8_t j = 0; j < 4; j++) {
-        if (POWER_LEVELS[protocol_version][j] == power_level) {
-            switch (j)
-            {
-            case 0:
-                power_in_dbm=14;
-                break;
-            case 1:
-                power_in_dbm=23;
-                break;
-            case 2:
-                power_in_dbm=27;
-                break;
-            case 3:
-                power_in_dbm=29;
-                break;
-            }
-        }
-    }
- return power_in_dbm;
-}
 
 
 /**

@@ -271,11 +271,7 @@ public:
     // enqueue a set power request using mw
     void set_power_mw(uint16_t power_mw);
 
-    // utility method to get power in dbm unit from the settled power level
-    static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm);
 
-    // utility method to get power in dbm unit from the settled power level
-    static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version);
 
 
 
@@ -310,11 +306,11 @@ private:
     void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
 
 
-    // utility method to get dbm transformation from power
+    // utility method to get mw transformation from power in dbm
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
         for (uint8_t i=0;i<7;i++){
             if (POW_MW_DBM_REL_TABLE[0][i]==uint16_t(power)){
-                return POW_MW_DBM_REL_TABLE[0][i];
+                return POW_MW_DBM_REL_TABLE[1][i];
             }
         }
 
@@ -326,7 +322,7 @@ private:
     static uint16_t _get_power_in_dbm_from_mw(uint16_t power){
         for (uint8_t i=0;i<7;i++){
             if (POW_MW_DBM_REL_TABLE[1][i]==uint16_t(power)){
-                return POW_MW_DBM_REL_TABLE[1][i];
+                return POW_MW_DBM_REL_TABLE[0][i];
             }
         }
 
@@ -355,6 +351,26 @@ private:
             }
         }
        return powerLevel;
+    }
+
+    
+    // utility method to get power in dbm mapping to power levels
+    static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version)
+    {
+
+        for (uint8_t j = 0; j < 4; j++) {
+            if (POWER_LEVELS[protocol_version][j] == power_level) {
+                return POWER_LEVELS[2][j];
+            }
+        }
+        return 0;
+    }
+
+    // returns the dbs associated by power-level input
+    static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version, uint8_t& power_in_dbm)
+    {
+        power_in_dbm=_get_power_in_dbm_from_vtx_power_level(power_level,protocol_version);
+        return power_in_dbm;
     }
 
 
