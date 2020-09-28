@@ -9,9 +9,9 @@ void NavEKF3_core::resetGyroBias(void)
     zeroRows(P,10,12);
     zeroCols(P,10,12);
 
-    P[10][10] = sq(radians(0.5f * dtIMUavg));
-    P[11][11] = P[10][10];
-    P[12][12] = P[10][10];
+    Pdiag(gyro_bias.x) = sq(radians(0.5f * dtIMUavg));
+    Pdiag(gyro_bias.y) = Pdiag(gyro_bias.x);
+    Pdiag(gyro_bias.z) = Pdiag(gyro_bias.x);
 }
 
 /*

@@ -1525,3 +1525,9 @@ private:
     uint8_t selected_baro;
     uint8_t selected_airspeed;
 };
+
+// accessor macros to make the code more readable and less error prone
+#define VarField(field) (offsetof(state_elements,field)/sizeof(ftype))
+#define Pdiag(field) P[VarField(field)][VarField(field)]
+#define nextPdiag(field) nextP[VarField(field)][VarField(field)]
+

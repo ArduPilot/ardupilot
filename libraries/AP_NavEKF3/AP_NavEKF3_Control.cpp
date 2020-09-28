@@ -114,12 +114,12 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
         if (magFieldLearned) {
             // if we have already learned the field states, then retain the learned variances
-            P[16][16] = earthMagFieldVar.x;
-            P[17][17] = earthMagFieldVar.y;
-            P[18][18] = earthMagFieldVar.z;
-            P[19][19] = bodyMagFieldVar.x;
-            P[20][20] = bodyMagFieldVar.y;
-            P[21][21] = bodyMagFieldVar.z;
+            Pdiag(earth_magfield.x) = earthMagFieldVar.x;
+            Pdiag(earth_magfield.y) = earthMagFieldVar.y;
+            Pdiag(earth_magfield.z) = earthMagFieldVar.z;
+            Pdiag(body_magfield.x) = bodyMagFieldVar.x;
+            Pdiag(body_magfield.y) = bodyMagFieldVar.y;
+            Pdiag(body_magfield.z) = bodyMagFieldVar.z;
         } else {
             // set the variances equal to the observation variances
             for (uint8_t index=16; index<=21; index++) {
@@ -144,9 +144,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-        P[14][14] = P[13][13];
-        P[15][15] = P[13][13];
+        Pdiag(accel_bias.x) = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        Pdiag(accel_bias.y) = Pdiag(accel_bias.x);
+        Pdiag(accel_bias.z) = Pdiag(accel_bias.x);
     }
 
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
@@ -155,9 +155,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-        P[11][11] = P[10][10];
-        P[12][12] = P[10][10];
+        Pdiag(gyro_bias.x) = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+        Pdiag(gyro_bias.y) = Pdiag(gyro_bias.x);
+        Pdiag(gyro_bias.z) = Pdiag(gyro_bias.x);
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
@@ -559,14 +559,14 @@ void NavEKF3_core::checkGyroCalStatus(void)
     if (!use_compass() && (effectiveMagCal != MagCal::EXTERNAL_YAW) && (effectiveMagCal != MagCal::EXTERNAL_YAW_FALLBACK)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
-        Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
+        Vector3f delAngBiasVarVec = Vector3f(Pdiag(gyro_bias.x),Pdiag(gyro_bias.y),Pdiag(gyro_bias.z));
         Vector3f temp = prevTnb * delAngBiasVarVec;
         delAngBiasLearned = (fabsf(temp.x) < delAngBiasVarMax) &&
                             (fabsf(temp.y) < delAngBiasVarMax);
     } else {
-        delAngBiasLearned = (P[10][10] <= delAngBiasVarMax) &&
-                            (P[11][11] <= delAngBiasVarMax) &&
-                            (P[12][12] <= delAngBiasVarMax);
+        delAngBiasLearned = (Pdiag(gyro_bias.x) <= delAngBiasVarMax) &&
+                            (Pdiag(gyro_bias.y) <= delAngBiasVarMax) &&
+                            (Pdiag(gyro_bias.z) <= delAngBiasVarMax);
     }
 }
 

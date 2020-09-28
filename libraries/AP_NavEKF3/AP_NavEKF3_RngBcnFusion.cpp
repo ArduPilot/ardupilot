@@ -102,19 +102,19 @@ void NavEKF3_core::FuseRngBcn()
         H_BCN[9] = -t2*t9;
 
         // calculate Kalman gains
-        float t10 = P[9][9]*t2*t9;
+        float t10 = Pdiag(position.z)*t2*t9;
         float t11 = P[8][9]*t3*t9;
         float t12 = P[7][9]*t4*t9;
         float t13 = t10+t11+t12;
         float t14 = t2*t9*t13;
         float t15 = P[9][8]*t2*t9;
-        float t16 = P[8][8]*t3*t9;
+        float t16 = Pdiag(position.y)*t3*t9;
         float t17 = P[7][8]*t4*t9;
         float t18 = t15+t16+t17;
         float t19 = t3*t9*t18;
         float t20 = P[9][7]*t2*t9;
         float t21 = P[8][7]*t3*t9;
-        float t22 = P[7][7]*t4*t9;
+        float t22 = Pdiag(position.x)*t4*t9;
         float t23 = t20+t21+t22;
         float t24 = t4*t9*t23;
         varInnovRngBcn = R_BCN+t14+t19+t24;
