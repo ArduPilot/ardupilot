@@ -9,7 +9,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <GCS_MAVLink/GCS.h>
 
-/* 
+/*
 for FrSky SPort Passthrough
 */
 // data bits preparation
@@ -119,18 +119,18 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
 {
     bool packet_ready = false;
     switch (idx) {
-        case TEXT:
-            packet_ready = !queue_empty;
-            break;
-        case AP_STATUS:
-            packet_ready = gcs().vehicle_initialised();
-            break;
-        case BATT_2:
-            packet_ready = AP::battery().num_instances() > 1;
-            break;
-        default:
-            packet_ready = true;
-            break;
+    case TEXT:
+        packet_ready = !queue_empty;
+        break;
+    case AP_STATUS:
+        packet_ready = gcs().vehicle_initialised();
+        break;
+    case BATT_2:
+        packet_ready = AP::battery().num_instances() > 1;
+        break;
+    default:
+        packet_ready = true;
+        break;
     }
 
     return packet_ready;
@@ -144,47 +144,47 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
 {
     // send packet
     switch (idx) {
-        case TEXT: // 0x5000 status text
-            if (get_next_msg_chunk()) {
-                send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID, _msg_chunk.chunk);
-            }
-            break;
-        case ATTITUDE: // 0x5006 Attitude and range
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+6, calc_attiandrng());
-            break;
-        case GPS_LAT: // 0x800 GPS lat
-            // sample both lat and lon at the same time
-            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
-            _passthrough.gps_lng_sample = calc_gps_latlng(&_passthrough.send_latitude);
-            // force the scheduler to select GPS lon as packet that's been waiting the most
-            // this guarantees that gps coords are sent at max 
-            // _scheduler.avg_polling_period*number_of_downlink_sensors time separation
-            _scheduler.packet_timer[GPS_LON] = _scheduler.packet_timer[GPS_LAT] - 10000;
-            break;
-        case GPS_LON: // 0x800 GPS lon
-            send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _passthrough.gps_lng_sample); // gps longitude
-            break;
-        case VEL_YAW: // 0x5005 Vel and Yaw
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+5, calc_velandyaw());
-            break;
-        case AP_STATUS: // 0x5001 AP status
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+1, calc_ap_status());
-            break;
-        case GPS_STATUS: // 0x5002 GPS Status
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+2, calc_gps_status());
-            break;
-        case HOME: // 0x5004 Home
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+4, calc_home());
-            break;
-        case BATT_2: // 0x5008 Battery 2 status
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+8, calc_batt(1));
-            break;
-        case BATT_1: // 0x5003 Battery 1 status
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+3, calc_batt(0));
-            break;
-        case PARAM: // 0x5007 parameters
-            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
-            break;
+    case TEXT: // 0x5000 status text
+        if (get_next_msg_chunk()) {
+            send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID, _msg_chunk.chunk);
+        }
+        break;
+    case ATTITUDE: // 0x5006 Attitude and range
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+6, calc_attiandrng());
+        break;
+    case GPS_LAT: // 0x800 GPS lat
+        // sample both lat and lon at the same time
+        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+        _passthrough.gps_lng_sample = calc_gps_latlng(&_passthrough.send_latitude);
+        // force the scheduler to select GPS lon as packet that's been waiting the most
+        // this guarantees that gps coords are sent at max
+        // _scheduler.avg_polling_period*number_of_downlink_sensors time separation
+        _scheduler.packet_timer[GPS_LON] = _scheduler.packet_timer[GPS_LAT] - 10000;
+        break;
+    case GPS_LON: // 0x800 GPS lon
+        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, _passthrough.gps_lng_sample); // gps longitude
+        break;
+    case VEL_YAW: // 0x5005 Vel and Yaw
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+5, calc_velandyaw());
+        break;
+    case AP_STATUS: // 0x5001 AP status
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+1, calc_ap_status());
+        break;
+    case GPS_STATUS: // 0x5002 GPS Status
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+2, calc_gps_status());
+        break;
+    case HOME: // 0x5004 Home
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+4, calc_home());
+        break;
+    case BATT_2: // 0x5008 Battery 2 status
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+8, calc_batt(1));
+        break;
+    case BATT_1: // 0x5003 Battery 1 status
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+3, calc_batt(0));
+        break;
+    case PARAM: // 0x5007 parameters
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
+        break;
     }
 }
 
@@ -269,7 +269,7 @@ bool AP_Frsky_SPort_Passthrough::get_next_msg_chunk(void)
         // send messages twice
         extra_chunks = 1;
     }
-    
+
     if (_msg_chunk.repeats++ > extra_chunks ) {
         _msg_chunk.repeats = 0;
         if (_msg_chunk.char_index == 0) {
@@ -297,7 +297,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_param(void)
     }
 
     _paramID++;
-    switch(_paramID) {
+    switch (_paramID) {
     case FRAME_TYPE:
         param = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
         break;
@@ -332,12 +332,12 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
     gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET; 
+    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET;
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
     gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
     const Location &loc = gps.location();
-    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET; 
+    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
     return gps_status;
 }
 
@@ -357,7 +357,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
     if (!_battery.consumed_mah(consumed_mah, instance)) {
         consumed_mah = 0;
     }
-    
+
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
@@ -393,8 +393,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
-    //hal.console->printf("flying=%d\n",AP_Notify::flags.flying);    
-    //hal.console->printf("ap_status=%08X\n",ap_status);    
+    //hal.console->printf("flying=%d\n",AP_Notify::flags.flying);
+    //hal.console->printf("ap_status=%08X\n",ap_status);
     return ap_status;
 }
 
@@ -417,7 +417,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
         home_loc = _ahrs.get_home();
     }
 
-    if (get_position) {            
+    if (get_position) {
         // check home_loc is valid
         if (home_loc.lat != 0 || home_loc.lng != 0) {
             // distance between vehicle and home_loc in meters
@@ -450,7 +450,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
     const AP_Airspeed *aspeed = _ahrs.get_airspeed();
-    if (aspeed && aspeed->enabled()) {        
+    if (aspeed && aspeed->enabled()) {
         velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else { // otherwise send groundspeed estimate from ahrs
         velandyaw |= prep_number(roundf(_ahrs.groundspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
