@@ -2,7 +2,8 @@
 
 #include "AP_Frsky_Backend.h"
 
-class AP_Frsky_D : public AP_Frsky_Backend {
+class AP_Frsky_D : public AP_Frsky_Backend
+{
 
 public:
 
@@ -11,7 +12,10 @@ public:
 protected:
 
     void send() override;
-    uint32_t initial_baud() const override { return 9600; }
+    uint32_t initial_baud() const override
+    {
+        return 9600;
+    }
 
 private:
 

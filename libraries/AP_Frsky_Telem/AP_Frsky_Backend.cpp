@@ -49,7 +49,8 @@ void AP_Frsky_Backend::loop(void)
 float AP_Frsky_Backend::get_vspeed_ms(void)
 {
 
-    {// release semaphore as soon as possible
+    {
+        // release semaphore as soon as possible
         AP_AHRS &_ahrs = AP::ahrs();
         Vector3f v;
         WITH_SEMAPHORE(_ahrs.get_semaphore());
@@ -70,10 +71,10 @@ float AP_Frsky_Backend::get_vspeed_ms(void)
 void AP_Frsky_Backend::calc_nav_alt(void)
 {
     _SPort_data.vario_vspd = (int32_t)(get_vspeed_ms()*100); //convert to cm/s
-    
+
     Location loc;
     float current_height = 0; // in centimeters above home
-    
+
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     if (_ahrs.get_position(loc)) {
@@ -86,7 +87,7 @@ void AP_Frsky_Backend::calc_nav_alt(void)
 
     _SPort_data.alt_nav_meters = (int16_t)current_height;
     _SPort_data.alt_nav_cm = (current_height - _SPort_data.alt_nav_meters) * 100;
-} 
+}
 
 /*
  * format the decimal latitude/longitude to the required degrees/minutes
@@ -141,6 +142,6 @@ void AP_Frsky_Backend::calc_gps_position(void)
     }
 
     AP_AHRS &_ahrs = AP::ahrs();
-    _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS    
+    _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS
 }
 
