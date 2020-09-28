@@ -40,6 +40,7 @@ protected:
     uint64_t capabilities() const override;
 
     uint8_t get_battery_remaining_percentage() const override { return -1; };
+    uint8_t get_battery_remaining_percentage(uint8_t instance) const override { return -1; };
 
 private:
 
