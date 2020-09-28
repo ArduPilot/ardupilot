@@ -105,6 +105,11 @@ void QuadPlane::tailsitter_output(void)
                 tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
                 tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
             }
+           // if throttle is idle and elevator full up, assume final langing flare and force tilts up to clear ground if Q_OPTION bit is set
+            if ( plane.channel_pitch->norm_input() > 0.5 && plane.channel_throttle->norm_input() < -0.95 && (options & OPTION_TILT_ON_FLARE)) { 
+                tilt_left = 4500;
+                tilt_right = 4500;
+            }
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
             return;
