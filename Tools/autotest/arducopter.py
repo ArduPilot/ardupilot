@@ -4872,7 +4872,10 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("AVOID_ENABLE", 4)
             self.set_parameter("GPS_TYPE", 0)
             self.set_parameter("EK3_ENABLE", 1)
-            self.set_parameter("EK3_GPS_TYPE", 3) # NOGPS
+            self.set_parameter("EK3_SRC1_POSXY", 4) # Beacon
+            self.set_parameter("EK3_SRC1_POSZ", 1)  # Baro
+            self.set_parameter("EK3_SRC1_VELXY", 0) # None
+            self.set_parameter("EK3_SRC1_VELZ", 0)  # None
             self.set_parameter("EK2_ENABLE", 0)
             self.reboot_sitl()
             self.set_parameter("AHRS_EKF_TYPE", 3)
