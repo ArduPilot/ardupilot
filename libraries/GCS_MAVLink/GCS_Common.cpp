@@ -257,7 +257,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     current,      // current in centiampere
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
-                                    battery.capacity_remaining_pct(instance),
+                                    get_battery_remaining_percentage(instance),
                                     0, // time remaining, seconds (not provided)
                                     MAV_BATTERY_CHARGE_STATE_UNDEFINED);
 }
@@ -5096,6 +5096,11 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
 uint8_t GCS_MAVLINK::get_battery_remaining_percentage() const {
     const AP_BattMonitor &battery = AP::battery();
     return battery.capacity_remaining_pct();
+}
+
+uint8_t GCS_MAVLINK::get_battery_remaining_percentage(uint8_t instance) const {
+    const AP_BattMonitor &battery = AP::battery();
+    return battery.capacity_remaining_pct(instance);
 }
 
 GCS &gcs()
