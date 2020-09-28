@@ -3,6 +3,53 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+/* 
+for FrSky D protocol (D-receivers)
+*/
+// FrSky sensor hub data IDs
+#define DATA_ID_GPS_ALT_BP          0x01
+#define DATA_ID_TEMP1               0x02
+#define DATA_ID_FUEL                0x04
+#define DATA_ID_TEMP2               0x05
+#define DATA_ID_GPS_ALT_AP          0x09
+#define DATA_ID_BARO_ALT_BP         0x10
+#define DATA_ID_GPS_SPEED_BP        0x11
+#define DATA_ID_GPS_LONG_BP         0x12
+#define DATA_ID_GPS_LAT_BP          0x13
+#define DATA_ID_GPS_COURS_BP        0x14
+#define DATA_ID_GPS_SPEED_AP        0x19
+#define DATA_ID_GPS_LONG_AP         0x1A
+#define DATA_ID_GPS_LAT_AP          0x1B
+#define DATA_ID_BARO_ALT_AP         0x21
+#define DATA_ID_GPS_LONG_EW         0x22
+#define DATA_ID_GPS_LAT_NS          0x23
+#define DATA_ID_CURRENT             0x28
+#define DATA_ID_VARIO               0x30
+#define DATA_ID_VFAS                0x39
+
+#define START_STOP_D                0x5E
+#define BYTESTUFF_D                 0x5D
+
+/* 
+for FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
+*/
+// FrSky Sensor IDs
+#define SENSOR_ID_VARIO             0x00 // Sensor ID  0
+#define SENSOR_ID_FAS               0x22 // Sensor ID  2
+#define SENSOR_ID_GPS               0x83 // Sensor ID  3
+#define SENSOR_ID_SP2UR             0xC6 // Sensor ID  6
+#define SENSOR_ID_27                0x1B // Sensor ID 27
+
+// FrSky data IDs
+#define GPS_LONG_LATI_FIRST_ID      0x0800
+#define DIY_FIRST_ID                0x5000
+
+#define FRAME_HEAD                  0x7E
+#define FRAME_DLE                   0x7D
+#define FRAME_XOR                   0x20
+
+#define SPORT_DATA_FRAME            0x10
+
 class AP_Frsky_Backend {
 public:
 
@@ -29,10 +76,6 @@ protected:
     AP_HAL::UARTDriver *_port;  // UART used to send data to FrSky receiver
 
     virtual bool init_serial_port();
-
-    // methods related to the nuts-and-bolts of sending data
-    void send_byte(uint8_t value);
-    void send_uint16(uint16_t id, uint16_t data);
 
     void calc_nav_alt(void);
     void calc_gps_position(void);
