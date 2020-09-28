@@ -357,9 +357,11 @@ void loop()
         smartaudioSettings_t _current_state;
 
         // peek from buffer
-        AP_SmartAudio::get_singleton()->vtx_states_queue.peek(&_current_state, 1);
+        //AP_SmartAudio::get_singleton()->vtx_states_queue.peek(&_current_state, 1);
+        AP_SmartAudio::get_singleton()->_peek_vtx_state(_current_state);
         _current_state.version=version;
-        AP_SmartAudio::get_singleton()->vtx_states_queue.update(_current_state);
+        //AP_SmartAudio::get_singleton()->vtx_states_queue.update(_current_state);
+        AP_SmartAudio::get_singleton()->_push_vtx_state(_current_state);
     }
 
     // utility method to assert the equality of the last inserted request at buffer

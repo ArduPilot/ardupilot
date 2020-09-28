@@ -77,7 +77,6 @@
 class AP_SmartAudio
 {
 public:
-AP_        
 
         // Proposed to be into AP_VideoTX
         enum class HWVtxUpdates {
@@ -207,8 +206,11 @@ AP_
     // When enabled the settings returned from hw vtx are settled into ap_videoTx params NOT USED YET
     AP_Int8 _smart_audio_param_setup_defaults;
 
-    // to prevent use of semaphores use an vtx_states_queue with 2 elements, so one buffered reading
-    ObjectBuffer<smartaudioSettings_s> vtx_states_queue{2};
+    // hw vtx state control with 2 elements array use methods _push _peek
+    uint8_t _vtx_state_idx=0;
+    smartaudioSettings_t _vtx_states_buffer[2];
+    smartaudioSettings_t *_vtx_current_state;
+    
 
      // RingBuffer to store outgoing request.
     ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
@@ -274,6 +276,24 @@ AP_
     // enqueue a set power request using mw
     void set_power_mw(uint16_t power_mw);
 
+    void _push_vtx_state(smartaudioSettings_t state){
+        memcpy(&(_vtx_states_buffer[_vtx_state_idx==0?1:0]),&state,sizeof(smartaudioSettings_t));
+        _vtx_current_state=&_vtx_states_buffer[_vtx_state_idx==0?1:0];
+        _vtx_state_idx==0?_vtx_state_idx=1:_vtx_state_idx=0;
+    }
+
+    void _peek_vtx_state(smartaudioSettings_t& state_holder){
+        if(_vtx_current_state==nullptr){
+            return;
+        }
+
+        memcpy(&state_holder,_vtx_current_state,sizeof(smartaudioSettings_t));
+        return;
+    }
+
+    
+
+
 private:
 
     // FOR ARDUPILOT
@@ -283,17 +303,6 @@ private:
 
     //Pointer to singleton
     static AP_SmartAudio* singleton;
-
-    // get current state, first on fifo queue
-    smartaudioSettings_t* _get_current_state(smartaudioSettings_t *stateStorage){
-         if (!vtx_states_queue.is_empty()){
-            vtx_states_queue.peek(stateStorage, 1);
-         }else{
-             stateStorage=nullptr;
-         }
-
-        return stateStorage;
-    }
 
     // utility method for debugging
     void _print_state(smartaudioSettings_t *state);

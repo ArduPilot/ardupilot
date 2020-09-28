@@ -176,17 +176,18 @@ bool AP_SmartAudio::update(bool force)
 {
 
 
-    if (vtx_states_queue.is_empty() && requests_queue.is_empty() && !is_waiting_response){
+    if (_vtx_current_state==nullptr && requests_queue.is_empty() && !is_waiting_response){
         if (!hal.util->get_soft_armed()) {
             request_settings();
         }
         return false;
     }
     smartaudioSettings_t current_state;
-    _get_current_state(&current_state);
+    //_get_current_state(&current_state);
+    _peek_vtx_state(current_state);
 
      debug("is_waiting_response:%u", is_waiting_response);
-    if ((is_waiting_response || _get_current_state(&current_state)==nullptr) && !force){
+    if ((is_waiting_response || _vtx_current_state==nullptr) && !force){
         debug("Breaking the update ...");
         return false;
     }
@@ -354,14 +355,14 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         }
 
         debug("%80s %02X", "selecting update path using:", vtx_settings.update_flags);
-        // if partial updates because setters method to vtx.
+        // if partial updates because using setters method to vtx.
         if (vtx_settings.update_flags != uint8_t(AP_SmartAudio::HWVtxUpdates::OVERALL_UPD) ){
             debug("%80s", "parse_frame_response:: overall update flow path");
 
             smartaudioSettings_t current_vtx_settings;
 
             // take the current vtx info
-            vtx_states_queue.peek(&current_vtx_settings, 1);
+            _peek_vtx_state(current_vtx_settings);
 
             // get update flags from the parsed response_buffer
             current_vtx_settings.update_flags=vtx_settings.update_flags;
@@ -422,17 +423,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
 
         // reset vtx_settings_change_control variables
         vtx_settings.update_flags=uint8_t(AP_SmartAudio::HWVtxUpdates::NO_UPD);
-
-        if (vtx_states_queue.is_empty()){
-            debug("%80s", "parse_frame_response:: insert state into ringbuffer");
-            vtx_states_queue.push_force(vtx_settings);
-        }else{
-            debug("%80s", "parse_frame_response:: insert second state into ringbuffer and advance");
-            vtx_states_queue.push_force(vtx_settings);
-
-            // advance to last element pushed
-            vtx_states_queue.advance(1);
-        }
+        _push_vtx_state(vtx_settings);
 
         return true;
     }
@@ -453,7 +444,8 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
    smartaudioSettings_t current_state;
 
     // peek from buffer
-   vtx_states_queue.peek(&current_state, 1);
+   //vtx_states_queue.peek(&current_state, 1);
+   _peek_vtx_state(current_state);
 
    // setting frequency
     vtx_dest->set_frequency_mhz(current_state.frequency);
@@ -494,7 +486,8 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
         }
    }
 
-   return !vtx_states_queue.is_empty();
+   //return !vtx_states_queue.is_empty();
+   return _vtx_current_state!=nullptr;
 }
 
 
@@ -519,7 +512,8 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
    smartaudioSettings_t current_state;
 
     // peek from buffer
-   vtx_states_queue.peek(&current_state, 1);
+   //vtx_states_queue.peek(&current_state, 1);
+   _peek_vtx_state(current_state);
 
     debug("%80s::set_operation_mode(%02X)\t", TAG, mode);
     // SPEC SAYS ONLY V2 SUPPORT SET MODE BUT THIS INCLUDES 2.1 ?
@@ -590,7 +584,9 @@ void AP_SmartAudio::set_power_dbm(uint8_t power)
    smartaudioSettings_t current_state;
 
     // peek from buffer
-   vtx_states_queue.peek(&current_state, 1);
+    //vtx_states_queue.peek(&current_state, 1);
+    _peek_vtx_state(current_state);
+
     smartaudioFrame_t request;
     uint8_t frame_size=0;
 
