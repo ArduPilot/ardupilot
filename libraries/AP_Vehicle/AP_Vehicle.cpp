@@ -38,6 +38,14 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
 #endif
 
+    // @Param: MAV_TEXT_SEV
+    // @DisplayName: MAV_SEVERITY level to send to GCS
+    // @Description: Only send statustext with severity equal to or higher than this value. Set to -1 to not send any statustext message.
+    // @Values: -1:Never send,0:EMERGENCY,1:ALERT,2:CRITICAL,3:ERROR,4:WARNING,5:NOTICE,6:INFO,7:DEBUG
+    // @Range: -1 7
+    // @User: Advanced
+    AP_GROUPINFO("MAV_TEXT_SEV", 6, AP_Vehicle, _mav_severity, MAV_SEVERITY_DEBUG),
+
     AP_GROUPEND
 };
 
