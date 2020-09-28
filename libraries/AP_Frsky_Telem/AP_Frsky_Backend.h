@@ -3,7 +3,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-class AP_Frsky_Backend {
+class AP_Frsky_Backend
+{
 public:
 
     AP_Frsky_Backend(AP_HAL::UARTDriver *port) :
@@ -15,10 +16,14 @@ public:
     virtual void send() = 0;
 
     // SPort is at 57600, D overrides this
-    virtual uint32_t initial_baud() const { return 57600; }
+    virtual uint32_t initial_baud() const
+    {
+        return 57600;
+    }
 
     // get next telemetry data for external consumers of SPort data
-    virtual bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data) {
+    virtual bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+    {
         return false;
     }
 
@@ -38,8 +43,7 @@ protected:
     // methods to convert flight controller data to FrSky D or SPort format
     float format_gps(float dec);
 
-    struct
-    {
+    struct {
         int32_t vario_vspd;
         char lat_ns, lon_ew;
         uint16_t latdddmm;

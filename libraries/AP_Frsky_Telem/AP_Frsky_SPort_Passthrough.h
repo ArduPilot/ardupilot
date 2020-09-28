@@ -6,14 +6,15 @@
 // for fair scheduler
 #define TIME_SLOT_MAX               11
 
-class AP_Frsky_SPort_Passthrough : public AP_Frsky_SPort, public AP_RCTelemetry {
+class AP_Frsky_SPort_Passthrough : public AP_Frsky_SPort, public AP_RCTelemetry
+{
 public:
 
     AP_Frsky_SPort_Passthrough(AP_HAL::UARTDriver *port, bool use_external_data) :
         AP_Frsky_SPort(port),
         AP_RCTelemetry(TIME_SLOT_MAX),
         _use_external_data(use_external_data)
-        { }
+    { }
 
     bool init() override;
     bool init_serial_port() override;
@@ -29,8 +30,9 @@ public:
 
     bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data) override;
 
-    void queue_text_message(MAV_SEVERITY severity, const char *text) override {
-         AP_RCTelemetry::queue_message(severity, text);
+    void queue_text_message(MAV_SEVERITY severity, const char *text) override
+    {
+        AP_RCTelemetry::queue_message(severity, text);
     }
 
 
@@ -80,8 +82,7 @@ private:
         bool pending;
     } external_data;
 
-    struct
-    {
+    struct {
         uint32_t chunk; // a "chunk" (four characters/bytes) at a time of the queued message to be sent
         uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
         uint8_t char_index; // index of which character to get in the message
