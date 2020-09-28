@@ -132,7 +132,7 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     calculate_scalars();
 
     // record successful initialisation if what we setup was the desired frame_class
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
 
     // set flag to true so targets are initialized once aircraft is armed for first time
     _heliflags.init_targets_on_arming = true;
@@ -142,7 +142,7 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_HELI);
+    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
 }
 
 // output_min - sets servos to neutral point with motors stopped
@@ -170,12 +170,11 @@ void AP_MotorsHeli::output()
     // run spool logic
     output_logic();
 
-    if (_flags.armed) {
+    if (armed()) {
         // block servo_test from happening at disarm
         _servo_test_cycle_counter = 0;
-        
         calculate_armed_scalars();
-        if (!_flags.interlock) {
+        if (!get_interlock()) {
             output_armed_zero_throttle();
         } else {
             output_armed_stabilizing();
@@ -285,8 +284,8 @@ void AP_MotorsHeli::output_disarmed()
 void AP_MotorsHeli::output_logic()
 {
     // force desired and current spool mode if disarmed and armed with interlock enabled
-    if (_flags.armed) {
-        if (!_flags.interlock) {
+    if (armed()) {
+        if (!get_interlock()) {
             _spool_desired = DesiredSpoolState::GROUND_IDLE;
         } else {
             _heliflags.init_targets_on_arming = false;

@@ -1,6 +1,6 @@
 #include "Plane.h"
 
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
 
 /*
 *  ArduSoar support function
@@ -26,8 +26,8 @@ void Plane::update_soaring() {
     case Mode::Number::CRUISE:
         g2.soaring_controller.suppress_throttle();
         break;
-    case Mode::Number::LOITER:
-        // Never use throttle in LOITER with soaring active.
+    case Mode::Number::THERMAL:
+        // Never use throttle in THERMAL with soaring active.
         g2.soaring_controller.set_throttle_suppressed(true);
         break;
     default:
@@ -52,12 +52,12 @@ void Plane::update_soaring() {
         g2.soaring_controller.update_cruising();
 
         if (g2.soaring_controller.check_thermal_criteria()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_loiter.name());
-            set_mode(mode_loiter, ModeReason::SOARING_THERMAL_DETECTED);
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
+            set_mode(mode_thermal, ModeReason::SOARING_THERMAL_DETECTED);
         }
         break;
 
-    case Mode::Number::LOITER: {
+    case Mode::Number::THERMAL: {
         // Update thermal estimate and check for switch back to AUTO
         g2.soaring_controller.update_thermalling();  // Update estimate
 

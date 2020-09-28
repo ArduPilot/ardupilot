@@ -17,7 +17,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_USE_CAN == TRUE
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <canard.h>
@@ -35,6 +35,7 @@
 #include "app_comms.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <stdio.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 
 
 static CanardInstance canard;
@@ -47,10 +48,14 @@ static uint8_t initial_node_id = HAL_CAN_DEFAULT_NODE_ID;
 // can config for 1MBit
 static uint32_t baudrate = 1000000U;
 
+#if HAL_USE_CAN
 static CANConfig cancfg = {
     CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP,
     0 // filled in below
 };
+#else
+static ChibiOS::CANIface can_iface(0);
+#endif
 
 #ifndef CAN_APP_VERSION_MAJOR
 #define CAN_APP_VERSION_MAJOR                                           1
@@ -66,7 +71,7 @@ static uint8_t node_id_allocation_transfer_id;
 static uavcan_protocol_NodeStatus node_status;
 static uint32_t send_next_node_id_allocation_request_at_ms;
 static uint8_t node_id_allocation_unique_id_offset;
-static uint32_t app_first_word = 0xFFFFFFFF;
+static uint32_t app_first_words[8];
 
 static struct {
     uint64_t ofs;
@@ -220,11 +225,11 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         flash_func_erase_sector(fw_update.sector+1);
     }
     for (uint16_t i=0; i<len/4; i++) {
-        if (i == 0 && fw_update.sector == 0 && fw_update.ofs == 0) {
+        if (fw_update.sector == 0 && (fw_update.ofs+i*4) < sizeof(app_first_words)) {
             // keep first word aside, to be flashed last
-            app_first_word = buf32[0];
+            app_first_words[i] = buf32[i];
         } else {
-            flash_func_write_word(fw_update.ofs+i*4, buf32[i]);
+            flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
         }
     }
     fw_update.ofs += len;
@@ -236,7 +241,8 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
     if (len < UAVCAN_PROTOCOL_FILE_READ_RESPONSE_DATA_MAX_LENGTH) {
         fw_update.node_id = 0;
         // now flash the first word
-        flash_func_write_word(0, app_first_word);
+        flash_write_buffer(0, app_first_words, ARRAY_SIZE(app_first_words));
+        flash_write_flush();
         if (can_check_firmware()) {
             jump_to_app();
         }
@@ -257,6 +263,9 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
         return;
     }
+
+    memset(app_first_words, 0xff, sizeof(app_first_words));
+
     if (fw_update.node_id == 0) {
         uint32_t offset = 0;
         canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
@@ -425,6 +434,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
     return false;
 }
 
+#if HAL_USE_CAN
 static void processTx(void)
 {
     static uint8_t fail_count;
@@ -457,8 +467,9 @@ static void processRx(void)
     while (canReceive(&CAND1, CAN_ANY_MAILBOX, &rxmsg, TIME_IMMEDIATE) == MSG_OK) {
         CanardCANFrame rx_frame {};
 
+#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
         palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
-
+#endif
         const uint64_t timestamp = AP_HAL::micros64();
         memcpy(rx_frame.data, rxmsg.data8, 8);
         rx_frame.data_len = rxmsg.DLC;
@@ -470,6 +481,59 @@ static void processRx(void)
         canardHandleRxFrame(&canard, &rx_frame, timestamp);
     }
 }
+#else
+// Use HAL CAN interface
+static void processTx(void)
+{
+    static uint8_t fail_count;
+    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
+        AP_HAL::CANFrame txmsg {};
+        txmsg.dlc = txf->data_len;
+        memcpy(txmsg.data, txf->data, 8);
+        txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
+        // push message with 1s timeout
+        if (can_iface.send(txmsg, AP_HAL::micros64() + 1000000, 0) > 0) {
+            canardPopTxQueue(&canard);
+            fail_count = 0;
+        } else {
+            // just exit and try again later. If we fail 8 times in a row
+            // then start discarding to prevent the pool filling up
+            if (fail_count < 8) {
+                fail_count++;
+            } else {
+                canardPopTxQueue(&canard);
+            }
+            return;
+        }
+    }
+}
+
+static void processRx(void)
+{
+    AP_HAL::CANFrame rxmsg;
+    while (true) {
+        bool read_select = true;
+        bool write_select = false;
+        can_iface.select(read_select, write_select, nullptr, 0);
+        if (!read_select) {
+            break;
+        }
+#ifdef HAL_GPIO_PIN_LED_BOOTLOADER
+        palToggleLine(HAL_GPIO_PIN_LED_BOOTLOADER);
+#endif
+        CanardCANFrame rx_frame {};
+
+        //palToggleLine(HAL_GPIO_PIN_LED);
+        uint64_t timestamp;
+        AP_HAL::CANIface::CanIOFlags flags;
+        can_iface.receive(rxmsg, timestamp, flags);
+        memcpy(rx_frame.data, rxmsg.data, 8);
+        rx_frame.data_len = rxmsg.dlc;
+        rx_frame.id = rxmsg.id;
+        canardHandleRxFrame(&canard, &rx_frame, timestamp);
+    }
+}
+#endif //#if HAL_USE_CAN
 
 /*
   handle waiting for a node ID
@@ -569,8 +633,8 @@ bool can_check_firmware(void)
         return false;
     }
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024);
-    const uint32_t flash_size = (BOARD_FLASH_SIZE - FLASH_BOOTLOADER_LOAD_KB)*1024;
+    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
+    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
     const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
     if (ad == nullptr) {
         // no application signature
@@ -593,6 +657,12 @@ bool can_check_firmware(void)
 
     const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
     uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
+    if ((len1 + desc_len) > ad->image_size) {
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
+        printf("Bad fw length %u\n", ad->image_size);
+        return false;
+    }
+
     uint32_t len2 = ad->image_size - (len1 + desc_len);
     uint32_t crc1 = crc32_small(0, flash, len1);
     uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
@@ -624,6 +694,7 @@ void can_start()
 {
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
 
+#if HAL_USE_CAN
     // calculate optimal CAN timings given PCLK1 and baudrate
     CanardSTM32CANTimings timings {};
     canardSTM32ComputeCANTimings(STM32_PCLK1, baudrate, &timings);
@@ -632,7 +703,9 @@ void can_start()
         CAN_BTR_TS1(timings.bit_segment_1-1) |
         CAN_BTR_BRP(timings.bit_rate_prescaler-1);
     canStart(&CAND1, &cancfg);
-
+#else
+    can_iface.init(baudrate, AP_HAL::CANIface::NormalMode);
+#endif
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
                onTransferReceived, shouldAcceptTransfer, NULL);
 

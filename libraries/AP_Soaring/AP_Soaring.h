@@ -16,6 +16,12 @@
 #include "Variometer.h"
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 
+#ifndef HAL_SOARING_ENABLED
+ #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_SOARING_ENABLED
+
 #define INITIAL_THERMAL_STRENGTH 2.0
 #define INITIAL_THERMAL_RADIUS 80.0
 #define INITIAL_STRENGTH_COVARIANCE 0.0049
@@ -141,3 +147,5 @@ private:
 
     bool _exit_commanded;
 };
+
+#endif // HAL_SOARING_ENABLED

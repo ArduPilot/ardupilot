@@ -80,7 +80,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(Log_Write_Fast,         25,    300),
     SCHED_TASK(update_logging1,        25,    300),
     SCHED_TASK(update_logging2,        25,    300),
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     SCHED_TASK(update_soaring,         50,    400),
 #endif
     SCHED_TASK(parachute_check,        10,    200),
@@ -92,7 +92,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Logger, &plane.logger, periodic_tasks, 50, 400),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &plane.ins, periodic, 50, 50),
+#if HAL_ADSB_ENABLED    
     SCHED_TASK(avoidance_adsb_update,  10,    100),
+#endif
     SCHED_TASK_CLASS(RC_Channels,       (RC_Channels*)&plane.g2.rc_channels, read_aux_all,           10,    200),
     SCHED_TASK_CLASS(AP_Button, &plane.button, update, 5, 100),
 #if STATS_ENABLED == ENABLED
@@ -265,10 +267,10 @@ void Plane::one_second_loop()
 
     // make it possible to change orientation at runtime
     ahrs.update_orientation();
-
+#if HAL_ADSB_ENABLED
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
-
+#endif
     ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2));
 
     // sync MAVLink system ID

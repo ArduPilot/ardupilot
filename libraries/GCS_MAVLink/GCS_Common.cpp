@@ -2152,7 +2152,7 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
 {
     MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
-    if (_base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
+    if (uint32_t(_base_mode) & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
         if (AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
             result = MAV_RESULT_ACCEPTED;
         }

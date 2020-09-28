@@ -328,8 +328,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: quadplane options
-    // @Description: This provides a set of additional control options for quadplanes. LevelTransition means that the wings should be held level to within LEVEL_ROLL_LIMIT degrees during transition to fixed wing flight, and the vehicle will not use the vertical lift motors to climb during the transition. If AllowFWTakeoff bit is not set then fixed wing takeoff on quadplanes will instead perform a VTOL takeoff. If AllowFWLand bit is not set then fixed wing land on quadplanes will instead perform a VTOL land. If respect takeoff frame is not set the vehicle will interpret all takeoff waypoints as an altitude above the current position. When Use QRTL is set it will replace QLAND with QRTL for failsafe actions when in VTOL modes. When AIRMODE is set AirMode is automatically enabled if arming by RC channel.
-    // @Bitmask: 0:LevelTransition,1:AllowFWTakeoff,2:AllowFWLand,3:Respect takeoff frame types,4:Use a fixed wing approach for VTOL landings,5:Use QRTL instead of QLAND for failsafe when in VTOL modes,6:Use idle governor in MANUAL,7:QAssist force enabled,8:Tailsitter QAssist motors only,9:enable AirMode if arming by aux switch,10:Enable motor tilt when disarmed,11:Delay spoolup for 2 seconds after arming
+    // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming.
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -1350,8 +1350,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 
     if ((plane.g.stick_mixing == STICK_MIXING_DISABLED) &&
         (plane.control_mode == &plane.mode_qrtl ||
-         plane.control_mode == &plane.mode_guided ||
-         plane.control_mode == &plane.mode_avoidADSB ||
+         plane.control_mode->is_guided_mode() ||
          in_vtol_auto())) {
         return 0;
     }
@@ -2246,7 +2245,8 @@ bool QuadPlane::in_vtol_mode(void) const
         return false;
     }
     return (plane.control_mode->is_vtol_mode() ||
-            ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
+            (plane.control_mode->is_guided_mode()
+            && plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 
@@ -2262,7 +2262,8 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
             plane.control_mode == &plane.mode_qland ||
             plane.control_mode == &plane.mode_qrtl ||
             plane.control_mode == &plane.mode_qautotune ||
-            ((plane.control_mode == &plane.mode_guided || plane.control_mode == &plane.mode_avoidADSB) && plane.auto_state.vtol_loiter) ||
+            (plane.control_mode->is_guided_mode() &&
+            plane.auto_state.vtol_loiter) ||
             in_vtol_auto());
 }
 

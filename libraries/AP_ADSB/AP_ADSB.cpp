@@ -21,6 +21,7 @@
 */
 
 #include "AP_ADSB.h"
+#if HAL_ADSB_ENABLED
 #include "AP_ADSB_Sagetech.h"
 #include "AP_ADSB_MAVLink.h"
 #include <stdio.h>  // for sprintf
@@ -313,7 +314,7 @@ void AP_ADSB::update(void)
 #ifndef ADSB_STATIC_CALLSIGN
         set_callsign("APM ", true);
 #endif
-        gcs().send_text(MAV_SEVERITY_INFO, "%sUsing ICAO_id %d and Callsign %s", GcsHeader, (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+        //gcs().send_text(MAV_SEVERITY_INFO, "%sUsing ICAO_id %d and Callsign %s", GcsHeader, (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
         out_state.last_config_ms = 0; // send now
     }
 
@@ -832,4 +833,7 @@ AP_ADSB *AP::ADSB()
 {
     return AP_ADSB::get_singleton();
 }
+
+#endif // HAL_ADSB_ENABLED
+
 
