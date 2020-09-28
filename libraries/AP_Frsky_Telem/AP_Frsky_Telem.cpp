@@ -34,12 +34,15 @@
 #include <AP_Baro/AP_Baro.h>
 #include <math.h>
 
+#include "AP_Frsky_D.h"
+#include "AP_Frsky_SPort.h"
+#include "AP_Frsky_SPort_Passthrough.h"
+
 extern const AP_HAL::HAL& hal;
 
 AP_Frsky_Telem *AP_Frsky_Telem::singleton;
 
-AP_Frsky_Telem::AP_Frsky_Telem(bool _external_data) : AP_RCTelemetry(TIME_SLOT_MAX),
-    use_external_data(_external_data)
+AP_Frsky_Telem::AP_Frsky_Telem()
 {
     singleton = this;
 }
@@ -52,7 +55,7 @@ AP_Frsky_Telem::~AP_Frsky_Telem(void)
 /*
   setup ready for passthrough telem
  */
-void AP_Frsky_Telem::setup_wfq_scheduler(void)
+void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
 {
     // initialize packet weights for the WFQ scheduler
     // priority[i] = 1/_scheduler.packet_weight[i]
@@ -73,39 +76,34 @@ void AP_Frsky_Telem::setup_wfq_scheduler(void)
 /*
  * init - perform required initialisation
  */
-bool AP_Frsky_Telem::init()
+bool AP_Frsky_Telem::init(bool use_external_data)
 {
-    if (use_external_data) {
-        return AP_RCTelemetry::init();
-    }
-
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
     // check for protocol configured for a serial port - only the first serial port with one of these protocols will then run (cannot have FrSky on multiple serial ports)
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_D; // FrSky D protocol (D-receivers)
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort; // FrSky SPort protocol (X-receivers)
-    } else if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
-        _protocol = AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough; // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
-        AP_RCTelemetry::init();
+    AP_HAL::UARTDriver *port;
+    if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_D, 0))) {
+        _backend = new AP_Frsky_D(port);
+    } else if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort, 0))) {
+        _backend = new AP_Frsky_SPort(port);
+    } else if (use_external_data || (port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough, 0))) {
+        _backend = new AP_Frsky_SPort_Passthrough(port, use_external_data);
     }
 
-    if (_port != nullptr) {
-        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Frsky_Telem::loop, void),
-                                          "FrSky",
-                                          1024, AP_HAL::Scheduler::PRIORITY_RCIN, 1)) {
-            return false;
-        }
-        // we don't want flow control for either protocol
-        _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        return true;
+    if (_backend == nullptr) {
+        return false;
     }
 
-    return false;
+    if (!_backend->init()) {
+        delete _backend;
+        _backend = nullptr;
+        return false;
+    }
+
+    return true;
 }
 
-void AP_Frsky_Telem::adjust_packet_weight(bool queue_empty)
+void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
 {
     if (!queue_empty) {
         _scheduler.packet_weight[TEXT] = 45;     // messages
@@ -117,7 +115,7 @@ void AP_Frsky_Telem::adjust_packet_weight(bool queue_empty)
 }
 
 // WFQ scheduler
-bool AP_Frsky_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
+bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
 {
     bool packet_ready = false;
     switch (idx) {
@@ -142,7 +140,7 @@ bool AP_Frsky_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
  * WFQ scheduler
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::process_packet(uint8_t idx)
+void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
 {
     // send packet
     switch (idx) {
@@ -194,7 +192,7 @@ void AP_Frsky_Telem::process_packet(uint8_t idx)
  * send telemetry data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-void AP_Frsky_Telem::send_SPort_Passthrough(void)
+void AP_Frsky_SPort_Passthrough::send(void)
 {
     int16_t numc;
     numc = _port->available();
@@ -225,7 +223,7 @@ void AP_Frsky_Telem::send_SPort_Passthrough(void)
  * send telemetry data
  * for FrSky SPort protocol (X-receivers)
  */
-void AP_Frsky_Telem::send_SPort(void)
+void AP_Frsky_SPort::send(void)
 {
     int16_t numc;
     numc = _port->available();
@@ -356,7 +354,7 @@ void AP_Frsky_Telem::send_SPort(void)
  * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.yaw_sensor heading (instead of GPS heading)
  * for FrSky D protocol (D-receivers)
  */
-void AP_Frsky_Telem::send_D(void)
+void AP_Frsky_D::send(void)
 {
     const AP_BattMonitor &_battery = AP::battery();
     uint32_t now = AP_HAL::millis();
@@ -400,32 +398,21 @@ void AP_Frsky_Telem::send_D(void)
 /*
   thread to loop handling bytes
  */
-void AP_Frsky_Telem::loop(void)
+void AP_Frsky_Backend::loop(void)
 {
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
-    if (_protocol == AP_SerialManager::SerialProtocol_FrSky_D) {                    // FrSky D protocol (D-receivers)
-        _port->begin(AP_SERIALMANAGER_FRSKY_D_BAUD, AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
-    } else {                                                                        // FrSky SPort and SPort Passthrough (OpenTX) protocols (X-receivers)
-        _port->begin(AP_SERIALMANAGER_FRSKY_SPORT_BAUD, AP_SERIALMANAGER_FRSKY_BUFSIZE_RX, AP_SERIALMANAGER_FRSKY_BUFSIZE_TX);
-    }
-    _port->set_unbuffered_writes(true);
+    _port->begin(initial_baud(), 0, 0);
 
     while (true) {
         hal.scheduler->delay(1);
-        if (_protocol == AP_SerialManager::SerialProtocol_FrSky_D) {                        // FrSky D protocol (D-receivers)
-            send_D();
-        } else if (_protocol == AP_SerialManager::SerialProtocol_FrSky_SPort) {             // FrSky SPort protocol (X-receivers)
-            send_SPort();
-        } else if (_protocol == AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough) { // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-            send_SPort_Passthrough();
-        }
+        send();
     }
 }
 
 /*
   send 1 byte and do byte stuffing
 */
-void AP_Frsky_Telem::send_byte(uint8_t byte)
+void AP_Frsky_Backend::send_byte(uint8_t byte)
 {
     if (byte == START_STOP_D) {
         _port->write(0x5D);
@@ -441,16 +428,8 @@ void AP_Frsky_Telem::send_byte(uint8_t byte)
 /*
  * send an 8 bytes SPort frame of FrSky data - for FrSky SPort protocol (X-receivers)
  */
-void  AP_Frsky_Telem::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data)
+void  AP_Frsky_SPort::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data)
 {
-    if (use_external_data) {
-        external_data.frame = frame;
-        external_data.appid = appid;
-        external_data.data = data;
-        external_data.pending = true;
-        return;
-    }
-
     uint8_t buf[8];
 
     buf[0] = frame;
@@ -503,7 +482,7 @@ void  AP_Frsky_Telem::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t d
 /*
  * send one uint16 frame of FrSky data - for FrSky D protocol (D-receivers)
  */
-void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
+void  AP_Frsky_Backend::send_uint16(uint16_t id, uint16_t data)
 {
     _port->write(START_STOP_D);    // send a 0x5E start byte
     uint8_t *bytes = (uint8_t*)&id;
@@ -517,7 +496,7 @@ void  AP_Frsky_Telem::send_uint16(uint16_t id, uint16_t data)
  * grabs one "chunk" (4 bytes) of the queued message to be transmitted
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-bool AP_Frsky_Telem::get_next_msg_chunk(void)
+bool AP_Frsky_SPort_Passthrough::get_next_msg_chunk(void)
 {
     if (!_statustext.available) {
         WITH_SEMAPHORE(_statustext.sem);
@@ -578,7 +557,7 @@ bool AP_Frsky_Telem::get_next_msg_chunk(void)
  * prepare parameter data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_param(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_param(void)
 {
     const AP_BattMonitor &_battery = AP::battery();
 
@@ -615,7 +594,7 @@ uint32_t AP_Frsky_Telem::calc_param(void)
  * prepare gps latitude/longitude data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
+uint32_t AP_Frsky_SPort::calc_gps_latlng(bool *send_latitude)
 {
     uint32_t latlng;
     const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
@@ -643,7 +622,7 @@ uint32_t AP_Frsky_Telem::calc_gps_latlng(bool *send_latitude)
  * prepare gps status data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_gps_status(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
 {
     const AP_GPS &gps = AP::gps();
 
@@ -667,7 +646,7 @@ uint32_t AP_Frsky_Telem::calc_gps_status(void)
  * prepare battery data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
+uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
 {
     const AP_BattMonitor &_battery = AP::battery();
 
@@ -693,7 +672,7 @@ uint32_t AP_Frsky_Telem::calc_batt(uint8_t instance)
  * prepare various autopilot status data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_ap_status(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
 {
     uint32_t ap_status;
 
@@ -724,7 +703,7 @@ uint32_t AP_Frsky_Telem::calc_ap_status(void)
  * prepare home position related data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_home(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
 {
     uint32_t home = 0;
     Location loc;
@@ -763,7 +742,7 @@ uint32_t AP_Frsky_Telem::calc_home(void)
  * prepare velocity and yaw data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_velandyaw(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
 {
     float vspd = get_vspeed_ms();
     // vertical velocity in dm/s
@@ -786,7 +765,7 @@ uint32_t AP_Frsky_Telem::calc_velandyaw(void)
  * prepare attitude (roll, pitch) and range data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_Telem::calc_attiandrng(void)
+uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
     const RangeFinder *_rng = RangeFinder::get_singleton();
 
@@ -805,7 +784,7 @@ uint32_t AP_Frsky_Telem::calc_attiandrng(void)
  * prepare value for transmission through FrSky link
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t power)
+uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits, uint8_t power)
 {
     uint16_t res = 0;
     uint32_t abs_number = abs(number);
@@ -870,7 +849,7 @@ uint16_t AP_Frsky_Telem::prep_number(int32_t number, uint8_t digits, uint8_t pow
  * get vertical speed from ahrs, if not available fall back to baro climbrate, units is m/s
  * for FrSky D and SPort protocols
  */
-float AP_Frsky_Telem::get_vspeed_ms(void)
+float AP_Frsky_Backend::get_vspeed_ms(void)
 {
 
     {// release semaphore as soon as possible
@@ -891,7 +870,7 @@ float AP_Frsky_Telem::get_vspeed_ms(void)
  * prepare altitude between vehicle and home location data
  * for FrSky D and SPort protocols
  */
-void AP_Frsky_Telem::calc_nav_alt(void)
+void AP_Frsky_Backend::calc_nav_alt(void)
 {
     _SPort_data.vario_vspd = (int32_t)(get_vspeed_ms()*100); //convert to cm/s
     
@@ -916,7 +895,7 @@ void AP_Frsky_Telem::calc_nav_alt(void)
  * format the decimal latitude/longitude to the required degrees/minutes
  * for FrSky D and SPort protocols
  */
-float AP_Frsky_Telem::format_gps(float dec)
+float AP_Frsky_Backend::format_gps(float dec)
 {
     uint8_t dm_deg = (uint8_t) dec;
     return (dm_deg * 100.0f) + (dec - dm_deg) * 60;
@@ -926,7 +905,7 @@ float AP_Frsky_Telem::format_gps(float dec)
  * prepare gps data
  * for FrSky D and SPort protocols
  */
-void AP_Frsky_Telem::calc_gps_position(void)
+void AP_Frsky_Backend::calc_gps_position(void)
 {
     float lat;
     float lon;
@@ -971,7 +950,7 @@ void AP_Frsky_Telem::calc_gps_position(void)
 /*
   fetch Sport data for an external transport, such as FPort
  */
-bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+bool AP_Frsky_SPort_Passthrough::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
 {
     run_wfq_scheduler();
     if (!external_data.pending) {
@@ -984,6 +963,14 @@ bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &
     return true;
 }
 
+bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_telem_data(frame, appid, data);
+}
+
 /*
   fetch Sport data for an external transport, such as FPort
  */
@@ -992,10 +979,10 @@ bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &d
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_Frsky_Telem object then try to allocate one
-        new AP_Frsky_Telem(true);
+        new AP_Frsky_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
-            singleton->init();
+            singleton->init(true);
         }
     }
     if (!singleton) {
