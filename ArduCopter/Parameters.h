@@ -619,6 +619,8 @@ public:
     AP_Int8 acro_options;
 #endif
 
+    // land repositioning altitude minimum
+    AP_Int16 land_repo_alt;
 };
 
 extern const AP_Param::Info        var_info[];
