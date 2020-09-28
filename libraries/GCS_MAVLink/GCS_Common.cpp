@@ -5093,7 +5093,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
     c->set_override(override_value, tnow);
 }
 
-uint8_t GCS_MAVLINK::get_battery_remaining_percentage() {
+uint8_t GCS_MAVLINK::get_battery_remaining_percentage() const {
     const AP_BattMonitor &battery = AP::battery();
     return battery.capacity_remaining_pct();
 }
