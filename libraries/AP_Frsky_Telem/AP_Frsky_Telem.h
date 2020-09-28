@@ -18,7 +18,8 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_RCTelemetry/AP_RCTelemetry.h>
+
+#include "AP_Frsky_Backend.h"
 
 #define FRSKY_TELEM_PAYLOAD_STATUS_CAPACITY          5 // size of the message buffer queue (max number of messages waiting to be sent)
 
@@ -111,12 +112,10 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
-// for fair scheduler
-#define TIME_SLOT_MAX               11
 
-class AP_Frsky_Telem : public AP_RCTelemetry {
+class AP_Frsky_Telem {
 public:
-    AP_Frsky_Telem(bool external_data=false);
+    AP_Frsky_Telem();
 
     ~AP_Frsky_Telem();
 
@@ -125,7 +124,7 @@ public:
     AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
 
     // init - perform required initialisation
-    virtual bool init() override;
+    bool init(bool use_external_data=false);
 
     static AP_Frsky_Telem *get_singleton(void) {
         return singleton;
@@ -134,135 +133,22 @@ public:
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
 
+    void queue_message(MAV_SEVERITY severity, const char *text) {
+        if (_backend == nullptr) {
+            return;
+        }
+        return _backend->queue_text_message(severity, text);
+    }
+
 private:
-    AP_HAL::UARTDriver *_port;                  // UART used to send data to FrSky receiver
-    AP_SerialManager::SerialProtocol _protocol; // protocol used - detected using SerialManager's SERIAL#_PROTOCOL parameter
-    uint16_t _crc;
 
-    uint8_t _paramID;
-    
-    enum PassthroughPacketType : uint8_t {
-        TEXT =          0,  // 0x5000 status text (dynamic)
-        ATTITUDE =      1,  // 0x5006 Attitude and range (dynamic)
-        GPS_LAT =       2,  // 0x800 GPS lat
-        GPS_LON =       3,  // 0x800 GPS lon
-        VEL_YAW =       4,  // 0x5005 Vel and Yaw
-        AP_STATUS =     5,  // 0x5001 AP status
-        GPS_STATUS =    6,  // 0x5002 GPS status
-        HOME =          7,  // 0x5004 Home
-        BATT_2 =        8,  // 0x5008 Battery 2 status
-        BATT_1 =        9,  // 0x5008 Battery 1 status
-        PARAM =         10  // 0x5007 parameters
-    };
-
-    enum PassthroughParam : uint8_t {
-        FRAME_TYPE =          1,
-        BATT_FS_VOLTAGE =     2,
-        BATT_FS_CAPACITY =    3,
-        BATT_CAPACITY_1 =     4,
-        BATT_CAPACITY_2 =     5
-    };
-
-    struct
-    {
-        int32_t vario_vspd;
-        char lat_ns, lon_ew;
-        uint16_t latdddmm;
-        uint16_t latmmmm;
-        uint16_t londddmm;
-        uint16_t lonmmmm;
-        uint16_t alt_gps_meters;
-        uint16_t alt_gps_cm;
-        uint16_t alt_nav_meters;
-        uint16_t alt_nav_cm;
-        int16_t speed_in_meter;
-        uint16_t speed_in_centimeter;
-        uint16_t yaw;
-    } _SPort_data;
-
-    struct PACKED
-    {
-        bool send_latitude; // sizeof(bool) = 4 ?
-        uint32_t gps_lng_sample;
-        uint8_t new_byte;
-    } _passthrough;
-
-    struct
-    {
-        bool sport_status;
-        bool gps_refresh;
-        bool vario_refresh;
-        uint8_t fas_call;
-        uint8_t gps_call;
-        uint8_t vario_call;
-        uint8_t various_call;
-    } _SPort;
-    
-    struct
-    {
-        uint32_t last_200ms_frame;
-        uint32_t last_1000ms_frame;
-    } _D;
-    
-    struct
-    {
-        uint32_t chunk; // a "chunk" (four characters/bytes) at a time of the queued message to be sent
-        uint8_t repeats; // send each message "chunk" 3 times to make sure the entire messsage gets through without getting cut
-        uint8_t char_index; // index of which character to get in the message
-    } _msg_chunk;
-    
-    float get_vspeed_ms(void);
-    // passthrough WFQ scheduler
-    bool is_packet_ready(uint8_t idx, bool queue_empty) override;
-    void process_packet(uint8_t idx) override;
-    void adjust_packet_weight(bool queue_empty) override;
-    // setup ready for passthrough operation
-    void setup_wfq_scheduler(void) override;
-
-    // main transmission function when protocol is FrSky SPort Passthrough (OpenTX)
-    void send_SPort_Passthrough(void);
-    // main transmission function when protocol is FrSky SPort
-    void send_SPort(void);
-    // main transmission function when protocol is FrSky D
-    void send_D(void);
-    // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
-    void loop(void);
-    // methods related to the nuts-and-bolts of sending data
-    void send_byte(uint8_t value);
-    void send_uint16(uint16_t id, uint16_t data);
-    void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
-
-    // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
-    bool get_next_msg_chunk(void) override;
-    uint32_t calc_param(void);
-    uint32_t calc_gps_latlng(bool *send_latitude);
-    uint32_t calc_gps_status(void);
-    uint32_t calc_batt(uint8_t instance);
-    uint32_t calc_ap_status(void);
-    uint32_t calc_home(void);
-    uint32_t calc_velandyaw(void);
-    uint32_t calc_attiandrng(void);
-    uint16_t prep_number(int32_t number, uint8_t digits, uint8_t power);
-
-    // methods to convert flight controller data to FrSky D or SPort format
-    void calc_nav_alt(void);
-    float format_gps(float dec);
-    void calc_gps_position(void);
+    AP_Frsky_Backend *_backend;
 
     // get next telemetry data for external consumers of SPort data (internal function)
     bool _get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
-    
+
     static AP_Frsky_Telem *singleton;
 
-    // use_external_data is set when this library will
-    // be providing data to another transport, such as FPort
-    bool use_external_data;
-    struct {
-        uint8_t frame;
-        uint16_t appid;
-        uint32_t data;
-        bool pending;
-    } external_data;
 };
 
 namespace AP {
