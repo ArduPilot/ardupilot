@@ -205,7 +205,14 @@ public:
     void write_notch_log_messages() const;
     // update the harmonic notch
     virtual void update_dynamic_notch() {};
-    
+
+    // zeroing the RC outputs can prevent unwanted motor movement:
+    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
+
+    // reboot the vehicle in an orderly manner, doing various cleanups
+    // and flashing LEDs as appropriate
+    void reboot(bool hold_in_bootloader);
+
 protected:
 
     virtual void init_ardupilot() = 0;
