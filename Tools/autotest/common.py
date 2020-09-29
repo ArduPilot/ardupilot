@@ -1084,7 +1084,8 @@ class AutoTest(ABC):
                  use_map=False,
                  _show_test_timings=False,
                  logs_dir=None,
-                 force_ahrs_type=None):
+                 force_ahrs_type=None,
+                 sup_binary=None):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1103,6 +1104,7 @@ class AutoTest(ABC):
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
         self.speedup = speedup
+        self.sup_binary = sup_binary
 
         self.mavproxy = None
         self.mav = None
@@ -4614,6 +4616,12 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Starting SITL")
         self.sitl = util.start_SITL(self.binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
+        if self.sup_binary is not None:
+            self.progress("Starting Supplementary Program")
+            self.sup_prog = util.start_SITL(self.sup_binary, **start_sitl_args)
+            self.expect_list_add(self.sup_prog)
+        else:
+            self.sup_prog = None
 
     def sitl_is_running(self):
         return self.sitl.isalive()
@@ -4641,7 +4649,10 @@ Also, ignores heartbeats not from our target system'''
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
 
         self.expect_list_clear()
-        self.expect_list_extend([self.sitl, self.mavproxy])
+        if self.sup_prog is not None:
+            self.expect_list_extend([self.sitl, self.mavproxy])
+        else:
+            self.expect_list_extend([self.sitl, self.mavproxy, self.sup_prog])
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
