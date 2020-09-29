@@ -43,6 +43,12 @@ enum AHRS_VehicleClass : uint8_t {
     AHRS_VEHICLE_SUBMARINE,
 };
 
+enum AHRS_GPSUse : uint8_t {
+    Disable = 0,
+    Enable_2D = 1,
+    Enable_3D = 2,
+};
+
 
 // forward declare view class
 class AP_AHRS_View;

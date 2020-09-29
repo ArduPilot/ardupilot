@@ -38,10 +38,10 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: GPS_USE
     // @DisplayName: AHRS use GPS for navigation
-    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. Currently this affects only the DCM-based AHRS: the EKF uses GPS whenever it is available.
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This controls whether to use dead-reckoning or GPS based navigation. If set to 0 then the GPS won't be used for navigation, and only dead reckoning will be used. A value of zero should never be used for normal flight. A value of 1 means to use GPS for position in DCM. A value of 2 means to use GPS for both position and altitude in DCM. Currently this affects only the DCM-based AHRS: the EKF has separate parameters for position and altitude source.
+    // @Values: 0:Disabled,1:Enabled-2D,2:Enabled-3D
     // @User: Advanced
-    AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, 1),
+    AP_GROUPINFO("GPS_USE",  3, AP_AHRS, _gps_use, AHRS_GPSUse::Enable_2D),
 
     // @Param: YAW_P
     // @DisplayName: Yaw P
