@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Options
     // @Description: Video Transmitter Options.
     // @User: Advanced
-    // @Bitmask: 0: Disabled,1: Enabled, 2: Pitmode, 4: Unlocking
+    // @Bitmask: 0: Disabled,1: Pitmode, 2: Unlocking
     AP_GROUPINFO("OPTIONS",  6, AP_VideoTX, _options, 0),
 
     AP_GROUPEND
