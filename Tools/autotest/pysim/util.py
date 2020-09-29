@@ -408,7 +408,7 @@ def start_SITL(binary,
         # TODO: have a SITL-compiled ardupilot able to have its
         # console on an output fd.
     else:
-        child.expect('Waiting for connection', timeout=300)
+        child.expect('Waiting for ', timeout=300)
     return child
 
 

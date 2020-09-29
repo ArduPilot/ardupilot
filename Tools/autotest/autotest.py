@@ -279,6 +279,8 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
+    "SITLPeriphGPS" : "sitl_periph_gp.AP_Periph",
+    "CAN" : "arducopter",
 }
 
 
@@ -289,13 +291,18 @@ def binary_path(step, debug=False):
         return None
 
     if vehicle in __bin_names:
-        binary_name = __bin_names[vehicle]
+        if len(__bin_names[vehicle].split(".")) == 2:
+            config_name = __bin_names[vehicle].split(".")[0]
+            binary_name = __bin_names[vehicle].split(".")[1]
+        else:
+            config_name = 'sitl'
+            binary_name = __bin_names[vehicle]
     else:
         # cope with builds that don't have a specific binary
         return None
 
     binary = util.reltopdir(os.path.join('build',
-                                         'sitl',
+                                         config_name,
                                          'bin',
                                          binary_name))
     if not os.path.exists(binary):
@@ -338,6 +345,11 @@ tester_class_map = {
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
+    "test.CAN": arducopter.AutoTestCAN,
+}
+
+suplementary_test_binary_map = {
+    "test.CAN": "sitl_periph_gps.AP_Periph",
 }
 
 def run_specific_test(step, *args, **kwargs):
@@ -396,9 +408,15 @@ def run_step(step):
 
     if step == 'build.Sub':
         vehicle_binary = 'bin/ardusub'
+    
+    if step == 'build.SITLPeriphGPS':
+        vehicle_binary = 'sitl_periph_gps.bin/AP_Periph'
 
     if vehicle_binary is not None:
-        return util.build_SITL(vehicle_binary, **build_opts)
+        if len(vehicle_binary.split(".")) == 1:
+            return util.build_SITL(vehicle_binary, **build_opts)
+        else:
+            return util.build_SITL(vehicle_binary.split(".")[1], board = vehicle_binary.split(".")[0], **build_opts)
 
     binary = binary_path(step, debug=opts.debug)
 
@@ -406,6 +424,18 @@ def run_step(step):
         vehicle = step[9:]
         return get_default_params(vehicle, binary)
 
+    if step in suplementary_test_binary_map:
+        config_name = suplementary_test_binary_map[step].split('.')[0]
+        binary_name = suplementary_test_binary_map[step].split('.')[1]
+        supplementary_binary =  util.reltopdir(os.path.join('build',
+                                                            config_name,
+                                                            'bin',
+                                                            binary_name))
+        # we are running in conjunction with a supplementary app
+        # can't have speedup
+        opts.speedup = 1.0
+    else:
+        supplementary_binary = None
     fly_opts = {
         "viewerip": opts.viewerip,
         "use_map": opts.map,
@@ -419,6 +449,7 @@ def run_step(step):
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
         "logs_dir": buildlogs_dirpath(),
+        "sup_binary": supplementary_binary,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -859,6 +890,9 @@ if __name__ == "__main__":
         'build.Sub',
         'defaults.Sub',
         'test.Sub',
+
+        'build.SITLPeriphGPS',
+        'test.CAN',
 
         'convertgpx',
     ]
