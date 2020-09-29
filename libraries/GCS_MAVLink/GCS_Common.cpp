@@ -4012,6 +4012,8 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
     AP::logger().Write_Command(packet_int, result, true);
+    gcs().send_text(MAV_SEVERITY_DEBUG, GCS::MessageOption::MAVLINK_COMMAND, false, "CmdL: %d (%g %g %g %g %g %g %g) Res: %d",
+        packet.command, packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6, packet.param7, (uint8_t)result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
@@ -4185,6 +4187,8 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     mavlink_msg_command_ack_send(chan, packet.command, result);
 
     AP::logger().Write_Command(packet, result);
+    gcs().send_text(MAV_SEVERITY_DEBUG, GCS::MessageOption::MAVLINK_COMMAND, false, "CmdI: %d (%g %g %g %g %" PRIu32 " %" PRIu32 " %g) Res: %d",
+        packet.command, packet.param1, packet.param2, packet.param3, packet.param4, packet.x, packet.y, packet.z, (uint8_t)result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
