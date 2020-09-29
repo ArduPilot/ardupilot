@@ -222,29 +222,22 @@ bool AP_SmartAudio::update(bool force)
         set_power_mw(AP::vtx().get_power_mw());
     }
 
-    // send request update for options with ap_vtx values
-    if ( (AP::vtx().get_options()==0 && current_state.pitModeRunning) || (AP::vtx().get_options()==1 && !current_state.pitModeRunning) ){
-        debug("UPDATE AP_VTX->HW_VTX: OPTIONS");
-        uint8_t operation_mode= 0x00;
 
-        debug("UPDATE AP_VTX->HW_VTX: OPTIONS LOCKING %u %u", AP::vtx().get_locking(), AP::vtx().get_locking()<<3);
-        debug("OPERATION MODE TO UPDATE:%u %u %u %u"
-        , 0x0F & (AP::vtx().get_locking()<<3)
-        , 0X0F & (AP::vtx().get_options()<<2)
-        , 0X0F & (current_state.pitmodeOutRangeActive<<1)
-        , 0X0F & (current_state.pitmodeInRangeActive<<0)
-        );
+    debug("UPDATE AP_VTX->HW_VTX: OPTIONS");
 
-        operation_mode |= (current_state.pitmodeInRangeActive<<0);
+    uint8_t curr_operation_mode=(current_state.pitmodeInRangeActive<<0)
+    | (current_state.pitmodeOutRangeActive<<1)
+    | (current_state.pitModeRunning<<2)
+    | ((current_state.unlocked>0)<<3);
 
-        operation_mode |= (current_state.pitmodeOutRangeActive<<1);
+    uint8_t new_operation_mode=curr_operation_mode;
 
-        operation_mode |= (AP::vtx().get_options()<<2);
+    new_operation_mode ^= (-(AP::vtx().get_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) ^ new_operation_mode) & (1UL << 2);
 
-        // 1 unlocked 0 locked
-        operation_mode |= (AP::vtx().get_locking()<<3);
+    new_operation_mode ^= (-(AP::vtx().get_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) ^ new_operation_mode) & (1UL << 3);
 
-        set_operation_mode(operation_mode);
+    if(curr_operation_mode!=new_operation_mode){
+        set_operation_mode(new_operation_mode);
     }
 
     return true;
@@ -456,21 +449,25 @@ bool AP_SmartAudio::get_readings(AP_VideoTX *vtx_dest)
     // setting channel 0 -> 40
     vtx_dest->set_channel(current_state.channel);
 
-   // define vtx options TODO: Review this after define policies
    // setup default value for options
     vtx_dest->set_options(0);
 
       // pitmode enabled
-   if (current_state.pitmodeOutRangeActive ||  current_state.pitmodeInRangeActive || !current_state.pitModeRunning){
-       vtx_dest->set_options(1);
+   if (current_state.pitmodeOutRangeActive ||  current_state.pitmodeInRangeActive || current_state.pitModeRunning){
+       vtx_dest->set_options(vtx_dest->get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
    }
     // pitmode disabled only by this option
-   if (current_state.pitModeRunning){
-       vtx_dest->set_options(0);
+   if (!current_state.pitModeRunning){
+       vtx_dest->set_options(vtx_dest->get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
    }
 
    // locking status
-   vtx_dest->set_locking(current_state.unlocked==0?1:0);
+
+   vtx_dest->set_options(current_state.unlocked==0?
+   (vtx_dest->get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED))
+   :
+   (vtx_dest->get_options() | ~uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED))
+   );
 
    // spec 2.1 power-levels in dbm
    vtx_dest->set_power_dbm(current_state.power_in_dbm);
