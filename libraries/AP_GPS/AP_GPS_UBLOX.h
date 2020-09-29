@@ -659,11 +659,6 @@ private:
         STEP_LAST
     };
 
-    // GPS_DRV_OPTIONS bits
-    enum class DRV_OPTIONS {
-        MB_USE_UART2 = 1U<<0,
-    };
-
     // Packet checksum accumulators
     uint8_t         _ck_a;
     uint8_t         _ck_b;
@@ -745,7 +740,7 @@ private:
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
     bool mb_use_uart2(void) const {
-        return (driver_options() & unsigned(DRV_OPTIONS::MB_USE_UART2))?true:false;
+        return (driver_options() & DriverOptions::UBX_MBUseUart2)?true:false;
     }
 #endif
 
