@@ -40,7 +40,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     enum class VideoOptions {
-        VTX_PITMODE = 1 << 0
+        VTX_PITMODE         = (1 << 0),
+        VTX_UNLOCKED        = (1 << 1)
     };
 
     enum VideoBand {
@@ -90,12 +91,6 @@ public:
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }
     bool update_enabled() const { return _defaults_set && _enabled != _current_enabled; }
-     // get /set whether the vtx is locked
-    void set_locking(bool locked){ _current_locking=locked; }
-    void set_configured_locking(bool locked){ _locking.set_and_save_ifchanged(locked); }
-    uint8_t get_configured_locking() const{ return _locking; }
-    uint8_t get_locking() const { return _current_locking; }
-    bool update_locking() const{ return _defaults_set && _locking != _current_locking;}
 
     // have the parameters been updated
     bool have_params_changed() const;
@@ -123,10 +118,6 @@ private:
     // vtx options
     AP_Int8 _options;
     uint8_t _current_options;
-
-    // vtx locking status
-    AP_Int8 _locking;
-    uint8_t _current_locking;
 
     AP_Int8 _enabled;
     bool _current_enabled;

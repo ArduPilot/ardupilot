@@ -61,15 +61,8 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Options
     // @Description: Video Transmitter Options.
     // @User: Advanced
-    // @Bitmask: 0:Pitmode disabled,1: PitMode enabled
+    // @Bitmask: 0: Disabled,1: Enabled, 2: Pitmode, 4: Unlocking
     AP_GROUPINFO("OPTIONS",  6, AP_VideoTX, _options, 0),
-
-    // @Param: LOCKING
-    // @DisplayName: Video Transmitter Locked status
-    // @Description: Video Transmitter Locked status.
-    // @User: Advanced
-    // @Bitmask: 1:Unlocked, 0 Locked
-    AP_GROUPINFO("LOCKING",  7, AP_VideoTX, _locking, 1),
 
     AP_GROUPEND
 };
@@ -113,7 +106,6 @@ bool AP_VideoTX::init(void)
     _current_channel = _channel;
     _current_options = _options;
     _current_enabled = _enabled;
-    _current_locking = _locking;
     _initialized = true;
 
     return true;
