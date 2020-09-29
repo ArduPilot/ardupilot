@@ -77,7 +77,7 @@ using namespace ChibiOS;
 
 constexpr CANIface::CanType* const CANIface::Can[];
 static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
-
+#define REG_SET_TIMEOUT 250 // if it takes longer than 250ms for setting a register we have failed
 static inline bool driver_initialised(uint8_t iface_index)
 {
     if (iface_index >= HAL_NUM_CAN_IFACES) {
@@ -384,7 +384,12 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
         can_->GFC |= (0x3U << 4); //Reject non matching Standard frames
     } else {    //The List is too big, return fail
         can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {}
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
 
@@ -418,7 +423,12 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
         can_->GFC |= (0x3U << 2); // Reject non matching Extended frames
     } else {    //The List is too big, return fail
         can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {}
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
 
@@ -448,7 +458,12 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
 
     // Finally get out of Config Mode
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {}
+    uint32_t while_start_ms = AP_HAL::millis();
+    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+            return false;
+        }
+    }
     initialised_ = true;
     return true;
 }
@@ -510,9 +525,19 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         CriticalSectionLocker lock;
 
         can_->CCCR &= ~FDCAN_CCCR_CSR; // Exit sleep mode
-        while ((can_->CCCR & FDCAN_CCCR_CSA) == FDCAN_CCCR_CSA) {} //Wait for wake up ack
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_CSA) == FDCAN_CCCR_CSA) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        } //Wait for wake up ack
         can_->CCCR |= FDCAN_CCCR_INIT; // Request init
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 0) {}
+        while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 0) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         can_->CCCR |= FDCAN_CCCR_CCE; //Enable Config change
         can_->IE = 0;                  // Disable interrupts while initialization is in progress
     }
@@ -534,7 +559,12 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 
     if (!computeTimings(bitrate, timings)) {
         can_->CCCR &= ~FDCAN_CCCR_INIT;
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {}
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
     Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u\n",
@@ -572,7 +602,12 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     // otherwise we finish here
     if (mode != FilteredMode) {
         can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {}
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
 
         //initialised
         initialised_ = true;
