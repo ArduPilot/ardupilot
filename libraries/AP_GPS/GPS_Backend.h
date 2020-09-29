@@ -118,6 +118,10 @@ protected:
         return uint16_t(gps._driver_options.get());
     }
 
+#if GPS_MOVING_BASELINE
+    bool calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D);
+#endif //GPS_MOVING_BASELINE
+
 private:
     // itow from previous message
     uint32_t _last_itow;

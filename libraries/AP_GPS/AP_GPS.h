@@ -43,13 +43,17 @@
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
-#ifndef GPS_UBLOX_MOVING_BASELINE
-#define GPS_UBLOX_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#ifndef GPS_MOVING_BASELINE
+#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
 #endif
 
 #ifndef HAL_MSP_GPS_ENABLED
 #define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
+
+#if GPS_MOVING_BASELINE
+#include "MovingBase.h"
+#endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
 
@@ -518,6 +522,10 @@ protected:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
+
+#if GPS_MOVING_BASELINE
+    MovingBase mb_params[GPS_MAX_RECEIVERS];
+#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 
