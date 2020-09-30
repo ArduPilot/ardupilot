@@ -186,6 +186,12 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     // update NMEA output
     update_nmea_out();
 #endif
+
+    EKFType _active_type = active_EKF_type();
+    if (_active_type != _last_ekf_type) {
+        _last_ekf_type = _active_type;
+        gcs().send_text(MAV_SEVERITY_WARNING, "Switched to EKF%u", unsigned(_active_type));
+    }
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)

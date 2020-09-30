@@ -342,6 +342,8 @@ private:
     };
     EKFType active_EKF_type(void) const;
 
+    EKFType _last_ekf_type;
+
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
