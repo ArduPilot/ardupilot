@@ -229,6 +229,14 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
     state.status = status;
 }
 
+// correct an angle (in degrees) based on the orientation and yaw correction parameters
+float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) const
+{
+    const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
+    return wrap_360(angle_degrees * angle_sign + frontend.get_yaw_correction(state.instance));
+}
+
+// find which sector a given angle falls into
 uint8_t AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees) const
 {
     return wrap_360(angle_degrees + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
