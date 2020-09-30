@@ -33,7 +33,9 @@ public:
 private:
     // counter incremented at 50Hz
     uint8_t _counter;
+#if defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN)
     uint16_t _sat_cnt;
     uint8_t save_trim_counter;
     uint8_t arm_counter = 0;
+#endif
 };
