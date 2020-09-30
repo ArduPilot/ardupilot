@@ -31,11 +31,11 @@ const AP_Param::GroupInfo AP_SmartAudio::var_info[] = {
 AP_SmartAudio::AP_SmartAudio()
 {
     AP_Param::setup_object_defaults(this, var_info);
-    singleton = this;
+    _singleton = this;
 
 }
 
-AP_SmartAudio *AP_SmartAudio::singleton;
+AP_SmartAudio *AP_SmartAudio::_singleton;
 
 // initialization start making a request settings to the vtx
 bool AP_SmartAudio::init()
@@ -93,7 +93,7 @@ void AP_SmartAudio::loop(){
         hal.scheduler->delay(50);
 
         // Proccess response in the next 200 milis from the request are sent.
-        if (now-last_request_sended_at_ms>100 && now-last_request_sended_at_ms<=1000 && is_waiting_response){
+        if (now-_last_request_sended_at_ms>100 && now-_last_request_sended_at_ms<=1000 && _is_waiting_response){
             // allocate response buffer
             uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
             // setup to zero because the
@@ -104,7 +104,7 @@ void AP_SmartAudio::loop(){
             // prevent to proccess any queued request from the ring buffer
             packet_processed=true;
         }else{
-            is_waiting_response=false;
+            _is_waiting_response=false;
         }
 
         // when pending request and last request sended is timeout, take another packet to send
@@ -116,10 +116,10 @@ void AP_SmartAudio::loop(){
             current_command.sended_at_ms=AP_HAL::millis();
 
             //update last send
-            last_request_sended_at_ms=AP_HAL::millis();
+            _last_request_sended_at_ms=AP_HAL::millis();
 
             // next loop we expect the response
-            is_waiting_response=true;
+            _is_waiting_response=true;
 
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
             hal.scheduler->delay(100);
@@ -162,7 +162,7 @@ void AP_SmartAudio::_print_state(smartaudioSettings_t& state){
 // updates the smartaudio state in sync whith AP_VideoTX
 bool AP_SmartAudio::update(bool force)
 {
-    if (_vtx_current_state==nullptr && requests_queue.is_empty() && !is_waiting_response){
+    if (_vtx_current_state==nullptr && requests_queue.is_empty() && !_is_waiting_response){
         if (!hal.util->get_soft_armed()) {
             request_settings();
         }
@@ -173,7 +173,7 @@ bool AP_SmartAudio::update(bool force)
     _peek_vtx_state(current_state);
 
     // prevent sync while waiting news from hw vtx or not available current_state but can be forced
-    if ((is_waiting_response || _vtx_current_state==nullptr) && !force){
+    if ((_is_waiting_response || _vtx_current_state==nullptr) && !force){
         return false;
     }
 
@@ -290,7 +290,7 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
 
     if (inline_buffer_length < response_header_size) {
         debug("INPUT FILTERED FROM UART IS SHORTER THAN EXPLICIT RESPONSE LENGTH");
-        is_waiting_response=false;
+        _is_waiting_response=false;
         return;
     }
 
@@ -303,7 +303,7 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
     } else {
         inline_buffer_length = payload_len + response_header_size;
     }
-    is_waiting_response=false;
+    _is_waiting_response=false;
 
     parse_frame_response(response_buffer);
 

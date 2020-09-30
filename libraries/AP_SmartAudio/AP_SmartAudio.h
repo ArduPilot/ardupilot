@@ -216,16 +216,16 @@ public:
     ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
 
     // time the last_request is process
-    uint32_t last_request_sended_at_ms;
+    uint32_t _last_request_sended_at_ms;
 
     // loops is waiting a response after a request
-    bool is_waiting_response=false;
+    bool _is_waiting_response=false;
 
     AP_SmartAudio();
 
     static AP_SmartAudio *get_singleton(void)
     {
-        return singleton;
+        return _singleton;
     }
 
     /* Do not allow copies */
@@ -302,7 +302,7 @@ private:
     AP_HAL::UARTDriver *_port;                  // UART used to send data to SmartAudio VTX
 
     //Pointer to singleton
-    static AP_SmartAudio* singleton;
+    static AP_SmartAudio* _singleton;
 
     // utility method for debugging
     void _print_state(smartaudioSettings_t& state);
