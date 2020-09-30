@@ -385,9 +385,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         if ((vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::FREQ_UPD)) && vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: band update in user freq mode");
             AP_VideoTX::VideoBand video_band;
-
             AP_VideoTX::get_band_and_channel(vtx_settings.frequency, video_band, vtx_settings.channel);
-
             vtx_settings.band=(int)video_band;
         }
 
@@ -395,6 +393,9 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         if ( (vtx_settings.update_flags & uint8_t(AP_SmartAudio::HWVtxUpdates::CHAN_UPD)) && !vtx_settings.userFrequencyMode){
             debug("%80s", "parse_frame_response:: freq update from band and chan settings");
             vtx_settings.frequency=AP_VideoTX::get_frequency_mhz(vtx_settings.band, vtx_settings.channel);
+            AP_VideoTX::VideoBand video_band;
+            AP_VideoTX::get_band_and_channel(vtx_settings.frequency, video_band, vtx_settings.channel);
+            vtx_settings.band=(int)video_band;
         }
 
         // reset vtx_settings_change_control variables
