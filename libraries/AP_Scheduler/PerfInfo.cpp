@@ -22,6 +22,9 @@ void AP::PerfInfo::reset()
     long_running = 0;
     sigma_time = 0;
     sigmasquared_time = 0;
+    if (_task_info != nullptr) {
+        memset(_task_info, 0, (_num_tasks + 1) * sizeof(TaskInfo));
+    }
 }
 
 // ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
@@ -33,7 +36,7 @@ void AP::PerfInfo::ignore_this_loop()
 // allocate the array of task statistics for use by @SYS/tasks.txt
 void AP::PerfInfo::allocate_task_info(uint8_t num_tasks)
 {
-    _task_info = new TaskInfo[num_tasks];
+    _task_info = new TaskInfo[num_tasks + 1];   // add an extra slot for the fast_loop
     if (_task_info == nullptr) {
         hal.console->printf("Unable to allocate scheduler TaskInfo\n");
         _num_tasks = 0;
@@ -56,7 +59,7 @@ void AP::PerfInfo::update_task_info(uint8_t task_index, uint16_t task_time_us, b
         return;
     }
 
-    if (task_index >= _num_tasks) {
+    if (task_index > _num_tasks) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }

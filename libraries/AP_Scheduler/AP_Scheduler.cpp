@@ -324,13 +324,16 @@ void AP_Scheduler::loop()
     const uint32_t loop_us = get_loop_period_us();
     uint32_t now = AP_HAL::micros();
     uint32_t time_available = 0;
-    if (now - sample_time_us < loop_us) {
+    const uint32_t loop_tick_us = now - sample_time_us;
+    if (loop_tick_us < loop_us) {
         // get remaining time available for this loop
-        time_available = loop_us - (now - sample_time_us);
+        time_available = loop_us - loop_tick_us;
     }
 
     // add in extra loop time determined by not achieving scheduler tasks
     time_available += extra_loop_us;
+    // update the task info for the fast loop
+    perf_info.update_task_info(_num_tasks, loop_tick_us, loop_tick_us > loop_us);
 
     // run the tasks
     run(time_available);
@@ -432,15 +435,15 @@ size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
 
     // baseline the total time taken by all tasks
     float total_time = 1.0f;
-    for (uint8_t i = 0; i < _num_tasks; i++) {
+    for (uint8_t i = 0; i < _num_tasks + 1; i++) {
         const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
         if (ti->tick_count > 0) {
             total_time += ti->elapsed_time_us;
         }
     }
 
-    for (uint8_t i = 0; i < _num_tasks; i++) {
-        const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
+    for (uint8_t i = 0; i < _num_tasks + 1; i++) {
+        const char* task_name = (i < _num_unshared_tasks) ? _tasks[i].name : i == _num_tasks ? "fast_loop" : _common_tasks[i - _num_unshared_tasks].name;
         const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
 
         uint16_t avg = 0;
@@ -455,7 +458,7 @@ size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
 #else
         const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #endif
-        n = hal.util->snprintf(buf, bufsize, fmt, task.name,
+        n = hal.util->snprintf(buf, bufsize, fmt, task_name,
             unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
             unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
 
