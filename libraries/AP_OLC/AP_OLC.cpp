@@ -15,7 +15,6 @@
  * AP_OLC is based on INAV olc.c implemention, thanks @fiam and other contributors.
  */
 
-#include <algorithm>
 #include "AP_OLC.h"
 
 #include <AP_Common/AP_Common.h>
