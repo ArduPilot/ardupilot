@@ -11,7 +11,7 @@ void Plane::set_next_WP(const struct Location &loc)
 {
     float bearing_deg = current_loc.get_bearing_to(loc) * 0.01;
     float yaw_deg = degrees(ahrs.yaw);
-    float bearing_err = abs(bearing_deg - yaw_deg);
+    float bearing_err = fabsf(bearing_deg - yaw_deg);
 
     if (auto_state.next_wp_crosstrack && bearing_err < 45) {
         // copy the current WP into the OldWP slot
