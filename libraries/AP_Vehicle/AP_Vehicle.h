@@ -110,6 +110,7 @@ public:
             uint8_t in_range_count;
             float height_estimate;
             float last_distance;
+            float prev_distance;
         };
 
 
