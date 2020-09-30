@@ -1273,8 +1273,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
             get_filter_status(filt_state);
         }
 #endif
-        if (hal.util->get_soft_armed() &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
+        if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
             (!filt_state.flags.using_gps ||
              !filt_state.flags.horiz_pos_abs ||
              EKF_innovations_bad())) {
