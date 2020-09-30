@@ -130,17 +130,27 @@ function is_change_candidate(cnum)
       return true
    end
    local loc = ahrs:get_position()
+   local m1 = mission:get_item(cnum)
+   if m1:command() ~= NAV_WAYPOINT then
+      -- only change when navigating to a WP
+      return false
+   end
+   if loc:alt() * 0.01 - LANDING_AMSL > 1000 then
+      -- if we have lots of height then we can change
+      return true
+   end
    local loc2 = get_location(cnum)
-   if loc:get_distance(loc2) < 2000 then
+   if loc:get_distance(loc2) < 1500 then
+      -- if we are within 1.5km then no change
       return false
    end
    if loc:get_distance(loc2) > 3500 then
+      -- if a long way from target allow change
       return true
    end
    if cnum > mission:num_commands()-2 then
       return false
    end
-   local m1 = mission:get_item(cnum)
    local m2 = mission:get_item(cnum+1)
    if m1:command() == NAV_WAYPOINT and m2:command() ~= NAV_LAND then
       -- allow change of cross WPs when more than 2km away
