@@ -180,9 +180,6 @@ private:
     // body_length as appropriate.
     void move_header_in_buffer(uint8_t initial_offset);
 
-    // RC input generator for pilot to specify desired generator state
-    RC_Channel *_rc_channel;
-
     // a simple heat model to avoid the motor moving to run too fast
     // or being stopped before cooldown.  The generator itself does
     // not supply temperature via telemetry, so we fake one based on
