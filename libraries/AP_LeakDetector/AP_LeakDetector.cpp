@@ -70,6 +70,7 @@ void AP_LeakDetector::init()
 {
     for (int i = 0; i < LEAKDETECTOR_MAX_INSTANCES; i++) {
         switch (_pin[i]) {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
         case 50 ... 55:
             _state[i].instance = i;
             _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
@@ -78,6 +79,9 @@ void AP_LeakDetector::init()
             _state[i].instance = i;
             _drivers[i] = new AP_LeakDetector_Analog(*this, _state[i]);
             break;
+#else
+#pragma message("Board does not support LeakDetection")
+#endif
         default:
             _drivers[i] = NULL;
             break;
