@@ -1088,6 +1088,15 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
 #endif
             _PITCHminf = MAX(_PITCHminf, pitch_limit_cd*0.01f);
         }
+        if (_landing.is_preflaring() && _landing.get_preflare_pitch_cd() != 0) {
+            // in preflare use min pitch from LAND_PF_PITCH_CD
+            _PITCHminf = MAX(_PITCHminf, _landing.get_preflare_pitch_cd() * 0.01f);
+            // and use max pitch from TECS_LAND_PMAX
+            if (_land_pitch_max != 0) {
+                // note that this allows a flare pitch outside the normal TECS auto limits
+                _PITCHmaxf = MAX(_PITCHmaxf, _land_pitch_max);
+            }
+        }
     }
 
     if (_landing.is_on_approach()) {
