@@ -676,6 +676,7 @@ void Plane::rangefinder_height_update(void)
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
         }
+        rangefinder_state.prev_distance = rangefinder_state.last_distance;
         rangefinder_state.last_distance = distance;
     } else {
         rangefinder_state.in_range_count = 0;

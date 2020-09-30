@@ -684,10 +684,13 @@ bool Plane::in_auto_land(void)
 
     // check if we have dropped below preflare height while flying, if
     // so then start landing immediately
+    const float rangefinder_last_change = fabsf(rangefinder_state.prev_distance - rangefinder_state.last_distance);
     if (auto_state.started_landing ||
         (g.rangefinder_landing && rangefinder_state.in_range &&
          rangefinder_state.height_estimate < landing.get_preflare_alt() &&
-         smoothed_airspeed >= aparm.airspeed_min)) {
+         smoothed_airspeed >= aparm.airspeed_min &&
+         rangefinder_last_change > 0 &&
+         rangefinder_last_change < 10)) {
         if (!auto_state.started_landing) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Emergency Land: %.1fm", rangefinder_state.height_estimate);
             auto_state.started_landing = true;
