@@ -53,10 +53,6 @@ bool ModeAuto::init(bool ignore_checks)
             waiting_for_origin = true;
         }
 
-        // if the user doesn't want to raise the throttle we can set it automatically
-        if ((copter.g2.auto_options & (int32_t)Options::BypassThrottle) != 0) {
-            copter.set_auto_armed(true);
-        }
         return true;
     } else {
         return false;
@@ -742,7 +738,7 @@ void ModeAuto::takeoff_run()
 {
     // if the user doesn't want to raise the throttle we can set it automatically
     // note that this can defeat the disarm check on takeoff
-    if ((copter.g2.auto_options & (int32_t)Options::BypassThrottle) != 0) {
+    if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
         copter.set_auto_armed(true);
     }
     auto_takeoff_run();

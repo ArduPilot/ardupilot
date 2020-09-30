@@ -406,8 +406,8 @@ protected:
 private:
 
     enum class Options : int32_t {
-        AllowArming    = (1 << 0U),
-        BypassThrottle = (1 << 1U),
+        AllowArming                        = (1 << 0U),
+        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
     };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
@@ -521,7 +521,7 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    bool waiting_for_origin;
+    bool waiting_for_origin;    // true if waiting for origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
