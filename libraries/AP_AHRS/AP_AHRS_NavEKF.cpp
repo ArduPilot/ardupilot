@@ -1268,9 +1268,10 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         }
 #endif
         if (hal.util->get_soft_armed() &&
+            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
             (!filt_state.flags.using_gps ||
-             !filt_state.flags.horiz_pos_abs) &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+             !filt_state.flags.horiz_pos_abs ||
+             EKF_innovations_bad())) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
             // and we have a 3D lock, then plane and rover would
             // prefer to use the GPS position from DCM. This is a
@@ -2373,6 +2374,39 @@ void AP_AHRS_NavEKF::set_alt_measurement_noise(float noise)
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.set_baro_alt_noise(noise);
 #endif
+}
+
+
+/*
+  return true if current EKF innovations are very bad
+ */
+bool AP_AHRS_NavEKF::EKF_innovations_bad(void) const
+{
+    switch (ekf_type()) {
+    case EKFType::NONE:
+        return false;
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO: {
+        Vector3f velInnov, posInnov, magInnov;
+        float tasInnov, yawInnov;
+        EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return (velInnov.length() < 10 && posInnov.length() < 50);
+    }
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE: {
+        Vector3f velInnov, posInnov, magInnov;
+        float tasInnov, yawInnov;
+        EKF3.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return (velInnov.length() < 10 && posInnov.length() < 50);
+    }
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        return false;
+#endif
+    }
+    return false;
 }
 
 #endif // AP_AHRS_NAVEKF_AVAILABLE
