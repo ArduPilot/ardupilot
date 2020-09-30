@@ -210,7 +210,7 @@ public:
     uint8_t _vtx_state_idx=0;
     smartaudioSettings_t _vtx_states_buffer[2];
     smartaudioSettings_t *_vtx_current_state;
-    
+
 
      // RingBuffer to store outgoing request.
     ObjectBuffer<Packet> requests_queue{SMARTAUDIO_BUFFER_CAPACITY};
@@ -243,7 +243,7 @@ public:
 
     // updates the smartaudio state in sync whith AP_VideoTX
     bool update(bool force);
-   
+
     // sends a frame over the wire
     void send_request(smartaudioFrame_t requestFrame, uint8_t size);
 
@@ -291,7 +291,7 @@ public:
         return;
     }
 
-    
+
 
 
 private:
@@ -305,7 +305,7 @@ private:
     static AP_SmartAudio* singleton;
 
     // utility method for debugging
-    void _print_state(smartaudioSettings_t *state);
+    void _print_state(smartaudioSettings_t& state);
 
     // utility method for debugging.
     void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
@@ -357,7 +357,7 @@ private:
        return powerLevel;
     }
 
-    
+
     // utility method to get power in dbm mapping to power levels
     static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version)
     {
