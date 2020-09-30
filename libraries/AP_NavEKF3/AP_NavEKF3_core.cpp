@@ -1078,16 +1078,21 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
 
     bool quatCovResetOnly = false;
     if (rotVarVecPtr != nullptr) {
-        // handle special case where we are initialising the quaternion covarianfces using an earth frame
-        // vector defining the varaince of the angular alignment uncertainty
-        // use the exisiting gyro error propagation mechanism to define an equivalent gyro error variance
+        // Handle special case where we are initialising the quaternion covariances using an earth frame
+        // vector defining the variance of the angular alignment uncertainty. Convert he varaince vector
+        // to a matrix and rotate into body frame. Use the exisiting gyro error propagation mechanism to
+        // propagate the body frame angular uncertainty variances.
         Vector3f rotVarVec = *rotVarVecPtr;
+        Matrix3f R_ef = Matrix3f (
+            rotVarVec.x, 0.0f, 0.0f,
+            0.0f, rotVarVec.y, 0.0f,
+            0.0f, 0.0f, rotVarVec.z);
         Matrix3f Tnb;
         stateStruct.quat.inverse().rotation_matrix(Tnb);
-        rotVarVec = rotVarVec * Tnb;
-        daxVar = rotVarVec.x;
-        dayVar = rotVarVec.y;
-        dazVar = rotVarVec.z;
+        Matrix3f R_bf = Tnb * R_ef * Tnb.transposed();
+        daxVar = R_bf.a.x;
+        dayVar = R_bf.b.y;
+        dazVar = R_bf.c.z;
         quatCovResetOnly = true;
         zeroRows(P,0,3);
         zeroCols(P,0,3);
