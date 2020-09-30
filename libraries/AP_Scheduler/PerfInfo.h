@@ -43,13 +43,13 @@ public:
     bool has_task_info() { return _task_info != nullptr; }
     // return a task info
     const TaskInfo* get_task_info(uint8_t task_index) const {
-        return (_task_info && task_index < _num_tasks) ? &_task_info[task_index] : nullptr;
+        return (_task_info && task_index <= _num_tasks) ? &_task_info[task_index] : nullptr;
     }
     // called after each run of a task to update its statistics based on measurements taken by the scheduler
     void update_task_info(uint8_t task_index, uint16_t task_time_us, bool overrun);
     // record that a task slipped
     void task_slipped(uint8_t task_index) {
-        if (_task_info && task_index < _num_tasks) {
+        if (_task_info && task_index <= _num_tasks) {
             _task_info[task_index].overrun_count++;
         }
     }
