@@ -150,6 +150,13 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
 
+    // @Param: PF_PITCH_CD
+    // @DisplayName: Landing pre-flare minimum pitch
+    // @Description: Used in autoland to give the minimum pitch in the preflare stage of landing. This parameter can be used to ensure that the preflare landing attitude is appropriate for the type of aircraft. Note that it is a minimum pitch only - the landing code will control pitch above this value to try to achieve the configured landing sink rate. A value of 0 means no limit
+    // @Units: cdeg
+    // @User: Advanced
+    AP_GROUPINFO("PF_PITCH_CD", 17, AP_Landing, preflare_pitch_cd, 0),
+    
     AP_GROUPEND
 };
 
@@ -293,6 +300,21 @@ bool AP_Landing::is_flaring(void) const
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
         return type_slope_is_flaring();
+    case TYPE_DEEPSTALL:
+    default:
+        return false;
+    }
+}
+
+bool AP_Landing::is_preflaring(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_preflaring();
     case TYPE_DEEPSTALL:
     default:
         return false;

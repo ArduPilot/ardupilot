@@ -378,6 +378,11 @@ bool AP_Landing::type_slope_is_flaring(void) const
     return (type_slope_stage == SLOPE_STAGE_FINAL);
 }
 
+bool AP_Landing::type_slope_is_preflaring(void) const
+{
+    return (type_slope_stage == SLOPE_STAGE_PREFLARE);
+}
+
 bool AP_Landing::type_slope_is_on_approach(void) const
 {
     return (type_slope_stage == SLOPE_STAGE_APPROACH ||
