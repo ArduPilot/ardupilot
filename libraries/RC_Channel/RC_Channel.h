@@ -232,10 +232,11 @@ public:
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
+    virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
-    virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
     virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
