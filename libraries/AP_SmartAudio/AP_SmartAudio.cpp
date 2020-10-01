@@ -61,8 +61,6 @@ bool AP_SmartAudio::init()
         // setup port options
         _port->set_stop_bits(2);
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        _port->set_options(AP_HAL::UARTDriver::OPTION_HDPLEX);
-
 
         // initialize AP_VideoTx settings
         request_settings();
