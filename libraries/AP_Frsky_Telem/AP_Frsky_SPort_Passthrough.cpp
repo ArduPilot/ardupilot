@@ -194,13 +194,7 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
  */
 void AP_Frsky_SPort_Passthrough::send(void)
 {
-    int16_t numc;
-    numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
+    const uint16_t numc = MIN(_port->available(), 1024U);
 
     // this is the constant for hub data frame
     if (_port->txspace() < 19) {
@@ -208,7 +202,7 @@ void AP_Frsky_SPort_Passthrough::send(void)
     }
     // keep only the last two bytes of the data found in the serial buffer, as we shouldn't respond to old poll requests
     uint8_t prev_byte = 0;
-    for (int16_t i = 0; i < numc; i++) {
+    for (uint16_t i = 0; i < numc; i++) {
         prev_byte = _passthrough.new_byte;
         _passthrough.new_byte = _port->read();
     }
@@ -237,14 +231,14 @@ bool AP_Frsky_SPort_Passthrough::get_next_msg_chunk(void)
         uint8_t character = 0;
         _msg_chunk.chunk = 0; // clear the 4 bytes of the chunk buffer
 
-        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext.next.text); i--) {
+        for (uint8_t i = 0; i < 4 && _msg_chunk.char_index < sizeof(_statustext.next.text); i++) {
             character = _statustext.next.text[_msg_chunk.char_index++];
 
             if (!character) {
                 break;
             }
 
-            _msg_chunk.chunk |= character << i * 8;
+            _msg_chunk.chunk |= character << (3-i) * 8;
         }
 
         if (!character || (_msg_chunk.char_index == sizeof(_statustext.next.text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
