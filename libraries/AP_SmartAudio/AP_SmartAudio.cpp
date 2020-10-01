@@ -137,7 +137,7 @@ void AP_SmartAudio::loop(){
 }
 
 void AP_SmartAudio::_print_state(smartaudioSettings_t& state){
-    if (&state!=nullptr){
+
     debug("{\nversion:%u"
     ", \nchannel:%u"
     ", \npower:%u"
@@ -161,7 +161,7 @@ void AP_SmartAudio::_print_state(smartaudioSettings_t& state){
     , state.pitmodeOutRangeActive
     , state.unlocked
     );
-    }
+
 }
 
 void AP_SmartAudio::_print_stats(){
