@@ -97,6 +97,30 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @Bitmask: 0:PWM Input,1:InvertInput
     AP_GROUPINFO("OPTIONS4",  9, AP_Button, options[3], 0),
 
+    // @Param: FUNC1
+    // @DisplayName: Button Pin 1 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC1",  10, AP_Button, pin_func[0], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC2
+    // @DisplayName: Button Pin 2 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC2",  11, AP_Button, pin_func[1], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC3
+    // @DisplayName: Button Pin 3 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC3",  12, AP_Button, pin_func[2], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC4
+    // @DisplayName: Button Pin 4 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC4",  13, AP_Button, pin_func[3], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
     AP_GROUPEND    
 };
 
@@ -144,30 +168,98 @@ void AP_Button::update(void)
     }
 
     // update the PWM state:
-    uint8_t new_pwm_state = 0;
+    uint8_t new_pwm_state = pwm_state;
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
+        const uint8_t mask = (1U << i);
         if (!is_pwm_input(i)) {
             // not a PWM input
+            new_pwm_state &= ~mask;
             continue;
         }
         const uint16_t pwm_us = pwm_pin_source[i].get_pwm_us();
         // these values are the same as used in RC_Channel:
-        new_pwm_state |= pwm_us > 1800 && pwm_us < 2200;
+        if (pwm_state & mask) {
+            // currently asserted; check to see if we should de-assert
+            if (pwm_us < RC_Channel::AUX_PWM_TRIGGER_LOW) {
+                new_pwm_state &= ~mask;
+            }
+        } else {
+            // currently not asserted; check to see if we should assert
+            if (pwm_us > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+                new_pwm_state |= mask;
+            }
+        }
     }
     if (new_pwm_state != pwm_state) {
         pwm_state = new_pwm_state;
-        last_debounced_change_ms = AP_HAL::millis64();
+        last_debounce_ms = AP_HAL::millis64();
     }
 
-    // act on any changes in state
-    if (last_change_time_ms != 0 &&
+    if (last_debounce_ms != 0 &&
         (AP_HAL::millis() - last_report_ms) > AP_BUTTON_REPORT_PERIOD_MS &&
-        (AP_HAL::millis64() - last_change_time_ms) < report_send_time*1000ULL) {
+        (AP_HAL::millis64() - last_debounce_ms) < report_send_time*1000ULL) {
         // send a change report
         last_report_ms = AP_HAL::millis();
 
         // send a report to GCS
         send_report();
+    }
+
+    if (!aux_functions_initialised) {
+        run_aux_functions(true);
+        aux_functions_initialised = true;
+    }
+
+    if (last_debounce_ms != 0 &&
+        last_debounce_ms != last_action_time_ms) {
+        last_action_time_ms = last_debounce_ms;
+        run_aux_functions(false);
+    }
+}
+
+void AP_Button::run_aux_functions(bool force)
+{
+    RC_Channel *rc_channel = rc().channel(1);
+    if (rc_channel == nullptr) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
+        const RC_Channel::AUX_FUNC func = RC_Channel::AUX_FUNC(pin_func[i].get());
+        if (func == RC_Channel::AUX_FUNC::DO_NOTHING) {
+            continue;
+        }
+        const uint8_t value_mask = (1U<<i);
+        bool value;
+        if (is_pwm_input(i)) {
+            value = (pwm_state & value_mask) != 0;
+        } else {
+            value = (debounce_mask & value_mask) != 0;
+        }
+        if (is_input_inverted(i)) {
+            value = !value;
+        }
+        const bool actioned = ((state_actioned_mask & value_mask) != 0);
+        if (!force && value == actioned) {
+            // no change on this pin
+            continue;
+        }
+        // mark action as done:
+        if (value) {
+            state_actioned_mask |= value_mask;
+        } else {
+            state_actioned_mask &= ~value_mask;
+        }
+
+        const RC_Channel::AuxSwitchPos pos = value ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
+        // I wonder if we can do better here:
+#if !HAL_MINIMIZE_FEATURES
+        const char *str = rc_channel->string_for_aux_function(func);
+        if (str != nullptr) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Button: executing (%s)", str);
+        }
+#endif
+        rc_channel->do_aux_function(func, pos);
     }
 }
 
@@ -224,6 +316,7 @@ void AP_Button::timer_update(void)
         (now - last_change_time_ms) > DEBOUNCE_MS) {
         // crude de-bouncing, debounces all buttons as one, not individually
         debounce_mask = last_mask;
+        WITH_SEMAPHORE(last_debounced_change_ms_sem);
         last_debounced_change_ms = now;
     }
 }

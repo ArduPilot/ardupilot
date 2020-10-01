@@ -238,6 +238,11 @@ public:
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
 
+    // pwm value above which the option will be invoked:
+    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
+    // pwm value below which the option will be disabled:
+    static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
+
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
@@ -291,11 +296,6 @@ private:
 
     int16_t pwm_to_angle() const;
     int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
-
-    // pwm value above which the option will be invoked:
-    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
-    // pwm value below which the option will be disabled:
-    static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
 
     // Structure used to detect and debounce switch changes
     struct {
