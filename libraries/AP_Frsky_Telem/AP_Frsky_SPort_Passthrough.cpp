@@ -154,8 +154,8 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
         break;
     case GPS_LAT: // 0x800 GPS lat
         // sample both lat and lon at the same time
-        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
-        _passthrough.gps_lng_sample = calc_gps_latlng(&_passthrough.send_latitude);
+        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
+        _passthrough.gps_lng_sample = calc_gps_latlng(_passthrough.send_latitude);
         // force the scheduler to select GPS lon as packet that's been waiting the most
         // this guarantees that gps coords are sent at max
         // _scheduler.avg_polling_period*number_of_downlink_sensors time separation
@@ -325,10 +325,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
 {
     const AP_GPS &gps = AP::gps();
 
-    uint32_t gps_status;
-
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
-    gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
+    uint32_t gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
     gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
@@ -349,7 +347,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
 {
     const AP_BattMonitor &_battery = AP::battery();
 
-    uint32_t batt;
     float current, consumed_mah;
     if (!_battery.current_amps(current, instance)) {
         current = 0;
@@ -359,7 +356,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
     }
 
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    uint32_t batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
     batt |= prep_number(roundf(current * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
@@ -373,13 +370,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
 {
-    uint32_t ap_status;
-
     // IMU temperature: offset -19, 0 means temp =< 19°, 63 means temp => 82°
     uint8_t imu_temp = (uint8_t) roundf(constrain_float(AP::ins().get_temperature(0), AP_IMU_TEMP_MIN, AP_IMU_TEMP_MAX) - AP_IMU_TEMP_MIN);
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
+    uint32_t ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(gcs().simple_input_active())<<AP_SIMPLE_OFFSET;
     ap_status |= (uint8_t)(gcs().supersimple_input_active())<<AP_SSIMPLE_OFFSET;
@@ -393,8 +388,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
-    //hal.console->printf("flying=%d\n",AP_Notify::flags.flying);
-    //hal.console->printf("ap_status=%08X\n",ap_status);
     return ap_status;
 }
 
@@ -407,17 +400,17 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
     uint32_t home = 0;
     Location loc;
     Location home_loc;
-    bool get_position;
+    bool got_position = false;
     float _relative_home_altitude = 0;
 
     {
         AP_AHRS &_ahrs = AP::ahrs();
         WITH_SEMAPHORE(_ahrs.get_semaphore());
-        get_position = _ahrs.get_position(loc);
+        got_position = _ahrs.get_position(loc);
         home_loc = _ahrs.get_home();
     }
 
-    if (get_position) {
+    if (got_position) {
         // check home_loc is valid
         if (home_loc.lat != 0 || home_loc.lng != 0) {
             // distance between vehicle and home_loc in meters
@@ -468,10 +461,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
     const RangeFinder *_rng = RangeFinder::get_singleton();
 
-    uint32_t attiandrng;
     AP_AHRS &_ahrs = AP::ahrs();
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
+    uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm

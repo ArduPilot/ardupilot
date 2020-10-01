@@ -21,7 +21,7 @@ protected:
         uint8_t new_byte;
     } _passthrough;
 
-    uint32_t calc_gps_latlng(bool *send_latitude);
+    uint32_t calc_gps_latlng(bool &send_latitude);
 
 private:
 
