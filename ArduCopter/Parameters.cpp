@@ -1021,7 +1021,7 @@ ParametersG2::ParametersG2(void)
     ,mode_systemid_ptr(&copter.mode_systemid)
 #endif
 #if MODE_AUTOROTATE_ENABLED == ENABLED
-    ,arot(copter.inertial_nav)
+    ,arot()
 #endif
     ,button_ptr(&copter.button)
 #if MODE_ZIGZAG_ENABLED == ENABLED
