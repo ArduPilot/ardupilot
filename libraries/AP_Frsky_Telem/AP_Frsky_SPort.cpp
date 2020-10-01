@@ -10,13 +10,7 @@
  */
 void AP_Frsky_SPort::send(void)
 {
-    int16_t numc;
-    numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
+    const uint16_t numc = MIN(_port->available(), 1024U);
 
     // this is the constant for hub data frame
     if (_port->txspace() < 19) {
