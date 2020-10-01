@@ -229,6 +229,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         #endif // HELI_FRAME
 
         // checks when using range finder for RTL
+#if MODE_RTL_ENABLED == ENABLED
         if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
             // get terrain source from wpnav
             switch (copter.wp_nav->get_terrain_source()) {
@@ -267,6 +268,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 break;
             }
         }
+#endif
 
         // check adsb avoidance failsafe
 #if HAL_ADSB_ENABLED
