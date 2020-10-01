@@ -22,6 +22,9 @@
 
 // SmartAudio Serial Protocol
 #define AP_SMARTAUDIO_UART_BAUD            4800
+#define AP_SMARTAUDIO_SMARTBAUD_MIN        4800
+#define AP_SMARTAUDIO_SMARTBAUD_MAX        4950
+#define AP_SMARTAUDIO_SMARTBAUD_STEP       50
 #define AP_SMARTAUDIO_UART_BUFSIZE_RX      16
 #define AP_SMARTAUDIO_UART_BUFSIZE_TX      16
 
@@ -77,6 +80,16 @@
 class AP_SmartAudio
 {
 public:
+        // Statistical counters, for user side trouble shooting.
+        struct smartAudioStat_s {
+            uint16_t pktsent;
+            uint16_t pktrcvd;
+            uint16_t badpre;
+            uint16_t badlen;
+            uint16_t crc;
+            uint16_t ooopresp;
+            uint16_t badcode;
+        } _saStat ={};
 
         // Proposed to be into AP_VideoTX
         enum class HWVtxUpdates {
@@ -101,13 +114,15 @@ public:
         uint8_t* power_levels=nullptr;
         uint8_t  power_in_dbm;
 
-
         uint16_t pitmodeFrequency;
         bool userFrequencyMode=false;     // user is setting freq
         bool pitModeRunning=false;
         bool pitmodeInRangeActive=false;
         bool pitmodeOutRangeActive=false;
 
+        // smart audio autoadjust baudrate direction
+
+        // current baud rate defined by autobaud
 
         //  |0 0 0 0 1 1 1 1|    // overall updated
         //  |0 0 0 0 0 0 0 1|    // freq updated    1 << 0
@@ -124,6 +139,7 @@ public:
                 update_flags=0x0F;
                 }
         }
+
 
     } smartaudioSettings_t;
 
@@ -202,6 +218,10 @@ public:
         uint8_t frame_size;
         uint32_t sended_at_ms;
     } PACKED;
+
+    // value for current baud adjust
+    int _sa_smartbaud=AP_SMARTAUDIO_SMARTBAUD_MIN;
+    int _sa_adjdir=1;
 
     // When enabled the settings returned from hw vtx are settled into ap_videoTx params NOT USED YET
     AP_Int8 _smart_audio_param_setup_defaults;
@@ -307,6 +327,9 @@ private:
     // utility method for debugging
     void _print_state(smartaudioSettings_t& state);
 
+    // utility method to print stats
+    void _print_stats();
+
     // utility method for debugging.
     void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
 
@@ -397,6 +420,7 @@ private:
     size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings);
     bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer);
     static u_int16_t applyBigEndian16(u_int16_t bytes);
+    void saAutobaud();
 
 };
 #endif

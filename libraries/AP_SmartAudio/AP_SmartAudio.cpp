@@ -92,6 +92,8 @@ void AP_SmartAudio::loop(){
         // setup a queue polling delay of 20 ms.
         hal.scheduler->delay(50);
 
+
+
         // Proccess response in the next 200 milis from the request are sent.
         if (now-_last_request_sended_at_ms>100 && now-_last_request_sended_at_ms<=1000 && _is_waiting_response){
             // allocate response buffer
@@ -103,6 +105,8 @@ void AP_SmartAudio::loop(){
             hal.scheduler->delay(500);
             // prevent to proccess any queued request from the ring buffer
             packet_processed=true;
+
+
         }else{
             _is_waiting_response=false;
         }
@@ -123,9 +127,12 @@ void AP_SmartAudio::loop(){
 
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
             hal.scheduler->delay(100);
+
         }
         // enqueu new packets in the buffer to sincro the hw vtx config
         update(false);
+        // process autobaud routine
+        saAutobaud();
      }
 }
 
@@ -157,7 +164,17 @@ void AP_SmartAudio::_print_state(smartaudioSettings_t& state){
     }
 }
 
-
+void AP_SmartAudio::_print_stats(){
+    debug("\r saStat: badCode: %u, badLength: %u, badPre: %u, badCrc: %u, outofScopeResp: %u, receivedPkt: %u, sendedPkt: %u ",
+    _saStat.badcode,
+    _saStat.badlen,
+    _saStat.badpre,
+    _saStat.crc,
+    _saStat.ooopresp,
+    _saStat.pktrcvd,
+    _saStat.pktsent
+    );
+}
 
 // updates the smartaudio state in sync whith AP_VideoTX
 bool AP_SmartAudio::update(bool force)
@@ -253,7 +270,9 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
     for (uint8_t i= 0; i < size; ++i) {
         _port->write(request[i]);
     }
-    AP_SmartAudio::_print_bytes_to_hex_string(request, size);
+
+    _saStat.pktsent++;
+    //AP_SmartAudio::_print_bytes_to_hex_string(request, size);
 }
 
 /**
@@ -306,9 +325,8 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer, uint8_t inline_buffe
     _is_waiting_response=false;
 
     parse_frame_response(response_buffer);
-
-
     response_buffer=nullptr;
+    _saStat.pktrcvd++;
 }
 
 /**
@@ -326,6 +344,7 @@ bool AP_SmartAudio::parse_frame_response(const uint8_t *buffer)
         // process response buffer
         if (!smartaudioParseResponseBuffer(&vtx_settings, buffer)){
             debug("%80s", "Unparseable buffer response");
+            _saStat.ooopresp++;
             return false;
         }
 
@@ -767,6 +786,7 @@ bool  AP_SmartAudio::smartaudioParseResponseBuffer(smartaudioSettings_t *setting
 
     if (crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr) || header->headerByte != SMARTAUDIO_HEADER_BYTE || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
         debug(" PARSE RESPONSE bad frame response crc check %02X", *endPtr);
+        _saStat.crc++;
         return false;
     }
 
@@ -818,8 +838,46 @@ bool  AP_SmartAudio::smartaudioParseResponseBuffer(smartaudioSettings_t *setting
     }
     break;
     default:
+        _saStat.badcode++;
         return false;
     }
     return true;
+}
+
+void AP_SmartAudio::saAutobaud()
+{
+    if (_saStat.pktsent < 10) {
+        // Not enough samples collected
+        return;
+    }
+
+    if (((_saStat.pktrcvd * 100) / _saStat.pktsent) >= 70) {
+        // This is okay
+        _saStat.pktsent = 0; // Should be more moderate?
+        _saStat.pktrcvd = 0;
+        return;
+    }
+
+    debug("autobaud: adjusting\r\n");
+    _print_stats();
+
+    if ((_sa_adjdir == 1) && (_sa_smartbaud == AP_SMARTAUDIO_SMARTBAUD_MAX)) {
+        _sa_adjdir = -1;
+        debug("autobaud: now going down\r\n");
+    } else if ((_sa_adjdir == -1 && _sa_smartbaud == AP_SMARTAUDIO_SMARTBAUD_MIN)) {
+        _sa_adjdir = 1;
+        debug("autobaud: now going up\r\n");
+    }
+
+    _sa_smartbaud += AP_SMARTAUDIO_SMARTBAUD_STEP * _sa_adjdir;
+
+    debug("autobaud: %d\r\n", _sa_smartbaud);
+
+    //smartAudioSerialPort->vTable->serialSetBaudRate(smartAudioSerialPort, sa_smartbaud);
+    _port->begin(_sa_smartbaud,0,0);
+
+    _saStat.pktsent = 0;
+    _saStat.pktrcvd = 0;
+
 }
 
