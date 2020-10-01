@@ -87,10 +87,10 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_GPS: // Sensor ID  3
                 switch (_SPort.gps_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
                     break;
                 case 1:
-                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
+                    send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
                     break;
                 case 2:
                     send_sport_frame(SPORT_DATA_FRAME, DATA_ID_GPS_SPEED_BP, _SPort_data.speed_in_meter); // send gps speed integer part
@@ -136,28 +136,26 @@ void AP_Frsky_SPort::send(void)
  * prepare gps latitude/longitude data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
-uint32_t AP_Frsky_SPort::calc_gps_latlng(bool *send_latitude)
+uint32_t AP_Frsky_SPort::calc_gps_latlng(bool &send_latitude)
 {
-    uint32_t latlng;
     const Location &loc = AP::gps().location(0); // use the first gps instance (same as in send_mavlink_gps_raw)
 
     // alternate between latitude and longitude
-    if ((*send_latitude) == true) {
+    if (send_latitude == true) {
+        send_latitude = false;
         if (loc.lat < 0) {
-            latlng = ((labs(loc.lat)/100)*6) | 0x40000000;
+            return ((labs(loc.lat)/100)*6) | 0x40000000;
         } else {
-            latlng = ((labs(loc.lat)/100)*6);
+            return ((labs(loc.lat)/100)*6);
         }
-        (*send_latitude) = false;
     } else {
+        send_latitude = true;
         if (loc.lng < 0) {
-            latlng = ((labs(loc.lng)/100)*6) | 0xC0000000;
+            return ((labs(loc.lng)/100)*6) | 0xC0000000;
         } else {
-            latlng = ((labs(loc.lng)/100)*6) | 0x80000000;
+            return ((labs(loc.lng)/100)*6) | 0x80000000;
         }
-        (*send_latitude) = true;
     }
-    return latlng;
 }
 
 /*
