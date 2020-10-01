@@ -15,7 +15,7 @@
 /*
   Simulator for the RPLidarA2 proximity sensor
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rplidara2 --speedup=1 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rplidara2 --speedup=1 -l 51.8752066,14.6487840,0,0
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rplidara2 --speedup=1 -l 51.8752066,14.6487840,0,0
 
 param set SERIAL5_PROTOCOL 11
 param set PRX_TYPE 5
@@ -88,7 +88,7 @@ private:
     };
     InputState _inputstate = InputState::WAITING_FOR_PREAMBLE;
     void set_inputstate(InputState newstate) {
-        ::fprintf(stderr, "Moving from inputstate (%u) to (%u)\n", (uint8_t)_state, (uint8_t)newstate);
+        ::fprintf(stderr, "Moving from inputstate (%u) to (%u)\n", (uint8_t)_inputstate, (uint8_t)newstate);
         _inputstate = newstate;
     }
 
