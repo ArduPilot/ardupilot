@@ -191,14 +191,13 @@ void  AP_Frsky_SPort::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t d
       check that we haven't been too slow in responding to the new
       UART data. If we respond too late then we will overwrite the next
       polling frame.
-      SPort poll-to-pool period is 11.65ms, a frame takes 1.38ms
-      this leaves us with up to 10ms to respond but to play it safe we
-      allow no more than 7500us
+      SPort poll-to-poll period is 11.65ms, a frame takes 1.38ms
+      but specs require we release the bus before 8ms leaving us with 6500us
      */
-    uint64_t tend = _port->receive_time_constraint_us(1);
-    uint64_t now = AP_HAL::micros64();
-    uint64_t tdelay = now - tend;
-    if (tdelay > 7500) {
+    const uint64_t tend_us = port->receive_time_constraint_us(1);
+    const uint64_t now_us = AP_HAL::micros64();
+    const uint64_t tdelay_us = now_us - tend_us;
+    if (tdelay_us > 6500) {
         // we've been too slow in responding
         return;
     }
