@@ -1379,6 +1379,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
 {
     Vector3f v;
     float vspd;
+    float vs_scaled;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     if (ahrs.get_velocity_NED(v)) {
@@ -1398,8 +1399,12 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     } else {
         sym = SYM_DOWN_DOWN;
     }
-    vspd = fabsf(vspd);
-    backend->write(x, y, false, "%c%2d%c", sym, (int)u_scale(VSPEED, vspd), u_icon(VSPEED));
+    vs_scaled = u_scale(VSPEED, fabsf(vspd));
+    if (vs_scaled < 5.0f) {
+        backend->write(x, y, false, "%c%2.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
+    } else {
+        backend->write(x, y, false, "%c%3d%c", sym, (int)vs_scaled, u_icon(VSPEED));
+    }
 }
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
