@@ -569,6 +569,9 @@ public:
     AP_Float fwd_thr_batt_voltage_max;
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
+
+    // min initial climb in RTL
+    AP_Int16        rtl_climb_min;
 };
 
 extern const AP_Param::Info var_info[];

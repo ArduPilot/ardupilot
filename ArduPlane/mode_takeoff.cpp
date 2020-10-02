@@ -65,7 +65,7 @@ void ModeTakeoff::update()
 {
     if (!takeoff_started) {
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && plane.ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && plane.ahrs.groundspeed() > 3) {
             gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = plane.current_loc;
