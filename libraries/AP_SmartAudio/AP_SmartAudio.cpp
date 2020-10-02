@@ -75,11 +75,6 @@ void AP_SmartAudio::loop(){
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
     _port->begin(AP_SMARTAUDIO_UART_BAUD , AP_SMARTAUDIO_UART_BUFSIZE_RX, AP_SMARTAUDIO_UART_BUFSIZE_TX);
 
-    // if(_smart_audio_param_setup_defaults==1){
-    //     debug("REQUESTING SETTINGS TO HW-VTX TO SET AP::VTX DEFAULTS");
-    //     // enqueue this request to get settings to fill up AP:vtx() data
-    //     request_settings();
-    // }
 
      while (true) {
 
@@ -105,14 +100,6 @@ void AP_SmartAudio::loop(){
             uint8_t _inline_buffer_length=0;
             // setup sheduler delay to 50 ms again after response processes
             read_response(_response_buffer, _inline_buffer_length);
-
-            // override vtx params with the settings from the vtx
-            // if(_smart_audio_param_setup_defaults==1){
-            //      debug("SETTING AP::VTX DEFAULTS");
-            //     get_readings(&AP::vtx());
-            //     _smart_audio_param_setup_defaults.set_and_notify(0);
-            // }
-
             hal.scheduler->delay(500);
             // prevent to proccess any queued request from the ring buffer
             packet_processed=true;
