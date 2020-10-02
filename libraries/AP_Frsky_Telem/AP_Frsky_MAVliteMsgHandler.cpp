@@ -9,6 +9,7 @@ extern const AP_HAL::HAL& hal;
  * Handle the COMMAND_LONG mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
+
 void AP_Frsky_MAVliteMsgHandler::handle_command_long(const AP_Frsky_MAVlite_Message &rxmsg)
 {
     mavlink_command_long_t mav_command_long {};
@@ -39,24 +40,22 @@ void AP_Frsky_MAVliteMsgHandler::handle_command_long(const AP_Frsky_MAVlite_Mess
     mav_command_long.param6 = params[5];
     mav_command_long.param7 = params[6];
 
-    MAV_RESULT mav_result = MAV_RESULT_FAILED;
+    const MAV_RESULT mav_result = handle_command(mav_command_long);
+    send_command_ack(mav_result, mav_command_long.command);
+}
+
+MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command(const mavlink_command_long_t &mav_command_long)
+{
     // filter allowed commands
     switch (mav_command_long.command) {
         //case MAV_CMD_ACCELCAL_VEHICLE_POS:
         case MAV_CMD_DO_SET_MODE:
-            if (AP::vehicle()->set_mode(mav_command_long.param1, ModeReason::FRSKY_COMMAND)) {
-                mav_result = MAV_RESULT_ACCEPTED;
-            }
-            break;
+            return handle_command_do_set_mode(mav_command_long);
         //case MAV_CMD_DO_SET_HOME:
         case MAV_CMD_DO_FENCE_ENABLE:
-            mav_result = handle_command_do_fence_enable((uint16_t)mav_command_long.param1);
-            break;
+            return handle_command_do_fence_enable(mav_command_long);
         case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (is_equal(mav_command_long.param1,1.0f) && is_zero(mav_command_long.param2)) {
-                mav_result = handle_command_preflight_reboot();
-            }
-            break;
+            return handle_command_preflight_reboot(mav_command_long);
         //case MAV_CMD_DO_START_MAG_CAL:
         //case MAV_CMD_DO_ACCEPT_MAG_CAL:
         //case MAV_CMD_DO_CANCEL_MAG_CAL:
@@ -72,10 +71,7 @@ void AP_Frsky_MAVliteMsgHandler::handle_command_long(const AP_Frsky_MAVlite_Mess
         //case MAV_CMD_DO_SET_ROI_LOCATION:
         //case MAV_CMD_DO_SET_ROI:
         case MAV_CMD_PREFLIGHT_CALIBRATION:
-            if (is_equal(mav_command_long.param1,0.0f) && is_equal(mav_command_long.param2,0.0f) && is_equal(mav_command_long.param3,1.0f)) {
-                mav_result = handle_command_preflight_calibration_baro();
-            }
-            break;
+            return handle_command_preflight_calibration_baro(mav_command_long);
         //case MAV_CMD_BATTERY_RESET:
         //case MAV_CMD_PREFLIGHT_UAVCAN:
         //case MAV_CMD_FLASH_BOOTLOADER:
@@ -93,10 +89,17 @@ void AP_Frsky_MAVliteMsgHandler::handle_command_long(const AP_Frsky_MAVlite_Mess
         //case MAV_CMD_COMPONENT_ARM_DISARM:
         //case MAV_CMD_FIXED_MAG_CAL_YAW:
         default:
-            mav_result = MAV_RESULT_UNSUPPORTED;
-            break;
+            return MAV_RESULT_UNSUPPORTED;
     }
-    send_command_ack(mav_result, mav_command_long.command);
+    return MAV_RESULT_UNSUPPORTED;
+}
+
+MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_set_mode(const mavlink_command_long_t &mav_command_long)
+{
+    if (AP::vehicle()->set_mode(mav_command_long.param1, ModeReason::FRSKY_COMMAND)) {
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_FAILED;
 }
 
 void AP_Frsky_MAVliteMsgHandler::send_command_ack(const MAV_RESULT mav_result, const uint16_t cmdid)
@@ -112,8 +115,12 @@ void AP_Frsky_MAVliteMsgHandler::send_command_ack(const MAV_RESULT mav_result, c
     send_message(txmsg);
 }
 
-MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro()
+MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro(const mavlink_command_long_t &mav_command_long)
 {
+    if (!(is_equal(mav_command_long.param1,0.0f) && is_equal(mav_command_long.param2,0.0f) && is_equal(mav_command_long.param3,1.0f))) {
+        return MAV_RESULT_FAILED;
+    }
+
     if (hal.util->get_soft_armed()) {
         return MAV_RESULT_DENIED;
     }
@@ -130,14 +137,14 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(uint16_t param1)
+MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavlink_command_long_t &mav_command_long)
 {
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    switch (param1) {
+    switch ((uint16_t)mav_command_long.param1) {
         case 0:
             fence->enable(false);
             return MAV_RESULT_ACCEPTED;
@@ -229,8 +236,11 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
   motors. That can be dangerous when a preflight reboot is done with
   the pilot close to the aircraft and can also damage the aircraft
  */
-MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_reboot(void)
+MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_reboot(const mavlink_command_long_t &mav_command_long)
 {
+    if (!(is_equal(mav_command_long.param1,1.0f) && is_zero(mav_command_long.param2))) {
+        return MAV_RESULT_FAILED;
+    }
     if (hal.util->get_soft_armed()) {
         // refuse reboot when armed
         return MAV_RESULT_FAILED;
@@ -262,8 +272,6 @@ void AP_Frsky_MAVliteMsgHandler::process_message(const AP_Frsky_MAVlite_Message 
 
 /*
  * Send a mavlite message
- * Message is chunked in sport packets pushed in the tx queue
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
 bool AP_Frsky_MAVliteMsgHandler::send_message(AP_Frsky_MAVlite_Message &txmsg)
 {
