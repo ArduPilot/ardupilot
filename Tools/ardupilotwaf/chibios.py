@@ -435,7 +435,7 @@ def build(bld):
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
         'cortex-m4' : 'libarm_cortexM4lf_math.a',
-        'cortex-m7' : 'libarm_cortexM7lfdp_math.a',
+        'cortex-m7' : 'libarm_cortexM7lfsp_math.a',
     }
     if bld.env.CORTEX in DSP_LIBS:
         libname = DSP_LIBS[bld.env.CORTEX]
