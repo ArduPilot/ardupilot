@@ -10,13 +10,8 @@
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-#include <AC_Fence/AC_Fence.h>
-#include <AP_Logger/AP_Logger.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <stdio.h>
 #include "AP_Frsky_MAVlite.h"
+#include "AP_Frsky_Parameters.h"
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 
 /*
@@ -62,6 +57,8 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
+
+extern const AP_HAL::HAL& hal;
 
 bool AP_Frsky_SPort_Passthrough::init()
 {
@@ -677,7 +674,7 @@ void AP_Frsky_SPort_Passthrough::process_rx_queue()
         AP_Frsky_MAVlite_Message rxmsg;
 
         if (sport_to_mavlite.process(rxmsg, packet)) {
-            mavlite_process_message(rxmsg);
+            mavlite.process_message(rxmsg);
             break; // process only 1 mavlite message each call
         }
     }
@@ -706,296 +703,6 @@ void AP_Frsky_SPort_Passthrough::process_tx_queue()
     send_sport_frame(SPORT_DOWNLINK_FRAME, packet.appid, packet.data);
 }
 
-
-/*
- * Handle the COMMAND_LONG mavlite message
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_command_long(const AP_Frsky_MAVlite_Message &rxmsg)
-{
-    mavlink_command_long_t mav_command_long {};
-
-    uint8_t cmd_options;
-    float params[7] {};
-
-    if (!rxmsg.get_uint16(mav_command_long.command, 0)) {
-        return;
-    }
-    if (!rxmsg.get_uint8(cmd_options, 2)) {
-        return;
-    }
-    uint8_t param_count = AP_Frsky_MAVlite_Message::bit8_unpack(cmd_options, 3, 0);               // first 3 bits
-
-    for (uint8_t cmd_idx=0; cmd_idx<param_count; cmd_idx++) {
-        // base offset is 3, relative offset is 4*cmd_idx
-        if (!rxmsg.get_float(params[cmd_idx], 3+(4*cmd_idx))) {
-            return;
-        }
-    }
-
-    mav_command_long.param1 = params[0];
-    mav_command_long.param2 = params[1];
-    mav_command_long.param3 = params[2];
-    mav_command_long.param4 = params[3];
-    mav_command_long.param5 = params[4];
-    mav_command_long.param6 = params[5];
-    mav_command_long.param7 = params[6];
-
-    MAV_RESULT mav_result = MAV_RESULT_FAILED;
-    // filter allowed commands
-    switch (mav_command_long.command) {
-        //case MAV_CMD_ACCELCAL_VEHICLE_POS:
-        case MAV_CMD_DO_SET_MODE:
-            if (AP::vehicle()->set_mode(mav_command_long.param1, ModeReason::FRSKY_COMMAND)) {
-                mav_result = MAV_RESULT_ACCEPTED;
-            }
-            break;
-        //case MAV_CMD_DO_SET_HOME:
-        case MAV_CMD_DO_FENCE_ENABLE:
-            mav_result = mavlite_handle_command_do_fence_enable((uint16_t)mav_command_long.param1);
-            break;
-        case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
-            if (is_equal(mav_command_long.param1,1.0f) && is_zero(mav_command_long.param2)) {
-                mav_result = mavlite_handle_command_preflight_reboot();
-            }
-            break;
-        //case MAV_CMD_DO_START_MAG_CAL:
-        //case MAV_CMD_DO_ACCEPT_MAG_CAL:
-        //case MAV_CMD_DO_CANCEL_MAG_CAL:
-        //case MAV_CMD_START_RX_PAIR:
-        //case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        //case MAV_CMD_DO_DIGICAM_CONTROL:
-        //case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        //case MAV_CMD_DO_GRIPPER:
-        //case MAV_CMD_DO_MOUNT_CONFIGURE:
-        //case MAV_CMD_DO_MOUNT_CONTROL:
-        //case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
-        //case MAV_CMD_DO_SET_ROI_SYSID:
-        //case MAV_CMD_DO_SET_ROI_LOCATION:
-        //case MAV_CMD_DO_SET_ROI:
-        case MAV_CMD_PREFLIGHT_CALIBRATION:
-            if (is_equal(mav_command_long.param1,0.0f) && is_equal(mav_command_long.param2,0.0f) && is_equal(mav_command_long.param3,1.0f)) {
-                mav_result = mavlite_handle_command_preflight_calibration_baro();
-            }
-            break;
-        //case MAV_CMD_BATTERY_RESET:
-        //case MAV_CMD_PREFLIGHT_UAVCAN:
-        //case MAV_CMD_FLASH_BOOTLOADER:
-        //case MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS:
-        //case MAV_CMD_GET_HOME_POSITION:
-        //case MAV_CMD_PREFLIGHT_STORAGE:
-        //case MAV_CMD_SET_MESSAGE_INTERVAL:
-        //case MAV_CMD_GET_MESSAGE_INTERVAL:
-        //case MAV_CMD_REQUEST_MESSAGE:
-        //case MAV_CMD_DO_SET_SERVO:
-        //case MAV_CMD_DO_REPEAT_SERVO:
-        //case MAV_CMD_DO_SET_RELAY:
-        //case MAV_CMD_DO_REPEAT_RELAY:
-        //case MAV_CMD_DO_FLIGHTTERMINATION:
-        //case MAV_CMD_COMPONENT_ARM_DISARM:
-        //case MAV_CMD_FIXED_MAG_CAL_YAW:
-        default:
-            mav_result = MAV_RESULT_UNSUPPORTED;
-            break;
-    }
-    mavlite_send_command_ack(mav_result, mav_command_long.command);
-}
-
-void AP_Frsky_SPort_Passthrough::mavlite_send_command_ack(const MAV_RESULT mav_result, const uint16_t cmdid)
-{
-    AP_Frsky_MAVlite_Message txmsg;
-    txmsg.msgid = MAVLINK_MSG_ID_COMMAND_ACK;
-    if (!txmsg.set_uint16(cmdid, 0)) {
-        return;
-    }
-    if (!txmsg.set_uint8((uint8_t)mav_result, 2)) {
-        return;
-    }
-    mavlite_send_message(txmsg);
-}
-
-MAV_RESULT AP_Frsky_SPort_Passthrough::mavlite_handle_command_preflight_calibration_baro()
-{
-    if (hal.util->get_soft_armed()) {
-        return MAV_RESULT_DENIED;
-    }
-    // fast barometer calibration
-    gcs().send_text(MAV_SEVERITY_INFO, "Updating barometer calibration");
-    AP::baro().update_calibration();
-    gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
-
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        airspeed->calibrate(false);
-    }
-
-    return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT AP_Frsky_SPort_Passthrough::mavlite_handle_command_do_fence_enable(uint16_t param1)
-{
-    AC_Fence *fence = AP::fence();
-    if (fence == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-
-    switch (param1) {
-        case 0:
-            fence->enable(false);
-            return MAV_RESULT_ACCEPTED;
-        case 1:
-            fence->enable(true);
-            return MAV_RESULT_ACCEPTED;
-        default:
-            return MAV_RESULT_FAILED;
-    }
-}
-
-/*
- * Handle the PARAM_REQUEST_READ mavlite message
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_param_request_read(const AP_Frsky_MAVlite_Message &rxmsg)
-{
-    float param_value;
-    char param_name[AP_MAX_NAME_SIZE+1];
-    if (!rxmsg.get_string(param_name, 0)) {
-        return;
-    }
-    // find existing param
-    if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
-        return;
-    }
-    AP_Frsky_MAVlite_Message txmsg;
-    txmsg.msgid = MAVLINK_MSG_ID_PARAM_VALUE;
-    if (!txmsg.set_float(param_value, 0)) {
-        return;
-    }
-    if (!txmsg.set_string(param_name, 4)) {
-        return;
-    }
-    mavlite_send_message(txmsg);
-}
-
-/*
- * Handle the PARAM_SET mavlite message
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-void AP_Frsky_SPort_Passthrough::mavlite_handle_param_set(const AP_Frsky_MAVlite_Message &rxmsg)
-{
-    float param_value;
-    char param_name[AP_MAX_NAME_SIZE+1];
-    // populate packet with mavlite payload
-    if (!rxmsg.get_float(param_value, 0)) {
-        return;
-    }
-    if (!rxmsg.get_string(param_name, 4)) {
-        return;
-    }
-    // find existing param so we can get the old value
-    enum ap_var_type var_type;
-    // set parameter
-    AP_Param *vp;
-    uint16_t parameter_flags = 0;
-    vp = AP_Param::find(param_name, &var_type, &parameter_flags);
-    if (vp == nullptr || isnan(param_value) || isinf(param_value)) {
-        return;
-    }
-    if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
-    } else if (!AP_Param::set_and_save(param_name, param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
-    }
-    // let's read back the last value, either the readonly one or the updated one
-    if (!AP_Param::get(param_name,param_value)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Param read failed (%s)", param_name);
-        return;
-    }
-    AP_Frsky_MAVlite_Message txmsg;
-    txmsg.msgid = MAVLINK_MSG_ID_PARAM_VALUE;
-    if (!txmsg.set_float(param_value, 0)) {
-        return;
-    }
-    if (!txmsg.set_string(param_name, 4)) {
-        return;
-    }
-    mavlite_send_message(txmsg);
-}
-
-/*
-  Handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
-  for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-  Optionally disable PX4IO overrides. This is done for quadplanes to
-  prevent the mixer running while rebooting which can start the VTOL
-  motors. That can be dangerous when a preflight reboot is done with
-  the pilot close to the aircraft and can also damage the aircraft
- */
-MAV_RESULT AP_Frsky_SPort_Passthrough::mavlite_handle_command_preflight_reboot(void)
-{
-    if (hal.util->get_soft_armed()) {
-        // refuse reboot when armed
-        return MAV_RESULT_FAILED;
-    }
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    SRV_Channels::zero_rc_outputs();
-#endif
-    // send ack before we reboot
-    mavlite_send_command_ack(MAV_RESULT_ACCEPTED, MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN);
-    // Notify might want to blink some LEDs:
-    AP_Notify *notify = AP_Notify::get_singleton();
-    if (notify) {
-        AP_Notify::flags.firmware_update = 1;
-        notify->update();
-    }
-    // force safety on
-    hal.rcout->force_safety_on();
-
-    // flush pending parameter writes
-    AP_Param::flush();
-
-    // do not process incoming mavlink messages while we delay:
-    hal.scheduler->register_delay_callback(nullptr, 5);
-
-    // delay to give the ACK a chance to get out, the LEDs to flash,
-    // the IO board safety to be forced on, the parameters to flush, ...
-    hal.scheduler->delay(1000);
-
-    hal.scheduler->reboot(false);
-
-    return MAV_RESULT_FAILED;
-}
-
-/*
- * Process an incoming mavlite message
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-void AP_Frsky_SPort_Passthrough::mavlite_process_message(const AP_Frsky_MAVlite_Message &rxmsg)
-{
-    switch (rxmsg.msgid) {
-        case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
-            mavlite_handle_param_request_read(rxmsg);
-            break;
-        case MAVLINK_MSG_ID_PARAM_SET:
-            mavlite_handle_param_set(rxmsg);
-            break;
-        case MAVLINK_MSG_ID_COMMAND_LONG:
-            mavlite_handle_command_long(rxmsg);
-            break;
-    }
-}
-
-/*
- * Send a mavlite message
- * Message is chunked in sport packets pushed in the tx queue
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-bool AP_Frsky_SPort_Passthrough::mavlite_send_message(AP_Frsky_MAVlite_Message &txmsg)
-{
-    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
-}
-
-
 /*
  * Utility method to apply constraints in changing sensor id values
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
@@ -1010,5 +717,15 @@ void AP_Frsky_SPort_Passthrough::set_sensor_id(AP_Int8 param_idx, uint8_t &senso
         return;
     }
     sensor = calc_sensor_id(idx);
+}
+
+/*
+ * Send a mavlite message
+ * Message is chunked in sport packets pushed in the tx queue
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &txmsg)
+{
+    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
 }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
