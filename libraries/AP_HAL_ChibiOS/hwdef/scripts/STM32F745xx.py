@@ -29,7 +29,7 @@ mcu = {
     # we build as m4 as it makes for a smaller build, and given the 1M
     # flash limit we care more about size
     'CORTEX'    : 'cortex-m7',
-    'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
+    'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-sp-d16 -mfloat-abi=hard',
 }
 
 DMA_Map = {
