@@ -1,3 +1,42 @@
+Release 4.0.7beta1, 2nd October 2020
+------------------------------------
+
+This is a minor release with some important bug fixes against 4.0.6.
+
+The changes are:
+
+ - Fixed F32Lightening board IMU fast sampling issue
+
+ - fixed issue with EKF2 and EKF3 with use of high accuracy GPS modules. This is important for anyone flying with a RTK GPS
+
+ - Fixed KakuteF7 DShot glitch issue
+
+ - Fixes issue with checking for valid RC input in ICE disable channel
+
+ - fixed an interrupt flood issue with any sensor that uses interrupt timing measurement, such as RPM sensors.
+
+ - Modified RM3100 driver to problem all 4 possible I2C addresses
+
+ - Fixed UDP RC input on Linux boards to accept up to 16 RC inputs on UDP
+
+The most critical fix in the above list is the ISR flood issue.
+
+ISR Flood Issue
+---------------
+
+The ISR flood issue happens when a misbehaving external sensor (such
+as an RPM sensor for a petrol motor) starts providing pulses faster
+than the flight controller can process them. If this happens then the
+CPU can be overloaded in the interrupt handling for the sensor and
+stop flying the vehicle. The level of interrupt rate needed to cause
+this issue is around 500k interrupts per second, so to be safe we have
+added a limit of 100k interrupts per second. If a single interrupt
+source produces more than 10k interrupts in a single 0.1 second period
+then we disable that interrupt source, print a warning to the user and
+raise an internal error.
+
+Happy flying!
+
 Release 4.0.6, 7th September 2020
 ---------------------------------
 
