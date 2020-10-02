@@ -88,21 +88,55 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if AP_FEATURE_RTSCTS
+#ifdef HAL_HAVE_RTSCTS_SERIAL1
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, state.ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, state.ser_rtscts[1], BOARD_SER1_RTSCTS_DEFAULT),
+#endif
 
+#ifdef HAL_HAVE_RTSCTS_SERIAL2
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
     // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and STATE. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser2_rtscts, 2),
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser_rtscts[2], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL3
+    // @Param: SER3_RTSCTS
+    // @DisplayName: Serial 3 flow control
+    // @Description: Enable flow control on serial 3. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER3_RTSCTS",    23, AP_BoardConfig, state.ser_rtscts[3], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL4
+    // @Param: SER4_RTSCTS
+    // @DisplayName: Serial 4 flow control
+    // @Description: Enable flow control on serial 4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER4_RTSCTS",    24, AP_BoardConfig, state.ser_rtscts[4], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL5
+    // @Param: SER5_RTSCTS
+    // @DisplayName: Serial 5 flow control
+    // @Description: Enable flow control on serial 5. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], 2),
+#endif
 #endif
 
 #if HAL_HAVE_SAFETY_SWITCH
