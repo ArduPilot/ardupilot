@@ -74,8 +74,7 @@
         {25,  100,  200, 400, 500, 800}     /* MW  */
     };
 
-
-
+#define SA_DEBUG     // DEV TESTS ACTIVATE
 
 class AP_SmartAudio
 {
@@ -329,10 +328,10 @@ private:
 
     // utility method to print stats
     void _print_stats();
-
+#ifdef SA_DEBUG
     // utility method for debugging.
-    void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
-
+    void _print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t x);
+#endif
     // utility method to get mw transformation from power in dbm
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
         for (uint8_t i=0;i<7;i++){
