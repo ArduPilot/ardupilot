@@ -21,6 +21,8 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#define VISUALODOM_RESET_IGNORE_DURATION_MS 1000    // sensor data is ignored for 1sec after a position reset
+
 extern const AP_HAL::HAL& hal;
 
 // consume vision position estimate data and send to EKF. distances in meters
@@ -43,8 +45,13 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
 
     posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
     angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
-    // send attitude and position to EKF
-    AP::ahrs().writeExtNavData(pos, att, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
+
+    // check for recent position reset
+    bool consume = should_consume_sensor_data(true, reset_counter);
+    if (consume) {
+        // send attitude and position to EKF
+        AP::ahrs().writeExtNavData(pos, att, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
+    }
 
     // calculate euler orientation for logging
     float roll;
@@ -53,7 +60,7 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     att.to_euler(roll, pitch, yaw);
 
     // log sensor data
-    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)), posErr, angErr, reset_counter);
+    AP::logger().Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)), posErr, angErr, reset_counter, !consume);
 
     // store corrected attitude for use in pre-arm checks
     _attitude_last = att;
@@ -69,13 +76,17 @@ void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_
     Vector3f vel_corrected = vel;
     rotate_velocity(vel_corrected);
 
-    // send velocity to EKF
-    AP::ahrs().writeExtNavVelData(vel_corrected, _frontend.get_vel_noise(), time_ms, _frontend.get_delay_ms());
+    // check for recent position reset
+    bool consume = should_consume_sensor_data(false, reset_counter);
+    if (consume) {
+        // send velocity to EKF
+        AP::ahrs().writeExtNavVelData(vel_corrected, _frontend.get_vel_noise(), time_ms, _frontend.get_delay_ms());
+    }
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
-    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, _frontend.get_vel_noise(), reset_counter);
+    AP::logger().Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, _frontend.get_vel_noise(), reset_counter, !consume);
 }
 
 // apply rotation and correction to position
@@ -217,6 +228,29 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
     }
 
     return true;
+}
+
+// returns true if sensor data should be consumed, false if it should be ignored
+// set vision_position_estimate to true if reset_counter is from the VISION_POSITION_ESTIMATE source, false otherwise
+// only the VISION_POSITION_ESTIMATE message's reset_counter is used to determine if sensor data should be ignored
+bool AP_VisualOdom_IntelT265::should_consume_sensor_data(bool vision_position_estimate, uint8_t reset_counter)
+{
+    uint32_t now_ms = AP_HAL::millis();
+
+    // set ignore start time if reset counter has changed
+    if (vision_position_estimate) {
+        if (reset_counter != _pos_reset_counter_last) {
+            _pos_reset_counter_last = reset_counter;
+            _pos_reset_ignore_start_ms = now_ms;
+        }
+    }
+
+    // check if 1 second has passed since the last reset
+    if ((now_ms - _pos_reset_ignore_start_ms) > VISUALODOM_RESET_IGNORE_DURATION_MS) {
+        _pos_reset_ignore_start_ms = 0;
+    }
+
+    return (_pos_reset_ignore_start_ms == 0);
 }
 
 #endif
