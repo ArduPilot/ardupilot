@@ -568,6 +568,7 @@ private:
         OPTION_AIRMODE=(1<<9),
         OPTION_DISARMED_TILT=(1<<10),
         OPTION_DELAY_ARMING=(1<<11),
+        OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
     };
 
     AP_Float takeoff_failure_scalar;
