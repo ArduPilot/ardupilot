@@ -400,20 +400,25 @@ void AP_Logger::Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
 
 void AP_Logger::Write_Vibration()
 {
-    uint64_t time_us = AP_HAL::micros64();
     const AP_InertialSensor &ins = AP::ins();
-    const Vector3f vibration = ins.get_vibration_levels();
-    const struct log_Vibe pkt{
-        LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-        time_us     : time_us,
-        vibe_x      : vibration.x,
-        vibe_y      : vibration.y,
-        vibe_z      : vibration.z,
-        clipping_0  : ins.get_accel_clip_count(0),
-        clipping_1  : ins.get_accel_clip_count(1),
-        clipping_2  : ins.get_accel_clip_count(2)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    const uint64_t time_us = AP_HAL::micros64();
+    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (!ins.use_accel(i)) {
+            continue;
+        }
+
+        const Vector3f vibration = ins.get_vibration_levels(i);
+        const struct log_Vibe pkt{
+            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
+            time_us     : time_us,
+            imu         : i,
+            vibe_x      : vibration.x,
+            vibe_y      : vibration.y,
+            vibe_z      : vibration.z,
+            clipping  : ins.get_accel_clip_count(i)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
