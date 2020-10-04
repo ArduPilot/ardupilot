@@ -21,10 +21,10 @@
 #define SMARTAUDIO_BUFFER_CAPACITY 5
 
 // SmartAudio Serial Protocol
-#define AP_SMARTAUDIO_UART_BAUD            4800
-#define AP_SMARTAUDIO_SMARTBAUD_MIN        4800
-#define AP_SMARTAUDIO_SMARTBAUD_MAX        4950
-#define AP_SMARTAUDIO_SMARTBAUD_STEP       50
+#define AP_SMARTAUDIO_UART_BAUD            4860
+#define AP_SMARTAUDIO_SMARTBAUD_MIN        4560
+#define AP_SMARTAUDIO_SMARTBAUD_MAX        5040
+#define AP_SMARTAUDIO_SMARTBAUD_STEP       60
 #define AP_SMARTAUDIO_UART_BUFSIZE_RX      32
 #define AP_SMARTAUDIO_UART_BUFSIZE_TX      16
 
@@ -89,6 +89,11 @@ public:
             uint16_t crc;
             uint16_t ooopresp;
             uint16_t badcode;
+
+            // request settings counter
+            uint16_t rqsettings;
+            uint16_t other_commands;
+
         } _saStat ={};
 
         // Proposed to be into AP_VideoTX
@@ -129,17 +134,9 @@ public:
         //  |0 0 0 0 0 0 1 0|    // channel updated 1 << 1
         //  |0 0 0 0 0 1 0 0|    // power updated 1 << 2
         //  |0 0 0 0 1 0 0 0|    // mode updated 1 << 3
-
         uint8_t update_flags=0X00;
 
-
-        // true when settings are from parsing response.
-        void overall_updated(bool value){
-            if (value){
-                update_flags=0x0F;
-                }
-        }
-
+        bool initialized;
 
     } smartaudioSettings_t;
 
@@ -220,11 +217,13 @@ public:
     } PACKED;
 
     // value for current baud adjust
-    int _sa_smartbaud=AP_SMARTAUDIO_SMARTBAUD_MIN;
-    int _sa_adjdir=1;
+    int _sa_smartbaud=AP_SMARTAUDIO_UART_BAUD;
+    int _sa_smartbaud_adjdir=1;
+
 
     // When enabled the settings returned from hw vtx are settled into ap_videoTx params NOT USED YET
     AP_Int8 _smart_audio_param_setup_defaults;
+    AP_Int8 _smart_audio_param_hot_deploy;
 
     // hw vtx state control with 2 elements array use methods _push _peek
     uint8_t _vtx_state_idx=0;
@@ -240,6 +239,9 @@ public:
 
     // loops is waiting a response after a request
     bool _is_waiting_response=false;
+
+    // debug printint throttle control
+    uint32_t _debug_last_printing_time_ms=0;
 
     AP_SmartAudio();
 
@@ -268,7 +270,7 @@ public:
     void send_request(smartaudioFrame_t requestFrame, uint8_t size);
 
     // receives a frame response over the wire
-    void read_response(uint8_t *response_buffer, uint8_t inline_buffer_length);
+    void read_response(uint8_t *response_buffer);
 
     // parses the response and updates the AP_VTX readings
     bool parse_frame_response(const uint8_t *buffer);
@@ -290,11 +292,8 @@ public:
     // enqueue a get pit mode frequency request
     void request_pit_mode_frequency();
 
-    // enqueue a set power request using dbm
-    void set_power_dbm(uint8_t power);
-
-    // enqueue a set power request using mw
-    void set_power_mw(uint16_t power_mw);
+    // enqueue a set power request using mw, generic interface from mw
+    void set_power_mw(uint16_t power_mw,uint8_t spec_version);
 
     void _push_vtx_state(smartaudioSettings_t state){
         memcpy(&(_vtx_states_buffer[_vtx_state_idx==0?1:0]),&state,sizeof(smartaudioSettings_t));
@@ -324,11 +323,14 @@ private:
     //Pointer to singleton
     static AP_SmartAudio* _singleton;
 
+    // response buffer length, permit splitted responses
+    uint8_t _inline_buffer_length=0;
+
     // utility method for debugging
-    void _print_state(smartaudioSettings_t& state);
+    void _print_state(smartaudioSettings_t& state,bool details,bool updates,bool ap_video_tx_details);
 
     // utility method to print stats
-    void _print_stats();
+    void _print_stats(bool errors,bool autobauding, bool commands_counters);
 
     // utility method for debugging.
     void _print_bytes_to_hex_string(uint8_t buf[], uint8_t x);
@@ -384,7 +386,6 @@ private:
     // utility method to get power in dbm mapping to power levels
     static uint8_t _get_power_in_dbm_from_vtx_power_level(uint8_t power_level, uint8_t& protocol_version)
     {
-
         for (uint8_t j = 0; j < 4; j++) {
             if (POWER_LEVELS[protocol_version][j] == power_level) {
                 return POWER_LEVELS[2][j];
@@ -400,7 +401,20 @@ private:
         return power_in_dbm;
     }
 
+    // enqueue a set power request using power_level, spec versions 1 and 2 or dbm value for spec version 2.1
+    void set_power(uint8_t power_level);
 
+    // sync the AP_VideoTx backend with the configured params.
+    bool hot_deploy();
+
+    // utility debug method
+    void _print_debug_info();
+
+    // return true if power need to bee synced with the backed
+    bool sync_power();
+
+    // TODO: Remove to use the AP self transformer
+    static u_int16_t applyBigEndian16(u_int16_t bytes);
 
 
     // FROM BETAFLIGHT
@@ -419,8 +433,10 @@ private:
     size_t smartaudioFrameSetFrequency(smartaudioFrame_t *smartaudioFrame, const uint16_t frequency, const bool pitmodeFrequency);
     size_t smartaudioFrameSetOperationMode(smartaudioFrame_t *smartaudioFrame, const smartaudioSettings_t *settings);
     bool smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer);
-    static u_int16_t applyBigEndian16(u_int16_t bytes);
+
+    // change baud automatically when request-response fails many times
     void saAutobaud();
+    void advice_gcs(uint8_t command);
 
 };
 #endif
