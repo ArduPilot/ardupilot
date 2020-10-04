@@ -26,7 +26,7 @@
 #include <AP_OLC/AP_OLC.h>
 
 #ifndef OSD_ENABLED
-#define OSD_ENABLED 0
+#define OSD_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #ifndef HAL_WITH_OSD_BITMAP
