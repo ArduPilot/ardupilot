@@ -78,6 +78,7 @@ bool AP_SmartAudio::init()
 }
 
 void AP_SmartAudio::loop(){
+    uint8_t res_retries=0;
 
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
@@ -99,7 +100,7 @@ void AP_SmartAudio::loop(){
         Packet current_command;
 
         // setup a queue polling delay of 20 ms.
-        hal.scheduler->delay(100);
+     //   hal.scheduler->delay(100);
 
         // Proccess response in the next 200 milis from the request are sent.
         if(now-_last_request_sended_at_ms>100 && now-_last_request_sended_at_ms<=1000 && _is_waiting_response){
@@ -107,7 +108,13 @@ void AP_SmartAudio::loop(){
             uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
 
             // setup sheduler delay to 50 ms again after response processes
-            read_response(_response_buffer);
+            if(!read_response(_response_buffer)){
+                res_retries++;
+                hal.scheduler->delay(100+res_retries);
+            }else{
+                gcs().send_text(MAV_SEVERITY_NOTICE,"RESPONSE RETRY:%u",res_retries);
+            }
+
             //hal.scheduler->delay(100);
             // prevent to proccess any queued request from the ring buffer
             packet_processed=true;
@@ -131,7 +138,8 @@ void AP_SmartAudio::loop(){
             _is_waiting_response=true;
 
             // spec says: The Unify Pro response frame is usually send <100ms after a frame is successfully received from the host MCU
-            hal.scheduler->delay(100);
+            hal.scheduler->delay(100+res_retries);
+            res_retries=0;
 
         }
 
@@ -345,7 +353,7 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
  * - response_buffer, response buffer to fill in
  * - inline_buffer_length , used to passthrought the response lenght in case the response where splitted
  **/
-void AP_SmartAudio::read_response(uint8_t *response_buffer)
+bool AP_SmartAudio::read_response(uint8_t *response_buffer)
 {
     int16_t incoming_bytes_count = _port->available();
     uint8_t response_header_size= sizeof(smartaudioFrameHeader_t);
@@ -355,7 +363,7 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer)
        _saStat.ooopresp++;
         // process autobaud routine
         saAutobaud();
-        return;
+        return false;
     }
 
     debug("AP_SmartAudio: A response has arrived with size %d", incoming_bytes_count);
@@ -378,7 +386,7 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer)
     if (_inline_buffer_length < response_header_size) {
         debug("INPUT FILTERED FROM UART IS SHORTER THAN EXPLICIT RESPONSE LENGTH");
         _is_waiting_response=false;
-        return;
+        return false;
     }
 
     uint8_t payload_len = response_buffer[3];
@@ -386,16 +394,18 @@ void AP_SmartAudio::read_response(uint8_t *response_buffer)
     if (_inline_buffer_length < payload_len + response_header_size) {
         // Not all response bytes received yet, splitted response is incoming
         debug("RESPONSE SEEMS TO BE SPLITTED WAITING IN OTHER LOOP CYCLE ?");
-        return;
+        return true;
     } else {
         _inline_buffer_length = payload_len + response_header_size;
     }
     _is_waiting_response=false;
 
-    parse_frame_response(response_buffer);
+    bool correct_parse=false;
+    correct_parse=parse_frame_response(response_buffer);
     response_buffer=nullptr;
     _inline_buffer_length=0;
     _saStat.pktrcvd++;
+    return correct_parse;
 }
 
 /**
@@ -937,7 +947,7 @@ void AP_SmartAudio::saAutobaud()
     }
     // gcs().send_text(MAV_SEVERITY_NOTICE ,"AP_SmartAudio: AUTOBAUD SANITY CHECK %ul.",((_saStat.pktrcvd * 100) / _saStat.pktsent));
 
-    if (((_saStat.pktrcvd * 100) / _saStat.pktsent) >= 7) {
+    if (((_saStat.pktrcvd * 100) / _saStat.pktsent) >= 70) {
      //    gcs().send_text(MAV_SEVERITY_NOTICE ,"AP_SmartAudio: El control de baudios está sano %ul.",((_saStat.pktrcvd * 100) / _saStat.pktsent) >= 70);
         // This is okay
         _saStat.pktsent = 0; // Should be more moderate?

@@ -270,7 +270,7 @@ public:
     void send_request(smartaudioFrame_t requestFrame, uint8_t size);
 
     // receives a frame response over the wire
-    void read_response(uint8_t *response_buffer);
+    bool read_response(uint8_t *response_buffer);
 
     // parses the response and updates the AP_VTX readings
     bool parse_frame_response(const uint8_t *buffer);
