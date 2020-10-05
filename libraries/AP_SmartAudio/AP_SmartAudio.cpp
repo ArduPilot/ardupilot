@@ -98,9 +98,6 @@ void AP_SmartAudio::loop(){
         // command to process
         Packet current_command;
 
-        // setup a queue polling delay of 20 ms.
-     //   hal.scheduler->delay(100);
-
         // Proccess response in the next 200 milis from the request are sent.
         if(now-_last_request_sended_at_ms>100 && now-_last_request_sended_at_ms<=1000 && _is_waiting_response){
             // allocate response buffer
@@ -114,7 +111,6 @@ void AP_SmartAudio::loop(){
                 gcs().send_text(MAV_SEVERITY_NOTICE,"RESPONSE RETRY:%u",res_retries);
             }
 
-            //hal.scheduler->delay(100);
             // prevent to proccess any queued request from the ring buffer
             packet_processed=true;
 
@@ -153,9 +149,10 @@ void AP_SmartAudio::loop(){
 }
 
 void AP_SmartAudio::_print_debug_info(){
+    #ifdef SA_DEBUG
     uint32_t now_ms=AP_HAL::millis();
     if(now_ms-_debug_last_printing_time_ms>3000){
-        debug("\nAP_SmartAudio: Printing Status debug info [%lu,%lu]",now_ms,(now_ms-_debug_last_printing_time_ms));
+        debug("\nAP_SmartAudio: Printing Status debug info [%d,%d]",int(now_ms),int(now_ms-_debug_last_printing_time_ms));
         _debug_last_printing_time_ms=AP_HAL::millis();
         smartaudioSettings_t current_vtx_status={};
 
@@ -163,6 +160,7 @@ void AP_SmartAudio::_print_debug_info(){
         _print_state(current_vtx_status,false,true,false);
         _print_stats(true,true,true);
     }
+    #endif
 }
 
 void AP_SmartAudio::_print_state(smartaudioSettings_t& state,bool details,bool updates,bool ap_video_tx_details){
@@ -1020,32 +1018,53 @@ void AP_SmartAudio::advice_gcs(uint8_t command){
         uint32_t now=AP_HAL::millis();
          switch(command){
              case SMARTAUDIO_RSP_GET_SETTINGS_V1:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 1 completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 1 completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 1 completed ");
+                #endif
                 break;
             case SMARTAUDIO_RSP_GET_SETTINGS_V2:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2 completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2 completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2 completed");
+                #endif
                 break;
             case SMARTAUDIO_RSP_GET_SETTINGS_V21:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2.1 completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2.1 completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation REQUEST SETTINGS VERSION 2.1 completed");
+                #endif
                 break;
              case SMARTAUDIO_RSP_SET_CHANNEL:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET CHANNEL completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET CHANNEL completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET CHANNEL completed since"));
+                #endif
                 break;
             case SMARTAUDIO_RSP_SET_POWER:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET POWER completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET POWER completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET POWER completed since");
+                #endif
                 break;
             case SMARTAUDIO_RSP_SET_MODE:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET MODE completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET MODE completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation SET MODE completed since %d milliseconds");
+                #endif
                 break;
              default:
-                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation UNKNOWN RESPONSE OPERATION completed since %lu milliseconds",(now-_last_request_sended_at_ms));
-
+                #ifdef SA_DEBUG
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation UNKNOWN RESPONSE OPERATION completed since %d milliseconds",int(now-_last_request_sended_at_ms));
+                #else
+                gcs().send_text(MAV_SEVERITY_CRITICAL ,"AP_SmartAudio: Operation UNKNOWN RESPONSE OPERATION completed since %d milliseconds");
+                #endif
                 break;
          }
 
