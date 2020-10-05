@@ -22,9 +22,9 @@ Available styles and respective OSD_FONT numbers are:
 
 ![](bold.png)
 
-**digital (OSD_FONT 4)** 80's clock radio style:
+**Chinese (OSD_FONT 4)** Simplified Chinese font,  Convenient for people who use Chinese or Japanese kanji:
 
-![](digital.png)
+![](chs.png)
 
 
 ## Adding font styles ##
