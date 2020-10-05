@@ -19,17 +19,11 @@
 
 #include "bitwise.h"
 
-void loadUint(uint8_t *b, uint16_t v, uint8_t bitCount, bool MSBfirst)
+void loadUint(uint8_t *b, uint32_t v, uint8_t bitCount, bool MSBfirst)
 {
     const uint8_t last = bitCount/8;
-
-//    count = 32
-//    last = 4
-//    MSBfirst = 1;
-
     for (uint8_t i=0; i<last; i++) {
         const uint8_t idx = MSBfirst ? last-1-i : i;
-//        idx = 4-1-0
         b[i] = v >> (8*idx);
     }
 }
