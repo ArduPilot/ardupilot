@@ -1555,6 +1555,11 @@ void Copter::convert_fs_options_params(void)
         AP_Param::set_and_save_by_name("FS_GCS_ENABLE", FS_GCS_ENABLED_ALWAYS_RTL);
     }
 
+    // Retains behavior in Copter 3.6 in that GCS failsafe would never be triggered when in a pilot controlled mode
+    if (g.failsafe_gcs != FS_GCS_DISABLED) {
+        fs_options_converted |= int32_t(FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL);
+    }
+
     // Write the new value to FS_OPTIONS
     // AP_Param::set_and_save_by_name("FS_OPTIONS", fs_options_converted);
     fs_opt->set_and_save(fs_options_converted);
