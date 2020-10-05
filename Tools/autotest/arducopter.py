@@ -3139,13 +3139,19 @@ class AutoTestCopter(AutoTest):
                 0, # yaw
                 0, # yawrate
             )
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            print("%s" % m)
-            if m.groundspeed > 0.5:
+            pos = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+            self.progress("pos=%s" % str(pos))
+            x_delta = abs(pos.x-startpos.x)
+            y_delta = abs(pos.y-startpos.y)
+            z_delta = abs(pos.z-startpos.z)
+            dist = math.sqrt(x_delta*x_delta + y_delta*y_delta + z_delta*z_delta)
+            expected_dist = math.sqrt(x*x+y*y+z_up*z_up)
+            self.progress("dist=%f expected=%f" % (dist, expected_dist))
+            if abs(dist-expected_dist) < 1:
                 break
 
         self.progress("Waiting for vehicle to stop...")
-        self.wait_groundspeed(1, 100, timeout=timeout)
+        self.wait_groundspeed(0, 1, timeout=timeout)
 
         stoppos = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True)
         self.progress("stop_pos=%s" % str(stoppos))
