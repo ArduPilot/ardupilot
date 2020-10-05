@@ -1176,15 +1176,24 @@ AP_GPS_UBLOX::_parse_gps(void)
                                              state.instance + 1,
                                              _version.hwVersion,
                                              _version.swVersion);
-            // check for F9. The F9 does not respond to SVINFO, so we need to use MON_VER
-            // for hardware generation
+            // check for F9 and M9. The F9 does not respond to SVINFO,
+            // so we need to use MON_VER for hardware generation
             if (strncmp(_version.hwVersion, "00190000", 8) == 0) {
-                if (_hardware_generation != UBLOX_F9) {
-                    // need to ensure time mode is correctly setup on F9
-                    _unconfigured_messages |= CONFIG_TMODE_MODE;
+                if (strncmp(_version.swVersion, "EXT CORE 1", 10) == 0) {
+                    // a F9
+                    if (_hardware_generation != UBLOX_F9) {
+                        // need to ensure time mode is correctly setup on F9
+                        _unconfigured_messages |= CONFIG_TMODE_MODE;
+                    }
+                    _hardware_generation = UBLOX_F9;
                 }
-                _hardware_generation = UBLOX_F9;
+                if (strncmp(_version.swVersion, "EXT CORE 4", 10) == 0) {
+                    // a M9
+                    _hardware_generation = UBLOX_M9;
+                }
             }
+            // none of the 9 series support the SOL message
+            _unconfigured_messages &= ~CONFIG_RATE_SOL;
             break;
         default:
             unexpected_message();
@@ -1874,6 +1883,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         lag_sec = 0.12f;
         break;
     case UBLOX_F9:
+    case UBLOX_M9:
         // F9 lag not verified yet from flight log, but likely to be at least
         // as good as M8
         lag_sec = 0.12f;
@@ -1960,5 +1970,5 @@ bool AP_GPS_UBLOX::is_healthy(void) const
 // return true if GPS is capable of F9 config
 bool AP_GPS_UBLOX::supports_F9_config(void) const
 {
-    return _hardware_generation >= UBLOX_F9 && _hardware_generation != UBLOX_UNKNOWN_HARDWARE_GENERATION;
+    return _hardware_generation == UBLOX_F9 && _hardware_generation != UBLOX_UNKNOWN_HARDWARE_GENERATION;
 }
