@@ -2,9 +2,8 @@
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define SA_DEBUG     // DEV TESTS ACTIVATE
 #ifdef SA_DEBUG
-# define debug(fmt, args...)	hal.console->printf(" " fmt "\n", ##args)
+# define debug(fmt, args...)	hal.console->printf("SA: " fmt "\n", ##args)
 //#define debug(fmt, args...) gcs().send_text(MAV_SEVERITY_DEBUG , fmt, ##args);
 #else
 //# define debug(fmt, args...)	do {} while(0)
@@ -345,7 +344,9 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
     }
 
     _saStat.pktsent++;
-    //AP_SmartAudio::_print_bytes_to_hex_string(request, size);
+#ifdef SA_DEBUG
+    _print_bytes_to_hex_string("send_request():", request, size);
+#endif
 }
 
 /**
@@ -359,17 +360,15 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
     uint8_t response_header_size= sizeof(smartaudioFrameHeader_t);
 
     // check if it is a response in the wire
-    if (incoming_bytes_count < 1) {
+    if (incoming_bytes_count <= 0) {
        _saStat.ooopresp++;
         // process autobaud routine
         saAutobaud();
         return false;
     }
 
-    debug("AP_SmartAudio: A response has arrived with size %d", incoming_bytes_count);
     for (uint8_t i= 0; i < incoming_bytes_count; ++i) {
         uint8_t response_in_bytes = _port->read();
-        //debug("\r READ RESPONSE response_in_bytes:%02X", response_in_bytes);
         debug("Ap_SmartAudio: Received byte %02X",response_in_bytes);
         if ((_inline_buffer_length == 0 && response_in_bytes != SMARTAUDIO_SYNC_BYTE)
             || (_inline_buffer_length == 1 && response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
@@ -377,10 +376,11 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
             _inline_buffer_length = 0;
         } else if (_inline_buffer_length < AP_SMARTAUDIO_UART_BUFSIZE_RX) {
             response_buffer[_inline_buffer_length++] = response_in_bytes;
-            debug("Ap_SmartAudio: byte -> response_buffer added :%02X", response_buffer[_inline_buffer_length-1]);
         }
     }
-
+#ifdef SA_DEBUG
+    _print_bytes_to_hex_string("read_response():", response_buffer, incoming_bytes_count);
+#endif
     //last_io_time = AP_HAL::millis();
 
     if (_inline_buffer_length < response_header_size) {
@@ -579,6 +579,7 @@ void AP_SmartAudio::request_settings()
 {
     //debug("%80s::request_settings()\t", TAG);
     _saStat.rqsettings++;
+    debug("request_settings()");
     smartaudioFrame_t request;
     uint8_t frame_size=smartaudioFrameGetSettings(&request);
     Packet command;
@@ -857,18 +858,16 @@ size_t AP_SmartAudio::smartaudioFrameSetOperationMode(smartaudioFrame_t *smartau
     return sizeof(smartaudioU8Frame_t);
 }
 
-void AP_SmartAudio::_print_bytes_to_hex_string(uint8_t buf[], uint8_t x)
+#ifdef SA_DEBUG
+void AP_SmartAudio::_print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t len)
 {
-    int i;
-    for (i = 0; i < x; i++) {
-        if (i > 0) {
-            debug(":");
-            break;
-        }
-        debug("%02X", buf[i]);
+    hal.console->printf("SA: %s ", msg);
+    for (uint8_t i = 0; i < len; i++) {
+        hal.console->printf("0x%02X ", buf[i]);
     }
-    debug("\n");
+    hal.console->printf("\n");
 }
+#endif
 
 bool  AP_SmartAudio::smartaudioParseResponseBuffer(smartaudioSettings_t *settings, const uint8_t *buffer)
 {
