@@ -62,7 +62,8 @@ public:
         bad_rotation                = (1U << 22),  //0x400000  4194304
         stack_overflow              = (1U << 23),  //0x800000  8388608
         imu_reset                   = (1U << 24),  //0x1000000 16777216
-        __LAST__                    = (1U << 25),  // used only for sanity check
+        gpio_isr                    = (1U << 25),  //0x2000000 33554432
+        __LAST__                    = (1U << 26),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to

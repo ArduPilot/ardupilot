@@ -71,7 +71,7 @@ public:
 
     // true for all q modes
     virtual bool is_vtol_mode() const { return false; }
-    virtual bool is_vtol_man_throttle() const { return false; }
+    virtual bool is_vtol_man_throttle() const;
     virtual bool is_vtol_man_mode() const { return false; }
     // guided or adsb mode
     virtual bool is_guided_mode() const { return false; }

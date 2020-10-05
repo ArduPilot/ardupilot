@@ -43,13 +43,26 @@ bool ModeAuto::init(bool ignore_checks)
         // clear guided limits
         copter.mode_guided.limit_clear();
 
-        // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
+        // don't start the mission until we have an origin
+        Location loc;
+        if (copter.ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_for_origin = false;
+        } else {
+            waiting_for_origin = true;
+        }
+
         return true;
     } else {
         return false;
     }
 }
+
+bool ModeAuto::allows_arming(bool from_gcs) const
+{
+    return (copter.g2.auto_options & (int32_t)Options::AllowArming) != 0;
+};
 
 // auto_run - runs the auto controller
 //      should be called at 100hz or more
@@ -592,7 +605,16 @@ bool ModeAuto::get_wp(Location& destination)
 // update mission
 void ModeAuto::run_autopilot()
 {
-    mission.update();
+    Location loc;
+    if (waiting_for_origin) {
+        if (copter.ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_for_origin = false;
+        }
+    } else {
+        mission.update();
+    }
 }
 
 /*******************************************************************************
@@ -714,6 +736,11 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 //      called by auto_run at 100hz or more
 void ModeAuto::takeoff_run()
 {
+    // if the user doesn't want to raise the throttle we can set it automatically
+    // note that this can defeat the disarm check on takeoff
+    if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
+        copter.set_auto_armed(true);
+    }
     auto_takeoff_run();
 }
 

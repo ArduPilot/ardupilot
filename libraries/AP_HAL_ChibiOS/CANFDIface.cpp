@@ -356,6 +356,10 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+    // TODO: We have a fix in the works, this is a stop gap solution
+    // so as to not block users from using normal CAN on H7
+    return false;
+#if 0
     uint32_t num_extid = 0, num_stdid = 0;
     uint32_t total_available_list_size = MAX_FILTER_LIST_SIZE;
     uint32_t* filter_ptr;
@@ -447,6 +451,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
 
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
     return 0;
+#endif
 }
 
 uint16_t CANIface::getNumFilters() const

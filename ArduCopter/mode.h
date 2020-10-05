@@ -353,7 +353,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(bool from_gcs) const override;
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
@@ -404,6 +404,11 @@ protected:
     void run_autopilot() override;
 
 private:
+
+    enum class Options : int32_t {
+        AllowArming                        = (1 << 0U),
+        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
+    };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -515,6 +520,8 @@ private:
         float descend_start_altitude;
         float descend_max; // centimetres
     } nav_payload_place;
+
+    bool waiting_for_origin;    // true if waiting for origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
