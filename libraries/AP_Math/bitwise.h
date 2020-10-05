@@ -19,11 +19,8 @@
 
 #include <stdint.h>
 
-void loadUint(uint8_t *b, uint16_t v, uint8_t bitCount, bool MSBfirst = true);
+void loadUint(uint8_t *b, uint32_t v, uint8_t bitCount, bool MSBfirst = true);
 
-//void loadU16(uint8_t *b, uint16_t v, bool MSBfirst = true) { loadUx(b, v, 16, MSBfirst); }
-//void loadU24(uint8_t *b, uint32_t v, bool MSBfirst = true) { loadUx(b, v, 24, MSBfirst); }
-//void loadU32(uint8_t *b, uint32_t v, bool MSBfirst = true) { loadUx(b, v, 32, MSBfirst); }
 uint16_t fetchU16(const uint8_t *v, bool MSBfirst = true);
 uint32_t fetchU24(const uint8_t *v, bool MSBfirst = true);
 uint32_t fetchU32(const uint8_t *v, bool MSBfirst = true);
