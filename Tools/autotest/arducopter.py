@@ -3557,6 +3557,33 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def RangeFinderMissionRTL(self):
+        '''ensure rangefinder continues to function when in RTL mode'''
+        self.install_terrain_handlers_context()
+
+        self.load_mission("mission.txt")
+
+        self.set_parameters({
+            "RNGFND1_TYPE": 2,
+            "TERRAIN_ENABLE": 1,
+        })
+
+        self.reboot_sitl()
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(1, 1400)
+        self.wait_distance_to_home(50, 100, timeout=120)
+        self.set_rc(1, 1500)
+
+        self.change_mode("AUTO")
+
+        self.wait_waypoint(2, 2)
+
+        self.do_RTL()
+
     def test_rangefinder_switchover(self):
         """test that the EKF correctly handles the switchover between baro and rangefinder"""
         ex = None
@@ -9652,6 +9679,7 @@ class AutoTestCopter(AutoTest):
              self.RangeFinder,
              self.BaroDrivers,
              self.SurfaceTracking,
+             self.RangeFinderMissionRTL,
              self.Parachute,
              self.ParameterChecks,
              self.ManualThrottleModeChange,
