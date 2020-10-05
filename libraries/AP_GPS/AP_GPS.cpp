@@ -1282,16 +1282,17 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         }
     }
 
-    uint8_t fragment = (flags >> 1U) & 0x03;
-    uint8_t sequence = (flags >> 3U) & 0x1F;
+    const uint8_t fragment = (flags >> 1U) & 0x03;
+    const uint8_t sequence = (flags >> 3U) & 0x1F;
 
     // see if this fragment is consistent with existing fragments
     if (rtcm_buffer->fragments_received &&
         (rtcm_buffer->sequence != sequence ||
-        (rtcm_buffer->fragments_received & (1U<<fragment)))) {
+         (rtcm_buffer->fragments_received & (1U<<fragment)))) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
-        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+        rtcm_buffer->fragment_count = 0;
+        rtcm_buffer->fragments_received = 0;
     }
 
     // add this fragment
@@ -1320,7 +1321,8 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
-        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+        rtcm_buffer->fragment_count = 0;
+        rtcm_buffer->fragments_received = 0;
     }
 }
 
