@@ -17,8 +17,6 @@
 
 #include "AP_ADSB_Backend.h"
 
-#if HAL_ADSB_ENABLED
-
 class AP_ADSB_MAVLink : public AP_ADSB_Backend {
 public:
     // constructor
@@ -45,6 +43,4 @@ private:
     uint32_t            _chan_last_ms;
     int8_t              _chan = -1;
 };
-
-#endif // HAL_ADSB_ENABLED
 

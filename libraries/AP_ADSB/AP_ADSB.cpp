@@ -21,7 +21,6 @@
 */
 
 #include "AP_ADSB.h"
-#if HAL_ADSB_ENABLED
 #include "AP_ADSB_Sagetech.h"
 #include "AP_ADSB_MAVLink.h"
 #include <stdio.h>  // for sprintf
@@ -833,7 +832,4 @@ AP_ADSB *AP::ADSB()
 {
     return AP_ADSB::get_singleton();
 }
-
-#endif // HAL_ADSB_ENABLED
-
 
