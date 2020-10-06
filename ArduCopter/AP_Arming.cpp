@@ -511,7 +511,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
     char failure_msg[50] = {};
     if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
-        check_failed(display_failure, "%s", failure_msg);
+        check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
 
