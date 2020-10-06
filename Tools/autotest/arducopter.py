@@ -269,6 +269,13 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
         self.do_RTL()
 
+    def fly_to_origin(self, final_alt=10):
+        origin = self.poll_message("GPS_GLOBAL_ORIGIN")
+        self.change_mode("GUIDED")
+        self.guided_move_global_relative_alt(origin.latitude,
+                                             origin.longitude,
+                                             final_alt)
+
     def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
         def adjust_altitude(current_alt, target_alt, accuracy):
