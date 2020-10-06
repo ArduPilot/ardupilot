@@ -15,8 +15,6 @@
 
 #include "AP_ADSB_MAVLink.h"
 
-#if HAL_ADSB_ENABLED
-
 #include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
@@ -276,4 +274,3 @@ uint32_t AP_ADSB_MAVLink::get_encoded_icao(void)
     return encoded_icao;
 }
 
-#endif // HAL_ADSB_ENABLED

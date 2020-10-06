@@ -17,8 +17,6 @@
 
 #include "AP_ADSB_Backend.h"
 
-#if HAL_ADSB_ENABLED
-
 class AP_ADSB_Sagetech : public AP_ADSB_Backend {
 public:
     // constructor
@@ -149,4 +147,3 @@ private:
     Transponder_Type transponder_type = Transponder_Type::Unknown;
 };
 
-#endif // HAL_ADSB_ENABLED
