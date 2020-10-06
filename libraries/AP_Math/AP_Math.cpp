@@ -128,23 +128,6 @@ float throttle_curve(float thr_mid, float alpha, float thr_in)
     return thr_out;
 }
 
-/*
- * Convert any base number to any base number. Example octal(8) to decimal(10)
- * baseIn: base of input number
- * baseOut: base of output number
- * inputNumber: value currently in base "baseIn" to be converted to base "baseOut"
- */
-uint32_t convertMathBase(const uint8_t baseIn, const uint8_t baseOut, uint32_t inputNumber)
-{
-    uint32_t outputNumber = 0;
-
-    for (uint8_t i=0; inputNumber != 0; i++) {
-        outputNumber += (inputNumber % baseOut) * powf(float(baseIn), i);
-        inputNumber /= baseOut;
-    }
-    return outputNumber;
-}
-
 template <typename T>
 T wrap_180(const T angle)
 {
