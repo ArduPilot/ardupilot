@@ -525,7 +525,7 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
 
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     // ArduSoar parameters
     SoaringController soaring_controller;
 #endif

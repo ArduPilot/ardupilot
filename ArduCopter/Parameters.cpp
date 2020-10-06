@@ -679,7 +679,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     // @Group: ADSB_
     // @Path: ../libraries/AP_ADSB/AP_ADSB.cpp
     GOBJECT(adsb,                "ADSB_", AP_ADSB),
@@ -976,6 +976,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("ACRO_OPTIONS", 39, ParametersG2, acro_options, 0),
 #endif
 
+#if MODE_AUTO_ENABLED == ENABLED
+    // @Param: AUTO_OPTIONS
+    // @DisplayName: Auto mode options
+    // @Description: A range of options that can be applied to change auto mode behaviour. Allow Arming allows the copter to be armed in Auto. Allow Takeoff Without Raising Throttle allows takeoff without the pilot having to raise the throttle
+    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle
+    // @User: Advanced
+    AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1012,7 +1021,7 @@ ParametersG2::ParametersG2(void)
     ,mode_systemid_ptr(&copter.mode_systemid)
 #endif
 #if MODE_AUTOROTATE_ENABLED == ENABLED
-    ,arot(copter.inertial_nav)
+    ,arot()
 #endif
     ,button_ptr(&copter.button)
 #if MODE_ZIGZAG_ENABLED == ENABLED

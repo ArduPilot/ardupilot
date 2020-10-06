@@ -176,9 +176,7 @@ void Sub::init_ardupilot()
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // disable safety if requested
-    BoardConfig.init_safety();    
-    
-    hal.console->print("\nInit complete");
+    BoardConfig.init_safety();
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -288,6 +286,7 @@ bool Sub::should_log(uint32_t mask)
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
-
+#if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
+#endif

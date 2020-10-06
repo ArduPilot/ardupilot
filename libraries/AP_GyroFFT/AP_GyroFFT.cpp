@@ -494,8 +494,7 @@ void AP_GyroFFT::update_thread(void)
             hal.scheduler->delay_microseconds(delay);
         }
 #else
-        // on an F4 (Pixracer) we need to delay by at least 10us to not lock up logging, on an H7 1us is enough
-        hal.scheduler->delay_microseconds(MAX(delay, 10U));
+        hal.scheduler->delay_microseconds(MAX(delay, 1U));
 #endif
     }
 }
@@ -509,7 +508,7 @@ bool AP_GyroFFT::start_update_thread(void)
         return true;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GyroFFT::update_thread, void), "apm_fft", FFT_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_GyroFFT::update_thread, void), "apm_fft", FFT_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
         AP_HAL::panic("Failed to start AP_GyroFFT update thread");
         return false;
     }
@@ -1126,10 +1125,8 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
         return;
     }
 
-    WITH_SEMAPHORE(_sem);
-
     // according to https://www.tcd.ie/Physics/research/groups/magnetism/files/lectures/py5021/MagneticSensors3.pdf sensor noise is not necessarily gaussian
-    // determine a PS noise reference at each of the possble center frequencies
+    // determine a PS noise reference at each of the possible center frequencies
     if (_noise_cycles == 0 && _noise_calibration_cycles[_update_axis] > 0) {
         for (uint16_t i = 1; i < _state->_bin_count; i++) {
             _ref_energy[_update_axis][i] += _state->_freq_bins[i];
@@ -1140,6 +1137,8 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
                 // overall random noise is reduced by sqrt(N) when averaging periodigrams so adjust for that
                 _ref_energy[_update_axis][i] = (_ref_energy[_update_axis][i] / cycles) * sqrtf(cycles);
             }
+
+            WITH_SEMAPHORE(_sem);
             _thread_state._noise_needs_calibration &= ~(1 << _update_axis);
         }
     }

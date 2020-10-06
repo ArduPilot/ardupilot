@@ -86,7 +86,7 @@ public:
     int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
 
     /// true if pilot control of radius and turn rate is enabled
-    bool pilot_control_enabled() const { return _control > 0; }
+    bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
 
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
@@ -127,10 +127,16 @@ private:
     const AP_AHRS_View&         _ahrs;
     AC_PosControl&              _pos_control;
 
+    enum CircleOptions {
+        MANUAL_CONTROL           = 1U << 0,
+        FACE_DIRECTION_OF_TRAVEL = 1U << 1,
+        INIT_AT_CENTER           = 1U << 2, // true then the circle center will be the current location, false and the center will be 1 radius ahead
+    };
+
     // parameters
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
-    AP_Int16    _control;       // stick control enable/disable
+    AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
     Vector3f    _center;        // center of circle in cm from home

@@ -18,7 +18,7 @@ int8_t RC_Channels_Plane::flight_mode_channel_number() const
 
 bool RC_Channels_Plane::has_valid_input() const
 {
-    if (plane.failsafe.rc_failsafe) {
+    if (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe) {
         return false;
     }
     if (plane.failsafe.throttle_counter != 0) {
@@ -98,7 +98,7 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
 
 void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
 {
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     SoaringController::ActiveStatus desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
 
     switch (ch_flag) {

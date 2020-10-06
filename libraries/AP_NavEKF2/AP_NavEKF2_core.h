@@ -946,6 +946,8 @@ private:
     float defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states and covariances are to remain constant
+    bool lastInhibitMagStates;      // previous inhibitMagStates
+    bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
     struct Location EKF_origin;     // LLH origin of the NED axis system

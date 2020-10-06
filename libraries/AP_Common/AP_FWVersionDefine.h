@@ -13,9 +13,12 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define FORCE_VERSION_H_INCLUDE
-#include "version.h"
-#undef FORCE_VERSION_H_INCLUDE
+// this include file *defines* the structure holding the version information for the ArduPilot binary.  It must only be 
+// included in a single place, thus the following protection:
+
+#ifndef FORCE_VERSION_H_INCLUDE
+#error AP_FWVersionDefine.h should never be included directly. You probably want to include AP_Common/AP_FWVersion.h
+#endif
 
 #include <AP_Common/AP_FWVersion.h>
 

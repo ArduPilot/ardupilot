@@ -61,6 +61,11 @@ public:
       forever. Return true on pin change, false on timeout
      */
     bool wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us) override;
+
+#ifndef IOMCU_FW
+    // timer tick
+    void timer_tick(void) override;
+#endif
     
 private:
     bool _usb_connected;

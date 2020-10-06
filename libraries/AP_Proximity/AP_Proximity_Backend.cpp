@@ -78,51 +78,20 @@ bool AP_Proximity_Backend::get_object_angle_and_distance(uint8_t object_number, 
 // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
 bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
 {
-    // exit immediately if we have no good ranges
+    // cycle through all sectors filling in distances and orientations
+    // see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
     bool valid_distances = false;
-    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
-        if (_distance_valid[i]) {
-            valid_distances = true;
-            break;
-        }
-    }
-    if (!valid_distances) {
-        return false;
-    }
-
-    // initialise orientations and directions
-    //  see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
-    //  distances initialised to maximum distances
-    bool dist_set[PROXIMITY_MAX_DIRECTION]{};
     for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
         prx_dist_array.orientation[i] = i;
-        prx_dist_array.distance[i] = distance_max();
-    }
-
-    // cycle through all sectors filling in distances
-    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
-            // convert angle to orientation
-            int16_t orientation = static_cast<int16_t>((_angle[i]+PROXIMITY_SECTOR_WIDTH_DEG*0.5) * (PROXIMITY_MAX_DIRECTION / 360.0f));
-            orientation %= PROXIMITY_MAX_DIRECTION;
-            if ((orientation >= 0) && (orientation < PROXIMITY_MAX_DIRECTION) && (_distance[i] < prx_dist_array.distance[orientation])) {
-                prx_dist_array.distance[orientation] = _distance[i];
-                dist_set[orientation] = true;
-            }
+            valid_distances = true;
+            prx_dist_array.distance[i] = _distance[i];
+        } else {
+            prx_dist_array.distance[i] = distance_max();
         }
     }
 
-    // fill in missing orientations with average of adjacent orientations if necessary and possible
-    for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
-        if (!dist_set[i]) {
-            uint8_t orient_before = (i==0) ? (PROXIMITY_MAX_DIRECTION - 1) : (i-1);
-            uint8_t orient_after = (i==(PROXIMITY_MAX_DIRECTION - 1)) ? 0 : (i+1);
-            if (dist_set[orient_before] && dist_set[orient_after]) {
-                prx_dist_array.distance[i] = (prx_dist_array.distance[orient_before] + prx_dist_array.distance[orient_after]) / 2.0f;
-            }
-        }
-    }
-    return true;
+    return valid_distances;
 }
 
 // get boundary points around vehicle for use by avoidance
@@ -229,6 +198,14 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
     state.status = status;
 }
 
+// correct an angle (in degrees) based on the orientation and yaw correction parameters
+float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) const
+{
+    const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
+    return wrap_360(angle_degrees * angle_sign + frontend.get_yaw_correction(state.instance));
+}
+
+// find which sector a given angle falls into
 uint8_t AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees) const
 {
     return wrap_360(angle_degrees + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;

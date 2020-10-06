@@ -416,7 +416,6 @@ protected:
     void handle_common_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg);
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
 
     // reset a message interval via mavlink:
@@ -824,8 +823,6 @@ private:
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
     struct Location global_position_current_loc;
-
-    void zero_rc_outputs();
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;

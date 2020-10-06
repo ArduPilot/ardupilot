@@ -23,6 +23,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_OLC/AP_OLC.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED 0
@@ -175,7 +176,10 @@ private:
     AP_OSD_Setting bat2_vlt{false, 0, 0};
     AP_OSD_Setting bat2used{false, 0, 0};
     AP_OSD_Setting clk{false, 0, 0};
-    
+#if HAL_PLUSCODE_ENABLE
+    AP_OSD_Setting pluscode{false, 0, 0};
+#endif
+
     // MSP OSD only
     AP_OSD_Setting sidebars{false, 0, 0};
     AP_OSD_Setting crosshair{false, 0, 0};
@@ -206,6 +210,9 @@ private:
     void draw_aspd1(uint8_t x, uint8_t y);
     void draw_aspd2(uint8_t x, uint8_t y);
     void draw_vspeed(uint8_t x, uint8_t y);
+#if HAL_PLUSCODE_ENABLE
+    void draw_pluscode(uint8_t x, uint8_t y);
+#endif
 
     //helper functions
     void draw_speed_vector(uint8_t x, uint8_t y, Vector2f v, int32_t yaw);

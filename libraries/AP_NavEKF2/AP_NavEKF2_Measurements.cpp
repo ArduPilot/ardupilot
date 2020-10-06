@@ -222,6 +222,9 @@ void NavEKF2_core::tryChangeCompass(void)
             magStateResetRequest = true;
             // declare the field unlearned so that the reset request will be obeyed
             magFieldLearned = false;
+
+            // reset body mag variances on next CovariancePrediction
+            needMagBodyVarReset = true;
             return;
         }
     }
@@ -269,13 +272,6 @@ void NavEKF2_core::readMagData()
         }
     }
 
-    // check for a failed compass and switch if failed for magFailTimeLimit_ms
-    if (maxCount > 1 &&
-        !compass.healthy(magSelectIndex) &&
-        imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms) {
-        tryChangeCompass();
-    }
-    
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
     if (use_compass() &&
@@ -292,6 +288,10 @@ void NavEKF2_core::readMagData()
             stateStruct.body_magfield.zero();
             // clear the measurement buffer
             storedMag.reset();
+            // reset body mag variances on next
+            // CovariancePrediction. This copes with possible errors
+            // in the new offsets
+            needMagBodyVarReset = true;
         }
         lastMagOffsets = nowMagOffsets;
         lastMagOffsetsValid = true;

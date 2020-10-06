@@ -103,6 +103,7 @@ void AP_Vehicle::setup()
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
@@ -252,6 +253,34 @@ void AP_Vehicle::write_notch_log_messages() const
     AP::logger().Write(
         "FTN", "TimeUS,NDn,DnF1,DnF2,DnF3,DnF4", "s-zzzz", "F-----", "QBffff", AP_HAL::micros64(), ins.get_num_gyro_dynamic_notch_center_frequencies(),
             notches[0], notches[1], notches[2], notches[3]);
+}
+
+// reboot the vehicle in an orderly manner, doing various cleanups and
+// flashing LEDs as appropriate
+void AP_Vehicle::reboot(bool hold_in_bootloader)
+{
+    if (should_zero_rc_outputs_on_reboot()) {
+        SRV_Channels::zero_rc_outputs();
+    }
+
+    // Notify might want to blink some LEDs:
+    AP_Notify::flags.firmware_update = 1;
+    notify.update();
+
+    // force safety on
+    hal.rcout->force_safety_on();
+
+    // flush pending parameter writes
+    AP_Param::flush();
+
+    // do not process incoming mavlink messages while we delay:
+    hal.scheduler->register_delay_callback(nullptr, 5);
+
+    // delay to give the ACK a chance to get out, the LEDs to flash,
+    // the IO board safety to be forced on, the parameters to flush, ...
+    hal.scheduler->delay(200);
+
+    hal.scheduler->reboot(hold_in_bootloader);
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;

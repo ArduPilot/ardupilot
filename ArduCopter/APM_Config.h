@@ -26,7 +26,6 @@
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define GRIPPER_ENABLED       DISABLED            // disable gripper support
 //#define RPM_ENABLED           DISABLED            // disable rotations per minute sensor support
-//#define MAGNETOMETER          DISABLED            // disable magnetometer support
 //#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support

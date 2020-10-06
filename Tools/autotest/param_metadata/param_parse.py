@@ -358,6 +358,10 @@ def validate(param):
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
             error("unknown units field '%s'" % param.__dict__["Units"])
+    # Validate User
+    if (hasattr(param, "User")):
+        if param.User.strip() not in ["Standard", "Advanced"]:
+            error("unknown user (%s)" % param.User.strip())
 
 for vehicle in vehicles:
     for param in vehicle.params:

@@ -72,8 +72,9 @@ bool Mode::enter()
 
         // start with throttle suppressed in auto_throttle modes
         plane.throttle_suppressed = plane.auto_throttle_mode;
-
+#if HAL_ADSB_ENABLED
         plane.adsb.set_is_auto_mode(plane.auto_navigation_mode);
+#endif
 
         // reset steering integrator on mode change
         plane.steerController.reset_I();
@@ -85,3 +86,17 @@ bool Mode::enter()
     return enter_result;
 }
 
+bool Mode::is_vtol_man_throttle() const
+{
+    if (!plane.quadplane.in_vtol_mode() &&
+        plane.quadplane.is_tailsitter() && 
+        plane.quadplane.tailsitter_transition_fw_complete() && 
+        plane.quadplane.assisted_flight) {
+        // a tailsitter that has fully transisisoned to Q-assisted forward flight
+        // in this case the forward throttle directly drives the vertical throttle
+        // set vertical throttle state to match the forward throttle state. Confusingly the booleans are inverted,
+        // forward throttle uses 'auto_throttle_mode' whereas vertical used 'is_vtol_man_throttle'
+        return !plane.auto_throttle_mode;
+    }
+    return false;
+}

@@ -179,7 +179,7 @@ bool MsgHandler::field_value(uint8_t *msg, const char *label, Vector3f &ret)
 }
 
 
-void MsgHandler::string_for_labels(char *buffer, uint bufferlen)
+void MsgHandler::string_for_labels(char *buffer, uint32_t bufferlen)
 {
     memset(buffer, '\0', bufferlen);
     bufferlen--;

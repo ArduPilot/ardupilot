@@ -190,8 +190,7 @@ private:
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        AP_Int8 ser1_rtscts;
-        AP_Int8 ser2_rtscts;
+        AP_Int8 ser_rtscts[6];
         AP_Int8 sbus_out_rate;
 #endif
         AP_Int8 board_type;

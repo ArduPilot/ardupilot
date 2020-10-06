@@ -108,7 +108,9 @@
 
 #include "RC_Channel.h"     // RC Channel Library
 #include "Parameters.h"
+#if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
+#endif
 #include "AP_Arming.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -157,6 +159,7 @@ public:
     friend class ModeQAcro;
     friend class ModeQAutotune;
     friend class ModeTakeoff;
+    friend class ModeThermal;
 
     Plane(void);
 
@@ -265,7 +268,9 @@ private:
     ModeAuto mode_auto;
     ModeRTL mode_rtl;
     ModeLoiter mode_loiter;
+#if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoidADSB;
+#endif
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
@@ -277,6 +282,9 @@ private:
     ModeQAcro mode_qacro;
     ModeQAutotune mode_qautotune;
     ModeTakeoff mode_takeoff;
+#if HAL_SOARING_ENABLED
+    ModeThermal mode_thermal;
+#endif
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
@@ -632,11 +640,12 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
             FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
             FUNCTOR_BIND_MEMBER(&Plane::update_flight_stage, void)};
-
+#if HAL_ADSB_ENABLED
     AP_ADSB adsb;
 
-    // avoidance of adsb enabled vehicles (normally manned vheicles)
+    // avoidance of adsb enabled vehicles (normally manned vehicles)
     AP_Avoidance_Plane avoidance_adsb{adsb};
+#endif
 
     // Outback Challenge Failsafe Support
 #if ADVANCED_FAILSAFE == ENABLED
@@ -1065,7 +1074,7 @@ private:
 #endif
 
     // soaring.cpp
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     void update_soaring();
     bool soaring_exit_heading_aligned() const;
     void soaring_restore_mode(const char *reason, ModeReason modereason);

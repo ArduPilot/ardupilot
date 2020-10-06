@@ -55,7 +55,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         }
     }
     if (strcmp(fname, "tasks.txt") == 0) {
-        const uint32_t max_size = 6144;
+        const uint32_t max_size = 6500;
         r.data->data = (char *)malloc(max_size);
         if (r.data->data) {
             r.data->length = AP::scheduler().task_info(r.data->data, max_size);

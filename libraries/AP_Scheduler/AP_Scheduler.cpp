@@ -430,23 +430,34 @@ size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
     bufsize -= n;
     total += n;
 
+    // baseline the total time taken by all tasks
+    float total_time = 1.0f;
+    for (uint8_t i = 0; i < _num_tasks; i++) {
+        const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
+        if (ti->tick_count > 0) {
+            total_time += ti->elapsed_time_us;
+        }
+    }
+
     for (uint8_t i = 0; i < _num_tasks; i++) {
         const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
         const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
 
         uint16_t avg = 0;
+        float pct = 0.0f;
         if (ti->tick_count > 0) {
+            pct = ti->elapsed_time_us * 100.0f / total_time;
             avg = MIN(uint16_t(ti->elapsed_time_us / ti->tick_count), 999);
         }
 
 #if HAL_MINIMIZE_FEATURES
-        const char* fmt = "%-16.16s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u\n";
+        const char* fmt = "%-16.16s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #else
-        const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u\n";
+        const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #endif
         n = hal.util->snprintf(buf, bufsize, fmt, task.name,
             unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
-            unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)));
+            unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
 
         if (n <= 0) {
             break;

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "Plane.h"
 
+#if HAL_ADSB_ENABLED
 void Plane::avoidance_adsb_update(void)
 {
     adsb.update();
@@ -201,4 +202,6 @@ bool AP_Avoidance_Plane::handle_avoidance_horizontal(const AP_Avoidance::Obstacl
     // if we got this far we failed to set the new target
     return false;
 }
+
+#endif // HAL_ADSB_ENABLED
 

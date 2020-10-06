@@ -20,12 +20,6 @@ public:
     AP_LeakDetector(const AP_LeakDetector &other) = delete;
     AP_LeakDetector &operator=(const AP_LeakDetector&) = delete;
 
-    enum LeakDetector_Type {
-        LEAKDETECTOR_TYPE_NONE = 0,
-        LEAKDETECTOR_TYPE_DIGITAL = 1,
-        LEAKDETECTOR_TYPE_ANALOG = 2
-    };
-
     struct LeakDetector_State {
         uint8_t instance;
         bool status; // leaking?

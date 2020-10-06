@@ -65,6 +65,7 @@
 #include <AC_AutoTune/AC_AutoTune.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_ADSB/AP_ADSB.h>
 
 // Configuration
 #include "defines.h"
@@ -111,9 +112,6 @@
 #if PRECISION_LANDING == ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AP_IRLock/AP_IRLock.h>
-#endif
-#if ADSB_ENABLED == ENABLED
- # include <AP_ADSB/AP_ADSB.h>
 #endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
@@ -169,7 +167,7 @@
 #include "UserParameters.h"
 #endif
 #include "Parameters.h"
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
 
@@ -535,7 +533,7 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
@@ -667,7 +665,7 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
 #endif
@@ -948,7 +946,7 @@ private:
 #if MODE_SYSTEMID_ENABLED == ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
 #endif
 #if MODE_THROW_ENABLED == ENABLED

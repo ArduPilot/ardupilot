@@ -63,22 +63,27 @@
 
 #define MESSAGE_RAM_END_ADDR 0x4000B5FC
 
-extern const AP_HAL::HAL& hal;
+extern AP_HAL::HAL& hal;
 
 static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz");
 
 using namespace ChibiOS;
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANFDIface", fmt, ##args); } while (0)
+#else
+#define Debug(fmt, args...)
+#endif
 
 constexpr CANIface::CanType* const CANIface::Can[];
+static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
 
 static inline bool driver_initialised(uint8_t iface_index)
 {
     if (iface_index >= HAL_NUM_CAN_IFACES) {
         return false;
     }
-    if (hal.can[iface_index] == nullptr) {
+    if (can_ifaces[iface_index] == nullptr) {
         return false;
     }
     return true;
@@ -97,12 +102,12 @@ static inline void handleCANInterrupt(uint8_t iface_index, uint8_t line_index)
         if ((CANIface::Can[iface_index]->IR & FDCAN_IR_RF0N) ||
             (CANIface::Can[iface_index]->IR & FDCAN_IR_RF0F)) {
             CANIface::Can[iface_index]->IR = FDCAN_IR_RF0N | FDCAN_IR_RF0F;
-            ((ChibiOS::CANIface*)hal.can[iface_index])->handleRxInterrupt(0);
+            can_ifaces[iface_index]->handleRxInterrupt(0);
         }
         if ((CANIface::Can[iface_index]->IR & FDCAN_IR_RF1N) ||
             (CANIface::Can[iface_index]->IR & FDCAN_IR_RF1F)) {
             CANIface::Can[iface_index]->IR = FDCAN_IR_RF1N | FDCAN_IR_RF1F;
-            ((ChibiOS::CANIface*)hal.can[iface_index])->handleRxInterrupt(1);
+            can_ifaces[iface_index]->handleRxInterrupt(1);
         }
     } else {
         if (CANIface::Can[iface_index]->IR & FDCAN_IR_TC) {
@@ -111,22 +116,23 @@ static inline void handleCANInterrupt(uint8_t iface_index, uint8_t line_index)
             if (timestamp_us > 0) {
                 timestamp_us--;
             }
-            ((ChibiOS::CANIface*)hal.can[iface_index])->handleTxCompleteInterrupt(timestamp_us);
+            can_ifaces[iface_index]->handleTxCompleteInterrupt(timestamp_us);
         }
 
         if ((CANIface::Can[iface_index]->IR & FDCAN_IR_BO)) {
             CANIface::Can[iface_index]->IR = FDCAN_IR_BO;
-            ((ChibiOS::CANIface*)hal.can[iface_index])->handleBusOffInterrupt();
+            can_ifaces[iface_index]->handleBusOffInterrupt();
         }
     }
-    ((ChibiOS::CANIface*)hal.can[iface_index])->pollErrorFlagsFromISR();
+    can_ifaces[iface_index]->pollErrorFlagsFromISR();
 }
 
 uint32_t CANIface::FDCANMessageRAMOffset_ = 0;
 
 CANIface::CANIface(uint8_t index) :
     self_index_(index),
-    rx_queue_(HAL_CAN_RX_QUEUE_SIZE)
+    rx_bytebuffer_((uint8_t*)rx_buffer, sizeof(rx_buffer)),
+    rx_queue_(&rx_bytebuffer_)
 {
     if (index >= HAL_NUM_CAN_IFACES) {
          AP_HAL::panic("Bad CANIface index.");
@@ -350,6 +356,10 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+    // TODO: We have a fix in the works, this is a stop gap solution
+    // so as to not block users from using normal CAN on H7
+    return false;
+#if 0
     uint32_t num_extid = 0, num_stdid = 0;
     uint32_t total_available_list_size = MAX_FILTER_LIST_SIZE;
     uint32_t* filter_ptr;
@@ -441,6 +451,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
 
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
     return 0;
+#endif
 }
 
 uint16_t CANIface::getNumFilters() const
@@ -451,6 +462,18 @@ uint16_t CANIface::getNumFilters() const
 bool CANIface::clock_init_ = false;
 bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 {
+    Debug("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
+    if (self_index_ > HAL_NUM_CAN_IFACES) {
+        Debug("CAN drv init failed");
+        return false;
+    }
+    if (can_ifaces[self_index_] == nullptr) {
+        can_ifaces[self_index_] = this;
+#if !defined(HAL_BOOTLOADER_BUILD)
+        hal.can[self_index_] = this;
+#endif
+    }
+
     //Only do it once
     //Doing it second time will reset the previously initialised bus
     if (!clock_init_) {
@@ -604,7 +627,9 @@ void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
             }
             if (event_handle_ != nullptr) {
                 stats.num_events++;
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
                 evt_src_.signalI(1 << self_index_);
+#endif
             }
         }
     }
@@ -703,7 +728,9 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index)
     }
     if (event_handle_ != nullptr) {
         stats.num_events++;
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
         evt_src_.signalI(1 << self_index_);
+#endif
     }
 }
 
@@ -766,6 +793,7 @@ uint32_t CANIface::getErrorCount() const
            stats.tx_timedout;
 }
 
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
 ChibiOS::EventSource CANIface::evt_src_;
 bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
 {
@@ -774,6 +802,7 @@ bool CANIface::set_event_handle(AP_HAL::EventHandle* handle)
     event_handle_->set_source(&evt_src_);
     return event_handle_->register_event(1 << self_index_);
 }
+#endif
 
 bool CANIface::isRxBufferEmpty() const
 {
@@ -857,6 +886,7 @@ bool CANIface::select(bool &read, bool &write,
     return true; // Return value doesn't matter as long as it is non-negative
 }
 
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
 uint32_t CANIface::get_stats(char* data, uint32_t max_size)
 {
     if (data == nullptr) {
@@ -886,7 +916,7 @@ uint32_t CANIface::get_stats(char* data, uint32_t max_size)
                             stats.num_events);
     return ret;
 }
-
+#endif
 
 /*
  * Interrupt handlers

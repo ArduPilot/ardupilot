@@ -523,14 +523,14 @@ private:
     // broken down as individual elements. Both are equivalent (same
     // memory)
     struct state_elements {
-        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame
-        Vector3f    velocity;       // velocity of IMU in local NED earth frame (m/sec)
-        Vector3f    position;       // position of IMU in local NED earth frame (m)
-        Vector3f    gyro_bias;      // body frame delta angle IMU bias vector (rad)
-        Vector3f    accel_bias;     // body frame delta velocity IMU bias vector (m/sec)
-        Vector3f    earth_magfield; // earth frame magnetic field vector (Gauss)
-        Vector3f    body_magfield;  // body frame magnetic field vector (Gauss)
-        Vector2f    wind_vel;       // horizontal North East wind velocity vector in local NED earth frame (m/sec)
+        Quaternion  quat;           // quaternion defining rotation from local NED earth frame to body frame 0..3
+        Vector3f    velocity;       // velocity of IMU in local NED earth frame (m/sec) 4..6
+        Vector3f    position;       // position of IMU in local NED earth frame (m)     7..9
+        Vector3f    gyro_bias;      // body frame delta angle IMU bias vector (rad)     10..12
+        Vector3f    accel_bias;     // body frame delta velocity IMU bias vector (m/sec) 13..15
+        Vector3f    earth_magfield; // earth frame magnetic field vector (Gauss)         16..18
+        Vector3f    body_magfield;  // body frame magnetic field vector (Gauss)          19..21
+        Vector2f    wind_vel;       // horizontal North East wind velocity vector in local NED earth frame (m/sec) 22..23
     };
 
     union {
@@ -1088,6 +1088,8 @@ private:
     float tasTestRatio;             // sum of squares of true airspeed innovation divided by fail threshold
     bool inhibitWindStates;         // true when wind states and covariances are to remain constant
     bool inhibitMagStates;          // true when magnetic field states are inactive
+    bool lastInhibitMagStates;      // previous inhibitMagStates
+    bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool inhibitDelVelBiasStates;   // true when IMU delta velocity bias states are inactive
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available

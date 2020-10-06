@@ -229,6 +229,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         #endif // HELI_FRAME
 
         // checks when using range finder for RTL
+#if MODE_RTL_ENABLED == ENABLED
         if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
             // get terrain source from wpnav
             switch (copter.wp_nav->get_terrain_source()) {
@@ -267,9 +268,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 break;
             }
         }
+#endif
 
         // check adsb avoidance failsafe
-#if ADSB_ENABLED == ENABLE
+#if HAL_ADSB_ENABLED
         if (copter.failsafe.adsb) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "ADSB threat detected");
             return false;
@@ -492,7 +494,7 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
         // display error if something is within 60cm
         const float tolerance = 0.6f;
         if (distance <= tolerance) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Proximity %d deg, %4.2fm (want <= %0.2fm)", (int)angle_deg, (double)distance, (double)tolerance);
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Proximity %d deg, %4.2fm (want > %0.1fm)", (int)angle_deg, (double)distance, (double)tolerance);
             return false;
         }
     }
@@ -687,7 +689,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // check adsb
-#if ADSB_ENABLED == ENABLE
+#if HAL_ADSB_ENABLED
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
         if (copter.failsafe.adsb) {
             check_failed(ARMING_CHECK_PARAMETERS, true, "ADSB threat detected");

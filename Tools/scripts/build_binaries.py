@@ -617,6 +617,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeOrange",
                 "CubeYellow",
                 "R9Pilot",
+                "QioTekZealotF427",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -635,6 +636,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "f103-Airspeed",
                 "CUAV_GPS",
                 "ZubaxGNSS",
+                "CubeOrange-periph",
                 ]
 
     def build_arducopter(self, tag):

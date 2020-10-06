@@ -17,6 +17,8 @@
 
 #include "AP_ADSB_Backend.h"
 
+#if HAL_ADSB_ENABLED
+
 class AP_ADSB_Sagetech : public AP_ADSB_Backend {
 public:
     // constructor
@@ -136,7 +138,6 @@ private:
     uint32_t        last_packet_GPS_ms;
     uint32_t        last_packet_send_ms;
     MsgTypes_XP     last_packet_type_sent = MsgTypes_XP::INVALID;
-    uint32_t        response_timeout_count;
     uint32_t        baudrate;
 
     uint32_t        last_packet_Operating_ms;
@@ -148,3 +149,4 @@ private:
     Transponder_Type transponder_type = Transponder_Type::Unknown;
 };
 
+#endif // HAL_ADSB_ENABLED

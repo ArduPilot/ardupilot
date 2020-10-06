@@ -166,7 +166,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u, dt=%.4f",
+    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
                     (unsigned)imu_buffer_length,
                     (unsigned)obs_buffer_length,
@@ -1022,12 +1022,28 @@ void NavEKF3_core::CovariancePrediction()
         }
     }
 
+    if (!inhibitMagStates && lastInhibitMagStates) {
+        // when starting 3D fusion we want to reset body mag variances
+        needMagBodyVarReset = true;
+    }
+
+    if (needMagBodyVarReset) {
+        // reset body mag variances
+        needMagBodyVarReset = false;
+        zeroCols(P,19,21);
+        zeroRows(P,19,21);
+        P[19][19] = sq(frontend->_magNoise);
+        P[20][20] = P[19][19];
+        P[21][21] = P[19][19];
+    }
+
     if (!inhibitMagStates) {
         float magEarthVar = sq(dt * constrain_float(frontend->_magEarthProcessNoise, 0.0f, 1.0f));
         float magBodyVar  = sq(dt * constrain_float(frontend->_magBodyProcessNoise, 0.0f, 1.0f));
         for (uint8_t i=6; i<=8; i++) processNoiseVariance[i] = magEarthVar;
         for (uint8_t i=9; i<=11; i++) processNoiseVariance[i] = magBodyVar;
     }
+    lastInhibitMagStates = inhibitMagStates;
 
     if (!inhibitWindStates) {
         float windVelVar  = sq(dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate)));
@@ -1726,9 +1742,6 @@ void NavEKF3_core::resetMagFieldStates()
     P[19][19] = P[18][18];
     P[20][20] = P[18][18];
     P[21][21] = P[18][18];
-
-    // prevent reset of variances in ConstrainVariances()
-    inhibitMagStates = false;
 
     // record the fact we have initialised the magnetic field states
     recordMagReset();
