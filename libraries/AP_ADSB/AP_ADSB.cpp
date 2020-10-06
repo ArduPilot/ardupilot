@@ -32,10 +32,6 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#ifndef ADSB_SAGETECH_ENABLED
-    #define ADSB_SAGETECH_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 
 //#define ADSB_STATIC_CALLSIGN            "APM1234"  // 8 ASCII chars of a Callsign. This can be overwritten by MAVLink msg UAVIONIX_ADSB_OUT_CFG
 
@@ -186,12 +182,9 @@ void AP_ADSB::hw_init(void)
         return;
     }
 
-#if ADSB_SAGETECH_ENABLED
     if (AP_ADSB_Sagetech::detect()) {
         backend = new AP_ADSB_Sagetech(*this);
-    } else
-#endif
-    {
+    } else {
         backend = new AP_ADSB_MAVLink(*this);
     }
 
