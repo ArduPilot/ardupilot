@@ -35,6 +35,13 @@ windowID = []
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
 
+ardupilot_IP = "10.0.2.17"
+master_IP = "10.0.2.17"
+out_IP = "10.0.2.17"
+sitl_IP = "10.0.2.17"
+
+
+
 os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 
 class CompatError(Exception):
@@ -554,7 +561,7 @@ def start_antenna_tracker(opts):
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
-    tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
+    tracker_uarta = "tcp:{}:".format(ardupilot_IP) + str(5760 + 10 * tracker_instance)
     if cmd_opts.build_system == "waf":
         binary_basedir = "build/sitl"
         exe = os.path.join(root_dir,
@@ -785,7 +792,7 @@ def start_mavproxy(opts, stuff):
                     # mavlink out to the containing host OS
                     c.extend(["--out", "10.0.2.2:" + str(port)])
                 else:
-                    c.extend(["--out", "127.0.0.1:" + str(port)])
+                    c.extend(["--out", "{}:".format(out_IP) + str(port)])
 
         if opts.hil:
             c.extend(["--load-module", "HIL"])
@@ -793,9 +800,9 @@ def start_mavproxy(opts, stuff):
             if opts.mcast:
                 c.extend(["--master", "mcast:"])
             else:
-                c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+                c.extend(["--master", "tcp:{}:".format(master_IP) + str(5760 + 10 * i)])
             if stuff["sitl-port"] and not opts.no_rcin:
-                c.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+                c.extend(["--sitl", "{}:".format(sitl_IP) + str(5501 + 10 * i)])
 
         os.chdir(i_dir)
         if i == instances[-1]:
@@ -848,6 +855,9 @@ parser.add_option("-H", "--hil",
                   action='store_true',
                   default=False,
                   help="start HIL")
+
+parser.add_option("", "--ardupilot_ip",
+                  help="IP where ardupilot and gazebo run")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
@@ -1120,6 +1130,14 @@ progress("Start")
 if cmd_opts.sim_vehicle_sh_compatible and cmd_opts.jobs is None:
     cmd_opts.jobs = 1
 
+# ip params
+if cmd_opts.ardupilot_ip:
+    ardupilot_IP = cmd_opts.ardupilot_ip
+    master_IP = cmd_opts.ardupilot_ip
+    out_IP = cmd_opts.ardupilot_ip
+    sitl_IP = cmd_opts.ardupilot_ip
+
+
 # validate parameters
 if cmd_opts.hil:
     if cmd_opts.valgrind:
@@ -1336,7 +1354,7 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
             'x': x, 'y': y, 'z': z, 'heading': heading,
             'to_ardupilot_port': 9003 + i * 10,
             'from_ardupilot_port': 9002 + i * 10,
-            'to_ardupilot_ip': '127.0.0.1'
+            'to_ardupilot_ip': ardupilot_IP 
         }
     if cmd_opts.scrimmage_args is not None:
         scrimmage_args = cmd_opts.scrimmage_args.split(',')
