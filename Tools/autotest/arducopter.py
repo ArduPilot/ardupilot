@@ -2946,8 +2946,11 @@ class AutoTestCopter(AutoTest):
             self.assert_vehicle_location_is_at_startup_location()
 
             self.takeoff(10, mode="LOITER")
-            self.change_mode("GUIDED")
-            self.fly_guided_move_local(-50, 0, 10, timeout=30)
+#            self.change_mode("GUIDED")
+#            self.fly_guided_move_local(-50, 0, 10, timeout=30)
+            self.set_rc(1, 1400)
+            self.wait_distance_to_home(50, 100, timeout=120)
+            self.set_rc(1, 1500)
 
             self.change_mode("AUTO")
 
