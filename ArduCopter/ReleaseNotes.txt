@@ -13,6 +13,7 @@ Changes from 4.0.4
     a) Linux boards accept up to 16 RC inputs when using UDP
     b) Protect against two many interrupts from RPM sensor, etc
     c) RM3100 compass support for probing all four I2C addresses
+    d) Durandal telem3 port enabled
 ------------------------------------------------------------------
 Copter 4.0.4 16-Sep-2020
 Changes from 4.0.4-rc4
