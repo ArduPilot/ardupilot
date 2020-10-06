@@ -78,6 +78,7 @@ bool AP_SmartAudio::init()
 
 void AP_SmartAudio::loop(){
     uint8_t res_retries=0;
+    uint8_t _response_buffer[AP_SMARTAUDIO_MAX_PACKET_SIZE];
 
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
@@ -101,7 +102,7 @@ void AP_SmartAudio::loop(){
         // Proccess response in the next 200 milis from the request are sent.
         if(now-_last_request_sended_at_ms>100 && now-_last_request_sended_at_ms<=1000 && _is_waiting_response){
             // allocate response buffer
-            uint8_t _response_buffer[AP_SMARTAUDIO_UART_BUFSIZE_RX];
+
 
             // setup sheduler delay to 50 ms again after response processes
             if(!read_response(_response_buffer)){
@@ -343,7 +344,7 @@ void AP_SmartAudio::send_request(smartaudioFrame_t requestFrame, uint8_t size)
 
     _saStat.pktsent++;
 #ifdef SA_DEBUG
-    _print_bytes_to_hex_string("send_request():", request, size);
+    _print_bytes_to_hex_string("send_request():", request, size,0);
 #endif
 }
 
@@ -367,17 +368,16 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
 
     for (uint8_t i= 0; i < incoming_bytes_count; ++i) {
         uint8_t response_in_bytes = _port->read();
-        debug("Ap_SmartAudio: Received byte %02X",response_in_bytes);
         if ((_inline_buffer_length == 0 && response_in_bytes != SMARTAUDIO_SYNC_BYTE)
             || (_inline_buffer_length == 1 && response_in_bytes != SMARTAUDIO_HEADER_BYTE)) {
             debug("Ap_SmartAudio: byte discard:%02X", response_in_bytes);
             _inline_buffer_length = 0;
-        } else if (_inline_buffer_length < AP_SMARTAUDIO_UART_BUFSIZE_RX) {
+        } else if (_inline_buffer_length < AP_SMARTAUDIO_MAX_PACKET_SIZE) {
             response_buffer[_inline_buffer_length++] = response_in_bytes;
         }
     }
 #ifdef SA_DEBUG
-    _print_bytes_to_hex_string("read_response():", response_buffer, incoming_bytes_count);
+    _print_bytes_to_hex_string("read_response():", response_buffer, incoming_bytes_count,(_inline_buffer_length-incoming_bytes_count)>=0?(_inline_buffer_length-incoming_bytes_count):0);
 #endif
     //last_io_time = AP_HAL::millis();
 
@@ -596,7 +596,7 @@ void AP_SmartAudio::set_operation_mode(uint8_t mode){
    //vtx_states_queue.peek(&current_state, 1);
    _peek_vtx_state(current_state);
 
-    debug("AP_SmartAudio: Changing operation mode to %02X",  mode);
+    debug("set_operation_mode(): Changing operation mode to %02X",  mode);
     // SPEC SAYS ONLY V2 SUPPORT SET MODE BUT THIS INCLUDES 2.1 ?
     if (current_state.version<SMARTAUDIO_SPEC_PROTOCOL_v2) {
         debug("%s HW: %s", TAG, "Device can't change operation mode. Spec protocol not supported");
@@ -857,11 +857,11 @@ size_t AP_SmartAudio::smartaudioFrameSetOperationMode(smartaudioFrame_t *smartau
 }
 
 #ifdef SA_DEBUG
-void AP_SmartAudio::_print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t len)
+void AP_SmartAudio::_print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t len,uint8_t offset)
 {
     hal.console->printf("SA: %s ", msg);
     for (uint8_t i = 0; i < len; i++) {
-        hal.console->printf("0x%02X ", buf[i]);
+        hal.console->printf("0x%02X ", buf[i+offset]);
     }
     hal.console->printf("\n");
 }

@@ -25,8 +25,9 @@
 #define AP_SMARTAUDIO_SMARTBAUD_MIN        4560
 #define AP_SMARTAUDIO_SMARTBAUD_MAX        5040
 #define AP_SMARTAUDIO_SMARTBAUD_STEP       60
-#define AP_SMARTAUDIO_UART_BUFSIZE_RX      32
+#define AP_SMARTAUDIO_UART_BUFSIZE_RX      16
 #define AP_SMARTAUDIO_UART_BUFSIZE_TX      16
+#define AP_SMARTAUDIO_MAX_PACKET_SIZE      32
 
 
 #define SMARTAUDIO_SYNC_BYTE            0xAA
@@ -325,6 +326,8 @@ private:
     // response buffer length, permit splitted responses
     uint8_t _inline_buffer_length=0;
 
+
+
     // utility method for debugging
     void _print_state(smartaudioSettings_t& state,bool details,bool updates,bool ap_video_tx_details);
 
@@ -333,7 +336,7 @@ private:
 
 #ifdef SA_DEBUG
     // utility method for debugging.
-    void _print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t x);
+    void _print_bytes_to_hex_string(const char* msg, uint8_t buf[], uint8_t x,uint8_t offset);
 #endif
     // utility method to get mw transformation from power in dbm
     static uint16_t _get_power_in_mw_from_dbm(uint8_t power){
