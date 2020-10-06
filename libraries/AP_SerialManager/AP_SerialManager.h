@@ -84,9 +84,6 @@
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
 #define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
 
-#define AP_SERIALMANAGER_SAGETECH_BUFSIZE_RX    128
-#define AP_SERIALMANAGER_SAGETECH_BUFSIZE_TX    128
-
 // MegaSquirt EFI protocol
 #define AP_SERIALMANAGER_EFI_MS_BAUD           115
 #define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
@@ -150,7 +147,6 @@ public:
         SerialProtocol_Winch = 31,
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
-        SerialProtocol_Sagetech = 34,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
