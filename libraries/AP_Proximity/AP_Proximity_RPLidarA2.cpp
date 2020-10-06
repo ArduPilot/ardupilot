@@ -92,7 +92,10 @@ void AP_Proximity_RPLidarA2::update(void)
 // get maximum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_max() const
 {
-    return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
+    if (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1)
+        return 40.0f;  //This is the max range of S1, but it's usually overstated 
+    else
+        return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
 }
 
 // get minimum distance (in meters) of sensor
@@ -160,6 +163,16 @@ void AP_Proximity_RPLidarA2::get_readings()
         return;
     }
     Debug(2, "             CURRENT STATE: %d ", _rp_state);
+
+    //All you have to do is to wait 2.1s after reset and you can start scan mode with S1, 2ms is wrong in documentation
+    if ( (frontend.get_type(state.instance) == AP_Proximity::Type::RPLidarS1) && (_rp_state == rp_resetted) ){
+        //Any input in resetted state come from scan before reset, must discard
+        _uart->discard_input();
+      if ((AP_HAL::millis() - _last_reset_ms) > 2100 ) { 
+             set_scan_mode();
+        }
+    }
+
     uint32_t nbytes = _uart->available();
 
     while (nbytes-- > 0) {
