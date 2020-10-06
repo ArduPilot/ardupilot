@@ -40,15 +40,11 @@ static const SerialConfig sbus_cfg = {
 // listen for parity errors on sd3 input
 static event_listener_t sd3_listener;
 
-static uint8_t sd3_config;
-
 void sbus_out_write(uint16_t *channels, uint8_t nchannels)
 {
-    if (sd3_config == 0) {
-        uint8_t buffer[25];
-        AP_SBusOut::sbus_format_frame(channels, nchannels, buffer);
-        chnWrite(&SD3, buffer, sizeof(buffer));
-    }
+    uint8_t buffer[25];
+    AP_SBusOut::sbus_format_frame(channels, nchannels, buffer);
+    chnWrite(&SD3, buffer, sizeof(buffer));
 }
 
 // usart1 is for DSM input and (optionally) debug to FMU
@@ -94,19 +90,13 @@ void AP_IOMCU_FW::rcin_serial_update(void)
 {
     uint8_t b[16];
     uint32_t n;
-    uint32_t now = AP_HAL::millis();
 
     // read from DSM port
     if ((n = chnReadTimeout(&SD1, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         n = MIN(n, sizeof(b));
-        // don't mix two 115200 uarts
-        if (sd3_config == 0) {
-            rc_stats.num_dsm_bytes += n;
-            for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], 115200)) {
-                    rc_stats.last_good_ms = now;
-                }
-            }
+        rc_stats.num_dsm_bytes += n;
+        for (uint8_t i=0; i<n; i++) {
+          AP::RC().process_byte(b[i], 115200);
         }
         //BLUE_TOGGLE();
     }
@@ -114,26 +104,17 @@ void AP_IOMCU_FW::rcin_serial_update(void)
     // read from SBUS port
     if ((n = chnReadTimeout(&SD3, b, sizeof(b), TIME_IMMEDIATE)) > 0) {
         eventflags_t flags;
-        if (sd3_config == 0 && ((flags = chEvtGetAndClearFlags(&sd3_listener)) & SD_PARITY_ERROR)) {
+        if ((flags = chEvtGetAndClearFlags(&sd3_listener)) & SD_PARITY_ERROR) {
             rc_stats.sbus_error = flags;
             rc_stats.num_sbus_errors++;
         } else {
             n = MIN(n, sizeof(b));
             rc_stats.num_sbus_bytes += n;
             for (uint8_t i=0; i<n; i++) {
-                if (AP::RC().process_byte(b[i], sd3_config==0?100000:115200)) {
-                    rc_stats.last_good_ms = now;
-                }
+               AP::RC().process_byte(b[i], 100000);
             }
         }
     }
-    if (now - rc_stats.last_good_ms > 2000) {
-        rc_stats.last_good_ms = now;
-        sd3_config ^= 1;
-        sdStop(&SD3);
-        sdStart(&SD3, sd3_config==0?&sbus_cfg:&dsm_cfg);
-    }
-
 }
 
 /*
