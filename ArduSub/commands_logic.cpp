@@ -1,6 +1,7 @@
 #include "Sub.h"
 
 #include <AP_RTC/AP_RTC.h>
+#include <AP_Common/bitops.h>
 
 static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCATION;
 
