@@ -6,6 +6,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Common/bitops.h>
 
 #include "AP_Volz_Protocol.h"
 
