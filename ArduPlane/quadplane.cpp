@@ -774,12 +774,12 @@ bool QuadPlane::setup(void)
         motors->disable_yaw_torque();
     }
 
-
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
     pos_control->set_dt(loop_delta_t);
     attitude_control->parameter_sanity_check();
+    wp_nav->wp_and_spline_init();
 
     // TODO: update this if servo function assignments change
     // used by relax_attitude_control() to control special behavior for vectored tailsitters
