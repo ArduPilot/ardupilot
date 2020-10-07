@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
+#include <AP_Common/bitops.h>
 
 void AP_RangeFinder_BLPing::update(void)
 {
