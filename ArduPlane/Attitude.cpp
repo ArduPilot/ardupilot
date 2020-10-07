@@ -478,11 +478,11 @@ void Plane::calc_nav_yaw_course(void)
 {
     // holding a specific navigation course on the ground. Used in
     // auto-takeoff and landing
+    if (stick_mixing_enabled()) {
+        steerController.set_rate_bias((rudder_input()/4500.0f) * g.ground_steer_dps);
+    }
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
     steering_control.steering = steerController.get_steering_out_angle_error(bearing_error_cd);
-    if (stick_mixing_enabled()) {
-        steering_control.steering = channel_rudder->stick_mixing(steering_control.steering);
-    }
     steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
 }
 
