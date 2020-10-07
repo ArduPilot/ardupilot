@@ -18,6 +18,7 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/crc.h>
 #include "AP_Proximity_LightWareSF40C.h"
+#include <AP_Common/bitops.h>
 
 extern const AP_HAL::HAL& hal;
 
