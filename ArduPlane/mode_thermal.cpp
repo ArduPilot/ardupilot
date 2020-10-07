@@ -26,6 +26,13 @@ void ModeThermal::update()
     plane.calc_nav_roll();
     plane.calc_nav_pitch();
     plane.calc_throttle();
+}
+
+void ModeThermal::update_soaring()
+{
+    // Update the thermal estimation and switching logic.
+    // This is called from soaring.cpp at fixed 50Hz to avoid
+    // potential issues with the main loop rate setting.
 
     // Update thermal estimate and check for switch back to AUTO
     plane.g2.soaring_controller.update_thermalling();  // Update estimate
