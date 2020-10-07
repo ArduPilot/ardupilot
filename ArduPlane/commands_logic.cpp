@@ -1,4 +1,5 @@
 #include "Plane.h"
+#include <AP_Common/bitops.h>
 
 /********************************************************************************/
 // Command Event Handlers
