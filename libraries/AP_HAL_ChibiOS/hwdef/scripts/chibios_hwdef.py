@@ -1691,7 +1691,7 @@ def write_board_validate_macro(f):
                 check_string = output
             validate_dict[check_name] = check_string
         # Finally create check conditional
-        for check_name in validate_dict:
+        for check_name in sorted(validate_dict.keys()):
             validate_string += "!" + validate_dict[check_name] + "?" + "\"" + check_name + "\"" + ":"
         validate_string += "nullptr"
         f.write('#define HAL_VALIDATE_BOARD (%s)\n\n' % validate_string) 
@@ -2343,8 +2343,8 @@ def write_alt_config(f):
 
 #define HAL_PIN_ALT_CONFIG { \\
 ''')
-    for alt in altmap.keys():
-        for pp in altmap[alt].keys():
+    for alt in sorted(altmap.keys()):
+        for pp in sorted(altmap[alt].keys()):
             p = altmap[alt][pp]
             f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU), %s, %u}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, p.periph_type(), p.periph_instance(), str(p)))
     f.write('}\n\n')
