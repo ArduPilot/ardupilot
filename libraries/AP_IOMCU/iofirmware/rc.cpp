@@ -127,13 +127,20 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             }
         }
     }
-    if (now - rc_stats.last_good_ms > 2000) {
+    /*
+      when not using SBUS output we switch UART3 between 100000 baud
+      and 115200 baud in order to support RC input protocols that are
+      115200 inverted (such as FPort). If SBUS output is enabled then
+      we need to disable this as the uart is shared between input and
+      output
+     */
+    const bool sbus_out_enabled = (reg_setup.features & P_SETUP_FEATURES_SBUS1_OUT) != 0;
+    if (now - rc_stats.last_good_ms > 2000 && (sd3_config==1 || !sbus_out_enabled)) {
         rc_stats.last_good_ms = now;
         sd3_config ^= 1;
         sdStop(&SD3);
         sdStart(&SD3, sd3_config==0?&sbus_cfg:&dsm_cfg);
     }
-
 }
 
 /*
