@@ -55,7 +55,11 @@ void Plane::update_soaring() {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
             set_mode(mode_thermal, ModeReason::SOARING_THERMAL_DETECTED);
         }
-
+        break;
+    case Mode::Number::THERMAL:
+        // Update thermal mode soaring logic.
+        mode_thermal.update_soaring();
+        break;
     } // switch control_mode
 }
 

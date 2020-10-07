@@ -548,6 +548,9 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    // Update thermal tracking and exiting logic.
+    void update_soaring();
+
     void navigate() override;
 
 protected:
