@@ -1,3 +1,15 @@
+Release 4.0.7beta2, 8th October 2020
+------------------------------------
+
+This is a minor release over 4.0.7beta1. The changes from beta1 are:
+
+ - enable telem3 on Durandal
+ - fixed SBUS output when scanning for FPort on IOMCU
+ - keep a backup of storage of last 100 boots
+ - fixed a race condition in handling UART DMA transmit
+
+Happy flying!
+
 Release 4.0.7beta1, 2nd October 2020
 ------------------------------------
 
