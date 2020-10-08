@@ -3397,7 +3397,7 @@ class AutoTestCopter(AutoTest):
         self.fly_guided_move_global_relative_alt(5, 5, 10)
 
         self.start_subtest("move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED")
-        self.fly_guided_stop()
+        self.fly_guided_stop(groundspeed_tolerance=0.1)
         self.fly_guided_move_local(5, 5, 10)
 
         self.start_subtest("Check target position received by vehicle using SET_MESSAGE_INTERVAL")
