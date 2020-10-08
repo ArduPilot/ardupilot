@@ -18,7 +18,7 @@ bool ModeRTL::init(bool ignore_checks)
         }
     }
     // initialise waypoint and spline controller
-    wp_nav->wp_and_spline_init();
+    wp_nav->wp_and_spline_init(g.rtl_speed_cms);
     _state = RTL_Starting;
     _state_complete = true; // see run() method below
     terrain_following_allowed = !copter.failsafe.terrain;
@@ -116,11 +116,6 @@ void ModeRTL::climb_start()
 {
     _state = RTL_InitialClimb;
     _state_complete = false;
-
-    // RTL_SPEED == 0 means use WPNAV_SPEED
-    if (g.rtl_speed_cms != 0) {
-        wp_nav->set_speed_xy(g.rtl_speed_cms);
-    }
 
     // set the destination
     if (!wp_nav->set_wp_destination_loc(rtl_path.climb_target) || !wp_nav->set_wp_destination_next_loc(rtl_path.return_target)) {
