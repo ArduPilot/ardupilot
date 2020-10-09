@@ -281,8 +281,9 @@ static_assert(sizeof(log_ISBD) < 256, "log_ISBD is over-size");
 struct PACKED log_Vibe {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t imu;
     float vibe_x, vibe_y, vibe_z;
-    uint32_t clipping_0, clipping_1, clipping_2;
+    uint32_t clipping;
 };
 
 struct PACKED log_RCIN {
@@ -648,6 +649,7 @@ struct PACKED log_VisualPosition {
     float pos_err;  // meters
     float ang_err;  // radians
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_VisualVelocity {
@@ -660,6 +662,7 @@ struct PACKED log_VisualVelocity {
     float vel_z;
     float vel_err;
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_ekfBodyOdomDebug {
@@ -2236,12 +2239,11 @@ struct PACKED log_PSC {
 // @LoggerMessage: VIBE
 // @Description: Processed (acceleration) vibration information
 // @Field: TimeUS: Time since system startup
+// @Field: IMU: Vibration instance number
 // @Field: VibeX: Primary accelerometer filtered vibration, x-axis
 // @Field: VibeY: Primary accelerometer filtered vibration, y-axis
 // @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
-// @Field: Clip0: Number of clipping events on 1st accelerometer
-// @Field: Clip1: Number of clipping events on 2nd accelerometer
-// @Field: Clip2: Number of clipping events on 3rd accelerometer
+// @Field: Clip: Number of clipping events on 1st accelerometer
 
 // @LoggerMessage: VISO
 // @Description: Visual Odometry
@@ -2268,7 +2270,8 @@ struct PACKED log_PSC {
 // @Field: Yaw: Yaw angle
 // @Field: PErr: Position estimate error
 // @Field: AErr: Attitude estimate error
-// @Field: RstCnt: Position reset counter
+// @Field: Rst: Position reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: VISV
 // @Description: Vision Velocity
@@ -2279,7 +2282,8 @@ struct PACKED log_PSC {
 // @Field: VY: Velocity Y-axis (East-West)
 // @Field: VZ: Velocity Z-axis (Down-Up)
 // @Field: VErr: Velocity estimate error
-// @Field: RstCnt: Velocity reset counter
+// @Field: Rst: Velocity reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -2659,7 +2663,7 @@ struct PACKED log_PSC {
     { LOG_BAR3_MSG, sizeof(log_BARO), \
       "BAR3",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2", "s------", "F------" }, \
+      "VIBE", "QBfffI",     "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
       "IMT",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
     { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
@@ -2685,9 +2689,9 @@ struct PACKED log_PSC {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
+      "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \

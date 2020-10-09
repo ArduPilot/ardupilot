@@ -2610,17 +2610,6 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_climbrate());
 }
 
-void GCS_MAVLINK::zero_rc_outputs()
-{
-    // Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
-    // For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
-    SRV_Channels::cork();
-    for (int i=0; i<NUM_RC_CHANNELS; i++) {
-        hal.rcout->write(i, 0);
-    }
-    SRV_Channels::push();
-}
-
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2667,34 +2656,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    if (should_zero_rc_outputs_on_reboot()) {
-        zero_rc_outputs();
-    }
-
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
-    // Notify might want to blink some LEDs:
-    AP_Notify *notify = AP_Notify::get_singleton();
-    if (notify) {
-        AP_Notify::flags.firmware_update = 1;
-        notify->update();
-    }
-    // force safety on
-    hal.rcout->force_safety_on();
-
-    // flush pending parameter writes
-    AP_Param::flush();
-
-    // do not process incoming mavlink messages while we delay:
-    hal.scheduler->register_delay_callback(nullptr, 5);
-
-    // delay to give the ACK a chance to get out, the LEDs to flash,
-    // the IO board safety to be forced on, the parameters to flush, ...
-    hal.scheduler->delay(200);
 
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
-    hal.scheduler->reboot(hold_in_bootloader);
+
+    AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
 
     return MAV_RESULT_FAILED;
 }

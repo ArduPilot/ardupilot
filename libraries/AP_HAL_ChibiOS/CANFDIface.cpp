@@ -77,7 +77,7 @@ using namespace ChibiOS;
 
 constexpr CANIface::CanType* const CANIface::Can[];
 static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
-
+#define REG_SET_TIMEOUT 250 // if it takes longer than 250ms for setting a register we have failed
 static inline bool driver_initialised(uint8_t iface_index)
 {
     if (iface_index >= HAL_NUM_CAN_IFACES) {
@@ -281,7 +281,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
                        CanIOFlags flags)
 {
     stats.tx_requests++;
-    if (frame.isErrorFrame() || frame.dlc > 8) {
+    if (frame.isErrorFrame() || frame.dlc > 8 || !initialised_) {
         stats.tx_rejected++;
         return -1;
     }
@@ -344,7 +344,7 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 {
     CriticalSectionLocker lock;
     CanRxItem rx_item;
-    if (!rx_queue_.pop(rx_item)) {
+    if (!rx_queue_.pop(rx_item) || !initialised_) {
         return 0;
     }
     out_frame    = rx_item.frame;
@@ -359,6 +359,10 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
     uint32_t num_extid = 0, num_stdid = 0;
     uint32_t total_available_list_size = MAX_FILTER_LIST_SIZE;
     uint32_t* filter_ptr;
+    if (initialised_ || mode_ != FilteredMode) {
+        // we are already initialised can't do anything here
+        return false;
+    }
     //count number of frames of each type
     for (uint8_t i = 0; i < num_configs; i++) {
         const CanFilterConfig* const cfg = filter_configs + i;
@@ -368,12 +372,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
             num_stdid++;
         }
     }
-
     CriticalSectionLocker lock;
-    can_->CCCR |= FDCAN_CCCR_INIT; // Request init
-    while ((can_->CCCR & FDCAN_CCCR_INIT) == 0) {}
-    can_->CCCR |= FDCAN_CCCR_CCE; //Enable Config change
-
     //Allocate Message RAM for Standard ID Filter List
     if (num_stdid == 0) { //No Frame with Standard ID is to be accepted
         can_->GFC |= 0x2; //Reject All Standard ID Frames
@@ -385,6 +384,12 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
         can_->GFC |= (0x3U << 4); //Reject non matching Standard frames
     } else {    //The List is too big, return fail
         can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
 
@@ -415,9 +420,15 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
         can_->XIDFC = (FDCANMessageRAMOffset_ << 2) | (num_extid << 16);
         MessageRam_.ExtendedFilterSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
         FDCANMessageRAMOffset_ += num_extid*2;
-        can_->GFC = (0x3U << 2); // Reject non matching Extended frames
+        can_->GFC |= (0x3U << 2); // Reject non matching Extended frames
     } else {    //The List is too big, return fail
         can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
 
@@ -432,8 +443,8 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
             if ((cfg->id & AP_HAL::CANFrame::FlagEFF) || !(cfg->mask & AP_HAL::CANFrame::FlagEFF)) {
                 id   = (cfg->id   & AP_HAL::CANFrame::MaskExtID);
                 mask = (cfg->mask & AP_HAL::CANFrame::MaskExtID);
-                filter_ptr[num_extid*2]       = 0x1U << 29 | id; // Classic CAN Filter
-                filter_ptr[num_extid*2 + 1]   = 0x2U << 30 | mask; //Store in Rx FIFO0 if filter matches
+                filter_ptr[num_extid*2]       = 0x1U << 29 | id; //Store in Rx FIFO0 if filter matches
+                filter_ptr[num_extid*2 + 1]   = 0x2U << 30 | mask; // Classic CAN Filter
                 num_extid++;
             }
         }
@@ -445,8 +456,16 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
         AP_HAL::panic("CANFDIface: Message RAM Overflow!");
     }
 
+    // Finally get out of Config Mode
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
-    return 0;
+    uint32_t while_start_ms = AP_HAL::millis();
+    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+            return false;
+        }
+    }
+    initialised_ = true;
+    return true;
 }
 
 uint16_t CANIface::getNumFilters() const
@@ -469,6 +488,9 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 #endif
     }
 
+
+    bitrate_ = bitrate;
+    mode_ = mode;
     //Only do it once
     //Doing it second time will reset the previously initialised bus
     if (!clock_init_) {
@@ -503,9 +525,19 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         CriticalSectionLocker lock;
 
         can_->CCCR &= ~FDCAN_CCCR_CSR; // Exit sleep mode
-        while ((can_->CCCR & FDCAN_CCCR_CSA) == FDCAN_CCCR_CSA) {} //Wait for wake up ack
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_CSA) == FDCAN_CCCR_CSA) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        } //Wait for wake up ack
         can_->CCCR |= FDCAN_CCCR_INIT; // Request init
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 0) {}
+        while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 0) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         can_->CCCR |= FDCAN_CCCR_CCE; //Enable Config change
         can_->IE = 0;                  // Disable interrupts while initialization is in progress
     }
@@ -527,6 +559,12 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 
     if (!computeTimings(bitrate, timings)) {
         can_->CCCR &= ~FDCAN_CCCR_INIT;
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
         return false;
     }
     Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u\n",
@@ -552,7 +590,7 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     can_->IE =  FDCAN_IE_TCE |  // Transmit Complete interrupt enable
                 FDCAN_IE_BOE |  // Bus off Error Interrupt enable
                 FDCAN_IE_RF0NE |  // RX FIFO 0 new message
-                FDCAN_IE_RF0FE |  // Rx FIFO 1 FIFO Full
+                FDCAN_IE_RF0FE |  // Rx FIFO 0 FIFO Full
                 FDCAN_IE_RF1NE |  // RX FIFO 1 new message
                 FDCAN_IE_RF1FE;   // Rx FIFO 1 FIFO Full
     can_->ILS = FDCAN_ILS_TCL | FDCAN_ILS_BOE;  //Set Line 1 for Transmit Complete Event Interrupt and Bus Off Interrupt
@@ -560,11 +598,20 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     can_->TXBTIE = 0xFFFFFFFF;
     can_->ILE = 0x3;
 
-    //Leave Init
-    can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+    // If mode is Filtered then we finish the initialisation in configureFilter method
+    // otherwise we finish here
+    if (mode != FilteredMode) {
+        can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+        uint32_t while_start_ms = AP_HAL::millis();
+        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                return false;
+            }
+        }
 
-    //initialised
-    initialised_ = true;
+        //initialised
+        initialised_ = true;
+    }
     return true;
 }
 

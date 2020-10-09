@@ -61,8 +61,9 @@ public:
     
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
-    // Ensure that all started cores are considered healthy
-    bool all_cores_healthy(void) const;
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -312,9 +313,6 @@ public:
     // return the amount of vertical position change due to the last reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosDownReset(float &posDelta);
-
-    // report any reason for why the backend is refusing to initialise
-    const char *prearm_failure_reason(void) const;
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };

@@ -369,14 +369,14 @@ void Copter::do_failsafe_action(Failsafe_Action action, ModeReason reason){
         case Failsafe_Action_SmartRTL_Land:
             set_mode_SmartRTL_or_land_with_pause(reason);
             break;
-        case Failsafe_Action_Terminate:
+        case Failsafe_Action_Terminate: {
 #if ADVANCED_FAILSAFE == ENABLED
-            char battery_type_str[17];
-            snprintf(battery_type_str, 17, "%s battery", type_str);
-            g2.afs.gcs_terminate(true, battery_type_str);
+            g2.afs.gcs_terminate(true, "Failsafe");
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
 #endif
+        }
+        break;
     }
 
 #if GRIPPER_ENABLED == ENABLED

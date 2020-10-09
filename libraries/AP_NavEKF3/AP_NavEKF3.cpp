@@ -1030,13 +1030,21 @@ bool NavEKF3::healthy(void) const
     return core[primary].healthy();
 }
 
-bool NavEKF3::all_cores_healthy(void) const
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool NavEKF3::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!core) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "no EKF3 cores");
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         if (!core[i].healthy()) {
+            const char *failure = core[primary].prearm_failure_reason();
+            if (failure != nullptr) {
+                hal.util->snprintf(failure_msg, failure_msg_len, failure);
+            } else {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 core %d unhealthy", (int)i);
+            }
             return false;
         }
     }
@@ -1794,21 +1802,6 @@ uint32_t NavEKF3::getLastVelNorthEastReset(Vector2f &vel) const
         return 0;
     }
     return core[primary].getLastVelNorthEastReset(vel);
-}
-
-// report the reason for why the backend is refusing to initialise
-const char *NavEKF3::prearm_failure_reason(void) const
-{
-    if (!core) {
-        return "no EKF3 cores";
-    }
-    for (uint8_t i = 0; i < num_cores; i++) {
-        const char * failure = core[primary].prearm_failure_reason();
-        if (failure != nullptr) {
-            return failure;
-        }
-    }
-    return nullptr;
 }
 
 // Returns the amount of vertical position change due to the last reset or core switch in metres

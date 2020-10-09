@@ -99,6 +99,9 @@ baro_list = []
 
 all_lines = []
 
+# map from uart names to SERIALn numbers
+uart_serial_num = {}
+
 mcu_type = None
 dual_USB_enabled = False
 
@@ -1109,8 +1112,10 @@ def get_UART_ORDER():
     while len(serial_order) < 4:
         serial_order += ['EMPTY']
     uart_order = []
+    global uart_serial_num
     for i in range(len(serial_order)):
         uart_order.append(serial_order[map[i]])
+        uart_serial_num[serial_order[i]] = i
     return uart_order
 
 def write_UART_config(f):
@@ -1177,6 +1182,8 @@ def write_UART_config(f):
         rts_line = make_line(dev + '_RTS')
         if rts_line != "0":
             have_rts_cts = True
+            f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % uart_serial_num[dev])
+
         if dev.startswith('OTG2'):
             f.write(
                 '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'

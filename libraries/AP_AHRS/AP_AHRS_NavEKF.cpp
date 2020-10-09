@@ -1344,34 +1344,42 @@ bool AP_AHRS_NavEKF::healthy(void) const
     return AP_AHRS_DCM::healthy();
 }
 
-bool AP_AHRS_NavEKF::prearm_healthy(void) const
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
-    bool prearm_health = false;
     switch (ekf_type()) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
 #endif
     case EKFType::NONE:
-        prearm_health = true;
-        break;
+        if (!healthy()) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
+            return false;
+        }
+        return true;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        if (_ekf2_started && EKF2.all_cores_healthy()) {
-            prearm_health = true;
+        if (!_ekf2_started) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 not started");
+            return false;
         }
-        break;
+        return EKF2.pre_arm_check(failure_msg, failure_msg_len);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        if (_ekf3_started && EKF3.all_cores_healthy()) {
-            prearm_health = true;
+        if (!_ekf3_started) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
+            return false;
         }
-        break;
+        return EKF3.pre_arm_check(failure_msg, failure_msg_len);
 #endif
     }
-   return prearm_health && healthy();
+
+    // if we get here then ekf type is invalid
+    hal.util->snprintf(failure_msg, failure_msg_len, "invalid EKF type");
+    return false;
 }
 
 void AP_AHRS_NavEKF::set_ekf_use(bool setting)
@@ -1615,32 +1623,6 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
     ret -= accel_bias*dt;
     ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;
-}
-
-// report any reason for why the backend is refusing to initialise
-const char *AP_AHRS_NavEKF::prearm_failure_reason(void) const
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        return nullptr;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.prearm_failure_reason();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.prearm_failure_reason();
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        return nullptr;
-#endif
-    }
-
-    return nullptr;
 }
 
 // check all cores providing consistent attitudes for prearm checks

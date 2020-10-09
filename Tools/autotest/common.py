@@ -1644,7 +1644,7 @@ class AutoTest(ABC):
                 continue
             util.pexpect_drain(p)
 
-    def drain_mav_unparsed(self, mav=None, quiet=False, freshen_sim_time=False):
+    def drain_mav_unparsed(self, mav=None, quiet=True, freshen_sim_time=False):
         if mav is None:
             mav = self.mav
         count = 0
@@ -1665,7 +1665,7 @@ class AutoTest(ABC):
         if freshen_sim_time:
             self.get_sim_time()
 
-    def drain_mav(self, mav=None, unparsed=False, quiet=False):
+    def drain_mav(self, mav=None, unparsed=False, quiet=True):
         if unparsed:
             return self.drain_mav_unparsed(quiet=quiet, mav=mav)
         if mav is None:
@@ -5960,15 +5960,15 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def test_request_message(self, timeout=60):
-        rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
-        if rate != 0:
-            raise PreconditionFailedException("Receving camera feedback")
+    def poll_message(self, message_id, timeout=10):
+        if type(message_id) == str:
+            message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         # temporarily use a constant in place of
         # mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE until we have a
         # pymavlink release:
-        self.run_cmd(512,
-                     180,
+        tstart = self.get_sim_time()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                     message_id,
                      0,
                      0,
                      0,
@@ -5976,7 +5976,22 @@ Also, ignores heartbeats not from our target system'''
                      0,
                      0,
                      timeout=timeout)
-        m = self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True, timeout=1)
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not receive polled message")
+            m = self.mav.recv_match(blocking=True,
+                                    timeout=0.1)
+            if m is None:
+                continue
+            if m.id != message_id:
+                continue
+            return m
+
+    def test_request_message(self, timeout=60):
+        rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
+        if rate != 0:
+            raise PreconditionFailedException("Receving camera feedback")
+        m = self.poll_message("CAMERA_FEEDBACK")
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
 

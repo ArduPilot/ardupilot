@@ -85,7 +85,8 @@
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
-#define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>((hbyte<<8)|lbyte))
+#define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>(((hbyte)<<8)|(lbyte)))
+#define UINT32_VALUE(b3, b2, b1, b0) (static_cast<uint32_t>(((b3)<<23)|((b2)<<16)|((b1)<<8)|(b0)))
 
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to

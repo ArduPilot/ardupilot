@@ -400,20 +400,25 @@ void AP_Logger::Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
 
 void AP_Logger::Write_Vibration()
 {
-    uint64_t time_us = AP_HAL::micros64();
     const AP_InertialSensor &ins = AP::ins();
-    const Vector3f vibration = ins.get_vibration_levels();
-    const struct log_Vibe pkt{
-        LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-        time_us     : time_us,
-        vibe_x      : vibration.x,
-        vibe_y      : vibration.y,
-        vibe_z      : vibration.z,
-        clipping_0  : ins.get_accel_clip_count(0),
-        clipping_1  : ins.get_accel_clip_count(1),
-        clipping_2  : ins.get_accel_clip_count(2)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    const uint64_t time_us = AP_HAL::micros64();
+    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (!ins.use_accel(i)) {
+            continue;
+        }
+
+        const Vector3f vibration = ins.get_vibration_levels(i);
+        const struct log_Vibe pkt{
+            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
+            time_us     : time_us,
+            imu         : i,
+            vibe_x      : vibration.x,
+            vibe_y      : vibration.y,
+            vibe_z      : vibration.z,
+            clipping  : ins.get_accel_clip_count(i)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
@@ -930,7 +935,7 @@ void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, 
 }
 
 // Write visual position sensor data.  x,y,z are in meters, angles are in degrees
-void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter)
+void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored)
 {
     const struct log_VisualPosition pkt_visualpos {
         LOG_PACKET_HEADER_INIT(LOG_VISUALPOS_MSG),
@@ -945,13 +950,14 @@ void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, 
         yaw             : yaw,
         pos_err         : pos_err,
         ang_err         : ang_err,
-        reset_counter   : reset_counter
+        reset_counter   : reset_counter,
+        ignored         : (uint8_t)ignored
     };
     WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
 }
 
 // Write visual velocity sensor data, velocity in NED meters per second
-void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter)
+void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored)
 {
     const struct log_VisualVelocity pkt_visualvel {
         LOG_PACKET_HEADER_INIT(LOG_VISUALVEL_MSG),
@@ -962,7 +968,8 @@ void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, 
         vel_y           : vel.y,
         vel_z           : vel.z,
         vel_err         : vel_err,
-        reset_counter   : reset_counter
+        reset_counter   : reset_counter,
+        ignored         : (uint8_t)ignored
     };
     WriteBlock(&pkt_visualvel, sizeof(log_VisualVelocity));
 }

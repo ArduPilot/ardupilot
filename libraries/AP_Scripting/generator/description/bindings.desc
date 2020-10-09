@@ -34,7 +34,7 @@ singleton AP_AHRS method groundspeed_vector Vector2f
 singleton AP_AHRS method get_velocity_NED boolean Vector3f'Null
 singleton AP_AHRS method get_relative_position_NED_home boolean Vector3f'Null
 singleton AP_AHRS method home_is_set boolean
-singleton AP_AHRS method prearm_healthy boolean
+singleton AP_AHRS method healthy boolean
 singleton AP_AHRS method airspeed_estimate boolean float'Null
 singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f

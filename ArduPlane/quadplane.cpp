@@ -329,7 +329,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -1479,8 +1479,10 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
         return false;
     }
 
-    if (have_airspeed && aspeed < assist_speed) {
-        // assistance due to Q_ASSIST_SPEED
+    // assistance due to Q_ASSIST_SPEED
+    // if option bit is enabled only allow assist with real airspeed sensor
+    if ((have_airspeed && aspeed < assist_speed) && 
+       (((options & OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST) == 0) || ahrs.airspeed_sensor_enabled())) {
         in_angle_assist = false;
         angle_error_start_ms = 0;
         return true;
@@ -2941,6 +2943,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z()),
         throttle_mix        : attitude_control->get_throttle_mix(),
         speed_scaler        : last_spd_scaler,
+        transition_state    : static_cast<uint8_t>(transition_state)
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
 
@@ -3379,4 +3382,24 @@ bool QuadPlane::in_vtol_land_final(void) const
 bool QuadPlane::in_vtol_land_sequence(void) const
 {
     return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+}
+
+// return true if we should show VTOL view
+bool QuadPlane::show_vtol_view() const
+{
+    bool show_vtol = in_vtol_mode();
+
+    if (is_tailsitter() && hal.util->get_soft_armed()) {
+        if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
+            // in a vtol mode but still transitioning from forward flight
+            return false;
+        }
+
+        if (!show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_FW)) {
+            // not in VTOL mode but still transitioning from VTOL
+            return true;
+        }
+    }
+
+    return show_vtol;
 }

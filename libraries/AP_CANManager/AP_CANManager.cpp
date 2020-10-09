@@ -147,24 +147,31 @@ void AP_CANManager::init()
         }
 
         // Initialise the interface we just allocated
-        if (hal.can[i] != nullptr) {
-            if (!hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode)) {
-                log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
-                continue;
-            }
-        } else {
+        if (hal.can[i] == nullptr) {
             continue;
         }
         AP_HAL::CANIface* iface = hal.can[i];
+
+        // Find the driver type that we need to allocate and register this interface with
+        Driver_Type drv_type = _driver_type_cache[drv_num] = (Driver_Type) _drv_param[drv_num]._driver_type.get();
+        bool can_initialised = false;
         // Check if this interface need hooking up to slcan passthrough
         // instead of a driver
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
+            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
+        } else if(drv_type == Driver_Type_UAVCAN) {
+            // We do Message ID filtering when using UAVCAN without SLCAN
+            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::FilteredMode);
+        } else {
+            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
         }
 
-        // Find the driver type that we need to allocate and register this interface with
-        Driver_Type drv_type = _driver_type_cache[drv_num] = (Driver_Type) _drv_param[drv_num]._driver_type.get();
+        if (!can_initialised) {
+            log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
+            continue;
+        }
 
         log_text(AP_CANManager::LOG_INFO, LOG_TAG, "CAN Interface %d initialized well", i + 1);
 
@@ -247,13 +254,19 @@ void AP_CANManager::init()
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
-        if ((_slcan_interface.get_iface_num() >= HAL_NUM_CAN_IFACES ||
-            _slcan_interface.get_iface_num() < 0) ||
-            (_interfaces[_slcan_interface.get_iface_num()]._driver_number != drv_num + 1)) {
-            _drivers[drv_num]->init(drv_num, true);
-        } else {
-            _drivers[drv_num]->init(drv_num, false);
+        bool enable_filter = false;
+        for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+            if (_interfaces[i]._driver_number == (drv_num+1) &&
+                hal.can[i] != nullptr &&
+                hal.can[i]->get_operating_mode() == AP_HAL::CANIface::FilteredMode) {
+                // Don't worry we don't enable Filters for Normal Ifaces under the driver
+                // this is just to ensure we enable them for the ones we already decided on
+                enable_filter = true;
+                break;
+            }
         }
+
+        _drivers[drv_num]->init(drv_num, enable_filter);
     }
 }
 

@@ -21,12 +21,27 @@
 #endif
 
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 const AP_FWVersion AP_FWVersion::fwver{
+    // Version header struct
+    .header = 0x61706677766572fb, // First 7 MSBs: "apfwver", LSB is the checksum of the previous string: 0xfb
+    .header_version = 0x0100U, // Major and minor version
+    .pointer_size = static_cast<uint8_t>(sizeof(void*)),
+    .reserved = 0,
+    .vehicle_type = static_cast<uint8_t>(APM_BUILD_DIRECTORY),
+    .board_type = static_cast<uint8_t>(CONFIG_HAL_BOARD),
+    .board_subtype = static_cast<uint16_t>(CONFIG_HAL_BOARD_SUBTYPE),
     .major = FW_MAJOR,
     .minor = FW_MINOR,
     .patch = FW_PATCH,
     .fw_type = FW_TYPE,
+#ifdef BUILD_DATE_YEAR
+    // encode build date in os_sw_version
+   .os_sw_version = (BUILD_DATE_YEAR*100*100) + (BUILD_DATE_MONTH*100) + BUILD_DATE_DAY,
+#else
+   .os_sw_version = 0,
+#endif
 #ifndef GIT_VERSION
     .fw_string = THISFIRMWARE,
     .fw_hash_str = "",
@@ -42,11 +57,5 @@ const AP_FWVersion AP_FWVersion::fwver{
 #else
     .os_name = nullptr,
     .os_hash_str = nullptr,
-#endif
-#ifdef BUILD_DATE_YEAR
-    // encode build date in os_sw_version
-   .os_sw_version = (BUILD_DATE_YEAR*100*100) + (BUILD_DATE_MONTH*100) + BUILD_DATE_DAY,
-#else
-   .os_sw_version = 0,
 #endif
 };

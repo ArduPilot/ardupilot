@@ -255,6 +255,34 @@ void AP_Vehicle::write_notch_log_messages() const
             notches[0], notches[1], notches[2], notches[3]);
 }
 
+// reboot the vehicle in an orderly manner, doing various cleanups and
+// flashing LEDs as appropriate
+void AP_Vehicle::reboot(bool hold_in_bootloader)
+{
+    if (should_zero_rc_outputs_on_reboot()) {
+        SRV_Channels::zero_rc_outputs();
+    }
+
+    // Notify might want to blink some LEDs:
+    AP_Notify::flags.firmware_update = 1;
+    notify.update();
+
+    // force safety on
+    hal.rcout->force_safety_on();
+
+    // flush pending parameter writes
+    AP_Param::flush();
+
+    // do not process incoming mavlink messages while we delay:
+    hal.scheduler->register_delay_callback(nullptr, 5);
+
+    // delay to give the ACK a chance to get out, the LEDs to flash,
+    // the IO board safety to be forced on, the parameters to flush, ...
+    hal.scheduler->delay(200);
+
+    hal.scheduler->reboot(hold_in_bootloader);
+}
+
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()

@@ -178,6 +178,12 @@ void Copter::parachute_check()
         return;
     }
 
+    // pass is_flying to parachute library
+    parachute.set_is_flying(!ap.land_complete);
+
+    // pass sink rate to parachute library
+    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01f);
+
     // exit immediately if in standby
     if (standby_active) {
         return;
@@ -189,6 +195,11 @@ void Copter::parachute_check()
     // return immediately if motors are not armed or pilot's throttle is above zero
     if (!motors->armed()) {
         control_loss_count = 0;
+        return;
+    }
+
+    if (parachute.release_initiated()) {
+        copter.arming.disarm(AP_Arming::Method::PARACHUTE_RELEASE);
         return;
     }
 
@@ -208,6 +219,9 @@ void Copter::parachute_check()
     if (control_loss_count == 0 && parachute.alt_min() != 0 && (current_loc.alt < (int32_t)parachute.alt_min() * 100)) {
         return;
     }
+
+    // trigger parachute release based on sink rate
+    parachute.check_sink_rate();
 
     // check for angle error over 30 degrees
     const float angle_error = attitude_control->get_att_error_angle_deg();
@@ -242,9 +256,6 @@ void Copter::parachute_check()
         // release parachute
         parachute_release();
     }
-
-    // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01);
 }
 
 // parachute_release - trigger the release of the parachute, disarm the motors and notify the user

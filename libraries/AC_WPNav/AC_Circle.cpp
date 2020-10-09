@@ -24,12 +24,12 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
 
-    // @Param: CONTROL
-    // @DisplayName: Circle control
-    // @Description: Enable or disable using the pitch/roll stick control circle mode's radius and rate
-    // @Values: 0:Disable,1:Enable
+    // @Param: OPTIONS
+    // @DisplayName: Circle options
+    // @Description: 0:Enable or disable using the pitch/roll stick control circle mode's radius and rate
+    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter
     // @User: Standard
-    AP_GROUPINFO("CONTROL", 2, AC_Circle, _control, 1),
+    AP_GROUPINFO("OPTIONS", 2, AC_Circle, _options, 1),
 
     AP_GROUPEND
 };
@@ -96,9 +96,11 @@ void AC_Circle::init()
     const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
-    _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
-    _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
-    _center.z = stopping_point.z;
+    _center = stopping_point;
+    if ((_options.get() & CircleOptions::INIT_AT_CENTER) == 0) {
+        _center.x += _radius * _ahrs.cos_yaw();
+        _center.y += _radius * _ahrs.sin_yaw();
+    }
     _terrain_alt = false;
 
     // calculate velocities
@@ -209,6 +211,12 @@ bool AC_Circle::update()
 
         // heading is from vehicle to center of circle
         _yaw = get_bearing_cd(_inav.get_position(), _center);
+
+        if ((_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0) {
+            _yaw += is_positive(_rate)?-9000.0f:9000.0f;
+            _yaw = wrap_360_cd(_yaw);
+        }
+
     } else {
         // set target position to center
         Vector3f target;

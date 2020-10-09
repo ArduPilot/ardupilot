@@ -67,6 +67,9 @@ protected:
     // set status and update valid_count
     void set_status(AP_Proximity::Status status);
 
+    // correct an angle (in degrees) based on the orientation and yaw correction parameters
+    float correct_angle_for_orientation(float angle_degrees) const;
+
     // find which sector a given angle falls into
     uint8_t convert_angle_to_sector(float angle_degrees) const;
 
