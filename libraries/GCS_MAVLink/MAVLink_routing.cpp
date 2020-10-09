@@ -177,7 +177,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         }
     }
 
-    if (!forwarded && match_system) {
+    if ((!forwarded && match_system) ||
+        broadcast_system) {
         process_locally = true;
     }
 
