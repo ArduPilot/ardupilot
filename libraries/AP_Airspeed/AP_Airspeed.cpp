@@ -69,6 +69,8 @@ extern const AP_HAL::HAL &hal;
 #define PSI_RANGE_DEFAULT 1.0f
 #endif
 
+#define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
@@ -158,10 +160,24 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
-    // @Description: Bitmask of options to use with airspeed.
-    // @Bitmask: 0:Disable on sensor failure,1:Re-enable on sensor recovery
+    // @Description: Bitmask of options to use with airspeed. Disable and/or re-enable sensor based on the difference between airspeed and ground speed based on ARSPD_WIND_MAX threshold, if set
+    // @Bitmask: 0:Disable sensor, 1:Re-enable sensor
     // @User: Advanced
-    AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, 0),
+    AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, OPTIONS_DEFAULT),
+
+    // @Param: _WIND_MAX
+    // @DisplayName: Maximum airspeed and ground speed difference
+    // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will be marked unhealthy. Using ARSPD_OPTION this health value can be used to disable the sensor.
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("_WIND_MAX", 22, AP_Airspeed, _wind_max, 0),
+
+    // @Param: _WIND_WARN
+    // @DisplayName: Airspeed and ground speed difference that gives a warning
+    // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
+    // @Units: m/s
+    // @User: Advanced
+    AP_GROUPINFO("_WIND_WARN", 23, AP_Airspeed, _wind_warn, 0),
 #endif
 
 #if AIRSPEED_MAX_SENSORS > 1
@@ -232,7 +248,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
 #endif // AIRSPEED_MAX_SENSORS
 
-    // Note that 21 is used above by the _OPTIONS parameter.  Do not use 21.
+    // Note that 21, 22 and 23 are used above by the _OPTIONS, _WIND_MAX and _WIND_WARN parameters.  Do not use them!!
 
     AP_GROUPEND
 };
@@ -264,6 +280,19 @@ void AP_Airspeed::init()
     if (param[0].pin.load() && param[0].pin.get() != 65) {
         param[0].type.set_default(TYPE_ANALOG);
     }
+
+#ifndef HAL_BUILD_AP_PERIPH
+    // Switch to dedicated WIND_MAX param
+    const float ahrs_max_wind = AP::ahrs().get_max_wind();
+    if (!_wind_max.configured() && is_positive(ahrs_max_wind)) {
+        _wind_max.set_and_save(ahrs_max_wind);
+
+        // Turn off _options to override the new default
+        if (!_options.configured()) {
+            _options.set_and_save(0);
+        }
+    }
+#endif
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
