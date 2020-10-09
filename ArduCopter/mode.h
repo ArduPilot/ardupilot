@@ -207,6 +207,9 @@ public:
                            int8_t direction,
                            bool relative_angle);
 
+        // the ROI yaw loop rate depends on the fast loop rate
+        void update_roi_yaw_loop_rate(uint16_t fast_loop_rate_hz);
+
     private:
 
         float look_ahead_yaw();
@@ -233,7 +236,10 @@ public:
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _rate_cds;
 
-        // used to reduce update rate to 100hz:
+        // used to reduce update rate to ROI_YAW_SCHEDULER_HZ (100hz):
+        uint8_t roi_yaw_divider;
+
+        // used to reduce update rate to ROI_YAW_SCHEDULER_HZ (100hz):
         uint8_t roi_yaw_counter;
 
     };

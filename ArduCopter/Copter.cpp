@@ -507,6 +507,9 @@ void Copter::one_hz_loop()
     // log terrain data
     terrain_logging();
 
+    // Update the ROI yaw loop rate divider if the user changes the main loop rate
+    flightmode->auto_yaw.update_roi_yaw_loop_rate(scheduler.get_loop_rate_hz());
+
 #if HAL_ADSB_ENABLED
     adsb.set_is_flying(!ap.land_complete);
 #endif

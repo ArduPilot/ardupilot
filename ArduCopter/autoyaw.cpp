@@ -2,11 +2,19 @@
 
 Mode::AutoYaw Mode::auto_yaw;
 
+static constexpr uint8_t ROI_YAW_SCHEDULER_HZ = 100; // ROI yaw should be calculated at 100Hz
+
+void Mode::AutoYaw::update_roi_yaw_loop_rate(uint16_t fast_loop_rate_hz)
+{
+    // the ROI yaw loop rate depends on the fast loop rate
+    roi_yaw_divider = fast_loop_rate_hz / ROI_YAW_SCHEDULER_HZ;
+}
+
 // roi_yaw - returns heading towards location held in roi
 float Mode::AutoYaw::roi_yaw()
 {
     roi_yaw_counter++;
-    if (roi_yaw_counter >= 4) {
+    if (roi_yaw_counter >= roi_yaw_divider) {
         roi_yaw_counter = 0;
         _roi_yaw = get_bearing_cd(copter.inertial_nav.get_position(), roi);
     }
@@ -157,7 +165,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         // send the command to the camera mount
         copter.camera_mount.set_roi_target(roi_location);
 
-        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 4 (see below)
+        // TO-DO: expand handling of the do_nav_roi to support all modes of the MAVLink.  Currently we only handle mode 3 (see below)
         //      0: do nothing
         //      1: point at next waypoint
         //      2: point at a waypoint taken from WP# parameter (2nd parameter?)
