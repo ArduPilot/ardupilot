@@ -315,7 +315,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             sercfg.irq_cb = rx_irq_cb;
 #endif // HAL_UART_NODMA
-            sercfg.cr2 |= USART_CR2_STOP1_BITS;
+            if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
+                sercfg.cr2 |= USART_CR2_STOP1_BITS;
+            }
             sercfg.ctx = (void*)this;
 
             sdStart((SerialDriver*)sdef.serial, &sercfg);
@@ -1290,12 +1292,15 @@ void UARTDriver::set_stop_bits(int n)
 
     switch (n) {
     case 1:
-        sercfg.cr2 = _cr2_options | USART_CR2_STOP1_BITS;
+        _cr2_options &= ~USART_CR2_STOP2_BITS;
+        _cr2_options |= USART_CR2_STOP1_BITS;
         break;
     case 2:
-        sercfg.cr2 = _cr2_options | USART_CR2_STOP2_BITS;
+        _cr2_options &= ~USART_CR2_STOP1_BITS;
+        _cr2_options |= USART_CR2_STOP2_BITS;
         break;
     }
+    sercfg.cr2 = _cr2_options;
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 #ifndef HAL_UART_NODMA
