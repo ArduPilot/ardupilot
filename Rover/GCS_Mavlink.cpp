@@ -718,10 +718,8 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
         }
     }
 
-    if (is_positive(packet.param1)) {
-        if (!rover.control_mode->set_desired_speed(packet.param1)) {
-            return MAV_RESULT_FAILED;
-        }
+    if (!rover.control_mode->set_desired_speed(packet.param1)) {
+        return MAV_RESULT_FAILED;
     }
 
     // set the destination
