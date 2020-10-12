@@ -954,6 +954,12 @@ private:
     // correct external navigation earth-frame velocity using sensor body-frame offset
     void CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav_vel_data) const;
 
+    // calculate velocity variances and innovations
+    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration
+    // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration
+    // variances argument is updated with variances for each axis
+    void CalculateVelInnovationsAndVariances(const Vector3f &velocity, float noise, float accel_scale, Vector3f &innovations, Vector3f &variances) const;
+
     // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
     // that uses IMU, GPS horizontal velocity and optionally true airspeed data.
     void runYawEstimatorPrediction(void);
