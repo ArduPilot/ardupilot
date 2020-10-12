@@ -72,9 +72,12 @@ PC5 RSSI_ADC ADC1
 
 PA2 LED0 OUTPUT LOW
 
+# In order to accommodate bi-directional dshot certain devices cannot be DMA enabled
+# NODMA indicates these devices, if you remove it they will still not be resolved for DMA
+
 # USART1
-PA10 USART1_RX USART1
-PA9  USART1_TX USART1
+PA10 USART1_RX USART1 NODMA
+PA9  USART1_TX USART1 NODMA
 
 # USART2
 PD5 USART2_TX USART2
@@ -88,31 +91,32 @@ PB10 USART3_TX USART3
 PA0 UART4_TX UART4 NODMA
 PA1 UART4_RX UART4 NODMA
 
-# RC input defaults to timer capture
-PC7 TIM8_CH2 TIM8 RCININT PULLDOWN
-PC6 USART6_TX USART6 NODMA
-
-# alt config to allow RCIN on UART for bi-directional
-# protocols like FPort
-PC7 USART6_RX USART6 NODMA ALT(1)
+# RC input defaults to UART to allow for bi-dir dshot
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define HAL_SERIAL6_PROTOCOL SerialProtocol_RCIN
+define HAL_SERIAL6_BAUD 115
 
 # UART7, RX only for ESC Telemetry
-PE7 UART7_RX UART7
+# No DMA because SPI2 requires the DMA slot
+PE7 UART7_RX UART7 NODMA
 PE8 UART7_TX UART7 NODMA LOW
 
-# Motors
-PB1  TIM1_CH3N TIM1 PWM(1) GPIO(50)
-PE9  TIM1_CH1 TIM1 PWM(2) GPIO(51)
-PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
-PB0  TIM3_CH3 TIM3 PWM(4) GPIO(53)
-PC9  TIM3_CH4 TIM3 PWM(5) GPIO(54)
-PA3  TIM5_CH4 TIM5 PWM(6) GPIO(55)
+# Motors, bi-directional dshot capable
+PB1  TIM3_CH4 TIM3 PWM(1) GPIO(50)          # M1
+PE9  TIM1_CH1 TIM1 PWM(2) GPIO(51)          # M2 CH1 and CH2 can share ICU Channel for BIDIR
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)  BIDIR   # M4
+PB0  TIM3_CH3 TIM3 PWM(4) GPIO(53)  BIDIR   # M3
+# These are not DMA enabled so not dshot capable
+# To get dshot (but not bi-dir dshot) remove the NODMA and add NODMA to USART6
+PC9  TIM8_CH4 TIM8 PWM(5) GPIO(54)  NODMA   # M5
+PA3  TIM5_CH4 TIM5 PWM(6) GPIO(55)          # M6
 
 # extra PWM outs
 #PD12  TIM4_CH1 TIM4 PWM(7) GPIO(56) # led pin
 #PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57) # buzzer pin (need to comment out buzzer)
 
-DMA_PRIORITY TIM1* TIM3* SPI4* SPI1*
+DMA_PRIORITY ADC* USART6* TIM1* TIM3* SPI4* SPI1*
 
 define HAL_STORAGE_SIZE 16384
 define STORAGE_FLASH_PAGE 1
