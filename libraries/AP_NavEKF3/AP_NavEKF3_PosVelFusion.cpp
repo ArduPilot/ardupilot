@@ -388,6 +388,19 @@ void NavEKF3_core::CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav
 #endif
 }
 
+// calculate velocity variance helper function
+void NavEKF3_core::CalculateVelInnovationsAndVariances(const Vector3f &velocity, float noise, float accel_scale, Vector3f &innovations, Vector3f &variances) const
+{
+    // innovations are latest estimate - latest observation
+    innovations = stateStruct.velocity - velocity;
+
+    const float obs_data_chk = sq(constrain_float(noise, 0.05f, 5.0f)) + sq(accel_scale * accNavMag);
+
+    // calculate innovation variance.  velocity states start at index 4
+    variances.x = P[4][4] + obs_data_chk;
+    variances.y = P[5][5] + obs_data_chk;
+    variances.z = P[6][6] + obs_data_chk;
+}
 
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
