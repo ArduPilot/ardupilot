@@ -211,7 +211,7 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
         // Calculate the slew rate amplitude produced by the unmodified D term
 
         // calculate a low pass filtered slew rate
-        float Dterm_slew_rate = _slew_rate_filter.apply(((_pid_info.D - _last_pid_info_D)/ delta_time), delta_time);
+        float Dterm_slew_rate = _slew_rate_filter.apply((fabsf(_pid_info.D - _last_pid_info_D)/ delta_time), delta_time);
 
         // rectify and apply a decaying envelope filter
         float alpha = 1.0f - constrain_float(delta_time/_slew_rate_tau, 0.0f , 1.0f);
