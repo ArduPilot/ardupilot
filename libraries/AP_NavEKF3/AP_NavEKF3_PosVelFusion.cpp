@@ -406,6 +406,9 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // get data that has now fallen behind the fusion time horizon
     gpsDataToFuse = storedGPS.recall(gpsDataDelayed,imuDataDelayed.time_ms);
+    if (gpsDataToFuse) {
+        CorrectGPSForAntennaOffset(gpsDataDelayed);
+    }
 
     // initialise all possible data we may fuse
     fusePosData = false;
@@ -423,7 +426,6 @@ void NavEKF3_core::SelectVelPosFusion()
         fusePosData = true;
         extNavUsedForPos = false;
 
-        CorrectGPSForAntennaOffset(gpsDataDelayed);
 
         // copy corrected GPS data to observation vector
         if (fuseVelData) {
