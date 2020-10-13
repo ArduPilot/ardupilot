@@ -66,7 +66,7 @@ void ModeLand::gps_run()
 
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
     } else {
@@ -121,7 +121,7 @@ void ModeLand::nogps_run()
 
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling();
     } else {
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
