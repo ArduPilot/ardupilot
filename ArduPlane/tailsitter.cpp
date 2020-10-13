@@ -114,7 +114,7 @@ void QuadPlane::tailsitter_output(void)
     // handle Copter controller
     // the MultiCopter rate controller has already been run in an earlier call
     // to motors_output() from quadplane.update(), unless we are in assisted flight
-    if (assisted_flight && tailsitter_transition_fw_complete()) {
+    if (assisted_flight && is_tailsitter_in_fw_flight()) {
         hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
         motors_output(true);
 
@@ -265,6 +265,14 @@ void QuadPlane::tailsitter_check_input(void)
 bool QuadPlane::in_tailsitter_vtol_transition(void) const
 {
     return is_tailsitter() && in_vtol_mode() && transition_state == TRANSITION_ANGLE_WAIT_VTOL;
+}
+
+/*
+  return true if we are a tailsitter in FW flight
+ */
+bool QuadPlane::is_tailsitter_in_fw_flight(void) const
+{
+    return is_tailsitter() && !in_vtol_mode() && transition_state == TRANSITION_DONE;
 }
 
 /*
