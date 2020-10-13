@@ -1352,6 +1352,9 @@ private:
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
     bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
     bool useExtNavVel;                  // true if external nav velocity should be used
+    Vector3f extNavVelInnov;            // external nav velocity innovations
+    Vector3f extNavVelVarInnov;         // external nav velocity innovation variances
+    uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
