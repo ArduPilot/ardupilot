@@ -448,10 +448,23 @@ void Mode::zero_throttle_and_hold_attitude()
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
-void Mode::make_safe_spool_down()
+// handle situations where the vehicle is on the ground waiting for takeoff
+// force_throttle_unlimited should be true in cases where we want to keep the motors spooled up
+// (instead of spooling down to ground idle).  This is required for tradheli's in Guided and Auto
+// where we always want the motor spooled up in Guided or Auto mode.  Tradheli's main rotor stops 
+// when spooled down to ground idle.
+// ultimately it forces the motor interlock to be obeyed in auto and guided modes when on the ground.
+void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 {
-    // command aircraft to initiate the shutdown process
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    if (force_throttle_unlimited) {
+        // keep rotors turning 
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    } else {
+        // spool down to ground idle
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    }
+
+
     switch (motors->get_spool_state()) {
 
     case AP_Motors::SpoolState::SHUT_DOWN:
