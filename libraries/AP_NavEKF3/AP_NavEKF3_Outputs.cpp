@@ -513,6 +513,36 @@ void  NavEKF3_core::getStateVariances(float stateVar[24])
     }
 }
 
+// get a particular source's velocity innovations
+// returns true on success and results are placed in innovations and variances arguments
+bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
+{
+    switch (source) {
+    case AP_NavEKF_Source::SourceXY::GPS:
+        // check for timeouts
+        if (AP_HAL::millis() - gpsVelInnovTime_ms > 500) {
+            return false;
+        }
+        innovations = gpsVelInnov;
+        variances = gpsVelVarInnov;
+        return true;
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        // check for timeouts
+        if (AP_HAL::millis() - extNavVelInnovTime_ms > 500) {
+            return false;
+        }
+        innovations = extNavVelInnov;
+        variances = extNavVelVarInnov;
+        return true;
+    default:
+        // variances are not available for this source
+        return false;
+    }
+
+    // should never get here but just in case
+    return false;
+}
+
 /*
 return the filter fault status as a bitmasked integer
  0 = quaternions are NaN
