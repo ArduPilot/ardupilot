@@ -426,6 +426,12 @@ void NavEKF3_core::SelectVelPosFusion()
     extNavVelToFuse = storedExtNavVel.recall(extNavVelDelayed, imuDataDelayed.time_ms);
     if (extNavVelToFuse) {
         CorrectExtNavVelForSensorOffset(extNavVelDelayed);
+
+        // calculate innovations and variances for reporting purposes only
+        CalculateVelInnovationsAndVariances(extNavVelDelayed.vel, extNavVelDelayed.err, frontend->extNavVelVarAccScale, extNavVelInnov, extNavVelVarInnov);
+
+        // record time innovations were calculated (for timeout checks)
+        extNavVelInnovTime_ms = AP_HAL::millis();
     }
 
     // Read GPS data from the sensor
