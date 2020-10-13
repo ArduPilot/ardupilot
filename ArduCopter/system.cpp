@@ -397,11 +397,7 @@ void Copter::update_auto_armed()
         if(flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
             set_auto_armed(false);
         }
-        // if helicopters are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if(ap.land_complete && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
-            set_auto_armed(false);
-        }
+
     }else{
         // arm checks
         
