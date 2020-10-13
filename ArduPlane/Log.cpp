@@ -307,7 +307,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: ThD: demanded speed-height-controller throttle
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
 // @Field: SAs: synthetic airspeed measurement derived from non-airspeed sensors, NaN if not available
-// @Field: E2T: equivelent to true airspeed ratio
+// @Field: E2T: equivalent to true airspeed ratio
 
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhhfff",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdrOut,ThD,As,SAs,E2T", "sdddd---nn-", "FBBBB---00-" },
