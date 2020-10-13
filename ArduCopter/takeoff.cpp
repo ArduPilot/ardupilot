@@ -35,8 +35,9 @@ bool Mode::do_user_takeoff(float takeoff_alt_cm, bool must_navigate)
         return false;
     }
 
-    // Helicopters should return false if MAVlink takeoff command is received while the rotor is not spinning
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && copter.ap.using_interlock) {
+    // Vehicles using motor interlock should return false if motor interlock is disabled.
+    // Interlock must be enabled to allow the controller to spool up the motor(s) for takeoff.
+    if (!motors->get_interlock() && copter.ap.using_interlock) {
         return false;
     }
 
@@ -96,7 +97,8 @@ void Mode::auto_takeoff_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || !copter.ap.auto_armed) {
-        make_safe_spool_down();
+        // do not spool down tradheli when on the ground with motor interlock enabled
+        make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
         wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
         return;
     }
