@@ -58,7 +58,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.channel_throttle->get_reverse() && 
-        plane.g.throttle_fs_enabled &&
+        Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
         plane.g.throttle_fs_value < 
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
@@ -88,6 +88,21 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         }
     }
 
+#if AP_TERRAIN_AVAILABLE
+    if (plane.g.terrain_follow || plane.mission.contains_terrain_relative()) {
+        // check terrain data is loaded and healthy
+        uint16_t terr_pending=0, terr_loaded=0;
+        plane.terrain.get_statistics(terr_pending, terr_loaded);
+        if (plane.terrain.status() != AP_Terrain::TerrainStatusOK) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "terrain data unhealthy");
+            ret = false;
+        } else if (terr_pending != 0) {
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "waiting for terrain data");
+            ret = false;
+        }
+    }
+#endif
+    
     if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
         check_failed(display_failure, "No mission loaded");
         ret = false;

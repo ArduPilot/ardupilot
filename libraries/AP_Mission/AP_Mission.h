@@ -303,6 +303,7 @@ public:
         _flags.state = MISSION_STOPPED;
         _flags.nav_cmd_loaded = false;
         _flags.do_cmd_loaded = false;
+        _force_resume = false;
     }
 
     // get singleton instance
@@ -471,6 +472,9 @@ public:
     // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
     bool jump_to_abort_landing_sequence(void);
 
+    // force mission to resume when start_or_resume() is called
+    void set_force_resume(bool force_resume) { _force_resume = force_resume; }
+
     // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
     // storage while working with multiple waypoints
     HAL_Semaphore_Recursive &get_semaphore(void) {
@@ -480,6 +484,9 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
+    // returns true if the mission has a terrain relative mission item
+    bool contains_terrain_relative(void) const;
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -567,6 +574,7 @@ private:
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
+    bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
 
     // jump related variables
     struct jump_tracking_struct {

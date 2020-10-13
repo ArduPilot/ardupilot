@@ -1,5 +1,26 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.5-rc2 08-Oct-2020
+Changes from 4.0.5-rc1
+1) Bug fixes:
+    a) Serial/UART DMA race condition that could cause watdog reset fixed (Critical fix)
+    b) SBUS output when no RC input fixed (Critical fix)
+------------------------------------------------------------------
+Copter 4.0.5-rc1 02-Oct-2020
+Changes from 4.0.4
+1) Bug fixes:
+    a) Acro expo calculation fix (fixes sluggish behaviour)
+    b) F32Lightening board IMU fast sampling fix
+    c) GPS minimum accuracy added to protect EKF from unrealistic values
+    d) KakuteF7/mini DShot glitch fix
+    e) RC input gets additional protection against out-of-range inputs (<RCx_MIN or >RCx_MAX)
+    f) RC_OPTION = 4 fix on boards with IOMCU (Pixhawk, etc). This allows ignoring SBUS failsafes 
+2) Small enhancements:
+    a) Linux boards accept up to 16 RC inputs when using UDP
+    b) Protect against two many interrupts from RPM sensor, etc
+    c) RM3100 compass support for probing all four I2C addresses
+    d) Durandal telem3 port enabled
+------------------------------------------------------------------
 Copter 4.0.4 16-Sep-2020
 Changes from 4.0.4-rc4
 1) Matek H743, 765-Wing and F405-Wing get DPS310 Baro support 
