@@ -339,11 +339,6 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
 
     guided_angle_state.update_time_ms = millis();
 
-    // interpret positive climb rate or thrust as triggering take-off
-    if (motors->armed() && !copter.ap.auto_armed && is_positive(climb_rate_cms_or_thrust)) {
-        copter.set_auto_armed(true);
-    }
-
     // log target
     copter.Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
@@ -616,6 +611,11 @@ void ModeGuided::angle_control_run()
         climb_rate_cms = 0.0f;
         yaw_rate_in = 0.0f;
         guided_angle_state.use_thrust = false;
+    }
+
+    // interpret positive climb rate or thrust as triggering take-off
+    if (motors->armed() && is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust : climb_rate_cms)) {
+        copter.set_auto_armed(true);
     }
 
     // if not armed set throttle to zero and exit immediately
