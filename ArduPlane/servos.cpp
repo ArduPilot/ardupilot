@@ -735,7 +735,7 @@ void Plane::servos_twin_engine_mix(void)
 */
 void Plane::force_flare(void)
 {
-    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && !auto_throttle_mode && channel_throttle->in_trim_dz() && flare_switch_active) {
+    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && !auto_throttle_mode && channel_throttle->in_trim_dz() && flare_mode != FlareMode::FLARE_DISABLED) {
         int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor
         if (quadplane.tilt.tilt_type == QuadPlane::TILT_TYPE_BICOPTER) {
             tilt = 0; // this is tilts up for a Bicopter

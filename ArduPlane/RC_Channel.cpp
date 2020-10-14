@@ -121,14 +121,16 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 {
         switch(ch_flag) {
         case AuxSwitchPos::HIGH:
-            plane.flare_switch_active = true;
+            plane.flare_mode = Plane::FlareMode::ENABLED_PITCH_TARGET;
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
             break;
         case AuxSwitchPos::MIDDLE:
+            plane.flare_mode = Plane::FlareMode::ENABLED_NO_PITCH_TARGET;
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
             break;
         case AuxSwitchPos::LOW:
             plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
-            plane.flare_switch_active = false;
+            plane.flare_mode = Plane::FlareMode::FLARE_DISABLED;
             break;
         }    
 }
