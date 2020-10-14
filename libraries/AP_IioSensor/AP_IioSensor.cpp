@@ -68,7 +68,7 @@ void AP_Iio_Channel::disable()
 }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpointer-arith"
-int AP_Iio_Channel::get_data(double *values)
+int AP_Iio_Channel::get_data(double *values) const
 {
     int ret = 0;
     unsigned int i;
@@ -212,7 +212,7 @@ int AP_Iio_Sensor::init()
     return 0;
 }
 
-int AP_Iio_Sensor::read()
+int AP_Iio_Sensor::read() const
 {
     const ssize_t ret = iio_buffer_refill(_iio_buf);
     if (ret < 0) {

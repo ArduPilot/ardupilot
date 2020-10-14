@@ -25,8 +25,8 @@ class AP_Iio_Channel
 {
 public:
     AP_Iio_Channel(const char *name);
-    int get_data(double *values);
-    const char *get_name() { return _name; };
+    int get_data(double *values) const;
+    const char *get_name() const { return _name; };
     friend class AP_Iio_Sensor;
 private:
     const char *_name;
@@ -49,7 +49,7 @@ public:
                   long long sampling_freq, unsigned int buf_count);
     ~AP_Iio_Sensor();
     int init();
-    int read();
+    int read() const;
     const struct iio_device *get_device() const {return _iio_dev;};
 private:
     const char *_name;
