@@ -13,14 +13,14 @@
 --        - pitch controls target distance to wall (limited to no less than 2m, no more than 8m)
 --        - throttle input causes vehicle to switch back to manual mode
 --        - climbs at 50cm/s (need parameter?) stopping at 2m intervals
---    e) switch controls switching in and out of auto mode (use ZigZag switch?)
+--    e) ZIGZAG_SaveWP aux switch controls switching in and out of auto mode
 
 -- constants
 local update_rate_ms = 10           -- script updates at 100hz
 local update_rate_dt = update_rate_ms / 1000.0 -- update rate in seconds
 local copter_guided_mode_num = 4    -- Copter's guided flight mode is mode 4
 local aux_switch_function = 61      -- auxiliary switch function controlling mode.  61 is ZIGZAG_SaveWP
-local climb_accel_max = 0.25         -- climb rate acceleration max in m/s/s
+local climb_accel_max = 0.25        -- climb rate acceleration max in m/s/s
 local climb_rate_max = 2            -- climb rate max in m/s
 local climb_rate_chg_max = climb_accel_max * update_rate_dt -- max change in climb rate in a single iteration
 local roll_pitch_speed_max = 2      -- horizontal speed max in m/s
