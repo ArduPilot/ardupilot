@@ -53,7 +53,7 @@ uint8_t GCS::statustext_send_channel_mask() const
 /*
   send a text message to all GCS
  */
-void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
+void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, MessageOption opt_bitmask, const uint8_t write_log)
 {
     uint8_t mask = statustext_send_channel_mask();
     if (!update_send_has_been_called) {
@@ -62,7 +62,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list)
         // it to all channels:
         mask = (1<<_num_gcs)-1;
     }
-    send_textv(severity, fmt, arg_list, mask);
+    send_textv(severity, fmt, arg_list, mask, opt_bitmask, write_log);
 }
 
 void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
@@ -70,6 +70,14 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_list arg_list;
     va_start(arg_list, fmt);
     send_textv(severity, fmt, arg_list);
+    va_end(arg_list);
+}
+
+void GCS::send_text(MAV_SEVERITY severity, MessageOption opt_bitmask, const uint8_t write_log, const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    send_textv(severity, fmt, arg_list, opt_bitmask, write_log);
     va_end(arg_list);
 }
 

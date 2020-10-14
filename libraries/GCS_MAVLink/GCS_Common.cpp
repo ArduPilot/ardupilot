@@ -1839,7 +1839,7 @@ void GCS_MAVLINK::send_ahrs()
 /*
     send a statustext text string to specific MAVLink bitmask
 */
-void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask)
+void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask, MessageOption opt_bitmask, const uint8_t write_log)
 {
     char first_piece_of_text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1]{};
 
@@ -1849,6 +1849,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         // protect the "text" member with _statustext_sem
         hal.util->vsnprintf(statustext_printf_buffer, sizeof(statustext_printf_buffer), fmt, arg_list);
         memcpy(first_piece_of_text, statustext_printf_buffer, ARRAY_SIZE(first_piece_of_text)-1);
+
+        // not send if severity level lower than MAV_TEXT_SEV
+        const AP_Vehicle *vehicle = AP::vehicle();
+        if ((uint16_t)opt_bitmask && !((uint16_t)opt_bitmask & constrain_int32(vehicle->_mav_text_option, 0, INT32_MAX))) {
+            break;
+        }
 
         // filter destination ports to only allow active ports.
         statustext_t statustext{};
@@ -1914,7 +1920,7 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     // given we don't really know what these methods get up to, we
     // don't hold the statustext semaphore while doing them:
     AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger != nullptr) {
+    if (logger != nullptr && write_log) {
         logger->Write_Message(first_piece_of_text);
     }
 
@@ -4017,6 +4023,8 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
     AP::logger().Write_Command(packet_int, result, true);
+    gcs().send_text(MAV_SEVERITY_DEBUG, GCS::MessageOption::MAVLINK_COMMAND, false, "CmdL: %d (%g %g %g %g %g %g %g) Res: %d",
+        packet.command, packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6, packet.param7, (uint8_t)result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
@@ -4190,6 +4198,8 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     mavlink_msg_command_ack_send(chan, packet.command, result);
 
     AP::logger().Write_Command(packet, result);
+    gcs().send_text(MAV_SEVERITY_DEBUG, GCS::MessageOption::MAVLINK_COMMAND, false, "CmdI: %d (%g %g %g %g %" PRIu32 " %" PRIu32 " %g) Res: %d",
+        packet.command, packet.param1, packet.param2, packet.param3, packet.param4, packet.x, packet.y, packet.z, (uint8_t)result);
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
