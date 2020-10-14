@@ -384,6 +384,17 @@ void ModeGuided::run()
     }
  }
 
+bool ModeGuided::allows_arming(bool from_gcs) const
+{
+    // always allow arming from the ground station
+    if (from_gcs) {
+        return true;
+    }
+
+    // optionally allow arming from the transmitter
+    return (copter.g2.guided_options & (int32_t)Options::AllowArmingFromTX) != 0;
+};
+
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more
 void ModeGuided::takeoff_run()

@@ -623,6 +623,10 @@ public:
     AP_Int32 auto_options;
 #endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
+    AP_Int32 guided_options;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
