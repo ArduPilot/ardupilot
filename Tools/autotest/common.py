@@ -1581,9 +1581,9 @@ class AutoTest(ABC):
                                             self.log_name()))
 
     def start_test(self, description):
-        self.progress("#")
+        self.progress("##################################################################################")
         self.progress("########## %s  ##########" % description)
-        self.progress("#")
+        self.progress("##################################################################################")
 
     def try_symlink_tlog(self):
         self.buildlog = self.buildlogs_path(self.log_name() + "-test.tlog")
@@ -4130,10 +4130,13 @@ Also, ignores heartbeats not from our target system'''
         for desc in self.test_timings.keys():
             if len(desc) > longest:
                 longest = len(desc)
+        tests_total_time = 0
         for desc, test_time in sorted(self.test_timings.items(),
                                       key=self.show_test_timings_key_sorter):
             fmt = "%" + str(longest) + "s: %.2fs"
+            tests_total_time += test_time;
             self.progress(fmt % (desc, test_time))
+        self.progress(fmt % ("**--tests_total_time--**", tests_total_time))
 
     def send_statustext(self, text):
         if sys.version_info.major >= 3 and not isinstance(text, bytes):
