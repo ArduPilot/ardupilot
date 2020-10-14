@@ -92,8 +92,13 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            sitltest-copter-tests1,
-            sitltest-copter-tests2
+            sitltest-copter-tests1a,
+            sitltest-copter-tests1b,
+            sitltest-copter-tests1c,
+            sitltest-copter-tests1d,
+            sitltest-copter-tests1e,
+            sitltest-copter-tests2a,
+            sitltest-copter-tests2b,
         ]
 
     steps:
