@@ -978,6 +978,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
 #endif
 
+#if MODE_GUIDED_ENABLED == ENABLED
+    // @Param: GUID_OPTIONS
+    // @DisplayName: Guided mode options
+    // @Description: Options that can be applied to change guided mode behaviour
+    // @Bitmask: 0:Allow Arming from Transmitter
+    // @User: Advanced
+    AP_GROUPINFO("GUID_OPTIONS", 41, ParametersG2, guided_options, 0),
+#endif
+
     AP_GROUPEND
 };
 
