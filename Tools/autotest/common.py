@@ -3073,7 +3073,6 @@ class AutoTest(ABC):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
         self.drain_mav()
-        tstart = self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
                      1,  # ARM
                      0,
@@ -3083,12 +3082,20 @@ class AutoTest(ABC):
                      0,
                      0,
                      timeout=timeout)
+        try:
+            self.wait_armed()
+        except AutoTestTimeoutException:
+            raise AutoTestTimeoutException("Failed to ARM with mavlink")
+        return True
+
+    def wait_armed(self, timeout=20):
+        tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
             self.wait_heartbeat()
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
-                return True
-        raise AutoTestTimeoutException("Failed to ARM with mavlink")
+                return
+        raise AutoTestTimeoutException("Did not become armed")
 
     def disarm_vehicle(self, timeout=60, force=False):
         """Disarm vehicle with mavlink disarm message."""
