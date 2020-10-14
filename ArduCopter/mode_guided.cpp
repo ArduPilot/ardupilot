@@ -47,6 +47,50 @@ bool ModeGuided::init(bool ignore_checks)
     return true;
 }
 
+// guided_run - runs the guided controller
+// should be called at 100hz or more
+void ModeGuided::run()
+{
+    // call the correct auto controller
+    switch (guided_mode) {
+
+    case Guided_TakeOff:
+        // run takeoff controller
+        takeoff_run();
+        break;
+
+    case Guided_WP:
+        // run position controller
+        pos_control_run();
+        break;
+
+    case Guided_Velocity:
+        // run velocity controller
+        vel_control_run();
+        break;
+
+    case Guided_PosVel:
+        // run position-velocity controller
+        posvel_control_run();
+        break;
+
+    case Guided_Angle:
+        // run angle controller
+        angle_control_run();
+        break;
+    }
+ }
+
+bool ModeGuided::allows_arming(bool from_gcs) const
+{
+    // always allow arming from the ground station
+    if (from_gcs) {
+        return true;
+    }
+
+    // optionally allow arming from the transmitter
+    return (copter.g2.guided_options & (int32_t)Options::AllowArmingFromTX) != 0;
+};
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
@@ -344,51 +388,6 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
                            Vector3f(0.0f, 0.0f, climb_rate_cms_or_thrust));
 }
-
-// guided_run - runs the guided controller
-// should be called at 100hz or more
-void ModeGuided::run()
-{
-    // call the correct auto controller
-    switch (guided_mode) {
-
-    case Guided_TakeOff:
-        // run takeoff controller
-        takeoff_run();
-        break;
-
-    case Guided_WP:
-        // run position controller
-        pos_control_run();
-        break;
-
-    case Guided_Velocity:
-        // run velocity controller
-        vel_control_run();
-        break;
-
-    case Guided_PosVel:
-        // run position-velocity controller
-        posvel_control_run();
-        break;
-
-    case Guided_Angle:
-        // run angle controller
-        angle_control_run();
-        break;
-    }
- }
-
-bool ModeGuided::allows_arming(bool from_gcs) const
-{
-    // always allow arming from the ground station
-    if (from_gcs) {
-        return true;
-    }
-
-    // optionally allow arming from the transmitter
-    return (copter.g2.guided_options & (int32_t)Options::AllowArmingFromTX) != 0;
-};
 
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more
