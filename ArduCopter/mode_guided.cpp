@@ -466,6 +466,17 @@ void ModeGuided::vel_control_run()
         }
     }
 
+    // landed with positive desired climb rate, initiate takeoff
+    if (motors->armed() && copter.ap.auto_armed && copter.ap.land_complete && is_positive(guided_vel_target_cms.z)) {
+        zero_throttle_and_relax_ac();
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+            set_throttle_takeoff();
+        }
+        return;
+    }
+
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
