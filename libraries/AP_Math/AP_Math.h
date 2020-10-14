@@ -265,6 +265,9 @@ constexpr float expo_curve(float alpha, float input);
  */
 float throttle_curve(float thr_mid, float alpha, float thr_in);
 
+// Convert any base number to any base number. Example octal(8) to decimal(10)
+uint32_t convertMathBase(const uint8_t baseIn, const uint8_t baseOut, uint32_t inputNumber);
+
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
 
