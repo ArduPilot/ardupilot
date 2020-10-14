@@ -6746,9 +6746,16 @@ switch value'''
         self.set_parameter("BTN_PIN%u" % btn, pin)
         m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
         self.progress("### m: %s" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get BUTTON_CHANGE event")
+        if m is not None:
+            # should not get a button-changed event here.  The pins
+            # are simulated pull-down
+            raise NotAchievedException("Received BUTTON_CHANGE event")
         mask = 1<<pin
+        self.set_parameter("SIM_PIN_MASK", mask)
+        m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("### m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not receive BUTTON_CHANGE event")
         if not (m.state & mask):
             raise NotAchievedException("Bit not set in mask (got=%u want=%u)" % (m.state, mask))
         m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
@@ -6758,28 +6765,19 @@ switch value'''
         # wait for messages to stop coming:
         self.drain_mav_seconds(15)
 
-        # NOTE: SIM_PIN_MASK is *magic*.  You might set it to zero,
-        # but it *will* end up as 1<<btn immediately afterwards.  Thus
-        # not attempting to fetch the value back here:
         new_mask = 0
         self.send_set_parameter("SIM_PIN_MASK", new_mask, verbose=True)
-        tstart = self.get_sim_time_cached()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 10:
-                raise AutoTestTimeoutException("No BUTTON_CHANGE received")
-            m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-            self.progress("### m3: %s" % str(m3))
-            if m3 is None:
-                continue
-            if m.last_change_ms == m3.last_change_ms:
-                self.progress("last_change_ms same as first message")
-                continue
-            if m3.state != new_mask:
-                raise NotAchievedException("Unexpected mask (want=%u got=%u)" %
-                                           (new_mask, m3.state))
-            self.progress("correct BUTTON_CHANGE event received")
-            break
+        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("### m3: %s" % str(m3))
+        if m3 is None:
+            raise NotAchievedException("Did not get 'off' message")
+
+        if m.last_change_ms == m3.last_change_ms:
+            raise NotAchievedException("last_change_ms same as first message")
+        if m3.state != new_mask:
+            raise NotAchievedException("Unexpected mask (want=%u got=%u)" %
+                                       (new_mask, m3.state))
+        self.progress("correct BUTTON_CHANGE event received")
 
     def compare_number_percent(self, num1, num2, percent):
         if num1 == 0 and num2 == 0:
