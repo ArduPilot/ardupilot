@@ -1016,6 +1016,10 @@ void AP_Periph_FW::can_start()
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_INITIALIZATION;
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
+    if (g.can_node >= 0 && g.can_node < 128) {
+        PreferredNodeID = g.can_node;
+    }
+
     can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
 
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
