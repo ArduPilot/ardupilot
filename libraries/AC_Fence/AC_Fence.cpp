@@ -78,6 +78,13 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_SUB),
 
+    // @Param: RECO_TIME
+    // @DisplayName: manual recovery time
+    // @Description: manual recovery time
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("RECO_TIME",   8,  AC_Fence,   _reco_time, AC_FENCE_MANUAL_RECOVERY_TIME_MIN),
+
     AP_GROUPEND
 };
 
@@ -338,8 +345,8 @@ uint8_t AC_Fence::check()
 
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
-        // we ignore any fence breaches during the manual recovery period which is about 10 seconds
-        if ((AP_HAL::millis() - _manual_recovery_start_ms) < AC_FENCE_MANUAL_RECOVERY_TIME_MIN) {
+        // we ignore any fence breaches during the manual recovery period which is about 10(default) seconds
+        if ((AP_HAL::millis() - _manual_recovery_start_ms) < uint32_t(_reco_time)) {
             return 0;
         }
         // recovery period has passed so reset manual recovery time
