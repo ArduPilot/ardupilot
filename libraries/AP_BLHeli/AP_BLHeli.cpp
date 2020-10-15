@@ -254,6 +254,15 @@ bool AP_BLHeli::blheli_4way_process_byte(uint8_t c)
     return true;
 }
 
+
+/*
+  send a MSP protocol ack
+ */
+void AP_BLHeli::msp_send_ack(uint8_t cmd)
+{
+    msp_send_reply(cmd, 0, 0);
+}
+
 /*
   send a MSP protocol reply
  */
@@ -265,7 +274,10 @@ void AP_BLHeli::msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len)
     *b++ = '>';
     *b++ = len;
     *b++ = cmd;
-    memcpy(b, buf, len);
+    // acks do not have a payload
+    if (len > 0) {
+        memcpy(b, buf, len);
+    }
     b += len;
     uint8_t c = 0;
     for (uint8_t i=0; i<len+2; i++) {
@@ -319,9 +331,14 @@ void AP_BLHeli::msp_process_command(void)
         msp_send_reply(msp.cmdMSP, (const uint8_t *)ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
         break;
 
+    /*
+      Notes:
+        version 3.3.1 adds a reply to MSP_SET_MOTOR which was missing
+        version 3.3.0 requires a workaround in blheli suite to handle MSP_SET_MOTOR without an ack
+    */
     case MSP_FC_VERSION: {
         debug("MSP_FC_VERSION");
-        uint8_t version[3] = { 3, 3, 0 };
+        uint8_t version[3] = { 3, 3, 1 };
         msp_send_reply(msp.cmdMSP, version, sizeof(version));
         break;
     }
@@ -452,6 +469,7 @@ void AP_BLHeli::msp_process_command(void)
         } else {
             debug("mixed type, Motors Disabled");
         }
+        msp_send_ack(msp.cmdMSP);
         break;
     }
 
