@@ -234,6 +234,10 @@ public:
 
     virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
+#if !HAL_MINIMIZE_FEATURES
+    const char *string_for_aux_function(AUX_FUNC function) const;
+#endif
+
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
@@ -312,7 +316,6 @@ private:
     };
 
     static const LookupTable lookuptable[];
-    const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
 };
 
