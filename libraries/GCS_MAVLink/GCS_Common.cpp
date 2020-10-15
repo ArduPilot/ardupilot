@@ -2238,6 +2238,11 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint16_t product_id = 0;
     uint64_t uid = 0;
     uint8_t  uid2[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_UID2_LEN] = {0};
+
+    uint8_t uid_len = sizeof(uid2); // taken as reference and modified
+                                    // by following call:
+    hal.util->get_system_id_unformatted(uid2, uid_len);
+
     const AP_FWVersion &version = AP::fwversion();
 
     flight_sw_version = version.major << (8 * 3) | \
