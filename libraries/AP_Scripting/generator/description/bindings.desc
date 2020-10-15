@@ -40,6 +40,7 @@ singleton AP_AHRS method get_vibration Vector3f
 singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
 singleton AP_AHRS method get_EAS2TAS float
+singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
 
 include AP_Arming/AP_Arming.h
 
