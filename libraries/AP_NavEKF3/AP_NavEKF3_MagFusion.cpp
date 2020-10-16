@@ -2,6 +2,8 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
+
+#include <AP_Compass/AP_Compass.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
