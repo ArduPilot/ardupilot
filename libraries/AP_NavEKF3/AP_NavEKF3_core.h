@@ -715,9 +715,6 @@ private:
     // Rotate the stored output quaternion history through a quaternion rotation
     void StoreQuatRotate(const Quaternion &deltaQuat);
 
-    // calculate nav to body quaternions from body to nav rotation matrix
-    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
-
     // calculate the NED earth spin vector in rad/sec
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
 

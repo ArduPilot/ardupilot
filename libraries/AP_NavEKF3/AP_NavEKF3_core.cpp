@@ -1546,13 +1546,6 @@ void NavEKF3_core::StoreQuatRotate(const Quaternion &deltaQuat)
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
 }
 
-// calculate nav to body quaternions from body to nav rotation matrix
-void NavEKF3_core::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
-{
-    // Calculate the body to nav cosine matrix
-    quat.rotation_matrix(Tbn);
-}
-
 // force symmetry on the covariance matrix to prevent ill-conditioning
 void NavEKF3_core::ForceSymmetry()
 {
