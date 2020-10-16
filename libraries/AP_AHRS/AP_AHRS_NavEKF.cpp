@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -50,6 +51,10 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
 // init sets up INS board orientation
 void AP_AHRS_NavEKF::init()
 {
+    // EKF1 is no longer supported - handle case where it is selected
+    if (_ekf_type.get() == 1) {
+        AP_BoardConfig::config_error("EKF1 not available");
+    }
 #if !HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
     if (_ekf_type.get() == 2) {
         _ekf_type.set(3);
@@ -117,11 +122,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
-    
-    // EKF1 is no longer supported - handle case where it is selected
-    if (_ekf_type == 1) {
-        _ekf_type.set(2);
-    }
 
     update_DCM(skip_ins_update);
 
