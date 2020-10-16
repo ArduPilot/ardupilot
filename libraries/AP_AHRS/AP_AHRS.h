@@ -712,12 +712,6 @@ private:
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_NavEKF.h"
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-#define AP_AHRS_TYPE AP_AHRS_NavEKF
-#else
-#define AP_AHRS_TYPE AP_AHRS
-#endif
-
 namespace AP {
     AP_AHRS &ahrs();
 
