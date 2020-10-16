@@ -10,7 +10,6 @@ uint8_t killswitch_counter;
 float _aft_rpm;
 float _fwd_rpm;
 
-//bool take_off_complete;
 uint16_t spoolup_timer;
 bool timer_trigger;
 

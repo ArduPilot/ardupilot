@@ -57,7 +57,7 @@ void Copter::userhook_init()
 	hal.gpio->pinMode(52, 1);  // Payload, FLASE to turn on
 	hal.gpio->pinMode(53, 1);  // ESCs/Servos, TRUE to turn on
 
-	hal.gpio->write(52, true);	// Payload Power off at startup
+	hal.gpio->write(52, false);	// Payload Power off at startup
 	hal.gpio->write(53, true);  //Turn ESC/Servos on at startup
 
 	//Spool up support
@@ -85,6 +85,10 @@ void Copter::userhook_50Hz()
 	if(g.herelink_enable){
 		Detect_Buttons();
 	}
+
+	//Call topple sense
+
+	topple_sense();
 
 
 	// State Machine
@@ -122,11 +126,6 @@ void Copter::userhook_50Hz()
 	}
 
 
-	if((control_mode == Mode::Number::LAND or copter.flightmode->is_landing()) and !ap.land_complete){
-
-		spirit_state = landing;
-
-	}
 
 
 	switch(spirit_state){
@@ -149,7 +148,6 @@ void Copter::userhook_50Hz()
 
 		//Looks for issues with startup
 		servo_voltage_watcher();
-		topple_sense();
 
 		//Spoolup Watcher.  Disarm if 4 seconds passes without advancing
 		if(AP_HAL::millis16() - spoolup_watcher > (uint16_t)4000){
@@ -188,28 +186,54 @@ void Copter::userhook_50Hz()
 
 	case takeoff:
 
-		topple_sense();
-
 		break;
 
 	case land:
-
-		topple_sense();
 
 		break;
 
 	case hover:
 
+		//////// Determine if we are landing //////
+		if(copter.flightmode->get_alt_above_ground_cm() <= (int32_t)g2.land_alt_low){   // need to be close to the ground
+
+			if(copter.flightmode->is_landing()){
+				spirit_state = landing;
+				attitude_control->enable_angle_boost(false);
+				//gcs().send_text(MAV_SEVERITY_INFO,"L:auto");
+				break;
+			// for manual also need to be decending
+			}else if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate((float)channel_throttle->get_control_in()) < 0.0f){
+				spirit_state = landing;
+				attitude_control->enable_angle_boost(false);
+				//gcs().send_text(MAV_SEVERITY_INFO,"L:dct");
+				break;
+			}
+
+		}
+
 		break;
 
 	case landing:
 
+		//////cancel landing if no longer auto landing or if pilot is not commanding a decent
+			if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate(channel_throttle->get_control_in()) >= 0.0f){
+				spirit_state = hover;
+				attitude_control->enable_angle_boost(true);
+				//gcs().send_text(MAV_SEVERITY_INFO,"H:cr");
+				break;
+			}
 
+			if(copter.flightmode->is_autopilot() and !copter.flightmode->is_landing()){
+				spirit_state = hover;
+				attitude_control->enable_angle_boost(true);
+				//gcs().send_text(MAV_SEVERITY_INFO,"H:!land");
+				break;
+			}
 
 		break;
 
-	}
-
+		}
 
 }
 #endif
@@ -240,16 +264,6 @@ void Copter::userhook_SlowLoop()
 		Decode_Buttons();
 	}else{
 		copter.ap.gimbal_control_active = false;
-	}
-
-
-	//Payload power control while not armed
-
-	if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1700 and !motors->armed()){
-		hal.gpio->write(52, false);
-	}else{
-		hal.gpio->write(52, true);
-
 	}
 
 
@@ -286,17 +300,45 @@ void Copter::userhook_auxSwitch3(uint8_t ch_flag)
 
 void Copter::topple_sense(){
 
-	if(fabsf(attitude_control->get_att_error_angle_deg()) > 15.0f and ap.land_complete){
-		 copter.arming.disarm();
-		 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple: Disarm");
+		if(spirit_state == spoolup){
+			if(labs(ahrs.pitch_sensor) >1500 or labs(ahrs.roll_sensor) > 1500){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple spoolup");
+			}
 
-	}else if(fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f){
+		}else if(spirit_state == takeoff){
+			if(fabsf(attitude_control->get_att_error_angle_deg()) > 30.0f and copter.flightmode->get_alt_above_ground_cm() < 150){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple takeoff");
+			}
 
-		 copter.arming.disarm();
-		 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple: Disarm");
+		}else if(spirit_state == landing){
 
-	}
+			if(fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f){
+				copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+				 return;
+			}
 
+			if(fabsf(attitude_control->get_att_error_angle_deg()) > 30.0f and channel_throttle->get_control_in() == 0){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+			}
+
+			if((RangeFinder::RangeFinder_OutOfRangeLow or rangefinder_state.alt_cm_filt.get() <= 75.0f) and fabsf(attitude_control->get_att_error_angle_deg()) > 20.0f and copter.flightmode->get_alt_above_ground_cm() < 400){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+			}
+
+		}else{
+
+			/////Always the case
+			if(fabsf(attitude_control->get_att_error_angle_deg()) > 100.0f and copter.flightmode->get_alt_above_ground_cm() < 400){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple crash");
+			}
+
+		}
 }
 
 
@@ -353,10 +395,10 @@ void Copter::Killswitch(){
 	bool killswitch_activate = {
 			ap.throttle_zero or
 			ap.land_complete or
+			channel_throttle->get_control_in() == 0 or
 			fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f};
 
 	 if(killswitch_activate) {
-
 			 if(killswitch_counter >= 2){
 				 copter.arming.disarm();
 				 killswitch_counter = 0;

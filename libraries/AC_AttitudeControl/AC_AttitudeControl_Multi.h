@@ -78,6 +78,8 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    void enable_angle_boost(bool en){_angle_boost_enabled = en;}
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
