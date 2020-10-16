@@ -62,8 +62,6 @@ extern const AP_HAL::HAL& hal;
 #define MPU_FIFO_FASTSAMPLE_DEFAULT 0
 #endif
 
-#define SAMPLE_UNIT 1
-
 #define GYRO_INIT_MAX_DIFF_DPS 0.1f
 
 // Class level parameters
