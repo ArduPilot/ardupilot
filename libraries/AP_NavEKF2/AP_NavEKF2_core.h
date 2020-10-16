@@ -594,41 +594,6 @@ private:
     // Rotate the stored output quaternion history through a quaternion rotation
     void StoreQuatRotate(const Quaternion &deltaQuat);
 
-    // store altimeter data
-    void StoreBaro();
-
-    // recall altimeter data at the fusion time horizon
-    // return true if data found
-    bool RecallBaro();
-
-    // store range finder data
-    void StoreRange();
-
-    // recall range finder data at the fusion time horizon
-    // return true if data found
-    bool RecallRange();
-
-    // store magnetometer data
-    void StoreMag();
-
-    // recall magetometer data at the fusion time horizon
-    // return true if data found
-    bool RecallMag();
-
-    // store true airspeed data
-    void StoreTAS();
-
-    // recall true airspeed data at the fusion time horizon
-    // return true if data found
-    bool RecallTAS();
-
-    // store optical flow data
-    void StoreOF();
-
-    // recall optical flow data at the fusion time horizon
-    // return true if data found
-    bool RecallOF();
-
     // calculate nav to body quaternions from body to nav rotation matrix
     void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
