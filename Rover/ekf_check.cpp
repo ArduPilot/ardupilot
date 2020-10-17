@@ -152,7 +152,6 @@ void Rover::failsafe_ekf_event()
     failsafe.ekf = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV,
                              LogErrorCode::FAILSAFE_OCCURRED);
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe!");
 
     // does this mode require position?
     if (!control_mode->requires_position()) {
@@ -163,12 +162,14 @@ void Rover::failsafe_ekf_event()
     switch ((enum fs_ekf_action)g.fs_ekf_action.get()) {
         case FS_EKF_DISABLE:
             // do nothing
-            break;
+            return;
         case FS_EFK_HOLD:
         default:
             set_mode(mode_hold, ModeReason::EKF_FAILSAFE);
             break;
     }
+
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe");
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
