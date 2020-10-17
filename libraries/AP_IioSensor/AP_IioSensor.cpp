@@ -132,16 +132,16 @@ int AP_Iio_Channel::get_data(double *values) const
 }
 #pragma GCC diagnostic pop
 AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels,
-                             long long sampling_freq, unsigned int buf_count)
+                             long long sampling_freq, unsigned int buf_count, const char* trigger_name, uint8_t kernel_buffer_count)
 {
-    int ret;
-
     if (!name || !buf_count) {
         fprintf(stderr,"AP_Iio_Sensor: wrong input parameters\n");
         return;
     }
 
     _buf_count = buf_count;
+    _name = name;
+    _kernel_buffer_count = kernel_buffer_count;
 
     _iio_ctx = iio_create_local_context();
     if (!_iio_ctx) {
@@ -152,27 +152,42 @@ AP_Iio_Sensor::AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels
     _iio_dev = iio_context_find_device(_iio_ctx, name);
     if (!_iio_dev) {
         fprintf(stderr,"AP_Iio_Sensor: couldn't find device %s\n", name);
-        goto err;
+        destroy_context();
     }
+
+    int ret = iio_device_attr_write(_iio_dev, "buffer/enable", "0");
+    if (ret < 0) {
+        fprintf(stderr, "AP_Iio_Sensor: %s failed to write buffer/enable %s\n", _name, strerror(-ret));
+        destroy_context();
+    }
+
     if (sampling_freq > 0) {
         ret = iio_device_attr_write_longlong(_iio_dev, "sampling_frequency", sampling_freq);
         if (ret < 0) {
             fprintf(stderr,"AP_Iio_Sensor: %s failed to write sampling frequency %s\n", name, strerror(errno));
-            goto err;
+            destroy_context();
         }
 
         ret = iio_device_attr_read_double(_iio_dev, "sampling_frequency", &_sampling_freq);
         if (ret < 0) {
             fprintf(stderr,"AP_Iio_Sensor: %s failed to read sampling frequency %s\n", name, strerror(errno));
-            goto err;
+            destroy_context();
         }
 
         printf("AP_Iio_Sensor: %s real sampling freq : %f\n", name, _sampling_freq);
     }
 
+    if (trigger_name) {
+        if(!set_trigger(trigger_name)) {
+            destroy_context();
+        }
+    }
+
     _channels = channels;
-    return;
-err:
+}
+
+void AP_Iio_Sensor::destroy_context()
+{
     iio_context_destroy(_iio_ctx);
 }
 
@@ -198,7 +213,13 @@ int AP_Iio_Sensor::init()
             return -1;
         }
     }
-
+    int ret;
+    if (_kernel_buffer_count > 0) {
+        ret = iio_device_set_kernel_buffers_count(_iio_dev, _kernel_buffer_count);
+        if (ret < 0) {
+            fprintf(stderr,"AP_Iio_Sensor: %s failed to set _kernel_buffer_count %s\n", _name, strerror(-ret));
+        }
+    }
     _iio_buf = iio_device_create_buffer(_iio_dev, _buf_count, false);
     if (!_iio_buf) {
         fprintf(stderr,"AP_Iio_Sensor: failed to create buffer\n");
@@ -209,6 +230,23 @@ int AP_Iio_Sensor::init()
         chan->set_buf(_iio_buf);
     }
 
+    bool buffer_enable = false;
+    ret = iio_device_attr_read_bool(_iio_dev, "buffer/enable", &buffer_enable);
+    if (ret < 0) {
+        fprintf(stderr,"AP_Iio_Sensor: %s failed to read buffer/enable %s\n", _name, strerror(errno));
+        destroy_context();
+    }
+
+    if (!buffer_enable) {
+        ret = iio_device_attr_write(_iio_dev, "buffer/enable", "1");
+        if (ret < 0) {
+            fprintf(stderr,"AP_Iio_Sensor: %s failed to write buffer/enable %s\n", _name, strerror(-ret));
+            destroy_context();
+        }
+    }
+    auto flushed = buffer_flush();
+    fprintf(stderr,"AP_Iio_Sensor: flushed %d\n", flushed);
+
     return 0;
 }
 
@@ -216,10 +254,70 @@ int AP_Iio_Sensor::read() const
 {
     const ssize_t ret = iio_buffer_refill(_iio_buf);
     if (ret < 0) {
-        fprintf(stderr, "iio_buffer_refill error %s\n", strerror(-ret));
+        fprintf(stderr, "%s iio_buffer_refill error %s\n", _name, strerror(-ret));
         return -1;
     }
 
     return _buf_count;
+}
+
+bool AP_Iio_Sensor::set_trigger(const char *name) {
+    const struct iio_device *trig;
+    int ret = iio_device_get_trigger(_iio_dev, &trig);
+    if (ret == 0) {
+        if (trig == nullptr) {
+            assign_trigger(name);
+        } else {
+            const char *trigger_name = iio_device_get_name(trig);
+            if (strcmp(trigger_name, name) != 0) {
+                assign_trigger(name);
+            } else {
+                _iio_trigger = trig;
+            }
+        }
+    } else if (ret == -ENOENT) {
+        assign_trigger(name);
+    } else if (ret < 0) {
+        fprintf(stderr, "%s failed to get trigger %s : %s\n", _name, name, strerror(-ret));
+        return false;
+    }
+    return true;
+}
+
+bool AP_Iio_Sensor::assign_trigger(const char *name) {
+    _iio_trigger = iio_context_find_device(_iio_ctx, name);
+    if (!_iio_trigger || !iio_device_is_trigger(_iio_trigger)) {
+        fprintf(stderr, "%s unable to use %s as trigger\n", _name, name);
+        return false;
+    }
+
+    int ret = iio_device_set_trigger(_iio_dev, _iio_trigger);
+    if (ret < 0) {
+        fprintf(stderr, "%s failed to set trigger %s : %s\n", _name, name, strerror(-ret));
+        return false;
+    }
+    return true;
+}
+
+int AP_Iio_Sensor::buffer_flush() {
+        ssize_t nsamples = 0;
+
+        int ret = iio_buffer_set_blocking_mode(_iio_buf, false);
+        if (ret < 0) {
+            fprintf(stderr, "%s failed to set buffer blocking mode %s\n", _name, strerror(-ret));
+            return ret;
+        }
+
+        do {
+            ret = iio_buffer_refill(_iio_buf);
+            if (ret < 0 && ret != -EAGAIN) {
+                fprintf(stderr, "%s iio_buffer_refill error %s\n", _name, strerror(-ret));
+                return ret;
+            } else if (ret > 0) {
+                nsamples++;
+            }
+        } while (ret > 0);
+
+        return nsamples;
 }
 #endif

@@ -46,18 +46,24 @@ class AP_Iio_Sensor
 {
 public:
     AP_Iio_Sensor(const char *name, vector<AP_Iio_Channel*> *channels,
-                  long long sampling_freq, unsigned int buf_count);
+                  long long sampling_freq, unsigned int buf_count, const char* trigger_name=nullptr, uint8_t kernel_buffer_count=-1);
     ~AP_Iio_Sensor();
     int init();
     int read() const;
     const struct iio_device *get_device() const {return _iio_dev;};
+    bool set_trigger(const char *name);
 private:
     const char *_name;
     double _sampling_freq;
+    uint8_t _kernel_buffer_count;
     unsigned int _buf_count;
     struct iio_device *_iio_dev;
     struct iio_context *_iio_ctx;
     struct iio_buffer *_iio_buf;
+    const struct iio_device *_iio_trigger;
     vector<AP_Iio_Channel*> *_channels;
+    bool assign_trigger(const char *name);
+    int buffer_flush();
+    void destroy_context();
 };
 #endif
