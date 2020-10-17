@@ -49,12 +49,11 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
-        FLAG_NONE = 0,
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
     // Constructor
-    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = 0);
 
     // initialise
     void init(void) override;
