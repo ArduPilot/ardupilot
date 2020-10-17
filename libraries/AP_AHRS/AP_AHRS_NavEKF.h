@@ -360,7 +360,7 @@ private:
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms = 0;
+    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
@@ -371,7 +371,7 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
-    uint32_t _last_body_odm_update_ms = 0;
+    uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
 #endif    
 };
