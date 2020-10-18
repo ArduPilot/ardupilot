@@ -423,10 +423,15 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
-        uint8_t buf[6];
+        uint8_t buf[10];
         putU16(&buf[0], 1030); // min throttle
         putU16(&buf[2], 2000); // max throttle
         putU16(&buf[4], 1000); // min command
+        // API 1.42
+        buf[6] = num_motors; // motorCount
+        buf[7] = motor_poles; // motorPoleCount
+        buf[8] = 0; // useDshotTelemetry
+        buf[9] = 0; // FEATURE_ESC_SENSOR
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -827,7 +832,7 @@ bool AP_BLHeli::BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint
 
 uint8_t AP_BLHeli::BL_WriteFlash(const uint8_t *buf, uint16_t n)
 {
-    return BL_WriteA(CMD_PROG_FLASH, buf, n, 250);
+    return BL_WriteA(CMD_PROG_FLASH, buf, n, 500);
 }
 
 bool AP_BLHeli::BL_VerifyFlash(const uint8_t *buf, uint16_t n)
@@ -917,7 +922,7 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceReset(%u)", unsigned(blheli.buf[0]));
         if (blheli.buf[0] >= num_motors) {
             debug("bad reset channel %u", blheli.buf[0]);
-            blheli.ack = ACK_D_GENERAL_ERROR;
+            blheli.ack = ACK_I_INVALID_CHANNEL;
             blheli_send_reply(&blheli.buf[0], 1);            
             break;
         }
@@ -940,6 +945,8 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceInitFlash(%u)", unsigned(blheli.buf[0]));
         if (blheli.buf[0] >= num_motors) {
             debug("bad channel %u", blheli.buf[0]);
+            blheli.ack = ACK_I_INVALID_CHANNEL;
+            blheli_send_reply(&blheli.buf[0], 1);
             break;
         }
         blheli.chan = blheli.buf[0];
@@ -1070,7 +1077,7 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceWriteEEprom n=%u im=%u", nbytes, blheli.interface_mode[blheli.chan]);
         switch (blheli.interface_mode[blheli.chan]) {
         case imATM_BLB:
-            BL_WriteA(CMD_PROG_EEPROM, buf, nbytes, 1000);
+            BL_WriteA(CMD_PROG_EEPROM, buf, nbytes, 3000);
             break;
         default:
             blheli.ack = ACK_D_GENERAL_ERROR;
