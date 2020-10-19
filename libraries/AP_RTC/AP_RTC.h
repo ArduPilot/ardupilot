@@ -44,6 +44,9 @@ public:
 
     uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms);
 
+    // replacement for mktime()
+    static time_t mktime(const struct tm *t);
+
     // get singleton instance
     static AP_RTC *get_singleton() {
         return _singleton;
