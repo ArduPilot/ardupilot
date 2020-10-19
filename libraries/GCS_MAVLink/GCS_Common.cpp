@@ -888,14 +888,12 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
 }
 
 // typical runtime on fmuv3: 5 microseconds for 3 buckets
-void GCS_MAVLINK::find_next_bucket_to_send()
+void GCS_MAVLINK::find_next_bucket_to_send(uint16_t now16_ms)
 {
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_us = AP_HAL::micros();
 #endif
-
-    const uint16_t now16_ms{AP_HAL::millis16()};
 
     // all done sending this bucket... find another bucket...
     sending_bucket_id = no_bucket_to_send;
@@ -934,14 +932,13 @@ void GCS_MAVLINK::find_next_bucket_to_send()
 #endif
 }
 
-ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
+ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send(uint16_t now16_ms)
 {
     if (sending_bucket_id == no_bucket_to_send) {
         // could happen if all streamrates are zero?
         return no_message_to_send;
     }
 
-    const uint16_t now16_ms = AP_HAL::millis16();
     const uint16_t ms_since_last_sent = now16_ms - deferred_message_bucket[sending_bucket_id].last_sent_ms;
     if (ms_since_last_sent < get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id])) {
         // not time to send this bucket
@@ -954,7 +951,7 @@ ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("next_deferred_bucket_message_to_send called on empty bucket");
 #endif
-        find_next_bucket_to_send();
+        find_next_bucket_to_send(now16_ms);
         return no_message_to_send;
     }
     return (ap_message)next;
@@ -1005,9 +1002,8 @@ int8_t GCS_MAVLINK::get_deferred_message_index(const ap_message id) const
     return -1;
 }
 
-int8_t GCS_MAVLINK::deferred_message_to_send_index()
+int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
 {
-    const uint16_t now16_ms = AP_HAL::millis16();
 
     if (next_deferred_message_to_send_cache == -1) {
         uint16_t ms_before_next_message_to_send = UINT16_MAX;
@@ -1066,6 +1062,7 @@ void GCS_MAVLINK::update_send()
 #endif
 
     const uint32_t start = AP_HAL::millis();
+    const uint16_t start16 = start & 0xFFFF;
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
@@ -1080,12 +1077,20 @@ void GCS_MAVLINK::update_send()
 
         // check if any "specially handled" messages should be sent out
         {
-            const int8_t next = deferred_message_to_send_index();
+            const int8_t next = deferred_message_to_send_index(start16);
             if (next != -1) {
                 if (!do_try_send_message(deferred_message[next].id)) {
                     break;
                 }
-                deferred_message[next].last_sent_ms += deferred_message[next].interval_ms;
+                // we try to keep output on a regular clock to avoid
+                // user support questions:
+                const uint16_t interval_ms = deferred_message[next].interval_ms;
+                deferred_message[next].last_sent_ms += interval_ms;
+                // but we do not want to try to catch up too much:
+                if (uint16_t(start16 - deferred_message[next].last_sent_ms) > interval_ms) {
+                    deferred_message[next].last_sent_ms = start16;
+                }
+
                 next_deferred_message_to_send_cache = -1; // deferred_message_to_send will recalculate
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
@@ -1118,7 +1123,7 @@ void GCS_MAVLINK::update_send()
             continue;
         }
 
-        ap_message next = next_deferred_bucket_message_to_send();
+        ap_message next = next_deferred_bucket_message_to_send(start16);
         if (next != no_message_to_send) {
             if (!do_try_send_message(next)) {
                 break;
@@ -1126,9 +1131,15 @@ void GCS_MAVLINK::update_send()
             bucket_message_ids_to_send.clear(next);
             if (bucket_message_ids_to_send.count() == 0) {
                 // we sent everything in the bucket.  Reschedule it.
-                deferred_message_bucket[sending_bucket_id].last_sent_ms +=
-                    get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id]);
-                find_next_bucket_to_send();
+                // we try to keep output on a regular clock to avoid
+                // user support questions:
+                const uint16_t interval_ms = get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id]);
+                deferred_message_bucket[sending_bucket_id].last_sent_ms += interval_ms;
+                // but we do not want to try to catch up too much:
+                if (uint16_t(start16 - deferred_message_bucket[sending_bucket_id].last_sent_ms) > interval_ms) {
+                    deferred_message_bucket[sending_bucket_id].last_sent_ms = start16;
+                }
+                find_next_bucket_to_send(start16);
             }
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
@@ -1173,7 +1184,7 @@ void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
     if (bucket == sending_bucket_id) {
         bucket_message_ids_to_send.clear(id);
         if (bucket_message_ids_to_send.count() == 0) {
-            find_next_bucket_to_send();
+            find_next_bucket_to_send(AP_HAL::millis16());
         } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (deferred_message_bucket[bucket].interval_ms == 0 &&

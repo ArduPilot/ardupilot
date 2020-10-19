@@ -898,7 +898,7 @@ private:
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
-    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    bool do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
@@ -1050,6 +1050,7 @@ private:
     void servos_output(void);
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
+    void force_flare();
     void throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle);
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
@@ -1076,8 +1077,6 @@ private:
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
-    bool soaring_exit_heading_aligned() const;
-    void soaring_restore_mode(const char *reason, ModeReason modereason);
 #endif
 
     // reverse_thrust.cpp
@@ -1129,6 +1128,8 @@ private:
     };
 
     CrowMode crow_mode = CrowMode::NORMAL;
+
+    bool flare_switch_active;
 
 public:
     void failsafe_check(void);

@@ -6,6 +6,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Vehicle/ModeReason.h>
 
 class Mode
 {
@@ -547,9 +548,15 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    // Update thermal tracking and exiting logic.
+    void update_soaring();
+
     void navigate() override;
 
 protected:
+
+    bool exit_heading_aligned() const;
+    void restore_mode(const char *reason, ModeReason modereason);
 
     bool _enter() override;
 };

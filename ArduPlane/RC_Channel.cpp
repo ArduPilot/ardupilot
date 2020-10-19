@@ -116,6 +116,23 @@ void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
     plane.g2.soaring_controller.set_pilot_desired_state(desired_state);
 #endif
 }
+
+void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
+{
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.flare_switch_active = true;
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            plane.flare_switch_active = false;
+            break;
+        }    
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {
@@ -131,6 +148,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FWD_THR:
+    case AUX_FUNC::LANDING_FLARE:
         break;
 
     case AUX_FUNC::Q_ASSIST:
@@ -256,6 +274,10 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
             break;
         }
         break;
+
+   case AUX_FUNC::LANDING_FLARE:
+       do_aux_function_flare(ch_flag);
+       break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);

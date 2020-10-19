@@ -1,5 +1,6 @@
 #include "Util.h"
 #include <sys/time.h>
+#include <AP_Param/AP_Param.h>
 
 #ifdef WITH_SITL_TONEALARM
 HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
@@ -137,4 +138,11 @@ enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
         return AP_HAL::Util::SAFETY_NONE;
     }
     return sitl->safety_switch_state();
+}
+
+void HALSITL::Util::set_cmdline_parameters()
+{
+    for (auto param: sitlState->cmdline_param) {
+        AP_Param::set_default_by_name(param.name, param.value);
+    }
 }

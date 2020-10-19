@@ -36,6 +36,10 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_MSP/msp.h>
 #include <AP_OLC/AP_OLC.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_WindVane/AP_WindVane.h>
+#endif
+
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -288,7 +292,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: WIND_EN
     // @DisplayName: WIND_EN
-    // @Description: Displays wind speed and relative direction
+    // @Description: Displays wind speed and relative direction, on Rover this is the apparent wind speed and direction from the windvane, if fitted
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: WIND_X
@@ -1205,19 +1209,15 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t yaw)
+// draw a arrow at the given angle, and print the given magnitude
+void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    float v_length = v.length();
-    char arrow = SYM_ARROW_START;
-    if (v_length > 1.0f) {
-        int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - yaw);
-        int32_t interval = 36000 / SYM_ARROW_COUNT;
-        arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
-    }
-    if (u_scale(SPEED, v_length) < 10.0) {
-        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, v_length), u_icon(SPEED)); 
+    static const int32_t interval = 36000 / SYM_ARROW_COUNT;
+    char arrow = SYM_ARROW_START + ((int32_t(angle_rad*DEGX100) + interval / 2) / interval) % SYM_ARROW_COUNT;
+    if (u_scale(SPEED, magnitude) < 10.0) {
+        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED)); 
     } else {
-        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, magnitude), u_icon(SPEED));
     }
 }
 
@@ -1227,7 +1227,14 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector2f v = ahrs.groundspeed_vector();
     backend->write(x, y, false, "%c", SYM_GSPD);
-    draw_speed_vector(x + 1, y, v, ahrs.yaw_sensor);
+
+    float angle = 0;
+    const float length = v.length();
+    if (length > 1.0f) {
+        angle = wrap_2PI(atan2f(v.y, v.x) - ahrs.yaw);
+    }
+
+    draw_speed(x + 1, y, angle, length);
 }
 
 //Thanks to betaflight/inav for simple and clean artificial horizon visual design
@@ -1367,14 +1374,28 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector3f v = ahrs.wind_estimate();
-    if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
-        v = -v;
+    float angle = 0;
+    const float length = v.length();
+    if (length > 1.0f) {
+        if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
+            angle = M_PI;
+        }
+        angle = wrap_2PI(angle + atan2f(v.y, v.x) - ahrs.yaw);
     }
+    draw_speed(x + 1, y, angle, length);
+
+#else
+    const AP_WindVane* windvane = AP_WindVane::get_singleton();
+    if (windvane != nullptr) {
+        draw_speed(x + 1, y, wrap_2PI(windvane->get_apparent_wind_direction_rad() + M_PI), windvane->get_apparent_wind_speed());
+    }
+#endif
+
     backend->write(x, y, false, "%c", SYM_WSPD);
-    draw_speed_vector(x + 1, y, Vector2f(v.x, v.y), ahrs.yaw_sensor);
 }
 
 void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)

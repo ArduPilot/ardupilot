@@ -5599,7 +5599,6 @@ class AutoTestCopter(AutoTest):
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
-            "Button": "See https://github.com/ArduPilot/ardupilot/issues/15259",
         }
 
 class AutoTestHeli(AutoTestCopter):
@@ -5734,14 +5733,14 @@ class AutoTestHeli(AutoTestCopter):
             self.delay_sim_time(20)
             # check we are still on the ground...
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-            max_relalt = 100
-            if abs(m.relative_alt) > max_relalt:
+            max_relalt_mm = 1000
+            if abs(m.relative_alt) > max_relalt_mm:
                 raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
-                (m.relative_alt, max_relalt))
-            self.progress("Pushing throttle past half-way")
+                (m.relative_alt, max_relalt_mm))
+            self.progress("Pushing collective past half-way")
             self.set_rc(3, 1600)
             self.delay_sim_time(0.5)
-            self.progress("Bringing back to hover throttle")
+            self.progress("Bringing back to hover collective")
             self.set_rc(3, 1500)
 
             # make sure we haven't already reached alt:
@@ -5763,6 +5762,8 @@ class AutoTestHeli(AutoTestCopter):
                     raise NotAchievedException("Failed to maintain takeoff alt")
             self.progress("takeoff OK")
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.land_and_disarm()
@@ -5771,8 +5772,6 @@ class AutoTestHeli(AutoTestCopter):
         self.context_pop()
 
         if ex is not None:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(ex))
             raise ex
 
     def fly_heli_stabilize_takeoff(self):

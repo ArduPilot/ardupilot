@@ -1674,6 +1674,8 @@ class AutoTest(ABC):
         tstart = time.time()
         while mav.recv_match(blocking=False) is not None:
             count += 1
+        if quiet:
+            return
         tdelta = time.time() - tstart
         if tdelta == 0:
             rate = "instantly"
@@ -5917,7 +5919,7 @@ Also, ignores heartbeats not from our target system'''
                 rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
                 self.progress("Want=%u got=%u" % (want_rate, rate))
                 if rate != want_rate:
-                    raise NotAchievedException("Did not get expected rate")
+                    raise NotAchievedException("Did not get expected rate (want=%u got=%u" % (want_rate, rate))
 
 
             self.progress("try at the main loop rate")
@@ -5936,9 +5938,6 @@ Also, ignores heartbeats not from our target system'''
 
             self.drain_mav()
 
-            self.progress("Resetting CAMERA_FEEDBACK rate to zero")
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
-
             non_existant_id = 145
             self.send_get_message_interval(non_existant_id)
             m = self.mav.recv_match(type='MESSAGE_INTERVAL', blocking=True)
@@ -5952,6 +5951,9 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
+
+        self.progress("Resetting CAMERA_FEEDBACK rate to zero")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
 
         # tell MAVProxy to start stuffing around with the rates:
         sr = self.sitl_streamrate()
@@ -6746,9 +6748,16 @@ switch value'''
         self.set_parameter("BTN_PIN%u" % btn, pin)
         m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
         self.progress("### m: %s" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get BUTTON_CHANGE event")
+        if m is not None:
+            # should not get a button-changed event here.  The pins
+            # are simulated pull-down
+            raise NotAchievedException("Received BUTTON_CHANGE event")
         mask = 1<<pin
+        self.set_parameter("SIM_PIN_MASK", mask)
+        m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("### m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not receive BUTTON_CHANGE event")
         if not (m.state & mask):
             raise NotAchievedException("Bit not set in mask (got=%u want=%u)" % (m.state, mask))
         m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
@@ -6758,28 +6767,19 @@ switch value'''
         # wait for messages to stop coming:
         self.drain_mav_seconds(15)
 
-        # NOTE: SIM_PIN_MASK is *magic*.  You might set it to zero,
-        # but it *will* end up as 1<<btn immediately afterwards.  Thus
-        # not attempting to fetch the value back here:
         new_mask = 0
         self.send_set_parameter("SIM_PIN_MASK", new_mask, verbose=True)
-        tstart = self.get_sim_time_cached()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 10:
-                raise AutoTestTimeoutException("No BUTTON_CHANGE received")
-            m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-            self.progress("### m3: %s" % str(m3))
-            if m3 is None:
-                continue
-            if m.last_change_ms == m3.last_change_ms:
-                self.progress("last_change_ms same as first message")
-                continue
-            if m3.state != new_mask:
-                raise NotAchievedException("Unexpected mask (want=%u got=%u)" %
-                                           (new_mask, m3.state))
-            self.progress("correct BUTTON_CHANGE event received")
-            break
+        m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        self.progress("### m3: %s" % str(m3))
+        if m3 is None:
+            raise NotAchievedException("Did not get 'off' message")
+
+        if m.last_change_ms == m3.last_change_ms:
+            raise NotAchievedException("last_change_ms same as first message")
+        if m3.state != new_mask:
+            raise NotAchievedException("Unexpected mask (want=%u got=%u)" %
+                                       (new_mask, m3.state))
+        self.progress("correct BUTTON_CHANGE event received")
 
     def compare_number_percent(self, num1, num2, percent):
         if num1 == 0 and num2 == 0:

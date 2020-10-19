@@ -265,9 +265,11 @@ T constrain_value(const T amt, const T low, const T high)
     // the check for NaN as a float prevents propagation of floating point
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
-    if (isnan(amt)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
-        return (low + high) / 2;
+    if (std::is_floating_point<T>::value) {
+        if (isnan(amt)) {
+            INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
+            return (low + high) / 2;
+        }
     }
 
     if (amt < low) {
