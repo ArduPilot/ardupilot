@@ -114,7 +114,7 @@ void ModeAuto::run()
 
 bool ModeAuto::allows_arming(bool from_gcs) const
 {
-    return (copter.g2.auto_options & (int32_t)Options::AllowArming) != 0;
+    return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
 };
 
 // auto_loiter_start - initialises loitering in auto mode
