@@ -141,7 +141,7 @@
  # include <AP_Button/AP_Button.h>
 #endif
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
  #include <AP_OSD/AP_OSD.h>
 #endif
 
@@ -442,7 +442,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Copter::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
 
