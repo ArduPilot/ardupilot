@@ -833,9 +833,9 @@ protected:
 
 private:
 
-    // enum for GUIDED_OPTIONS parameter
+    // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
-        AllowArmingFromTX = (1 << 0U),
+        AllowArmingFromTX = (1U << 0),
     };
 
     void pos_control_start();
@@ -865,7 +865,6 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
 
 protected:
