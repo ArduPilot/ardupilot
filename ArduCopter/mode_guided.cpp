@@ -613,12 +613,13 @@ void ModeGuided::angle_control_run()
     }
 
     // interpret positive climb rate or thrust as triggering take-off
-    if (motors->armed() && is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust : climb_rate_cms)) {
+    const bool positive_thrust_or_climbrate = is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust : climb_rate_cms);
+    if (motors->armed() && positive_thrust_or_climbrate) {
         copter.set_auto_armed(true);
     }
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !copter.ap.auto_armed || (copter.ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f))) {
+    if (!motors->armed() || !copter.ap.auto_armed || (copter.ap.land_complete && !positive_thrust_or_climbrate)) {
         make_safe_spool_down();
         return;
     }
