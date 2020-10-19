@@ -24,6 +24,7 @@
 #include "AP_OSD.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <ctype.h>
 
 #if OSD_PARAM_ENABLED
 
@@ -366,7 +367,7 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
             }
             incr = MAX(1, powf(10, digits - 2));
             max = powf(10, digits + 1);
-            debug("Guessing range for value %d as %f -> %f, %f\n", p->get(), min, max, incr);
+            debug("Guessing range for value %d as %f -> %f, %f\n", int(p->get()), min, max, incr);
             break;
         }
         case AP_PARAM_FLOAT: {
@@ -411,6 +412,23 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
         }
         if (force || !_param_incr.configured()) {
             _param_incr = incr;
+        }
+    }
+}
+
+// copy the name converting FOO_BAR_BAZ to FooBarBaz
+void AP_OSD_ParamSetting::copy_name_camel_case(char* name, size_t len)
+{
+    char buf[17];
+    _param->copy_name_token(_current_token, buf, 17);
+    buf[16] = 0;
+    name[0] = buf[0];
+    for (uint8_t i = 1, n = 1; i < len; i++, n++) {
+        if (buf[i] == '_') {
+            name[n] = buf[i+1];
+            i++;
+        } else {
+            name[n] = tolower(buf[i]);
         }
     }
 }

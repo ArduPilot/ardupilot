@@ -25,6 +25,7 @@ extern const AP_HAL::HAL& hal;
 
 void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
 {
+#if OSD_ENABLED
     if (blink && (blink_phase < 2)) {
         return;
     }
@@ -48,4 +49,5 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
         write(x, y, buff);
     }
     va_end(ap);
+#endif
 }

@@ -22,6 +22,7 @@
 #include "AP_OSD.h"
 #include "AP_OSD_Backend.h"
 
+#if OSD_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -1809,3 +1810,4 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
 }
 #endif
+#endif // OSD_ENABLED
