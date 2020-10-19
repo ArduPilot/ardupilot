@@ -50,7 +50,6 @@ public:
         SF45B = 8,
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         SITL    = 10,
-        MorseSITL = 11,
         AirSimSITL = 12,
 #endif
     };
