@@ -89,7 +89,7 @@ bool ModeGuided::allows_arming(bool from_gcs) const
     }
 
     // optionally allow arming from the transmitter
-    return (copter.g2.guided_options & (int32_t)Options::AllowArmingFromTX) != 0;
+    return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
 };
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
