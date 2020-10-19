@@ -3163,7 +3163,7 @@ void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg)
 {
-#if OSD_ENABLED
+#if OSD_PARAM_ENABLED
     AP_OSD *osd = AP::osd();
     if (osd != nullptr) {
         osd->handle_msg(msg, *this);
