@@ -18,6 +18,7 @@
 
 #include <AP_OSD/AP_OSD_MAX7456.h>
 
+#if HAL_WITH_OSD_BITMAP
 #include <AP_HAL/Util.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
@@ -478,3 +479,4 @@ float AP_OSD_MAX7456::get_aspect_ratio_correction() const
         return 1.0f;
     };
 }
+#endif // HAL_WITH_OSD_BITMAP
