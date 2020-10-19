@@ -23,7 +23,6 @@
 #include "AP_Proximity_LightWareSF40C.h"
 #include "AP_Proximity_LightWareSF45B.h"
 #include "AP_Proximity_SITL.h"
-#include "AP_Proximity_MorseSITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 
 extern const AP_HAL::HAL &hal;
@@ -35,7 +34,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,11:MorseSITL,12:AirSimSITL
+    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE",   1, AP_Proximity, _type[0], 0),
@@ -155,7 +154,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,11:MorseSITL,12:AirSimSITL
+    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("2_TYPE", 16, AP_Proximity, _type[1], 0),
@@ -340,11 +339,6 @@ void AP_Proximity::detect_instance(uint8_t instance)
     case Type::SITL:
         state[instance].instance = instance;
         drivers[instance] = new AP_Proximity_SITL(*this, state[instance]);
-        return;
-
-    case Type::MorseSITL:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_MorseSITL(*this, state[instance]);
         return;
 
     case Type::AirSimSITL:
