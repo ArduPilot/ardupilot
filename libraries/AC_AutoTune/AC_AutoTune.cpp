@@ -37,12 +37,7 @@
  *
  */
 
-#define AUTOTUNE_AXIS_BITMASK_ROLL            1
-#define AUTOTUNE_AXIS_BITMASK_PITCH           2
-#define AUTOTUNE_AXIS_BITMASK_YAW             4
-
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  # define AUTOTUNE_LEVEL_ANGLE_CD           500     // angle which qualifies as level (Plane uses more relaxed 5deg)
  # define AUTOTUNE_LEVEL_RATE_RP_CD        1000     // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
@@ -52,26 +47,10 @@
 #endif
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
-#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level (relaxes criteria)
-#define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS 5000     // level failure warning messages sent at this interval to users
-#define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
-#define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
-#define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
-#define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
-#define AUTOTUNE_PI_RATIO_FINAL            1.0f     // I is set 1x P after testing
-#define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
-#define AUTOTUNE_RD_MAX                  0.200f     // maximum Rate D value
-#define AUTOTUNE_RLPF_MIN                  1.0f     // minimum Rate Yaw filter value
-#define AUTOTUNE_RLPF_MAX                  5.0f     // maximum Rate Yaw filter value
-#define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
-#define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
-#define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
+#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
 #define AUTOTUNE_RP_ACCEL_MIN           4000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN            1000.0f     // Minimum acceleration for Yaw
 #define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
-#define AUTOTUNE_SUCCESS_COUNT                4     // The number of successful iterations we need to freeze at current gains
-#define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 #define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
 #define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
@@ -90,15 +69,13 @@
 #define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // minimum target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
 
-// Auto Tune message ids for ground station
-#define AUTOTUNE_MESSAGE_STARTED 0
-#define AUTOTUNE_MESSAGE_STOPPED 1
-#define AUTOTUNE_MESSAGE_SUCCESS 2
-#define AUTOTUNE_MESSAGE_FAILED 3
-#define AUTOTUNE_MESSAGE_SAVED_GAINS 4
-#define AUTOTUNE_MESSAGE_TESTING 5
-
-#define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
+#ifdef HELI_BUILD
+// heli defines
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U    // timeout for tuning mode's testing step
+#else
+// Frame specific defaults
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
+#endif // HELI_BUILD
 
 // second table of user settable parameters for quadplanes, this
 // allows us to go beyond the 64 parameter limit
@@ -134,7 +111,7 @@ AC_AutoTune::AC_AutoTune()
 
 // autotune_init - should be called when autotune mode is selected
 bool AC_AutoTune::init_internals(bool _use_poshold,
-                                 AC_AttitudeControl_Multi *_attitude_control,
+                                 AC_AttitudeControl *_attitude_control,
                                  AC_PosControl *_pos_control,
                                  AP_AHRS_View *_ahrs_view,
                                  AP_InertialNav *_inertial_nav)
@@ -215,6 +192,11 @@ bool AC_AutoTune::init_position_controller(void)
     // initialise the vertical position controller
     pos_control->init_z_controller();
 
+    ff_up_first_iter = true;
+
+    // re-initializes dwell test sequence for rate_p_up and rate_d_up tests for tradheli
+    freq_cnt = 0;
+
     return true;
 }
 
@@ -252,8 +234,8 @@ void AC_AutoTune::send_step_string()
     case UPDATE_GAINS:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
-    case TWITCHING:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitching");
+    case TESTING:
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Testing");
         return;
     }
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: unknown step");
@@ -268,71 +250,22 @@ const char *AC_AutoTune::type_string() const
         return "Rate D Down";
     case RP_UP:
         return "Rate P Up";
-    case SP_DOWN:
-        return "Angle P Down";
+    case RP_DOWN:
+        return "Rate P Down";
+    case RFF_UP:
+        return "Rate FF Up";
+    case RFF_DOWN:
+        return "Rate FF Down";
     case SP_UP:
         return "Angle P Up";
+    case SP_DOWN:
+        return "Angle P Down";
+    case MAX_GAINS:
+        return "Find Max Gains";
+    case TUNE_COMPLETE:
+        return "Tune Complete";
     }
     return "Bug";
-}
-
-void AC_AutoTune::do_gcs_announcements()
-{
-    const uint32_t now = AP_HAL::millis();
-    if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
-        return;
-    }
-    float tune_rp = 0.0f;
-    float tune_rd = 0.0f;
-    float tune_sp = 0.0f;
-    float tune_accel = 0.0f;
-    char axis_char = '?';
-    switch (axis) {
-    case ROLL:
-        tune_rp = tune_roll_rp;
-        tune_rd = tune_roll_rd;
-        tune_sp = tune_roll_sp;
-        tune_accel = tune_roll_accel;
-        axis_char = 'R';
-        break;
-    case PITCH:
-        tune_rp = tune_pitch_rp;
-        tune_rd = tune_pitch_rd;
-        tune_sp = tune_pitch_sp;
-        tune_accel = tune_pitch_accel;
-        axis_char = 'P';
-        break;
-    case YAW:
-        tune_rp = tune_yaw_rp;
-        tune_rd = tune_yaw_rLPF;
-        tune_sp = tune_yaw_sp;
-        tune_accel = tune_yaw_accel;
-        axis_char = 'Y';
-        break;
-    }
-
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis_char, type_string());
-    send_step_string();
-    if (!is_zero(lean_angle)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)target_angle);
-    }
-    if (!is_zero(rotation_rate)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(target_rate*0.01f));
-    }
-    switch (tune_type) {
-    case RD_UP:
-    case RD_DOWN:
-    case RP_UP:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
-        break;
-    case SP_DOWN:
-    case SP_UP:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
-        break;
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", counter, AUTOTUNE_SUCCESS_COUNT);
-
-    announce_time = now;
 }
 
 // run - runs the autotune flight mode
@@ -489,6 +422,7 @@ void AC_AutoTune::control_attitude()
     switch (step) {
 
     case WAITING_FOR_LEVEL: {
+
         // Note: we should be using intra-test gains (which are very close to the original gains but have lower I)
         // re-enable rate limits
         attitude_control->use_sqrt_controller(true);
@@ -506,11 +440,12 @@ void AC_AutoTune::control_attitude()
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitch");
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Start Test");
             // initiate variables for next step
-            step = TWITCHING;
+            step = TESTING;
             step_start_time_ms = now;
             step_time_limit_ms = AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+            // set gains to their to-be-tested values
             twitch_first_iter = true;
             test_rate_max = 0.0f;
             test_rate_min = 0.0f;
@@ -518,152 +453,43 @@ void AC_AutoTune::control_attitude()
             test_angle_min = 0.0f;
             rotation_rate_filt.reset(0.0f);
             rate_max = 0.0f;
-            // set gains to their to-be-tested values
-            load_gains(GAIN_TWITCH);
+            load_gains(GAIN_TEST);
         } else {
             // when waiting for level we use the intra-test gains
             load_gains(GAIN_INTRA_TEST);
         }
 
-        float target_max_rate;
+        // Initialize test specific variables
         switch (axis) {
-        case ROLL: {
-            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-            target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        case ROLL:
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
-            rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz()*2.0f);
             break;
-        }
-        case PITCH: {
-            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
-            target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        case PITCH:
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
-            rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz()*2.0f);
             break;
-        }
-        case YAW: {
-            target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
-            target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
-            target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
+        case YAW:
             abort_angle = AUTOTUNE_TARGET_ANGLE_YAW_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
-            rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
             break;
         }
-        }
-        if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-            rotation_rate_filt.reset(start_rate);
-        } else {
-            rotation_rate_filt.reset(0);
-        }
+
+        // tests must be initialized last as some rely on variables above
+        test_init();
+
         break;
     }
 
-    case TWITCHING: {
+    case TESTING: {
         // Run the twitching step
-        load_gains(GAIN_TWITCH);
+        load_gains(GAIN_TEST);
 
-        // disable rate limits
-        attitude_control->use_sqrt_controller(false);
-        // hold current attitude
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-
-        if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-            // step angle targets on first iteration
-            if (twitch_first_iter) {
-                twitch_first_iter = false;
-                // Testing increasing stabilize P gain so will set lean angle target
-                switch (axis) {
-                case ROLL:
-                    // request roll to 20deg
-                    attitude_control->input_angle_step_bf_roll_pitch_yaw(direction_sign * target_angle, 0.0f, 0.0f);
-                    break;
-                case PITCH:
-                    // request pitch to 20deg
-                    attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, direction_sign * target_angle, 0.0f);
-                    break;
-                case YAW:
-                    // request pitch to 20deg
-                    attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, 0.0f, direction_sign * target_angle);
-                    break;
-                }
-            }
-        } else {
-            // Testing rate P and D gains so will set body-frame rate targets.
-            // Rate controller will use existing body-frame rates and convert to motor outputs
-            // for all axes except the one we override here.
-            switch (axis) {
-            case ROLL:
-                // override body-frame roll rate
-                attitude_control->rate_bf_roll_target(direction_sign * target_rate + start_rate);
-                break;
-            case PITCH:
-                // override body-frame pitch rate
-                attitude_control->rate_bf_pitch_target(direction_sign * target_rate + start_rate);
-                break;
-            case YAW:
-                // override body-frame yaw rate
-                attitude_control->rate_bf_yaw_target(direction_sign * target_rate + start_rate);
-                break;
-            }
-        }
-
-        // capture this iterations rotation rate and lean angle
-        float gyro_reading = 0;
-        switch (axis) {
-        case ROLL:
-            gyro_reading = ahrs_view->get_gyro().x;
-            lean_angle = direction_sign * (ahrs_view->roll_sensor - (int32_t)start_angle);
-            break;
-        case PITCH:
-            gyro_reading = ahrs_view->get_gyro().y;
-            lean_angle = direction_sign * (ahrs_view->pitch_sensor - (int32_t)start_angle);
-            break;
-        case YAW:
-            gyro_reading = ahrs_view->get_gyro().z;
-            lean_angle = direction_sign * wrap_180_cd(ahrs_view->yaw_sensor-(int32_t)start_angle);
-            break;
-        }
-
-        // Add filter to measurements
-        float filter_value;
-        switch (tune_type) {
-        case SP_DOWN:
-        case SP_UP:
-            filter_value = direction_sign * (ToDeg(gyro_reading) * 100.0f);
-            break;
-        default:
-            filter_value = direction_sign * (ToDeg(gyro_reading) * 100.0f - start_rate);
-            break;
-        }
-        rotation_rate = rotation_rate_filt.apply(filter_value,
-                        AP::scheduler().get_loop_period_s());
-
-        switch (tune_type) {
-        case RD_UP:
-        case RD_DOWN:
-            twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
-            twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-            twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
-            break;
-        case RP_UP:
-            twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
-            twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
-            twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
-            break;
-        case SP_DOWN:
-        case SP_UP:
-            twitching_test_angle(lean_angle, rotation_rate, target_angle*(1+0.5f*aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
-            twitching_measure_acceleration(test_accel_max, rotation_rate - direction_sign * start_rate, rate_max);
-            break;
-        }
+        // run the test
+        test_run(axis, direction_sign);
 
         // Check for failure causing reverse response
         if (lean_angle <= -AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD) {
@@ -671,7 +497,7 @@ void AC_AutoTune::control_attitude()
         }
 
         // log this iterations lean angle and rotation rate
-        Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
+        Log_AutoTuneDetails();
         ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         log_pids();
         break;
@@ -683,102 +509,39 @@ void AC_AutoTune::control_attitude()
         attitude_control->use_sqrt_controller(true);
 
         // log the latest gains
-        if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
-            switch (axis) {
-            case ROLL:
-                Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
-                break;
-            case PITCH:
-                Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
-                break;
-            case YAW:
-                Log_Write_AutoTune(axis, tune_type, target_angle, test_angle_min, test_angle_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max);
-                break;
-            }
-        } else {
-            switch (axis) {
-            case ROLL:
-                Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
-                break;
-            case PITCH:
-                Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
-                break;
-            case YAW:
-                Log_Write_AutoTune(axis, tune_type, target_rate, test_rate_min, test_rate_max, tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, test_accel_max);
-                break;
-            }
-        }
 
-        // Check results after mini-step to increase rate D gain
+        Log_AutoTune();
+
         switch (tune_type) {
+        // Check results after mini-step to increase rate D gain
         case RD_UP:
-            switch (axis) {
-            case ROLL:
-                updating_rate_d_up(tune_roll_rd, min_d, AUTOTUNE_RD_MAX, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case PITCH:
-                updating_rate_d_up(tune_pitch_rd, min_d, AUTOTUNE_RD_MAX, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case YAW:
-                updating_rate_d_up(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RLPF_MAX, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            }
+            updating_rate_d_up_all(axis);
             break;
         // Check results after mini-step to decrease rate D gain
         case RD_DOWN:
-            switch (axis) {
-            case ROLL:
-                updating_rate_d_down(tune_roll_rd, min_d, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case PITCH:
-                updating_rate_d_down(tune_pitch_rd, min_d, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case YAW:
-                updating_rate_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            }
+            updating_rate_d_down_all(axis);
             break;
         // Check results after mini-step to increase rate P gain
         case RP_UP:
-            switch (axis) {
-            case ROLL:
-                updating_rate_p_up_d_down(tune_roll_rd, min_d, AUTOTUNE_RD_STEP, tune_roll_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case PITCH:
-                updating_rate_p_up_d_down(tune_pitch_rd, min_d, AUTOTUNE_RD_STEP, tune_pitch_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            case YAW:
-                updating_rate_p_up_d_down(tune_yaw_rLPF, AUTOTUNE_RLPF_MIN, AUTOTUNE_RD_STEP, tune_yaw_rp, AUTOTUNE_RP_MIN, AUTOTUNE_RP_MAX, AUTOTUNE_RP_STEP, target_rate, test_rate_min, test_rate_max);
-                break;
-            }
+            updating_rate_p_up_all(axis);
             break;
         // Check results after mini-step to increase stabilize P gain
         case SP_DOWN:
-            switch (axis) {
-            case ROLL:
-                updating_angle_p_down(tune_roll_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            case PITCH:
-                updating_angle_p_down(tune_pitch_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            case YAW:
-                updating_angle_p_down(tune_yaw_sp, AUTOTUNE_SP_MIN, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            }
+            updating_angle_p_down_all(axis);
             break;
         // Check results after mini-step to increase stabilize P gain
         case SP_UP:
-            switch (axis) {
-            case ROLL:
-                updating_angle_p_up(tune_roll_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            case PITCH:
-                updating_angle_p_up(tune_pitch_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            case YAW:
-                updating_angle_p_up(tune_yaw_sp, AUTOTUNE_SP_MAX, AUTOTUNE_SP_STEP, target_angle, test_angle_max, test_rate_min, test_rate_max);
-                break;
-            }
+            updating_angle_p_up_all(axis);
+            break;
+        case RFF_UP:
+            updating_rate_ff_up_all(axis);
+            break;
+        case MAX_GAINS:
+            updating_max_gains_all(axis);
+            break;
+        case RP_DOWN:
+        case RFF_DOWN:
+        case TUNE_COMPLETE:
             break;
         }
 
@@ -791,56 +554,80 @@ void AC_AutoTune::control_attitude()
             // reset scaling factor
             step_scaler = 1.0f;
 
+
             // move to the next tuning type
             switch (tune_type) {
             case RD_UP:
-                tune_type = TuneType(tune_type + 1);
                 break;
             case RD_DOWN:
-                tune_type = TuneType(tune_type + 1);
                 switch (axis) {
                 case ROLL:
                     tune_roll_rd = MAX(min_d, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
-                    tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RD_BACKOFF);
+                    tune_roll_rp = MAX(get_rp_min(), tune_roll_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 case PITCH:
                     tune_pitch_rd = MAX(min_d, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
-                    tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
+                    tune_pitch_rp = MAX(get_rp_min(), tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 case YAW:
-                    tune_yaw_rLPF = MAX(AUTOTUNE_RLPF_MIN, tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
-                    tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
+                    tune_yaw_rLPF = MAX(get_rlpf_min(), tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
+                    tune_yaw_rp = MAX(get_rp_min(), tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 }
                 break;
             case RP_UP:
-                tune_type = TuneType(tune_type + 1);
                 switch (axis) {
                 case ROLL:
-                    tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
+                    tune_roll_rp = MAX(get_rp_min(), tune_roll_rp * AUTOTUNE_RP_BACKOFF);
                     break;
                 case PITCH:
-                    tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
+                    tune_pitch_rp = MAX(get_rp_min(), tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
                     break;
                 case YAW:
-                    tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
+                    tune_yaw_rp = MAX(get_rp_min(), tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
                     break;
                 }
                 break;
             case SP_DOWN:
-                tune_type = TuneType(tune_type + 1);
                 break;
             case SP_UP:
+                switch (axis) {
+                case ROLL:
+                    tune_roll_sp = MAX(get_sp_min(), tune_roll_sp * AUTOTUNE_SP_BACKOFF);
+                    tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+                    break;
+                case PITCH:
+                    tune_pitch_sp = MAX(get_sp_min(), tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
+                    tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+                    break;
+                case YAW:
+                    tune_yaw_sp = MAX(get_sp_min(), tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
+                    tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_Y_BACKOFF);
+                    break;
+                }
+                break;
+            case RP_DOWN:
+            case RFF_UP:
+            case RFF_DOWN:
+            case MAX_GAINS:
+            case TUNE_COMPLETE:
+                break;
+            }
+
+            // increment the tune type to the next one in tune sequence
+            tune_seq_curr++;
+            tune_type = tune_seq[tune_seq_curr];
+
+            if (tune_type == TUNE_COMPLETE) {
                 // we've reached the end of a D-up-down PI-up-down tune type cycle
-                tune_type = RD_UP;
+                tune_seq_curr = 0;
+                tune_type = tune_seq[tune_seq_curr];
 
                 // advance to the next axis
                 bool complete = false;
                 switch (axis) {
                 case ROLL:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_ROLL;
-                    tune_roll_sp = MAX(AUTOTUNE_SP_MIN, tune_roll_sp * AUTOTUNE_SP_BACKOFF);
-                    tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
                     if (pitch_enabled()) {
                         axis = PITCH;
                     } else if (yaw_enabled()) {
@@ -851,8 +638,6 @@ void AC_AutoTune::control_attitude()
                     break;
                 case PITCH:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_PITCH;
-                    tune_pitch_sp = MAX(AUTOTUNE_SP_MIN, tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
-                    tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
                     if (yaw_enabled()) {
                         axis = YAW;
                     } else {
@@ -861,8 +646,6 @@ void AC_AutoTune::control_attitude()
                     break;
                 case YAW:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_YAW;
-                    tune_yaw_sp = MAX(AUTOTUNE_SP_MIN, tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
-                    tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_Y_BACKOFF);
                     complete = true;
                     break;
                 }
@@ -877,7 +660,6 @@ void AC_AutoTune::control_attitude()
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
                 }
-                break;
             }
         }
 
@@ -915,11 +697,14 @@ void AC_AutoTune::backup_gains_and_initialise()
     // no axes are complete
     axes_completed = 0;
 
+    // start at the beginning of tune sequence
+    tune_seq_curr = 0;
+    tune_type = tune_seq[tune_seq_curr];
+
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
     step_start_time_ms = AP_HAL::millis();
     level_start_time_ms = step_start_time_ms;
-    tune_type = RD_UP;
     step_scaler = 1.0f;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
@@ -939,6 +724,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     orig_roll_accel = attitude_control->get_accel_roll_max_cdss();
     tune_roll_rp = attitude_control->get_rate_roll_pid().kP();
     tune_roll_rd = attitude_control->get_rate_roll_pid().kD();
+    tune_roll_rff = attitude_control->get_rate_roll_pid().ff();
     tune_roll_sp = attitude_control->get_angle_roll_p().kP();
     tune_roll_accel = attitude_control->get_accel_roll_max_cdss();
 
@@ -952,6 +738,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     orig_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
     tune_pitch_rp = attitude_control->get_rate_pitch_pid().kP();
     tune_pitch_rd = attitude_control->get_rate_pitch_pid().kD();
+    tune_pitch_rff = attitude_control->get_rate_pitch_pid().ff();
     tune_pitch_sp = attitude_control->get_angle_pitch_p().kP();
     tune_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
 
@@ -965,6 +752,8 @@ void AC_AutoTune::backup_gains_and_initialise()
     orig_yaw_accel = attitude_control->get_accel_yaw_max_cdss();
     orig_yaw_sp = attitude_control->get_angle_yaw_p().kP();
     tune_yaw_rp = attitude_control->get_rate_yaw_pid().kP();
+    tune_yaw_rd = attitude_control->get_rate_yaw_pid().kD();
+    tune_yaw_rff = attitude_control->get_rate_yaw_pid().ff();
     tune_yaw_rLPF = attitude_control->get_rate_yaw_pid().filt_E_hz();
     tune_yaw_sp = attitude_control->get_angle_yaw_p().kP();
     tune_yaw_accel = attitude_control->get_accel_yaw_max_cdss();
@@ -978,7 +767,7 @@ void AC_AutoTune::load_orig_gains()
 {
     attitude_control->bf_feedforward(orig_bf_feedforward);
     if (roll_enabled()) {
-        if (!is_zero(orig_roll_rp)) {
+        if (!is_zero(orig_roll_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_roll_pid().kP(orig_roll_rp);
             attitude_control->get_rate_roll_pid().kI(orig_roll_ri);
             attitude_control->get_rate_roll_pid().kD(orig_roll_rd);
@@ -990,7 +779,7 @@ void AC_AutoTune::load_orig_gains()
         }
     }
     if (pitch_enabled()) {
-        if (!is_zero(orig_pitch_rp)) {
+        if (!is_zero(orig_pitch_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_pitch_pid().kP(orig_pitch_rp);
             attitude_control->get_rate_pitch_pid().kI(orig_pitch_ri);
             attitude_control->get_rate_pitch_pid().kD(orig_pitch_rd);
@@ -1025,21 +814,21 @@ void AC_AutoTune::load_tuned_gains()
         attitude_control->set_accel_pitch_max_cdss(0.0f);
     }
     if (roll_enabled()) {
-        if (!is_zero(tune_roll_rp)) {
+        if (!is_zero(tune_roll_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-            attitude_control->get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control->get_rate_roll_pid().kI(get_load_tuned_ri(axis));
             attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
-            attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
+            attitude_control->get_rate_roll_pid().ff(tune_roll_rff);
             attitude_control->get_angle_roll_p().kP(tune_roll_sp);
             attitude_control->set_accel_roll_max_cdss(tune_roll_accel);
         }
     }
     if (pitch_enabled()) {
-        if (!is_zero(tune_pitch_rp)) {
+        if (!is_zero(tune_pitch_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-            attitude_control->get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
+            attitude_control->get_rate_pitch_pid().kI(get_load_tuned_ri(axis));
             attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
-            attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
+            attitude_control->get_rate_pitch_pid().ff(tune_pitch_rff);
             attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
             attitude_control->set_accel_pitch_max_cdss(tune_pitch_accel);
         }
@@ -1047,9 +836,9 @@ void AC_AutoTune::load_tuned_gains()
     if (yaw_enabled()) {
         if (!is_zero(tune_yaw_rp)) {
             attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
-            attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
-            attitude_control->get_rate_yaw_pid().kD(0.0f);
-            attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
+            attitude_control->get_rate_yaw_pid().kI(get_load_tuned_ri(axis));
+            attitude_control->get_rate_yaw_pid().kD(get_load_tuned_yaw_rd());
+            attitude_control->get_rate_yaw_pid().ff(tune_yaw_rff);
             attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
             attitude_control->get_angle_yaw_p().kP(tune_yaw_sp);
             attitude_control->set_accel_yaw_max_cdss(tune_yaw_accel);
@@ -1066,7 +855,7 @@ void AC_AutoTune::load_intra_test_gains()
     attitude_control->bf_feedforward(true);
     if (roll_enabled()) {
         attitude_control->get_rate_roll_pid().kP(orig_roll_rp);
-        attitude_control->get_rate_roll_pid().kI(orig_roll_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control->get_rate_roll_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_roll_pid().kD(orig_roll_rd);
         attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
         attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
@@ -1075,7 +864,7 @@ void AC_AutoTune::load_intra_test_gains()
     }
     if (pitch_enabled()) {
         attitude_control->get_rate_pitch_pid().kP(orig_pitch_rp);
-        attitude_control->get_rate_pitch_pid().kI(orig_pitch_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control->get_rate_pitch_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_pitch_pid().kD(orig_pitch_rd);
         attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
         attitude_control->get_rate_pitch_pid().filt_T_hz(orig_pitch_fltt);
@@ -1084,7 +873,7 @@ void AC_AutoTune::load_intra_test_gains()
     }
     if (yaw_enabled()) {
         attitude_control->get_rate_yaw_pid().kP(orig_yaw_rp);
-        attitude_control->get_rate_yaw_pid().kI(orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING);
+        attitude_control->get_rate_yaw_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_yaw_pid().kD(orig_yaw_rd);
         attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
         attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
@@ -1094,37 +883,25 @@ void AC_AutoTune::load_intra_test_gains()
     }
 }
 
-// load_twitch_gains - load the to-be-tested gains for a single axis
+
+// load_test_gains - load the to-be-tested gains for a single axis
 // called by control_attitude() just before it beings testing a gain (i.e. just before it twitches)
-void AC_AutoTune::load_twitch_gains()
+void AC_AutoTune::load_test_gains()
 {
     switch (axis) {
     case ROLL:
         attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-        attitude_control->get_rate_roll_pid().kI(tune_roll_rp*0.01f);
         attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
-        attitude_control->get_rate_roll_pid().ff(0.0f);
-        attitude_control->get_rate_roll_pid().filt_T_hz(0.0f);
-        attitude_control->get_rate_roll_pid().slew_limit(0.0f);
         attitude_control->get_angle_roll_p().kP(tune_roll_sp);
         break;
     case PITCH:
         attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-        attitude_control->get_rate_pitch_pid().kI(tune_pitch_rp*0.01f);
         attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
-        attitude_control->get_rate_pitch_pid().ff(0.0f);
-        attitude_control->get_rate_pitch_pid().filt_T_hz(0.0f);
-        attitude_control->get_rate_pitch_pid().slew_limit(0.0f);
         attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
         break;
     case YAW:
         attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
-        attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*0.01f);
-        attitude_control->get_rate_yaw_pid().kD(0.0f);
-        attitude_control->get_rate_yaw_pid().ff(0.0f);
         attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
-        attitude_control->get_rate_yaw_pid().filt_T_hz(0.0f);
-        attitude_control->get_rate_yaw_pid().slew_limit(0.0f);
         attitude_control->get_angle_yaw_p().kP(tune_yaw_sp);
         break;
     }
@@ -1142,8 +919,8 @@ void AC_AutoTune::load_gains(enum GainType gain_type)
     case GAIN_INTRA_TEST:
         load_intra_test_gains();
         break;
-    case GAIN_TWITCH:
-        load_twitch_gains();
+    case GAIN_TEST:
+        load_test_gains();
         break;
     case GAIN_TUNED:
         load_tuned_gains();
@@ -1170,12 +947,7 @@ void AC_AutoTune::save_tuning_gains()
     if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && !is_zero(tune_roll_rp)) {
         // rate roll gains
         attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-        attitude_control->get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
-        attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
-        attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
-        attitude_control->get_rate_roll_pid().slew_limit(orig_roll_smax);
-        attitude_control->get_rate_roll_pid().save_gains();
 
         // stabilize roll
         attitude_control->get_angle_roll_p().kP(tune_roll_sp);
@@ -1186,9 +958,7 @@ void AC_AutoTune::save_tuning_gains()
 
         // resave pids to originals in case the autotune is run again
         orig_roll_rp = attitude_control->get_rate_roll_pid().kP();
-        orig_roll_ri = attitude_control->get_rate_roll_pid().kI();
         orig_roll_rd = attitude_control->get_rate_roll_pid().kD();
-        orig_roll_rff = attitude_control->get_rate_roll_pid().ff();
         orig_roll_sp = attitude_control->get_angle_roll_p().kP();
         orig_roll_accel = attitude_control->get_accel_roll_max_cdss();
     }
@@ -1196,12 +966,7 @@ void AC_AutoTune::save_tuning_gains()
     if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && !is_zero(tune_pitch_rp)) {
         // rate pitch gains
         attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-        attitude_control->get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
-        attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
-        attitude_control->get_rate_pitch_pid().filt_T_hz(orig_pitch_fltt);
-        attitude_control->get_rate_pitch_pid().slew_limit(orig_pitch_smax);
-        attitude_control->get_rate_pitch_pid().save_gains();
 
         // stabilize pitch
         attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
@@ -1212,9 +977,7 @@ void AC_AutoTune::save_tuning_gains()
 
         // resave pids to originals in case the autotune is run again
         orig_pitch_rp = attitude_control->get_rate_pitch_pid().kP();
-        orig_pitch_ri = attitude_control->get_rate_pitch_pid().kI();
         orig_pitch_rd = attitude_control->get_rate_pitch_pid().kD();
-        orig_pitch_rff = attitude_control->get_rate_pitch_pid().ff();
         orig_pitch_sp = attitude_control->get_angle_pitch_p().kP();
         orig_pitch_accel = attitude_control->get_accel_pitch_max_cdss();
     }
@@ -1222,13 +985,6 @@ void AC_AutoTune::save_tuning_gains()
     if ((axes_completed & AUTOTUNE_AXIS_BITMASK_YAW) && yaw_enabled() && !is_zero(tune_yaw_rp)) {
         // rate yaw gains
         attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
-        attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
-        attitude_control->get_rate_yaw_pid().kD(0.0f);
-        attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
-        attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
-        attitude_control->get_rate_yaw_pid().slew_limit(orig_yaw_smax);
-        attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
-        attitude_control->get_rate_yaw_pid().save_gains();
 
         // stabilize yaw
         attitude_control->get_angle_yaw_p().kP(tune_yaw_sp);
@@ -1239,19 +995,9 @@ void AC_AutoTune::save_tuning_gains()
 
         // resave pids to originals in case the autotune is run again
         orig_yaw_rp = attitude_control->get_rate_yaw_pid().kP();
-        orig_yaw_ri = attitude_control->get_rate_yaw_pid().kI();
-        orig_yaw_rd = attitude_control->get_rate_yaw_pid().kD();
-        orig_yaw_rff = attitude_control->get_rate_yaw_pid().ff();
-        orig_yaw_rLPF = attitude_control->get_rate_yaw_pid().filt_E_hz();
         orig_yaw_sp = attitude_control->get_angle_yaw_p().kP();
         orig_yaw_accel = attitude_control->get_accel_yaw_max_cdss();
     }
-
-    // update GCS and log save gains event
-    update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
-    AP::logger().Write_Event(LogEvent::AUTOTUNE_SAVEDGAINS);
-
-    reset();
 }
 
 // update_gcs - send message to ground station
@@ -1283,17 +1029,17 @@ void AC_AutoTune::update_gcs(uint8_t message_id) const
 }
 
 // axis helper functions
-inline bool AC_AutoTune::roll_enabled()
+bool AC_AutoTune::roll_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_ROLL;
 }
 
-inline bool AC_AutoTune::pitch_enabled()
+bool AC_AutoTune::pitch_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_PITCH;
 }
 
-inline bool AC_AutoTune::yaw_enabled()
+bool AC_AutoTune::yaw_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_YAW;
 }
@@ -1421,225 +1167,6 @@ void AC_AutoTune::twitching_measure_acceleration(float &rate_of_change, float ra
     }
 }
 
-// updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
-// optimize D term while keeping the maximum just below the target by adjusting P
-void AC_AutoTune::updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max)
-{
-    if (meas_rate_max > rate_target) {
-        // if maximum measurement was higher than target
-        // reduce P gain (which should reduce maximum)
-        tune_p -= tune_p*tune_p_step_ratio;
-        if (tune_p < tune_p_min) {
-            // P gain is at minimum so start reducing D
-            tune_p = tune_p_min;
-            tune_d -= tune_d*tune_d_step_ratio;
-            if (tune_d <= tune_d_min) {
-                // We have reached minimum D gain so stop tuning
-                tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
-        }
-    } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
-        // we have not achieved a high enough maximum to get a good measurement of bounce back.
-        // increase P gain (which should increase maximum)
-        tune_p += tune_p*tune_p_step_ratio;
-        if (tune_p >= tune_p_max) {
-            tune_p = tune_p_max;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-    } else {
-        // we have a good measurement of bounce back
-        if (meas_rate_max-meas_rate_min > meas_rate_max*aggressiveness) {
-            // ignore the next result unless it is the same as this one
-            ignore_next = true;
-            // bounce back is bigger than our threshold so increment the success counter
-            counter++;
-        } else {
-            if (ignore_next == false) {
-                // bounce back is smaller than our threshold so decrement the success counter
-                if (counter > 0) {
-                    counter--;
-                }
-                // increase D gain (which should increase bounce back)
-                tune_d += tune_d*tune_d_step_ratio*2.0f;
-                // stop tuning if we hit maximum D
-                if (tune_d >= tune_d_max) {
-                    tune_d = tune_d_max;
-                    counter = AUTOTUNE_SUCCESS_COUNT;
-                    AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-                }
-            } else {
-                ignore_next = false;
-            }
-        }
-    }
-}
-
-// updating_rate_d_down - decrease D and adjust P to optimize the D term for no bounce back
-// optimize D term while keeping the maximum just below the target by adjusting P
-void AC_AutoTune::updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max)
-{
-    if (meas_rate_max > rate_target) {
-        // if maximum measurement was higher than target
-        // reduce P gain (which should reduce maximum)
-        tune_p -= tune_p*tune_p_step_ratio;
-        if (tune_p < tune_p_min) {
-            // P gain is at minimum so start reducing D gain
-            tune_p = tune_p_min;
-            tune_d -= tune_d*tune_d_step_ratio;
-            if (tune_d <= tune_d_min) {
-                // We have reached minimum D so stop tuning
-                tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
-        }
-    } else if ((meas_rate_max < rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (tune_p <= tune_p_max)) {
-        // we have not achieved a high enough maximum to get a good measurement of bounce back.
-        // increase P gain (which should increase maximum)
-        tune_p += tune_p*tune_p_step_ratio;
-        if (tune_p >= tune_p_max) {
-            tune_p = tune_p_max;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-    } else {
-        // we have a good measurement of bounce back
-        if (meas_rate_max-meas_rate_min < meas_rate_max*aggressiveness) {
-            if (ignore_next == false) {
-                // bounce back is less than our threshold so increment the success counter
-                counter++;
-            } else {
-                ignore_next = false;
-            }
-        } else {
-            // ignore the next result unless it is the same as this one
-            ignore_next = true;
-            // bounce back is larger than our threshold so decrement the success counter
-            if (counter > 0) {
-                counter--;
-            }
-            // decrease D gain (which should decrease bounce back)
-            tune_d -= tune_d*tune_d_step_ratio;
-            // stop tuning if we hit minimum D
-            if (tune_d <= tune_d_min) {
-                tune_d = tune_d_min;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
-        }
-    }
-}
-
-// updating_rate_p_up_d_down - increase P to ensure the target is reached while checking bounce back isn't increasing
-// P is increased until we achieve our target within a reasonable time while reducing D if bounce back increases above the threshold
-void AC_AutoTune::updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max)
-{
-    if (meas_rate_max > rate_target*(1+0.5f*aggressiveness)) {
-        // ignore the next result unless it is the same as this one
-        ignore_next = true;
-        // if maximum measurement was greater than target so increment the success counter
-        counter++;
-    } else if ((meas_rate_max < rate_target) && (meas_rate_max > rate_target*(1.0f-AUTOTUNE_D_UP_DOWN_MARGIN)) && (meas_rate_max-meas_rate_min > meas_rate_max*aggressiveness) && (tune_d > tune_d_min)) {
-        // if bounce back was larger than the threshold so decrement the success counter
-        if (counter > 0) {
-            counter--;
-        }
-        // decrease D gain (which should decrease bounce back)
-        tune_d -= tune_d*tune_d_step_ratio;
-        // do not decrease the D term past the minimum
-        if (tune_d <= tune_d_min) {
-            tune_d = tune_d_min;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-        // decrease P gain to match D gain reduction
-        tune_p -= tune_p*tune_p_step_ratio;
-        // do not decrease the P term past the minimum
-        if (tune_p <= tune_p_min) {
-            tune_p = tune_p_min;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-        // cancel change in direction
-        positive_direction = !positive_direction;
-    } else {
-        if (ignore_next == false) {
-            // if maximum measurement was lower than target so decrement the success counter
-            if (counter > 0) {
-                counter--;
-            }
-            // increase P gain (which should increase the maximum)
-            tune_p += tune_p*tune_p_step_ratio;
-            // stop tuning if we hit maximum P
-            if (tune_p >= tune_p_max) {
-                tune_p = tune_p_max;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
-        } else {
-            ignore_next = false;
-        }
-    }
-}
-
-// updating_angle_p_down - decrease P until we don't reach the target before time out
-// P is decreased to ensure we are not overshooting the target
-void AC_AutoTune::updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max)
-{
-    if (meas_angle_max < angle_target*(1+0.5f*aggressiveness)) {
-        if (ignore_next == false) {
-            // if maximum measurement was lower than target so increment the success counter
-            counter++;
-        } else {
-            ignore_next = false;
-        }
-    } else {
-        // ignore the next result unless it is the same as this one
-        ignore_next = true;
-        // if maximum measurement was higher than target so decrement the success counter
-        if (counter > 0) {
-            counter--;
-        }
-        // decrease P gain (which should decrease the maximum)
-        tune_p -= tune_p*tune_p_step_ratio;
-        // stop tuning if we hit maximum P
-        if (tune_p <= tune_p_min) {
-            tune_p = tune_p_min;
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-        }
-    }
-}
-
-// updating_angle_p_up - increase P to ensure the target is reached
-// P is increased until we achieve our target within a reasonable time
-void AC_AutoTune::updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max)
-{
-    if ((meas_angle_max > angle_target*(1+0.5f*aggressiveness)) ||
-        ((meas_angle_max > angle_target) && (meas_rate_min < -meas_rate_max*aggressiveness))) {
-        // ignore the next result unless it is the same as this one
-        ignore_next = true;
-        // if maximum measurement was greater than target so increment the success counter
-        counter++;
-    } else {
-        if (ignore_next == false) {
-            // if maximum measurement was lower than target so decrement the success counter
-            if (counter > 0) {
-                counter--;
-            }
-            // increase P gain (which should increase the maximum)
-            tune_p += tune_p*tune_p_step_ratio;
-            // stop tuning if we hit maximum P
-            if (tune_p >= tune_p_max) {
-                tune_p = tune_p_max;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
-        } else {
-            ignore_next = false;
-        }
-    }
-}
-
 /*
   check if we have a good position estimate
  */
@@ -1731,56 +1258,588 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     yaw_cd_out = target_yaw_cd;
 }
 
-// @LoggerMessage: ATUN
-// @Description: Copter/QuadPlane AutoTune
-// @Vehicles: Copter, Plane
-// @Field: TimeUS: Time since system startup
-// @Field: Axis: which axis is currently being tuned
-// @Field: TuneStep: step in autotune process
-// @Field: Targ: target angle or rate, depending on tuning step
-// @Field: Min: measured minimum target angle or rate
-// @Field: Max: measured maximum target angle or rate
-// @Field: RP: new rate gain P term
-// @Field: RD: new rate gain D term
-// @Field: SP: new angle P term
-// @Field: ddt: maximum measured twitching acceleration
-
-// Write an Autotune data packet
-void AC_AutoTune::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt)
+void AC_AutoTune::twitch_test_init()
 {
-    AP::logger().Write(
-        "ATUN",
-        "TimeUS,Axis,TuneStep,Targ,Min,Max,RP,RD,SP,ddt",
-        "s--ddd---o",
-        "F--000---0",
-        "QBBfffffff",
-        AP_HAL::micros64(),
-        axis,
-        tune_step,
-        meas_target*0.01f,
-        meas_min*0.01f,
-        meas_max*0.01f,
-        new_gain_rp,
-        new_gain_rd,
-        new_gain_sp,
-        new_ddt);
+    float target_max_rate;
+    switch (axis) {
+    case ROLL: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz()*2.0f);
+        break;
+    }
+    case PITCH: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz()*2.0f);
+        break;
+    }
+    case YAW: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
+        rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
+        break;
+    }
+    }
+
+    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+        rotation_rate_filt.reset(start_rate);
+    } else {
+        rotation_rate_filt.reset(0);
+    }
+
 }
 
-// Write an Autotune data packet
-void AC_AutoTune::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds)
+//run twitch test
+void AC_AutoTune::twitch_test_run(AxisType test_axis, const float dir_sign)
 {
-// @LoggerMessage: ATDE
-// @Description: AutoTune data packet
-// @Field: TimeUS: Time since system startup
-// @Field: Angle: current angle
-// @Field: Rate: current angular rate
-    AP::logger().WriteStreaming(
-        "ATDE",
-        "TimeUS,Angle,Rate",
-        "sdk",
-        "F00",
-        "Qff",
-        AP_HAL::micros64(),
-        angle_cd*0.01f,
-        rate_cds*0.01f);
+    // disable rate limits
+    attitude_control->use_sqrt_controller(false);
+    // hold current attitude
+    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+
+    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+        // step angle targets on first iteration
+        if (twitch_first_iter) {
+            twitch_first_iter = false;
+            // Testing increasing stabilize P gain so will set lean angle target
+            switch (test_axis) {
+            case ROLL:
+                // request roll to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(dir_sign * target_angle, 0.0f, 0.0f);
+                break;
+            case PITCH:
+                // request pitch to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, dir_sign * target_angle, 0.0f);
+                break;
+            case YAW:
+                // request pitch to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, 0.0f, dir_sign * target_angle);
+                break;
+            }
+        }
+    } else {
+        // Testing rate P and D gains so will set body-frame rate targets.
+        // Rate controller will use existing body-frame rates and convert to motor outputs
+        // for all axes except the one we override here.
+        switch (test_axis) {
+        case ROLL:
+            // override body-frame roll rate
+            attitude_control->rate_bf_roll_target(dir_sign * target_rate + start_rate);
+            break;
+        case PITCH:
+            // override body-frame pitch rate
+            attitude_control->rate_bf_pitch_target(dir_sign * target_rate + start_rate);
+            break;
+        case YAW:
+            // override body-frame yaw rate
+            attitude_control->rate_bf_yaw_target(dir_sign * target_rate + start_rate);
+            break;
+        }
+    }
+
+    // capture this iterations rotation rate and lean angle
+    float gyro_reading = 0;
+    switch (test_axis) {
+    case ROLL:
+        gyro_reading = ahrs_view->get_gyro().x;
+        lean_angle = dir_sign * (ahrs_view->roll_sensor - (int32_t)start_angle);
+        break;
+    case PITCH:
+        gyro_reading = ahrs_view->get_gyro().y;
+        lean_angle = dir_sign * (ahrs_view->pitch_sensor - (int32_t)start_angle);
+        break;
+    case YAW:
+        gyro_reading = ahrs_view->get_gyro().z;
+        lean_angle = dir_sign * wrap_180_cd(ahrs_view->yaw_sensor-(int32_t)start_angle);
+        break;
+    }
+
+    // Add filter to measurements
+    float filter_value;
+    switch (tune_type) {
+    case SP_DOWN:
+    case SP_UP:
+        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0f);
+        break;
+    default:
+        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0f - start_rate);
+        break;
+    }
+    rotation_rate = rotation_rate_filt.apply(filter_value,
+                    AP::scheduler().get_loop_period_s());
+
+    switch (tune_type) {
+    case RD_UP:
+    case RD_DOWN:
+        twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        break;
+    case RP_UP:
+        twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        break;
+    case SP_DOWN:
+    case SP_UP:
+        twitching_test_angle(lean_angle, rotation_rate, target_angle*(1+0.5f*aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, rate_max);
+        break;
+    default:
+        break;
+    }
 }
+
+void AC_AutoTune::rate_ff_test_init()
+{
+    ff_test_phase = 0;
+    rotation_rate_filt.reset(0);
+    rotation_rate_filt.set_cutoff_frequency(5.0f);
+    command_filt.reset(0);
+    command_filt.set_cutoff_frequency(5.0f);
+    target_rate_filt.reset(0);
+    target_rate_filt.set_cutoff_frequency(5.0f);
+    test_command_filt = 0.0f;
+    test_rate_filt = 0.0f;
+    test_tgt_rate_filt = 0.0f;
+    filt_target_rate = 0.0f;
+}
+
+void AC_AutoTune::rate_ff_test_run(float max_angle_cds, float target_rate_cds)
+{
+    float gyro_reading = 0.0f;
+    float command_reading = 0.0f;
+    float tgt_rate_reading = 0.0f;
+    const uint32_t now = AP_HAL::millis();
+    switch (axis) {
+    case ROLL:
+        gyro_reading = ahrs_view->get_gyro().x;
+        command_reading = motors->get_roll();
+        tgt_rate_reading = attitude_control->rate_bf_targets().x;
+        if (ahrs_view->roll_sensor <= max_angle_cds + start_angle - 100.0f && ff_test_phase == 0) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(target_rate_cds, 0.0f, 0.0f);
+        } else if (ahrs_view->roll_sensor > max_angle_cds + start_angle - 100.0f && ff_test_phase == 0) {
+            ff_test_phase = 1;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_roll_target(-target_rate_cds);
+        } else if (ahrs_view->roll_sensor >= -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_roll_target(-target_rate_cds);
+        } else if (ahrs_view->roll_sensor < -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            ff_test_phase = 2;
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        } else if (ff_test_phase == 2 ) {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        }
+        break;
+    case PITCH:
+        gyro_reading = ahrs_view->get_gyro().y;
+        command_reading = motors->get_pitch();
+        tgt_rate_reading = attitude_control->rate_bf_targets().y;
+        if (ahrs_view->pitch_sensor <= max_angle_cds + start_angle - 100.0f && ff_test_phase == 0) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, target_rate_cds, 0.0f);
+        } else if (ahrs_view->pitch_sensor > max_angle_cds + start_angle - 100.0f && ff_test_phase == 0) {
+            ff_test_phase = 1;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_pitch_target(-target_rate_cds);
+        } else if (ahrs_view->pitch_sensor >= -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_pitch_target(-target_rate_cds);
+        } else if (ahrs_view->pitch_sensor < -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            ff_test_phase = 2;
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        } else if (ff_test_phase == 2 ) {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        }
+        break;
+    case YAW:
+        gyro_reading = ahrs_view->get_gyro().z;
+        command_reading = motors->get_yaw();
+        tgt_rate_reading = attitude_control->rate_bf_targets().z;
+        if (wrap_180_cd(ahrs_view->yaw_sensor) <= wrap_180_cd(max_angle_cds + start_angle - 100.0f) && ff_test_phase == 0) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.5f * target_rate_cds);
+        } else if (wrap_180_cd(ahrs_view->yaw_sensor) > wrap_180_cd(max_angle_cds + start_angle - 100.0f) && ff_test_phase == 0) {
+            ff_test_phase = 1;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_yaw_target(-target_rate_cds);
+        } else if (wrap_180_cd(ahrs_view->yaw_sensor) >= wrap_180_cd(-max_angle_cds + start_angle) && ff_test_phase == 1 ) {
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_yaw_target(-target_rate_cds);
+        } else if (wrap_180_cd(ahrs_view->yaw_sensor) < wrap_180_cd(-max_angle_cds + start_angle) && ff_test_phase == 1 ) {
+            ff_test_phase = 2;
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        } else if (ff_test_phase == 2 ) {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+        }
+        break;
+    }
+
+    rotation_rate = rotation_rate_filt.apply(gyro_reading,
+                    AP::scheduler().get_loop_period_s());
+    command_out = command_filt.apply(command_reading,
+                                     AP::scheduler().get_loop_period_s());
+    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
+                       AP::scheduler().get_loop_period_s());
+
+    // record steady state rate and motor command
+    switch (axis) {
+    case ROLL:
+        if (ahrs_view->roll_sensor >= -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            test_rate_filt = rotation_rate;
+            test_command_filt = command_out;
+            test_tgt_rate_filt = filt_target_rate;
+        }
+        break;
+    case PITCH:
+        if (ahrs_view->pitch_sensor >= -max_angle_cds + start_angle && ff_test_phase == 1 ) {
+            test_rate_filt = rotation_rate;
+            test_command_filt = command_out;
+            test_tgt_rate_filt = filt_target_rate;
+        }
+        break;
+    case YAW:
+        if (wrap_180_cd(ahrs_view->yaw_sensor) >= wrap_180_cd(-max_angle_cds + start_angle) && ff_test_phase == 1 ) {
+            test_rate_filt = rotation_rate;
+            test_command_filt = command_out;
+            test_tgt_rate_filt = filt_target_rate;
+        }
+        break;
+    }
+    if (now - step_start_time_ms >= step_time_limit_ms || ff_test_phase == 2) {
+        // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+    }
+
+}
+
+void AC_AutoTune::dwell_test_init(float filt_freq)
+{
+    rotation_rate_filt.reset(0);
+    rotation_rate_filt.set_cutoff_frequency(filt_freq);
+    command_filt.reset(0);
+    command_filt.set_cutoff_frequency(filt_freq);
+    target_rate_filt.reset(0);
+    target_rate_filt.set_cutoff_frequency(filt_freq);
+    test_command_filt = 0.0f;
+    test_rate_filt = 0.0f;
+    test_tgt_rate_filt = 0.0f;
+    filt_target_rate = 0.0f;
+    dwell_start_time_ms = 0.0f;
+}
+
+void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase)
+{
+    float gyro_reading = 0.0f;
+    float command_reading = 0.0f;
+    float tgt_rate_reading = 0.0f;
+    float tgt_attitude = 2.5f * 0.01745f;
+    const uint32_t now = AP_HAL::millis();
+    float target_rate_cds;
+
+    switch (axis) {
+    case ROLL:
+        gyro_reading = ahrs_view->get_gyro().x;
+        command_reading = motors->get_roll();
+        tgt_rate_reading = attitude_control->rate_bf_targets().x;
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+        if (is_zero(dwell_start_time_ms) && ahrs_view->roll_sensor > -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_roll_target(-1000.0f);
+        } else if (is_zero(dwell_start_time_ms) && ahrs_view->roll_sensor < -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_roll_target(0.0f);
+            dwell_start_time_ms = now;
+        } else {
+            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+            attitude_control->rate_bf_roll_target(target_rate_cds);
+        }
+        break;
+    case PITCH:
+        gyro_reading = ahrs_view->get_gyro().y;
+        command_reading = motors->get_pitch();
+        tgt_rate_reading = attitude_control->rate_bf_targets().y;
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+        if (is_zero(dwell_start_time_ms) && ahrs_view->pitch_sensor > -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_pitch_target(-1000.0f);
+        } else if (is_zero(dwell_start_time_ms) && ahrs_view->pitch_sensor < -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_pitch_target(0.0f);
+            dwell_start_time_ms = now;
+        } else {
+            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+            attitude_control->rate_bf_pitch_target(target_rate_cds);
+        }
+        break;
+    case YAW:
+        gyro_reading = ahrs_view->get_gyro().z;
+        command_reading = motors->get_yaw();
+        tgt_rate_reading = attitude_control->rate_bf_targets().z;
+        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+        if (is_zero(dwell_start_time_ms) && ahrs_view->yaw_sensor > -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_yaw_target(-1000.0f);
+        } else if (is_zero(dwell_start_time_ms) && ahrs_view->yaw_sensor < -0.95f * tgt_attitude * 5730.0f + start_angle) {
+            attitude_control->rate_bf_yaw_target(0.0f);
+            dwell_start_time_ms = now;
+        } else {
+            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+            attitude_control->rate_bf_yaw_target(target_rate_cds);
+        }
+        break;
+    }
+
+    // looks at gain and phase of input rate to output rate
+    rotation_rate = rotation_rate_filt.apply(gyro_reading,
+                    AP::scheduler().get_loop_period_s());
+    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
+                       AP::scheduler().get_loop_period_s());
+    command_out = command_filt.apply(command_reading,
+                                     AP::scheduler().get_loop_period_s());
+
+    // wait for dwell to start before determining gain and phase
+    if (!is_zero(dwell_start_time_ms)) {
+        if (freq_resp_input == 1) {
+            determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
+        } else {
+            determine_gain(command_out,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
+        }
+    }
+
+    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
+        // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+    }
+}
+
+void AC_AutoTune::angle_dwell_test_init(float filt_freq)
+{
+    rotation_rate_filt.reset(0);
+    rotation_rate_filt.set_cutoff_frequency(filt_freq);
+    command_filt.reset(0);
+    command_filt.set_cutoff_frequency(filt_freq);
+    target_rate_filt.reset(0);
+    target_rate_filt.set_cutoff_frequency(filt_freq);
+    test_command_filt = 0.0f;
+    test_rate_filt = 0.0f;
+    test_tgt_rate_filt = 0.0f;
+    filt_target_rate = 0.0f;
+    dwell_start_time_ms = 0.0f;
+}
+
+void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase)
+{
+    float gyro_reading = 0.0f;
+    float command_reading = 0.0f;
+    float tgt_rate_reading = 0.0f;
+    float tgt_attitude = 5.0f * 0.01745f;
+    const uint32_t now = AP_HAL::millis();
+    float target_angle_cd;
+    float target_rate_cds;
+    static uint32_t settle_time = 200;
+    static bool dtrmn_gain;
+
+    switch (axis) {
+    case ROLL:
+        //        gyro_reading = ahrs_view->get_gyro().x;
+        command_reading = motors->get_roll();
+        //        tgt_rate_reading = attitude_control->rate_bf_targets().x;
+
+        attitude_control->bf_feedforward(false);
+        if (settle_time == 0) {
+            target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + start_angles.x, start_angles.y, 0.0f);
+        } else {
+            target_angle_cd = 0.0f;
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
+            settle_time--;
+            dwell_start_time_ms = now;
+        }
+        tgt_rate_reading = target_angle_cd / 5730.0f;
+        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle + target_angle_cd) / 5730.0f;
+        break;
+    case PITCH:
+        gyro_reading = ahrs_view->get_gyro().y;
+        command_reading = motors->get_pitch();
+        tgt_rate_reading = attitude_control->rate_bf_targets().y;
+        target_angle_cd = tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, target_angle_cd + start_angles.y, 0.0f);
+        break;
+    case YAW:
+        gyro_reading = ahrs_view->get_gyro().z;
+        command_reading = motors->get_yaw();
+        tgt_rate_reading = attitude_control->rate_bf_targets().z;
+        target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, target_rate_cds);
+        break;
+    }
+
+    // need to hold off from starting determine gain until neg rate is established
+    if (!is_zero(dwell_start_time_ms) && tgt_rate_reading < -0.01745f && !dtrmn_gain) {
+        dtrmn_gain = true;
+    }
+
+    // looks at gain and phase of input rate to output rate
+    rotation_rate = rotation_rate_filt.apply(gyro_reading,
+                    AP::scheduler().get_loop_period_s());
+    filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
+                       AP::scheduler().get_loop_period_s());
+    command_out = command_filt.apply(command_reading,
+                                     AP::scheduler().get_loop_period_s());
+
+    // wait for dwell to start before determining gain and phase
+    if (!is_zero(dwell_start_time_ms) && dtrmn_gain) {
+        determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
+    }
+    //    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
+    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
+        // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+        settle_time = 200;
+        dtrmn_gain = false;
+        // announce results of dwell and update
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(dwell_freq), (double)(dwell_gain), (double)(dwell_phase));
+
+    }
+}
+
+
+// determine_gain - this function receives time history data during a dwell test input and determines the gain and phase of the response to the input.
+// Once the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles and the cycles_complete flag
+// is set.  This function must be reset using the reset flag prior to the next dwell.
+void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
+{
+    static float max_target, max_meas, prev_target, prev_meas;
+    static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES+1], input_ampl[AUTOTUNE_DWELL_CYCLES+1];
+    static float temp_max_target, temp_min_target;
+    static float temp_max_meas, temp_min_meas;
+    static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES+1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES+1];
+    static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms;
+    static uint8_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
+    static bool new_target = false;
+    static bool new_meas = false;
+    uint32_t now = AP_HAL::millis();
+
+    if (funct_reset) {
+        max_target_cnt = 0;
+        min_target_cnt = 0;
+        max_meas_cnt = 0;
+        min_meas_cnt = 0;
+        new_tgt_time_ms = 0;
+        new_meas_time_ms = 0;
+        new_target = false;
+        new_meas = false;
+        gain = 0.0f;
+        phase = 0.0f;
+        cycles_complete = false;
+        funct_reset = false;
+        return;
+    }
+
+    uint32_t half_cycle_time_ms = 0;
+    if (!is_zero(freq)) {
+        half_cycle_time_ms = (uint32_t)(400 * 6.28 / freq);
+    }
+
+    // cycles are complete! determine gain and phase and exit
+    if (max_meas_cnt > AUTOTUNE_DWELL_CYCLES + 1 && max_target_cnt > AUTOTUNE_DWELL_CYCLES + 1) {
+        float delta_time = 0.0f;
+        float sum_gain = 0.0f;
+        uint8_t cnt = 0;
+        uint8_t gcnt = 0;
+        for (int i = 0;  i < 5; i++) {
+            if (input_ampl[AUTOTUNE_DWELL_CYCLES - i] > 0) {
+                sum_gain += output_ampl[AUTOTUNE_DWELL_CYCLES - i] / input_ampl[AUTOTUNE_DWELL_CYCLES - i];
+                gcnt++;
+            }
+            float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
+            if (d_time * 0.001f < 5.0f * 6.28f / freq) {
+                delta_time += d_time;
+                cnt++;
+            }
+        }
+        if (gcnt > 0) {
+            gain = sum_gain / gcnt;
+        }
+        if (cnt > 0) {
+            delta_time = delta_time / cnt;
+        }
+        phase = freq * delta_time * 0.001f * 360.0f / 6.28f;
+        if (phase > 360.0f) {
+            phase = phase - 360.0f;
+        }
+        cycles_complete = true;
+        return;
+    }
+
+    // Indicates when the target(input) is positive or negative half of the cycle to notify when the max or min should be sought
+    if (!is_positive(prev_target) && is_positive(tgt_rate) && !new_target && now > new_tgt_time_ms) {
+        new_target = true;
+        new_tgt_time_ms = now + half_cycle_time_ms;
+        // reset max_target
+        max_target = 0.0f;
+        max_target_cnt++;
+        temp_min_target = min_target;
+        if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
+        }
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
+
+    } else if (is_positive(prev_target) && !is_positive(tgt_rate) && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
+        new_target = false;
+        new_tgt_time_ms = now + half_cycle_time_ms;
+        min_target_cnt++;
+        temp_max_target = max_target;
+        if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            temp_max_tgt_time[min_target_cnt] = max_tgt_time;
+        }
+        min_target = 0.0f;
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
+    }
+
+    // Indicates when the measured value (output) is positive or negative half of the cycle to notify when the max or min should be sought
+    if (!is_positive(prev_meas) && is_positive(meas_rate) && !new_meas && now > new_meas_time_ms && max_target_cnt > 0) {
+        new_meas = true;
+        new_meas_time_ms = now + half_cycle_time_ms;
+        // reset max_meas
+        max_meas = 0.0f;
+        max_meas_cnt++;
+        temp_min_meas = min_meas;
+        if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
+        }
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
+    } else if (is_positive(prev_meas) && !is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
+        new_meas = false;
+        new_meas_time_ms = now + half_cycle_time_ms;
+        min_meas_cnt++;
+        temp_max_meas = max_meas;
+        if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            temp_max_meas_time[min_meas_cnt] = max_meas_time;
+        }
+        min_meas = 0.0f;
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
+    }
+
+    if (tgt_rate > max_target && new_target) {
+        max_target = tgt_rate;
+        max_tgt_time = now;
+    }
+
+    if (tgt_rate < min_target && !new_target) {
+        min_target = tgt_rate;
+    }
+
+    if (meas_rate > max_meas && new_meas) {
+        max_meas = meas_rate;
+        max_meas_time = now;
+    }
+
+    if (meas_rate < min_meas && !new_meas) {
+        min_meas = meas_rate;
+    }
+
+    prev_target = tgt_rate;
+    prev_meas = meas_rate;
+}
+
+
