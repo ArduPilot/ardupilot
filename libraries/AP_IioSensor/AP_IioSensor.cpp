@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <AP_Math/AP_Math.h>
 
 
 AP_Iio_Channel::AP_Iio_Channel(const char *name) :
@@ -106,17 +107,26 @@ int AP_Iio_Channel::get_data(double *values) const
              * - In big endian, the last byte will be the lsb, and all other
              *   bytes will be shifted so shift right by 8 bits
              */
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-            val = val >> 8;
-#endif
+            if (_iio_fmt->is_be) {
+                be32toh(val);
+                val = val >> 8;  // fmt->shift ?
+            }
             value = val;
         } else if ((_iio_fmt->length == 32) && _iio_fmt->is_signed &&
                    (_iio_fmt->bits == 24)) {
-            uint32_t val;
+            int32_t val;
             iio_channel_convert(_iio_chan, &val, ptr);
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-            val = val >> 8;
-#endif
+            if (_iio_fmt->is_be) {
+                be32toh(val);
+            }
+            value = val;
+        } else if ((_iio_fmt->length == 64) && _iio_fmt->is_signed &&
+                   (_iio_fmt->bits == 64)) {
+            int64_t val;
+            iio_channel_convert(_iio_chan, &val, ptr);
+            if (_iio_fmt->is_be) {
+                be64toh(val);
+            }
             value = val;
         } else {
             fprintf(stderr,"%s: unhandled channel format length : %d, bits : %d, %s\n", _name,
@@ -124,7 +134,11 @@ int AP_Iio_Channel::get_data(double *values) const
             ret = -1;
             continue;
         }
-        values[i] = (value + _offset) * _scale;
+        if (_iio_fmt->with_scale && !is_zero(_scale)) {
+            values[i] = (value + _offset) * _scale;
+        } else {
+            values[i] = (value + _offset);
+        }
         //printf("values[i] %f = (value %f + _offset %f) * _scale %f \n", values[i], value, _offset, _scale);
     }
 
@@ -258,7 +272,7 @@ int AP_Iio_Sensor::read() const
         return -1;
     }
 
-    return _buf_count;
+    return ret;
 }
 
 bool AP_Iio_Sensor::set_trigger(const char *name) {
@@ -317,6 +331,12 @@ int AP_Iio_Sensor::buffer_flush() {
                 nsamples++;
             }
         } while (ret > 0);
+
+        ret = iio_buffer_set_blocking_mode(_iio_buf, true);
+        if (ret < 0) {
+            fprintf(stderr, "%s failed to set buffer blocking mode %s\n", _name, strerror(-ret));
+            return ret;
+        }
 
         return nsamples;
 }
