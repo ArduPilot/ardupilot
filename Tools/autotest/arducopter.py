@@ -137,9 +137,9 @@ class AutoTestCopter(AutoTest):
         self.progress("TAKEOFF COMPLETE")
 
     def wait_for_alt(self, alt_min=30, timeout=30):
-        """Wait for altitude to be reached."""
+        """Wait for minimum altitude to be reached."""
         self.wait_altitude(alt_min - 1,
-                           (alt_min + 5),
+                           (alt_min + 500),
                            relative=True,
                            timeout=timeout)
 
