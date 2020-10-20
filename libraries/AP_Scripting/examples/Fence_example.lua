@@ -1,23 +1,24 @@
 -- this script loads in a fence about the home position
+local rad1 = 50
+local rad2 = 100
+local home
 
-function add_fence(center)
+function add_fence()
 
     -- build fence points into this table
     local fence_points = {}
 
     -- draw a star!
-    local inner_rad = 50
-    local outer_rad = 100
     for i = 0, 9 do
         local angle = math.rad(i*(360/10))
         local temp = Location()
         -- temp = center does not work
-        temp:lat(center:lat())
-        temp:lng(center:lng())
+        temp:lat(home:lat())
+        temp:lng(home:lng())
         if i%2 == 0 then
-            temp:offset(math.sin(angle)*outer_rad, math.cos(angle)*outer_rad)
+            temp:offset(math.sin(angle)*rad1, math.cos(angle)*rad1)
         else 
-            temp:offset(math.sin(angle)*inner_rad, math.cos(angle)*inner_rad)
+            temp:offset(math.sin(angle)*rad2, math.cos(angle)*rad2)
         end
 
         fence_points[i+1] = AC_PolyFenceItem()
@@ -33,16 +34,24 @@ function add_fence(center)
     end
 
     fence:load(table.unpack(fence_points))
+    assert(fence:send(),'Failed to send fence')
 
     gcs:send_text(4,'Added '..#fence_points .. ' point fence')
+
+    if rad1 < rad2 then
+        rad1 = rad2 + 50
+    else
+        rad2 = rad1 + 50
+    end
+
+    return add_fence, 5000
 end
 
 function wait()
     -- wait until we have a valid home location
-    local home = ahrs:get_home()
+    home = ahrs:get_home()
     if home and home:lat() ~= 0 and home:lng() ~= 0 then
-        add_fence(home)
-        return
+        return add_fence()
     end
 
     return wait, 1000
