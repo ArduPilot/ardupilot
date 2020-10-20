@@ -289,7 +289,7 @@ void NavEKF3_core::setAidingMode()
             // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
             // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
             // and declare attitude aiding loss so that we fall back into a non-aiding mode
-            if (assume_zero_sideslip() && onGround && !use_compass()){
+            if (assume_zero_sideslip() && onGround && !use_compass() && !using_external_yaw()) {
                 yawAlignComplete = false;
                 finalInflightYawInit = false;
                 attAidLossCritical = true;
