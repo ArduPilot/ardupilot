@@ -87,7 +87,7 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(mass, 0.51, 0, 0);
+    frame->init(frame_str);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
@@ -108,10 +108,10 @@ void QuadPlane::update(const struct sitl_input &input)
     Vector3f quad_rot_accel;
     Vector3f quad_accel_body;
 
-    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1]);
+    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1], false);
 
     // estimate voltage and current
-    frame->current_and_voltage(input, battery_voltage, battery_current);
+    frame->current_and_voltage(battery_voltage, battery_current);
 
     float throttle;
     if (reverse_thrust) {
