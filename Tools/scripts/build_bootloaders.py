@@ -54,9 +54,6 @@ for board in get_board_list():
     if not build_board(board):
         failed_boards.add(board)
         continue
-    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
-    shutil.copy('build/%s/bin/AP_Bootloader.hex' % board, 'Tools/bootloaders/%s_bl.hex' % board)
-    shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_bl.elf' % board)
 
 if len(failed_boards):
     print("Failed boards: %s" % list(failed_boards))

@@ -199,6 +199,17 @@ class build_bootloader_intel_hex(Task.Task):
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
+class copy_and_rename(Task.Task):
+    '''Copy and rename a file to a new location'''
+    color='CYAN'
+    always_run = True
+    def keyword(self):
+        return "Copying to"
+    def run(self):
+        shutil.copy(self.inputs[0].abspath(), self.outputs[0].abspath())
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
@@ -222,18 +233,32 @@ def chibios_firmware(self):
         abin_task.set_run_after(generate_apj_task)
 
     if self.env.BOOTLOADER:
-        if self.bld.env.HAVE_INTEL_HEX:
+        # copy elf
+        copy_elf_target = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.elf" % self.env.BOARD)
+        copy_elf_task = self.create_task('copy_and_rename', src=link_output, tgt=copy_elf_target)
+        copy_elf_task.set_run_after(generate_bin_task)
+        # copy bin
+        copy_bin_target = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+        copy_bin_task = self.create_task('copy_and_rename', src=bin_target, tgt=copy_bin_target)
+        copy_bin_task.set_run_after(generate_bin_task)
+
+    if self.bld.env.HAVE_INTEL_HEX:
+        if self.env.BOOTLOADER:
             hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_bootloader_intel_hex', src=bin_target, tgt=hex_target)
-            hex_task.set_run_after(generate_bin_task)
-    else:
-        bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
-        if os.path.exists(bootloader_bin.abspath()) and self.bld.env.HAVE_INTEL_HEX:
-            hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
-            hex_task = self.create_task('build_ardupilot_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
-            hex_task.set_run_after(generate_bin_task)
+            hex_task.set_run_after(generate_apj_task)
+            # copy hex
+            copy_hex_target = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.hex" % self.env.BOARD)
+            copy_hex_task = self.create_task('copy_and_rename', src=hex_target, tgt=copy_hex_target)
+            copy_hex_task.set_run_after(hex_task)
         else:
-            print("Not embedding bootloader; %s does not exist" % bootloader_bin)
+            bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+            if os.path.exists(bootloader_bin.abspath()):
+                hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
+                hex_task = self.create_task('build_ardupilot_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
+                hex_task.set_run_after(generate_bin_task)
+            else:
+                print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
@@ -423,7 +448,7 @@ def build(bld):
                 bld.bldnode.find_or_declare('ldscript.ld'),
                 bld.bldnode.find_or_declare('hw.dat')]
     )
-    
+
     bld(
         # create the file modules/ChibiOS/include_dirs
         rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
