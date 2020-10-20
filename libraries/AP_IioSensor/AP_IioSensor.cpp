@@ -58,7 +58,7 @@ int AP_Iio_Channel::init(struct iio_device *iio_dev, struct iio_buffer *iio_buf)
     iio_channel_attr_read_double(_iio_chan, "scale", &_scale);
     iio_channel_attr_read_double(_iio_chan, "offset", &_offset);
     _iio_buf = iio_buf;
-    printf("AP_Iio_Channel: added channel %s\n", _name);
+    //printf("AP_Iio_Channel: added channel %s\n", _name);
 
     return 0;
 }
@@ -139,7 +139,7 @@ int AP_Iio_Channel::get_data(double *values) const
         } else {
             values[i] = (value + _offset);
         }
-        //printf("values[i] %f = (value %f + _offset %f) * _scale %f \n", values[i], value, _offset, _scale);
+        //printf("%s values[i] %f = (value %f + _offset %f) * _scale %f \n", _name, values[i], value, _offset, _scale);
     }
 
     return ret;
@@ -259,7 +259,7 @@ int AP_Iio_Sensor::init()
         }
     }
     auto flushed = buffer_flush();
-    fprintf(stderr,"AP_Iio_Sensor: flushed %d\n", flushed);
+    fprintf(stderr,"AP_Iio_Sensor: %s flushed %d\n",_name, flushed);
 
     return 0;
 }
