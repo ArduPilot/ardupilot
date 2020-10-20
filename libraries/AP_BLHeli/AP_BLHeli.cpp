@@ -741,19 +741,16 @@ bool AP_BLHeli::BL_ConnectEx(void)
         blheli.interface_mode[blheli.chan] = imSIL_BLB;
         debug("Interface type imSIL_BLB");
         break;
-    case 0x1F06:
-    case 0x3306:
-    case 0x3406:
-    case 0x3506:
-    case 0x2B06:
-    case 0x4706:
-        blheli.interface_mode[blheli.chan] = imARM_BLB;
-        debug("Interface type imARM_BLB");
-        break;
     default:
-        blheli.ack = ACK_D_GENERAL_ERROR;        
-        debug("Unknown interface type 0x%04x", *devword);
-        break;
+        // BLHeli_32 MCU ID hi > 0x00 and < 0x90 / lo always = 0x06
+        if ((blheli.deviceInfo[blheli.chan][1] > 0x00) && (blheli.deviceInfo[blheli.chan][1] < 0x90) && (blheli.deviceInfo[blheli.chan][0] == 0x06)) {
+            blheli.interface_mode[blheli.chan] = imARM_BLB;
+            debug("Interface type imARM_BLB");
+        } else {
+            blheli.ack = ACK_D_GENERAL_ERROR;
+            debug("Unknown interface type 0x%04x", *devword);
+            break;
+        }
     }
     blheli.deviceInfo[blheli.chan][3] = blheli.interface_mode[blheli.chan];
     if (blheli.interface_mode[blheli.chan] != 0) {
