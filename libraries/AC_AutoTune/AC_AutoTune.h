@@ -16,14 +16,35 @@
   support for autotune of multirotors. Based on original autotune code from ArduCopter, written by Leonard Hall
   Converted to a library by Andrew Tridgell
  */
-
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
+#include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
+#include <AP_Math/AP_Math.h>
 
-class AC_AutoTune {
+#define AUTOTUNE_AXIS_BITMASK_ROLL            1
+#define AUTOTUNE_AXIS_BITMASK_PITCH           2
+#define AUTOTUNE_AXIS_BITMASK_YAW             4
+
+#define AUTOTUNE_SUCCESS_COUNT                4     // The number of successful iterations we need to freeze at current gains
+
+// Auto Tune message ids for ground station
+#define AUTOTUNE_MESSAGE_STARTED 0
+#define AUTOTUNE_MESSAGE_STOPPED 1
+#define AUTOTUNE_MESSAGE_SUCCESS 2
+#define AUTOTUNE_MESSAGE_FAILED 3
+#define AUTOTUNE_MESSAGE_SAVED_GAINS 4
+#define AUTOTUNE_MESSAGE_TESTING 5
+
+#define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
+
+#define AUTOTUNE_DWELL_CYCLES                10
+
+
+
+class AC_AutoTune
+{
 public:
     // constructor
     AC_AutoTune();
@@ -32,7 +53,7 @@ public:
     virtual void run();
 
     // save gained, called on disarm
-    void save_tuning_gains();
+    virtual void save_tuning_gains();
 
     // stop tune, reverting gains
     void stop();
@@ -67,7 +88,7 @@ protected:
 
     // internal init function, should be called from init()
     bool init_internals(bool use_poshold,
-                        AC_AttitudeControl_Multi *attitude_control,
+                        AC_AttitudeControl *attitude_control,
                         AC_PosControl *pos_control,
                         AP_AHRS_View *ahrs_view,
                         AP_InertialNav *inertial_nav);
@@ -75,36 +96,57 @@ protected:
     // initialise position controller
     bool init_position_controller();
 
-private:
+    // things that can be tuned
+    enum AxisType {
+        ROLL = 0,                 // roll axis is being tuned (either angle or rate)
+        PITCH = 1,                // pitch axis is being tuned (either angle or rate)
+        YAW = 2,                  // pitch axis is being tuned (either angle or rate)
+    };
+
     void control_attitude();
     void backup_gains_and_initialise();
     void load_orig_gains();
     void load_tuned_gains();
     void load_intra_test_gains();
-    void load_twitch_gains();
+    virtual void load_test_gains();
+    virtual void test_init() = 0;
+    virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
     void update_gcs(uint8_t message_id) const;
-    bool roll_enabled();
-    bool pitch_enabled();
-    bool yaw_enabled();
+    bool roll_enabled() const;
+    bool pitch_enabled() const;
+    bool yaw_enabled() const;
     void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
     void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
     void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
-    void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
-    void updating_rate_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
-    void updating_rate_p_up_d_down(float &tune_d, float tune_d_min, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
-    void updating_angle_p_down(float &tune_p, float tune_p_min, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
-    void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+
+    // Added generic twitch test functions for multi
+    void twitch_test_init();
+    void twitch_test_run(AxisType test_axis, const float dir_sign);
+
+    // replace multi specific updating gain functions with generic forms that covers all axes
+    // generic method used by subclasses to update gains for the rate p up tune type
+    virtual void updating_rate_p_up_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the rate p down tune type
+    virtual void updating_rate_p_down_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the rate d up tune type
+    virtual void updating_rate_d_up_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the rate d down tune type
+    virtual void updating_rate_d_down_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the angle p up tune type
+    virtual void updating_angle_p_up_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the angle p down tune type
+    virtual void updating_angle_p_down_all(AxisType test_axis)=0;
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
-    void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
-    void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
+    virtual void Log_AutoTune() = 0;
+    virtual void Log_AutoTuneDetails() = 0;
 
     void send_step_string();
     const char *level_issue_string() const;
     const char * type_string() const;
     void announce_state_to_gcs();
-    void do_gcs_announcements();
+    virtual void do_gcs_announcements() = 0;
 
     enum struct LevelIssue {
         NONE,
@@ -129,15 +171,8 @@ private:
     // steps performed while in the tuning mode
     enum StepType {
         WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
-        TWITCHING = 1,            // autotune has begun a twitch and is watching the resulting vehicle movement
-        UPDATE_GAINS = 2          // autotune has completed a twitch and is updating the gains based on the results
-    };
-
-    // things that can be tuned
-    enum AxisType {
-        ROLL = 0,                 // roll axis is being tuned (either angle or rate)
-        PITCH = 1,                // pitch axis is being tuned (either angle or rate)
-        YAW = 2,                  // pitch axis is being tuned (either angle or rate)
+        TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
+        UPDATE_GAINS      = 2     // autotune has completed a test and is updating the gains based on the results
     };
 
     // mini steps performed while in Tuning mode, Testing step
@@ -145,14 +180,19 @@ private:
         RD_UP = 0,                // rate D is being tuned up
         RD_DOWN = 1,              // rate D is being tuned down
         RP_UP = 2,                // rate P is being tuned up
-        SP_DOWN = 3,              // angle P is being tuned down
-        SP_UP = 4                 // angle P is being tuned up
+        RP_DOWN = 3,              // rate P is being tuned down
+        RFF_UP = 4,               // rate FF is being tuned up
+        RFF_DOWN = 5,             // rate FF is being tuned down
+        SP_UP = 6,                // angle P is being tuned up
+        SP_DOWN = 7,              // angle P is being tuned down
+        MAX_GAINS = 8,            // max allowable stable gains are determined
+        TUNE_COMPLETE = 9         // Reached end of tuning
     };
 
     // type of gains to load
     enum GainType {
         GAIN_ORIGINAL   = 0,
-        GAIN_TWITCH     = 1,
+        GAIN_TEST       = 1,
         GAIN_INTRA_TEST = 2,
         GAIN_TUNED      = 3,
     };
@@ -201,6 +241,7 @@ private:
     float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel;
     float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
     float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
+    float    tune_roll_rff, tune_pitch_rff, tune_yaw_rd, tune_yaw_rff;
 
     uint32_t announce_time;
     float lean_angle;
@@ -220,9 +261,75 @@ private:
     AP_Float min_d;
 
     // copies of object pointers to make code a bit clearer
-    AC_AttitudeControl_Multi *attitude_control;
+    AC_AttitudeControl *attitude_control;
     AC_PosControl *pos_control;
     AP_AHRS_View *ahrs_view;
     AP_InertialNav *inertial_nav;
     AP_Motors *motors;
+
+    TuneType  tune_seq[6];              // holds sequence of tune_types to be performed
+    uint8_t tune_seq_curr;               // current tune sequence step
+    virtual bool allow_zero_rate_p() = 0;
+    virtual float get_intra_test_ri(AxisType test_axis) = 0;
+    virtual float get_load_tuned_ri(AxisType test_axis) = 0;
+    virtual float get_load_tuned_yaw_rd() = 0;
+    virtual float get_rp_min() const = 0;
+    virtual float get_sp_min() const = 0;
+    virtual float get_rlpf_min() const = 0;
+
+    // Functions added for heli autotune
+
+    // Add additional updating gain functions specific to heli
+    // generic method used by subclasses to update gains for the rate ff up tune type
+    virtual void updating_rate_ff_up_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the rate ff down tune type
+    virtual void updating_rate_ff_down_all(AxisType test_axis)=0;
+    // generic method used by subclasses to update gains for the max gain tune type
+    virtual void updating_max_gains_all(AxisType test_axis)=0;
+
+    // Feedforward test used to determine Rate FF gain
+    void rate_ff_test_init();
+    void rate_ff_test_run(float max_angle_cds, float target_rate_cds);
+
+    // dwell test used to perform frequency dwells for rate gains
+    void dwell_test_init(float filt_freq);
+    void dwell_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase);
+
+    // dwell test used to perform frequency dwells for angle gains
+    void angle_dwell_test_init(float filt_freq);
+    void angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase);
+
+    // determines the gain and phase for a dwell
+    void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
+
+    uint8_t  ff_test_phase;                         // phase of feedforward test
+    float    test_command_filt;                     // filtered commanded output
+    float    test_rate_filt;                        // filtered rate output
+    float    command_out;
+    float    test_tgt_rate_filt;                    // filtered target rate
+    float    filt_target_rate;
+    bool     ff_up_first_iter   : 1;       //true on first iteration of ff up testing
+    float    test_gain[20];                             // gain of output to input
+    float    test_freq[20];
+    float    test_phase[20];
+    float    dwell_start_time_ms;
+    uint8_t  freq_cnt;
+    uint8_t  freq_cnt_max;
+    float    curr_test_freq;
+    bool     dwell_complete;
+    Vector3f start_angles;
+
+    LowPassFilterFloat  command_filt;               // filtered command
+    LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
+
+    struct max_gain_data {
+        float freq;
+        float phase;
+        float gain;
+        float max_allowed;
+    };
+
+    max_gain_data max_rate_p;
+    max_gain_data max_rate_d;
+
 };
