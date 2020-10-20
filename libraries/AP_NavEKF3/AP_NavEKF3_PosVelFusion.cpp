@@ -992,6 +992,7 @@ void NavEKF3_core::selectHeightForFusion()
     baroDataToFuse = storedBaro.recall(baroDataDelayed, imuDataDelayed.time_ms);
 
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
+    const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
     // select height source
     if (extNavUsedForPos && (frontend->_altSource == 4)) {
         // always use external navigation as the height source if using for position.
@@ -1043,14 +1044,14 @@ void NavEKF3_core::selectHeightForFusion()
         activeHgtSource = HGT_SOURCE_GPS;
     } else if ((frontend->_altSource == 3) && validOrigin && rngBcnGoodToAlign) {
         activeHgtSource = HGT_SOURCE_BCN;
-    } else if ((frontend->_altSource == 4) && ((imuSampleTime_ms - extNavMeasTime_ms) < 500)) {
+    } else if ((frontend->_altSource == 4) && extNavDataIsFresh) {
         activeHgtSource = HGT_SOURCE_EXTNAV;
     }
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
     bool lostRngHgt = ((activeHgtSource == HGT_SOURCE_RNG) && !rangeFinderDataIsFresh);
     bool lostGpsHgt = ((activeHgtSource == HGT_SOURCE_GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
-    bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && ((imuSampleTime_ms - extNavMeasTime_ms) > 2000));
+    bool lostExtNavHgt = ((activeHgtSource == HGT_SOURCE_EXTNAV) && !extNavDataIsFresh);
     bool lostRngBcnHgt = ((activeHgtSource == HGT_SOURCE_BCN) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
     if (lostRngHgt || lostGpsHgt || lostExtNavHgt || lostRngBcnHgt) {
         activeHgtSource = HGT_SOURCE_BARO;
