@@ -80,11 +80,14 @@ static const char* get_frame_type(uint8_t byte)
         return "ATTITUDE";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE:
         return "FLIGHT_MODE";
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+        return "DEVICE_INFO";
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
+        return "PARAM_READ";
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+        return "SETTINGS_ENTRY";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
         return "UNKNOWN";
     }
@@ -259,7 +262,12 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #ifdef CRSF_DEBUG
     hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type));
     for (uint8_t i = 0; i < frame->length + 2; i++) {
-        hal.console->printf(" 0x%x", ((uint8_t*)frame)[i]);
+        uint8_t val = ((uint8_t*)frame)[i];
+        if (val >= 32 && val <= 126) {
+            hal.console->printf(" 0x%x '%c'", val, (char)val);
+        } else {
+            hal.console->printf(" 0x%x", val);
+        }
     }
     hal.console->printf("\n");
 #endif
