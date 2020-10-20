@@ -1269,8 +1269,11 @@ int lua_DroneCAN_get_FlexDebug(lua_State *L)
 
     return 2;
 }
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
 
-static int AC_Fence_Load(lua_State *L) {
+#if AP_FENCE_ENABLED
+int AC_Fence_load(lua_State *L)
+{
     AC_Fence * fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
         return luaL_argerror(L, 1, "fence not supported on this firmware");
@@ -1294,22 +1297,16 @@ static int AC_Fence_Load(lua_State *L) {
     return 0;
 }
 
-const luaL_Reg AC_Fence_functions[] = {
-    {"load", AC_Fence_Load},
-    {NULL, NULL}
-};
-
-void load_lua_bindings(lua_State *L) {
-    lua_pushstring(L, "logger");
-    luaL_newlib(L, AP_Logger_functions);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "fence");
-    luaL_newlib(L, AC_Fence_functions);
-    lua_settable(L, -3);
-
-    luaL_setfuncs(L, global_functions, 0);
+int AC_Fence_broadcast(lua_State *L)
+{
+    AC_Fence * fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        return luaL_argerror(L, 1, "fence not supported on this firmware");
+    }
+    bool ret = fence->broadcast_fence();
+    lua_pushboolean(L, ret);
+    return 1;
 }
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif
 
 #endif  // AP_SCRIPTING_ENABLED
