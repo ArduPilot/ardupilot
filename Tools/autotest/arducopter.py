@@ -1562,7 +1562,7 @@ class AutoTestCopter(AutoTest):
 
         # switch to stabilize mode
         self.change_mode("STABILIZE")
-        self.set_rc(3, 1700)
+        self.set_rc(3, 1550)
 
         # start copter yawing slowly
         self.set_rc(4, 1550)
