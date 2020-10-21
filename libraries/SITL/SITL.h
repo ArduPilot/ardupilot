@@ -56,6 +56,7 @@ struct sitl_fdm {
     double battery_voltage; // Volts
     double battery_current; // Amps
     uint8_t num_motors;
+    uint8_t vtol_motor_start;
     float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[12];         // RC input 0..1
