@@ -504,7 +504,7 @@ void NavEKF2_core::readGpsData()
             gpsCheckStatus.bad_fix = false;
 
             // store fix time from previous read
-            secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+            const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
             // get current fix time
             lastTimeGpsReceived_ms = gps.last_message_time_ms(gps.primary_sensor());
