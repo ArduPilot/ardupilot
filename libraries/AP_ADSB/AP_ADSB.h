@@ -34,8 +34,13 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_ADSB_Backend;
+
 class AP_ADSB {
 public:
+    friend class AP_ADSB_Backend;
+    friend class AP_ADSB_uAvionix_MAVLink;
+
     // constructor
     AP_ADSB();
 
@@ -235,6 +240,8 @@ private:
 
     void update_uavionix();
 
+    // reference to backend
+    AP_ADSB_Backend *_backend;
 };
 
 namespace AP {
