@@ -1021,9 +1021,9 @@ class AutoTestCopter(AutoTest):
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
 
-        # cut motor 1 to 55% efficiency
-        self.progress("Cutting motor 1 to 60% efficiency")
-        self.set_parameter("SIM_ENGINE_MUL", 0.60)
+        # cut motor 1 to 65% efficiency
+        self.progress("Cutting motor 1 to 65% efficiency")
+        self.set_parameter("SIM_ENGINE_MUL", 0.65)
 
         while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
