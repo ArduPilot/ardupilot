@@ -260,7 +260,6 @@ void NavEKF3_core::InitialiseVariables()
     inhibitGndState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    heldVelNE.zero();
     PV_AidingMode = AID_NONE;
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
@@ -292,11 +291,7 @@ void NavEKF3_core::InitialiseVariables()
     yawAlignComplete = false;
     have_table_earth_field = false;
     stateIndexLim = 23;
-    baroStoreIndex = 0;
-    rangeStoreIndex = 0;
     last_gps_idx = 0;
-    tasStoreIndex = 0;
-    ofStoreIndex = 0;
     delAngCorrection.zero();
     velErrintegral.zero();
     posErrintegral.zero();
@@ -353,7 +348,6 @@ void NavEKF3_core::InitialiseVariables()
 
     // range beacon fusion variables
     memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
-    rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
     rngBcnHealth = false;
@@ -459,7 +453,6 @@ void NavEKF3_core::InitialiseVariablesMag()
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     inhibitMagStates = true;
-    magStoreIndex = 0;
     magSelectIndex = 0;
     lastMagOffsetsValid = false;
     magStateResetRequest = false;

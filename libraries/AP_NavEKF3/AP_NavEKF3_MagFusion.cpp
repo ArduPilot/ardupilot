@@ -638,8 +638,6 @@ void NavEKF3_core::FuseMagnetometer()
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
-            magFuseRequired = true;
-
         } else if (obsIndex == 1) { // Fuse Y axis
 
             // calculate observation jacobians
@@ -716,7 +714,6 @@ void NavEKF3_core::FuseMagnetometer()
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
-            magFuseRequired = true;
         }
         else if (obsIndex == 2) // we are now fusing the Z measurement
         {
