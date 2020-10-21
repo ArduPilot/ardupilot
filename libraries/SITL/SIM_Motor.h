@@ -96,6 +96,10 @@ public:
         slew_max = _slew_max;
     }
 
+    float get_command(void) const {
+        return last_command;
+    }
+
     // calculate thrust of motor
     float calc_thrust(float command, float air_density, float effective_prop_area, float velocity_in, float velocity_max) const;
 
