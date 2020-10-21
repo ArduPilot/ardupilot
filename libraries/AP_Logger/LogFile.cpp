@@ -488,6 +488,12 @@ bool AP_Logger_Backend::Write_Message(const char *message)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
+void AP_Logger::Write_APBanner()
+{
+    static constexpr char ap_banner[18] = {0x55,0x4e,0x4d,0x41,0x4e,0x4e,0x45,0x44,0x20,0x55,0x53,0x45,0x20,0x4f,0x4e,0x4c,0x59,0};
+    Write_Message(ap_banner);
+}
+
 void AP_Logger::Write_Power(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
