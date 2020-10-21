@@ -23,6 +23,7 @@
 #include "AP_ADSB.h"
 
 #if HAL_ADSB_ENABLED
+#include "AP_ADSB_uAvionix_MAVLink.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdio.h>  // for sprintf
 #include <limits.h>
@@ -202,6 +203,16 @@ void AP_ADSB::init(void)
             return;
         }
         in_state.list_size_allocated = in_state.list_size_param;
+    }
+
+    if (_backend == nullptr) {
+        _backend = new AP_ADSB_uAvionix_MAVLink(*this);
+
+        if (_backend == nullptr) {
+            _init_failed = true;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
+            return;
+        }
     }
 }
 
