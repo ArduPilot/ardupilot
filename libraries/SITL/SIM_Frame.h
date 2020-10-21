@@ -65,6 +65,11 @@ public:
         return mass;
     }
 
+    // set mass in kg
+    void set_mass(float new_mass) {
+        mass = new_mass;
+    }
+    
 private:
     /*
       parameters that define the multicopter model. Can be loaded from

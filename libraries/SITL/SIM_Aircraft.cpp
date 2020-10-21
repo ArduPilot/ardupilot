@@ -352,6 +352,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.num_motors = num_motors;
+    fdm.vtol_motor_start = vtol_motor_start;
     memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = range;

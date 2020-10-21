@@ -171,6 +171,7 @@ protected:
     float battery_voltage = -1.0f;
     float battery_current;
     uint8_t num_motors = 1;
+    uint8_t vtol_motor_start;
     float rpm[12];
     uint8_t rcin_chan_count;
     float rcin[12];

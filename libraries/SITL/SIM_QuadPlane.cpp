@@ -74,6 +74,7 @@ QuadPlane::QuadPlane(const char *frame_str) :
         exit(1);
     }
     num_motors = 1 + frame->num_motors;
+    vtol_motor_start = 1;
 
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
@@ -88,6 +89,10 @@ QuadPlane::QuadPlane(const char *frame_str) :
 
     // we use zero terminal velocity to let the plane model handle the drag
     frame->init(frame_str);
+
+    // increase mass for plane components
+    mass = frame->get_mass() * 1.5;
+    frame->set_mass(mass);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
