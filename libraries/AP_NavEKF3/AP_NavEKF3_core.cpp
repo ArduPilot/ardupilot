@@ -198,7 +198,6 @@ void NavEKF3_core::InitialiseVariables()
     lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
     lastTimeGpsReceived_ms = 0;
-    secondLastGpsTime_ms = 0;
     lastDecayTime_ms = imuSampleTime_ms;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
