@@ -71,16 +71,17 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!AP::gps().get_lag(selected_gps, gps_delay_sec)) {
-            if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
-                lastInitFailReport_ms = AP_HAL::millis();
+            const uint32_t now = AP_HAL::millis();
+            if (now - lastInitFailReport_ms > 10000) {
+                lastInitFailReport_ms = now;
                 // provide an escalating series of messages
-                if (AP_HAL::millis() > 30000) {
-                    gcs().send_text(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
-                } else if (AP_HAL::millis() > 15000) {
-                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
-                } else  {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+                MAV_SEVERITY severity = MAV_SEVERITY_INFO;
+                if (now > 30000) {
+                    severity = MAV_SEVERITY_ERROR;
+                } else if (now > 15000) {
+                    severity = MAV_SEVERITY_WARNING;
                 }
+                gcs().send_text(severity, "EKF3 waiting for GPS config data");
             }
             return false;
         }
