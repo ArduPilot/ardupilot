@@ -481,6 +481,7 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 
     if (home_is_set()) {
         logger->Write_Origin(LogOriginType::ahrs_home, _home);
+        logger->Write_APBanner();
     }
 }
 
