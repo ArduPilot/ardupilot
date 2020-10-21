@@ -234,35 +234,35 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             // get terrain source from wpnav
             switch (copter.wp_nav->get_terrain_source()) {
             case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
-                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no terrain data");
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d but no terrain data", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                 return false;
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
                 if (!copter.rangefinder_state.enabled || !copter.rangefinder.has_orientation(ROTATION_PITCH_270)) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but no rangefinder");
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d but no rangefinder", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                     return false;
                 }
                 // check if RTL_ALT is higher than rangefinder's max range
                 if (copter.g.rtl_altitude > copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but RTL_ALT>RNGFND_MAX_CM");
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d but RTL_ALT>RNGFND_MAX_CM", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                     return false;
                 }
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
                 if (!copter.terrain.enabled()) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d but terrain disabled", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                     return false;
                 }
                 // check terrain data is loaded
                 uint16_t terr_pending, terr_loaded;
                 copter.terrain.get_statistics(terr_pending, terr_loaded);
                 if (terr_pending != 0) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1, waiting for terrain data");
+                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d, waiting for terrain data", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                     return false;
                 }
 #else
-                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=1 but terrain disabled");
+                check_failed(ARMING_CHECK_PARAMETERS, display_failure, "RTL_ALT_TYPE=%d but terrain disabled", uint8_t(ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN));
                 return false;
 #endif
                 break;
