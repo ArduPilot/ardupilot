@@ -819,19 +819,17 @@ void NavEKF3::UpdateFilter(void)
 
     imuSampleTime_us = AP::dal().micros64();
 
-    bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {
         // if we have not overrun by more than 3 IMU frames, and we
         // have already used more than 1/3 of the CPU budget for this
         // loop then suppress the prediction step. This allows
         // multiple EKF instances to cooperate on scheduling
+        bool allow_state_prediction = true;
         if (core[i].getFramesSincePredict() < (_framesPerPrediction+3) &&
             AP::dal().ekf_low_time_remaining(AP_DAL::EKFType::EKF3, i)) {
-            statePredictEnabled[i] = false;
-        } else {
-            statePredictEnabled[i] = true;
+            allow_state_prediction = false;
         }
-        core[i].UpdateFilter(statePredictEnabled[i]);
+        core[i].UpdateFilter(allow_state_prediction);
     }
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
