@@ -850,7 +850,7 @@ void NavEKF3_core::FuseVelPosNED()
                     Kfusion[i] = P[i][stateIndex]*SK;
                 }
 
-                // inhibit delta angle bias state estmation by setting Kalman gains to zero
+                // inhibit delta angle bias state estimation by setting Kalman gains to zero
                 if (!inhibitDelAngBiasStates) {
                     for (uint8_t i = 10; i<=12; i++) {
                         Kfusion[i] = P[i][stateIndex]*SK;
@@ -892,8 +892,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
                 // this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
                 for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++)
-                    {
+                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
                         KHP[i][j] = Kfusion[i] * P[stateIndex][j];
                     }
                 }
@@ -1838,9 +1837,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
 
             // Fuse data into the main filter
             FuseBodyVel();
-
         }
-
     }
 }
 
