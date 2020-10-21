@@ -100,7 +100,7 @@ void AP_InertialSensor_SITL::generate_accel()
         if (!is_zero(sitl->vibe_motor) && motors_on) {
             for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
                 float &phase = accel_motor_phase[i];
-                float motor_freq = calculate_noise(sitl->state.rpm[i] / 60.0f, freq_variation);
+                float motor_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
                 float phase_incr = motor_freq * 2 * M_PI / (accel_sample_hz * nsamples);
                 phase += phase_incr;
                 if (phase_incr > M_PI) {
@@ -206,7 +206,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
         if (!is_zero(sitl->vibe_motor) && motors_on) {
             for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
-                float motor_freq = calculate_noise(sitl->state.rpm[i] / 60.0f, freq_variation);
+                float motor_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
                 float phase_incr = motor_freq * 2 * M_PI / (gyro_sample_hz * nsamples);
                 float &phase = gyro_motor_phase[i];
                 phase += phase_incr;
