@@ -81,7 +81,8 @@ public:
         SUI6                       = 14,
         NeoDesign                  = 15,
         MAXELL                     = 16,
-        Generator                  = 17,
+        GENERATOR_ELEC             = 17,
+        GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
     };
 
