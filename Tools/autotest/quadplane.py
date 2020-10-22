@@ -589,6 +589,10 @@ class AutoTestQuadPlane(AutoTest):
         self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
+
+        # disable stall prevention to roll angle is not limited
+        self.set_parameter("STALL_PREVENTION", 0)
+
         thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
         lim_roll_deg = self.get_parameter("LIM_ROLL_CD") * 0.01
         self.progress("Waiting for motors to stop (transition completion)")
@@ -612,10 +616,10 @@ class AutoTestQuadPlane(AutoTest):
                                       thr_min_pwm,
                                       timeout=30,
                                       comparator=operator.eq)
-        self.set_rc(3, 1500)
+        self.set_rc(3, 1300)
 
         self.context_push()
-        self.progress("Rolling over to %.0f degrees", -lim_roll_deg)
+        self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
         self.wait_roll(-lim_roll_deg, 5)
         self.progress("Killing servo outputs to force qassist to help")
