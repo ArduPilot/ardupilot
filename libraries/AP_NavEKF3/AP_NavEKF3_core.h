@@ -560,6 +560,7 @@ private:
         Vector3f    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
         uint32_t    time_ms;        // measurement timestamp (msec)
         uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
+        bool        corrected;      // true when the position and velocity have been corrected for sensor position
     };
 
     struct mag_elements {
