@@ -26,7 +26,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Generator/AP_Generator_RichenPower.h>
+#include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
@@ -288,7 +288,7 @@ protected:
 #endif
 
 #if GENERATOR_ENABLED
-    AP_Generator_RichenPower generator;
+    AP_Generator generator;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
