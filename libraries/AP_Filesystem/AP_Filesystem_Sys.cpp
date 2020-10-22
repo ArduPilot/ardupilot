@@ -200,7 +200,7 @@ struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
     }
     dtracker->curr_file.d_type = DT_REG;
     size_t max_length = ARRAY_SIZE(dtracker->curr_file.d_name);
-    strncpy(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
+    strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
     dtracker->file_offset++;
     return &dtracker->curr_file;
 }
