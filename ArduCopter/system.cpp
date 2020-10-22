@@ -55,10 +55,6 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if GENERATOR_ENABLED
-    generator.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
