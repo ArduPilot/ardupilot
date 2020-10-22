@@ -776,7 +776,6 @@ class AutoTest(ABC):
                  binary,
                  valgrind=False,
                  gdb=False,
-                 speedup=8,
                  frame=None,
                  params=None,
                  gdbserver=False,
@@ -805,7 +804,6 @@ class AutoTest(ABC):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
-        self.speedup = speedup
 
         self.mavproxy = None
         self.mav = None
@@ -831,6 +829,14 @@ class AutoTest(ABC):
         self.logs_dir = logs_dir
         self.timesync_number = 137
         self.last_progress_sent_as_statustext = None
+
+    def sitl_speedup(self):
+        '''allow speedup to be overridden per test'''
+        return 8
+
+    def sitl_rate_hz(self):
+        '''allow override of simulation rate'''
+        return 1200
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
@@ -907,7 +913,7 @@ class AutoTest(ABC):
         ret = ['--sitl=127.0.0.1:5501',
                '--out=' + self.autotest_connection_string_from_mavproxy(),
                '--streamrate=%u' % self.sitl_streamrate(),
-               '--cmd="set heartbeat %u"' % self.speedup]
+               '--cmd="set heartbeat %u"' % self.sitl_speedup()]
         if self.viewerip:
             ret.append("--out=%s:14550" % self.viewerip)
         if self.use_map:
@@ -985,6 +991,7 @@ class AutoTest(ABC):
             if self.force_ahrs_type == 3:
                 self.set_parameter("EK3_ENABLE", 1)
             self.set_parameter("AHRS_EKF_TYPE", self.force_ahrs_type)
+        self.set_parameter('SIM_RATE_HZ', self.sitl_rate_hz())
         self.reboot_sitl()
         if False:  # FIXME: do do this if using MAVProxy:
             self.fetch_parameters()
@@ -1965,17 +1972,17 @@ class AutoTest(ABC):
     #################################################
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
+
+        m = self.mav.recv_match(type=['SYSTEM_TIME','ATTITUDE', 'GLOBAL_POSITION_INT', 'RC_CHANNELS', 'SCALED_PRESSURE',
+                                      'SCALED_IMU2', 'SCALED_IMU3'],
+                                      blocking=True, timeout=timeout)
         if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
+            raise AutoTestTimeoutException("Did not get time_boot_ms message after %f seconds" % timeout)
         return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
-        x = self.mav.messages.get("SYSTEM_TIME", None)
-        if x is None:
-            raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        return x.time_boot_ms * 1.0e-3
+        return self.mav.uptime
 
     def sim_location(self):
         """Return current simulator location."""
@@ -3398,7 +3405,7 @@ class AutoTest(ABC):
                     self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
                     self.get_sim_time_cached() > tstart + timeout):
-                raise WaitModeTimeout("Did not change mode")
+                raise WaitModeTimeout("Did not change mode %s" % mode)
             self.mavproxy.send('mode %s\n' % mode)
         self.progress("Got mode %s" % mode)
 
@@ -3914,6 +3921,7 @@ class AutoTest(ABC):
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
+        self.drain_mav()
         tstart = self.get_sim_time()
         while not self.mode_is(mode, drain_mav=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
@@ -3921,7 +3929,8 @@ class AutoTest(ABC):
                     self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
                     self.get_sim_time_cached() > tstart + timeout):
-                raise WaitModeTimeout("Did not change mode")
+                print("FAIL: ", self.get_sim_time_cached(),tstart, timeout)
+                raise WaitModeTimeout("Did not change mode %s" % mode)
         self.progress("Got mode %s" % mode)
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
@@ -4303,7 +4312,7 @@ Also, ignores heartbeats not from our target system'''
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
             "home": self.sitl_home(),
-            "speedup": self.speedup,
+            "speedup": self.sitl_speedup(),
             "valgrind": self.valgrind,
             "wipe": True,
         }
@@ -6628,12 +6637,14 @@ switch value'''
 
             self.start_subtest("GPS Failure")
             self.set_parameter("AFS_MAX_GPS_LOSS", 1)
+            self.drain_mav()
             self.set_parameter("SIM_GPS_DISABLE", 1)
             self.wait_statustext("AFS State: GPS_LOSS")
             self.set_parameter("SIM_GPS_DISABLE", 0)
             self.set_parameter("AFS_MAX_GPS_LOSS", 0)
             self.set_parameter("AFS_TERMINATE", 0)
 
+            self.drain_mav()
             self.send_cmd(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
                           1,  # terminate
                           0,

@@ -23,6 +23,19 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 
 class AutoTestPlane(AutoTest):
+
+    def sitl_streamrate(self):
+        '''override streamrate'''
+        return 2
+
+    def sitl_speedup(self):
+        '''override speedup'''
+        return 40
+
+    def sitl_rate_hz(self):
+        '''override simulation rate'''
+        return 100
+    
     @staticmethod
     def get_not_armable_mode_list():
         return []
@@ -681,7 +694,7 @@ class AutoTestPlane(AutoTest):
                 break
         self.fly_home_land_and_disarm()
 
-    def fly_home_land_and_disarm(self, timeout=120):
+    def fly_home_land_and_disarm(self, timeout=220):
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         num_wp = self.load_mission(filename)
@@ -825,6 +838,10 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
     def test_throttle_failsafe(self):
+        # run this test a bit slower, to handle the CIRCLE/RTL timing
+        self.set_parameter("SIM_SPEEDUP", 8)
+        self.drain_mav()
+
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
