@@ -1754,8 +1754,8 @@ class AutoTestCopter(AutoTest):
 
             self.reboot_sitl()
 
-            self.takeoff(alt_min=2, require_absolute=False)
-
+            # we can't takeoff in loiter as we need flow healthy
+            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
             self.mavproxy.send('mode loiter\n')
             self.wait_mode('LOITER')
 
@@ -1765,9 +1765,13 @@ class AutoTestCopter(AutoTest):
             tstart = self.get_sim_time()
             timeout = 60
             while self.get_sim_time_cached() - tstart < timeout:
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-                spd = m.groundspeed
-                max_speed = 10
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
+                alt = m.relative_alt*0.001
+
+                # calculate max speed from altitude above the ground
+                margin = 2.0
+                max_speed = alt * 1.4 + margin
                 self.progress("%0.1f: Low Speed: %f (want <= %u)" %
                               (self.get_sim_time_cached() - tstart,
                                spd,
