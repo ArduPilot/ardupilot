@@ -136,10 +136,10 @@ class AutoTestCopter(AutoTest):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def wait_for_alt(self, alt_min=30, timeout=30):
+    def wait_for_alt(self, alt_min=30, timeout=30, max_err=5):
         """Wait for minimum altitude to be reached."""
         self.wait_altitude(alt_min - 1,
-                           (alt_min + 500),
+                           (alt_min + max_err),
                            relative=True,
                            timeout=timeout)
 
@@ -1714,8 +1714,8 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Regaining altitude")
             self.change_mode('STABILIZE')
-            self.set_rc(3, 1800)
-            self.wait_for_alt(20)
+            self.set_rc(3, 1650)
+            self.wait_for_alt(20, max_err=40)
             self.hover()
 
             self.progress("Flipping in pitch")
