@@ -188,9 +188,14 @@ AP_BattMonitor::init()
                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                          100000, true, 20));
                 break;
-            case Type::Generator:
-                drivers[instance] = new AP_BattMonitor_Generator(*this, state[instance], _params[instance]);
+#if GENERATOR_ENABLED
+            case Type::GENERATOR_ELEC:
+                drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
                 break;
+            case Type::GENERATOR_FUEL:
+                drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
+                break;
+#endif // GENERATOR_ENABLED
             case Type::NONE:
             default:
                 break;
