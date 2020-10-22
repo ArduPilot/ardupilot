@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Camera/AP_RunCam.h>
-#include <AP_Generator/AP_Generator_RichenPower.h>
+#include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_LandingGear/AP_LandingGear.h>
@@ -763,7 +763,7 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
 #if GENERATOR_ENABLED
 void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 {
-    AP_Generator_RichenPower *generator = AP::generator();
+    AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return;
     }
