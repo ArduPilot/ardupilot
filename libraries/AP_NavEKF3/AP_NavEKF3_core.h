@@ -627,12 +627,14 @@ private:
         float           posErr;     // spherical poition measurement error 1-std (m)
         uint32_t        time_ms;    // measurement timestamp (msec)
         bool            posReset;   // true when the position measurement has been reset
+        bool            corrected;  // true when the position has been corrected for sensor position
     };
 
     struct ext_nav_vel_elements {
         Vector3f vel;               // velocity in NED (m/s)
         float err;                  // velocity measurement error (m/s)
         uint32_t time_ms;           // measurement timestamp (msec)
+        bool corrected;             // true when the velocity has been corrected for sensor position
     };
 
     // bias estimates for the IMUs that are enabled but not being used
@@ -944,10 +946,10 @@ private:
     void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
-    void CorrectExtNavForSensorOffset(Vector3f &ext_position);
+    void CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data);
 
     // correct external navigation earth-frame velocity using sensor body-frame offset
-    void CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const;
+    void CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav_vel_data) const;
 
     // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
     // that uses IMU, GPS horizontal velocity and optionally true airspeed data.

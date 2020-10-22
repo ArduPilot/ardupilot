@@ -1051,7 +1051,8 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     const ext_nav_vel_elements extNavVelNew {
         vel,
         err,
-        timeStamp_ms
+        timeStamp_ms,
+        false
     };
     storedExtNavVel.push(extNavVelNew);
 }
