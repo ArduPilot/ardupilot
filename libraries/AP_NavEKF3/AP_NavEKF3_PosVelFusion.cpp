@@ -323,6 +323,12 @@ bool NavEKF3_core::resetHeightDatum(void)
  */
 void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 {
+    // return immediately if already corrected
+    if (gps_data.corrected) {
+        return;
+    }
+    gps_data.corrected = true;
+
     const Vector3f &posOffsetBody = AP::gps().get_antenna_offset(gps_data.sensor_idx) - accelPosOffset;
     if (posOffsetBody.is_zero()) {
         return;

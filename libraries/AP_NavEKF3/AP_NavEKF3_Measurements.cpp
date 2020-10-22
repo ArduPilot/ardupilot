@@ -581,6 +581,9 @@ void NavEKF3_core::readGpsData()
             // read the NED velocity from the GPS
             gpsDataNew.vel = gps.velocity(selected_gps);
 
+            // position and velocity are not yet corrected for sensor position
+            gpsDataNew.corrected = false;
+
             // Use the speed and position accuracy from the GPS if available, otherwise set it to zero.
             // Apply a decaying envelope filter with a 5 second time constant to the raw accuracy data
             float alpha = constrain_float(0.0002f * (lastTimeGpsReceived_ms - secondLastGpsTime_ms),0.0f,1.0f);
