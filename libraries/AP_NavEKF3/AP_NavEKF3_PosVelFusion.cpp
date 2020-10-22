@@ -345,8 +345,14 @@ void NavEKF3_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 }
 
 // correct external navigation earth-frame position using sensor body-frame offset
-void NavEKF3_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
+void NavEKF3_core::CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data)
 {
+    // return immediately if already corrected
+    if (ext_nav_data.corrected) {
+        return;
+    }
+    ext_nav_data.corrected = true;
+
 #if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom == nullptr) {
@@ -357,15 +363,21 @@ void NavEKF3_core::CorrectExtNavForSensorOffset(Vector3f &ext_position)
         return;
     }
     Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-    ext_position.x -= posOffsetEarth.x;
-    ext_position.y -= posOffsetEarth.y;
-    ext_position.z -= posOffsetEarth.z;
+    ext_nav_data.pos.x -= posOffsetEarth.x;
+    ext_nav_data.pos.y -= posOffsetEarth.y;
+    ext_nav_data.pos.z -= posOffsetEarth.z;
 #endif
 }
 
 // correct external navigation earth-frame velocity using sensor body-frame offset
-void NavEKF3_core::CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const
+void NavEKF3_core::CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav_vel_data) const
 {
+    // return immediately if already corrected
+    if (ext_nav_vel_data.corrected) {
+        return;
+    }
+    ext_nav_vel_data.corrected = true;
+
 #if HAL_VISUALODOM_ENABLED
     AP_VisualOdom *visual_odom = AP::visualodom();
     if (visual_odom == nullptr) {
@@ -377,7 +389,7 @@ void NavEKF3_core::CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const
     }
     // TODO use a filtered angular rate with a group delay that matches the sensor delay
     const Vector3f angRate = imuDataDelayed.delAng * (1.0f/imuDataDelayed.delAngDT);
-    ext_velocity += get_vel_correction_for_sensor_offset(posOffsetBody, prevTnb, angRate);
+    ext_nav_vel_data.vel += get_vel_correction_for_sensor_offset(posOffsetBody, prevTnb, angRate);
 #endif
 }
 
@@ -401,11 +413,11 @@ void NavEKF3_core::SelectVelPosFusion()
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
     if (extNavDataToFuse) {
-        CorrectExtNavForSensorOffset(extNavDataDelayed.pos);
+        CorrectExtNavForSensorOffset(extNavDataDelayed);
     }
     extNavVelToFuse = storedExtNavVel.recall(extNavVelDelayed, imuDataDelayed.time_ms);
     if (extNavVelToFuse) {
-        CorrectExtNavVelForSensorOffset(extNavVelDelayed.vel);
+        CorrectExtNavVelForSensorOffset(extNavVelDelayed);
     }
 
     // Read GPS data from the sensor
