@@ -625,7 +625,7 @@ private:
 
     struct ext_nav_elements {
         Vector3f        pos;        // XYZ position measured in a RH navigation frame (m)
-        float           posErr;     // spherical poition measurement error 1-std (m)
+        float           posErr;     // spherical position measurement error 1-std (m)
         uint32_t        time_ms;    // measurement timestamp (msec)
         bool            posReset;   // true when the position measurement has been reset
         bool            corrected;  // true when the position has been corrected for sensor position
