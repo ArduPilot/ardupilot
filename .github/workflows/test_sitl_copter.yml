@@ -135,6 +135,21 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
 
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: BIN-files-for-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7
+
+
   build-gcc-heli:
     needs: build-gcc  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
@@ -218,3 +233,18 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: BIN-files-for-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7
+
