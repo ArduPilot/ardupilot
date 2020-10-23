@@ -559,10 +559,7 @@ def write_fullresults():
     results.addglob("GPX track", '*.gpx')
 
     # results common to all vehicles:
-    vehicle_files = [('{vehicle} build log', '{vehicle}.txt'),
-                     ('{vehicle} code size', '{vehicle}.sizes.txt'),
-                     ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
-                     ('{vehicle} defaults', '{vehicle}-defaults.parm'),
+    vehicle_files = [('{vehicle} defaults', '{vehicle}-defaults.parm'),
                      ('{vehicle} core', '{vehicle}.core'),
                      ('{vehicle} ELF', '{vehicle}.elf'), ]
     vehicle_globs = [('{vehicle} log', '{vehicle}-*.BIN'), ]
