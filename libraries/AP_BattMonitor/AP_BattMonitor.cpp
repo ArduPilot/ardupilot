@@ -393,7 +393,7 @@ void AP_BattMonitor::check_failsafes(void)
                 continue;
             }
 
-            const BatteryFailsafe type = drivers[i]->update_failsafes();
+            const Failsafe type = drivers[i]->update_failsafes();
             if (type <= state[i].failsafe) {
                 continue;
             }
@@ -401,13 +401,13 @@ void AP_BattMonitor::check_failsafes(void)
             int8_t action = 0;
             const char *type_str = nullptr;
             switch (type) {
-                case AP_BattMonitor::BatteryFailsafe_None:
+                case Failsafe::None:
                     continue; // should not have been called in this case
-                case AP_BattMonitor::BatteryFailsafe_Low:
+                case Failsafe::Low:
                     action = _params[i]._failsafe_low_action;
                     type_str = "low";
                     break;
-                case AP_BattMonitor::BatteryFailsafe_Critical:
+                case Failsafe::Critical:
                     action = _params[i]._failsafe_critical_action;
                     type_str = "critical";
                     break;
@@ -551,7 +551,7 @@ void AP_BattMonitor::checkPoweringOff(void)
 bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
 {
     bool ret = true;
-    BatteryFailsafe highest_failsafe = BatteryFailsafe_None;
+    Failsafe highest_failsafe = Failsafe::None;
     for (uint8_t i = 0; i < _num_instances; i++) {
         if ((1U<<i) & battery_mask) {
             ret &= drivers[i]->reset_remaining(percentage);
@@ -562,7 +562,7 @@ bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
     }
 
     // If all backends are not in failsafe then set overall failsafe state
-    if (highest_failsafe == BatteryFailsafe_None) {
+    if (highest_failsafe == Failsafe::None) {
         _highest_failsafe_priority = INT8_MAX;
         _has_triggered_failsafe = false;
         // and reset notify flag

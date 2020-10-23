@@ -143,9 +143,9 @@ void AP_BattMonitor_Generator_Elec::read()
     _state.last_time_micros = AP_HAL::micros();
 }
 
-AP_BattMonitor::BatteryFailsafe AP_BattMonitor_Generator_Elec::update_failsafes()
+AP_BattMonitor::Failsafe AP_BattMonitor_Generator_Elec::update_failsafes()
 {
-    AP_BattMonitor::BatteryFailsafe failsafe = AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_None;
+    AP_BattMonitor::Failsafe failsafe = AP_BattMonitor::Failsafe::None;
 
     AP_Generator *generator = AP::generator();
 
