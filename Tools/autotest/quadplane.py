@@ -632,10 +632,10 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
-
+        self.set_rc(1, 1500)
+        self.mavproxy.send('rally clear\n')
+        self.set_parameter("Q_RTL_MODE", 1)
         self.change_mode("RTL")
-        self.delay_sim_time(20)
-        self.change_mode("QRTL")
         self.wait_disarmed(timeout=300)
 
     def tests(self):
