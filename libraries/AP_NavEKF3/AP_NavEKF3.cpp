@@ -978,7 +978,7 @@ void NavEKF3::checkLaneSwitch(void)
 void NavEKF3::requestYawReset(void)
 {
     for (uint8_t i = 0; i < num_cores; i++) {
-        core[primary].EKFGSF_requestYawReset();
+        core[i].EKFGSF_requestYawReset();
     }
 }
 
