@@ -25,7 +25,7 @@ public:
     bool has_consumed_energy(void) const override;
 
     // Override backend update_failsafes.  No point in failsafing twice so generator failsafes are only updated from the electrical instance of the generator drivers
-    AP_BattMonitor::BatteryFailsafe update_failsafes() override;
+    AP_BattMonitor::Failsafe update_failsafes() override;
 };
 
 // Sub class for generator fuel
