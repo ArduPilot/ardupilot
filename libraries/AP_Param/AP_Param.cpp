@@ -1489,7 +1489,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
         }
     }
 #endif
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
     hal.util->set_cmdline_parameters();
 #endif
 }
