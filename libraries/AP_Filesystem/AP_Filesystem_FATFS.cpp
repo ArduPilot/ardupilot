@@ -818,6 +818,24 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
 }
 
 /*
+  retry mount of filesystem if needed
+*/
+bool AP_Filesystem_FATFS::retry_mount(void)
+{
+    WITH_SEMAPHORE(sem);
+    return sdcard_retry();
+}
+
+/*
+  unmount filesystem for reboot
+*/
+void AP_Filesystem_FATFS::unmount(void)
+{
+    WITH_SEMAPHORE(sem);
+    return sdcard_stop();
+}
+
+/*
   convert POSIX errno to text with user message.
 */
 char *strerror(int errnum)
