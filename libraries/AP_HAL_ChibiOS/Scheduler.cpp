@@ -36,8 +36,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
+#include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
-#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -258,8 +258,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
         AP::logger().StopLogging();
     }
 
-    // stop sdcard driver, if active
-    sdcard_stop();
+    // unmount filesystem, if active
+    AP::FS().unmount();
 #endif
 
 #if !defined(NO_FASTBOOT)
@@ -465,22 +465,26 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+#ifndef HAL_NO_LOGGING
     uint32_t last_sd_start_ms = AP_HAL::millis();
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#ifndef HAL_NO_LOGGING
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
-                sdcard_retry();
+                AP::FS().retry_mount();
             }
         }
+#endif
     }
 }
 
