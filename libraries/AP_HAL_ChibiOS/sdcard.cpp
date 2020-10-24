@@ -80,8 +80,6 @@ bool sdcard_init()
         }
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
 
-        // Create APM Directory if needed
-        AP::FS().mkdir("/APM");
         sdcard_running = true;
         return true;
     }
@@ -124,9 +122,6 @@ bool sdcard_init()
             continue;
         }
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
-
-        // Create APM Directory if needed
-        AP::FS().mkdir("/APM");
         return true;
     }
 #endif
@@ -163,7 +158,10 @@ bool sdcard_retry(void)
 {
 #ifdef USE_POSIX
     if (!sdcard_running) {
-        sdcard_init();
+        if (sdcard_init()) {
+            // create APM directory
+            AP::FS().mkdir("/APM");
+        }
     }
     return sdcard_running;
 #endif

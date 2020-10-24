@@ -55,13 +55,6 @@ public:
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
-#ifdef USE_POSIX
-    /*
-      initialise (or re-initialise) filesystem storage
-     */
-    bool fs_init(void) override;
-#endif
-
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
