@@ -20,7 +20,6 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
-#include <Filter/LowPassFilter.h>
 
 namespace SITL {
 
@@ -36,16 +35,16 @@ public:
     Frame(const char *_name,
           uint8_t _num_motors,
           Motor *_motors) :
-        name(_name),
-        num_motors(_num_motors),
-        motors(_motors) {}
+          name(_name),
+          num_motors(_num_motors),
+          motors(_motors) {}
 
 
     // find a frame by name
     static Frame *find_frame(const char *name);
     
     // initialise frame
-    void init(const char *frame_str);
+    void init(const char *frame_str, Battery *_battery);
 
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
@@ -96,6 +95,9 @@ private:
         // full pack voltage
         float maxVoltage = 4.2*3;
 
+        // battery capacity in Ah. Use zero for unlimited
+        float battCapacityAh = 0.0;
+
         // CTUN.ThO at bover at refAlt
         float hoverThrOut = 0.39;
 
@@ -127,9 +129,8 @@ private:
     float velocity_max;
     float thrust_max;
     float effective_prop_area;
-
-    // 10Hz filter for battery voltage
-    LowPassFilterFloat voltage_filter{10};
+    Battery *battery;
+    float last_param_voltage;
 
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;

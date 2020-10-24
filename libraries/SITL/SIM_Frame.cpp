@@ -362,6 +362,7 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(refAlt),
         FRAME_VAR(refTempC),
         FRAME_VAR(maxVoltage),
+        FRAME_VAR(battCapacityAh),
         FRAME_VAR(refBatRes),
         FRAME_VAR(propExpo),
         FRAME_VAR(refRotRate),
@@ -392,9 +393,10 @@ void Frame::load_frame_params(const char *model_json)
 /*
   initialise the frame
  */
-void Frame::init(const char *frame_str)
+void Frame::init(const char *frame_str, Battery *_battery)
 {
     model = default_model;
+    battery = _battery;
 
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
@@ -422,9 +424,8 @@ void Frame::init(const char *frame_str)
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
 
-    // init voltage
-    voltage_filter.reset(AP::sitl()->batt_voltage);
-    
+    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
+
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
                                model.mass, model.diagonal_size, power_factor, model.maxVoltage);
@@ -442,7 +443,7 @@ void Frame::init(const char *frame_str)
             Vector3f rot_accel {}, thrust {};
             Vector3f vel_air_bf {};
             motors[0].calculate_forces(input, motor_offset, rot_accel, thrust, vel_air_bf,
-                                       ref_air_density, velocity_max, effective_prop_area, voltage_filter.get());
+                                       ref_air_density, velocity_max, effective_prop_area, battery->get_voltage());
             ::printf("pwm[%u] cmd=%.3f thrust=%.3f hovthst=%.3f\n",
                      pwm, motors[0].pwm_to_command(pwm), -thrust.z*num_motors, hover_thrust);
         }
@@ -483,7 +484,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mraccel, mthrust;
         motors[i].calculate_forces(input, motor_offset, mraccel, mthrust, vel_air_bf, air_density, velocity_max,
-                                   effective_prop_area, voltage_filter.get());
+                                   effective_prop_area, battery->get_voltage());
         current += motors[i].get_current();
         rot_accel += mraccel;
         thrust += mthrust;
@@ -515,9 +516,6 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         body_accel += aircraft.get_dcm().transposed() * drag_ef / mass;
     }
 
-    float voltage_drop = current * model.refBatRes;
-    voltage_filter.apply(AP::sitl()->batt_voltage - voltage_drop);
-
     // add some noise
     const float gyro_noise = radians(0.1);
     const float accel_noise = 0.3;
@@ -534,7 +532,12 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 // calculate current and voltage
 void Frame::current_and_voltage(float &voltage, float &current)
 {
-    voltage = voltage_filter.get();
+    float param_voltage = AP::sitl()->batt_voltage;
+    if (!is_equal(last_param_voltage,param_voltage)) {
+        battery->init_voltage(param_voltage);
+        last_param_voltage = param_voltage;
+    }
+    voltage = battery->get_voltage();
     current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         current += motors[i].get_current();
