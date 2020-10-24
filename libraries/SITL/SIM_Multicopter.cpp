@@ -32,7 +32,7 @@ MultiCopter::MultiCopter(const char *frame_str) :
         exit(1);
     }
 
-    frame->init(frame_str);
+    frame->init(frame_str, &battery);
 
     mass = frame->get_mass();
     frame_height = 0.1;
@@ -63,6 +63,8 @@ void MultiCopter::update(const struct sitl_input &input)
 
     // estimate voltage and current
     frame->current_and_voltage(battery_voltage, battery_current);
+
+    battery.set_current(battery_current);
 
     update_dynamics(rot_accel);
     update_external_payload(input);

@@ -31,6 +31,7 @@
 #include "SIM_RichenPower.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
+#include "SIM_Battery.h"
 #include <Filter/Filter.h>
 
 namespace SITL {
@@ -170,6 +171,10 @@ protected:
     float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
     float battery_current;
+
+    // battery model
+    Battery battery;
+
     uint8_t num_motors = 1;
     uint8_t vtol_motor_start;
     float rpm[12];
