@@ -78,6 +78,7 @@ public:
         uint32_t last_gps_ms;
         uint32_t last_baro_ms;
         uint32_t last_mag_ms;
+        uint32_t last_airspeed_ms;
     } msp;
     void msp_init(AP_HAL::UARTDriver *_uart);
     void msp_sensor_update(void);
@@ -85,6 +86,7 @@ public:
     void send_msp_GPS(void);
     void send_msp_compass(void);
     void send_msp_baro(void);
+    void send_msp_airspeed(void);
 #endif
     
 #ifdef HAL_PERIPH_ENABLE_ADSB
