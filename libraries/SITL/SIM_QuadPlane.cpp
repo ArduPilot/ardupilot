@@ -88,7 +88,7 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(frame_str);
+    frame->init(frame_str, &battery);
 
     // increase mass for plane components
     mass = frame->get_mass() * 1.5;
@@ -117,6 +117,8 @@ void QuadPlane::update(const struct sitl_input &input)
 
     // estimate voltage and current
     frame->current_and_voltage(battery_voltage, battery_current);
+
+    battery.set_current(battery_current);
 
     float throttle;
     if (reverse_thrust) {

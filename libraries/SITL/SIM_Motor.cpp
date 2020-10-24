@@ -39,6 +39,14 @@ void Motor::calculate_forces(const struct sitl_input &input,
     float command = pwm_to_command(pwm);
     float voltage_scale = voltage / voltage_max;
 
+    if (voltage_scale < 0.1) {
+        // battery is dead
+        rot_accel.zero();
+        thrust.zero();
+        current = 0;
+        return;
+    }
+
     // apply slew limiter to command
     uint64_t now_us = AP_HAL::micros64();
     if (last_calc_us != 0 && slew_max > 0) {
@@ -56,7 +64,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     float velocity_in = MAX(0, -velocity_air_bf.z);
 
     // get thrust for untilted motor
-    float motor_thrust = calc_thrust(command * voltage_scale, air_density, effective_prop_area, velocity_in, velocity_max);
+    float motor_thrust = calc_thrust(command, air_density, effective_prop_area, velocity_in, velocity_max * voltage_scale);
 
     // thrust in NED
     thrust = {0, 0, -motor_thrust};
