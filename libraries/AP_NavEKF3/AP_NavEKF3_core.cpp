@@ -1085,7 +1085,7 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
         // vector defining the variance of the angular alignment uncertainty. Convert he varaince vector
         // to a matrix and rotate into body frame. Use the exisiting gyro error propagation mechanism to
         // propagate the body frame angular uncertainty variances.
-        Vector3f rotVarVec = *rotVarVecPtr;
+        const Vector3f &rotVarVec = *rotVarVecPtr;
         Matrix3f R_ef = Matrix3f (
             rotVarVec.x, 0.0f, 0.0f,
             0.0f, rotVarVec.y, 0.0f,
