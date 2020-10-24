@@ -46,7 +46,7 @@ public:
         k_param_avoidance_adsb,
         k_param_landing,
         k_param_NavEKF3,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
         k_param_osd,
 
         // Misc
@@ -525,7 +525,7 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
 
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     // ArduSoar parameters
     SoaringController soaring_controller;
 #endif
@@ -566,10 +566,26 @@ public:
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
 
+    // Forward throttle battery voltage compenstaion
+    AP_Float fwd_thr_batt_voltage_max;
+    AP_Float fwd_thr_batt_voltage_min;
+    AP_Int8  fwd_thr_batt_idx;
+
 #if EFI_ENABLED
     // EFI Engine Monitor
     AP_EFI efi;
 #endif
+
+#if OFFBOARD_GUIDED == ENABLED
+    // guided yaw heading PID
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+#endif
+
+
+    AP_Float        fs_ekf_thresh;
+
+    // min initial climb in RTL
+    AP_Int16        rtl_climb_min;
 };
 
 extern const AP_Param::Info var_info[];

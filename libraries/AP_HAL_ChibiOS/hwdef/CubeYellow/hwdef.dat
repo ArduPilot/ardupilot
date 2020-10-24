@@ -21,14 +21,6 @@ define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV3
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-define STM32_LSECLK 32768U
-define STM32_LSEDRV (3U << 3U)
-define STM32_PLLSRC STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 24
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
 # board ID for firmware load
 APJ_BOARD_ID 120
 
@@ -43,9 +35,6 @@ env OPTIMIZE -O2
 
 # now define the voltage the MCU runs at. This is needed for ChibiOS
 # to set various internal driver limits. It is in 0.01 volt units
-
-# board voltage
-STM32_VDD 330U
 
 # this is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support
@@ -64,9 +53,9 @@ FLASH_SIZE_KB 2048
 # in drivers.
 
 # serial port for stdout. This is optional. If you leave it out then
-# output from printf() lines will be thrown away (you can stil use
+# output from printf() lines will be sent to
 # hal.console->printf() for the ArduPilot console, which is the first
-# UART in the UART_ORDER list). The value for STDOUT_SERIAL is a
+# UART in the SERIAL_ORDER list. The value for STDOUT_SERIAL is a
 # serial device name, and must be for a serial device for which pins
 # are defined in this file. For example, SD7 is for UART7 (SD7 ==
 # "serial device 7" in ChibiOS).
@@ -111,7 +100,7 @@ I2C_ORDER I2C2 I2C1
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7 OTG2
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
 # if the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU
@@ -237,7 +226,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # this input pin is used to detect that power is valid on USB
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # this defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -342,10 +331,10 @@ PE12 FMU_LED_AMBER OUTPUT GPIO(0)
 # power flag pins. These tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 # now the SPI device table. This table creates all accessible SPI
 # devices, giving the name of the device (which is used by device
@@ -465,16 +454,10 @@ define HAL_BATT_CURR_PIN 3
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 1
 
 # this defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
-
-# uncomment the lines below to enable strict API
-# checking in ChibiOS
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # we can't share IO UART (USART6)
 DMA_NOSHARE USART6_TX USART6_RX ADC1

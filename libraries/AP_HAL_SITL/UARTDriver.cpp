@@ -174,6 +174,12 @@ int16_t UARTDriver::read(void)
     return c;
 }
 
+bool UARTDriver::discard_input(void)
+{
+    _readbuffer.clear();
+    return true;
+}
+
 void UARTDriver::flush(void)
 {
 }
@@ -231,7 +237,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
 void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 {
     int one=1;
-    struct sockaddr_in sockaddr;
     int ret;
 
     if (_connected) {
@@ -254,17 +259,17 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     }
 
     if (_listen_fd == -1) {
-        memset(&sockaddr,0,sizeof(sockaddr));
+        memset(&_listen_sockaddr,0,sizeof(_listen_sockaddr));
 
 #ifdef HAVE_SOCK_SIN_LEN
-        sockaddr.sin_len = sizeof(sockaddr);
+        _listen_sockaddr.sin_len = sizeof(_listen_sockaddr);
 #endif
         if (port > 1000) {
-            sockaddr.sin_port = htons(port);
+            _listen_sockaddr.sin_port = htons(port);
         } else {
-            sockaddr.sin_port = htons(_sitlState->base_port() + port);
+            _listen_sockaddr.sin_port = htons(_sitlState->base_port() + port);
         }
-        sockaddr.sin_family = AF_INET;
+        _listen_sockaddr.sin_family = AF_INET;
 
         _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (_listen_fd == -1) {
@@ -284,13 +289,13 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         fprintf(stderr, "bind port %u for %u\n",
-                (unsigned)ntohs(sockaddr.sin_port),
+                (unsigned)ntohs(_listen_sockaddr.sin_port),
                 (unsigned)_portNumber);
 
-        ret = bind(_listen_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+        ret = bind(_listen_fd, (struct sockaddr *)&_listen_sockaddr, sizeof(_listen_sockaddr));
         if (ret == -1) {
             fprintf(stderr, "bind failed on port %u - %s\n",
-                    (unsigned)ntohs(sockaddr.sin_port),
+                    (unsigned)ntohs(_listen_sockaddr.sin_port),
                     strerror(errno));
             exit(1);
         }
@@ -302,7 +307,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         }
 
         fprintf(stderr, "Serial port %u on TCP port %u\n", _portNumber,
-                (unsigned)ntohs(sockaddr.sin_port));
+                (unsigned)ntohs(_listen_sockaddr.sin_port));
         fflush(stdout);
     }
 
@@ -318,7 +323,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
         setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
         fcntl(_fd, F_SETFD, FD_CLOEXEC);
         _connected = true;
-        fprintf(stdout, "Connection on serial port %u\n", (unsigned)ntohs(sockaddr.sin_port));
+        fprintf(stdout, "Connection on serial port %u\n", (unsigned)ntohs(_listen_sockaddr.sin_port));
     }
 }
 
@@ -510,6 +515,11 @@ void UARTDriver::_uart_start_connection(void)
     if (!_connected) {
         _fd = ::open(_uart_path, O_RDWR | O_CLOEXEC);
         if (_fd == -1) {
+            static uint32_t last_error_print_ms;
+            if (AP_HAL::millis() - last_error_print_ms > 5000) {
+                ::printf("Failed to open (%s): %s\n", _uart_path, strerror(errno));
+                last_error_print_ms = AP_HAL::millis();
+            }
             return;
         }
         // use much smaller buffer sizes on real UARTs
@@ -768,6 +778,26 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
         last_receive_us -= transport_time_us;
     }
     return last_receive_us;
+}
+
+ssize_t UARTDriver::get_system_outqueue_length() const
+{
+    if (!_connected) {
+        return 0;
+    }
+
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+    return 0;
+#elif defined(__APPLE__) && defined(__MACH__)
+    return 0;
+#else
+    int size;
+    if (ioctl(_fd, TIOCOUTQ, &size) == -1) {
+        // ::fprintf(stderr, "ioctl TIOCOUTQ failed: %m\n");
+        return 0;
+    }
+    return size;
+#endif
 }
 
 #endif // CONFIG_HAL_BOARD

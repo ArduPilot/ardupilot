@@ -1,20 +1,16 @@
 #include "GCS.h"
 #include <AP_Common/AP_FWVersion.h>
 
-const AP_FWVersion AP_FWVersion::fwver
-{
-    major: 3,
-    minor: 1,
-    patch: 4,
-    fw_type: FIRMWARE_VERSION_TYPE_DEV,
-    fw_string: "Dummy GCS",
-    fw_hash_str: "",
-    middleware_name: "",
-    middleware_hash_str: "",
-    os_name: "",
-    os_hash_str: "",
-    os_sw_version: 0
-};
+#define THISFIRMWARE "GCSDummy V3.1.4-dev"
+
+#define FW_MAJOR 3
+#define FW_MINOR 1
+#define FW_PATCH 4
+#define FW_TYPE FIRMWARE_VERSION_TYPE_DEV
+
+#define FORCE_VERSION_H_INCLUDE
+#include <AP_Common/AP_FWVersionDefine.h>
+#undef FORCE_VERSION_H_INCLUDE
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
 
@@ -64,6 +60,8 @@ public:
 
 protected:
 
+    uint8_t sysid_this_mav() const override { return 1; }
+
     GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
         return new GCS_MAVLINK_Dummy(params, uart);
@@ -72,14 +70,14 @@ protected:
 private:
     GCS_MAVLINK_Dummy *chan(const uint8_t ofs) override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Dummy *)_chan[ofs];
     };
     const GCS_MAVLINK_Dummy *chan(const uint8_t ofs) const override {
         if (ofs > _num_gcs) {
-            AP::internalerror().error(AP_InternalError::error_t::gcs_offset);
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
             return nullptr;
         }
         return (GCS_MAVLINK_Dummy *)_chan[ofs];
@@ -88,6 +86,7 @@ private:
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override {
         hal.console->printf("TOGCS: ");
         hal.console->vprintf(fmt, arg_list);
+        hal.console->printf("\n");
     }
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }

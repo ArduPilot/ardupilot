@@ -1,8 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for FMUv4pro hardware (Pixhawk 3 Pro)
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV4PRO
-
 define BOARD_TYPE_DEFAULT 14
 
 # MCU class and specific type
@@ -14,8 +12,6 @@ APJ_BOARD_ID 13
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -44,7 +40,7 @@ I2C_ORDER I2C1 I2C2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART1 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7
 
 # UART for IOMCU
 IOMCU_UART USART6
@@ -126,7 +122,7 @@ PB13 CAN2_TX CAN2
 PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 PC1 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
 PC3 BATT2_CURRENT_SENS ADC1 SCALE(1)
 #PC4 SAFETY_IN INPUT PULLDOWN
@@ -200,10 +196,10 @@ PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PG5 VDD_BRICK2_VALID INPUT PULLUP
-PF3 VDD_5V_HIPOWER_OC INPUT PULLUP
-PG4 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PG5 VDD_BRICK2_nVALID INPUT PULLUP
+PF3 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PG4 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 # SPI device table
 SPIDEV ms5611      SPI1 DEVID3  BARO_CS    MODE3  20*MHZ 20*MHZ
@@ -233,9 +229,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
 
-# fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
-
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
 
@@ -246,7 +239,7 @@ define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
 # setup serial port defaults for ESP8266
-define HAL_SERIAL5_PROTOCOL SerialProtocol_MAVLink
+define HAL_SERIAL5_PROTOCOL SerialProtocol_MAVLink2
 define HAL_SERIAL5_BAUD 921600
 
 # 8 PWM available by default

@@ -78,50 +78,20 @@ bool AP_Proximity_Backend::get_object_angle_and_distance(uint8_t object_number, 
 // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
 bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
 {
-    // exit immediately if we have no good ranges
+    // cycle through all sectors filling in distances and orientations
+    // see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
     bool valid_distances = false;
-    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
-        if (_distance_valid[i]) {
-            valid_distances = true;
-            break;
-        }
-    }
-    if (!valid_distances) {
-        return false;
-    }
-
-    // initialise orientations and directions
-    //  see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
-    //  distances initialised to maximum distances
-    bool dist_set[PROXIMITY_MAX_DIRECTION]{};
     for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
         prx_dist_array.orientation[i] = i;
-        prx_dist_array.distance[i] = distance_max();
-    }
-
-    // cycle through all sectors filling in distances
-    for (uint8_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
         if (_distance_valid[i]) {
-            // convert angle to orientation
-            int16_t orientation = static_cast<int16_t>(_angle[i] * (PROXIMITY_MAX_DIRECTION / 360.0f));
-            if ((orientation >= 0) && (orientation < PROXIMITY_MAX_DIRECTION) && (_distance[i] < prx_dist_array.distance[orientation])) {
-                prx_dist_array.distance[orientation] = _distance[i];
-                dist_set[orientation] = true;
-            }
+            valid_distances = true;
+            prx_dist_array.distance[i] = _distance[i];
+        } else {
+            prx_dist_array.distance[i] = distance_max();
         }
     }
 
-    // fill in missing orientations with average of adjacent orientations if necessary and possible
-    for (uint8_t i=0; i<PROXIMITY_MAX_DIRECTION; i++) {
-        if (!dist_set[i]) {
-            uint8_t orient_before = (i==0) ? (PROXIMITY_MAX_DIRECTION - 1) : (i-1);
-            uint8_t orient_after = (i==(PROXIMITY_MAX_DIRECTION - 1)) ? 0 : (i+1);
-            if (dist_set[orient_before] && dist_set[orient_after]) {
-                prx_dist_array.distance[i] = (prx_dist_array.distance[orient_before] + prx_dist_array.distance[orient_after]) / 2.0f;
-            }
-        }
-    }
-    return true;
+    return valid_distances;
 }
 
 // get boundary points around vehicle for use by avoidance
@@ -174,7 +144,7 @@ void AP_Proximity_Backend::update_boundary_for_sector(const uint8_t sector, cons
         return;
     }
 
-    if (push_to_OA_DB) {
+    if (push_to_OA_DB && _distance_valid[sector]) {
         database_push(_angle[sector], _distance[sector]);
     }
 
@@ -228,6 +198,14 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
     state.status = status;
 }
 
+// correct an angle (in degrees) based on the orientation and yaw correction parameters
+float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) const
+{
+    const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
+    return wrap_360(angle_degrees * angle_sign + frontend.get_yaw_correction(state.instance));
+}
+
+// find which sector a given angle falls into
 uint8_t AP_Proximity_Backend::convert_angle_to_sector(float angle_degrees) const
 {
     return wrap_360(angle_degrees + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
@@ -239,7 +217,7 @@ bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
     // check angle vs each ignore area
     for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
         if (frontend._ignore_width_deg[i] != 0) {
-            if (abs(angle_deg - frontend._ignore_width_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
+            if (abs(angle_deg - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
                 return true;
             }
         }
@@ -248,40 +226,53 @@ bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg) const
 }
 
 // returns true if database is ready to be pushed to and all cached data is ready
-bool AP_Proximity_Backend::database_prepare_for_push(Vector2f &current_pos, float &current_heading)
+bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
     }
 
-    if (!AP::ahrs().get_relative_position_NE_origin(current_pos)) {
+    if (!AP::ahrs().get_relative_position_NED_origin(current_pos)) {
         return false;
     }
 
-    current_heading = AP::ahrs().yaw_sensor * 0.01f;
+    body_to_ned = AP::ahrs().get_rotation_body_to_ned();
+
     return true;
 }
 
 // update Object Avoidance database with Earth-frame point
 void AP_Proximity_Backend::database_push(float angle, float distance)
 {
-    Vector2f current_pos;
-    float current_heading;
-    if (database_prepare_for_push(current_pos, current_heading)) {
-        database_push(angle, distance, AP_HAL::millis(), current_pos, current_heading);
+    Vector3f current_pos;
+    Matrix3f body_to_ned;
+
+    if (database_prepare_for_push(current_pos, body_to_ned)) {
+        database_push(angle, distance, AP_HAL::millis(), current_pos, body_to_ned);
     }
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector2f &current_pos, float current_heading)
+void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
-
-    Vector2f temp_pos = current_pos;
-    temp_pos.offset_bearing(wrap_180(current_heading + angle), distance);
+    
+    //Assume object is angle bearing and distance meters away from the vehicle 
+    Vector2f object_2D = {0.0f,0.0f};
+    object_2D.offset_bearing(wrap_180(angle), distance);	
+    
+    //rotate that vector to a 3D vector in NED frame
+    const Vector3f object_3D = {object_2D.x,object_2D.y,0.0f};
+    const Vector3f rotated_object_3D = body_to_ned * object_3D;
+    
+    //Calculate the position vector from origin
+    Vector3f temp_pos = current_pos + rotated_object_3D;
+    //Convert the vector to a NEU frame from NED
+    temp_pos.z = temp_pos.z * -1.0f;
+    
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }

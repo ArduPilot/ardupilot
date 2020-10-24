@@ -24,15 +24,37 @@
 
 #include "AP_Filesystem_Available.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Filesystem_FATFS.h"
 #endif
+#define DT_REG 0
+#define DT_DIR 1
+#if defined(FF_MAX_LFN) && FF_USE_LFN != 0
+#define MAX_NAME_LEN FF_MAX_LFN 
+#else
+#define MAX_NAME_LEN 13
+#endif
+struct dirent {
+   char    d_name[MAX_NAME_LEN]; /* filename */
+   uint8_t d_type;
+};
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#endif // HAL_BOARD_CHIBIOS
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Filesystem_posix.h"
 #endif
 
+#include "AP_Filesystem_backend.h"
+
 class AP_Filesystem {
+private:
+    struct DirHandle {
+        uint8_t fs_index;
+        void *dir;
+    };
 
 public:
     AP_Filesystem() {}
@@ -40,16 +62,17 @@ public:
     // functions that closely match the equivalent posix calls
     int open(const char *fname, int flags);
     int close(int fd);
-    ssize_t read(int fd, void *buf, size_t count);
-    ssize_t write(int fd, const void *buf, size_t count);
+    int32_t read(int fd, void *buf, uint32_t count);
+    int32_t write(int fd, const void *buf, uint32_t count);
     int fsync(int fd);
-    off_t lseek(int fd, off_t offset, int whence);
+    int32_t lseek(int fd, int32_t offset, int whence);
     int stat(const char *pathname, struct stat *stbuf);
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
-    DIR *opendir(const char *pathname);
-    struct dirent *readdir(DIR *dirp);
-    int closedir(DIR *dirp);
+
+    DirHandle *opendir(const char *pathname);
+    struct dirent *readdir(DirHandle *dirp);
+    int closedir(DirHandle *dirp);
 
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path);
@@ -58,10 +81,27 @@ public:
     int64_t disk_space(const char *path);
 
     // set modification time on a file
-    bool set_mtime(const char *filename, const time_t mtime_sec);
+    bool set_mtime(const char *filename, const uint32_t mtime_sec);
+
+private:
+    struct Backend {
+        const char *prefix;
+        AP_Filesystem_Backend &fs;
+    };
+    static const struct Backend backends[];
+
+    /*
+      find backend by path
+     */
+    const Backend &backend_by_path(const char *&path) const;
+
+    /*
+      find backend by open fd
+     */
+    const Backend &backend_by_fd(int &fd) const;
 };
 
 namespace AP {
     AP_Filesystem &FS();
 };
-#endif // HAVE_FILESYSTEM_SUPPORT
+

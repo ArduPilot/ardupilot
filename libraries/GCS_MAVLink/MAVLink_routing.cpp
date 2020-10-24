@@ -97,6 +97,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    // don't ever forward data from a private channel
+    if ((GCS_MAVLINK::is_private(in_channel))) {
+        return true;
+    }
+
     // learn new routes
     learn_route(in_channel, msg);
 
@@ -139,7 +144,7 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool sent_to_chan[MAVLINK_COMM_NUM_BUFFERS];
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
     for (uint8_t i=0; i<num_routes; i++) {
-    
+
         // Skip if channel is private and the target system or component IDs do not match
         if ((GCS_MAVLINK::is_private(routes[i].channel)) &&
             (target_system != routes[i].sysid ||
@@ -172,7 +177,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         }
     }
 
-    if (!forwarded && match_system) {
+    if ((!forwarded && match_system) ||
+        broadcast_system) {
         process_locally = true;
     }
 
@@ -261,9 +267,20 @@ bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &
 void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t &msg)
 {
     uint8_t i;
-    if (msg.sysid == 0 ||
-        (msg.sysid == mavlink_system.sysid &&
-         msg.compid == mavlink_system.compid)) {
+    if (msg.sysid == 0) {
+        // don't learn routes to the broadcast system
+        return;
+    }
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == mavlink_system.compid) {
+        // don't learn routes to ourself.  We know where we are.
+        return;
+    }
+    if (msg.sysid == mavlink_system.sysid &&
+        msg.compid == MAV_COMP_ID_ALL) {
+        // don't learn routes to the broadcast component ID for our
+        // own system id.  We should still broadcast these, but we
+        // should also process them locally.
         return;
     }
     for (i=0; i<num_routes; i++) {
@@ -301,8 +318,8 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
 */
 void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t &msg)
 {
-    uint16_t mask = GCS_MAVLINK::active_channel_mask();
-    
+    uint16_t mask = GCS_MAVLINK::active_channel_mask() & ~GCS_MAVLINK::private_channel_mask();
+
     // don't send on the incoming channel. This should only matter if
     // the routing table is full
     mask &= ~(1U<<(in_channel-MAVLINK_COMM_0));

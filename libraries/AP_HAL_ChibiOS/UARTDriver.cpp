@@ -256,21 +256,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
          */
         if (!_device_initialised) {
             if ((SerialUSBDriver*)sdef.serial == &SDU1) {
-                sduObjectInit(&SDU1);
-                sduStart(&SDU1, &serusbcfg1);
-#if HAL_HAVE_DUAL_USB_CDC
-                sduObjectInit(&SDU2);
-                sduStart(&SDU2, &serusbcfg2);
-#endif
-                /*
-                * Activates the USB driver and then the USB bus pull-up on D+.
-                * Note, a delay is inserted in order to not have to disconnect the cable
-                * after a reset.
-                */
-                usbDisconnectBus(serusbcfg1.usbp);
-                hal.scheduler->delay_microseconds(1500);
-                usbStart(serusbcfg1.usbp, &usbcfg);
-                usbConnectBus(serusbcfg1.usbp);
+                usb_initialise();
             }
             _device_initialised = true;
         }
@@ -570,12 +556,67 @@ uint32_t UARTDriver::available() {
     return _readbuf.available();
 }
 
+uint32_t UARTDriver::available_locked(uint32_t key)
+{
+    if (lock_read_key != 0 && key != lock_read_key) {
+        return -1;
+    }
+    if (sdef.is_usb) {
+#ifdef HAVE_USB_SERIAL
+
+        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+            return 0;
+        }
+#endif
+    }
+    return _readbuf.available();
+}
+
 uint32_t UARTDriver::txspace()
 {
     if (!_initialised) {
         return 0;
     }
     return _writebuf.space();
+}
+
+bool UARTDriver::discard_input()
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return false;
+    }
+    if (!_initialised) {
+        return false;
+    }
+
+    _readbuf.clear();
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return true;
+}
+
+ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
+{
+    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+        return -1;
+    }
+    if (!_initialised) {
+        return -1;
+    }
+
+    const uint32_t ret = _readbuf.read(buffer, count);
+    if (ret == 0) {
+        return 0;
+    }
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return ret;
 }
 
 int16_t UARTDriver::read()
@@ -761,7 +802,8 @@ void UARTDriver::handle_tx_timeout(void *arg)
     chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
         dmaStreamDisable(uart_drv->txdma);
-        uart_drv->tx_len -= dmaStreamGetTransactionSize(uart_drv->txdma);
+        const uint32_t tx_size = dmaStreamGetTransactionSize(uart_drv->txdma);
+        uart_drv->tx_len -= MIN(uart_drv->tx_len, tx_size);
         uart_drv->tx_bounce_buf_ready = true;
         uart_drv->dma_handle->unlock_from_IRQ();
     }
@@ -804,6 +846,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         }
     }
 
+    chSysLock();
     dmaStreamDisable(txdma);
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
@@ -817,7 +860,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
     uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
-    chVTSet(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
+    chVTSetI(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
+    chSysUnlock();
 }
 #endif // HAL_UART_NODMA
 
@@ -831,7 +875,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     ByteBuffer::IoVec vec[2];
     uint16_t nwritten = 0;
 
-    if (half_duplex) {
+    if (half_duplex && n > 1) {
         half_duplex_setup_tx();
     }
 
@@ -943,12 +987,10 @@ void UARTDriver::half_duplex_setup_tx(void)
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
         hd_tx_active = true;
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 &= ~USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 &= ~USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
     }
 #endif
 }
@@ -969,12 +1011,10 @@ void UARTDriver::_timer_tick(void)
           half-duplex transmit has finished. We now re-enable the
           HDSEL bit for receive
          */
-        if (_last_options & (OPTION_RXINV | OPTION_TXINV)) {
-            SerialDriver *sd = (SerialDriver*)(sdef.serial);
-            sdStop(sd);
-            sercfg.cr3 |= USART_CR3_HDSEL;
-            sdStart(sd, &sercfg);
-        }
+        SerialDriver *sd = (SerialDriver*)(sdef.serial);
+        sdStop(sd);
+        sercfg.cr3 |= USART_CR3_HDSEL;
+        sdStart(sd, &sercfg);
         hd_tx_active = false;
     }
 #endif
@@ -1445,5 +1485,35 @@ uint8_t UARTDriver::get_options(void) const
 {
     return _last_options;
 }
+
+#if HAL_USE_SERIAL_USB == TRUE
+/*
+  initialise the USB bus, called from both UARTDriver and stdio for startup debug
+  This can be called before the hal is initialised so must not call any hal functions
+ */
+void usb_initialise(void)
+{
+    static bool initialised;
+    if (initialised) {
+        return;
+    }
+    initialised = true;
+    sduObjectInit(&SDU1);
+    sduStart(&SDU1, &serusbcfg1);
+#if HAL_HAVE_DUAL_USB_CDC
+    sduObjectInit(&SDU2);
+    sduStart(&SDU2, &serusbcfg2);
+#endif
+    /*
+     * Activates the USB driver and then the USB bus pull-up on D+.
+     * Note, a delay is inserted in order to not have to disconnect the cable
+     * after a reset.
+     */
+    usbDisconnectBus(serusbcfg1.usbp);
+    chThdSleep(chTimeUS2I(1500));
+    usbStart(serusbcfg1.usbp, &usbcfg);
+    usbConnectBus(serusbcfg1.usbp);
+}
+#endif
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

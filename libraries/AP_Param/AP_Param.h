@@ -39,7 +39,7 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if HAL_MINIMIZE_FEATURES
+#if BOARD_FLASH_SIZE <= 1024
 # define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 #else
 # define AP_PARAM_MAX_EMBEDDED_PARAM 8192
@@ -197,6 +197,11 @@ public:
         uint16_t i;
         for (i=0; info[i].type != AP_PARAM_NONE; i++) ;
         _num_vars = i;
+
+        if (_singleton != nullptr) {
+            AP_HAL::panic("AP_Param must be singleton");
+        }
+        _singleton = this;
     }
 
     // empty constructor
@@ -281,6 +286,15 @@ public:
     /// @param  value           The new value
     /// @return                 true if the variable is found
     static bool set_by_name(const char *name, float value);
+    // name helper for scripting
+    static bool set(const char *name, float value) { return set_by_name(name, value); };
+
+    /// gat a value by name, used by scripting
+    ///
+    /// @param  name            The full name of the variable to be found.
+    /// @param  value           A reference to the variable
+    /// @return                 true if the variable is found
+    static bool get(const char *name, float &value);
 
     /// set and save a value by name
     ///
@@ -288,6 +302,8 @@ public:
     /// @param  value           The new value
     /// @return                 true if the variable is found
     static bool set_and_save_by_name(const char *name, float value);
+    // name helper for scripting
+    static bool set_and_save(const char *name, float value) { return set_and_save_by_name(name, value); };
 
     /// Find a variable by index.
     ///
@@ -298,6 +314,9 @@ public:
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
 
+    // by-name equivalent of find_by_index()
+    static AP_Param* find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token);
+
     /// Find a variable by pointer
     ///
     ///
@@ -306,6 +325,14 @@ public:
     static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
+
+    /// Find key of top level group variable by pointer
+    ///
+    ///
+    /// @param  p               Pointer to variable
+    /// @return                 key for variable
+    static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
+
 
     /// Find a object in the top level var_info table
     ///
@@ -430,6 +457,9 @@ public:
     /// as needed
     static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
+    /// get the size of a type in bytes
+    static uint8_t				type_size(enum ap_var_type type);
+
     /// cast a variable to a float given its type
     float                   cast_to_float(enum ap_var_type type) const;
 
@@ -447,15 +477,21 @@ public:
 
     // return true if the parameter is read-only
     bool is_read_only(void) const;
+
+    // return the persistent top level key for the ParamToken key
+    static uint16_t get_persistent_key(uint16_t key) { return _var_info[key].key; }
     
     // count of parameters in tree
     static uint16_t count_parameters(void);
+
+    // invalidate parameter count
+    static void invalidate_count(void);
 
     static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
-        _parameter_count = 0;
+        invalidate_count();
         _frame_type_flags |= flags_to_set;
     }
 
@@ -479,7 +515,11 @@ public:
                              AP_HAL::BetterStream *port);
 #endif // AP_PARAM_KEY_DUMP
 
+    static AP_Param *get_singleton() { return _singleton; }
+
 private:
+    static AP_Param *_singleton;
+
     /// EEPROM header
     ///
     /// This structure is placed at the head of the EEPROM to indicate
@@ -490,6 +530,7 @@ private:
         uint8_t revision;
         uint8_t spare;
     };
+    static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
     static uint16_t sentinal_offset;
 
@@ -512,6 +553,7 @@ private:
         uint32_t key_high : 1;
         uint32_t group_element : 18;
     };
+    static_assert(sizeof(struct Param_header) == 4, "Bad Param_header size!");
 
     // number of bits in each level of nesting of groups
     static const uint8_t        _group_level_shift = 6;
@@ -598,7 +640,6 @@ private:
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static uint8_t				type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,
@@ -639,6 +680,9 @@ private:
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
+    static uint16_t             _count_marker;
+    static uint16_t             _count_marker_done;
+    static HAL_Semaphore        _count_sem;
     static const struct Info *  _var_info;
 
     /*
@@ -666,11 +710,15 @@ private:
         AP_Param *param;
         bool force_save;
     };
-    static ObjectBuffer<struct param_save> save_queue;
+    static ObjectBuffer_TS<struct param_save> save_queue;
     static bool registered_save_handler;
 
     // background function for saving parameters
     void save_io_handler(void);
+};
+
+namespace AP {
+    AP_Param *param();
 };
 
 /// Template class for scalar variables.
@@ -699,6 +747,14 @@ public:
         _value = v;
     }
 
+    // set a parameter that is an ENABLE param
+    void set_enable(const T &v) {
+        if (v != _value) {
+            invalidate_count();
+        }
+        _value = v;
+    }
+    
     /// Sets if the parameter is unconfigured
     ///
     void set_default(const T &v) {
@@ -735,7 +791,10 @@ public:
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
     void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
         if (v == _value) {
+#pragma GCC diagnostic pop
             return;
         }
         set(v);
@@ -833,6 +892,23 @@ public:
         set(v);
         save(force);
     }
+
+    /// Combined set and save, but only does the save if the value is
+    /// different from the current ram value, thus saving us a
+    /// scan(). This should only be used where we have not set() the
+    /// value separately, as otherwise the value in EEPROM won't be
+    /// updated correctly.
+    void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+        if (_value == v) {
+#pragma GCC diagnostic pop
+            return;
+        }
+        set(v);
+        save(true);
+    }
+
 
     /// Conversion to T returns a reference to the value.
     ///

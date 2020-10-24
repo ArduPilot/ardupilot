@@ -37,19 +37,49 @@ public:
         return new Helicopter(frame_str);
     }
 
+protected:
+
+    void update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt);
+    float update_rpm(bool interlock, float dt);
+
+    // buffers to provide time delay
+    struct servos_stored {
+        uint16_t servo1;
+        uint16_t servo2;
+        uint16_t servo3;
+        uint16_t servo4;
+        uint16_t servo5;
+        uint16_t servo6;
+    };
+    uint16_t _servos_delayed[6];
+    ObjectBuffer<servos_stored> *servos_stored_buffer;
+    void push_to_buffer(const uint16_t servos_input[16]);
+    void pull_from_buffer(uint16_t servos_delayed[6]);
+
+
 private:
     float terminal_rotation_rate = 4*radians(360.0f);
-    float hover_throttle = 0.65f;
-    float terminal_velocity = 40;
-    float hover_lean = 3.0f;
+    float hover_throttle = 0.5f;
+    float terminal_velocity = 80;
+    float hover_lean = 3.2f;
     float yaw_zero = 0.1f;
     float rotor_rot_accel = radians(20);
     float roll_rate_max = radians(1400);
     float pitch_rate_max = radians(1400);
     float yaw_rate_max = radians(1400);
     float rsc_setpoint = 0.8f;
+    float izz = 0.2f;
+    float tr_dist = 0.85f;
+    float tr_accel_max = 50.0f; //rad/s/s
+    float cyclic_scalar = 7.2; // converts swashplate servo ouputs to cyclic blade pitch
     float thrust_scale;
     float tail_thrust_scale;
+    Vector2f _tpp_angle;
+    float torque_scale;
+    float torque_mpog;
+    float hover_coll = 5.0f;
+    bool motor_interlock;
+    uint8_t _time_delay = 30;
     enum frame_types {
         HELI_FRAME_CONVENTIONAL,
         HELI_FRAME_DUAL,

@@ -135,6 +135,9 @@ void AC_WPNav::wp_and_spline_init()
     // initialise feed forward velocity to zero
     _pos_control.set_desired_velocity_xy(0.0f, 0.0f);
 
+    // initialize the desired wp speed if not already done
+    _wp_desired_speed_xy_cms = _wp_speed_cms;
+
     // initialise position controller speed and acceleration
     _pos_control.set_max_speed_xy(_wp_speed_cms);
     _pos_control.set_max_accel_xy(_wp_accel_cmss);
@@ -150,11 +153,9 @@ void AC_WPNav::wp_and_spline_init()
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
 void AC_WPNav::set_speed_xy(float speed_cms)
 {
-    // range check new target speed and update position controller
+    // range check target speed
     if (speed_cms >= WPNAV_WP_SPEED_MIN) {
-        _pos_control.set_max_speed_xy(speed_cms);
-        // flag that wp leash must be recalculated
-        _flags.recalc_wp_leash = true;
+        _wp_desired_speed_xy_cms = speed_cms;
     }
 }
 
@@ -314,6 +315,47 @@ void AC_WPNav::shift_wp_origin_to_current_pos()
     // move pos controller target and disable feed forward
     _pos_control.set_pos_target(curr_pos);
     _pos_control.freeze_ff_z();
+}
+
+/// shifts the origin and destination horizontally to the current position
+///     used to reset the track when taking off without horizontal position control
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_current_pos_xy()
+{
+    // get current and target locations
+    const Vector3f& curr_pos = _inav.get_position();
+
+    // shift origin and destination horizontally
+    _origin.x = curr_pos.x;
+    _origin.y = curr_pos.y;
+    _destination.x = curr_pos.x;
+    _destination.y = curr_pos.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(curr_pos.x, curr_pos.y);
+}
+
+/// shifts the origin and destination horizontally to the achievable stopping point
+///     used to reset the track when horizontal navigation is enabled after having been disabled (see Copter's wp_navalt_min)
+///     relies on set_wp_destination or set_wp_origin_and_destination having been called first
+void AC_WPNav::shift_wp_origin_and_destination_to_stopping_point_xy()
+{
+    // relax position control in xy axis
+    // removing velocity error also impacts stopping point calculation
+    _pos_control.relax_velocity_controller_xy();
+
+    // get current and target locations
+    Vector3f stopping_point;
+    get_wp_stopping_point_xy(stopping_point);
+
+    // shift origin and destination horizontally
+    _origin.x = stopping_point.x;
+    _origin.y = stopping_point.y;
+    _destination.x = stopping_point.x;
+    _destination.y = stopping_point.y;
+
+    // move pos controller target horizontally
+    _pos_control.set_xy_target(stopping_point.x, stopping_point.y);
 }
 
 /// get_wp_stopping_point_xy - returns vector to stopping point based on a horizontal position and velocity
@@ -510,6 +552,9 @@ bool AC_WPNav::update_wpnav()
     // out of auto mode. This makes it easier to tune auto flight
     _pos_control.set_max_accel_xy(_wp_accel_cmss);
     _pos_control.set_max_accel_z(_wp_accel_z_cmss);
+
+    // wp_speed_update - update _pos_control.set_max_speed_xy if speed change has been requested
+    wp_speed_update(dt);
 
     // advance the target if necessary
     if (!advance_wp_target_along_track(dt)) {
@@ -800,6 +845,9 @@ bool AC_WPNav::update_spline()
     // get dt from pos controller
     float dt = _pos_control.get_dt();
 
+    // wp_speed_update - update _pos_control.set_max_speed_xy if speed change has been requested
+    wp_speed_update(dt);
+
     // advance the target if necessary
     if (!advance_spline_target_along_track(dt)) {
         // To-Do: handle failure to advance along track (due to missing terrain data)
@@ -1052,4 +1100,34 @@ float AC_WPNav::get_slow_down_speed(float dist_from_dest_cm, float accel_cmss)
     } else {
         return target_speed;
     }
+}
+
+/// wp_speed_update - calculates how to handle speed change requests
+void AC_WPNav::wp_speed_update(float dt)
+{
+    // return if speed has not changed
+    float curr_max_speed_xy_cms = _pos_control.get_max_speed_xy();
+    if (is_equal(_wp_desired_speed_xy_cms, curr_max_speed_xy_cms)) {
+        return;
+    }
+    // calculate speed change
+    if (_wp_desired_speed_xy_cms > curr_max_speed_xy_cms) {
+        // speed up is requested so increase speed within limit set by WPNAV_ACCEL
+        curr_max_speed_xy_cms += _wp_accel_cmss * dt;
+        if (curr_max_speed_xy_cms > _wp_desired_speed_xy_cms) {
+            curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+        }
+    } else if (_wp_desired_speed_xy_cms < curr_max_speed_xy_cms) {
+        // slow down is requested so reduce speed within limit set by WPNAV_ACCEL
+        curr_max_speed_xy_cms -= _wp_accel_cmss * dt;
+        if (curr_max_speed_xy_cms < _wp_desired_speed_xy_cms) {
+            curr_max_speed_xy_cms = _wp_desired_speed_xy_cms;
+        }
+    }
+
+    // update position controller speed
+    _pos_control.set_max_speed_xy(curr_max_speed_xy_cms);
+    
+    // flag that wp leash must be recalculated
+    _flags.recalc_wp_leash = true;
 }

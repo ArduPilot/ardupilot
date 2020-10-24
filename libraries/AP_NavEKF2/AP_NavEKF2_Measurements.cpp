@@ -1,6 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -9,8 +8,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-
-#include <stdio.h>
+#include <AP_Compass/AP_Compass.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -58,6 +56,8 @@ void NavEKF2_core::readRangeFinder(void)
                 }
                 storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
                 storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance_cm() * 0.01f;
+            } else {
+                continue;
             }
 
             // check for three fresh samples
@@ -192,6 +192,44 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
 *                      MAGNETOMETER                     *
 ********************************************************/
 
+// try changing to another compass
+void NavEKF2_core::tryChangeCompass(void)
+{
+    const Compass &compass = AP::compass();
+    const uint8_t maxCount = compass.get_count();
+
+    // search through the list of magnetometers
+    for (uint8_t i=1; i<maxCount; i++) {
+        uint8_t tempIndex = magSelectIndex + i;
+        // loop back to the start index if we have exceeded the bounds
+        if (tempIndex >= maxCount) {
+            tempIndex -= maxCount;
+        }
+        // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
+        if (compass.healthy(tempIndex) && compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
+            magSelectIndex = tempIndex;
+            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+            // reset the timeout flag and timer
+            magTimeout = false;
+            lastHealthyMagTime_ms = imuSampleTime_ms;
+            // zero the learned magnetometer bias states
+            stateStruct.body_magfield.zero();
+            // clear the measurement buffer
+            storedMag.reset();
+            // clear the data waiting flag so that we do not use any data pending from the previous sensor
+            magDataToFuse = false;
+            // request a reset of the magnetic field states
+            magStateResetRequest = true;
+            // declare the field unlearned so that the reset request will be obeyed
+            magFieldLearned = false;
+
+            // reset body mag variances on next CovariancePrediction
+            needMagBodyVarReset = true;
+            return;
+        }
+    }
+}
+
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
@@ -199,15 +237,18 @@ void NavEKF2_core::readMagData()
         allMagSensorsFailed = true;
         return;        
     }
+
+    const Compass &compass = AP::compass();
+
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
-    uint8_t maxCount = _ahrs->get_compass()->get_count();
+    const uint8_t maxCount = compass.get_count();
     if (allMagSensorsFailed || (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight)) {
         allMagSensorsFailed = true;
         return;
     }
 
-    if (_ahrs->get_compass()->learn_offsets_enabled()) {
+    if (compass.learn_offsets_enabled()) {
         // while learning offsets keep all mag states reset
         InitialiseVariablesMag();
         wasLearningCompass_ms = imuSampleTime_ms;
@@ -219,60 +260,47 @@ void NavEKF2_core::readMagData()
         InitialiseVariablesMag();
     }
 
-    
+    // If the magnetometer has timed out (been rejected for too long), we find another magnetometer to use if available
+    // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
+    // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
+    // if the timeout is due to a sensor failure, then declare a timeout regardless of onground status
+    if (maxCount > 1) {
+        bool fusionTimeout = magTimeout && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000;
+        bool sensorTimeout = !compass.healthy(magSelectIndex) && imuSampleTime_ms - lastMagRead_ms > frontend->magFailTimeLimit_ms;
+        if (fusionTimeout || sensorTimeout) {
+            tryChangeCompass();
+        }
+    }
+
     // do not accept new compass data faster than 14Hz (nominal rate is 10Hz) to prevent high processor loading
     // because magnetometer fusion is an expensive step and we could overflow the FIFO buffer
-    if (use_compass() && _ahrs->get_compass()->last_update_usec() - lastMagUpdate_us > 70000) {
+    if (use_compass() &&
+        compass.healthy(magSelectIndex) &&
+        compass.last_update_usec(magSelectIndex) - lastMagUpdate_us > 70000) {
         frontend->logging.log_compass = true;
 
-        // If the magnetometer has timed out (been rejected too long) we find another magnetometer to use if available
-        // Don't do this if we are on the ground because there can be magnetic interference and we need to know if there is a problem
-        // before taking off. Don't do this within the first 30 seconds from startup because the yaw error could be due to large yaw gyro bias affsets
-        if (magTimeout && (maxCount > 1) && !onGround && imuSampleTime_ms - ekfStartTime_ms > 30000) {
-
-            // search through the list of magnetometers
-            for (uint8_t i=1; i<maxCount; i++) {
-                uint8_t tempIndex = magSelectIndex + i;
-                // loop back to the start index if we have exceeded the bounds
-                if (tempIndex >= maxCount) {
-                    tempIndex -= maxCount;
-                }
-                // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
-                if (_ahrs->get_compass()->use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
-                    magSelectIndex = tempIndex;
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
-                    // reset the timeout flag and timer
-                    magTimeout = false;
-                    lastHealthyMagTime_ms = imuSampleTime_ms;
-                    // zero the learned magnetometer bias states
-                    stateStruct.body_magfield.zero();
-                    // clear the measurement buffer
-                    storedMag.reset();
-                    // clear the data waiting flag so that we do not use any data pending from the previous sensor
-                    magDataToFuse = false;
-                    // request a reset of the magnetic field states
-                    magStateResetRequest = true;
-                    // declare the field unlearned so that the reset request will be obeyed
-                    magFieldLearned = false;
-                    break;
-                }
-            }
-        }
 
         // detect changes to magnetometer offset parameters and reset states
-        Vector3f nowMagOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        Vector3f nowMagOffsets = compass.get_offsets(magSelectIndex);
         bool changeDetected = lastMagOffsetsValid && (nowMagOffsets != lastMagOffsets);
         if (changeDetected) {
             // zero the learned magnetometer bias states
             stateStruct.body_magfield.zero();
             // clear the measurement buffer
             storedMag.reset();
+            // reset body mag variances on next
+            // CovariancePrediction. This copes with possible errors
+            // in the new offsets
+            needMagBodyVarReset = true;
         }
         lastMagOffsets = nowMagOffsets;
         lastMagOffsetsValid = true;
 
         // store time of last measurement update
-        lastMagUpdate_us = _ahrs->get_compass()->last_update_usec(magSelectIndex);
+        lastMagUpdate_us = compass.last_update_usec(magSelectIndex);
+
+        // Magnetometer data at the current time horizon
+        mag_elements magDataNew;
 
         // estimate of time magnetometer measurement was taken, allowing for delays
         magDataNew.time_ms = imuSampleTime_ms - frontend->magDelay_ms;
@@ -281,13 +309,16 @@ void NavEKF2_core::readMagData()
         magDataNew.time_ms -= localFilterTimeStep_ms/2;
 
         // read compass data and scale to improve numerical conditioning
-        magDataNew.mag = _ahrs->get_compass()->get_field(magSelectIndex) * 0.001f;
+        magDataNew.mag = compass.get_field(magSelectIndex) * 0.001f;
 
         // check for consistent data between magnetometers
-        consistentMagData = _ahrs->get_compass()->consistent();
+        consistentMagData = compass.consistent();
 
         // save magnetometer measurement to buffer to be fused later
         storedMag.push(magDataNew);
+
+        // remember time we read compass, to detect compass sensor failure
+        lastMagRead_ms = imuSampleTime_ms;
     }
 }
 
@@ -308,9 +339,6 @@ void NavEKF2_core::readIMUData()
 
     // average IMU sampling rate
     dtIMUavg = ins.get_loop_delta_t();
-
-    // the imu sample time is used as a common time reference throughout the filter
-    imuSampleTime_ms = AP_HAL::millis();
 
     // use the nominated imu or primary if not available
     uint8_t accel_active, gyro_active;
@@ -517,6 +545,7 @@ void NavEKF2_core::readGpsData()
             } else {
                 gpsSpdAccuracy = MAX(gpsSpdAccuracy,gpsSpdAccRaw);
                 gpsSpdAccuracy = MIN(gpsSpdAccuracy,50.0f);
+                gpsSpdAccuracy = MAX(gpsSpdAccuracy,frontend->_gpsHorizVelNoise);
             }
             gpsPosAccuracy *= (1.0f - alpha);
             float gpsPosAccRaw;
@@ -525,6 +554,7 @@ void NavEKF2_core::readGpsData()
             } else {
                 gpsPosAccuracy = MAX(gpsPosAccuracy,gpsPosAccRaw);
                 gpsPosAccuracy = MIN(gpsPosAccuracy,100.0f);
+                gpsPosAccuracy = MAX(gpsPosAccuracy, frontend->_gpsHorizPosNoise);
             }
             gpsHgtAccuracy *= (1.0f - alpha);
             float gpsHgtAccRaw;
@@ -533,6 +563,7 @@ void NavEKF2_core::readGpsData()
             } else {
                 gpsHgtAccuracy = MAX(gpsHgtAccuracy,gpsHgtAccRaw);
                 gpsHgtAccuracy = MIN(gpsHgtAccuracy,100.0f);
+                gpsHgtAccuracy = MAX(gpsHgtAccuracy, 1.5f * frontend->_gpsHorizPosNoise);
             }
 
             // check if we have enough GPS satellites and increase the gps noise scaler if we don't
@@ -584,7 +615,7 @@ void NavEKF2_core::readGpsData()
 
             if (gpsGoodToAlign && !have_table_earth_field) {
                 const Compass *compass = _ahrs->get_compass();
-                if (compass && compass->have_scale_factor(magSelectIndex)) {
+                if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
                                                                                 gpsloc.lng*1.0e-7));
@@ -889,17 +920,22 @@ void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
     memset(&timing, 0, sizeof(timing));
 }
 
-void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms)
+void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    // protect against NaN
+    if (pos.is_nan() || isnan(posErr) || quat.is_nan() || isnan(angErr)) {
+        return;
+    }
+
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if ((timeStamp_ms - extNavMeasTime_ms) < 70) {
+    if ((timeStamp_ms - extNavMeasTime_ms) < 20) {
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
     }
 
-    if (resetTime_ms > extNavLastPosResetTime_ms) {
+    if (resetTime_ms != extNavLastPosResetTime_ms) {
         extNavDataNew.posReset = true;
         extNavLastPosResetTime_ms = resetTime_ms;
     } else {
@@ -908,14 +944,9 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
 
     extNavDataNew.pos = pos;
     extNavDataNew.quat = quat;
-    if (posErr > 0) {
-        extNavDataNew.posErr = posErr;
-    } else {
-        extNavDataNew.posErr = frontend->_gpsHorizPosNoise;
-    }
+    extNavDataNew.posErr = posErr;
     extNavDataNew.angErr = angErr;
-    extNavDataNew.body_offset = &sensOffset;
-    timeStamp_ms = timeStamp_ms - frontend->_extnavDelay_ms;
+    timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
     timeStamp_ms -= localFilterTimeStep_ms/2;
     // Prevent time delay exceeding age of oldest IMU data in the buffer
@@ -923,7 +954,6 @@ void NavEKF2_core::writeExtNavData(const Vector3f &sensOffset, const Vector3f &p
     extNavDataNew.time_ms = timeStamp_ms;
 
     storedExtNav.push(extNavDataNew);
-
 }
 
 /*
@@ -1010,3 +1040,32 @@ void NavEKF2_core::learnInactiveBiases(void)
     }
 }
 
+// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF2_core::writeDefaultAirSpeed(float airspeed)
+{
+    defaultAirSpeed = airspeed;
+}
+
+void NavEKF2_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
+{
+    // protect against NaN
+    if (vel.is_nan() || isnan(err)) {
+        return;
+    }
+
+    if ((timeStamp_ms - extNavVelMeasTime_ms) < 20) {
+        return;
+    }
+
+    extNavVelMeasTime_ms = timeStamp_ms;
+    useExtNavVel = true;
+    extNavVelNew.vel = vel;
+    extNavVelNew.err = err;
+    timeStamp_ms = timeStamp_ms - delay_ms;
+    // Correct for the average intersampling delay due to the filter updaterate
+    timeStamp_ms -= localFilterTimeStep_ms/2;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer
+    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
+    extNavVelNew.time_ms = timeStamp_ms;
+    storedExtNavVel.push(extNavVelNew);
+}

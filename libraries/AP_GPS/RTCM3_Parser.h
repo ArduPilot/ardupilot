@@ -38,7 +38,6 @@ public:
     
 private:
     const uint8_t RTCMv3_PREAMBLE = 0xD3;
-    const uint32_t POLYCRC24 = 0x1864CFB;
 
     // raw packet, we shouldn't need over 300 bytes for the MB configs we use
     uint8_t pkt[300];
@@ -54,6 +53,5 @@ private:
     
     bool parse(void);
     void resync(void);
-    uint32_t crc24(const uint8_t *bytes, uint16_t len);
 };
 

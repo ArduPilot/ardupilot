@@ -18,7 +18,7 @@ int8_t RC_Channels_Plane::flight_mode_channel_number() const
 
 bool RC_Channels_Plane::has_valid_input() const
 {
-    if (plane.failsafe.rc_failsafe) {
+    if (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe) {
         return false;
     }
     if (plane.failsafe.throttle_counter != 0) {
@@ -27,11 +27,16 @@ bool RC_Channels_Plane::has_valid_input() const
     return true;
 }
 
+RC_Channel * RC_Channels_Plane::get_arming_channel(void) const
+{
+    return plane.channel_rudder;
+}
+
 void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
-                                                   const aux_switch_pos_t ch_flag)
+                                                   const AuxSwitchPos ch_flag)
 {
     switch(ch_flag) {
-    case HIGH: {
+    case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
         const bool success = plane.set_mode_by_number(number, ModeReason::RC_COMMAND);
         if (plane.control_mode != &plane.mode_initializing) {
@@ -53,8 +58,83 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
     }
 }
 
+void RC_Channel_Plane::do_aux_function_q_assist_state(AuxSwitchPos ch_flag)
+{
+    switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Force enabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_FORCE);
+            break;
+
+        case AuxSwitchPos::MIDDLE:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Enabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            break;
+
+        case AuxSwitchPos::LOW:
+            gcs().send_text(MAV_SEVERITY_INFO, "QAssist: Disabled");
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            break;
+    }
+}
+
+void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
+{
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.crow_mode = Plane::CrowMode::CROW_DISABLED;
+            gcs().send_text(MAV_SEVERITY_INFO, "Crow Flaps Disabled");
+            break;
+        case AuxSwitchPos::MIDDLE:
+            gcs().send_text(MAV_SEVERITY_INFO, "Progressive Crow Flaps"); 
+            plane.crow_mode = Plane::CrowMode::PROGRESSIVE;   
+            break;
+        case AuxSwitchPos::LOW:
+            plane.crow_mode = Plane::CrowMode::NORMAL;
+            gcs().send_text(MAV_SEVERITY_INFO, "Normal Crow Flaps");
+            break;
+        }    
+}
+
+void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
+{
+#if HAL_SOARING_ENABLED
+    SoaringController::ActiveStatus desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
+
+    switch (ch_flag) {
+        case AuxSwitchPos::LOW:
+            desired_state = SoaringController::ActiveStatus::SOARING_DISABLED;
+            break;
+        case AuxSwitchPos::MIDDLE:
+            desired_state = SoaringController::ActiveStatus::MANUAL_MODE_CHANGE;
+            break;
+        case AuxSwitchPos::HIGH:
+            desired_state = SoaringController::ActiveStatus::AUTO_MODE_CHANGE;
+            break;
+        }
+
+    plane.g2.soaring_controller.set_pilot_desired_state(desired_state);
+#endif
+}
+
+void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
+{
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.flare_switch_active = true;
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.quadplane.set_q_assist_state(plane.quadplane.Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED);
+            plane.flare_switch_active = false;
+            break;
+        }    
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
-                                         const RC_Channel::aux_switch_pos_t ch_flag)
+                                         const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     // the following functions do not need to be initialised:
@@ -67,6 +147,14 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::MANUAL:
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
+    case AUX_FUNC::FWD_THR:
+    case AUX_FUNC::LANDING_FLARE:
+        break;
+
+    case AUX_FUNC::Q_ASSIST:
+    case AUX_FUNC::SOARING:
+    case AUX_FUNC::AIRMODE:
+        do_aux_function(ch_option, ch_flag);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
@@ -80,23 +168,31 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         // want to startup with reverse thrust
         break;
 
+    case AUX_FUNC::TER_DISABLE:
+        do_aux_function(ch_option, ch_flag);
+        break;
+
+    case AUX_FUNC::CROW_SELECT:
+        do_aux_function(ch_option, ch_flag);
+        break;
+
     default:
         // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
         break;
-}
+    }
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
-void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_switch_pos_t ch_flag)
+void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
-        plane.inverted_flight = (ch_flag == HIGH);
+        plane.inverted_flight = (ch_flag == AuxSwitchPos::HIGH);
         break;
 
     case AUX_FUNC::REVERSE_THROTTLE:
-        plane.reversed_throttle = (ch_flag == HIGH);
+        plane.reversed_throttle = (ch_flag == AuxSwitchPos::HIGH);
         gcs().send_text(MAV_SEVERITY_INFO, "RevThrottle: %s", plane.reversed_throttle?"ENABLE":"DISABLE");
         break;
 
@@ -128,8 +224,60 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         do_aux_function_change_mode(Mode::Number::TAKEOFF, ch_flag);
         break;
 
+    case AUX_FUNC::SOARING:
+        do_aux_function_soaring_3pos(ch_flag);
+        break;
+
     case AUX_FUNC::FLAP:
         break; // flap input label, nothing to do
+
+    case AUX_FUNC::Q_ASSIST:
+        do_aux_function_q_assist_state(ch_flag);
+        break;
+
+    case AUX_FUNC::FWD_THR:
+        break; // VTOL forward throttle input label, nothing to do
+
+    case AUX_FUNC::TER_DISABLE:
+            switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                plane.non_auto_terrain_disable = true;
+                if (plane.control_mode->allows_terrain_disable()) {
+                    plane.set_target_altitude_current();
+                }
+                break;
+            case AuxSwitchPos::MIDDLE:
+                break;
+            case AuxSwitchPos::LOW:
+                plane.non_auto_terrain_disable = false;
+                if (plane.control_mode->allows_terrain_disable()) {
+                    plane.set_target_altitude_current();
+                }
+                break;
+            }
+            gcs().send_text(MAV_SEVERITY_INFO, "NON AUTO TERRN: %s", plane.non_auto_terrain_disable?"OFF":"ON");
+        break;
+
+    case AUX_FUNC::CROW_SELECT:
+        do_aux_function_crow_mode(ch_flag);
+        break;
+
+    case AUX_FUNC::AIRMODE:
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.quadplane.air_mode = AirMode::ON;
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.quadplane.air_mode = AirMode::OFF;
+            break;
+        }
+        break;
+
+   case AUX_FUNC::LANDING_FLARE:
+       do_aux_function_flare(ch_flag);
+       break;
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);

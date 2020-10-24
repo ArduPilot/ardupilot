@@ -18,6 +18,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -26,10 +27,41 @@
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
+#ifndef HAL_NO_GCS
+
+// macros used to determine if a message will fit in the space available.
+
+void gcs_out_of_space_to_send_count(mavlink_channel_t chan);
+
+// important note: despite the names, these messages do NOT check to
+// see if the payload will fit in the buffer.  They check to see if
+// the packed message along with any channel overhead will fit.
+
+// PAYLOAD_SIZE returns the amount of space required to send the
+// mavlink message with id id on channel chan.  Mavlink2 has higher
+// overheads than mavlink1, for example.
+
 // check if a message will fit in the payload space available
 #define PAYLOAD_SIZE(chan, id) (unsigned(GCS_MAVLINK::packet_overhead_chan(chan)+MAVLINK_MSG_ID_ ## id ## _LEN))
-#define HAVE_PAYLOAD_SPACE(chan, id) (comm_get_txspace(chan) >= PAYLOAD_SIZE(chan, id))
-#define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) return false
+
+// HAVE_PAYLOAD_SPACE evaluates to an expression that can be used
+// anywhere in the code to determine if the mavlink message with ID id
+// can currently fit in the output of _chan.  Note the use of the ","
+// operator here to increment a counter.
+#define HAVE_PAYLOAD_SPACE(_chan, id) (comm_get_txspace(_chan) >= PAYLOAD_SIZE(_chan, id) ? true : (gcs_out_of_space_to_send_count(_chan), false))
+
+// CHECK_PAYLOAD_SIZE - macro which may only be used within a
+// GCS_MAVLink object's methods.  It inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the current object's
+// output
+#define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) { gcs_out_of_space_to_send_count(chan); return false; }
+
+// CHECK_PAYLOAD_SIZE2 - macro which inserts code which will
+// immediately return false from the current function if there is no
+// room to fit the mavlink message with id id on the mavlink output
+// channel "chan".  It is expecting there to be a "chan" variable in
+// scope.
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
 // convenience macros for defining which ap_message ids are in which streams:
@@ -89,6 +121,9 @@ public:
         // a single loop):
         return MIN(_port->txspace(), 8192U);
     }
+
+    // this is called when we discover we'd like to send something but can't:
+    void out_of_space_to_send() { out_of_space_to_send_count++; }
 
     void send_mission_ack(const mavlink_message_t &msg,
                           MAV_MISSION_TYPE mission_type,
@@ -173,8 +208,10 @@ public:
 
     uint32_t        last_heartbeat_time; // milliseconds
 
-    // last time we got a non-zero RSSI from RADIO_STATUS
-    static uint32_t last_radio_status_remrssi_ms;
+    static uint32_t last_radio_status_remrssi_ms() {
+        return last_radio_status.remrssi_ms;
+    }
+    static float telemetry_radio_rssi(); // 0==no signal, 1==full signal
 
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
@@ -185,7 +222,7 @@ public:
     void send_fence_status() const;
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
-    bool send_battery_status() const;
+    bool send_battery_status();
     void send_distance_sensor() const;
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
@@ -194,13 +231,12 @@ public:
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
-    void send_ahrs3();
     void send_system_time();
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
     void send_raw_imu();
 
-    void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature));
+    void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff));
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
@@ -228,6 +264,8 @@ public:
     void send_sys_status();
     void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
+    void send_generator_status() const;
+    virtual void send_winch_status() const {};
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -244,6 +282,9 @@ public:
 
     // return a bitmap of streaming channels
     static uint8_t streaming_channel_mask(void) { return chan_is_streaming; }
+
+    // return a bitmap of private channels
+    static uint8_t private_channel_mask(void) { return mavlink_private; }
 
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
@@ -292,7 +333,7 @@ public:
     static const struct stream_entries all_stream_entries[];
 
     virtual uint64_t capabilities() const;
-    uint8_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
+    uint16_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
@@ -353,6 +394,8 @@ protected:
     void handle_distance_sensor(const mavlink_message_t &msg);
     void handle_obstacle_distance(const mavlink_message_t &msg);
 
+    void handle_osd_param_config(const mavlink_message_t &msg);
+
     void handle_common_param_message(const mavlink_message_t &msg);
     void handle_param_set(const mavlink_message_t &msg);
     void handle_param_request_list(const mavlink_message_t &msg);
@@ -373,7 +416,6 @@ protected:
     void handle_common_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg);
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
 
     // reset a message interval via mavlink:
@@ -471,7 +513,20 @@ protected:
 
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
+    /*
+      correct an offboard timestamp in microseconds to a local time
+      since boot in milliseconds
+     */
+    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
+
 private:
+
+    // last time we got a non-zero RSSI from RADIO_STATUS
+    static struct LastRadioStatus {
+        uint32_t remrssi_ms;
+        uint8_t rssi;
+        uint32_t received_ms; // time RADIO_STATUS received
+    } last_radio_status;
 
     void log_mavlink_stats();
 
@@ -541,7 +596,7 @@ private:
     int8_t get_deferred_message_index(const ap_message id) const;
     // returns index of a message in deferred_message[] which should
     // be sent (or -1 if none to send at the moment)
-    int8_t deferred_message_to_send_index();
+    int8_t deferred_message_to_send_index(uint16_t now16_ms);
     // cache of which deferred message should be sent next:
     int8_t next_deferred_message_to_send_cache = -1;
 
@@ -556,8 +611,8 @@ private:
     uint8_t sending_bucket_id = no_bucket_to_send;
     Bitmask<MSG_LAST> bucket_message_ids_to_send;
 
-    ap_message next_deferred_bucket_message_to_send();
-    void find_next_bucket_to_send();
+    ap_message next_deferred_bucket_message_to_send(uint16_t now16_ms);
+    void find_next_bucket_to_send(uint16_t now16_ms);
     void remove_message_from_bucket(int8_t bucket, ap_message id);
 
     // bitmask of IDs the code has spontaneously decided it wants to
@@ -643,8 +698,6 @@ private:
 
     uint8_t send_parameter_async_replies();
 
-#if HAVE_FILESYSTEM_SUPPORT
-
     enum class FTP_OP : uint8_t {
         None = 0,
         TerminateSession = 1,
@@ -707,6 +760,8 @@ private:
         int fd = -1;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         int16_t current_session;
+        uint32_t last_send_ms;
+        uint8_t need_banner_send_mask;
     };
     static struct ftp_state ftp;
 
@@ -719,7 +774,6 @@ private:
     void send_ftp_replies(void);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
-#endif // HAVE_FILESYSTEM_SUPPORT
 
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
@@ -738,28 +792,17 @@ private:
                                                      const float roll,
                                                      const float pitch,
                                                      const float yaw,
+                                                     const float covariance[21],
+                                                     const uint8_t reset_counter,
                                                      const uint16_t payload_size);
-    void log_vision_position_estimate_data(const uint64_t usec,
-                                           const uint32_t corrected_msec,
-                                           const float x,
-                                           const float y,
-                                           const float z,
-                                           const float roll,
-                                           const float pitch,
-                                           const float yaw);
+    void handle_vision_speed_estimate(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
-    /*
-      correct an offboard timestamp in microseconds to a local time
-      since boot in milliseconds
-     */
-    uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
-    
     mavlink_signing_t signing;
     static mavlink_signing_streams_t signing_streams;
     static uint32_t last_signing_save_ms;
-    
+
     static StorageAccess _signing_storage;
     static bool signing_key_save(const struct SigningKey &key);
     static bool signing_key_load(struct SigningKey &key);
@@ -781,10 +824,9 @@ private:
     // no idea where we are:
     struct Location global_position_current_loc;
 
-    void zero_rc_outputs();
-
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
+    uint16_t out_of_space_to_send_count; // number of times HAVE_PAYLOAD_SPACE and friends have returned false
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     struct {
@@ -802,6 +844,8 @@ private:
 #endif
 
     uint32_t last_mavlink_stats_logged;
+
+    uint8_t last_battery_status_idx;
 
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
@@ -840,6 +884,7 @@ public:
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list);
     virtual void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t mask);
+    uint8_t statustext_send_channel_mask() const;
 
     virtual GCS_MAVLINK *chan(const uint8_t ofs) = 0;
     virtual const GCS_MAVLINK *chan(const uint8_t ofs) const = 0;
@@ -870,6 +915,7 @@ public:
         return 200;
     }
 
+    void init();
     void setup_console();
     void setup_uarts();
 
@@ -907,6 +953,8 @@ public:
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 protected:
+
+    virtual uint8_t sysid_this_mav() const = 0;
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;
@@ -975,6 +1023,22 @@ private:
 
     // timer called to implement pass-thru
     void passthru_timer();
+
+    // this contains the index of the GCS_MAVLINK backend we will
+    // first call update_send on.  It is incremented each time
+    // GCS::update_send is called so we don't starve later links of
+    // time in which they are permitted to send messages.
+    uint8_t first_backend_to_send;
 };
 
 GCS &gcs();
+
+// send text when we do have a GCS
+#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#else // HAL_NO_GCS
+// empty send text when we have no GCS
+#define GCS_SEND_TEXT(severity, format, args...)
+
+#endif // HAL_NO_GCS
+

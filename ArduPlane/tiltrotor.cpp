@@ -92,26 +92,45 @@ void QuadPlane::tiltrotor_continuous_update(void)
     tilt.current_throttle = constrain_float(motors_throttle,
                                             tilt.current_throttle-max_change,
                                             tilt.current_throttle+max_change);
-    
+
     /*
       we are in a VTOL mode. We need to work out how much tilt is
-      needed. There are 3 strategies we will use:
+      needed. There are 4 strategies we will use:
 
-      1) in QSTABILIZE or QHOVER the angle will be set to zero. This
+      1) without manual forward throttle control, the angle will be set to zero
+         in QAUTOTUNE QACRO, QSTABILIZE and QHOVER. This
          enables these modes to be used as a safe recovery mode.
 
-      2) in fixed wing assisted flight or velocity controlled modes we
+      2) with manual forward throttle control we will set the angle based on
+         the demanded forward throttle via RC input.
+
+      3) in fixed wing assisted flight or velocity controlled modes we
          will set the angle based on the demanded forward throttle,
          with a maximum tilt given by Q_TILT_MAX. This relies on
-         Q_VFWD_GAIN being set
+         Q_VFWD_GAIN being set.
 
-      3) if we are in TRANSITION_TIMER mode then we are transitioning
+      4) if we are in TRANSITION_TIMER mode then we are transitioning
          to forward flight and should put the rotors all the way forward
     */
-    if (plane.control_mode == &plane.mode_qstabilize ||
-        plane.control_mode == &plane.mode_qhover ||
-        plane.control_mode == &plane.mode_qautotune) {
+
+    if (plane.control_mode == &plane.mode_qautotune) {
         tiltrotor_slew(0);
+        return;
+    }
+
+    // if not in assisted flight and in QACRO, QSTABILIZE or QHOVER mode
+    if (!assisted_flight &&
+        (plane.control_mode == &plane.mode_qacro ||
+         plane.control_mode == &plane.mode_qstabilize ||
+         plane.control_mode == &plane.mode_qhover)) {
+        if (rc_fwd_thr_ch == nullptr) {
+            // no manual throttle control, set angle to zero
+            tiltrotor_slew(0);
+        } else {
+            // manual control of forward throttle
+            float settilt = .01f * forward_throttle_pct();
+            tiltrotor_slew(settilt);
+        }
         return;
     }
 
@@ -355,7 +374,24 @@ void QuadPlane::tiltrotor_vectored_yaw(void)
 
     // calculate the basic tilt amount from current_tilt
     float base_output = zero_out + (tilt.current_tilt * (1 - zero_out));
-    
+
+    // for testing when disarmed, apply vectored yaw in proportion to rudder stick
+    // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
+    constexpr uint32_t TILT_DELAY_MS = 3000;
+    uint32_t now = AP_HAL::millis();
+    if (!hal.util->get_soft_armed() && (plane.quadplane.options & OPTION_DISARMED_TILT)) {
+        // this test is subject to wrapping at ~49 days, but the consequences are insignificant
+        if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
+            float yaw_out = plane.channel_rudder->get_control_in();
+            yaw_out /= plane.channel_rudder->get_range();
+            float yaw_range = zero_out;
+
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * (base_output + yaw_out * yaw_range));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * (base_output - yaw_out * yaw_range));
+        }
+        return;
+    }
+
     float tilt_threshold = (tilt.max_angle_deg/90.0f);
     bool no_yaw = (tilt.current_tilt > tilt_threshold);
     if (no_yaw) {

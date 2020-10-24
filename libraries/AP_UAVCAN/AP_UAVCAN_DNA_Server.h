@@ -1,10 +1,11 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include <uavcan/uavcan.hpp>
 #include <AP_Common/Bitmask.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_CANManager/AP_CANManager.h>
 
 //Forward declaring classes
 class AllocationCb;
@@ -30,7 +31,7 @@ class AP_UAVCAN_DNA_Server
 
     uint32_t last_verification_request;
     uint8_t curr_verifying_node;
-    uint8_t self_node_id[MAX_NUMBER_OF_CAN_DRIVERS];
+    uint8_t self_node_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
     bool nodeInfo_resp_rcvd;
 
     Bitmask<128> occupation_mask;
@@ -48,6 +49,7 @@ class AP_UAVCAN_DNA_Server
     uint8_t rcvd_unique_id_offset;
     uint8_t current_driver_index;
     uint32_t last_activity_ms;
+    uint32_t last_alloc_msg_ms;
 
     //Methods to handle and report Node IDs seen on the bus
     void addToSeenNodeMask(uint8_t node_id);

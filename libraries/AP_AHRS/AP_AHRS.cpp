@@ -179,26 +179,6 @@ Vector3f AP_AHRS::get_gyro_latest(void) const
     return AP::ins().get_gyro(primary_gyro) + get_gyro_drift();
 }
 
-// return airspeed estimate if available
-bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
-{
-    if (airspeed_sensor_enabled()) {
-        airspeed_ret = _airspeed->get_airspeed();
-        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-            // constrain the airspeed by the ground speed
-            // and AHRS_WIND_MAX
-            const float gnd_speed = AP::gps().ground_speed();
-            float true_airspeed = airspeed_ret * get_EAS2TAS();
-            true_airspeed = constrain_float(true_airspeed,
-                                            gnd_speed - _wind_max,
-                                            gnd_speed + _wind_max);
-            airspeed_ret = true_airspeed / get_EAS2TAS();
-        }
-        return true;
-    }
-    return false;
-}
-
 // set_trim
 void AP_AHRS::set_trim(const Vector3f &new_trim)
 {
@@ -472,14 +452,14 @@ float AP_AHRS::getSSA(void)
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS::rotate_earth_to_body2D(const Vector2f &ef) const
+Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 {
     return Vector2f(ef.x * _cos_yaw + ef.y * _sin_yaw,
                     -ef.x * _sin_yaw + ef.y * _cos_yaw);
 }
 
 // rotate a 2D vector from earth frame to body frame
-Vector2f AP_AHRS::rotate_body_to_earth2D(const Vector2f &bf) const
+Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 {
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
@@ -516,6 +496,12 @@ void AP_AHRS::update_nmea_out()
         _nmea_out->update();
     }
 #endif
+}
+
+// return current vibration vector for primary IMU
+Vector3f AP_AHRS::get_vibration(void) const
+{
+    return AP::ins().get_vibration_levels();
 }
 
 // singleton instance

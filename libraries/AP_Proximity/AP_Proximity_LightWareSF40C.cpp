@@ -16,7 +16,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/crc.h>
 #include "AP_Proximity_LightWareSF40C.h"
 
@@ -24,30 +23,6 @@ extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_SF40C_HEADER                  0xAA
 #define PROXIMITY_SF40C_DESIRED_OUTPUT_RATE     3
-#define PROXIMITY_SF40C_UART_RX_SPACE           1280
-
-/* 
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
-*/
-AP_Proximity_LightWareSF40C::AP_Proximity_LightWareSF40C(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
-{
-    const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (_uart != nullptr) {
-        // start uart with larger receive buffer
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), PROXIMITY_SF40C_UART_RX_SPACE, 0);
-    }
-}
-
-// detect if a Lightware proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_LightWareSF40C::detect()
-{
-    return AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
 
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C::update(void)
@@ -225,12 +200,11 @@ void AP_Proximity_LightWareSF40C::process_replies()
 }
 
 // process one byte received on serial port
-// returns true if a message has been successfully parsed
 // state is stored in _msg structure
 void AP_Proximity_LightWareSF40C::parse_byte(uint8_t b)
 {
     // check that payload buffer is large enough
-    static_assert(ARRAY_SIZE(_msg.payload) == PROXIMITY_SF40C_PAYLOAD_LEN_MAX, "AP_Proximity_LightwareSF40C: check _msg.payload array size ");
+    static_assert(ARRAY_SIZE(_msg.payload) == PROXIMITY_SF40C_PAYLOAD_LEN_MAX, "AP_Proximity_LightWareSF40C: check _msg.payload array size");
 
     // process byte depending upon current state
     switch (_msg.state) {
@@ -328,9 +302,9 @@ void AP_Proximity_LightWareSF40C::process_message()
         }
 
         // prepare to push to object database
-        Vector2f current_pos;
-        float current_heading;
-        const bool database_ready = database_prepare_for_push(current_pos, current_heading);
+        Vector3f current_pos;
+        Matrix3f body_to_ned;
+        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
@@ -386,7 +360,7 @@ void AP_Proximity_LightWareSF40C::process_message()
             // send combined distance to object database
             if ((i+1 >= point_count) || (combined_count >= PROXIMITY_SF40C_COMBINE_READINGS)) {
                 if ((combined_dist_m < INT16_MAX) && database_ready) {
-                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_pos, current_heading);
+                    database_push(combined_angle_deg, combined_dist_m, _last_distance_received_ms, current_pos,body_to_ned);
                 }
                 combined_count = 0;
                 combined_dist_m = INT16_MAX;

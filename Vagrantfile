@@ -2,6 +2,7 @@
 # vi: set ft=ruby :
 
 # Testing an ArduPilot VM:
+# dpkg -l | grep modemmanager
 # sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
 # sim_vehicle.py --valgrind
@@ -9,7 +10,7 @@
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
 # time (cd /vagrant && ./Tools/autotest/sim_vehicle.py --map --console -v ArduPlane -f jsbsim) # should test JSBSim
-# time (cd /vagrant && ./Tools/autotest/autotest.py build.APMrover2 drive.APMrover2)
+# time (cd /vagrant && ./Tools/autotest/autotest.py build.Rover test.Rover)
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -137,14 +138,33 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
-  # 19.04 bleeding edge
+  # 19.04
   config.vm.define "disco64", autostart: false do |disco64|
     disco64.vm.box = "ubuntu/disco64"
     disco64.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
     disco64.vm.provider "virtualbox" do |vb|
       vb.name = "ArduPilot (disco64)"
-      vb.gui = true
     end
+  end
+
+  # 19.10 - broken; fails to use NamedTemporaryFile to create file for gdb
+#  config.vm.define "eoan", autostart: false do |eoan|
+#    eoan.vm.box = "ubuntu/eoan64"
+#    eoan.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+#    eoan.vm.provider "virtualbox" do |vb|
+#      vb.name = "ArduPilot (eoan)"
+#    end
+#    eoan.vm.boot_timeout = 1200
+#  end
+
+  # 20.04 LTS
+  config.vm.define "focal", autostart: false do |focal|
+    focal.vm.box = "ubuntu/focal64"
+    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    focal.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (focal)"
+    end
+    focal.vm.boot_timeout = 1200
   end
 
 end

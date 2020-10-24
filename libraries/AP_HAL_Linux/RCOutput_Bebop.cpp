@@ -81,7 +81,7 @@ enum BLDC_STATUS {
 
 using namespace Linux;
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : _dev(std::move(dev))

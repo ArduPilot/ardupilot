@@ -120,6 +120,12 @@ public:
     // use bailout ramp time
     void        use_bailout_ramp_time(bool enable) { _use_bailout_ramp = enable; }
 
+    // use external governor autorotation window
+    void        set_autorotaion_flag(bool flag) { _in_autorotaion = flag; }
+
+    // set the throttle percentage to be sent to external governor to signal that autorotation bailout ramp should be used within this instance of Heli_RSC
+    void        set_ext_gov_arot_bail(int16_t pct) { _rsc_arot_bailout_pct = pct; }
+
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
 
@@ -133,6 +139,7 @@ public:
     AP_Int8         _runup_time;              // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _critical_speed;          // Rotor speed below which flight is not possible
     AP_Int16        _idle_output;             // Rotor control output while at idle
+    AP_Int16        _ext_gov_arot_pct;        // Percent value sent to external governor when in autorotation
 
 private:
     uint64_t        _last_update_us;
@@ -154,6 +161,8 @@ private:
     float           _governor_output;             // governor output for rotor speed control
     bool            _governor_engage;             // RSC governor status flag for soft-start
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
+    bool            _in_autorotaion;              // true if vehicle is currently in an autorotaion
+    int16_t         _rsc_arot_bailout_pct;        // the throttle percentage sent to the external governor to signal that autorotation bailout ramp should be used
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);

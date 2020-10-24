@@ -15,6 +15,7 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
@@ -22,9 +23,14 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#include "AP_RCProtocol_SRXL2.h"
+#endif
+#include "AP_RCProtocol_CRSF.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +43,10 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+    backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+#endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 }
@@ -55,6 +65,16 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
+
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+    
     if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes && !searching) {
         // we're using byte inputs, discard pulses
         return;
@@ -76,17 +96,24 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             continue;
         }
         if (backend[i] != nullptr) {
-            uint32_t frame_count = backend[i]->get_rc_frame_count();
-            uint32_t input_count = backend[i]->get_rc_input_count();
+            if (!protocol_enabled(rcprotocol_t(i))) {
+                continue;
+            }
+            const uint32_t frame_count = backend[i]->get_rc_frame_count();
+            const uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_pulse(width_s0, width_s1);
-            if (frame_count != backend[i]->get_rc_frame_count()) {
-                _good_frames[i]++;
-                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+            const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
+            if (frame_count2 > frame_count) {
+                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
-                memset(_good_frames, 0, sizeof(_good_frames));
+                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                    if (backend[j]) {
+                        backend[j]->reset_rc_frame_count();
+                    }
+                }
                 _last_input_ms = now;
                 _detected_with_bytes = false;
                 break;
@@ -122,6 +149,16 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = (now - _last_input_ms >= 200);
+
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+
     if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes && !searching) {
         // we're using pulse inputs, discard bytes
         return false;
@@ -139,20 +176,26 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
-            uint32_t frame_count = backend[i]->get_rc_frame_count();
-            uint32_t input_count = backend[i]->get_rc_input_count();
+            if (!protocol_enabled(rcprotocol_t(i))) {
+                continue;
+            }
+            const uint32_t frame_count = backend[i]->get_rc_frame_count();
+            const uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_byte(byte, baudrate);
-            if (frame_count != backend[i]->get_rc_frame_count()) {
-                _good_frames[i]++;
-                if (requires_3_frames((rcprotocol_t)i) && _good_frames[i] < 3) {
+            const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
+            if (frame_count2 > frame_count) {
+                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
-                memset(_good_frames, 0, sizeof(_good_frames));
                 _last_input_ms = now;
                 _detected_with_bytes = true;
-
+                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                    if (backend[j]) {
+                        backend[j]->reset_rc_frame_count();
+                    }
+                }
                 // stop decoding pulses to save CPU
                 hal.rcin->pulse_input_enable(false);
                 break;
@@ -199,6 +242,15 @@ void AP_RCProtocol::check_added_uart(void)
             added.uart->set_stop_bits(2);
             added.uart->set_options(added.uart->get_options() | AP_HAL::UARTDriver::OPTION_RXINV);
             break;
+        case CONFIG_420000_8N1:
+            added.baudrate = CRSF_BAUDRATE;
+            added.uart->configure_parity(0);
+            added.uart->set_stop_bits(1);
+            added.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+            added.uart->set_unbuffered_writes(true);
+            added.uart->set_blocking_writes(false);
+            added.uart->set_options(added.uart->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV);
+            break;
         }
         added.uart->begin(added.baudrate, 128, 128);
         added.last_baud_change_ms = AP_HAL::millis();
@@ -215,7 +267,7 @@ void AP_RCProtocol::check_added_uart(void)
         if (now - added.last_baud_change_ms > 1000) {
             // flip baudrates if not detected once a second
             added.phase = (enum config_phase)(uint8_t(added.phase) + 1);
-            if (added.phase > CONFIG_100000_8E2I) {
+            if (added.phase > CONFIG_420000_8N1) {
                 added.phase = (enum config_phase)0;
             }
             added.baudrate = (added.baudrate==100000)?115200:100000;
@@ -308,6 +360,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "SUMD";
     case SRXL:
         return "SRXL";
+    case SRXL2:
+        return "SRXL2";
+    case CRSF:
+        return "CRSF";
     case ST24:
         return "ST24";
     case FPORT:
@@ -334,6 +390,16 @@ void AP_RCProtocol::add_uart(AP_HAL::UARTDriver* uart)
     added.uart = uart;
     // start with DSM
     added.baudrate = 115200U;
+}
+
+// return true if a specific protocol is enabled
+bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
+{
+    if ((rc_protocols_mask & 1) != 0) {
+        // all protocols enabled
+        return true;
+    }
+    return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
 }
 
 namespace AP {

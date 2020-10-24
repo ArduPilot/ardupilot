@@ -76,6 +76,9 @@ public:
     // notify of a fifo reset
     void notify_fifo_reset(void);
 
+    // get a startup banner to output to the GCS
+    virtual bool get_output_banner(char* banner, uint8_t banner_len) { return false; }
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -108,6 +111,7 @@ public:
         DEVTYPE_INS_ICM20649 = 0x2E,
         DEVTYPE_INS_ICM20602 = 0x2F,
         DEVTYPE_INS_ICM20601 = 0x30,
+        DEVTYPE_INS_ADIS1647X = 0x31,
     };
 
 protected:
@@ -173,7 +177,7 @@ protected:
     void _set_raw_sample_accel_multiplier(uint8_t instance, uint16_t mul) {
         _imu._accel_raw_sampling_multiplier[instance] = mul;
     }
-    void _set_raw_sampl_gyro_multiplier(uint8_t instance, uint16_t mul) {
+    void _set_raw_sample_gyro_multiplier(uint8_t instance, uint16_t mul) {
         _imu._gyro_raw_sampling_multiplier[instance] = mul;
     }
 
@@ -233,7 +237,7 @@ protected:
     uint16_t _gyro_filter_cutoff(void) const { return _imu._gyro_filter_cutoff; }
 
     // return the requested sample rate in Hz
-    uint16_t get_sample_rate_hz(void) const;
+    uint16_t get_loop_rate_hz(void) const;
 
     // return the notch filter center in Hz for the sample rate
     float _gyro_notch_center_freq_hz(void) const { return _imu._notch_filter.center_freq_hz(); }
@@ -247,7 +251,13 @@ protected:
     bool _gyro_notch_enabled(void) const { return _imu._notch_filter.enabled(); }
 
     // return the harmonic notch filter center in Hz for the sample rate
-    float gyro_harmonic_notch_center_freq_hz() const { return _imu._calculated_harmonic_notch_freq_hz; }
+    float gyro_harmonic_notch_center_freq_hz() const { return _imu.get_gyro_dynamic_notch_center_freq_hz(); }
+
+    // set of harmonic notch current center frequencies
+    const float* gyro_harmonic_notch_center_frequencies_hz(void) const { return _imu.get_gyro_dynamic_notch_center_frequencies_hz(); }
+
+    // number of harmonic notch current center frequencies
+    uint8_t num_gyro_harmonic_notch_center_frequencies(void) const { return _imu.get_num_gyro_dynamic_notch_center_frequencies(); }
 
     // return the harmonic notch filter bandwidth in Hz for the sample rate
     float gyro_harmonic_notch_bandwidth_hz(void) const { return _imu._harmonic_notch_filter.bandwidth_hz(); }
@@ -274,7 +284,7 @@ protected:
     float _last_harmonic_notch_center_freq_hz;
     float _last_harmonic_notch_bandwidth_hz;
     float _last_harmonic_notch_attenuation_dB;
-    
+
     void set_gyro_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._gyro_orientation[instance] = rotation;
     }
@@ -292,6 +302,11 @@ protected:
     // should fast sampling be enabled on this IMU?
     bool enable_fast_sampling(uint8_t instance) {
         return (_imu._fast_sampling_mask & (1U<<instance)) != 0;
+    }
+
+    // if fast sampling is enabled, the rate to use in kHz
+    uint8_t get_fast_sampling_rate() {
+        return (1 << uint8_t(_imu._fast_sampling_rate));
     }
 
     // called by subclass when data is received from the sensor, thus

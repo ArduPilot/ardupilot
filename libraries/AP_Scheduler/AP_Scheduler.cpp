@@ -57,6 +57,13 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOOP_RATE",  1, AP_Scheduler, _loop_rate_hz, SCHEDULER_DEFAULT_LOOP_RATE),
 
+    // @Param: OPTIONS
+    // @DisplayName: Scheduling options
+    // @Description: This controls optional aspects of the scheduler.
+    // @Bitmask: 0:Enable per-task perf info
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  2, AP_Scheduler, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -87,6 +94,9 @@ AP_Scheduler *AP_Scheduler::get_singleton()
 // initialise the scheduler
 void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint32_t log_performance_bit)
 {
+    // grab the semaphore before we start anything
+    _rsem.take_blocking();
+
     // only allow 50 to 2000 Hz
     if (_loop_rate_hz < 50) {
         _loop_rate_hz.set(50);
@@ -110,6 +120,10 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
     // setup initial performance counters
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
+
+    if (_options & uint8_t(Options::RECORD_TASK_INFO)) {
+        perf_info.allocate_task_info(_num_tasks);
+    }
 
     _log_performance_bit = log_performance_bit;
 }
@@ -157,7 +171,8 @@ void AP_Scheduler::run(uint32_t time_available)
         const AP_Scheduler::Task& task = (i < _num_unshared_tasks) ? _tasks[i] : _common_tasks[i - _num_unshared_tasks];
 
         uint32_t dt = _tick_counter - _last_run[i];
-        uint32_t interval_ticks = _loop_rate_hz / task.rate_hz;
+        // we allow 0 to mean loop rate
+        uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
         if (interval_ticks < 1) {
             interval_ticks = 1;
         }
@@ -169,13 +184,7 @@ void AP_Scheduler::run(uint32_t time_available)
         _task_time_allowed = task.max_time_micros;
 
         if (dt >= interval_ticks*2) {
-            // we've slipped a whole run of this task!
-            debug(2, "Scheduler slip task[%u-%s] (%u/%u/%u)\n",
-                  (unsigned)i,
-                  task.name,
-                  (unsigned)dt,
-                  (unsigned)interval_ticks,
-                  (unsigned)_task_time_allowed);
+            perf_info.task_slipped(i);
         }
 
         if (dt >= interval_ticks*max_task_slowdown) {
@@ -212,8 +221,9 @@ void AP_Scheduler::run(uint32_t time_available)
         // work out how long the event actually took
         now = AP_HAL::micros();
         uint32_t time_taken = now - _task_time_started;
-
+        bool overrun = false;
         if (time_taken > _task_time_allowed) {
+            overrun = true;
             // the event overran!
             debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
                   (unsigned)i,
@@ -221,6 +231,9 @@ void AP_Scheduler::run(uint32_t time_available)
                   (unsigned)time_taken,
                   (unsigned)_task_time_allowed);
         }
+
+        perf_info.update_task_info(i, time_taken, overrun);
+
         if (time_taken >= time_available) {
             time_available = 0;
             break;
@@ -267,7 +280,9 @@ void AP_Scheduler::loop()
 {
     // wait for an INS sample
     hal.util->persistent_data.scheduler_task = -3;
+    _rsem.give();
     AP::ins().wait_for_sample();
+    _rsem.take_blocking();
     hal.util->persistent_data.scheduler_task = -1;
 
     const uint32_t sample_time_us = AP_HAL::micros();
@@ -309,13 +324,16 @@ void AP_Scheduler::loop()
     const uint32_t loop_us = get_loop_period_us();
     uint32_t now = AP_HAL::micros();
     uint32_t time_available = 0;
-    if (now - sample_time_us < loop_us) {
+    const uint32_t loop_tick_us = now - sample_time_us;
+    if (loop_tick_us < loop_us) {
         // get remaining time available for this loop
-        time_available = loop_us - (now - sample_time_us);
+        time_available = loop_us - loop_tick_us;
     }
 
     // add in extra loop time determined by not achieving scheduler tasks
     time_available += extra_loop_us;
+    // update the task info for the fast loop
+    perf_info.update_task_info(_num_tasks, loop_tick_us, loop_tick_us > loop_us);
 
     // run the tasks
     run(time_available);
@@ -359,6 +377,12 @@ void AP_Scheduler::update_logging()
     }
     perf_info.set_loop_rate(get_loop_rate_hz());
     perf_info.reset();
+    // dynamically update the per-task perf counter
+    if (!(_options & uint8_t(Options::RECORD_TASK_INFO)) && perf_info.has_task_info()) {
+        perf_info.free_task_info();
+    } else if ((_options & uint8_t(Options::RECORD_TASK_INFO)) && !perf_info.has_task_info()) {
+        perf_info.allocate_task_info(_num_tasks);
+    }
 }
 
 // Write a performance monitoring packet
@@ -381,6 +405,72 @@ void AP_Scheduler::Log_Write_Performance()
         extra_loop_us    : extra_loop_us,
     };
     AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+// display task statistics as text buffer for @SYS/tasks.txt
+size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
+{
+    size_t total = 0;
+
+    // a header to allow for machine parsers to determine format
+    int n = hal.util->snprintf(buf, bufsize, "TasksV1\n");
+
+    if (n <= 0) {
+        return 0;
+    }
+
+    // dynamically enable statistics collection
+    if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
+        _options |= uint8_t(Options::RECORD_TASK_INFO);
+        return n;
+    }
+
+    if (perf_info.get_task_info(0) == nullptr) {
+        return n;
+    }
+
+    buf += n;
+    bufsize -= n;
+    total += n;
+
+    // baseline the total time taken by all tasks
+    float total_time = 1.0f;
+    for (uint8_t i = 0; i < _num_tasks + 1; i++) {
+        const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
+        if (ti->tick_count > 0) {
+            total_time += ti->elapsed_time_us;
+        }
+    }
+
+    for (uint8_t i = 0; i < _num_tasks + 1; i++) {
+        const char* task_name = (i < _num_unshared_tasks) ? _tasks[i].name : i == _num_tasks ? "fast_loop" : _common_tasks[i - _num_unshared_tasks].name;
+        const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
+
+        uint16_t avg = 0;
+        float pct = 0.0f;
+        if (ti->tick_count > 0) {
+            pct = ti->elapsed_time_us * 100.0f / total_time;
+            avg = MIN(uint16_t(ti->elapsed_time_us / ti->tick_count), 999);
+        }
+
+#if HAL_MINIMIZE_FEATURES
+        const char* fmt = "%-16.16s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
+#else
+        const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
+#endif
+        n = hal.util->snprintf(buf, bufsize, fmt, task_name,
+            unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
+            unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
+
+        if (n <= 0) {
+            break;
+        }
+        buf += n;
+        bufsize -= n;
+        total += n;
+    }
+
+    return total;
 }
 
 namespace AP {

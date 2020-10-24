@@ -90,6 +90,38 @@ uint8_t crc_crc8(const uint8_t *p, uint8_t len)
 	return crc & 0xFF;
 }
 
+// crc8 from betaflight
+uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
+{
+    return crc8_dvb(crc, a, 0xD5);
+}
+
+// crc8 from betaflight
+uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
+{
+    crc ^= a;
+    for (uint8_t i = 0; i < 8; ++i) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ seed;
+        } else {
+            crc = crc << 1;
+        }
+    }
+    return crc;
+}
+
+// crc8 from betaflight
+uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length)
+{
+    const uint8_t *p = (const uint8_t *)data;
+    const uint8_t *pend = p + length;
+
+    for (; p != pend; p++) {
+        crc = crc8_dvb_s2(crc, *p);
+    }
+    return crc;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty
@@ -281,4 +313,24 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
         *hash ^= (uint64_t)buf[i];
         *hash *= FNV_1_PRIME_64;
     }
+}
+
+// calculate 24 bit crc. We take an approach that saves memory and flash at the cost of higher CPU load.
+uint32_t crc_crc24(const uint8_t *bytes, uint16_t len)
+{
+    static constexpr uint32_t POLYCRC24 = 0x1864CFB;
+    uint32_t crc = 0;
+    while (len--) {
+        uint8_t b = *bytes++;
+        const uint8_t idx = (crc>>16) ^ b;
+        uint32_t crct = idx<<16;
+        for (uint8_t j=0; j<8; j++) {
+            crct <<= 1;
+            if (crct & 0x1000000) {
+                crct ^= POLYCRC24;
+            }
+        }
+        crc = ((crc<<8)&0xFFFFFF) ^ crct;
+    }
+    return crc;
 }

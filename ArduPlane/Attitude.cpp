@@ -26,7 +26,7 @@ float Plane::get_speed_scaler(void)
             // when in VTOL modes limit surface movement at low speed to prevent instability
             float threshold = aparm.airspeed_min * 0.5;
             if (aspeed < threshold) {
-                float new_scaler = linear_interpolate(0, g.scaling_speed / threshold, aspeed, 0, threshold);
+                float new_scaler = linear_interpolate(0.001, g.scaling_speed / threshold, aspeed, 0, threshold);
                 speed_scaler = MIN(speed_scaler, new_scaler);
 
                 // we also decay the integrator to prevent an integrator from before
@@ -57,6 +57,7 @@ bool Plane::stick_mixing_enabled(void)
     if (auto_throttle_mode && auto_navigation_mode) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
+            g.stick_mixing != STICK_MIXING_VTOL_YAW &&
             geofence_stickmixing() &&
             failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
@@ -122,6 +123,12 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
+
+   // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD
+   if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !auto_throttle_mode && flare_switch_active) {
+       demanded_pitch = landing.get_pitch_cd();
+   }
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                                            speed_scaler, 
                                                                                            disable_integrator));
@@ -453,7 +460,7 @@ void Plane::calc_throttle()
     int32_t commanded_throttle = SpdHgt_Controller->get_throttle_demand();
 
     // Received an external msg that guides throttle in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_throttle_ms > 0 &&
             millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
         commanded_throttle = plane.guided_state.forced_throttle;
@@ -477,7 +484,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     int16_t commanded_rudder;
 
     // Received an external msg that guides yaw in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
@@ -565,7 +572,7 @@ void Plane::calc_nav_pitch()
     int32_t commanded_pitch = SpdHgt_Controller->get_pitch_demand();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.y > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
         commanded_pitch = plane.guided_state.forced_rpy_cd.y;
@@ -583,10 +590,40 @@ void Plane::calc_nav_roll()
     int32_t commanded_roll = nav_controller->nav_roll_cd();
 
     // Received an external msg that guides roll in the last 3 seconds?
-    if ((control_mode == &mode_guided || control_mode == &mode_avoidADSB) &&
+    if (control_mode->is_guided_mode() &&
             plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
         commanded_roll = plane.guided_state.forced_rpy_cd.x;
+#if OFFBOARD_GUIDED == ENABLED
+    // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
+    } else if ((control_mode == &mode_guided) && (guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
+        uint32_t tnow = AP_HAL::millis();
+        float delta = (tnow - guided_state.target_heading_time_ms) * 1e-3f;
+        guided_state.target_heading_time_ms = tnow;
+
+        float error = 0.0f;
+        if (guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
+            error = wrap_PI(guided_state.target_heading - AP::ahrs().yaw);
+        } else {
+            Vector2f groundspeed = AP::ahrs().groundspeed_vector();
+            error = wrap_PI(guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
+        }
+
+        float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
+
+        g2.guidedHeading.update_error(error); // push error into AC_PID , possible improvement is to use update_all instead.?
+        g2.guidedHeading.set_dt(delta);
+
+        float i = g2.guidedHeading.get_i(); // get integrator TODO
+        if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {
+            i = g2.guidedHeading.get_i();
+        }
+
+        float desired = g2.guidedHeading.get_p() + i + g2.guidedHeading.get_d();
+        guided_state.target_heading_limit_low = (desired <= -bank_limit);
+        guided_state.target_heading_limit_high = (desired >= bank_limit);
+        commanded_roll = constrain_float(desired, -bank_limit, bank_limit);
+#endif // OFFBOARD_GUIDED == ENABLED
     }
 
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);

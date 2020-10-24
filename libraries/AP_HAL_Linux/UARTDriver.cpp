@@ -79,7 +79,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (!_connected) {
         _connected = _device->open();
-        _device->set_blocking(false);
+        if (_connected) {
+            _device->set_blocking(false);
+        }
     }
     _initialised = false;
 
@@ -289,6 +291,15 @@ int16_t UARTDriver::read()
     }
 
     return byte;
+}
+
+bool UARTDriver::discard_input()
+{
+    if (!_initialised) {
+        return false;
+    }
+    _readbuf.clear();
+    return true;
 }
 
 /* Linux implementations of Print virtual methods */

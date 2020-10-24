@@ -5,7 +5,7 @@ _ap_bin() {
   typeset -A opt_args
   local context state line curcontext="$curcontext"
 
-  _arguments -C -A -s -S \
+  _arguments -C \
     '(- 1 *)'{-h,--help}'[display this help information]' \
     '(-w --wipe)'{-w,--wipe}'[wipe eeprom]' \
     '(-u --unhide-groups)'{-u,--unhide-groups}'[parameter enumeration ignores AP_PARAM_FLAG_ENABLE]' \

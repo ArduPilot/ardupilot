@@ -23,6 +23,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AP_ICENGINE_START_CHAN_DEBOUNCE_MS          300
+
 const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: ENABLE
@@ -117,7 +119,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IDLE_RPM", 12, AP_ICEngine, idle_rpm, -1),
 
-    // @Param: ICE_IDLE_DB
+    // @Param: IDLE_DB
     // @DisplayName: Deadband for Idle Governor
     // @Description: This configures the deadband that is tolerated before adjusting the idle setpoint
     AP_GROUPINFO("IDLE_DB", 13, AP_ICEngine, idle_db, 50),
@@ -132,7 +134,14 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Description: Options for ICE control
     // @Bitmask: 0:DisableIgnitionRCFailsafe
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
-    
+
+    // @Param: STARTCHN_MIN
+    // @DisplayName: Input channel for engine start minimum PWM
+    // @Description: This is a minimum PWM value for engine start channel for an engine stop to be commanded. Setting this value will avoid RC input glitches with low PWM values from causing an unwanted engine stop. A value of zero means any PWM below 1300 triggers an engine stop.
+    // @User: Standard
+    // @Range: 0 1300
+    AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
+
     AP_GROUPEND
 };
 
@@ -160,17 +169,43 @@ void AP_ICEngine::update(void)
 
     uint16_t cvalue = 1500;
     RC_Channel *c = rc().channel(start_chan-1);
-    if (c != nullptr) {
+    if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
         cvalue = c->get_radio_in();
+
+        if (cvalue < start_chan_min_pwm) {
+            cvalue = start_chan_last_value;
+        }
+
+        // snap the input to either 1000, 1500, or 2000
+        // this is useful to compare a debounce changed value
+        // while ignoring tiny noise
+        if (cvalue >= 1700) {
+            cvalue = 2000;
+        } else if ((cvalue > 800) && (cvalue <= 1300)) {
+            cvalue = 1300;
+        } else {
+            cvalue = 1500;
+        }
     }
 
     bool should_run = false;
     uint32_t now = AP_HAL::millis();
 
-    if (state == ICE_OFF && cvalue >= 1700) {
+
+    // debounce timer to protect from spurious changes on start_chan rc input
+    // If the cached value is the same, reset timer
+    if (start_chan_last_value == cvalue) {
+        start_chan_last_ms = now;
+    } else if (now - start_chan_last_ms >= AP_ICENGINE_START_CHAN_DEBOUNCE_MS) {
+        // if it has changed, and stayed changed for the duration, then use that new value
+        start_chan_last_value = cvalue;
+    }
+
+
+    if (state == ICE_OFF && start_chan_last_value >= 1700) {
         should_run = true;
-    } else if (cvalue <= 1300) {
+    } else if (start_chan_last_value <= 1300) {
         should_run = false;
     } else if (state != ICE_OFF) {
         should_run = true;
@@ -229,8 +264,9 @@ void AP_ICEngine::update(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
         } else if (rpm_instance > 0) {
             // check RPM to see if still running
-            if (!rpm.healthy(rpm_instance-1) ||
-                rpm.get_rpm(rpm_instance-1) < rpm_threshold) {
+            float rpm_value;
+            if (!rpm.get_rpm(rpm_instance-1, rpm_value) ||
+                rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
             }
@@ -321,9 +357,10 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
         return true;
     }
     RC_Channel *c = rc().channel(start_chan-1);
-    if (c != nullptr) {
+    if (c != nullptr && rc().has_valid_input()) {
         // get starter control channel
-        if (c->get_radio_in() <= 1300) {
+        uint16_t cvalue = c->get_radio_in();
+        if (cvalue >= start_chan_min_pwm && cvalue <= 1300) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine: start control disabled");
             return false;
         }
@@ -365,10 +402,10 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     }
 
     // get current RPM feedback
-    uint32_t rpmv = ap_rpm->get_rpm(rpm_instance-1);
+    float rpmv;
 
     // Double Check to make sure engine is really running
-    if (rpmv < 1) {
+    if (!ap_rpm->get_rpm(rpm_instance-1, rpmv) || rpmv < 1) {
         // Reset idle point to the default value when the engine is stopped
         idle_governor_integrator = min_throttle;
         return;

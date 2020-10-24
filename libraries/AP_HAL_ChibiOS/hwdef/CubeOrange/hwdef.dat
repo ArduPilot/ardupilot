@@ -23,16 +23,13 @@ env OPTIMIZE -O2
 
 FLASH_RESERVE_START_KB 128
 
-# board voltage
-STM32_VDD 330U
-
 define HAL_STORAGE_SIZE 16384
 
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7 OTG2
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
@@ -54,7 +51,11 @@ PA5 SPI1_SCK SPI1
 PA6 SPI1_MISO SPI1
 PA7 SPI1_MOSI SPI1
 
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+# This defines an output pin which will default to output HIGH. It is
+# a pin that enables peripheral power on this board. It starts in the
+# off state, then is pulled low to enable peripherals in
+# peripheral_power_enable()
+PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
@@ -99,7 +100,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # This input pin is used to detect that power is valid on USB.
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # This defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -193,8 +194,9 @@ PE6 SPI4_MOSI SPI4
 
 # This is the pin to enable the sensors rail. It can be used to power
 # cycle sensors to recover them in case there are problems with power on
-# timing affecting sensor stability. We pull it high by default.
-PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+# timing affecting sensor stability. We pull it LOW on startup, which
+# means sensors off, then it is pulled HIGH in peripheral_power_enable()
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
 
 # UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
 PE7 UART7_RX UART7
@@ -206,10 +208,10 @@ PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
 SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
@@ -247,6 +249,23 @@ IMU Invensense SPI:mpu9250 ROTATION_YAW_270
 IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
 IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
 IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+# Sensor Check alias for validating board type
+CHECK_ICM20649          spi_check_register_inv2("icm20948", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649)
+CHECK_ICM20602_EXT      spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)
+CHECK_ICM20948_EXT      spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)
+CHECK_MS5611            check_ms5611("ms5611")
+CHECK_MS5611_EXT        check_ms5611("ms5611_ext")
+
+# Sensor Check Macros to be used for validating board type
+CHECK_IMU0_PRESENT   $CHECK_ICM20602_EXT
+CHECK_IMU1_PRESENT   $CHECK_ICM20948_EXT
+CHECK_IMU2_PRESENT   $CHECK_ICM20649
+CHECK_BARO0_PRESENT  $CHECK_MS5611
+CHECK_BARO1_PRESENT  $CHECK_MS5611_EXT
+
+BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
@@ -293,6 +312,7 @@ define HAL_BATT_CURR_PIN 15
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 1
 
 # List of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

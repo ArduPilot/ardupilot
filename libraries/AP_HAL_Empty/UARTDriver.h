@@ -18,6 +18,7 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+    bool discard_input() override;
 
     /* Empty implementations of Print virtual methods */
     size_t write(uint8_t c) override;

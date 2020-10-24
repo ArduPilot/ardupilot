@@ -26,7 +26,7 @@
  */
 const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     SCHED_TASK(fifty_hz_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+    SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 200),
 #if OPTFLOW == ENABLED
     SCHED_TASK_CLASS(OpticalFlow,          &sub.optflow,             update,         200, 160),
 #endif
@@ -43,11 +43,11 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AC_FENCE == ENABLED
     SCHED_TASK_CLASS(AC_Fence,            &sub.fence,        update,              10, 100),
 #endif
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75),
 #endif
 #if CAMERA == ENABLED
-    SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update_trigger,      50,  75),
+    SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update,              50,  75),
 #endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350),
     SCHED_TASK(twentyfive_hz_logging, 25,    110),
@@ -126,7 +126,7 @@ void Sub::fast_loop()
     // check if we've reached the surface or bottom
     update_surface_and_bottom_detector();
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // camera mount's fast update
     camera_mount.update_fast();
 #endif
@@ -135,6 +135,8 @@ void Sub::fast_loop()
     if (should_log(MASK_LOG_ANY)) {
         Log_Sensor_Health();
     }
+
+    AP_Vehicle::fast_loop();
 }
 
 // 50 Hz tasks
@@ -284,30 +286,6 @@ void Sub::one_hz_loop()
     set_likely_flying(hal.util->get_soft_armed());
 }
 
-// called at 50hz
-void Sub::update_GPS()
-{
-    static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
-    bool gps_updated = false;
-
-    gps.update();
-
-    // log after every gps message
-    for (uint8_t i=0; i<gps.num_sensors(); i++) {
-        if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
-            last_gps_reading[i] = gps.last_message_time_ms(i);
-            gps_updated = true;
-            break;
-        }
-    }
-
-    if (gps_updated) {
-#if CAMERA == ENABLED
-        camera.update();
-#endif
-    }
-}
-
 void Sub::read_AHRS()
 {
     // Perform IMU calculations and get attitude info
@@ -325,6 +303,11 @@ void Sub::update_altitude()
 
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#else
+        write_notch_log_messages();
+#endif
     }
 }
 

@@ -4,6 +4,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <stdio.h>
@@ -41,6 +42,7 @@ private:
 
     AP_Int32 log_bitmask;
     AP_Logger logger{log_bitmask};
+    AP_Scheduler scheduler;
 
 };
 
@@ -54,7 +56,14 @@ void AP_LoggerTest::setup(void)
     logger.Init(log_structure, ARRAY_SIZE(log_structure));
     logger.set_vehicle_armed(true);
     logger.Write_Message("AP_Logger Test");
-
+#ifdef DEBUG_RATES
+    hal.console->printf("| Type | Size | 10Hz(bs) | 25Hz(bs) | 400Hz(Kbs) |\n");
+    for (uint16_t i = 0; i < ARRAY_SIZE(log_structure); i++) {
+        LogStructure log = log_structure[i];
+        hal.console->printf("| %-6s | %3d | %4d | %4d | %2dk |\n", log.name, log.msg_len,
+            log.msg_len * 10, log.msg_len * 25, log.msg_len * 400 / 1000);
+    }
+#endif
     // Test
     hal.scheduler->delay(20);
 

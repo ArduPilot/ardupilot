@@ -60,7 +60,7 @@ class TestPitchRollCoupling(Test):
         isAuto = False # we always start in a manual control mode
         prevLine = 0
         mode = ""
-        for line,modepair in orderedModes.iteritems():
+        for line,modepair in orderedModes.items():
             mode = modepair[0].upper()
             if prevLine == 0:
                 prevLine = line

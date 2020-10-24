@@ -23,11 +23,9 @@
 
 #if HAL_PICCOLO_CAN_ENABLE
 
-#include <uavcan/uavcan.hpp>
-#include <uavcan/driver/can.hpp>
-
+#include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -40,26 +38,71 @@
 #include <AP_PiccoloCAN/piccolo_protocol/ESCVelocityProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ESCPackets.h>
 
-
 extern const AP_HAL::HAL& hal;
 
-static const uint8_t CAN_IFACE_INDEX = 0;
+#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "PiccoloCAN", fmt, ##args); } while (0)
 
-#define debug_can(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
+// table of user-configurable Piccolo CAN bus parameters
+const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
+
+    // @Param: ESC_BM
+    // @DisplayName: ESC channels
+    // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @User: Advanced
+    AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0xFFFF),
+
+    // @Param: ESC_RT
+    // @DisplayName: ESC output rate
+    // @Description: Output rate of ESC command messages
+    // @Units: Hz
+    // @User: Advanced
+    // @Range: 1 500
+    AP_GROUPINFO("ESC_RT", 2, AP_PiccoloCAN, _esc_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+
+    AP_GROUPEND
+};
 
 AP_PiccoloCAN::AP_PiccoloCAN()
 {
-    debug_can(2, "PiccoloCAN: constructed\n\r");
+    AP_Param::setup_object_defaults(this, var_info);
+
+    debug_can(AP_CANManager::LOG_INFO, "PiccoloCAN: constructed\n\r");
 }
 
 AP_PiccoloCAN *AP_PiccoloCAN::get_pcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_protocol_type(driver_index) != AP_BoardConfig_CAN::Protocol_Type_PiccoloCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_PiccoloCAN) {
         return nullptr;
     }
 
     return static_cast<AP_PiccoloCAN*>(AP::can().get_driver(driver_index));
+}
+
+bool AP_PiccoloCAN::add_interface(AP_HAL::CANIface* can_iface) {
+    if (_can_iface != nullptr) {
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Multiple Interface not supported\n\r");
+        return false;
+    }
+
+    _can_iface = can_iface;
+
+    if (_can_iface == nullptr) {
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: CAN driver not found\n\r");
+        return false;
+    }
+
+    if (!_can_iface->is_initialized()) {
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized\n\r");
+        return false;
+    }
+
+    if (!_can_iface->set_event_handle(&_event_handle)) {
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Cannot add event handle\n\r");
+        return false;
+    }
+    return true;
 }
 
 // initialize PiccoloCAN bus
@@ -67,35 +110,15 @@ void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
 
-    debug_can(2, "PiccoloCAN: starting init\n\r");
+    debug_can(AP_CANManager::LOG_DEBUG, "PiccoloCAN: starting init\n\r");
 
     if (_initialized) {
-        debug_can(1, "PiccoloCAN: already initialized\n\r");
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: already initialized\n\r");
         return;
     }
-
-    AP_HAL::CANManager* can_mgr = hal.can_mgr[driver_index];
-
-    if (can_mgr == nullptr) {
-        debug_can(1, "PiccoloCAN: no mgr for this driver\n\r");
-        return;
-    }
-
-    if (!can_mgr->is_initialized()) {
-        debug_can(1, "PiccoloCAN: mgr not initialized\n\r");
-        return;
-    }
-
-    _can_driver = can_mgr->get_driver();
-
-    if (_can_driver == nullptr) {
-        debug_can(1, "PiccoloCAN: no CAN driver\n\r");
-        return;
-    }
-
     // start calls to loop in separate thread
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_PiccoloCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_MAIN, 1)) {
-        debug_can(1, "PiccoloCAN: couldn't create thread\n\r");
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: couldn't create thread\n\r");
         return;
     }
 
@@ -103,45 +126,46 @@ void AP_PiccoloCAN::init(uint8_t driver_index, bool enable_filters)
 
     snprintf(_thread_name, sizeof(_thread_name), "PiccoloCAN_%u", driver_index);
 
-    debug_can(2, "PiccoloCAN: init done\n\r");
+    debug_can(AP_CANManager::LOG_DEBUG, "PiccoloCAN: init done\n\r");
 }
 
 // loop to send output to CAN devices in background thread
 void AP_PiccoloCAN::loop()
 {
-    uavcan::CanFrame txFrame;
-    uavcan::CanFrame rxFrame;
+    AP_HAL::CANFrame txFrame;
+    AP_HAL::CANFrame rxFrame;
 
-    // How often to transmit CAN messages (milliseconds)
-#define CMD_TX_PERIOD 10
-
-    uint16_t txCounter = 0;
+    uint16_t esc_tx_counter = 0;
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
     uint16_t frame_id_device;   // Device identifier
 
-    uavcan::MonotonicTime timeout;
+    uint64_t timeout;
+
+    uint16_t escCmdRateMs;
 
     while (true) {
 
+        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+
+        escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
+
         if (!_initialized) {
-            debug_can(2, "PiccoloCAN: not initialized\n\r");
+            debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
             hal.scheduler->delay_microseconds(10000);
             continue;
         }
 
-        timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 250);
+        timeout = AP_HAL::micros64() + 250;
 
         // 1ms loop delay
         hal.scheduler->delay_microseconds(1 * 1000);
 
-        // Transmit CAN commands at regular intervals
-        if (txCounter++ > CMD_TX_PERIOD) {
+        // Transmit ESC commands at regular intervals
+        if (esc_tx_counter++ > escCmdRateMs) {
+            esc_tx_counter = 0;
 
-            txCounter = 0;
-
-            // Transmit ESC commands
             send_esc_messages();
         }
 
@@ -151,7 +175,7 @@ void AP_PiccoloCAN::loop()
             frame_id_device = (rxFrame.id >> 8) & 0xFF;
 
             // Only accept extended messages
-            if ((rxFrame.id & uavcan::CanFrame::FlagEFF) == 0) {
+            if ((rxFrame.id & AP_HAL::CANFrame::FlagEFF) == 0) {
                 continue;
             }
 
@@ -179,55 +203,45 @@ void AP_PiccoloCAN::loop()
 }
 
 // write frame on CAN bus, returns true on success
-bool AP_PiccoloCAN::write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTime timeout)
+bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 {
     if (!_initialized) {
-        debug_can(1, "PiccoloCAN: Driver not initialized for write_frame\n\r");
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for write_frame\n\r");
         return false;
     }
 
-    // wait for space in buffer to send command
-    uavcan::CanSelectMasks inout_mask;
-
+    bool read_select = false;
+    bool write_select = true;
+    bool ret;
     do {
-        inout_mask.read = 0;
-        inout_mask.write = (1 << CAN_IFACE_INDEX);
-        _select_frames[CAN_IFACE_INDEX] = &out_frame;
-        _can_driver->select(inout_mask, _select_frames, timeout);
-
-        if (!inout_mask.write) {
+        ret = _can_iface->select(read_select, write_select, &out_frame, timeout);
+        if (!ret || !write_select) {
             hal.scheduler->delay_microseconds(50);
         }
-    } while (!inout_mask.write);
+    } while (!ret || !write_select);
 
-    return (_can_driver->getIface(CAN_IFACE_INDEX)->send(out_frame, timeout, uavcan::CanIOFlagAbortOnError) == 1);
+    return (_can_iface->send(out_frame, timeout, AP_HAL::CANIface::AbortOnError) == 1);
 }
 
 // read frame on CAN bus, returns true on succses
-bool AP_PiccoloCAN::read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout)
+bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
 {
     if (!_initialized) {
-        debug_can(1, "PiccoloCAN: Driver not initialized for read_frame\n\r");
+        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for read_frame\n\r");
         return false;
     }
-
-    uavcan::CanSelectMasks inout_mask;
-    inout_mask.read = 1 << CAN_IFACE_INDEX;
-    inout_mask.write = 0;
-
-    _select_frames[CAN_IFACE_INDEX] = &recv_frame;
-    _can_driver->select(inout_mask, _select_frames, timeout);
-
-    if (!inout_mask.read) {
+    bool read_select = true;
+    bool write_select = false;
+    bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+    if (!ret || !read_select) {
         // No frame available
         return false;
     }
 
-    uavcan::MonotonicTime time;
-    uavcan::UtcTime utc_time;
-    uavcan::CanIOFlags flags {};
+    uint64_t time;
+    AP_HAL::CANIface::CanIOFlags flags {};
 
-    return (_can_driver->getIface(CAN_IFACE_INDEX)->receive(recv_frame, time, utc_time, flags) == 1);
+    return (_can_iface->receive(recv_frame, time, flags) == 1);
 }
 
 // called from SRV_Channels
@@ -238,12 +252,11 @@ void AP_PiccoloCAN::update()
     /* Read out the ESC commands from the channel mixer */
     for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 
-        // Check each channel to determine if a motor function is assigned
-        SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
-
-        if (SRV_Channels::function_assigned(motor_function)) {
+        if (is_esc_channel_active(i)) {
 
             uint16_t output = 0;
+            
+            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
 
@@ -355,13 +368,19 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 // send ESC messages over CAN
 void AP_PiccoloCAN::send_esc_messages(void)
 {
-    uavcan::CanFrame txFrame;
+    AP_HAL::CANFrame txFrame;
 
-    uavcan::MonotonicTime timeout = uavcan::MonotonicTime::fromUSec(AP_HAL::micros64() + 250);
+    uint64_t timeout = AP_HAL::micros64() + 250;
 
     // TODO - How to buffer CAN messages properly?
     // Sending more than 2 messages at each loop instance means that sometimes messages are dropped
 
+    // No ESCs are selected? Don't send anything
+    if (_esc_bm == 0x00) {
+        return;
+    }
+
+    // System is armed - send out ESC commands
     if (hal.util->get_soft_armed()) {
 
         bool send_cmd = false;
@@ -376,6 +395,11 @@ void AP_PiccoloCAN::send_esc_messages(void)
             for (uint8_t jj = 0; jj < 4; jj++) {
 
                 idx = (ii * 4) + jj;
+
+                // Skip an ESC if the motor channel is not enabled
+                if (!is_esc_channel_active(idx)) {
+                    continue;
+                }
 
                 /* Check if the ESC is software-inhibited.
                  * If so, send a message to enable it.
@@ -427,7 +451,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
 
 
 // interpret an ESC message received over CAN
-bool AP_PiccoloCAN::handle_esc_message(uavcan::CanFrame &frame)
+bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 {
     uint64_t timestamp = AP_HAL::micros64();
 
@@ -455,7 +479,6 @@ bool AP_PiccoloCAN::handle_esc_message(uavcan::CanFrame &frame)
     if (decodeESC_StatusAPacketStructure(&frame, &esc.statusA)) {
         esc.newTelemetry = true;
     } else if (decodeESC_StatusBPacketStructure(&frame, &esc.statusB)) {
-
         esc.newTelemetry = true;
     } else if (decodeESC_FirmwarePacketStructure(&frame, &esc.firmware)) {
         // TODO
@@ -476,9 +499,32 @@ bool AP_PiccoloCAN::handle_esc_message(uavcan::CanFrame &frame)
 }
 
 
+/**
+ * Check if a given ESC channel is "active" (has been configured correctly)
+ */
+bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
+{
+    // First check if the particular ESC channel is enabled in the channel mask
+    if (((_esc_bm >> chan) & 0x01) == 0x00) {
+        return false;
+    }
+
+    // Check if a motor function is assigned for this motor channel
+    SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(chan);
+
+    if (SRV_Channels::function_assigned(motor_function)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+/**
+ * Determine if an ESC is present on the CAN bus (has telemetry data been received)
+ */
 bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 {
-
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
     }
@@ -502,6 +548,9 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 }
 
 
+/**
+ * Check if a given ESC is enabled (both hardware and software enable flags)
+ */
 bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
@@ -530,20 +579,18 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
     // Check that each required ESC is present on the bus
     for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
 
-        SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
-
-        // There is a motor function assigned to this channel
-        if (SRV_Channels::function_assigned(motor_function)) {
+        // Skip any ESC channels where the motor channel is not enabled
+        if (is_esc_channel_active(ii)) {
 
             if (!is_esc_present(ii)) {
-                snprintf(reason, reason_len, "PiccoloCAN: ESC %u not detected", ii + 1);
+                snprintf(reason, reason_len, "ESC %u not detected", ii + 1);
                 return false;
             }
 
             PiccoloESC_Info_t &esc = _esc_info[ii];
 
             if (esc.statusA.status.hwInhibit) {
-                snprintf(reason, reason_len, "PiccoloCAN: ESC %u is hardware inhibited", (ii + 1));
+                snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }
         }
@@ -560,7 +607,7 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 //! \return the packet data pointer from the packet
 uint8_t* getESCVelocityPacketData(void* pkt)
 {
-    uavcan::CanFrame* frame = (uavcan::CanFrame*) pkt;
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
     return (uint8_t*) frame->data;
 }
@@ -568,7 +615,7 @@ uint8_t* getESCVelocityPacketData(void* pkt)
 //! \return the packet data pointer from the packet, const
 const uint8_t* getESCVelocityPacketDataConst(const void* pkt)
 {
-    uavcan::CanFrame* frame = (uavcan::CanFrame*) pkt;
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
     return (const uint8_t*) frame->data;
 }
@@ -576,10 +623,10 @@ const uint8_t* getESCVelocityPacketDataConst(const void* pkt)
 //! Complete a packet after the data have been encoded
 void finishESCVelocityPacket(void* pkt, int size, uint32_t packetID)
 {
-    uavcan::CanFrame* frame = (uavcan::CanFrame*) pkt;
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
-    if (size > uavcan::CanFrame::MaxDataLen) {
-        size = uavcan::CanFrame::MaxDataLen;
+    if (size > AP_HAL::CANFrame::MaxDataLen) {
+        size = AP_HAL::CANFrame::MaxDataLen;
     }
 
     frame->dlc = size;
@@ -599,7 +646,7 @@ void finishESCVelocityPacket(void* pkt, int size, uint32_t packetID)
                   (((uint8_t) AP_PiccoloCAN::ActuatorType::ESC) << 8);              // Actuator type
 
     // Extended frame format
-    id |= uavcan::CanFrame::FlagEFF;
+    id |= AP_HAL::CANFrame::FlagEFF;
 
     frame->id = id;
 }
@@ -607,7 +654,7 @@ void finishESCVelocityPacket(void* pkt, int size, uint32_t packetID)
 //! \return the size of a packet from the packet header
 int getESCVelocityPacketSize(const void* pkt)
 {
-    uavcan::CanFrame* frame = (uavcan::CanFrame*) pkt;
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
     return (int) frame->dlc;
 }
@@ -615,7 +662,7 @@ int getESCVelocityPacketSize(const void* pkt)
 //! \return the ID of a packet from the packet header
 uint32_t getESCVelocityPacketID(const void* pkt)
 {
-    uavcan::CanFrame* frame = (uavcan::CanFrame*) pkt;
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 
     // Extract the message ID field from the 29-bit ID
     return (uint32_t) ((frame->id >> 16) & 0xFF);

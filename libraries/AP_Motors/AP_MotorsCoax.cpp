@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsSingle.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsCoax.h"
@@ -44,13 +38,13 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     }
 
     // record successful initialisation if what we setup was the desired frame_class
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
+    set_initialised_ok(frame_class == MOTOR_FRAME_COAX);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
 void AP_MotorsCoax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
+    set_initialised_ok(frame_class == MOTOR_FRAME_COAX);
 }
 
 // set update rate to motors - a value in hertz

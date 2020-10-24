@@ -132,13 +132,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// MOUNT (ANTENNA OR CAMERA)
-//
-#ifndef MOUNT
-#define MOUNT          ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT AND NAVIGATION CONTROL
 //////////////////////////////////////////////////////////////////////////////
@@ -301,10 +294,16 @@
  #define OSD_ENABLED DISABLED
 #endif
 
-#ifndef SOARING_ENABLED
- #define SOARING_ENABLED !HAL_MINIMIZE_FEATURES
+#ifndef OFFBOARD_GUIDED
+ #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
 #endif
 
 #ifndef LANDING_GEAR_ENABLED
  #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+//  EKF Failsafe
+#ifndef FS_EKF_THRESHOLD_DEFAULT
+ # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif

@@ -18,6 +18,7 @@
 
 #include "AP_SerialLED.h"
 #include <AP_Math/AP_Math.h>
+#include "SRV_Channel/SRV_Channel.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,25 +28,44 @@ AP_SerialLED::AP_SerialLED()
 {
 }
 
-// set number of LEDs per pin
-bool AP_SerialLED::set_num_LEDs(uint8_t chan, uint8_t num_leds)
+// set number of NeoPixels per pin
+bool AP_SerialLED::set_num_neopixel(uint8_t chan, uint8_t num_leds)
 {
-    if (chan >= 1 && chan <= 16 && num_leds <= 32) {
-        return hal.rcout->set_neopixel_num_LEDs(chan-1, num_leds);
+    if (chan >= 1 && chan <= 16 && num_leds <= AP_SERIALLED_MAX_LEDS) {
+        return hal.rcout->set_serial_led_num_LEDs(chan-1, num_leds, AP_HAL::RCOutput::MODE_NEOPIXEL);
     }
     return false;
 }
 
-// set RGB value on mask of LEDs. chan is PWM output, 1..16
-void AP_SerialLED::set_RGB(uint8_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue)
+// set number of ProfiLEDs per pin
+bool AP_SerialLED::set_num_profiled(uint8_t chan, uint8_t num_leds)
+{
+    if (chan >= 1 && chan <= 16 && num_leds <= AP_SERIALLED_MAX_LEDS - 2) {
+        // must have a clock
+        uint16_t Clock_mask = 0;
+        if (!SRV_Channels::function_assigned((SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_ProfiLED_Clock))) {
+            return false;
+        }
+        Clock_mask = SRV_Channels::get_output_channel_mask((SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_ProfiLED_Clock));
+
+        return hal.rcout->set_serial_led_num_LEDs(chan-1, num_leds, AP_HAL::RCOutput::MODE_PROFILED, Clock_mask);
+    }
+    return false;
+}
+
+// set RGB value on LED number. LED number -1 is all LEDs. First LED is 0. chan is PWM output, 1..16
+void AP_SerialLED::set_RGB(uint8_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
 {
     if (chan >= 1 && chan <= 16) {
-        hal.rcout->set_neopixel_rgb_data(chan-1, ledmask, red, green, blue);
+        hal.rcout->set_serial_led_rgb_data(chan-1, led, red, green, blue);
     }
 }
 
 // trigger sending of LED changes to LEDs
-void AP_SerialLED::send(void)
+void AP_SerialLED::send(uint8_t chan)
 {
-    hal.rcout->neopixel_send();
+    if (chan >= 1 && chan <= 16) {
+        hal.rcout->serial_led_send(chan-1);
+    }
+
 }

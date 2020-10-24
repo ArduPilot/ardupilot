@@ -34,24 +34,107 @@ SITL_SFML_LED::SITL_SFML_LED():
 }
 
 /*
+  return layout size for a LED layout scheme
+ */
+bool SITL_SFML_LED::layout_size(SITL::LedLayout layout, uint16_t &xsize, uint16_t &ysize)
+{
+    switch (layout) {
+    case SITL::LedLayout::ROWS:
+        xsize = MAX_LEDS;
+        ysize = 16;
+        break;
+
+    case SITL::LedLayout::LUMINOUSBEE:
+        xsize = 5 + 3 + 5;
+        ysize = 5 + 3 + 5;
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+/*
+  return layout position for a LED layout scheme
+ */
+bool SITL_SFML_LED::layout_pos(SITL::LedLayout layout, uint8_t chan, uint8_t led, uint16_t &xpos, uint16_t &ypos)
+{
+    switch (layout) {
+    case SITL::LedLayout::ROWS:
+        xpos = led;
+        ypos = chan;
+        break;
+
+    case SITL::LedLayout::LUMINOUSBEE:
+        /*
+          Luminousbee has 60 LEDs, 15 on each arm, connected on PWM7
+         */
+        if (chan != 6) {
+            return false;
+        }
+        if (led < 15) {
+            xpos = 5 + led / 5;
+            ypos = led % 5;
+            if (((led/5) & 1) == 0) {
+                ypos = 4 - ypos;
+            }
+        } else if (led < 30) {
+            led -= 15;
+            xpos = led % 5;
+            ypos = 5 + led / 5;
+            if (((led/5) & 1) == 1) {
+                xpos = 4 - xpos;
+            }
+            xpos += 8;
+        } else if (led < 45) {
+            led -= 30;
+            xpos = 5 + led / 5;
+            ypos = led % 5;
+            if (((led/5) & 1) == 0) {
+                ypos = 4 - ypos;
+            }
+            ypos += 8;
+        } else if (led < 60) {
+            led -= 45;
+            xpos = led % 5;
+            ypos = 5 + led / 5;
+            if (((led/5) & 1) == 0) {
+                xpos = 4 - xpos;
+            }
+        } else {
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+/*
   update simulation of WS2812 (NeoPixel) serial LEDs
  */
 void SITL_SFML_LED::update_serial_LEDs()
 {
     static sf::RenderWindow *w;
-    static sf::RectangleShape *leds[16][32];
+    static sf::RectangleShape *leds[16][MAX_LEDS];
 
     SITL::SITL *sitl = AP::sitl();
     if (sitl == nullptr || sitl->led.send_counter == 0) {
         // no SerialLEDs set
         return;
     }
+    SITL::LedLayout layout = SITL::LedLayout(sitl->led_layout.get());
     if (w == nullptr) {
         uint8_t max_leds = 0;
         for (uint8_t i=0; i<16; i++) {
             max_leds = MAX(max_leds, sitl->led.num_leds[i]);
         }
-        w = new sf::RenderWindow(sf::VideoMode(32*(serialLED_size+1), 16*(serialLED_size+1)), "SerialLED");
+        uint16_t xsize=0, ysize=0;
+        if (!layout_size(layout, xsize, ysize)) {
+            return;
+        }
+        w = new sf::RenderWindow(sf::VideoMode(xsize*(serialLED_size+1), ysize*(serialLED_size+1)), "SerialLED");
         if (!w) {
             return;
         }
@@ -67,7 +150,10 @@ void SITL_SFML_LED::update_serial_LEDs()
                 if (!leds[chan][led]) {
                     return;
                 }
-                leds[chan][led]->setPosition(led*(serialLED_size+1), chan*(serialLED_size+1));
+                uint16_t xpos, ypos;
+                if (layout_pos(layout, chan, led, xpos, ypos)) {
+                    leds[chan][led]->setPosition(xpos*(serialLED_size+1), ypos*(serialLED_size+1));
+                }
             }
             leds[chan][led]->setFillColor(sf::Color(rgb[0], rgb[1], rgb[2], 255));
             w->draw(*leds[chan][led]);

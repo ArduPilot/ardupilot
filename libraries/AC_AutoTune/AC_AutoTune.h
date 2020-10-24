@@ -191,9 +191,9 @@ private:
     LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
 
     // backup of currently being tuned parameter values
-    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_sp, orig_roll_accel;
-    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_sp, orig_pitch_accel;
-    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
+    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_fltt, orig_roll_sp, orig_roll_accel;
+    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_fltt, orig_pitch_sp, orig_pitch_accel;
+    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_fltt, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
     bool     orig_bf_feedforward;
 
     // currently being tuned parameter values

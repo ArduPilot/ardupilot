@@ -2,6 +2,7 @@
 
 Mode::_TakeOff Mode::takeoff;
 
+bool Mode::auto_takeoff_no_nav_active = false;
 float Mode::auto_takeoff_no_nav_alt_cm = 0;
 
 // This file contains the high-level takeoff logic for Loiter, PosHold, AltHold, Sport modes.
@@ -53,7 +54,7 @@ void Mode::_TakeOff::start(float alt_cm)
     // indicate we are taking off
     copter.set_land_complete(false);
     // tell position controller to reset alt target and reset I terms
-    copter.set_throttle_takeoff();
+    copter.flightmode->set_throttle_takeoff();
 
     // calculate climb rate
     const float speed = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
@@ -149,6 +150,9 @@ void Mode::auto_takeoff_run()
         return;
     }
 
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
     // process pilot's yaw input
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
@@ -163,52 +167,45 @@ void Mode::auto_takeoff_run()
         wp_nav->shift_wp_origin_to_current_pos();
     }
 
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    // check if we are not navigating because of low altitude
+    float nav_roll = 0.0f, nav_pitch = 0.0f;
+    if (auto_takeoff_no_nav_active) {
+        // check if vehicle has reached no_nav_alt threshold
+        if (inertial_nav.get_altitude() >= auto_takeoff_no_nav_alt_cm) {
+            auto_takeoff_no_nav_active = false;
+            wp_nav->shift_wp_origin_and_destination_to_stopping_point_xy();
+        } else {
+            // shift the navigation target horizontally to our current position
+            wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
+        }
+        // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
+        pos_control->set_limit_accel_xy();
+    }
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    copter.pos_control->update_z_controller();
-
-    // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
-}
-
-void Mode::auto_takeoff_set_start_alt(void)
-{
-    // start with our current altitude
-    auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude();
-
-    if (is_disarmed_or_landed() || !motors->get_interlock()) {
-        // we are not flying, add the wp_navalt_min
-        auto_takeoff_no_nav_alt_cm += g2.wp_navalt_min * 100;
-    }
-}
-
-
-/*
-  call attitude controller for automatic takeoff, limiting roll/pitch
-  if below wp_navalt_min
- */
-void Mode::auto_takeoff_attitude_run(float target_yaw_rate)
-{
-    float nav_roll, nav_pitch;
-
-    if (g2.wp_navalt_min > 0 && inertial_nav.get_altitude() < auto_takeoff_no_nav_alt_cm) {
-        // we haven't reached the takeoff navigation altitude yet
-        nav_roll = 0;
-        nav_pitch = 0;
-        // tell the position controller that we have limited roll/pitch demand to prevent integrator buildup
-        pos_control->set_limit_accel_xy();
-    } else {
+    if (!auto_takeoff_no_nav_active) {
         nav_roll = wp_nav->get_roll();
         nav_pitch = wp_nav->get_pitch();
     }
 
+    // call z-axis position controller (wpnav should have already updated it's alt target)
+    copter.pos_control->update_z_controller();
+
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+}
+
+void Mode::auto_takeoff_set_start_alt(void)
+{
+    if ((g2.wp_navalt_min > 0) && (is_disarmed_or_landed() || !motors->get_interlock())) {
+        // we are not flying, climb with no navigation to current alt-above-ekf-origin + wp_navalt_min
+        auto_takeoff_no_nav_alt_cm = inertial_nav.get_altitude() + g2.wp_navalt_min * 100;
+        auto_takeoff_no_nav_active = true;
+    } else {
+        auto_takeoff_no_nav_active = false;
+    }
 }
 
 bool Mode::is_taking_off() const

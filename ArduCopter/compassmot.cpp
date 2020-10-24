@@ -221,10 +221,10 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
                                                channel_throttle->get_control_in(),
                                                current,
-                                               interference_pct[compass.get_primary()],
-                                               motor_compensation[compass.get_primary()].x,
-                                               motor_compensation[compass.get_primary()].y,
-                                               motor_compensation[compass.get_primary()].z);
+                                               interference_pct[0],
+                                               motor_compensation[0].x,
+                                               motor_compensation[0].y,
+                                               motor_compensation[0].z);
         }
     }
 

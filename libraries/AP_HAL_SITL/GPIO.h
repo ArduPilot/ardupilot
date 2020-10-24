@@ -19,6 +19,8 @@ public:
 
 private:
     SITL_State *_sitlState;
+
+    uint8_t pin_mode_is_write;
 };
 
 class HALSITL::DigitalSource : public AP_HAL::DigitalSource {

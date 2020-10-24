@@ -31,10 +31,6 @@ void Plane::read_rangefinder(void)
 
     rangefinder.update();
 
-    if ((rangefinder.num_sensors() > 0) && should_log(MASK_LOG_SONAR)) {
-        Log_Write_Sonar();
-    }
-
     rangefinder_height_update();
 }
 

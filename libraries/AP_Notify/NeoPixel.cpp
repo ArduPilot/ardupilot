@@ -32,15 +32,8 @@
 extern const AP_HAL::HAL& hal;
 
 NeoPixel::NeoPixel() :
-    RGBLed(NEOPIXEL_LED_OFF, NEOPIXEL_LED_HIGH, NEOPIXEL_LED_MEDIUM, NEOPIXEL_LED_LOW)
+    SerialLED(NEOPIXEL_LED_OFF, NEOPIXEL_LED_HIGH, NEOPIXEL_LED_MEDIUM, NEOPIXEL_LED_LOW)
 {
-}
-
-bool NeoPixel::hw_init()
-{
-    init_ports();
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&NeoPixel::timer, void));
-    return true;
 }
 
 uint16_t NeoPixel::init_ports()
@@ -54,40 +47,20 @@ uint16_t NeoPixel::init_ports()
         mask |= SRV_Channels::get_output_channel_mask(fn);
     }
 
-    if (mask != 0) {
-        for (uint16_t chan=0; chan<16; chan++) {
-            if ((1U<<chan) & mask) {
-                hal.rcout->set_neopixel_num_LEDs(chan, (pNotify->get_neo_len()));
-            }
-        }
+    if (mask == 0) {
+        return 0;
     }
-    last_mask = mask;
-    return mask;
-}
 
-void NeoPixel::timer()
-{
-    WITH_SEMAPHORE(_sem);
-
-    const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _last_init_ms >= 1000) {
-        _last_init_ms = now_ms;
-        enable_mask = init_ports();
-    }
-}
-
-bool NeoPixel::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
-{
-    if (enable_mask == 0) {
-        // nothing is enabled, no pins set as LED output
-        return true;
+    AP_SerialLED *led = AP_SerialLED::get_singleton();
+    if (led == nullptr) {
+        return 0;
     }
 
     for (uint16_t chan=0; chan<16; chan++) {
-        if ((1U<<chan) & enable_mask) {
-            hal.rcout->set_neopixel_rgb_data(chan, (1U<<(pNotify->get_neo_len()))-1, red, green, blue);
+        if ((1U<<chan) & mask) {
+            led->set_num_neopixel(chan+1, (pNotify->get_led_len()));
         }
     }
-    hal.rcout->neopixel_send();
-    return true;
+
+    return mask;
 }

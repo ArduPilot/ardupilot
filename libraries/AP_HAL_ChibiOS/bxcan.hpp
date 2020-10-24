@@ -42,51 +42,37 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_WITH_UAVCAN
+#if HAL_NUM_CAN_IFACES
 
 # if !defined(STM32H7XX)
 
-#include <uavcan/uavcan.hpp>
 #include <stdint.h>
 
-#ifndef UAVCAN_CPP_VERSION
-# error UAVCAN_CPP_VERSION
-#endif
-
-#if UAVCAN_CPP_VERSION < UAVCAN_CPP11
-// #undef'ed at the end of this file
-# define constexpr const
-#endif
-
-namespace ChibiOS_CAN
+namespace ChibiOS
 {
 namespace bxcan
 {
 
-struct TxMailboxType
-{
+struct TxMailboxType {
     volatile uint32_t TIR;
     volatile uint32_t TDTR;
     volatile uint32_t TDLR;
     volatile uint32_t TDHR;
 };
 
-struct RxMailboxType
-{
+struct RxMailboxType {
     volatile uint32_t RIR;
     volatile uint32_t RDTR;
     volatile uint32_t RDLR;
     volatile uint32_t RDHR;
 };
 
-struct FilterRegisterType
-{
+struct FilterRegisterType {
     volatile uint32_t FR1;
     volatile uint32_t FR2;
 };
 
-struct CanType
-{
+struct CanType {
     volatile uint32_t  MCR;                 /*!< CAN master control register,         Address offset: 0x00          */
     volatile uint32_t  MSR;                 /*!< CAN master status register,          Address offset: 0x04          */
     volatile uint32_t  TSR;                 /*!< CAN transmit status register,        Address offset: 0x08          */
@@ -109,18 +95,6 @@ struct CanType
     volatile uint32_t  FA1R;                /*!< CAN filter activation register,      Address offset: 0x21C         */
     uint32_t           RESERVED5[8];        /*!< Reserved, 0x220-0x23F                                              */
     FilterRegisterType FilterRegister[28];  /*!< CAN Filter Register,                 Address offset: 0x240-0x31C   */
-};
-
-/**
- * CANx register sets
- */
-CanType* const Can[UAVCAN_STM32_NUM_IFACES] =
-{
-    reinterpret_cast<CanType*>(0x40006400)
-#if UAVCAN_STM32_NUM_IFACES > 1
-    ,
-    reinterpret_cast<CanType*>(0x40006800)
-#endif
 };
 
 /* CAN master control register */
@@ -323,8 +297,5 @@ constexpr unsigned long FMR_FINIT =           (1U << 0); /* Bit 0:  Filter Init 
 }
 }
 
-#if UAVCAN_CPP_VERSION < UAVCAN_CPP11
-# undef constexpr
-#endif
 #endif //!defined(STM32H7XX)
-#endif //HAL_WITH_UAVCAN
+#endif //HAL_NUM_CAN_IFACES

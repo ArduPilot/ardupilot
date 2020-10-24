@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_Motors.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
-
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -56,8 +50,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 
 void AP_Motors::armed(bool arm)
 {
-    if (_flags.armed != arm) {
-        _flags.armed = arm;
+    if (_armed != arm) {
+        _armed = arm;
         AP_Notify::flags.armed = arm;
         if (!arm) {
             save_params_on_disarm();
@@ -67,7 +61,7 @@ void AP_Motors::armed(bool arm)
 
 void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
 {
-    if (_flags.armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
+    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
         _spool_desired = spool;
     }
 };

@@ -6,9 +6,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -21,7 +21,7 @@ void MMLPlayer::update()
     }
 }
 
-void MMLPlayer::play(const char* string)
+void MMLPlayer::prepare_to_play_string(const char* string)
 {
     stop();
 
@@ -36,6 +36,12 @@ void MMLPlayer::play(const char* string)
     _repeat = false;
 
     _playing = true;
+    _note_duration_us = 0;
+}
+
+void MMLPlayer::play(const char* string)
+{
+    prepare_to_play_string(string);
     next_action();
 }
 
@@ -58,7 +64,7 @@ void MMLPlayer::start_note(float duration, float frequency, float volume)
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(frequency, volume, _note_duration_us/1000U);
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // support CAN buzzers too
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 
@@ -133,7 +139,11 @@ void MMLPlayer::next_action()
         char c = next_char();
         if (c == '\0') {
             if (_repeat) {
-                play(_string);
+                // don't "play" here, as we may have been called from
+                // there, and it turns out infinite recursion on
+                // invalid strings is suboptimal.  The next call to
+                // update() will push things out as appropriate.
+                prepare_to_play_string(_string);
             } else {
                 stop();
             }

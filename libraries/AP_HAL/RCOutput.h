@@ -178,7 +178,8 @@ public:
         MODE_PWM_DSHOT300,
         MODE_PWM_DSHOT600,
         MODE_PWM_DSHOT1200,
-        MODE_NEOPIXEL,      // same as MODE_PWM_DSHOT at 800kHz but it's an LED
+        MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
+        MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
     };
     virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
 
@@ -199,21 +200,21 @@ public:
     virtual void set_telem_request_mask(uint16_t mask) {}
 
     /*
-      setup neopixel (WS2812B) output for a given channel number, with
+      setup serial led output for a given channel number, with
       the given max number of LEDs in the chain.
      */
-    virtual bool set_neopixel_num_LEDs(const uint16_t chan, uint8_t num_leds) { return false; }
+    virtual bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint16_t clock_mask = 0) { return false; }
 
     /*
-      setup neopixel (WS2812B) output data for a given output channel
-      and mask of which LEDs in the chain
+      setup serial led output data for a given output channel
+      and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
-    virtual void set_neopixel_rgb_data(const uint16_t chan, uint32_t ledmask, uint8_t red, uint8_t green, uint8_t blue) {}
-
+    virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
+    
     /*
-      trigger send of neopixel data
+      trigger send of serial led
      */
-    virtual void neopixel_send(void) {}
+    virtual void serial_led_send(const uint16_t chan) {}
 
 protected:
 

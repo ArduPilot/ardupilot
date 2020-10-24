@@ -92,7 +92,7 @@ void Sub::failsafe_sensors_check()
         // This should always succeed
         if (!set_mode(MANUAL, ModeReason::BAD_DEPTH)) {
             // We should never get here
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::BADFLOWOFCONTROL);
         }
     }
 }
@@ -110,10 +110,9 @@ void Sub::failsafe_ekf_check()
 
     float posVar, hgtVar, tasVar;
     Vector3f magVar;
-    Vector2f offset;
     float compass_variance;
     float vel_variance;
-    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar, offset);
+    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar);
     compass_variance = magVar.length();
 
     if (compass_variance < g.fs_ekf_thresh && vel_variance < g.fs_ekf_thresh) {
@@ -146,7 +145,7 @@ void Sub::failsafe_ekf_check()
     }
 
     if (g.fs_ekf_action == FS_EKF_ACTION_DISARM) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::EKFFAILSAFE);
     }
 }
 
@@ -160,7 +159,7 @@ void Sub::handle_battery_failsafe(const char* type_str, const int8_t action)
             set_mode(SURFACE, ModeReason::BATTERY_FAILSAFE);
             break;
         case Failsafe_Action_Disarm:
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
             break;
         case Failsafe_Action_Warn:
         case Failsafe_Action_None:
@@ -194,7 +193,7 @@ void Sub::failsafe_pilot_input_check()
     set_neutral_controls();
 
     if(g.failsafe_pilot_input == FS_PILOT_INPUT_DISARM) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::PILOT_INPUT_FAILSAFE);
     }
 #endif
 }
@@ -345,14 +344,14 @@ void Sub::failsafe_gcs_check()
 
     // handle failsafe action
     if (g.failsafe_gcs == FS_GCS_DISARM) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::GCSFAILSAFE);
     } else if (g.failsafe_gcs == FS_GCS_HOLD && motors.armed()) {
         if (!set_mode(ALT_HOLD, ModeReason::GCS_FAILSAFE)) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::GCS_FAILSAFE_HOLDFAILED);
         }
     } else if (g.failsafe_gcs == FS_GCS_SURFACE && motors.armed()) {
         if (!set_mode(SURFACE, ModeReason::GCS_FAILSAFE)) {
-            arming.disarm();
+            arming.disarm(AP_Arming::Method::GCS_FAILSAFE_SURFACEFAILED);
         }
     }
 }
@@ -411,7 +410,7 @@ void Sub::failsafe_crash_check()
 
     // disarm motors
     if (g.fs_crash_check == FS_CRASH_DISARM) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::CRASH);
     }
 }
 
@@ -490,6 +489,6 @@ void Sub::failsafe_terrain_act()
 
     case FS_TERRAIN_DISARM:
     default:
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
     }
 }

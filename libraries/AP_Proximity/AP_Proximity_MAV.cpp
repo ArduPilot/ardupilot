@@ -103,9 +103,9 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             increment *= -1;
         }
 
-        Vector2f current_pos;
-        float current_heading;
-        const bool database_ready = database_prepare_for_push(current_pos, current_heading);
+        Vector3f current_pos;
+        Matrix3f body_to_ned;
+        const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
         // initialise updated array and proximity sector angles (to closest object) and distances
         bool sector_updated[PROXIMITY_NUM_SECTORS];
@@ -132,18 +132,35 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
             // iterate over proximity sectors
             for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-                float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - mid_angle));
                 // update distance array sector with shortest distance from message
-                if ((angle_diff <= (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) && (packet_distance_m < _distance[i])) {
-                    _distance[i] = packet_distance_m;
-                    _angle[i] = mid_angle;
-                    sector_updated[i] = true;
+                const float angle_diff = wrap_180(_sector_middle_deg[i] - mid_angle);
+                if (fabsf(angle_diff) > PROXIMITY_SECTOR_WIDTH_DEG*0.5f) {
+                    // not even in this sector
+                    continue;
                 }
+                if (is_equal(angle_diff, -PROXIMITY_SECTOR_WIDTH_DEG*0.5f)) {
+                    // on the upper boundary is *out* to avoid
+                    // ambiguity.  The distance is considered to be in
+                    // the next sector.  We should never be within an
+                    // epsilon of the boundary, so is_equal should be
+                    // safe.
+                    continue;
+                }
+                if (packet_distance_m >= _distance[i]) {
+                    // this is no closer than a previous distance
+                    // found from the pakcet
+                    continue;
+                }
+
+                // this is the shortest distance we've found in the packet so far
+                _distance[i] = packet_distance_m;
+                _angle[i] = mid_angle;
+                sector_updated[i] = true;
             }
 
             // update Object Avoidance database with Earth-frame point
             if (database_ready) {
-                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, current_heading);
+                database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
             }
         }
 

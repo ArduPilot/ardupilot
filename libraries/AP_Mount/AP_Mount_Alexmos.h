@@ -4,6 +4,7 @@
 #pragma once
 
 #include "AP_Mount.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -299,3 +300,4 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
+#endif // HAL_MOUNT_ENABLED

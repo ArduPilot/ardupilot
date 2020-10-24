@@ -67,6 +67,9 @@ protected:
     // set status and update valid_count
     void set_status(AP_Proximity::Status status);
 
+    // correct an angle (in degrees) based on the orientation and yaw correction parameters
+    float correct_angle_for_orientation(float angle_degrees) const;
+
     // find which sector a given angle falls into
     uint8_t convert_angle_to_sector(float angle_degrees) const;
 
@@ -84,10 +87,9 @@ protected:
     bool ignore_reading(uint16_t angle_deg) const;
 
     // database helpers.  all angles are in degrees
-    bool database_prepare_for_push(Vector2f &current_pos, float &current_heading);
+    bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
     void database_push(float angle, float distance);
-    void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector2f &current_pos, float current_heading);
-
+    void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 

@@ -20,11 +20,11 @@ CompassLearn::CompassLearn(Compass &_compass) :
     compass(_compass)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "CompassLearn: Initialised");
-    for (uint8_t i=0; i<compass.get_count(); i++) {
-        if (compass._state[i].use_for_yaw) {
+    for (Compass::Priority i(0); i<compass.get_count(); i++) {
+        if (compass._use_for_yaw[Compass::Priority(i)]) {
             // reset scale factors, we can't learn scale factors in
             // flight
-            compass.set_and_save_scale_factor(i, 0.0);
+            compass.set_and_save_scale_factor(uint8_t(i), 0.0);
         }
     }
 }
@@ -50,9 +50,6 @@ void CompassLearn::update(void)
             return;
         }
 
-        // remember primary mag
-        primary_mag = compass.get_primary();
-
         // setup the expected earth field in mGauss at this location
         mag_ef = AP_Declination::get_earth_field_ga(loc) * 1000;
         have_earth_field = true;
@@ -60,8 +57,8 @@ void CompassLearn::update(void)
         // form eliptical correction matrix and invert it. This is
         // needed to remove the effects of the eliptical correction
         // when calculating new offsets
-        const Vector3f &diagonals = compass.get_diagonals(primary_mag);
-        const Vector3f &offdiagonals = compass.get_offdiagonals(primary_mag);
+        const Vector3f &diagonals = compass.get_diagonals(0);
+        const Vector3f &offdiagonals = compass.get_offdiagonals(0);
         mat = Matrix3f(
             diagonals.x, offdiagonals.x, offdiagonals.y,
             offdiagonals.x,    diagonals.y, offdiagonals.z,
@@ -89,7 +86,7 @@ void CompassLearn::update(void)
         return;
     }
 
-    Vector3f field = compass.get_field(primary_mag);
+    Vector3f field = compass.get_field(0);
     Vector3f field_change = field - last_field;
     if (field_change.length() < min_field_change) {
         return;
@@ -99,7 +96,7 @@ void CompassLearn::update(void)
         WITH_SEMAPHORE(sem);
         // give a sample to the backend to process
         new_sample.field = field;
-        new_sample.offsets = compass.get_offsets(primary_mag);
+        new_sample.offsets = compass.get_offsets(0);
         new_sample.attitude = Vector3f(ahrs.roll, ahrs.pitch, ahrs.yaw);
         sample_available = true;
         last_field = field;
@@ -107,6 +104,16 @@ void CompassLearn::update(void)
     }
 
     if (sample_available) {
+// @LoggerMessage: COFS
+// @Description: Current compass learn offsets
+// @Field: TimeUS: Time since system startup
+// @Field: OfsX: best learnt offset, x-axis
+// @Field: OfsY: best learnt offset, y-axis
+// @Field: OfsZ: best learnt offset, z-axis
+// @Field: Var: error of best offset vector
+// @Field: Yaw: best learnt yaw
+// @Field: WVar: error of best learn yaw
+// @Field: N: number of samples used
         AP::logger().Write("COFS", "TimeUS,OfsX,OfsY,OfsZ,Var,Yaw,WVar,N", "QffffffI",
                                                AP_HAL::micros64(),
                                                (double)best_offsets.x,
@@ -122,12 +129,12 @@ void CompassLearn::update(void)
         WITH_SEMAPHORE(sem);
 
         // set offsets to current best guess
-        compass.set_offsets(primary_mag, best_offsets);
+        compass.set_offsets(0, best_offsets);
 
         // set non-primary offsets to match primary
-        Vector3f field_primary = compass.get_field(primary_mag);
-        for (uint8_t i=0; i<compass.get_count(); i++) {
-            if (i == primary_mag || !compass._state[i].use_for_yaw) {
+        Vector3f field_primary = compass.get_field(0);
+        for (uint8_t i=1; i<compass.get_count(); i++) {
+            if (!compass._use_for_yaw[Compass::Priority(i)]) {
                 continue;
             }
             Vector3f field2 = compass.get_field(i);
@@ -140,10 +147,9 @@ void CompassLearn::update(void)
             // set the offsets and enable compass for EKF use. Let the
             // EKF learn the remaining compass offset error
             for (uint8_t i=0; i<compass.get_count(); i++) {
-                if (compass._state[i].use_for_yaw) {
+                if (compass._use_for_yaw[Compass::Priority(i)]) {
                     compass.save_offsets(i);
                     compass.set_and_save_scale_factor(i, 0.0);
-                    compass.set_use_for_yaw(i, true);
                 }
             }
             compass.set_learn_type(Compass::LEARN_NONE, true);

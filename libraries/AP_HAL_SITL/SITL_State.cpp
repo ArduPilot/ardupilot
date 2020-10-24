@@ -77,9 +77,6 @@ void SITL_State::_sitl_setup(const char *home_str)
     _barometer = AP_Baro::get_singleton();
     _ins = AP_InertialSensor::get_singleton();
     _compass = Compass::get_singleton();
-#if AP_TERRAIN_AVAILABLE
-    _terrain = reinterpret_cast<AP_Terrain *>(AP_Param::find_object("TERRAIN_"));
-#endif
 
     if (_sitl != nullptr) {
         // setup some initial values
@@ -98,6 +95,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
         sitl_model->set_parachute(&_sitl->parachute_sim);
         sitl_model->set_precland(&_sitl->precland_sim);
+        sitl_model->set_i2c(&_sitl->i2c_sim);
 
         if (_use_fg_view) {
             fg_socket.connect(_fg_address, _fg_view_port);
@@ -181,8 +179,7 @@ void SITL_State::_fdm_input_step(void)
         _update_gps(_sitl->state.latitude, _sitl->state.longitude,
                     _sitl->state.altitude,
                     _sitl->state.speedN, _sitl->state.speedE, _sitl->state.speedD,
-                    _sitl->state.yawDeg,
-                    !_sitl->gps_disable);
+                    _sitl->state.yawDeg, true);
         _update_airspeed(_sitl->state.airspeed);
         _update_rangefinder(_sitl->state.range);
 
@@ -209,6 +206,20 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
             _fdm_input_step();
         } else {
+            usleep(1000);
+        }
+    }
+    // check the outbound TCP queue size.  If it is too long then
+    // MAVProxy/pymavlink take too long to process packets and it ends
+    // up seeing traffic well into our past and hits time-out
+    // conditions.
+    if (sitl_model->get_speedup() > 1) {
+        while (true) {
+            const int queue_length = ((HALSITL::UARTDriver*)hal.uartA)->get_system_outqueue_length();
+            // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
+            if (queue_length < 1024) {
+                break;
+            }
             usleep(1000);
         }
     }
@@ -247,6 +258,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         lightwareserial = new SITL::RF_LightWareSerial();
         return lightwareserial->fd();
+    } else if (streq(name, "lightwareserial-binary")) {
+        if (lightwareserial_binary != nullptr) {
+            AP_HAL::panic("Only one lightwareserial-binary at a time");
+        }
+        lightwareserial_binary = new SITL::RF_LightWareSerialBinary();
+        return lightwareserial_binary->fd();
     } else if (streq(name, "lanbao")) {
         if (lanbao != nullptr) {
             AP_HAL::panic("Only one lanbao at a time");
@@ -296,6 +313,13 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         nmea = new SITL::RF_NMEA();
         return nmea->fd();
 
+    } else if (streq(name, "rf_mavlink")) {
+        if (wasp != nullptr) {
+            AP_HAL::panic("Only one rf_mavlink at a time");
+        }
+        rf_mavlink = new SITL::RF_MAVLink();
+        return rf_mavlink->fd();
+
     } else if (streq(name, "frsky-d")) {
         if (frsky_d != nullptr) {
             AP_HAL::panic("Only one frsky_d at a time");
@@ -315,6 +339,27 @@ int SITL_State::sim_fd(const char *name, const char *arg)
     //     }
     //     frsky_sport = new SITL::Frsky_SPortPassthrough();
     //     return frsky_sportpassthrough->fd();
+    } else if (streq(name, "crsf")) {
+        if (crsf != nullptr) {
+            AP_HAL::panic("Only one crsf at a time");
+        }
+        crsf = new SITL::CRSF();
+        return crsf->fd();
+    } else if (streq(name, "rplidara2")) {
+        if (rplidara2 != nullptr) {
+            AP_HAL::panic("Only one rplidara2 at a time");
+        }
+        rplidara2 = new SITL::PS_RPLidarA2();
+        return rplidara2->fd();
+    } else if (streq(name, "richenpower")) {
+        sitl_model->set_richenpower(&_sitl->richenpower_sim);
+        return _sitl->richenpower_sim.fd();
+    } else if (streq(name, "gyus42v2")) {
+        if (gyus42v2 != nullptr) {
+            AP_HAL::panic("Only one gyus42v2 at a time");
+        }
+        gyus42v2 = new SITL::RF_GYUS42v2();
+        return gyus42v2->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -346,6 +391,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No lightwareserial created");
         }
         return lightwareserial->write_fd();
+    } else if (streq(name, "lightwareserial-binary")) {
+        if (lightwareserial_binary == nullptr) {
+            AP_HAL::panic("No lightwareserial_binary created");
+        }
+        return lightwareserial_binary->write_fd();
     } else if (streq(name, "lanbao")) {
         if (lanbao == nullptr) {
             AP_HAL::panic("No lanbao created");
@@ -386,11 +436,33 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No nmea created");
         }
         return nmea->write_fd();
+    } else if (streq(name, "rf_mavlink")) {
+        if (rf_mavlink == nullptr) {
+            AP_HAL::panic("No rf_mavlink created");
+        }
+        return rf_mavlink->write_fd();
     } else if (streq(name, "frsky-d")) {
         if (frsky_d == nullptr) {
             AP_HAL::panic("No frsky-d created");
         }
         return frsky_d->write_fd();
+    } else if (streq(name, "crsf")) {
+        if (crsf == nullptr) {
+            AP_HAL::panic("No crsf created");
+        }
+        return crsf->write_fd();
+    } else if (streq(name, "rplidara2")) {
+        if (rplidara2 == nullptr) {
+            AP_HAL::panic("No rplidara2 created");
+        }
+        return rplidara2->write_fd();
+    } else if (streq(name, "richenpower")) {
+        return _sitl->richenpower_sim.write_fd();
+    } else if (streq(name, "gyus42v2")) {
+        if (gyus42v2 == nullptr) {
+            AP_HAL::panic("No gyus42v2 created");
+        }
+        return gyus42v2->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -526,43 +598,53 @@ void SITL_State::_fdm_input_local(void)
         sitl_model->get_attitude(attitude);
         vicon->update(sitl_model->get_location(),
                       sitl_model->get_position(),
+                      sitl_model->get_velocity_ef(),
                       attitude);
     }
     if (benewake_tf02 != nullptr) {
-        benewake_tf02->update(sitl_model->get_range());
+        benewake_tf02->update(sitl_model->rangefinder_range());
     }
     if (benewake_tf03 != nullptr) {
-        benewake_tf03->update(sitl_model->get_range());
+        benewake_tf03->update(sitl_model->rangefinder_range());
     }
     if (benewake_tfmini != nullptr) {
-        benewake_tfmini->update(sitl_model->get_range());
+        benewake_tfmini->update(sitl_model->rangefinder_range());
     }
     if (lightwareserial != nullptr) {
-        lightwareserial->update(sitl_model->get_range());
+        lightwareserial->update(sitl_model->rangefinder_range());
+    }
+    if (lightwareserial_binary != nullptr) {
+        lightwareserial_binary->update(sitl_model->rangefinder_range());
     }
     if (lanbao != nullptr) {
-        lanbao->update(sitl_model->get_range());
+        lanbao->update(sitl_model->rangefinder_range());
     }
     if (blping != nullptr) {
-        blping->update(sitl_model->get_range());
+        blping->update(sitl_model->rangefinder_range());
     }
     if (leddarone != nullptr) {
-        leddarone->update(sitl_model->get_range());
+        leddarone->update(sitl_model->rangefinder_range());
     }
     if (ulanding_v0 != nullptr) {
-        ulanding_v0->update(sitl_model->get_range());
+        ulanding_v0->update(sitl_model->rangefinder_range());
     }
     if (ulanding_v1 != nullptr) {
-        ulanding_v1->update(sitl_model->get_range());
+        ulanding_v1->update(sitl_model->rangefinder_range());
     }
     if (maxsonarseriallv != nullptr) {
-        maxsonarseriallv->update(sitl_model->get_range());
+        maxsonarseriallv->update(sitl_model->rangefinder_range());
     }
     if (wasp != nullptr) {
-        wasp->update(sitl_model->get_range());
+        wasp->update(sitl_model->rangefinder_range());
     }
     if (nmea != nullptr) {
-        nmea->update(sitl_model->get_range());
+        nmea->update(sitl_model->rangefinder_range());
+    }
+    if (rf_mavlink != nullptr) {
+        rf_mavlink->update(sitl_model->rangefinder_range());
+    }
+    if (gyus42v2 != nullptr) {
+        gyus42v2->update(sitl_model->rangefinder_range());
     }
 
     if (frsky_d != nullptr) {
@@ -574,6 +656,14 @@ void SITL_State::_fdm_input_local(void)
     // if (frsky_sportpassthrough != nullptr) {
     //     frsky_sportpassthrough->update();
     // }
+
+    if (crsf != nullptr) {
+        crsf->update();
+    }
+
+    if (rplidara2 != nullptr) {
+        rplidara2->update(sitl_model->get_location());
+    }
 
     if (_sitl) {
         _sitl->efi_ms.update();
@@ -616,7 +706,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         if (_vehicle == ArduPlane) {
             pwm_output[0] = pwm_output[1] = pwm_output[3] = 1500;
         }
-        if (_vehicle == APMrover2) {
+        if (_vehicle == Rover) {
             pwm_output[0] = pwm_output[1] = pwm_output[2] = pwm_output[3] = 1500;
         }
     }
@@ -681,22 +771,41 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         engine_fail = 0;
     }
     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
-    if (_vehicle != APMrover2) {
+    if (_vehicle != Rover) {
         input.servos[engine_fail] = ((input.servos[engine_fail]-1000) * engine_mul) + 1000;
     } else {
         input.servos[engine_fail] = static_cast<uint16_t>(((input.servos[engine_fail] - 1500) * engine_mul) + 1500);
     }
 
     if (_vehicle == ArduPlane) {
-        throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
-    } else if (_vehicle == APMrover2) {
+        float forward_throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
+        // do a little quadplane dance
+        float hover_throttle = 0.0f;
+        uint8_t running_motors = 0;
+        for (i=0; i < sitl_model->get_num_motors() - 1; i++) {
+            float motor_throttle = constrain_float((input.servos[sitl_model->get_motors_offset() + i] - 1000) / 1000.0f, 0.0f, 1.0f);
+            // update motor_on flag
+            if (!is_zero(motor_throttle)) {
+                hover_throttle += motor_throttle;
+                running_motors++;
+            }
+        }
+        if (running_motors > 0) {
+            hover_throttle /= running_motors;
+        }
+        if (!is_zero(forward_throttle)) {
+            throttle = forward_throttle;
+        } else {
+            throttle = hover_throttle;
+        }
+    } else if (_vehicle == Rover) {
         input.servos[2] = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
         input.servos[0] = static_cast<uint16_t>(constrain_int16(input.servos[0], 1000, 2000));
         throttle = fabsf((input.servos[2] - 1500) / 500.0f);
     } else {
         // run checks on each motor
         uint8_t running_motors = 0;
-        for (i=0; i<SITL_NUM_CHANNELS; i++) {
+        for (i=0; i < sitl_model->get_num_motors(); i++) {
             float motor_throttle = constrain_float((input.servos[i] - 1000) / 1000.0f, 0.0f, 1.0f);
             // update motor_on flag
             if (!is_zero(motor_throttle)) {
@@ -780,8 +889,7 @@ void SITL_State::set_height_agl(void)
     }
 
 #if AP_TERRAIN_AVAILABLE
-    if (_terrain != nullptr &&
-        _sitl != nullptr &&
+    if (_sitl != nullptr &&
         _sitl->terrain_enable) {
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
@@ -790,7 +898,9 @@ void SITL_State::set_height_agl(void)
         location.lat = _sitl->state.latitude*1.0e7;
         location.lng = _sitl->state.longitude*1.0e7;
 
-        if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
+        AP_Terrain *_terrain = AP_Terrain::get_singleton();
+        if (_terrain != nullptr &&
+            _terrain->height_amsl(location, terrain_height_amsl, false)) {
             _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }

@@ -24,13 +24,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
-#if HAL_WITH_UAVCAN
-#include <AP_UAVCAN/AP_UAVCAN.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux/CAN.h>
-#endif
-#endif
-
 #include <stdio.h>
 
 #ifndef BOARD_TYPE_DEFAULT
@@ -70,7 +63,7 @@
 #endif
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
 #else
 #define HAL_BRD_OPTIONS_DEFAULT 0
@@ -95,21 +88,55 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
 
 #if AP_FEATURE_RTSCTS
+#ifdef HAL_HAVE_RTSCTS_SERIAL1
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
     // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, state.ser1_rtscts, BOARD_SER1_RTSCTS_DEFAULT),
+    AP_GROUPINFO("SER1_RTSCTS",    1, AP_BoardConfig, state.ser_rtscts[1], BOARD_SER1_RTSCTS_DEFAULT),
+#endif
 
+#ifdef HAL_HAVE_RTSCTS_SERIAL2
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
     // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and STATE. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser2_rtscts, 2),
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser_rtscts[2], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL3
+    // @Param: SER3_RTSCTS
+    // @DisplayName: Serial 3 flow control
+    // @Description: Enable flow control on serial 3. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER3_RTSCTS",    23, AP_BoardConfig, state.ser_rtscts[3], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL4
+    // @Param: SER4_RTSCTS
+    // @DisplayName: Serial 4 flow control
+    // @Description: Enable flow control on serial 4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER4_RTSCTS",    24, AP_BoardConfig, state.ser_rtscts[4], 2),
+#endif
+
+#ifdef HAL_HAVE_RTSCTS_SERIAL5
+    // @Param: SER5_RTSCTS
+    // @DisplayName: Serial 5 flow control
+    // @Description: Enable flow control on serial 5. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Values: 0:Disabled,1:Enabled,2:Auto
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], 2),
+#endif
 #endif
 
 #if HAL_HAVE_SAFETY_SWITCH
@@ -164,7 +191,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Board type
     // @Description: This allows selection of a PX4 or VRBRAIN board type. If set to zero then the board type is auto-detected (PX4)
-    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim,7:VRBrain 5.1,8:VRBrain 5.2,9:VR Micro Brain 5.1,10:VR Micro Brain 5.2,11:VRBrain Core 1.0,12:VRBrain 5.4,13:Intel Aero FC,20:AUAV2.1
+    // @Values: 0:AUTO,1:PX4V1,2:Pixhawk,3:Cube/Pixhawk2,4:Pixracer,5:PixhawkMini,6:Pixhawk2Slim,13:Intel Aero FC,14:Pixhawk Pro,20:AUAV2.1,21:PCNC1,22:MINDPXV2,23:SP01,24:CUAVv5/FMUV5,30:VRX BRAIN51,32:VRX BRAIN52,33:VRX BRAIN52E,34:VRX UBRAIN51,35:VRX UBRAIN52,36:VRX CORE10,38:VRX BRAIN54,39:PX4 FMUV6,100:PX4 OLDDRIVERS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE", 9, AP_BoardConfig, state.board_type, BOARD_TYPE_DEFAULT),
@@ -322,12 +349,6 @@ void AP_BoardConfig::init()
         printf("SDCard failed to start\n");
     }
 #endif
-
-    // run any the vehicle initialization routines
-    AP_Vehicle *vehicle = AP::vehicle();
-    if (vehicle) {
-        vehicle->init_vehicle();
-    }
 }
 
 // set default value for BRD_SAFETY_MASK

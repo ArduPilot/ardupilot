@@ -107,7 +107,8 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
         AP_HAL::millis(),
         0,
         0,
-        sub.celsius.temperature() * 100);
+        sub.celsius.temperature() * 100,
+        0); // TODO: use differential pressure temperature
 }
 
 bool GCS_MAVLINK_Sub::send_info()
@@ -139,6 +140,9 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("InputHold", sub.input_hold_engaged);
+
+    CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
+    send_named_float("RollPitch", sub.roll_pitch_flag);
 
     return true;
 }
@@ -350,7 +354,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE,
     MSG_AHRS2,
-    MSG_AHRS3,
     MSG_PID_TUNING
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
@@ -785,16 +788,9 @@ void GCS_MAVLINK_Sub::handle_rc_channels_override(const mavlink_message_t &msg)
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-
-/*
- *  a delay() callback that processes MAVLink packets. We set this as the
- *  callback in long running library initialisation routines to allow
- *  MAVLink to process packets while waiting for the initialisation to
- *  complete
- */
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_long_t &packet) {
     if (packet.param1 > 0.5f) {
-        sub.arming.disarm();
+        sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;

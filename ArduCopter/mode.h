@@ -66,7 +66,6 @@ public:
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
 
-    virtual bool landing_gear_should_be_deployed() const { return false; }
     virtual bool is_landing() const { return false; }
 
     // mode requires terrain to be present to be functional
@@ -86,6 +85,10 @@ public:
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_throttle() const;
+
+    // returns climb target_rate reduced to avoid obstacles and
+    // altitude fence
+    float get_avoidance_adjusted_climbrate(float target_rate);
 
     const Vector3f& get_desired_velocity() {
         // note that position control isn't used in every mode, so
@@ -172,8 +175,9 @@ protected:
     // waypoint navigation but the user can control the yaw.
     void auto_takeoff_run();
     void auto_takeoff_set_start_alt(void);
-    void auto_takeoff_attitude_run(float target_yaw_rate);
-    // altitude below which we do no navigation in auto takeoff
+
+    // altitude above-ekf-origin below which auto takeoff does not control horizontal position
+    static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
 
 public:
@@ -245,7 +249,6 @@ public:
     void set_land_complete(bool b);
     GCS_Copter &gcs();
     void set_throttle_takeoff(void);
-    float get_avoidance_adjusted_climbrate(float target_rate);
     uint16_t get_pilot_speed_dn(void);
 
     // end pass-through functions
@@ -265,12 +268,21 @@ public:
         LIMITED = 2,
     };
 
+    enum class AcroOptions {
+        AIR_MODE = 1 << 0,
+        RATE_LOOP_ONLY = 1 << 1,
+    };
+
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool init(bool ignore_checks) override;
+    void exit();
+    // whether an air-mode aux switch has been toggled
+    void air_mode_aux_changed();
 
 protected:
 
@@ -282,7 +294,7 @@ protected:
     float throttle_hover() const override;
 
 private:
-
+    bool disable_air_mode_reset;
 };
 #endif
 
@@ -341,7 +353,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(bool from_gcs) const override;
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
@@ -351,7 +363,6 @@ public:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    void wp_start(const Vector3f& destination, bool terrain_alt);
     void wp_start(const Location& dest_loc);
     void land_start();
     void land_start(const Vector3f& destination);
@@ -362,7 +373,6 @@ public:
     void nav_guided_start();
 
     bool is_landing() const override;
-    bool landing_gear_should_be_deployed() const override;
 
     bool is_taking_off() const override;
 
@@ -394,6 +404,11 @@ protected:
     void run_autopilot() override;
 
 private:
+
+    enum class Options : int32_t {
+        AllowArming                        = (1 << 0U),
+        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
+    };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -505,6 +520,8 @@ private:
         float descend_start_altitude;
         float descend_max; // centimetres
     } nav_payload_place;
+
+    bool waiting_for_origin;    // true if waiting for origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -777,15 +794,15 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; }
+    bool allows_arming(bool from_gcs) const override;
     bool is_autopilot() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
 
     bool requires_terrain_failsafe() const override { return true; }
 
-    void set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
-    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
+    void set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust);
+    bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
     bool get_wp(Location &loc) override;
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
@@ -798,7 +815,7 @@ public:
 
     bool is_taking_off() const override;
 
-    bool do_user_takeoff_start(float final_alt_above_home) override;
+    bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     GuidedMode mode() const { return guided_mode; }
 
@@ -815,6 +832,11 @@ protected:
     float crosstrack_error() const override;
 
 private:
+
+    // enum for GUID_OPTIONS parameter
+    enum class Options : int32_t {
+        AllowArmingFromTX = (1U << 0),
+    };
 
     void pos_control_start();
     void vel_control_start();
@@ -843,7 +865,6 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
 
 protected:
@@ -871,7 +892,6 @@ public:
     bool is_autopilot() const override { return true; }
 
     bool is_landing() const override { return true; };
-    bool landing_gear_should_be_deployed() const override { return true; };
 
     void do_not_use_GPS();
 
@@ -1043,8 +1063,7 @@ public:
     // this should probably not be exposed
     bool state_complete() { return _state_complete; }
 
-    bool is_landing() const override;
-    bool landing_gear_should_be_deployed() const override;
+    virtual bool is_landing() const override;
 
     void restart_without_terrain();
 
@@ -1096,9 +1115,9 @@ private:
 
     // return target alt type
     enum class ReturnTargetAltType {
-        RETURN_TARGET_ALTTYPE_RELATIVE = 0,
-        RETURN_TARGET_ALTTYPE_RANGEFINDER = 1,
-        RETURN_TARGET_ALTTYPE_TERRAINDATABASE = 2
+        RELATIVE = 0,
+        RANGEFINDER = 1,
+        TERRAINDATABASE = 2
     };
 
     // Loiter timer - Records how long we have been in loiter
@@ -1125,6 +1144,8 @@ public:
     void save_position();
     void exit();
 
+    bool is_landing() const override;
+
 protected:
 
     const char *name() const override { return "SMARTRTL"; }
@@ -1144,6 +1165,10 @@ private:
     void land();
     SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
 
+    // keep track of how long we have failed to get another return
+    // point while following our path home.  If we take too long we
+    // may choose to land the vehicle.
+    uint32_t path_follow_last_pop_fail_ms;
 };
 
 
@@ -1387,23 +1412,44 @@ protected:
 class ModeZigZag : public Mode {        
 
 public:
+    ModeZigZag(void);
 
     // Inherit constructor
     using Mode::Mode;
 
+    enum class Destination : uint8_t {
+        A,  // Destination A
+        B,  // Destination B
+    };
+
+    enum class Direction : uint8_t {
+        FORWARD,        // moving forward from the yaw direction
+        RIGHT,          // moving right from the yaw direction
+        BACKWARD,       // moving backward from the yaw direction
+        LEFT,           // moving left from the yaw direction
+    } zigzag_direction;
+
     bool init(bool ignore_checks) override;
+    void exit();
     void run() override;
+
+    // auto control methods.  copter flies grid pattern
+    void run_auto();
+    void suspend_auto();
+    void init_auto();
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
 
-    // save current position as A (dest_num = 0) or B (dest_num = 1).  If both A and B have been saved move to the one specified
-    void save_or_move_to_destination(uint8_t dest_num);
+    // save current position as A or B.  If both A and B have been saved move to the one specified
+    void save_or_move_to_destination(Destination ab_dest);
 
     // return manual control to the pilot
     void return_to_manual_control(bool maintain_target);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
@@ -1415,18 +1461,44 @@ private:
     void auto_control();
     void manual_control();
     bool reached_destination();
-    bool calculate_next_dest(uint8_t position_num, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+    bool calculate_next_dest(Destination ab_dest, bool use_wpnav_alt, Vector3f& next_dest, bool& terrain_alt) const;
+    void spray(bool b);
+    bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
+    void move_to_side();
 
     Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
     Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
+    Vector3f current_dest; // current target destination (use for resume after suspending)
+    bool current_terr_alt;
 
-    enum zigzag_state {
+    // parameters
+    AP_Int8  _auto_enabled;    // top level enable/disable control
+#if SPRAYER_ENABLED == ENABLED
+    AP_Int8  _spray_enabled;   // auto spray enable/disable
+#endif
+    AP_Int8  _wp_delay;        // delay for zigzag waypoint
+    AP_Float _side_dist;       // sideways distance
+    AP_Int8  _direction;       // sideways direction
+    AP_Int16 _line_num;        // total number of lines
+
+    enum ZigZagState {
         STORING_POINTS, // storing points A and B, pilot has manual control
         AUTO,           // after A and B defined, pilot toggle the switch from one side to the other, vehicle flies autonomously
         MANUAL_REGAIN   // pilot toggle the switch to middle position, has manual control
     } stage;
 
+    enum AutoState {
+        MANUAL,         // not in ZigZag Auto
+        AB_MOVING,      // moving from A to B or from B to A
+        SIDEWAYS,       // moving to sideways
+    } auto_stage;
+
     uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
+    Destination ab_dest_stored;     // store the current destination
+    bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
+    uint16_t line_count = 0;        // current line number
+    int16_t line_num = 0;           // target line number
+    bool is_suspended;              // true if zigzag auto is suspended
 };
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -1457,21 +1529,14 @@ private:
     // --- Internal variables ---
     float _initial_rpm;             // Head speed recorded at initiation of flight mode (RPM)
     float _target_head_speed;       // The terget head main rotor head speed.  Normalised by main rotor set point
-    float _fwd_speed_target;        // Target forward speed (cm/s)
     float _desired_v_z;             // Desired vertical
     int32_t _pitch_target;          // Target pitch attitude to pass to attitude controller
-    float _collective_aggression;   // The 'aggresiveness' of collective appliction
-    float _z_touch_down_start;      // The height in cm that the touch down phase began
-    float _t_touch_down_initiate;   // The time in ms that the touch down phase began
-    float now;                      // Current time in millis
-    float _entry_time_start;        // Time remaining until entry phase moves on to glide phase
+    uint32_t _entry_time_start_ms;  // Time remaining until entry phase moves on to glide phase
     float _hs_decay;                // The head accerleration during the entry phase
     float _bail_time;               // Timer for exiting the bail out phase (s)
-    float _bail_time_start;         // Time at start of bail out
-    float _des_z;                   // Desired vertical position
+    uint32_t _bail_time_start_ms;   // Time at start of bail out
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
-    uint16_t log_counter;           // Used to reduce the data flash logging rate
 
     enum class Autorotation_Phase {
         ENTRY,

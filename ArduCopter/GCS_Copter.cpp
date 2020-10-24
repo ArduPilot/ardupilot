@@ -2,6 +2,11 @@
 
 #include "Copter.h"
 
+uint8_t GCS_Copter::sysid_this_mav() const
+{
+    return copter.g.sysid_this_mav;
+}
+
 const char* GCS_Copter::frame_string() const
 {
     return copter.get_frame_string();
@@ -9,12 +14,12 @@ const char* GCS_Copter::frame_string() const
 
 bool GCS_Copter::simple_input_active() const
 {
-    return copter.ap.simple_mode == 1;
+    return copter.simple_mode == Copter::SimpleMode::SIMPLE;
 }
 
 bool GCS_Copter::supersimple_input_active() const
 {
-    return copter.ap.simple_mode == 2;
+    return copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE;
 }
 
 void GCS_Copter::update_vehicle_sensor_status_flags(void)
@@ -43,13 +48,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
 #endif
 #if PRECISION_LANDING == ENABLED
     if (copter.precland.enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    const AP_VisualOdom *visual_odom = AP::visualodom();
-    if (visual_odom && visual_odom->enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
@@ -88,7 +86,9 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     case Mode::Number::THROW:
     case Mode::Number::SMART_RTL:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         break;
     case Mode::Number::ALT_HOLD:
     case Mode::Number::GUIDED_NOGPS:
@@ -96,6 +96,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLOWHOLD:
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         break;
     default:
         // stabilize, acro, drift, and flip have no automatic x,y or z control (i.e. all manual)
@@ -118,11 +119,6 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
 #endif
 #if PRECISION_LANDING == ENABLED
     if (copter.precland.enabled() && copter.precland.healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
-    }
-#endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (visual_odom && visual_odom->enabled() && visual_odom->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
     }
 #endif

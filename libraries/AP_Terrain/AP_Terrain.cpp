@@ -41,12 +41,19 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 
     // @Param: SPACING
     // @DisplayName: Terrain grid spacing
-    // @Description: Distance between terrain grid points in meters. This controls the horizontal resolution of the terrain data that is stored on te SD card and requested from the ground station. If your GCS is using the worldwide SRTM database then a resolution of 100 meters is appropriate. Some parts of the world may have higher resolution data available, such as 30 meter data available in the SRTM database in the USA. The grid spacing also controls how much data is kept in memory during flight. A larger grid spacing will allow for a larger amount of data in memory. A grid spacing of 100 meters results in the vehicle keeping 12 grid squares in memory with each grid square having a size of 2.7 kilometers by 3.2 kilometers. Any additional grid squares are stored on the SD once they are fetched from the GCS and will be demand loaded as needed.
+    // @Description: Distance between terrain grid points in meters. This controls the horizontal resolution of the terrain data that is stored on te SD card and requested from the ground station. If your GCS is using the ArduPilot SRTM database like Mission Planner or MAVProxy, then a resolution of 100 meters is appropriate. Grid spacings lower than 100 meters waste SD card space if the GCS cannot provide that resolution. The grid spacing also controls how much data is kept in memory during flight. A larger grid spacing will allow for a larger amount of data in memory. A grid spacing of 100 meters results in the vehicle keeping 12 grid squares in memory with each grid square having a size of 2.7 kilometers by 3.2 kilometers. Any additional grid squares are stored on the SD once they are fetched from the GCS and will be loaded as needed.
     // @Units: m
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("SPACING",   1, AP_Terrain, grid_spacing, 100),
 
+    // @Param: OPTIONS
+    // @DisplayName: Terrain options
+    // @Description: Options to change behaviour of terrain system
+    // @Bitmask: 0:Disable Download
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
+    
     AP_GROUPEND
 };
 
@@ -392,5 +399,14 @@ bool AP_Terrain::allocate(void)
     cache_size = TERRAIN_GRID_BLOCK_CACHE_SIZE;
     return true;
 }
+
+namespace AP {
+
+AP_Terrain &terrain()
+{
+    return *AP_Terrain::get_singleton();
+}
+
+};
 
 #endif // AP_TERRAIN_AVAILABLE

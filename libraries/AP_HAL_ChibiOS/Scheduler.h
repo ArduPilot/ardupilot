@@ -58,7 +58,7 @@
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
-#define RCIN_THD_WA_SIZE    512
+#define RCIN_THD_WA_SIZE    768
 #endif
 
 #ifndef IO_THD_WA_SIZE
@@ -70,7 +70,7 @@
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#define MONITOR_THD_WA_SIZE 512
+#define MONITOR_THD_WA_SIZE 768
 #endif
 
 /* Scheduler implementation: */
@@ -103,8 +103,15 @@ public:
       be used to prevent watchdog reset during expected long delays
       A value of zero cancels the previous expected delay
      */
+    void     _expect_delay_ms(uint32_t ms);
     void     expect_delay_ms(uint32_t ms) override;
 
+    /*
+      return true if we are in a period of expected delay. This can be
+      used to suppress error messages
+     */
+    bool in_expected_delay(void) const override;
+    
     /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect
@@ -134,6 +141,7 @@ private:
     uint32_t expect_delay_start;
     uint32_t expect_delay_length;
     uint32_t expect_delay_nesting;
+    HAL_Semaphore expect_delay_sem;
 
     AP_HAL::MemberProc _timer_proc[CHIBIOS_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;

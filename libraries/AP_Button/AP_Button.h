@@ -41,6 +41,10 @@ public:
         return _singleton;
     }
 
+    // get state of a button
+    // used by scripting
+    bool get_button_state(uint8_t number);
+
 private:
 
     static AP_Button *_singleton;
@@ -53,6 +57,9 @@ private:
 
     // last button press mask
     uint8_t last_mask;
+
+    // debounced button press mask
+    uint8_t debounce_mask;
 
     // when the mask last changed
     uint64_t last_change_time_ms;

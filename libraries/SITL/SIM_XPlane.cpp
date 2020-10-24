@@ -28,6 +28,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 
+// ignore cast errors in this case to keep complexity down
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 extern const AP_HAL::HAL& hal;
 
 namespace SITL {
@@ -311,7 +314,7 @@ bool XPlane::receive_data(void)
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
                loc.get_distance(location), loc.alt*0.01f, location.alt*0.01f);
         // reset home location
-        position_zero(-pos.x, -pos.y, -pos.z);
+        position_zero = {-pos.x, -pos.y, -pos.z};
         home.lat = loc.lat;
         home.lng = loc.lng;
         home.alt = loc.alt;

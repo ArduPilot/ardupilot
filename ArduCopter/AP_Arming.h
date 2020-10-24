@@ -23,7 +23,7 @@ public:
 
     bool rc_calibration_checks(bool display_failure) override;
 
-    bool disarm() override;
+    bool disarm(AP_Arming::Method method) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
 protected:
@@ -50,6 +50,8 @@ protected:
     bool oa_checks(bool display_failure);
     bool mandatory_gps_checks(bool display_failure);
     bool gcs_failsafe_check(bool display_failure);
+    bool winch_checks(bool display_failure) const;
+    bool alt_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
 

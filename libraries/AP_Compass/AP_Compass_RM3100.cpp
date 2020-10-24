@@ -143,19 +143,20 @@ bool AP_Compass_RM3100::init()
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
-    compass_instance = register_compass();
+    dev->set_device_type(DEVTYPE_RM3100);
+    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+        return false;
+    }
+    set_dev_id(compass_instance, dev->get_bus_id());
 
     hal.console->printf("RM3100: Found at address 0x%x as compass %u\n", dev->get_bus_address(), compass_instance);
-
+    
     set_rotation(compass_instance, rotation);
 
     if (force_external) {
         set_external(compass_instance, true);
     }
-
-    dev->set_device_type(DEVTYPE_RM3100);
-    set_dev_id(compass_instance, dev->get_bus_id());
-
+    
     // call timer() at 80Hz
     dev->register_periodic_callback(1000000U/80U,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_RM3100::timer, void));
@@ -176,7 +177,6 @@ void AP_Compass_RM3100::timer()
         uint8_t magz_1;
         uint8_t magz_0;
     } data;
-    Vector3f field;
 
     int32_t magx = 0;
     int32_t magy = 0;
@@ -208,10 +208,16 @@ void AP_Compass_RM3100::timer()
     magy >>= 8;
     magz >>= 8;
 
-    // apply scaler and store in field vector
-    field(magx * _scaler, magy * _scaler, magz * _scaler);
+    {
+        // apply scaler and store in field vector
+         Vector3f field{
+             magx * _scaler,
+             magy * _scaler,
+             magz * _scaler
+         };
 
-    accumulate_sample(field, compass_instance);
+        accumulate_sample(field, compass_instance);
+    }
 
 check_registers:
     dev->check_next_register();

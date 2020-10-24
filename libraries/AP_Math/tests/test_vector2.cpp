@@ -52,6 +52,12 @@ TEST(Vector2Test, reflect)
     Vector2f reflected3 = Vector2f(3, 3);
     reflected3.reflect(Vector2f(1, -1));
     EXPECT_EQ(reflected3, Vector2f(-3, -3));
+
+    // rotation
+    Vector2f base = Vector2f(2, 1);
+    base.rotate(radians(90));
+    EXPECT_FLOAT_EQ(base.x, -1);
+    EXPECT_FLOAT_EQ(base.y, 2);
 }
 
 TEST(Vector2Test, closest_point)

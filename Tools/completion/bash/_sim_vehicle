@@ -55,8 +55,8 @@ _sim_vehicle() {
   lim=$((COMP_CWORD - 1))
   for i in $(seq 0 $lim); do
     if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
-      opts=${opts/" ${COMP_WORDS[i]}"/}
-      opts=${opts/" --${COMP_WORDS[i]}"/}
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
     fi
   done
 
@@ -64,27 +64,22 @@ _sim_vehicle() {
   -v | --vehicle)
     # get the calling program, remove anything after the space == all commands arguments
     local caller; caller=$(echo $@ | sed 's/ .*//g');
-    # get options between "vehicle type " and closing ")", remove line return, remove spaces, anything before the opening (, remove the "|" and closing ")"
-    opts=$($caller --help | sed -n '/vehicle type (/,/)/p' | tr '\n' ' ' | sed -e 's/ //g' -e 's/.*(//g' -e 's/[|)]/ /g')
+    opts=$($caller --list-vehicle)
     COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
     return 0
     ;;
   -f | --frame)
     # get the calling program, remove anything after the space == all commands arguments
     local caller; caller=$(echo $@ | sed 's/ .*//g');
-    # Get everything between "frame type" and "-C", remove first and last line, get line starting with caracters and ": " sequence, remove spaces and :
-    local supported_vehicle_list=$($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' | sed  -n 's/\(.*: \).*/\1/p' | sed -e 's/ //g' -e 's/://g')
+    local supported_vehicle_list=$($caller --list-vehicle)
     local frames;
-    local count=1;
     for v in $supported_vehicle_list
     do
       if [[ ${COMP_WORDS[@]} == *"$v"* ]]
       then
-          # Get everything between "frame type" and "-C", remove first and last line and change starting space by " :", change newlines to space, remove spaces then change vehicle type enclose by ":" by newline and change "|" by space, remove first line, get line "count" that match supported_vehicle_list[count]
-          frames=$($caller --help | sed -n '/frame type/,/-C/p' | sed -e '1d' -e '$d' -e 's/^\s*A/ :A/g' | tr '\n' ' ' | sed -e 's/ //g' -e 's/:\w*:/\n/g' -e 's/[|]/ /g' | sed '1d' | sed "${count}q;d")
+          frames=$($caller --list-frame "$v")
           break
       fi
-      count=$(( $count + 1 ))
     done
     COMPREPLY=($(compgen -W "${frames}" -- ${cur}))
     return 0

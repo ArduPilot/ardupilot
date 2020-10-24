@@ -23,6 +23,8 @@ mcu = {
         (0x20000000,  64, 1), # DTCM memory, DMA safe
     ],
 
+    'EXPECTED_CLOCK' : 216000000,
+
     # this board has M7 instructions, but single precision only FPU
     # we build as m4 as it makes for a smaller build, and given the 1M
     # flash limit we care more about size

@@ -77,8 +77,6 @@ OSCILLATOR_HZ 24000000
 # Now define the voltage the MCU runs at. This is needed for ChibiOS
 # to set various internal driver limits. It is in 0.01 volt units.
 
-# board voltage
-STM32_VDD 330U
 
 # This is the STM32 timer that ChibiOS will use for the low level
 # driver. This must be a 32 bit timer. We currently only support
@@ -98,7 +96,7 @@ FLASH_SIZE_KB 2048
 
 # Serial port for stdout. This is optional. If you leave it out then
 # output from printf() lines will go to the ArduPilot console, which is the
-# first UART in the UART_ORDER list.  But note that some startup code
+# first UART in the SERIAL_ORDER list.  But note that some startup code
 # runs before USB is set up. 
 # The value for STDOUT_SERIAL is a serial device name, and must be for a 
 # serial device for which pins are defined in this file. For example, SD7
@@ -113,11 +111,8 @@ FLASH_SIZE_KB 2048
 # If creating a board for a RTF vehicle you may wish to customise these.
 
 # USB setup
-USB_VENDOR 0x0483 # ST
-USB_PRODUCT 0x5740
 USB_STRING_MANUFACTURER "ArduPilot"
 USB_STRING_PRODUCT "%BOARD%"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # Now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the
@@ -130,21 +125,21 @@ USB_STRING_SERIAL  "%SERIAL%"
 # order of I2C buses
 I2C_ORDER I2C2 I2C1
 
-# Now the UART order. These map to the hal.uartA to hal.uartF
-# objects. If you use a shorter list then HAL_Empty::UARTDriver
+# Now the serial ordering. These map to the SERIALn_ parameter numbers
+# If you use a shorter list then HAL_Empty::UARTDriver
 # objects are substituted for later UARTs, or you can leave a gap by
 # listing one or more of the uarts as EMPTY.
 
 # The normal usage of this ordering is:
 # 1) SERIAL0: console (primary mavlink, usually USB)
-# 2) SERIAL3: primary GPS
-# 3) SERIAL1: telem1
-# 4) SERIAL2: telem2
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
 # 5) SERIAL4: GPS2
 # 6) SERIAL5: extra UART (usually RTOS debug console)
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 UART7
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7
 
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
@@ -270,7 +265,7 @@ PB14 SPI2_MISO SPI2
 PB15 SPI2_MOSI SPI2
 
 # This input pin is used to detect that power is valid on USB.
-PC0 VBUS_VALID INPUT
+PC0 VBUS_nVALID INPUT PULLUP
 
 # This defines the CS pin for the magnetometer and first IMU. Note
 # that CS pins are software controlled, and are not tied to a particular
@@ -378,10 +373,10 @@ PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
-PB7 VDD_SERVO_VALID INPUT PULLUP
-PE10 VDD_5V_HIPOWER_OC INPUT PULLUP
-PE15 VDD_5V_PERIPH_OC INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PB7 VDD_BRICK2_nVALID INPUT PULLUP
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
 
 # Now the SPI device table. This table creates all accessible SPI
 # devices, giving the name of the device (which is used by device
@@ -445,12 +440,6 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 # available (in bytes).
 define HAL_STORAGE_SIZE 16384
 
-# Now define fallback storage location is flash if no FRAM
-# fitted. This needs to be carefully chosen to align with your
-# bootloader. The flash storage system needs two sectors, and the
-# sectors must be at least 20% larger than HAL_STORAGE_SIZE.
-define STORAGE_FLASH_PAGE 22
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 
@@ -476,13 +465,6 @@ define HAL_BATT_CURR_SCALE 17.0
 
 # This defines the default maximum clock on I2C devices.
 define HAL_I2C_MAX_CLOCK 100000
-
-# Uncomment the lines below to enable strict API
-# checking in ChibiOS.
-# define CH_DBG_ENABLE_ASSERTS TRUE
-# define CH_DBG_ENABLE_CHECKS TRUE
-# define CH_DBG_SYSTEM_STATE_CHECK TRUE
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
 
 # We can't share the IO UART (USART6).
 DMA_NOSHARE USART6_TX ADC1

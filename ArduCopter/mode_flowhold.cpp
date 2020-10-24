@@ -138,7 +138,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     sensor_flow *= constrain_float(height_estimate, height_min, height_max);
 
     // rotate controller input to earth frame
-    Vector2f input_ef = copter.ahrs.rotate_body_to_earth2D(sensor_flow);
+    Vector2f input_ef = copter.ahrs.body_to_earth2D(sensor_flow);
 
     // run PI controller
     flow_pi_xy.set_input(input_ef);
@@ -194,7 +194,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     ef_output *= copter.aparm.angle_max;
 
     // convert to body frame
-    bf_angles += copter.ahrs.rotate_earth_to_body2D(ef_output);
+    bf_angles += copter.ahrs.earth_to_body2D(ef_output);
 
     // set limited flag to prevent integrator windup
     limited = fabsf(bf_angles.x) > copter.aparm.angle_max || fabsf(bf_angles.y) > copter.aparm.angle_max;
@@ -202,6 +202,18 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
     // constrain to angle limit
     bf_angles.x = constrain_float(bf_angles.x, -copter.aparm.angle_max, copter.aparm.angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
+
+// @LoggerMessage: FHLD
+// @Description: FlowHold mode messages
+// @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
+// @Field: TimeUS: Time since system startup
+// @Field: SFx: Filtered flow rate, X-Axis
+// @Field: SFy: Filtered flow rate, Y-Axis
+// @Field: Ax: Target lean angle, X-Axis
+// @Field: Ay: Target lean angle, Y-Axis
+// @Field: Qual: Flow sensor quality. If this value falls below FHLD_QUAL_MIN parameter, FlowHold will act just like AltHold.
+// @Field: Ix: Integral part of PI controller, X-Axis
+// @Field: Iy: Integral part of PI controller, Y-Axis
 
     if (log_counter++ % 20 == 0) {
         AP::logger().Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
@@ -274,7 +286,7 @@ void ModeFlowHold::run()
         takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         // call position controller
         copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
@@ -297,7 +309,7 @@ void ModeFlowHold::run()
         target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
         copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         break;
@@ -388,7 +400,7 @@ void ModeFlowHold::update_height_estimate(void)
     }
 
     // convert delta velocity back to body frame to match the flow sensor
-    Vector2f delta_vel_bf = copter.ahrs.rotate_earth_to_body2D(delta_velocity_ne);
+    Vector2f delta_vel_bf = copter.ahrs.earth_to_body2D(delta_velocity_ne);
 
     // and convert to an rate equivalent, to be comparable to flow
     Vector2f delta_vel_rate(-delta_vel_bf.y, delta_vel_bf.x);
@@ -471,6 +483,20 @@ void ModeFlowHold::update_height_estimate(void)
 
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
+
+// @LoggerMessage: FHXY
+// @Description: Height estimation using optical flow sensor 
+// @Field: TimeUS: Time since system startup
+// @Field: DFx: Delta flow rate, X-Axis
+// @Field: DFy: Delta flow rate, Y-Axis
+// @Field: DVx: Integrated delta velocity rate, X-Axis
+// @Field: DVy: Integrated delta velocity rate, Y-Axis
+// @Field: Hest: Estimated Height
+// @Field: DH: Delta Height
+// @Field: Hofs: Height offset
+// @Field: InsH: Height estimate from inertial navigation library
+// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
+// @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
 
     AP::logger().Write("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),

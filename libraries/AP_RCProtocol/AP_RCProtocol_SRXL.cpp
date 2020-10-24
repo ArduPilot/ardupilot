@@ -230,6 +230,7 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
             crc_fmu = crc_xmodem_update(crc_fmu,byte);
         }
         if (buflen == frame_len_full) {
+            log_data(AP_RCProtocol::SRXL, timestamp_us, buffer, buflen);
             /* CRC check here */
             crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
              if (crc_receiver == crc_fmu) {

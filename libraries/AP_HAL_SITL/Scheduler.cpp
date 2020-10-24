@@ -1,12 +1,13 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_HAL_SITL.h"
+#include <AP_HAL_SITL/I2CDevice.h>
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
 #include <fenv.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if defined (__clang__)
+#if defined (__clang__) || (defined (__APPLE__) && defined (__MACH__))
 #include <stdlib.h>
 #else
 #include <malloc.h>
@@ -239,6 +240,9 @@ void Scheduler::_run_io_procs()
     hal.uartG->_timer_tick();
     hal.uartH->_timer_tick();
     hal.storage->_timer_tick();
+
+    // in lieu of a thread-per-bus:
+    ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
 
 #if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();

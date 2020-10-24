@@ -92,7 +92,7 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Param: ANG_YAW_P
     // @DisplayName: Yaw axis angle controller P gain
     // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
-    // @Range: 3.000 6.000
+    // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 6.000
     // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw, "ANG_YAW_", 15, AC_AttitudeControl, AC_P),
@@ -859,28 +859,25 @@ Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f
 {
     Vector3f rate_target_ang_vel;
     // Compute the roll angular velocity demand from the roll angle error
-    if (_use_sqrt_controller) {
+    if (_use_sqrt_controller && !is_zero(get_accel_roll_max_radss())) {
         rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
         rate_target_ang_vel.x = _p_angle_roll.kP() * attitude_error_rot_vec_rad.x;
     }
-    // todo: Add Angular Velocity Limit
 
     // Compute the pitch angular velocity demand from the pitch angle error
-    if (_use_sqrt_controller) {
+    if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
         rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
         rate_target_ang_vel.y = _p_angle_pitch.kP() * attitude_error_rot_vec_rad.y;
     }
-    // todo: Add Angular Velocity Limit
 
     // Compute the yaw angular velocity demand from the yaw angle error
-    if (_use_sqrt_controller) {
+    if (_use_sqrt_controller && !is_zero(get_accel_yaw_max_radss())) {
         rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
     } else {
         rate_target_ang_vel.z = _p_angle_yaw.kP() * attitude_error_rot_vec_rad.z;
     }
-    // todo: Add Angular Velocity Limit
     return rate_target_ang_vel;
 }
 

@@ -19,9 +19,15 @@
  *       Code by Randy Mackay. DIYDrones.com
  */
 
+#include <AP_MSP/msp.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+
+
+#ifndef HAL_MSP_OPTICALFLOW_ENABLED
+#define HAL_MSP_OPTICALFLOW_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#endif
 
 class OpticalFlow_backend;
 class AP_AHRS_NavEKF;
@@ -50,7 +56,8 @@ public:
         CXOF = 4,
         MAVLINK = 5,
         UAVCAN = 6,
-        SITL = 10
+        MSP = 7,
+        SITL = 10,
     };
 
     // init - initialise sensor
@@ -67,6 +74,11 @@ public:
 
     // handle optical flow mavlink messages
     void handle_msg(const mavlink_message_t &msg);
+
+#if HAL_MSP_OPTICALFLOW_ENABLED
+    // handle optical flow msp messages
+    void handle_msp(const MSP::msp_opflow_data_message_t &pkt);
+#endif
 
     // quality - returns the surface quality as a measure from 0 ~ 255
     uint8_t quality() const { return _state.surface_quality; }

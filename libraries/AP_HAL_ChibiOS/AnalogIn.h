@@ -29,7 +29,7 @@
 class ChibiOS::AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class ChibiOS::AnalogIn;
-    AnalogSource(int16_t pin, float initial_value);
+    AnalogSource(int16_t pin);
     float read_average() override;
     float read_latest() override;
     void set_pin(uint8_t p) override;
@@ -61,6 +61,7 @@ public:
     float board_voltage(void) override { return _board_voltage; }
     float servorail_voltage(void) override { return _servorail_voltage; }
     uint16_t power_status_flags(void) override { return _power_flags; }
+    uint16_t accumulated_power_status_flags(void) const override { return _accumulated_power_flags; }
     static void adccallback(ADCDriver *adcp);
 
 private:
@@ -74,6 +75,8 @@ private:
     float _servorail_voltage;
     float _rssi_voltage;
     uint16_t _power_flags;
+    uint16_t _accumulated_power_flags;  // bitmask of all _power_flags ever set
+
     ADCConversionGroup adcgrpcfg;
 
     struct pin_info {

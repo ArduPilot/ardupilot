@@ -31,7 +31,7 @@
 
 using namespace ChibiOS;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
         thread_priority(_thread_priority)
@@ -104,12 +104,12 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
         char *name = (char *)malloc(name_len);
         switch (hal_device->bus_type()) {
         case AP_HAL::Device::BUS_TYPE_I2C:
-            snprintf(name, name_len, "I2C:%u",
+            snprintf(name, name_len, "I2C%u",
                      hal_device->bus_num());
             break;
 
         case AP_HAL::Device::BUS_TYPE_SPI:
-            snprintf(name, name_len, "SPI:%u",
+            snprintf(name, name_len, "SPI%u",
                      hal_device->bus_num());
             break;
         default:

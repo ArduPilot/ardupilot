@@ -58,8 +58,9 @@ private:
     char _term[15];                         // buffer for the current term within the current sentence
     uint8_t _term_offset;                   // offset within the _term buffer where the next character should be placed
     uint8_t _term_number;                   // term index within the current sentence
-    float _distance_m = -1.0f;                      // distance in meters parsed from a term, -1 if no distance
+    float _distance_m = -1.0f;              // distance in meters parsed from a term, -1 if no distance
     uint8_t _checksum;                      // checksum accumulator
     bool _term_is_checksum;                 // current term is the checksum
     sentence_types _sentence_type;          // the sentence type currently being processed
+    bool _sentence_done;                    // true if this sentence has already been decoded
 };

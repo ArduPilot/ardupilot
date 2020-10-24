@@ -42,10 +42,15 @@ public:
 
 
     uint32_t available() override;
+    uint32_t available_locked(uint32_t key) override;
+
     uint32_t txspace() override;
     int16_t read() override;
+    ssize_t read(uint8_t *buffer, uint16_t count) override;
     int16_t read_locked(uint32_t key) override;
     void _timer_tick(void) override;
+
+    bool discard_input() override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
@@ -136,7 +141,7 @@ private:
     uint32_t lock_read_key;
 
     uint32_t _baudrate;
-    uint16_t tx_len;
+    volatile uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
 #endif
@@ -152,7 +157,7 @@ private:
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
 #ifndef HAL_UART_NODMA
-    bool tx_bounce_buf_ready;
+    volatile bool tx_bounce_buf_ready;
     volatile uint8_t rx_bounce_idx;
     uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;
@@ -238,3 +243,6 @@ private:
     void thread_init();
     static void uart_thread(void *);
 };
+
+// access to usb init for stdio.cpp
+void usb_initialise(void);

@@ -20,7 +20,18 @@ private:
     // get a reading
     bool get_reading(uint16_t &reading_cm) override;
 
-    char linebuf[10];
-    uint8_t linebuf_len = 0;
-    uint32_t last_init_ms;
+    char linebuf[10];           // legacy protocol buffer
+    uint8_t linebuf_len;        // legacy protocol buffer length
+    uint32_t last_init_ms;      // init time used to switch lw20 to serial mode
+    uint8_t high_byte;          // binary protocol high byte
+    bool high_byte_received;    // true if high byte has been received
+
+    // automatic protocol decision variables
+    enum class ProtocolState {
+        UNKNOWN,    // the protocol used is not yet known
+        LEGACY,     // legacy protocol, distances are sent as strings
+        BINARY      // binary protocol, distances are sent using two bytes
+    } protocol_state;
+    uint8_t legacy_valid_count;
+    uint8_t binary_valid_count;
 };

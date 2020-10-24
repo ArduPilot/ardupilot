@@ -9,17 +9,6 @@ APJ_BOARD_ID 141
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-define STM32_LSECLK 32768U
-define STM32_LSEDRV (3U << 3U)
-define STM32_PLLSRC STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 24
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
-# board voltage
-STM32_VDD 330U
-
 FLASH_SIZE_KB 2048
 
 # with 2M flash we can afford to optimize for speed
@@ -74,7 +63,7 @@ define HAL_I2C_INTERNAL_MASK 0
 # USART6 FC
 # UART7 DEBUG
 
-UART_ORDER OTG1 UART4 USART2 USART3 UART8 USART6 UART7 OTG2
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART6 UART7 OTG2
 
 # default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
 define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
@@ -141,7 +130,7 @@ PF9 SPI5_MOSI SPI5
 PA9 VBUS INPUT OPENDRAIN
 
 # This input pin is used to detect that power is valid on USB.
-PC0 VBUS_VALID INPUT
+PC0 VBUS_VALID INPUT PULLDOWN
 
 # Now we define the pins that USB is connected on.
 PA11 OTG_FS_DM OTG1
@@ -224,7 +213,7 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
 # names used in AnalogIn.cpp. 
-PB5 VDD_BRICK_VALID INPUT PULLUP
+PB5 VDD_BRICK_nVALID INPUT PULLUP
 
 SPIDEV dps310      SPI2 DEVID3  BARO_CS           MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron     SPI2 DEVID10 FRAM_CS           MODE3  8*MHZ  8*MHZ

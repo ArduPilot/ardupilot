@@ -120,7 +120,7 @@ void Copter::set_land_complete(bool b)
     const bool mode_disarms_on_land = flightmode->allows_arming(false) && !flightmode->has_manual_throttle();
 
     if (ap.land_complete && motors->armed() && disarm_on_land_configured && mode_disarms_on_land) {
-        arming.disarm();
+        arming.disarm(AP_Arming::Method::LANDED);
     }
 }
 
@@ -137,21 +137,21 @@ void Copter::set_land_complete_maybe(bool b)
     ap.land_complete_maybe = b;
 }
 
-// update_throttle_thr_mix - sets motors throttle_low_comp value depending upon vehicle state
+// sets motors throttle_low_comp value depending upon vehicle state
 //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
 //  has no effect when throttle is above hover throttle
-void Copter::update_throttle_thr_mix()
+void Copter::update_throttle_mix()
 {
 #if FRAME_CONFIG != HELI_FRAME
     // if disarmed or landed prioritise throttle
-    if(!motors->armed() || ap.land_complete) {
+    if (!motors->armed() || ap.land_complete) {
         attitude_control->set_throttle_mix_min();
         return;
     }
 
     if (flightmode->has_manual_throttle()) {
         // manual throttle
-        if(channel_throttle->get_control_in() <= 0) {
+        if (channel_throttle->get_control_in() <= 0 || air_mode == AirMode::AIRMODE_DISABLED) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
@@ -168,14 +168,15 @@ void Copter::update_throttle_thr_mix()
         bool large_angle_error = (angle_error > LAND_CHECK_ANGLE_ERROR_DEG);
 
         // check for large acceleration - falling or high turbulence
-        Vector3f accel_ef = ahrs.get_accel_ef_blended();
-        accel_ef.z += GRAVITY_MSS;
-        bool accel_moving = (accel_ef.length() > LAND_CHECK_ACCEL_MOVING);
+        const bool accel_moving = (land_accel_ef_filter.get().length() > LAND_CHECK_ACCEL_MOVING);
 
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
 
-        if ( large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+        // check if landing
+        const bool landing = flightmode->is_landing();
+
+        if ((large_angle_request && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
             attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();

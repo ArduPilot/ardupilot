@@ -30,19 +30,16 @@
 #pragma once
 
 #include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
+#include "AP_Proximity_Backend_Serial.h"
 #include <AP_HAL/AP_HAL.h>                   ///< for UARTDriver
 
 
-class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend
+class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
 
 public:
-    // constructor
-    AP_Proximity_RPLidarA2(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
 
-    // static detection function
-    static bool detect();
+    using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
 
     // update state
     void update(void) override;
@@ -79,7 +76,6 @@ private:
     void reset_rplidar();
 
     // reply related variables
-    AP_HAL::UARTDriver *_uart;
     uint8_t _descriptor[7];
     char _rp_systeminfo[63];
     bool _descriptor_data;

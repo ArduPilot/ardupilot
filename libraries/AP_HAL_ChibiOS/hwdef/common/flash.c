@@ -53,6 +53,8 @@
 #include <string.h>
 #include "stm32_util.h"
 
+#include <assert.h>
+
 // #pragma GCC optimize("O0")
 
 /*
@@ -123,6 +125,13 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
 #else
 #error "Unsupported processor for flash.c"
+#endif
+
+#if defined(__GNUC__) && __GNUC__ >= 6
+#ifdef STORAGE_FLASH_PAGE
+static_assert(STORAGE_FLASH_PAGE < STM32_FLASH_NPAGES,
+              "STORAGE_FLASH_PAGE out of range");
+#endif
 #endif
 
 // keep a cache of the page addresses
@@ -441,7 +450,8 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
     }
     stm32_flash_unlock();
     while (count >= 32) {
-        if (!stm32h7_flash_write32(addr, b)) {
+        if (memcmp((void*)addr, b, 32) != 0 &&
+            !stm32h7_flash_write32(addr, b)) {
             return false;
         }
         // check contents

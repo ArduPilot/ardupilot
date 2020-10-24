@@ -19,44 +19,38 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AC_PID/AC_PID.h>
-#include <AP_WheelEncoder/AP_WheelEncoder.h>
-
-// winch rate control default gains
-#define AP_WINCH_POS_P      1.00f
-#define AP_WINCH_RATE_P     1.00f
-#define AP_WINCH_RATE_I     0.50f
-#define AP_WINCH_RATE_IMAX  1.00f
-#define AP_WINCH_RATE_D     0.00f
-#define AP_WINCH_RATE_FILT  5.00f
-#define AP_WINCH_RATE_DT    0.10f
 
 class AP_Winch_Backend;
 
 class AP_Winch {
     friend class AP_Winch_Backend;
-    friend class AP_Winch_Servo;
+    friend class AP_Winch_PWM;
+    friend class AP_Winch_Daiwa;
 
 public:
     AP_Winch();
 
+    // Do not allow copies
+    AP_Winch(const AP_Winch &other) = delete;
+    AP_Winch &operator=(const AP_Winch&) = delete;
+
     // indicate whether this module is enabled
     bool enabled() const;
 
+    // true if winch is healthy
+    bool healthy() const;
+
     // initialise the winch
-    void init(const AP_WheelEncoder *wheel_encoder = nullptr);
+    void init();
 
     // update the winch
     void update();
 
     // relax the winch so it does not attempt to maintain length or rate
-    void relax() { config.state = STATE_RELAXED; }
+    void relax() { config.control_mode = ControlMode::RELAXED; }
 
-    // get current line length
-    float get_line_length() const { return config.length_curr; }
-
-    // release specified length of cable (in meters) at the specified rate
-    // if rate is zero, the RATE_MAX parameter value will be used
-    void release_length(float length, float rate = 0.0f);
+    // release specified length of cable (in meters)
+    void release_length(float length);
 
     // deploy line at specified speed in m/s (+ve deploys line, -ve retracts line, 0 stops)
     void set_desired_rate(float rate);
@@ -64,30 +58,49 @@ public:
     // get rate maximum in m/s
     float get_rate_max() const { return MAX(config.rate_max, 0.0f); }
 
+    // send status to ground station
+    void send_status(const GCS_MAVLINK &channel);
+
+    // write log
+    void write_log();
+
+    // returns true if pre arm checks have passed
+    bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const;
+
+    static AP_Winch *get_singleton();
+
     static const struct AP_Param::GroupInfo        var_info[];
 
 private:
 
-    // parameters
-    AP_Int8     _enabled;               // grabber enable/disable
+    enum class WinchType {
+        NONE = 0,
+        PWM = 1,
+        DAIWA = 2
+    };
 
     // winch states
-    typedef enum {
-        STATE_RELAXED = 0,              // winch is not operating
-        STATE_POSITION,                 // moving or maintaining a target length
-        STATE_RATE,                     // deploying or retracting at a target rate
-    }  winch_state;
+    enum class ControlMode : uint8_t {
+        RELAXED = 0,    // winch is realxed
+        POSITION,       // moving or maintaining a target length (from an external source)
+        RATE,           // extending or retracting at a target rate (from an external source)
+        RATE_FROM_RC    // extending or retracting at a target rate (from RC input)
+    };
 
     struct Backend_Config {
         AP_Int8     type;               // winch type
         AP_Float    rate_max;           // deploy or retract rate maximum (in m/s).
         AP_Float    pos_p;              // position error P gain
-        AC_PID      rate_pid = AC_PID(AP_WINCH_RATE_P, AP_WINCH_RATE_I, AP_WINCH_RATE_D, 0.0f, AP_WINCH_RATE_IMAX, 0.0f, AP_WINCH_RATE_FILT, 0.0f, AP_WINCH_RATE_DT);           // rate control PID
-        winch_state state;              // state of winch control (using target position or target rate)
-        float       length_curr;        // current length of the line (in meters) that has been deployed
+        ControlMode control_mode;       // state of winch control (using target position or target rate)
         float       length_desired;     // target desired length (in meters)
         float       rate_desired;       // target deploy rate (in m/s, +ve = deploying, -ve = retracting)
     } config;
 
     AP_Winch_Backend *backend;
+
+    static AP_Winch *_singleton;
+};
+
+namespace AP {
+    AP_Winch *winch();
 };

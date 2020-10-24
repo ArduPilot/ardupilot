@@ -19,7 +19,7 @@
   Also note that code needs to support other APM_BUILD_DIRECTORY
   values for example sketches
  */
-#define APM_BUILD_APMrover2      1
+#define APM_BUILD_Rover      1
 #define APM_BUILD_ArduCopter     2
 #define APM_BUILD_ArduPlane      3
 #define APM_BUILD_AntennaTracker 4
@@ -29,12 +29,12 @@
 #define APM_BUILD_iofirmware     8
 #define APM_BUILD_AP_Periph      9
 
+#ifndef APM_BUILD_DIRECTORY
+#define APM_BUILD_DIRECTORY APM_BUILD_UNKNOWN
+#endif
+
 /*
   using this macro catches cases where we try to check vehicle type on
   build systems that don't support it
  */
-#ifdef APM_BUILD_DIRECTORY
 #define APM_BUILD_TYPE(type) ((type) == APM_BUILD_DIRECTORY)
-#else
-#define APM_BUILD_TYPE(type) ((type) == APM_BUILD_UNKNOWN)
-#endif

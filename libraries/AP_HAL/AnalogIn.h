@@ -36,6 +36,10 @@ public:
 
     // power supply status flags, see MAV_POWER_STATUS
     virtual uint16_t power_status_flags(void) { return 0; }
+
+    // bitmask of all _power_flags bits ever set, so transient
+    // failures can still be diagnosed
+    virtual uint16_t accumulated_power_status_flags(void) const { return 0; }
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254

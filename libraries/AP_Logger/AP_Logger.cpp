@@ -9,6 +9,7 @@
 
 #include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 AP_Logger *AP_Logger::_singleton;
 
@@ -53,8 +54,8 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
-    // @DisplayName: Maximum AP_Logger File Backend buffer size (in kilobytes)
-    // @Description: The AP_Logger_File backend uses a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
+    // @DisplayName: Maximum AP_Logger File and Block Backend buffer size (in kilobytes)
+    // @Description: The File and Block backends use a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
     // @User: Standard
     AP_GROUPINFO("_FILE_BUFSIZE",  1, AP_Logger, _params.file_bufsize,       HAL_LOGGING_FILE_BUFSIZE),
 
@@ -74,7 +75,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _FILE_DSRMROT
     // @DisplayName: Stop logging to current file on disarm
-    // @Description: When set, the current log file is closed when the vehicle is disarmed.  If LOG_DISARMED is set then a fresh log will be opened.
+    // @Description: When set, the current log file is closed when the vehicle is disarmed.  If LOG_DISARMED is set then a fresh log will be opened. Applies to the File and Block logging backends.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, AP_Logger, _params.file_disarm_rot,       0),
@@ -92,7 +93,15 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     // @Units: s
     AP_GROUPINFO("_FILE_TIMEOUT",  6, AP_Logger, _params.file_timeout,     HAL_LOGGING_FILE_TIMEOUT),
-    
+
+    // @Param: _FILE_MB_FREE
+    // @DisplayName: Old logs on the SD card will be deleted to maintain this amount of free space
+    // @Description: Set this such that the free space is larger than your largest typical flight log
+    // @Units: MB
+    // @Range: 10 1000
+    // @User: Standard
+    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
+
     AP_GROUPEND
 };
 
@@ -137,6 +146,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_File");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -156,6 +167,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_DataFlash");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -175,6 +188,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_SITL");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -195,6 +210,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         }
         if (backends[_next_backend] == nullptr) {
             hal.console->printf("Unable to open AP_Logger_MAVLink");
+            // note that message_writer is leaked here; costs several
+            // hundred bytes to fix for marginal utility
         } else {
             _next_backend++;
         }
@@ -233,7 +250,7 @@ static uint8_t count_commas(const char *string)
 /// return a unit name given its ID
 const char* AP_Logger::unit_name(const uint8_t unit_id)
 {
-    for(uint8_t i=0; i<unit_id; i++) {
+    for (uint8_t i=0; i<unit_id; i++) {
         if (_units[i].ID == unit_id) {
             return _units[i].unit;
         }
@@ -244,7 +261,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 /// return a multiplier value given its ID
 double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 {
-    for(uint8_t i=0; i<multiplier_id; i++) {
+    for (uint8_t i=0; i<multiplier_id; i++) {
         if (_multipliers[i].ID == multiplier_id) {
             return _multipliers[i].multiplier;
         }
@@ -290,6 +307,48 @@ void AP_Logger::dump_structures(const struct LogStructure *logstructures, const 
 #endif
 }
 
+bool AP_Logger::labels_string_is_good(const char *labels) const
+{
+    bool passed = true;
+    if (strlen(labels) >= LS_LABELS_SIZE) {
+        Debug("Labels string too long (%u > %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
+        passed = false;
+    }
+    // This goes through and slices labels up into substrings by
+    // changing commas to nulls - keeping references to each string in
+    // label_offsets.
+    char *label_offsets[LS_LABELS_SIZE];
+    uint8_t label_offsets_offset = 0;
+    char labels_copy[LS_LABELS_SIZE+1] {};
+    strncpy(labels_copy, labels, LS_LABELS_SIZE);
+    if (labels_copy[0] == ',') {
+        Debug("Leading comma in (%s)", labels);
+        passed = false;
+    }
+    label_offsets[label_offsets_offset++] = labels_copy;
+    const uint8_t len = strnlen(labels_copy, LS_LABELS_SIZE);
+    for (uint8_t i=0; i<len; i++) {
+        if (labels_copy[i] == ',') {
+            if (labels_copy[i+1] == '\0') {
+                Debug("Trailing comma in (%s)", labels);
+                passed = false;
+                continue;
+            }
+            labels_copy[i] = '\0';
+            label_offsets[label_offsets_offset++] = &labels_copy[i+1];
+        }
+    }
+    for (uint8_t i=0; i<label_offsets_offset-1; i++) {
+        for (uint8_t j=i+1; j<label_offsets_offset; j++) {
+            if (!strcmp(label_offsets[i], label_offsets[j])) {
+                Debug("Duplicate label (%s) in (%s)", label_offsets[i], labels);
+                passed = false;
+            }
+        }
+    }
+    return passed;
+}
+
 bool AP_Logger::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
 {
     bool passed = true;
@@ -326,6 +385,10 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     if (fieldcount != labelcount) {
         Debug("  fieldcount=%u does not match labelcount=%u",
               fieldcount, labelcount);
+        passed = false;
+    }
+
+    if (!labels_string_is_good(logstructure->labels)) {
         passed = false;
     }
 
@@ -455,8 +518,7 @@ void AP_Logger::validate_structures(const struct LogStructure *logstructures, co
     }
 
     if (!passed) {
-        Debug("Log structures are invalid");
-        abort();
+        AP_BoardConfig::config_error("See console: Log structures invalid");
     }
 }
 
@@ -665,7 +727,7 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
+        FOR_EACH_BACKEND(remote_log_block_status_msg(link, msg));
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         FALLTHROUGH;
@@ -730,6 +792,19 @@ void AP_Logger::Write_Rally()
     FOR_EACH_BACKEND(Write_Rally());
 }
 
+// output a FMT message for each backend if not already done so
+void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
+{
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!(f->sent_mask & (1U<<i))) {
+            if (!backends[i]->Write_Emit_FMT(f->msg_type)) {
+                continue;
+            }
+            f->sent_mask |= (1U<<i);
+        }
+    }
+}
+
 uint32_t AP_Logger::num_dropped() const
 {
     if (_next_backend == 0) {
@@ -784,7 +859,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
         // msgtypes, could be out of slots, ...
-        AP::internalerror().error(AP_InternalError::error_t::logger_mapfailure);
+        INTERNAL_ERROR(AP_InternalError::error_t::logger_mapfailure);
         return;
     }
 
@@ -844,24 +919,34 @@ void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
         passed = false;
     }
     if (!passed) {
-        Debug("Format definition must be consistent for every call of Write");
-        abort();
+        AP_BoardConfig::config_error("See console: Format definition must be consistent for every call of Write");
     }
 }
 #endif
 
-AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt)
+AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp)
 {
     WITH_SEMAPHORE(log_write_fmts_sem);
 
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
-        if (f->name == name) { // ptr comparison
-            // already have an ID for this name:
+        if (!direct_comp) {
+            if (f->name == name) { // ptr comparison
+                // already have an ID for this name:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
+                assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
 #endif
-            return f;
+                return f;
+            }
+        } else {
+            // direct comparison used from scripting where pointer is not maintained
+            if (strcmp(f->name,name) == 0) {
+                // already have an ID for this name:
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                assert_same_fmt_for_name(f, name, labels, units, mults, fmt);
+#endif
+                return f;
+            }
         }
     }
     f = (struct log_write_fmt *)calloc(1, sizeof(*f));
@@ -923,8 +1008,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
         memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
     }
     if (!validate_structure(&ls, (int16_t)-1)) {
-        Debug("Log structure invalid");
-        abort();
+        AP_BoardConfig::config_error("See console: Log structure invalid");
     }
 #endif
 
@@ -997,7 +1081,7 @@ bool AP_Logger::fill_log_write_logstructure(struct LogStructure &logstruct, cons
     // find log structure information corresponding to msg_type:
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
-        if(f->msg_type == msg_type) {
+        if (f->msg_type == msg_type) {
             break;
         }
     }

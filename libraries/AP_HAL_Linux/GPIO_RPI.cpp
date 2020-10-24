@@ -6,6 +6,7 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -19,85 +20,193 @@
 #include "GPIO.h"
 #include "Util_RPI.h"
 
-// Raspberry Pi GPIO memory
-#define BCM2708_PERI_BASE   0x20000000
-#define BCM2709_PERI_BASE   0x3F000000
-#define BCM2711_PERI_BASE   0xFE000000
-#define GPIO_BASE(address)  (address + 0x200000)
-
-// GPIO setup. Always use INP_GPIO(x) before OUT_GPIO(x) or SET_GPIO_ALT(x,y)
-#define GPIO_MODE_IN(g)     *(_gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
-#define GPIO_MODE_OUT(g)    *(_gpio+((g)/10)) |=  (1<<(((g)%10)*3))
-#define GPIO_MODE_ALT(g,a)  *(_gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
-#define GPIO_SET_HIGH       *(_gpio+7)  // sets   bits which are 1
-#define GPIO_SET_LOW        *(_gpio+10) // clears bits which are 1
-#define GPIO_GET(g)         (*(_gpio+13)&(1<<g)) // 0 if LOW, (1<<g) if HIGH
 #define GPIO_RPI_MAX_NUMBER_PINS 32
 
 using namespace Linux;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
+
+// Range based in the first memory address of the first register and the last memory addres
+// for the GPIO section (0x7E20'00B4 - 0x7E20'0000).
+const uint8_t GPIO_RPI::_gpio_registers_memory_range = 0xB4;
+const char* GPIO_RPI::_system_memory_device_path = "/dev/mem";
 
 GPIO_RPI::GPIO_RPI()
 {
 }
 
-void GPIO_RPI::init()
+void GPIO_RPI::set_gpio_mode_alt(int pin, int alternative)
 {
-    int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
-    uint32_t gpio_address;
-    if(rpi_version == 1) {
-        gpio_address = GPIO_BASE(BCM2708_PERI_BASE);
-    } else if (rpi_version == 2) {
-        gpio_address = GPIO_BASE(BCM2709_PERI_BASE);
-    } else {
-        gpio_address = GPIO_BASE(BCM2711_PERI_BASE);
-    }
+    // Each register can contain 10 pins
+    const uint8_t pins_per_register = 10;
+    // Calculates the position of the 3 bit mask in the 32 bits register
+    const uint8_t tree_bits_position_in_register = (pin%pins_per_register)*3;
+    /** Creates a mask to enable the alternative function based in the following logic:
+     *
+     * | Alternative Function | 3 bits value |
+     * |:--------------------:|:------------:|
+     * |      Function 0      |     0b100    |
+     * |      Function 1      |     0b101    |
+     * |      Function 2      |     0b110    |
+     * |      Function 3      |     0b111    |
+     * |      Function 4      |     0b011    |
+     * |      Function 5      |     0b010    |
+     */
+    const uint8_t alternative_value =
+        (alternative < 4 ? (alternative + 4) : (alternative == 4 ? 3 : 2));
+    // 0b00'000'000'000'000'000'000'ALT'000'000'000 enables alternative for the 4th pin
+    const uint32_t mask_with_alt = static_cast<uint32_t>(alternative_value) << tree_bits_position_in_register;
+    const uint32_t mask = 0b111 << tree_bits_position_in_register;
+    // Clear all bits in our position and apply our mask with alt values
+    uint32_t register_value = _gpio[pin / pins_per_register];
+    register_value &= ~mask;
+    _gpio[pin / pins_per_register] = register_value | mask_with_alt;
+}
 
-    int mem_fd = open("/dev/mem", O_RDWR|O_SYNC|O_CLOEXEC);
-    if (mem_fd < 0) {
-        AP_HAL::panic("Can't open /dev/mem");
-    }
+void GPIO_RPI::set_gpio_mode_in(int pin)
+{
+    // Each register can contain 10 pins
+    const uint8_t pins_per_register = 10;
+    // Calculates the position of the 3 bit mask in the 32 bits register
+    const uint8_t tree_bits_position_in_register = (pin%pins_per_register)*3;
+    // Create a mask that only removes the bits in this specific GPIO pin, E.g:
+    // 0b11'111'111'111'111'111'111'000'111'111'111 for the 4th pin
+    const uint32_t mask = ~(0b111<<tree_bits_position_in_register);
+    // Apply mask
+    _gpio[pin / pins_per_register] &= mask;
+}
 
-    // mmap GPIO
-    void *gpio_map = mmap(
-        nullptr,              // Any adddress in our space will do
-        BLOCK_SIZE,           // Map length
-        PROT_READ|PROT_WRITE, // Enable reading & writting to mapped memory
-        MAP_SHARED,           // Shared with other processes
-        mem_fd,               // File to map
-        gpio_address          // Offset to GPIO peripheral
+void GPIO_RPI::set_gpio_mode_out(int pin)
+{
+    // Each register can contain 10 pins
+    const uint8_t pins_per_register = 10;
+    // Calculates the position of the 3 bit mask in the 32 bits register
+    const uint8_t tree_bits_position_in_register = (pin%pins_per_register)*3;
+    // Create a mask to enable the bit that sets output functionality
+    // 0b00'000'000'000'000'000'000'001'000'000'000 enables output for the 4th pin
+    const uint32_t mask_with_bit = 0b001 << tree_bits_position_in_register;
+    const uint32_t mask = 0b111 << tree_bits_position_in_register;
+    // Clear all bits in our position and apply our mask with alt values
+    uint32_t register_value = _gpio[pin / pins_per_register];
+    register_value &= ~mask;
+    _gpio[pin / pins_per_register] = register_value | mask_with_bit;
+}
+
+void GPIO_RPI::set_gpio_high(int pin)
+{
+    // Calculate index of the array for the register GPSET0 (0x7E20'001C)
+    constexpr uint32_t gpset0_memory_offset_value = 0x1c;
+    constexpr uint32_t gpset0_index_value = gpset0_memory_offset_value / sizeof(*_gpio);
+    _gpio[gpset0_index_value] = 1 << pin;
+}
+
+void GPIO_RPI::set_gpio_low(int pin)
+{
+    // Calculate index of the array for the register GPCLR0 (0x7E20'0028)
+    constexpr uint32_t gpclr0_memory_offset_value = 0x28;
+    constexpr uint32_t gpclr0_index_value = gpclr0_memory_offset_value / sizeof(*_gpio);
+    _gpio[gpclr0_index_value] = 1 << pin;
+}
+
+bool GPIO_RPI::get_gpio_logic_state(int pin)
+{
+    // Calculate index of the array for the register GPLEV0 (0x7E20'0034)
+    constexpr uint32_t gplev0_memory_offset_value = 0x34;
+    constexpr uint32_t gplev0_index_value = gplev0_memory_offset_value / sizeof(*_gpio);
+    return _gpio[gplev0_index_value] & (1 << pin);
+}
+
+uint32_t GPIO_RPI::get_address(GPIO_RPI::Address address, GPIO_RPI::PeripheralOffset offset) const
+{
+    return static_cast<uint32_t>(address) + static_cast<uint32_t>(offset);
+}
+
+volatile uint32_t* GPIO_RPI::get_memory_pointer(uint32_t address, uint32_t range) const
+{
+    auto pointer = mmap(
+        nullptr,                         // Any adddress in our space will do
+        range,                           // Map length
+        PROT_READ|PROT_WRITE|PROT_EXEC,  // Enable reading & writing to mapped memory
+        MAP_SHARED|MAP_LOCKED,           // Shared with other processes
+        _system_memory_device,           // File to map
+        address                          // Offset to GPIO peripheral
     );
 
-    close(mem_fd); // No need to keep mem_fd open after mmap
-
-    if (gpio_map == MAP_FAILED) {
-        AP_HAL::panic("Can't open /dev/mem");
+    if (pointer == MAP_FAILED) {
+        return nullptr;
     }
 
-    _gpio = (volatile uint32_t *)gpio_map;
+    return static_cast<volatile uint32_t*>(pointer);
+}
+
+bool GPIO_RPI::openMemoryDevice()
+{
+    _system_memory_device = open(_system_memory_device_path, O_RDWR|O_SYNC|O_CLOEXEC);
+    if (_system_memory_device < 0) {
+        AP_HAL::panic("Can't open %s", GPIO_RPI::_system_memory_device_path);
+        return false;
+    }
+
+    return true;
+}
+
+void GPIO_RPI::closeMemoryDevice()
+{
+    close(_system_memory_device);
+    // Invalidate device variable
+    _system_memory_device = -1;
+}
+
+void GPIO_RPI::init()
+{
+    const int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
+
+    GPIO_RPI::Address peripheral_base;
+    if(rpi_version == 1) {
+        peripheral_base = Address::BCM2708_PERIPHERAL_BASE;
+    } else if (rpi_version == 2) {
+        peripheral_base = Address::BCM2709_PERIPHERAL_BASE;
+    } else {
+        peripheral_base = Address::BCM2711_PERIPHERAL_BASE;
+    }
+
+    if (!openMemoryDevice()) {
+        AP_HAL::panic("Failed to initialize memory device.");
+        return;
+    }
+
+    const uint32_t gpio_address = get_address(peripheral_base, PeripheralOffset::GPIO);
+
+    _gpio = get_memory_pointer(gpio_address, _gpio_registers_memory_range);
+    if (!_gpio) {
+        AP_HAL::panic("Failed to get GPIO memory map.");
+    }
+
+    // No need to keep mem_fd open after mmap
+    closeMemoryDevice();
 }
 
 void GPIO_RPI::pinMode(uint8_t pin, uint8_t output)
 {
     if (output == HAL_GPIO_INPUT) {
-        GPIO_MODE_IN(pin);
+        set_gpio_mode_in(pin);
     } else {
-        GPIO_MODE_IN(pin);
-        GPIO_MODE_OUT(pin);
+        set_gpio_mode_in(pin);
+        set_gpio_mode_out(pin);
     }
 }
 
 void GPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
 {
+    assert(alt < 6);
     if (output == HAL_GPIO_INPUT) {
-        GPIO_MODE_IN(pin);
+        set_gpio_mode_in(pin);
     } else if (output == HAL_GPIO_ALT) {
-        GPIO_MODE_IN(pin);
-        GPIO_MODE_ALT(pin, alt);
+        set_gpio_mode_in(pin);
+        set_gpio_mode_alt(pin, alt);
     } else {
-        GPIO_MODE_IN(pin);
-        GPIO_MODE_OUT(pin);
+        set_gpio_mode_in(pin);
+        set_gpio_mode_out(pin);
     }
 }
 
@@ -106,16 +215,15 @@ uint8_t GPIO_RPI::read(uint8_t pin)
     if (pin >= GPIO_RPI_MAX_NUMBER_PINS) {
         return 0;
     }
-    uint32_t value = GPIO_GET(pin);
-    return value ? 1: 0;
+    return static_cast<uint8_t>(get_gpio_logic_state(pin));
 }
 
 void GPIO_RPI::write(uint8_t pin, uint8_t value)
 {
-    if (value == LOW) {
-        GPIO_SET_LOW = 1 << pin;
+    if (value != 0) {
+        set_gpio_high(pin);
     } else {
-        GPIO_SET_HIGH = 1 << pin;
+        set_gpio_low(pin);
     }
 }
 

@@ -206,6 +206,9 @@ bool AP_Baro_ICM20789::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_ICM20789);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     debug("ICM20789: startup OK\n");
@@ -339,6 +342,13 @@ void AP_Baro_ICM20789::update()
 {
 #if BARO_ICM20789_DEBUG
     // useful for debugging
+// @LoggerMessage: ICMB
+// @Description: ICM20789 diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: Traw: raw temperature from sensor
+// @Field: Praw: raw pressure from sensor
+// @Field: P: pressure
+// @Field: T: temperature
     AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
                                            AP_HAL::micros64(),
                                            dd.Traw, dd.Praw, dd.P, dd.T);

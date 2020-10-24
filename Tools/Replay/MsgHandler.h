@@ -5,6 +5,10 @@
 
 #include <stdio.h>
 
+// ignore cast errors in this case to keep complexity down
+// on x86 where replay is run we don't care about cast alignment
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #define LOGREADER_MAX_FIELDS 30
 
 #define streq(x, y) (!strcmp(x, y))
@@ -15,7 +19,7 @@ public:
     MsgHandler(const struct log_Format &f);
 
     // retrieve a comma-separated list of all labels
-    void string_for_labels(char *buffer, uint bufferlen);
+    void string_for_labels(char *buffer, uint32_t bufferlen);
 
     // field_value - retrieve the value of a field from the supplied message
     // these return false if the field was not found

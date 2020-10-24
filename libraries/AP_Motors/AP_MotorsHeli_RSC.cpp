@@ -170,6 +170,17 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // @Param: AROT_PCT
+    // @DisplayName: Autorotation Throttle Percentage for External Governor
+    // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
+    // @Range: 0 40
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -226,8 +237,13 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             // set rotor ramp to decrease speed to zero
             update_rotor_ramp(0.0f, dt);
 
-            // set rotor control speed to idle speed parameter, this happens instantly and ignore ramping
-            _control_output = get_idle_output();
+            if (_in_autorotaion) {
+                // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
+                _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
+            } else {
+                // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
+                _control_output = get_idle_output();
+            }
             break;
 
         case ROTOR_CONTROL_ACTIVE:
@@ -322,16 +338,21 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 // update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
 void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 {
+    int8_t runup_time = _runup_time;
     // sanity check runup time
-    if (_runup_time < _ramp_time) {
-        _runup_time = _ramp_time;
-    }
-    if (_runup_time <= 0 ) {
-        _runup_time = 1;
+    runup_time = MAX(_ramp_time+1,runup_time);
+
+    // adjust rotor runup when bailing out
+    if (_use_bailout_ramp) {
+        // maintain same delta as set in parameters
+        runup_time = _runup_time-_ramp_time+1;
     }
 
+    // protect against divide by zero
+    runup_time = MAX(1,runup_time);
+
     // ramp speed estimate towards control out
-    float runup_increment = dt / _runup_time;
+    float runup_increment = dt / runup_time;
     if (_rotor_runup_output < _rotor_ramp_output) {
         _rotor_runup_output += runup_increment;
         if (_rotor_runup_output > _rotor_ramp_output) {

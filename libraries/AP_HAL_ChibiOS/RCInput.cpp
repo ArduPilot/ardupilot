@@ -216,7 +216,7 @@ void RCInput::_timer_tick(void)
 #ifndef HAL_NO_UARTDRIVER
     if (rc_protocol && rc_protocol != last_protocol) {
         last_protocol = rc_protocol;
-        gcs().send_text(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
     }
 #endif
 

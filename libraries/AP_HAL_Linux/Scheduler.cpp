@@ -75,7 +75,7 @@ void Scheduler::init_realtime()
     mlockall(MCL_CURRENT|MCL_FUTURE);
 
     struct sched_param param = { .sched_priority = APM_LINUX_MAIN_PRIORITY };
-    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+    if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == -1) {
         AP_HAL::panic("Scheduler: failed to set scheduling parameters: %s",
                       strerror(errno));
     }
@@ -313,13 +313,25 @@ void Scheduler::reboot(bool hold_in_bootloader)
     exit(1);
 }
 
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
-    if (time_usec >= _stopped_clock_usec) {
-        _stopped_clock_usec = time_usec;
-        _run_io();
+    if (time_usec < _stopped_clock_usec) {
+        ::fprintf(stderr, "Warning: setting time backwards from (%" PRIu64 ") to (%" PRIu64 ")\n", _stopped_clock_usec, time_usec);
+        return;
     }
+
+    _stopped_clock_usec = time_usec;
+    _run_io();
 }
+#else
+void Scheduler::stop_clock(uint64_t time_usec)
+{
+    // stop_clock() is not called outside of Replay, but we can't
+    // guard it in the header because of the vehicle-dependent-library
+    // checks in waf.
+}
+#endif
 
 bool Scheduler::SchedulerThread::_run()
 {
