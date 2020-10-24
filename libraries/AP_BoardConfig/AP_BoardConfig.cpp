@@ -23,6 +23,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <stdio.h>
 
@@ -337,7 +338,7 @@ void AP_BoardConfig::init()
     uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
     do {
-        if (hal.util->fs_init()) {
+        if (AP::FS().retry_mount()) {
             break;
         }
         slowdown++;
