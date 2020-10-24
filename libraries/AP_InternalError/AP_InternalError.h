@@ -64,7 +64,8 @@ public:
         imu_reset                   = (1U << 24),  //0x1000000 16777216
         gpio_isr                    = (1U << 25),  //0x2000000 33554432
         mem_guard                   = (1U << 26),  //0x4000000 67108864
-        __LAST__                    = (1U << 27),  // used only for sanity check
+        dma_fail                    = (1U << 27),  //0x8000000 134217728
+        __LAST__                    = (1U << 28),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to

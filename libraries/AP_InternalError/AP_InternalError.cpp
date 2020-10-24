@@ -58,6 +58,7 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "imu_reset",  // imu_reset
         "gpio_isr",
         "mem_guard",
+        "dma_fail",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");
