@@ -130,6 +130,7 @@ void AP_CANManager::init()
     //Reset all SLCAN related params that needs resetting at boot
     _slcan_interface.reset_params();
 
+    Driver_Type drv_type[HAL_MAX_CAN_PROTOCOL_DRIVERS] = {};
     // loop through interfaces and allocate and initialise Iface,
     // Also allocate Driver objects, and add interfaces to them
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
@@ -153,7 +154,7 @@ void AP_CANManager::init()
         AP_HAL::CANIface* iface = hal.can[i];
 
         // Find the driver type that we need to allocate and register this interface with
-        Driver_Type drv_type = _driver_type_cache[drv_num] = (Driver_Type) _drv_param[drv_num]._driver_type.get();
+        drv_type[drv_num] = (Driver_Type) _drv_param[drv_num]._driver_type.get();
         bool can_initialised = false;
         // Check if this interface need hooking up to slcan passthrough
         // instead of a driver
@@ -161,7 +162,7 @@ void AP_CANManager::init()
             // we have slcan bridge setup pass that on as can iface
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
-        } else if(drv_type == Driver_Type_UAVCAN) {
+        } else if(drv_type[drv_num] == Driver_Type_UAVCAN) {
             // We do Message ID filtering when using UAVCAN without SLCAN
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::FilteredMode);
         } else {
@@ -190,7 +191,7 @@ void AP_CANManager::init()
         }
 
         // Allocate the set type of Driver
-        if (drv_type == Driver_Type_UAVCAN) {
+        if (drv_type[drv_num] == Driver_Type_UAVCAN) {
             _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN;
 
             if (_drivers[drv_num] == nullptr) {
@@ -199,7 +200,7 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[drv_num], AP_UAVCAN::var_info);
-        } else if (drv_type == Driver_Type_KDECAN) {
+        } else if (drv_type[drv_num] == Driver_Type_KDECAN) {
 #if (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
             // To be replaced with macro saying if KDECAN library is included
             _drivers[drv_num] = _drv_param[drv_num]._kdecan = new AP_KDECAN;
@@ -211,14 +212,14 @@ void AP_CANManager::init()
 
             AP_Param::load_object_from_eeprom((AP_KDECAN*)_drivers[drv_num], AP_KDECAN::var_info);
 #endif
-        } else if (drv_type == Driver_Type_ToshibaCAN) {
+        } else if (drv_type[drv_num] == Driver_Type_ToshibaCAN) {
             _drivers[drv_num] = new AP_ToshibaCAN;
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::config_error("Failed to allocate ToshibaCAN %d\n\r", drv_num + 1);
                 continue;
             }
-        } else if (drv_type == Driver_Type_PiccoloCAN) {
+        } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
 #if HAL_PICCOLO_CAN_ENABLE
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
 
@@ -229,7 +230,7 @@ void AP_CANManager::init()
 
             AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
 #endif
-        } else if (drv_type == Driver_Type_CANTester) {
+        } else if (drv_type[drv_num] == Driver_Type_CANTester) {
 #if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES
             _drivers[drv_num] = _drv_param[drv_num]._testcan = new CANTester;
 
@@ -267,6 +268,9 @@ void AP_CANManager::init()
         }
 
         _drivers[drv_num]->init(drv_num, enable_filter);
+        // Finally initialise driver type, this will be used
+        // to find and reference protocol drivers
+        _driver_type_cache[drv_num] = drv_type[drv_num];
     }
 }
 
