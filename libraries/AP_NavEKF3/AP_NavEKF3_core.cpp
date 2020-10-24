@@ -1051,7 +1051,9 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
         P[16][16] = sq(frontend->_magNoise);
         P[17][17] = P[16][16];
         P[18][18] = P[16][16];
-        FuseDeclination(0.34f);
+        // Fusing the declinaton angle as an observaton with a 20 deg uncertainty helps
+        // to stabilise the earth field.
+        FuseDeclination(radians(20.0f));
     }
 
     if (!inhibitMagStates) {
