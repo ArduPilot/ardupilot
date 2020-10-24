@@ -48,4 +48,10 @@ public:
 
     // set modification time on a file
     bool set_mtime(const char *filename, const uint32_t mtime_sec) override;
+
+    // retry mount of filesystem if needed
+    bool retry_mount(void) override;
+
+    // unmount filesystem for reboot
+    void unmount(void) override;
 };
