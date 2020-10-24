@@ -179,11 +179,6 @@ public:
      */
     virtual uint32_t available_memory(void) { return 4096; }
 
-    /*
-      initialise (or re-initialise) filesystem storage
-     */
-    virtual bool fs_init(void) { return false; }
-
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
 
