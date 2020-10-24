@@ -18,8 +18,12 @@
     "refTempC" : 25,     # degrees C
     "refBatRes" : 0.024, # BAT.Res from log
 
+
     # full battery voltage
     "maxVoltage" : 50.4,
+
+    # full battery capacity, Ah
+    "battCapacityAh" : 44,
 
     # MOT_THST_EXPO
     "propExpo" : 0.5,
