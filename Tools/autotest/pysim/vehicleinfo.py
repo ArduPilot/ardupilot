@@ -157,6 +157,13 @@ class VehicleInfo(object):
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
             },
+            "Callisto": {
+                "model": "octa-quad:@ROMFS/models/Callisto.json",
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "models/Callisto.param"],
+            },
         },
     },
     "ArduPlane": {
