@@ -16,21 +16,27 @@ parser.add_argument('--build', action='store_true', default=False, help='build a
 parser.add_argument('--build-target', default='copter', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on build fail')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
+parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
 parser.add_argument('--pattern', default='*')
+parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
 parser.add_argument('--python', default='python')
 args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 failures = []
+done = []
+board_list = []
 
 def get_board_list():
     '''add boards based on existance of hwdef-bl.dat in subdirectories for ChibiOS'''
     board_list = []
+    # these are base builds, and don't build directly
+    omit = ['f103-periph', 'f303-periph']
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
-        if os.path.exists(hwdef):
+        if os.path.exists(hwdef) and not d in omit:
             board_list.append(d)
     return board_list
 
@@ -38,17 +44,30 @@ def run_program(cmd_list, build):
     print("Running (%s)" % " ".join(cmd_list))
     retcode = subprocess.call(cmd_list)
     if retcode != 0:
-        print("Build failed: %s %s" % (build, ' '.join(cmd_list)))
+        print("FAILED BUILD: %s %s" % (build, ' '.join(cmd_list)))
         global failures
         failures.append(build)
         if args.stop:
             sys.exit(1)
 
-for board in get_board_list():
+for board in sorted(get_board_list()):
     if not fnmatch.fnmatch(board, args.pattern):
         continue
-    print("Configuring for %s" % board)
-    run_program([args.python, "waf", "configure", "--board", board], "configure: " + board)
+    board_list.append(board)
+
+if args.start is not None:
+    if args.start < 1 or args.start >= len(board_list):
+        print("Invalid start %u for %u boards" % (args.start, len(board_list)))
+        sys.exit(1)
+    board_list = board_list[args.start-1:]
+
+for board in board_list:
+    done.append(board)
+    print("Configuring for %s [%u/%u failed=%u]" % (board, len(done), len(board_list), len(failures)))
+    config_opts = ["--board", board]
+    if args.Werror:
+        config_opts += ["--Werror"]
+    run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
@@ -56,7 +75,10 @@ for board in get_board_list():
             target = "AP_Periph"
         else:
             target = args.build_target
-        run_program([args.python, "waf", target], "build: " + board)
+        if target.find('/') != -1:
+            run_program([args.python, "waf", "--target", target], "build: " + board)
+        else:
+            run_program([args.python, "waf", target], "build: " + board)
     if args.no_bl:
         continue
     # check for bootloader def

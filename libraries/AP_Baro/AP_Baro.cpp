@@ -27,7 +27,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_Baro_SITL.h"
@@ -43,9 +43,10 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Baro_UAVCAN.h"
 #endif
+#include "AP_Baro_MSP.h"
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -162,16 +163,41 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
-#ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
+#if defined(HAL_PROBE_EXTERNAL_I2C_BAROS) || defined(HAL_MSP_BARO_ENABLED)
     // @Param: PROBE_EXT
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on GND_EXT_BUS. If GND_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in GND_EXT_BUS.
-    // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06
-    // @Values: 1:BMP085,2:BMP280,4:MS5611,8:MS5607,16:MS5637,32:FBM320,64:DPS280,128:LPS25H,256:Keller,512:MS5837,1024:BMP388,2048:SPL06
+    // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06,12:MSP
+    // @Values: 1:BMP085,2:BMP280,4:MS5611,8:MS5607,16:MS5637,32:FBM320,64:DPS280,128:LPS25H,256:Keller,512:MS5837,1024:BMP388,2048:SPL06,4096:MSP
     // @User: Advanced
     AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
 
+    // @Param: BARO_ID
+    // @DisplayName: Baro ID
+    // @Description: Barometer sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO_ID", 15, AP_Baro, sensors[0].bus_id, 0),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Param: BARO2_ID
+    // @DisplayName: Baro ID2
+    // @Description: Barometer2 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO2_ID", 16, AP_Baro, sensors[1].bus_id, 0),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Param: BARO3_ID
+    // @DisplayName: Baro ID3
+    // @Description: Barometer3 sensor ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("BARO3_ID", 17, AP_Baro, sensors[2].bus_id, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -205,9 +231,17 @@ void AP_Baro::calibrate(bool save)
     }
 
     if (hal.util->was_watchdog_reset()) {
-        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration");
+        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: skipping calibration after WDG reset");
         return;
     }
+    
+    #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
+            BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
+            return;
+    }
+    #endif
+    
     BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
@@ -273,7 +307,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_BoardConfig::config_error("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
 }
 
 /*
@@ -460,10 +494,17 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
  */
 void AP_Baro::init(void)
 {
+    init_done = true;
+
     // ensure that there isn't a previous ground temperature saved
     if (!is_zero(_user_ground_temperature)) {
         _user_ground_temperature.set_and_save(0.0f);
         _user_ground_temperature.notify();
+    }
+
+    // zero bus IDs before probing
+    for (uint8_t i = 0; i < BARO_MAX_INSTANCES; i++) {
+        sensors[i].bus_id.set(0);
     }
 
     if (_hil_mode) {
@@ -472,7 +513,7 @@ void AP_Baro::init(void)
         return;
     }
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
@@ -565,10 +606,7 @@ void AP_Baro::init(void)
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
-    if (sitl->baro_count > 1) {
-        ::fprintf(stderr, "More than one baro not supported.  Sorry.");
-    }
-    if (sitl->baro_count == 1) {
+    for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #elif HAL_BARO_DEFAULT == HAL_BARO_HIL
@@ -604,6 +642,18 @@ void AP_Baro::init(void)
 
 #ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
     _probe_i2c_barometers();
+#endif
+
+#if HAL_MSP_BARO_ENABLED
+    if ((_baro_probe_ext.get() & PROBE_MSP) && msp_instance_mask == 0) {
+        // allow for late addition of MSP sensor
+        msp_instance_mask |= 1;
+    }
+    for (uint8_t i=0; i<8; i++) {
+        if (msp_instance_mask & (1U<<i)) {
+            ADD_BACKEND(new AP_Baro_MSP(*this, i));
+        }
+    }
 #endif
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
@@ -865,6 +915,26 @@ void AP_Baro::set_pressure_correction(uint8_t instance, float p_correction)
         sensors[instance].p_correction = p_correction;
     }
 }
+
+#if HAL_MSP_BARO_ENABLED
+/*
+  handle MSP barometer data
+ */
+void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
+{
+    if (pkt.instance > 7) {
+        return;
+    }
+    if (!init_done) {
+        msp_instance_mask |= 1U<<pkt.instance;
+    } else if (msp_instance_mask != 0) {
+        for (uint8_t i=0; i<_num_drivers; i++) {
+            drivers[i]->handle_msp(pkt);
+        }
+    }
+}
+#endif 
+
 
 namespace AP {
 

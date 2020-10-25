@@ -71,8 +71,8 @@ Plane::Plane(const char *frame_str) :
     }
     if (strstr(frame_str, "-throw")) {
         have_launcher = true;
-        launch_accel = 10;
-        launch_time = 1;
+        launch_accel = 25;
+        launch_time = 0.4;
     }
     if (strstr(frame_str, "-tailsitter")) {
         tailsitter = true;
@@ -82,6 +82,11 @@ Plane::Plane(const char *frame_str) :
 
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
+    }
+
+    if (strstr(frame_str, "-soaring")) {
+        mass = 2.0;
+        coefficient.c_drag_p = 0.05;
     }
 }
 
@@ -303,6 +308,9 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     
     float thrust     = throttle;
 
+    battery_voltage = sitl->batt_voltage - 0.7*throttle;
+    battery_current = 50.0f*throttle;
+
     if (ice_engine) {
         thrust = icengine.update(input);
     }
@@ -333,8 +341,8 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
                 launch_start_ms = now;
             }
             if (now - launch_start_ms < launch_time*1000) {
-                force.x += launch_accel;
-                force.z += launch_accel/3;
+                force.x += mass * launch_accel;
+                force.z += mass * launch_accel/3;
             }
         } else {
             // allow reset of catapult

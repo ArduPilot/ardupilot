@@ -26,14 +26,15 @@
 #if HAL_RUNCAM_ENABLED
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
-    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options
-    // @Values: 0:Disabled, 1:RunCam Split
+    // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
+    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
@@ -102,7 +103,7 @@ AP_RunCam::Request::Length AP_RunCam::Request::_expected_responses_length[RUNCAM
 // the protocol for Runcam Device definition
 static const uint8_t RUNCAM_HEADER = 0xCC;
 static const uint8_t RUNCAM_OSD_MENU_DEPTH = 2;
-static const uint32_t RUNCAM_INIT_INTERVAL_MS = 500;
+static const uint32_t RUNCAM_INIT_INTERVAL_MS = 1000;
 static const uint32_t RUNCAM_OSD_UPDATE_INTERVAL_MS = 100; // 10Hz
 
 // menu structures of runcam devices
@@ -155,7 +156,7 @@ void AP_RunCam::init()
         _in_menu = -1;
     }
 
-    uart->begin(115200);
+    start_uart();
 
     // first transition is from initialized to ready
     _transition_start_ms = AP_HAL::millis();
@@ -256,25 +257,23 @@ bool AP_RunCam::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) 
 // OSD update loop
 void AP_RunCam::update_osd()
 {
+    bool use_armed_state_machine = hal.util->get_soft_armed();
+#if OSD_ENABLED
+    // prevent runcam stick gestures interferring with osd stick gestures
+    if (!use_armed_state_machine) {
+        const AP_OSD* osd = AP::osd();
+        if (osd != nullptr) {
+            use_armed_state_machine = !osd->is_readonly_screen();
+        }
+    }
+#endif
     // run a reduced state simulation process when armed
-    if (AP::arming().is_armed()) {
+    if (use_armed_state_machine) {
         update_state_machine_armed();
         return;
     }
 
     update_state_machine_disarmed();
-}
-
-// return radio values as LOW, MIDDLE, HIGH
-RC_Channel::aux_switch_pos_t AP_RunCam::get_channel_pos(uint8_t rcmapchan) const
-{
-    RC_Channel::aux_switch_pos_t position = RC_Channel::LOW;
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
-    if (chan == nullptr || !chan->read_3pos_switch(position)) {
-        return RC_Channel::LOW;
-    }
-
-    return position;
 }
 
 // update the state machine when armed or flying
@@ -449,40 +448,40 @@ void AP_RunCam::handle_in_menu(Event ev)
 // map rc input to an event
 AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
 {
-    const RC_Channel::aux_switch_pos_t throttle = get_channel_pos(AP::rcmap()->throttle());
-    const RC_Channel::aux_switch_pos_t yaw = get_channel_pos(AP::rcmap()->yaw());
-    const RC_Channel::aux_switch_pos_t roll = get_channel_pos(AP::rcmap()->roll());
-    const RC_Channel::aux_switch_pos_t pitch = get_channel_pos(AP::rcmap()->pitch());
+    const RC_Channel::AuxSwitchPos throttle = rc().get_channel_pos(AP::rcmap()->throttle());
+    const RC_Channel::AuxSwitchPos yaw = rc().get_channel_pos(AP::rcmap()->yaw());
+    const RC_Channel::AuxSwitchPos roll = rc().get_channel_pos(AP::rcmap()->roll());
+    const RC_Channel::AuxSwitchPos pitch = rc().get_channel_pos(AP::rcmap()->pitch());
 
     Event result = Event::NONE;
 
     if (_button_pressed != ButtonState::NONE) {
-        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE) {
+        if (_button_pressed == ButtonState::PRESSED && yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE) {
             result = Event::BUTTON_RELEASE;
         } else {
             result = Event::NONE; // still waiting to be released
         }
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::LOW
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::LOW
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         // don't allow an action close to arming unless the user had configured it or arming is not possible
         // but don't prevent the 5-Key control actually working
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::EXIT_MENU;
-    } else if (throttle == RC_Channel::MIDDLE && yaw == RC_Channel::HIGH
-        && pitch == RC_Channel::MIDDLE && roll == RC_Channel::MIDDLE
+    } else if (throttle == RC_Channel::AuxSwitchPos::MIDDLE && yaw == RC_Channel::AuxSwitchPos::HIGH
+        && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::MIDDLE
         && (_cam_control_option & uint8_t(ControlOption::STICK_YAW_RIGHT) || is_arming_prevented())) {
         result = Event::ENTER_MENU;
-    } else if (roll == RC_Channel::LOW) {
+    } else if (roll == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_EXIT;
-    } else if (yaw == RC_Channel::MIDDLE && pitch == RC_Channel::MIDDLE && roll == RC_Channel::HIGH) {
+    } else if (yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::HIGH) {
         if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
             result = Event::IN_MENU_RIGHT;
         } else {
             result = Event::IN_MENU_ENTER;
         }
-    } else if (pitch == RC_Channel::LOW) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_UP;
-    } else if (pitch == RC_Channel::HIGH) {
+    } else if (pitch == RC_Channel::AuxSwitchPos::HIGH) {
         result = Event::IN_MENU_DOWN;
     } else if (_video_recording != _last_video_recording) {
         switch (_video_recording) {
@@ -549,6 +548,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // in a sub-menu and save-and-exit was selected
         if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _button_delay_ms);
+            _sub_menu_pos = 0;
             _in_menu--;
         // in the top-menu and save-and-exit was selected
         } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1)) {
@@ -580,6 +580,7 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
         // the only exception is if someone hits save and exit on the root menu - then we are lost.
         if (_in_menu > 0) {
             _in_menu--;
+            _sub_menu_pos = 0;
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_MODE, _mode_delay_ms);     // move up/out a menu
         }
         // no longer in the menu so trigger the OSD re-enablement
@@ -758,17 +759,27 @@ void AP_RunCam::drain()
         return;
     }
 
-    uint32_t avail = uart->available();
-    while (avail-- > 0) {
-       uart->read();
-    }
+    uart->discard_input();
+}
+
+// start the uart if we have one
+void AP_RunCam::start_uart()
+{
+    // 8N1 communication
+    uart->configure_parity(0);
+    uart->set_stop_bits(1);
+    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    uart->set_blocking_writes(false);   // updates run in the main thread
+    uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
+    uart->begin(115200, 10, 10);
+    uart->discard_input();
 }
 
 // get the device info (firmware version, protocol version and features)
 void AP_RunCam::get_device_info()
 {
-    send_request_and_waiting_response(Command::RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, 0, RUNCAM_INIT_INTERVAL_MS,
-        _boot_delay_ms / RUNCAM_INIT_INTERVAL_MS, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
+    send_request_and_waiting_response(Command::RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, 0, RUNCAM_INIT_INTERVAL_MS * 4,
+        -1, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
 }
 
 // map a Event to a SimulationOperation
@@ -913,36 +924,6 @@ void AP_RunCam::send_packet(Command command, uint8_t param)
     uart->flush();
 }
 
-// crc functions
-uint8_t AP_RunCam::crc8_dvb_s2(uint8_t crc, uint8_t a)
-{
-    crc ^= a;
-    for (uint8_t i = 0; i < 8; ++i) {
-        if (crc & 0x80) {
-            crc = (crc << 1) ^ 0xD5;
-        } else {
-            crc = crc << 1;
-        }
-    }
-    return crc;
-}
-
-uint8_t AP_RunCam::crc8_high_first(uint8_t *ptr, uint8_t len)
-{
-    uint8_t crc = 0x00;
-    while (len--) {
-        crc ^= *ptr++;
-        for (uint8_t i = 8; i > 0; --i) {
-            if (crc & 0x80) {
-                crc = (crc << 1) ^ 0x31;
-            } else {
-                crc = (crc << 1);
-            }
-        }
-    }
-    return (crc);
-}
-
 // handle a device info response
 void AP_RunCam::parse_device_info(const Request& request)
 {
@@ -1003,6 +984,7 @@ bool AP_RunCam::request_pending(uint32_t now)
     if (_pending_request._max_retry_times > 0) {
         // request timed out, so resend
         debug("retrying[%d] command 0x%X, op 0x%X\n", int(_pending_request._max_retry_times), int(_pending_request._command), int(_pending_request._param));
+        start_uart();
         _pending_request._device->send_packet(_pending_request._command, _pending_request._param);
         _pending_request._recv_response_length = 0;
         _pending_request._request_timestamp_ms = now;
@@ -1040,7 +1022,7 @@ uint8_t AP_RunCam::Request::get_crc() const
 {
     uint8_t crc = 0;
     for (int i = 0; i < _recv_response_length; i++) {
-        crc = AP_RunCam::crc8_dvb_s2(crc, _recv_buf[i]);
+        crc = crc8_dvb_s2(crc, _recv_buf[i]);
     }
     return crc;
 }

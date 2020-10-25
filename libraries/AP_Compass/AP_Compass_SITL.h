@@ -35,10 +35,11 @@ private:
     void _timer();
     uint32_t _last_sample_time;
 
-    void _setup_eliptical_correcion();
+    void _setup_eliptical_correcion(uint8_t i);
     
     Matrix3f _eliptical_corr;
     Vector3f _last_dia;
     Vector3f _last_odi;
+    Vector3f _last_data[MAX_SITL_COMPASSES];
 };
 #endif // CONFIG_HAL_BOARD

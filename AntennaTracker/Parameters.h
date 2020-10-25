@@ -86,7 +86,7 @@ public:
         k_param_gcs3,               // stream rates for fourth MAVLink port
         k_param_log_bitmask,        // 140
         k_param_notify,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
         k_param_battery,
 
         //
@@ -123,6 +123,10 @@ public:
         k_param_scan_speed_pitch,
         k_param_initial_mode,
         k_param_disarm_pwm,
+
+        k_param_auto_opts,
+
+        k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
     };
@@ -162,6 +166,7 @@ public:
     AP_Int16 gcs_pid_mask;
     AP_Int8  initial_mode;
     AP_Int8 disarm_pwm;
+    AP_Int8 auto_opts;
 
     // Waypoints
     //

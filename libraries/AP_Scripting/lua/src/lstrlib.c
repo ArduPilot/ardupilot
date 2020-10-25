@@ -24,6 +24,13 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#if defined(__GNUC__) &&  __GNUC__ >= 7 || defined(__clang_major__) && __clang_major__ >= 11
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+#endif
+
 
 /*
 ** maximum number of captures that a pattern can do during

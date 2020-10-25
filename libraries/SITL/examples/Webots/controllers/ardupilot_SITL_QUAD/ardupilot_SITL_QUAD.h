@@ -4,10 +4,15 @@
 // #define DEBUG_USE_KB 
 // #define DEBUG_INPUT_DATA
 // #define LINEAR_THRUST
-#define WIND_SIMULATION
 #define DEBUG_SOCKETS
 
+
+
+#define WIND_SIMULATION
 #define VEHICLE_DRAG_FACTOR 0.001
+
+// # of simulation steps between two image frames.
+#define CAMERA_FRAME_RATE_FACTOR  50
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
@@ -58,5 +63,5 @@ struct keytable {
         w: wind speed
         x , y, z: wind direction.
 */
-VECTOR4F __attribute__((packed, aligned(1)))  wind_webots_axis;
+VECTOR4F   wind_webots_axis;
 

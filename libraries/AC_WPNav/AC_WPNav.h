@@ -55,6 +55,7 @@ public:
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
     // return true if range finder may be used for terrain following
+    bool rangefinder_used() const { return _rangefinder_use; }
     bool rangefinder_used_and_healthy() const { return _rangefinder_use && _rangefinder_healthy; }
 
     // get expected source of terrain data if alt-above-terrain command is executed (used by Copter's ModeRTL)
@@ -218,9 +219,6 @@ public:
     ///     seg_end_type should be set to stopped, straight or spline depending upon the next segment's type
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
     bool set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
-
-    /// reached_spline_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_spline_destination() const { return _flags.reached_destination; }
 
     /// update_spline - update spline controller
     bool update_spline();

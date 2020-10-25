@@ -34,6 +34,11 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_MSP/msp.h>
+#include <AP_OLC/AP_OLC.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_WindVane/AP_WindVane.h>
+#endif
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -287,7 +292,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: WIND_EN
     // @DisplayName: WIND_EN
-    // @Description: Displays wind speed and relative direction
+    // @Description: Displays wind speed and relative direction, on Rover this is the apparent wind speed and direction from the windvane, if fitted
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: WIND_X
@@ -705,12 +710,160 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
     
+#if HAL_MSP_ENABLED
+    // @Param: SIDEBARS_EN
+    // @DisplayName: SIDEBARS_EN
+    // @Description: Displays artificial horizon side bars (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: SIDEBARS_X
+    // @DisplayName: SIDEBARS_X
+    // @Description: Horizontal position on screen (MSP OSD only) 
+    // @Range: 0 29
+
+    // @Param: SIDEBARS_Y
+    // @DisplayName: SIDEBARS_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: CRSSHAIR_EN
+    // @DisplayName: CRSSHAIR_EN
+    // @Description: Displays artificial horizon crosshair (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CRSSHAIR_X
+    // @DisplayName: CRSSHAIR_X
+    // @Description: Horizontal position on screen (MSP OSD only) 
+    // @Range: 0 29
+
+    // @Param: CRSSHAIR_Y
+    // @DisplayName: CRSSHAIR_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(crosshair, "CRSSHAIR", 45, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: HOMEDIST_EN
+    // @DisplayName: HOMEDIST_EN
+    // @Description: Displays distance from HOME (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: HOMEDIST_X
+    // @DisplayName: HOMEDIST_X
+    // @Description: Horizontal position on screen (MSP OSD only)
+    // @Range: 0 29
+
+    // @Param: HOMEDIST_Y
+    // @DisplayName: HOMEDIST_Y
+    // @Description: Vertical position on screen (MSP OSD only)
+    // @Range: 0 15
+    AP_SUBGROUPINFO(home_dist, "HOMEDIST", 46, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: HOMEDIR_EN
+    // @DisplayName: HOMEDIR_EN
+    // @Description: Displays relative direction to HOME (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: HOMEDIR_X
+    // @DisplayName: HOMEDIR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: HOMEDIR_Y
+    // @DisplayName: HOMEDIR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(home_dir, "HOMEDIR", 47, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: POWER_EN
+    // @DisplayName: POWER_EN
+    // @Description: Displays power (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: POWER_X
+    // @DisplayName: POWER_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: POWER_Y
+    // @DisplayName: POWER_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(power, "POWER", 48, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: CELL_VOLT_EN
+    // @DisplayName: CELL_VOLT_EN
+    // @Description: Displays average cell voltage (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CELL_VOLT_X
+    // @DisplayName: CELL_VOLT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CELL_VOLT_Y
+    // @DisplayName: CELL_VOLT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(cell_volt, "CELLVOLT", 49, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: BATT_BAR_EN
+    // @DisplayName: BATT_BAR_EN
+    // @Description: Displays battery usage bar (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: BATT_BAR_X
+    // @DisplayName: BATT_BAR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: BATT_BAR_Y
+    // @DisplayName: BATT_BAR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(batt_bar, "BATTBAR", 50, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: ARMING_EN
+    // @DisplayName: ARMING_EN
+    // @Description: Displays arming status (MSP OSD only)
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: ARMING_X
+    // @DisplayName: ARMING_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ARMING_Y
+    // @DisplayName: ARMING_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(arming, "ARMING", 51, AP_OSD_Screen, AP_OSD_Setting),
+#endif //HAL_MSP_ENABLED
+
+#if HAL_PLUSCODE_ENABLE
+    // @Param: PLUSCODE_EN
+    // @DisplayName: PLUSCODE_EN
+    // @Description: Displays pluscode (OLC) element 
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: PLUSCODE_X
+    // @DisplayName: PLUSCODE_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: PLUSCODE_Y
+    // @DisplayName: PLUSCODE_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
+#endif
     AP_GROUPEND
 };
 
 // constructor
 AP_OSD_Screen::AP_OSD_Screen()
 {
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 //Symbols
@@ -744,8 +897,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FTMIN  0xE8
 #define SYM_FTSEC  0x99
 
-
-
 #define SYM_SAT_L 0x1E
 #define SYM_SAT_R 0x1F
 #define SYM_HDOP_L 0xBD
@@ -762,7 +913,6 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_AH_V_START 0xCA
 #define SYM_AH_V_COUNT 6
-
 
 #define SYM_AH_CENTER_LINE_LEFT   0x26
 #define SYM_AH_CENTER_LINE_RIGHT  0x27
@@ -801,21 +951,21 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_AH        0xF3
 #define SYM_CLK       0xBC
 
-void AP_OSD_Screen::set_backend(AP_OSD_Backend *_backend)
+void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
 {
     backend = _backend;
     osd = _backend->get_osd();
 };
 
-bool AP_OSD_Screen::check_option(uint32_t option)
+bool AP_OSD_AbstractScreen::check_option(uint32_t option)
 {
-    return (osd->options & option) != 0;
+    return osd?(osd->options & option) != 0 : false;
 }
 
 /*
   get the right units icon given a unit
  */
-char AP_OSD_Screen::u_icon(enum unit_type unit)
+char AP_OSD_AbstractScreen::u_icon(enum unit_type unit)
 {
     static const char icons_metric[UNIT_TYPE_LAST] {
         (char)SYM_ALT_M,    //ALTITUDE
@@ -844,7 +994,7 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
     static const char icons_aviation[UNIT_TYPE_LAST] {
         (char)SYM_ALT_FT,   //ALTITUDE Ft
         (char)SYM_KN,       //SPEED Knots
-        (char)SYM_FS,       //VSPEED
+        (char)SYM_FTMIN,    //VSPEED
         (char)SYM_FT,       //DISTANCE
         (char)SYM_NM,       //DISTANCE_LONG Nm
         (char)SYM_DEGREES_C //TEMPERATURE
@@ -861,7 +1011,7 @@ char AP_OSD_Screen::u_icon(enum unit_type unit)
 /*
   scale a value for the user selected units
  */
-float AP_OSD_Screen::u_scale(enum unit_type unit, float value)
+float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
 {
     static const float scale_metric[UNIT_TYPE_LAST] = {
         1.0,       //ALTITUDE m
@@ -942,8 +1092,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
-        int rssiv = ap_rssi->read_receiver_rssi_uint8();
-        rssiv = (rssiv * 99) / 255;
+        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYM_RSSI, rssiv);
     }
 }
@@ -1060,19 +1209,15 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_speed_vector(uint8_t x, uint8_t y,Vector2f v, int32_t yaw)
+// draw a arrow at the given angle, and print the given magnitude
+void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    float v_length = v.length();
-    char arrow = SYM_ARROW_START;
-    if (v_length > 1.0f) {
-        int32_t angle = wrap_360_cd(DEGX100 * atan2f(v.y, v.x) - yaw);
-        int32_t interval = 36000 / SYM_ARROW_COUNT;
-        arrow = SYM_ARROW_START + ((angle + interval / 2) / interval) % SYM_ARROW_COUNT;
-    }
-    if (u_scale(SPEED, v_length) < 10.0) {
-        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, v_length), u_icon(SPEED)); 
+    static const int32_t interval = 36000 / SYM_ARROW_COUNT;
+    char arrow = SYM_ARROW_START + ((int32_t(angle_rad*DEGX100) + interval / 2) / interval) % SYM_ARROW_COUNT;
+    if (u_scale(SPEED, magnitude) < 10.0) {
+        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED)); 
     } else {
-        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, v_length), u_icon(SPEED));
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, magnitude), u_icon(SPEED));
     }
 }
 
@@ -1082,7 +1227,14 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector2f v = ahrs.groundspeed_vector();
     backend->write(x, y, false, "%c", SYM_GSPD);
-    draw_speed_vector(x + 1, y, v, ahrs.yaw_sensor);
+
+    float angle = 0;
+    const float length = v.length();
+    if (length > 1.0f) {
+        angle = wrap_2PI(atan2f(v.y, v.x) - ahrs.yaw);
+    }
+
+    draw_speed(x + 1, y, angle, length);
 }
 
 //Thanks to betaflight/inav for simple and clean artificial horizon visual design
@@ -1102,9 +1254,11 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     float ky = sinf(roll);
     float kx = cosf(roll);
 
+    float ratio = backend->get_aspect_ratio_correction();
+
     if (fabsf(ky) < fabsf(kx)) {
         for (int dx = -4; dx <= 4; dx++) {
-            float fy =  dx * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
+            float fy = (ratio * dx) * (ky/kx) + pitch * ah_pitch_rad_to_char + 0.5f;
             int dy = floorf(fy);
             char c = (fy - dy) * SYM_AH_H_COUNT;
             //chars in font in reversed order
@@ -1115,7 +1269,7 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
         }
     } else {
         for (int dy=-4; dy<=4; dy++) {
-            float fx = (dy - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
+            float fx = ((dy / ratio) - pitch * ah_pitch_rad_to_char) * (kx/ky) + 0.5f;
             int dx = floorf(fx);
             char c = (fx - dx) * SYM_AH_V_COUNT;
             c = SYM_AH_V_START + c;
@@ -1220,14 +1374,28 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector3f v = ahrs.wind_estimate();
-    if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
-        v = -v;
+    float angle = 0;
+    const float length = v.length();
+    if (length > 1.0f) {
+        if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
+            angle = M_PI;
+        }
+        angle = wrap_2PI(angle + atan2f(v.y, v.x) - ahrs.yaw);
     }
+    draw_speed(x + 1, y, angle, length);
+
+#else
+    const AP_WindVane* windvane = AP_WindVane::get_singleton();
+    if (windvane != nullptr) {
+        draw_speed(x + 1, y, wrap_2PI(windvane->get_apparent_wind_direction_rad() + M_PI), windvane->get_apparent_wind_speed());
+    }
+#endif
+
     backend->write(x, y, false, "%c", SYM_WSPD);
-    draw_speed_vector(x + 1, y, Vector2f(v.x, v.y), ahrs.yaw_sensor);
 }
 
 void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
@@ -1247,6 +1415,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
 {
     Vector3f v;
     float vspd;
+    float vs_scaled;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     if (ahrs.get_velocity_NED(v)) {
@@ -1266,8 +1435,12 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     } else {
         sym = SYM_DOWN_DOWN;
     }
-    vspd = fabsf(vspd);
-    backend->write(x, y, false, "%c%2d%c", sym, (int)u_scale(VSPEED, vspd), u_icon(VSPEED));
+    vs_scaled = u_scale(VSPEED, fabsf(vspd));
+    if (vs_scaled < 5.0f) {
+        backend->write(x, y, false, "%c%2.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
+    } else {
+        backend->write(x, y, false, "%c%3d%c", sym, (int)vs_scaled, u_icon(VSPEED));
+    }
 }
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
@@ -1560,8 +1733,24 @@ void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
     }
 }
 
+#if HAL_PLUSCODE_ENABLE
+void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
+{
+    AP_GPS & gps = AP::gps();
+    const Location &loc = gps.location();
+    char buff[16];
+    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+        backend->write(x, y, false, "--------+--");
+    } else {
+        AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
+        backend->write(x, y, false, buff);
+    }
+}
+#endif
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
+#if HAL_WITH_OSD_BITMAP
 void AP_OSD_Screen::draw(void)
 {
     if (!enabled || !backend) {
@@ -1611,9 +1800,12 @@ void AP_OSD_Screen::draw(void)
 
     DRAW_SETTING(gps_latitude);
     DRAW_SETTING(gps_longitude);
+#if HAL_PLUSCODE_ENABLE
+    DRAW_SETTING(pluscode);
+#endif
     DRAW_SETTING(dist);
     DRAW_SETTING(stat);
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
 }
-
+#endif

@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Param: APP_EXT
     // @DisplayName: Deepstall approach extension
-    // @Description: The forward velocity of the aircraft while stalled
+    // @Description: The horizontal distance from which the aircraft will approach before the stall
     // @Range: 10 200
     // @Units: m
     // @User: Advanced
@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall L1 period
     // @Description: Deepstall L1 navigational controller period
     // @Range: 5 50
-    // @Units: m
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("L1", 10, AP_Landing_Deepstall, L1_period, 30.0),
 

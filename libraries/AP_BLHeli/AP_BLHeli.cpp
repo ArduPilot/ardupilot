@@ -121,6 +121,8 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     AP_GROUPEND
 };
 
+#define RPM_SLEW_RATE 50
+
 AP_BLHeli *AP_BLHeli::_singleton;
 
 // constructor
@@ -446,8 +448,8 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 
-    case MSP_SET_4WAY_IF: {
-        debug("MSP_SET_4WAY_IF");
+    case MSP_SET_PASSTHROUGH: {
+        debug("MSP_SET_PASSTHROUGH");
         if (msp.dataSize == 0) {
             msp.escMode = PROTOCOL_4WAY;
         } else if (msp.dataSize == 2) {
@@ -1337,7 +1339,9 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     for (uint8_t i = 0; i < num_motors; i++) {
         if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
             valid_escs++;
-            motor_freq += last_telem[i].rpm / 60.0f;
+            // slew the update
+            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
+            motor_freq += (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
         }
     }
     if (valid_escs > 0) {
@@ -1345,6 +1349,23 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     }
 
     return motor_freq;
+}
+
+// return all the motor frequencies in Hz for dynamic filtering
+uint8_t AP_BLHeli::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
+{
+    const uint32_t now = AP_HAL::millis();
+    uint8_t valid_escs = 0;
+    // average the rpm of each motor as reported by BLHeli and convert to Hz
+    for (uint8_t i = 0; i < num_motors && i < nfreqs; i++) {
+        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
+            // slew the update
+            const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
+            freqs[valid_escs++] = (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
+        }
+    }
+
+    return MIN(valid_escs, nfreqs);
 }
 
 /*
@@ -1368,39 +1389,40 @@ uint8_t AP_BLHeli::telem_crc8(uint8_t crc, uint8_t crc_seed) const
 void AP_BLHeli::read_telemetry_packet(void)
 {
     uint8_t buf[telem_packet_size];
-    uint8_t crc = 0;
-    for (uint8_t i=0; i<telem_packet_size; i++) {
-        int16_t v = telem_uart->read();
-        if (v < 0) {
-            // short read, we should have 10 bytes ready when this function is called
-            return;
-        }
-        buf[i] = uint8_t(v);
+    if (telem_uart->read(buf, telem_packet_size) < telem_packet_size) {
+        // short read, we should have 10 bytes ready when this function is called
+        return;
     }
 
     // calculate crc
+    uint8_t crc = 0;
     for (uint8_t i=0; i<telem_packet_size-1; i++) {    
         crc = telem_crc8(buf[i], crc);
     }
 
     if (buf[telem_packet_size-1] != crc) {
         // bad crc
-        debug("Bad CRC on %u\n", last_telem_esc);
+        debug("Bad CRC on %u", last_telem_esc);
         return;
     }
     struct telem_data td;
-    td.temperature = buf[0];
+    td.temperature = int8_t(buf[0]);
     td.voltage = (buf[1]<<8) | buf[2];
     td.current = (buf[3]<<8) | buf[4];
     td.consumption = (buf[5]<<8) | buf[6];
     td.rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
     td.timestamp_ms = AP_HAL::millis();
+    // record the previous rpm so that we can slew to the new one
+    prev_motor_rpm[last_telem_esc] = last_telem[last_telem_esc].rpm;
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
+    received_telem_data = true;
 
     AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger && logger->logging_enabled()) {
+    if (logger && logger->logging_enabled()
+        // log at 10Hz
+        && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
         logger->Write_ESC(uint8_t(last_telem_esc),
                       AP_HAL::micros64(),
                       td.rpm*100U,
@@ -1409,7 +1431,9 @@ void AP_BLHeli::read_telemetry_packet(void)
                       td.temperature * 100U,
                       td.consumption,
                       0);
+        last_log_ms[last_telem_esc] = td.timestamp_ms;
     }
+
     if (debug_level >= 2) {
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
                             last_telem_esc,
@@ -1447,9 +1471,7 @@ void AP_BLHeli::update_telemetry(void)
     if (nbytes > telem_packet_size) {
         // if we have more than 10 bytes then we don't know which ESC
         // they are from. Throw them all away
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes > 0 &&
@@ -1464,9 +1486,7 @@ void AP_BLHeli::update_telemetry(void)
     }
     if (nbytes > 0 && nbytes < telem_packet_size) {
         // we've waited long enough, discard bytes if we don't have 10 yet
-        while (nbytes--) {
-            telem_uart->read();
-        }
+        telem_uart->discard_input();
         return;
     }
     if (nbytes == telem_packet_size) {
@@ -1529,4 +1549,3 @@ void AP_BLHeli::send_esc_telemetry_mavlink(uint8_t mav_chan)
 }
 
 #endif // HAVE_AP_BLHELI_SUPPORT
-

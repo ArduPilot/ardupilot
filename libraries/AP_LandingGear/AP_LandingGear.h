@@ -1,5 +1,5 @@
-/// @file	AP_LandingGear.h
-/// @brief	Landing gear control library
+/// @file   AP_LandingGear.h
+/// @brief  Landing gear control library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -13,8 +13,8 @@
 #define DEFAULT_PIN_WOW_POL 0
 #endif
 
-/// @class	AP_LandingGear
-/// @brief	Class managing the control of landing gear
+/// @class  AP_LandingGear
+/// @brief  Class managing the control of landing gear
 class AP_LandingGear {
 public:
     AP_LandingGear() {

@@ -19,6 +19,19 @@
 ************************************************************/
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
+
+#ifndef HAL_MOUNT_ENABLED
+#define HAL_MOUNT_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#ifndef HAL_SOLO_GIMBAL_ENABLED
+#define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED && AP_AHRS_NAVEKF_AVAILABLE && BOARD_FLASH_SIZE > 1024
+#endif
+
+#if HAL_MOUNT_ENABLED
+
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -180,6 +193,9 @@ protected:
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
+    // Check if instance backend is ok
+    bool check_primary() const;
+    bool check_instance(uint8_t instance) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_mount_configure(const mavlink_message_t &msg);
@@ -193,3 +209,5 @@ private:
 namespace AP {
     AP_Mount *mount();
 };
+
+#endif // HAL_MOUNT_ENABLED

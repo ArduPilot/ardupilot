@@ -22,17 +22,19 @@ namespace AP_HAL {
     class AnalogIn;
     class Storage;
     class DigitalSource;
+    class PWMSource;
     class GPIO;
     class RCInput;
     class RCOutput;
     class Scheduler;
+    class EventHandle;
+    class EventSource;
     class Semaphore;
     class OpticalFlow;
     class DSP;
 
-    class CANProtocol;
-    class CANManager;
-    class CANHal;
+    class CANIface;
+    class CANFrame;
 
     class Util;
     class Flash;

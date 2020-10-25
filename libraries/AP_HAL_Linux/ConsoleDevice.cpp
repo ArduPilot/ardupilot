@@ -8,6 +8,7 @@
 
 #include "ConsoleDevice.h"
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 ConsoleDevice::ConsoleDevice()
 {
@@ -27,6 +28,13 @@ bool ConsoleDevice::close()
 
 bool ConsoleDevice::open()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // we do not want a ConsoleDevice for Replay or any examples.  It
+    // screws up the terminal settings and creates all sorts of
+    // weirdnesses in Replay's output.
+    return false;
+#endif
+
     _rd_fd = STDIN_FILENO;
     _wr_fd = STDOUT_FILENO;
 

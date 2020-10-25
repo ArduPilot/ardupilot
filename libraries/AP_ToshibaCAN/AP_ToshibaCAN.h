@@ -15,12 +15,15 @@
 
 #pragma once
 
-#include <AP_HAL/CAN.h>
+#include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
 
 #define TOSHIBACAN_MAX_NUM_ESCS 12
 
-class AP_ToshibaCAN : public AP_HAL::CANProtocol {
+class CANTester;
+
+class AP_ToshibaCAN : public AP_CANDriver {
+    friend class CANTester;
 public:
     AP_ToshibaCAN();
     ~AP_ToshibaCAN();
@@ -34,6 +37,7 @@ public:
 
     // initialise ToshibaCAN bus
     void init(uint8_t driver_index, bool enable_filters) override;
+    bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // called from SRV_Channels
     void update();
@@ -49,14 +53,37 @@ public:
 
 private:
 
+    // data format for messages from flight controller
+    static constexpr uint8_t COMMAND_STOP = 0x0;
+    static constexpr uint8_t COMMAND_LOCK = 0x10;
+    static constexpr uint8_t COMMAND_REQUEST_DATA = 0x20;
+    static constexpr uint8_t COMMAND_MOTOR3 = 0x3B;
+    static constexpr uint8_t COMMAND_MOTOR2 = 0x3D;
+    static constexpr uint8_t COMMAND_MOTOR1 = 0x3F;
+
+    // data format for messages from ESC
+    static constexpr uint8_t MOTOR_DATA1 = 0x40;
+    static constexpr uint8_t MOTOR_DATA2 = 0x50;
+    static constexpr uint8_t MOTOR_DATA3 = 0x60;
+    static constexpr uint8_t MOTOR_DATA5 = 0x80;
+
+    // processing definitions
+    static constexpr uint16_t TOSHIBACAN_OUTPUT_MIN = 6300;
+    static constexpr uint16_t TOSHIBACAN_OUTPUT_MAX = 32000;
+    static const uint16_t TOSHIBACAN_SEND_TIMEOUT_US;
+    static constexpr uint8_t CAN_IFACE_INDEX = 0;
+
+    // telemetry definitions
+    static constexpr uint32_t TOSHIBA_CAN_ESC_UPDATE_MS = 100;
+
     // loop to send output to ESCs in background thread
     void loop();
 
     // write frame on CAN bus, returns true on success
-    bool write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTime timeout);
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout);
 
     // read frame on CAN bus, returns true on success
-    bool read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout);
+    bool read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout);
 
     // update esc_present_bitmask
     void update_esc_present_bitmask();
@@ -64,9 +91,8 @@ private:
     bool _initialized;
     char _thread_name[9];
     uint8_t _driver_index;
-    uavcan::ICanDriver* _can_driver;
-    const uavcan::CanFrame* _select_frames[uavcan::MaxCanIfaces] { };
-
+    AP_HAL::CANIface* _can_iface;
+    HAL_EventHandle _event_handle;
     // PWM output
     HAL_Semaphore _rc_out_sem;
     uint16_t _scaled_output[TOSHIBACAN_MAX_NUM_ESCS];
@@ -78,7 +104,7 @@ private:
     // telemetry data (rpm, voltage)
     HAL_Semaphore _telem_sem;
     struct telemetry_info_t {
-        uint16_t rpm;               // rpm
+        int16_t rpm;                // rpm
         uint16_t voltage_cv;        // voltage in centi-volts
         uint16_t current_ca;        // current in centi-amps
         uint16_t esc_temp;          // esc temperature in degrees
@@ -154,9 +180,10 @@ private:
     // structure for replies from ESC of data1 (rpm and voltage)
     union motor_reply_data1_t {
         struct PACKED {
-            uint8_t rxng:1;
-            uint8_t state:7;
-            uint16_t rpm;
+            uint8_t rxng:1;         // RX No Good. "1" if ESC encountered error receiving a message since MOTOR_DATA1 was last sent
+            uint8_t stepout:1;      // "1" if a "step out" has occured since MOTOR_DATA1 was last sent
+            uint8_t state:6;
+            int16_t rpm;
             uint16_t current_ma;    // current in milliamps
             uint16_t voltage_mv;    // voltage in millivolts
             uint8_t position_est_error;
@@ -165,8 +192,8 @@ private:
     };
 
     // frames to be sent
-    uavcan::CanFrame unlock_frame;
-    uavcan::CanFrame mot_rot_frame1;
-    uavcan::CanFrame mot_rot_frame2;
-    uavcan::CanFrame mot_rot_frame3;
+    AP_HAL::CANFrame unlock_frame;
+    AP_HAL::CANFrame mot_rot_frame1;
+    AP_HAL::CANFrame mot_rot_frame2;
+    AP_HAL::CANFrame mot_rot_frame3;
 };

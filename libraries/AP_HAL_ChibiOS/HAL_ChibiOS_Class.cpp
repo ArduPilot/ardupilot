@@ -103,6 +103,9 @@ static ChibiOS::Flash flashDriver;
 static Empty::Flash flashDriver;
 #endif
 
+#if HAL_NUM_CAN_IFACES > 0
+static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
+#endif
 
 #if HAL_WITH_IO_MCU
 HAL_UART_IO_DRIVER;
@@ -133,7 +136,11 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &opticalFlowDriver,
         &flashDriver,
         &dspDriver,
+#if HAL_NUM_CAN_IFACES
+        (AP_HAL::CANIface**)canDrivers
+#else
         nullptr
+#endif
         )
 {}
 
@@ -165,8 +172,6 @@ thread_t* get_main_thread()
 }
 
 static AP_HAL::HAL::Callbacks* g_callbacks;
-
-static AP_HAL::Util::PersistentData last_persistent_data;
 
 static void main_loop()
 {
@@ -207,7 +212,7 @@ static void main_loop()
     if (stm32_was_watchdog_reset()) {
         // load saved watchdog data
         stm32_watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4);
-        last_persistent_data = utilInstance.persistent_data;
+        utilInstance.last_persistent_data = utilInstance.persistent_data;
     }
 
     schedulerInstance.hal_initialized();
@@ -224,21 +229,7 @@ static void main_loop()
 
 #ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
-        AP::internalerror().error(AP_InternalError::error_t::watchdog_reset);
-        const AP_HAL::Util::PersistentData &pd = last_persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,MavMsg,MavCmd,SemLine,FL,FT,FA,FP,ICSR", "QbIIHHHHHIBI",
-                                   AP_HAL::micros64(),
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.fault_line,
-                                   pd.fault_type,
-                                   pd.fault_addr,
-                                   pd.fault_thd_prio,
-                                   pd.fault_icsr);
+        INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
 #endif // HAL_NO_LOGGING
 #endif // IOMCU_FW

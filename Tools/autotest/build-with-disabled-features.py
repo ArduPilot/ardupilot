@@ -200,13 +200,13 @@ class BuilderCopter(Builder):
 specs = [
     {
         "config": 'ArduCopter/config.h',
-        "autotest_target": "build.ArduCopter",
+        "autotest_target": "build.Copter",
         "target_binary": "bin/arducopter",
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
-            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
+            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
@@ -229,7 +229,7 @@ specs = [
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
-            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
+            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
@@ -243,19 +243,19 @@ specs = [
     },
     {
         "config": 'ArduPlane/config.h',
-        "autotest_target": "build.ArduPlane",
+        "autotest_target": "build.Plane",
         "target_binary": "bin/arduplane",
         "reverse-deps": {
         },
     }, {
-        "config": 'APMrover2/config.h',
-        "autotest_target": "build.APMrover2",
+        "config": 'Rover/config.h',
+        "autotest_target": "build.Rover",
         "target_binary": "bin/ardurover",
         "reverse-deps": {
         },
     }, {
         "config": 'ArduSub/config.h',
-        "autotest_target": "build.ArduSub",
+        "autotest_target": "build.Sub",
         "target_binary": "bin/ardusub",
         "reverse-deps": {
             "AC_FENCE": ["AVOIDANCE_ENABLED"],
@@ -264,7 +264,7 @@ specs = [
         },
     }, {
         "config": 'AntennaTracker/config.h',
-        "autotest_target": "build.AntennaTracker",
+        "autotest_target": "build.Tracker",
         "target_binary": "bin/antennatracker",
         "reverse-deps": {
         },

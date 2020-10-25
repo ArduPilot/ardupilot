@@ -15,7 +15,6 @@ public:
               struct LogStructure *log_structure,
               uint8_t log_structure_count,
               const char **&nottypes);
-    bool wait_type(const char *type);
 
     const Vector3f &get_attitude(void) const { return attitude; }
     const Vector3f &get_ahr2_attitude(void) const { return ahr2_attitude; }
@@ -35,7 +34,7 @@ public:
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     bool handle_log_format_msg(const struct log_Format &f) override;
-    bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
+    bool handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) override;
 
     static bool in_list(const char *type, const char *list[]);
 

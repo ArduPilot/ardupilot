@@ -11,28 +11,17 @@ APJ_BOARD_ID 145
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
-define STM32_LSECLK   32768U
-define STM32_LSEDRV   (3U << 3U)
-
-define STM32_PLLSRC     STM32_PLLSRC_HSE
-define STM32_PLLM_VALUE 8
-define STM32_PLLN_VALUE 432
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 9
-
 FLASH_SIZE_KB 1024
 
 # leave 2 sectors free
 FLASH_RESERVE_START_KB 96
 
-# board voltage
-STM32_VDD 330U
 
 # only one I2C bus
 I2C_ORDER I2C1
 
 # order of UARTs (and USB), USART3 should be in second place to map order with the board's silk screen
-UART_ORDER OTG1 USART3 USART1 USART2 UART4 EMPTY USART6 UART7
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7
 
 # buzzer
 PD15 TIM4_CH4 TIM4 GPIO(77) ALARM
@@ -123,7 +112,7 @@ PA3  TIM5_CH4 TIM5 PWM(6) GPIO(55)
 #PD12  TIM4_CH1 TIM4 PWM(7) GPIO(56) # led pin
 #PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57) # buzzer pin (need to comment out buzzer)
 
-DMA_PRIORITY S*
+DMA_PRIORITY TIM1* TIM3* SPI4* SPI1*
 
 define HAL_STORAGE_SIZE 16384
 define STORAGE_FLASH_PAGE 1
@@ -169,6 +158,4 @@ define HAL_SPRAYER_ENABLED 0
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
-# we are low on flash on this board
-define HAL_MINIMIZE_FEATURES 1
-define HAL_WITH_DSP 1
+define HAL_MOUNT_ENABLED 0

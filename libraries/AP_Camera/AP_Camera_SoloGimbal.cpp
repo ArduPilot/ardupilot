@@ -1,6 +1,8 @@
 #include "AP_Camera_SoloGimbal.h"
 #include <GCS_MAVLink/GCS.h>
 
+#if HAL_SOLO_GIMBAL_ENABLED
+
 GOPRO_CAPTURE_MODE AP_Camera_SoloGimbal::gopro_capture_mode;
 GOPRO_HEARTBEAT_STATUS AP_Camera_SoloGimbal::gopro_status;
 bool AP_Camera_SoloGimbal::gopro_is_recording;
@@ -110,3 +112,5 @@ void AP_Camera_SoloGimbal::handle_gopro_heartbeat(mavlink_channel_t chan, const 
             break;
     }
 }
+
+#endif // HAL_SOLO_GIMBAL_ENABLED

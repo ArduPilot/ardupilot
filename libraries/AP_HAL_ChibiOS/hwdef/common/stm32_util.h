@@ -107,6 +107,9 @@ void fault_printf(const char *fmt, ...);
 // halt hook for printing panic message
 void system_halt_hook(void);
 
+// hook for stack overflow
+void stack_overflow(thread_t *tp);
+    
 #ifdef __cplusplus
 }
 #endif

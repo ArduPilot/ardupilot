@@ -51,7 +51,7 @@ class TestDupeLogData(Test):
 		sampleStartIndices = []
 		attStartIndex = 0
 		attEndIndex   = len(logdata.channels["ATT"]["Pitch"].listData)-1
-		step = attEndIndex / 11
+		step = int(attEndIndex / 11)
 		for i in range(step,attEndIndex-step,step):
 			sampleStartIndices.append(i)
 			#print("Dupe data sample point index %d at line %d" % (i, logdata.channels["ATT"]["Pitch"].listData[i][0]))

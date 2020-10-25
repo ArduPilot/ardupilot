@@ -10,17 +10,15 @@ float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
     }
     float yaw_request;
 
+    // range check expo
+    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
+
     // calculate yaw rate request
-    if (g2.acro_y_expo <= 0) {
+    if (is_zero(g2.acro_y_expo)) {
         yaw_request = stick_angle * g.acro_yaw_p;
     } else {
         // expo variables
         float y_in, y_in3, y_out;
-
-        // range check expo
-        if (g2.acro_y_expo > 1.0f || g2.acro_y_expo < 0.5f) {
-            g2.acro_y_expo = 1.0f;
-        }
 
         // yaw expo
         y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
@@ -71,13 +69,6 @@ void Copter::update_throttle_hover()
 #endif
 }
 
-// set_throttle_takeoff - allows parents to tell throttle controller we are taking off so I terms can be cleared
-void Copter::set_throttle_takeoff()
-{
-    // tell position controller to reset alt target and reset I terms
-    pos_control->init_takeoff();
-}
-
 // get_pilot_desired_climb_rate - transform pilot's throttle input to climb rate in cm/s
 // without any deadzone at the bottom
 float Copter::get_pilot_desired_climb_rate(float throttle_control)
@@ -125,17 +116,6 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
 float Copter::get_non_takeoff_throttle()
 {
     return MAX(0,motors->get_throttle_hover()/2.0f);
-}
-
-// get target climb rate reduced to avoid obstacles and altitude fence
-float Copter::get_avoidance_adjusted_climbrate(float target_rate)
-{
-#if AC_AVOID_ENABLED == ENABLED
-    avoid.adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
-    return target_rate;
-#else
-    return target_rate;
-#endif
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle

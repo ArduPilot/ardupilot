@@ -24,7 +24,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #ifndef HAL_NAVEKF2_AVAILABLE
-#define HAL_NAVEKF2_AVAILABLE 1
+// only default to EK2 enabled on boards with over 1M flash
+#define HAL_NAVEKF2_AVAILABLE (BOARD_FLASH_SIZE>1024)
 #endif
 
 #ifndef HAL_NAVEKF3_AVAILABLE
@@ -48,12 +49,14 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
-        FLAG_NONE = 0,
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
     // Constructor
-    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = 0);
+
+    // initialise
+    void init(void) override;
 
     /* Do not allow copies */
     AP_AHRS_NavEKF(const AP_AHRS_NavEKF &other) = delete;
@@ -115,6 +118,9 @@ public:
     }
 #endif
 
+    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
+
     // return secondary attitude solution if available, as eulers in radians
     bool get_secondary_attitude(Vector3f &eulers) const override;
 
@@ -171,10 +177,16 @@ public:
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
 
     // write body odometry measurements to the EKF
-    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset);
+    void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
+
+    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed);
 
     // Write position and quaternion data from an external navigation system
-    void writeExtNavData(const Vector3f &sensOffset, const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint32_t resetTime_ms) override;
+    void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms) override;
+
+    // Write velocity data from an external navigation system
+    void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
     // inhibit GPS usage
     uint8_t setInhibitGPS(void);
@@ -187,7 +199,8 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
-    bool prearm_healthy() const override;
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
@@ -198,9 +211,6 @@ public:
     // get compass offset estimates
     // true if offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
-
-    // report any reason for why the backend is refusing to initialise
-    const char *prearm_failure_reason(void) const override;
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
@@ -236,6 +246,10 @@ public:
     // it will return invalid when no limiting is required
     bool get_hgt_ctrl_limit(float &limit) const override;
 
+    // Set to true if the terrain underneath is stable enough to be used as a height reference
+    // this is not related to terrain following
+    void set_terrain_hgt_stable(bool stable) override;
+
     // get_location - updates the provided location with the latest
     // calculated location including absolute altitude
     // returns true on success (i.e. the EKF knows it's latest
@@ -250,7 +264,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // returns the expected NED magnetic field
     bool get_mag_field_NED(Vector3f& ret) const;
@@ -269,6 +283,16 @@ public:
     // is the EKF backend doing its own sensor logging?
     bool have_ekf_logging(void) const override;
 
+    // return the index of the airspeed we should use for airspeed measurements
+    // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
+    // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
+    // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
+    // airspeed sensor fault, which makes this even more necessary
+    uint8_t get_active_airspeed_index() const;
+
+    // return the index of the primary core or -1 if no primary core selected
+    int8_t get_primary_core_index() const override;
+
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const override;
 
@@ -278,10 +302,16 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     void check_lane_switch(void) override;
 
+    // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
+    void request_yaw_reset(void) override;
+
     void Log_Write();
 
-    // check whether compass can be bypassed for arming check in case when external navigation data is available 
-    bool is_ext_nav_used_for_yaw(void) const;
+    // check whether external navigation is providing yaw.  Allows compass pre-arm checks to be bypassed
+    bool is_ext_nav_used_for_yaw(void) const override;
+
+    // set and save the ALT_M_NSE parameter value
+    void set_alt_measurement_noise(float noise) override;
 
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
@@ -293,12 +323,12 @@ public:
 
 private:
     enum class EKFType {
-        NONE = 0,
+        NONE = 0
 #if HAL_NAVEKF3_AVAILABLE
-        THREE = 3,
+        ,THREE = 3
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        TWO = 2
+        ,TWO = 2
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
@@ -329,7 +359,7 @@ private:
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms = 0;
+    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
@@ -340,7 +370,7 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
-    uint32_t _last_body_odm_update_ms = 0;
+    uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
 #endif    
 };

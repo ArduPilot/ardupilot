@@ -22,6 +22,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_ADSB.h"
+#if HAL_ADSB_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdio.h>  // for sprintf
 #include <limits.h>
@@ -967,4 +968,5 @@ AP_ADSB *AP::ADSB()
 {
     return AP_ADSB::get_singleton();
 }
+#endif // HAL_ADSB_ENABLED
 

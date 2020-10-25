@@ -6,6 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
 #include <stdio.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -60,19 +61,19 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
                       (unsigned)offset,
                       (unsigned)length);
     }
-    const uint16_t *data16 = (const uint16_t *)data;
-    uint16_t *b16 = (uint16_t *)&b[0];
     uint16_t len16 = length/2;
     for (uint16_t i=0; i<len16; i++) {
-        if (data16[i] & !b16[i]) {
+        const uint16_t v = le16toh_ptr(&data[i*2]);
+        uint16_t v2 = le16toh_ptr(&b[i*2]);
+        if (v & !v2) {
             AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
                           (unsigned)sector,
                           unsigned(offset+i),
                           b[i],
                           data[i]);
         }
-#if !AP_FLASHSTORAGE_MULTI_WRITE
-        if (data16[i] != b16[i] && data16[i] != 0xFFFF && b16[i] != 0xFFFF) {
+#ifndef AP_FLASHSTORAGE_MULTI_WRITE
+        if (v != v2 && v != 0xFFFF && v2 != 0xFFFF) {
             AP_HAL::panic("FATAL: invalid write16 at %u:%u 0x%04x 0x%04x\n",
                           (unsigned)sector,
                           unsigned(offset+i),
@@ -80,7 +81,8 @@ bool FlashTest::flash_write(uint8_t sector, uint32_t offset, const uint8_t *data
                           data[i]);
         }
 #endif
-        b16[i] &= data16[i];
+        v2 &= v;
+        put_le16_ptr(&b[i*2], v2);
     }
     return true;
 }

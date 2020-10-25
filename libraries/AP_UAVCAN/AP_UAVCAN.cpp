@@ -18,12 +18,12 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 
 #include <uavcan/transport/can_acceptance_filter_configurator.hpp>
 
@@ -58,7 +58,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_uavcan(level_debug, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(_driver_index)) { printf(fmt, ##args); }} while (0)
+#define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
@@ -104,30 +104,33 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
 #define CAN_PERIODIC_TX_TIMEOUT_MS 2
 
 // publisher interfaces
-static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // subscribers
 
 // handler SafteyButton
 UC_REGISTRY_BINDER(ButtonCb, ardupilot::indication::Button);
-static uavcan::Subscriber<ardupilot::indication::Button, ButtonCb> *safety_button_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Subscriber<ardupilot::indication::Button, ButtonCb> *safety_button_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // handler TrafficReport
 UC_REGISTRY_BINDER(TrafficReportCb, ardupilot::equipment::trafficmonitor::TrafficReport);
-static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb> *traffic_report_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb> *traffic_report_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // handler actuator status
 UC_REGISTRY_BINDER(ActuatorStatusCb, uavcan::equipment::actuator::Status);
-static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
 // handler ESC status
 UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
-static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+AP_UAVCAN::esc_data AP_UAVCAN::_escs_data[];
+HAL_Semaphore AP_UAVCAN::_telem_sem;
 
 
 AP_UAVCAN::AP_UAVCAN() :
@@ -140,7 +143,7 @@ AP_UAVCAN::AP_UAVCAN() :
         _SRV_conf[i].servo_pending = false;
     }
 
-    debug_uavcan(2, "AP_UAVCAN constructed\n\r");
+    debug_uavcan(AP_CANManager::LOG_INFO, "AP_UAVCAN constructed\n\r");
 }
 
 AP_UAVCAN::~AP_UAVCAN()
@@ -150,92 +153,99 @@ AP_UAVCAN::~AP_UAVCAN()
 AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_protocol_type(driver_index) != AP_BoardConfig_CAN::Protocol_Type_UAVCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_UAVCAN) {
         return nullptr;
     }
     return static_cast<AP_UAVCAN*>(AP::can().get_driver(driver_index));
 }
 
+bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
+
+    if (_iface_mgr == nullptr) {
+        _iface_mgr = new uavcan::CanIfaceMgr();
+    }
+
+    if (_iface_mgr == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't create UAVCAN interface manager\n\r");
+        return false;
+    }
+
+    if (!_iface_mgr->add_interface(can_iface)) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't add UAVCAN interface\n\r");
+        return false;   
+    }
+    return true;
+}
+
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
-    if (_initialized) {
-        debug_uavcan(2, "UAVCAN: init called more than once\n\r");
-        return;
-    }
-
     _driver_index = driver_index;
 
-    AP_HAL::CANManager* can_mgr = hal.can_mgr[driver_index];
-    if (can_mgr == nullptr) {
-        debug_uavcan(2, "UAVCAN: init called for inexisting CAN driver\n\r");
+    if (_initialized) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: init called more than once\n\r");
         return;
     }
 
-    if (!can_mgr->is_initialized()) {
-        debug_uavcan(1, "UAVCAN: CAN driver not initialized\n\r");
+    if (_iface_mgr == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't get UAVCAN interface driver\n\r");
         return;
     }
 
-    uavcan::ICanDriver* driver = can_mgr->get_driver();
-    if (driver == nullptr) {
-        debug_uavcan(2, "UAVCAN: can't get UAVCAN interface driver\n\r");
-        return;
-    }
-
-    _node = new uavcan::Node<0>(*driver, SystemClock::instance(), _node_allocator);
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
 
     if (_node == nullptr) {
-        debug_uavcan(1, "UAVCAN: couldn't allocate node\n\r");
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
         return;
     }
 
     if (_node->isStarted()) {
-        debug_uavcan(2, "UAVCAN: node was already started?\n\r");
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node was already started?\n\r");
         return;
     }
+    {
+        uavcan::NodeID self_node_id(_uavcan_node);
+        _node->setNodeID(self_node_id);
 
-    uavcan::NodeID self_node_id(_uavcan_node);
-    _node->setNodeID(self_node_id);
+        char ndname[20];
+        snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
 
-    char ndname[20];
-    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
-
-    uavcan::NodeStatusProvider::NodeName name(ndname);
-    _node->setName(name);
-
-    uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
-    sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
-    sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
-    _node->setSoftwareVersion(sw_version);
-
-    uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
-
-    hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
-    hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
-
-    const uint8_t uid_buf_len = hw_version.unique_id.capacity();
-    uint8_t uid_len = uid_buf_len;
-    uint8_t unique_id[uid_buf_len];
-
-
-    if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
-        //This is because we are maintaining a common Server Record for all UAVCAN Instances.
-        //In case the node IDs are different, and unique id same, it will create
-        //conflict in the Server Record.
-        unique_id[uid_len - 1] += _uavcan_node;
-        uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+        uavcan::NodeStatusProvider::NodeName name(ndname);
+        _node->setName(name);
     }
-    _node->setHardwareVersion(hw_version);
+    {
+        uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
+        sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
+        sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
+        _node->setSoftwareVersion(sw_version);
 
+        uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
+
+        hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
+        hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+
+        const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+        uint8_t uid_len = uid_buf_len;
+        uint8_t unique_id[uid_buf_len];
+
+
+        if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+            //This is because we are maintaining a common Server Record for all UAVCAN Instances.
+            //In case the node IDs are different, and unique id same, it will create
+            //conflict in the Server Record.
+            unique_id[uid_len - 1] += _uavcan_node;
+            uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+        }
+        _node->setHardwareVersion(hw_version);
+    }
     int start_res = _node->start();
     if (start_res < 0) {
-        debug_uavcan(1, "UAVCAN: node start problem, error %d\n\r", start_res);
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node start problem, error %d\n\r", start_res);
         return;
     }
 
     //Start Servers
     if (!AP::uavcan_dna_server().init(this)) {
-        debug_uavcan(1, "UAVCAN: Failed to start DNA Server\n\r");
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: Failed to start DNA Server\n\r");
         return;
     }
 
@@ -311,12 +321,83 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         _node->setModeOfflineAndPublish();
-        debug_uavcan(1, "UAVCAN: couldn't create thread\n\r");
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
         return;
     }
 
     _initialized = true;
-    debug_uavcan(2, "UAVCAN: init done\n\r");
+    debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
+}
+
+// send ESC telemetry messages over MAVLink
+void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    static const uint8_t MAV_ESC_GROUPS = 3;
+    static const uint8_t MAV_ESC_PER_GROUP = 4;
+
+    for (uint8_t i = 0; i < MAV_ESC_GROUPS; i++) {
+
+        // arrays to hold output
+        uint8_t temperature[MAV_ESC_PER_GROUP] {};
+        uint16_t voltage[MAV_ESC_PER_GROUP] {};
+        uint16_t current[MAV_ESC_PER_GROUP] {};
+        uint16_t current_tot[MAV_ESC_PER_GROUP] {};
+        uint16_t rpm[MAV_ESC_PER_GROUP] {};
+        uint16_t count[MAV_ESC_PER_GROUP] {};
+
+        // if at least one of the ESCs in the group is availabe, the group
+        // is considered to be available too, and will be sent over MAVlink
+        bool group_available = false;
+
+        // fill in output arrays of ESCs sensors with available data.
+        for (uint8_t j = 0; j < MAV_ESC_PER_GROUP; j++) {
+            const uint8_t esc_idx = i * MAV_ESC_PER_GROUP + j;
+            
+            if (!is_esc_data_index_valid(esc_idx)) {
+                return;
+            }
+
+            WITH_SEMAPHORE(_telem_sem);
+            
+            if (!_escs_data[esc_idx].available) {
+                continue;
+            } 
+
+            _escs_data[esc_idx].available = false;
+
+            temperature[j] = _escs_data[esc_idx].temp;
+            voltage[j] = _escs_data[esc_idx].voltage;
+            current[j] = _escs_data[esc_idx].current;
+            current_tot[j] = 0; // currently not implemented
+            rpm[j] = _escs_data[esc_idx].rpm;
+            count[j] = _escs_data[esc_idx].count;
+
+            group_available = true;
+        }
+
+        if (!group_available) {
+            continue;
+        }
+
+        if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
+            return;
+        }
+
+        // send messages
+        switch (i) {
+            case 0:
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 1:
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 2:
+                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void AP_UAVCAN::loop(void)
@@ -339,7 +420,7 @@ void AP_UAVCAN::loop(void)
 
             if (_servo_bm > 0) {
                 // if we have any Servos in bitmask
-                uint32_t now = AP_HAL::micros();
+                uint32_t now = AP_HAL::native_micros();
                 const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
                 if (now - _SRV_last_send_us >= servo_period_us) {
                     _SRV_last_send_us = now;
@@ -486,7 +567,7 @@ void AP_UAVCAN::SRV_push_servos()
 
 void AP_UAVCAN::led_out_send()
 {
-    uint64_t now = AP_HAL::micros64();
+    uint64_t now = AP_HAL::native_micros64();
 
     if ((now - _led_conf.last_update) < LED_DELAY_US) {
         return;
@@ -581,7 +662,7 @@ void AP_UAVCAN::rtcm_stream_send()
         // nothing to send
         return;
     }
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now - _rtcm_stream.last_send_ms < 20) {
         // don't send more than 50 per second
         return;
@@ -607,7 +688,7 @@ void AP_UAVCAN::rtcm_stream_send()
 void AP_UAVCAN::safety_state_send()
 {
     ardupilot::indication::SafetyState msg;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::native_millis();
     if (now - _last_safety_state_ms < 500) {
         // update at 2Hz
         return;
@@ -670,6 +751,7 @@ void AP_UAVCAN::handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Butto
  */
 void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb)
 {
+#if HAL_ADSB_ENABLED
     AP_ADSB *adsb = AP::ADSB();
     if (!adsb || !adsb->enabled()) {
         // ADSB not enabled
@@ -720,16 +802,16 @@ void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, con
     if (msg.simulated_report) {
         pkt.flags |= ADSB_FLAGS_SIMULATED;
     }
-    // flags not in common.xml yet
     if (msg.vertical_velocity_valid) {
-        pkt.flags |= 0x80;
+        pkt.flags |= ADSB_FLAGS_VERTICAL_VELOCITY_VALID;
     }
     if (msg.baro_valid) {
-        pkt.flags |= 0x100;
+        pkt.flags |= ADSB_FLAGS_BARO_VALID;
     }
 
-    vehicle.last_update_ms = AP_HAL::millis() - (vehicle.info.tslc * 1000);
+    vehicle.last_update_ms = AP_HAL::native_millis() - (vehicle.info.tslc * 1000);
     adsb->handle_adsb_vehicle(vehicle);
+#endif
 }
 
 /*
@@ -738,7 +820,7 @@ void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, con
 void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb)
 {
     // log as CSRV message
-    AP::logger().Write_ServoStatus(AP_HAL::micros64(),
+    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
                                    cb.msg->actuator_id,
                                    cb.msg->position,
                                    cb.msg->force,
@@ -751,8 +833,10 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
  */
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
+    const uint8_t esc_index = cb.msg->esc_index;
+    
     // log as CESC message
-    AP::logger().Write_ESCStatus(AP_HAL::micros64(),
+    AP::logger().Write_ESCStatus(AP_HAL::native_micros64(),
                                  cb.msg->esc_index,
                                  cb.msg->error_count,
                                  cb.msg->voltage,
@@ -761,6 +845,28 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
                                  cb.msg->rpm,
                                  cb.msg->power_rating_pct);
 
+    WITH_SEMAPHORE(_telem_sem);
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+
+    esc_data &esc = _escs_data[esc_index];
+    esc.available = true;
+    esc.temp = (cb.msg->temperature - C_TO_KELVIN);
+    esc.voltage = cb.msg->voltage*100;
+    esc.current = cb.msg->current*100;
+    esc.rpm = cb.msg->rpm;
+    esc.count++;
+
 }
 
-#endif // HAL_WITH_UAVCAN
+bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
+    if (index > UAVCAN_SRV_NUMBER) {
+        // printf("UAVCAN: invalid esc index: %d. max index allowed: %d\n\r", index, UAVCAN_SRV_NUMBER);
+        return false;
+    }
+    return true;
+}
+
+#endif // HAL_NUM_CAN_IFACES

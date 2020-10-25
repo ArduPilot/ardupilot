@@ -29,19 +29,18 @@
 class ChibiOS::DSP : public AP_HAL::DSP {
 public:
     // initialise an FFT instance
-    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate) override;
-    // start an FFT analysis
-    virtual void fft_start(FFTWindowState* state, const float* samples, uint16_t buffer_index, uint16_t buffer_size) override;
+    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics) override;
+    // start an FFT analysis with an ObjectBuffer
+    virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) override;
     // perform remaining steps of an FFT analysis
-    virtual uint16_t fft_analyse(FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, uint8_t harmonics, float noise_att_cutoff) override;
+    virtual uint16_t fft_analyse(FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff) override;
 
     // STM32-based FFT state
     class FFTWindowStateARM : public AP_HAL::DSP::FFTWindowState {
         friend class ChibiOS::DSP;
-
-    protected:
-        FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate);
-        ~FFTWindowStateARM();
+    public:
+        FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics);
+        virtual ~FFTWindowStateARM();
 
     private:
         // underlying CMSIS data structure for FFT analysis
@@ -57,14 +56,19 @@ protected:
     void vector_scale_float(const float* vin, float scale, float* vout, uint16_t len) const override {
         arm_scale_f32(vin, scale, vout, len);
     }
+    float vector_mean_float(const float* vin, uint16_t len) const override {
+        float mean_value;
+        arm_mean_f32(vin, len, &mean_value);
+        return mean_value;
+    }
 
 private:
     // following are the six independent steps for calculating an FFT
-    void step_hanning(FFTWindowStateARM* fft, const float* samples, uint16_t buffer_index, uint16_t buffer_size);
+    void step_hanning(FFTWindowStateARM* fft, FloatBuffer& samples, uint16_t advance);
     void step_arm_cfft_f32(FFTWindowStateARM* fft);
     void step_bitreversal(FFTWindowStateARM* fft);
     void step_stage_rfft_f32(FFTWindowStateARM* fft);
-    void step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin, uint8_t harmonics, float noise_att_cutoff);
+    void step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff);
     uint16_t step_calc_frequencies_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin);
     // candan's frequency interpolator
     float calculate_candans_estimator(const FFTWindowStateARM* fft, uint16_t k) const;

@@ -83,9 +83,9 @@ static const struct {
 Webots::Webots(const char *frame_str) :
     Aircraft(frame_str)
 {
-    use_time_sync = true;
-    rate_hz = 4000;
-    
+    use_time_sync = false;   
+    use_smoothing = false;
+    last_state.timestamp = 0.0l;
     char *saveptr = nullptr;
     char *s = strdup(frame_str);
     char *frame_option = strtok_r(s, ":", &saveptr);
@@ -97,6 +97,7 @@ Webots::Webots(const char *frame_str) :
      */
     if (args1) {
         webots_ip = args1;
+        printf("Simulation Port %s\n",args1);
     }
     if (args2) {
         webots_sensors_port = atoi(args2);
@@ -157,8 +158,7 @@ Webots::Webots(const char *frame_str) :
 bool Webots::parse_sensors(const char *json)
 {
     //printf("%s\n", json);
-    ///*
-     for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
+   for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
         struct keytable &key = keytable[i];
         //printf("search   %s/%s\n", key.section, key.key);
         // look for section header 
@@ -220,7 +220,6 @@ bool Webots::parse_sensors(const char *json)
                     v->length = n+1;
                 }
                 if (sscanf(p, "[%f, %f, %f]", &v->data[n].x, &v->data[n].y, &v->data[n].z) != 3) {
-                    //printf("Failed to parse Vector3f for %s %s/%s[%u]\n",p,  key.section, key.key, n);
                     //printf("Failed to parse Vector3f for %s/%s[%u]\n", key.section, key.key, n);
                     return false;
                 }
@@ -278,7 +277,7 @@ bool Webots::parse_sensors(const char *json)
         }
         }
     }
-    // */
+
     socket_frame_counter++;
     return true;
     
@@ -305,6 +304,8 @@ bool Webots::connect_sockets(void)
             sim_sock = nullptr;
             return false;
         }
+        // wait for Webots packets
+        sim_sock->set_blocking(true);
         sim_sock->reuseaddress();
         printf("Sensors connected\n");
     }
@@ -431,21 +432,21 @@ void Webots::output_quad(const struct sitl_input &input)
 */
 void Webots::output_pwm(const struct sitl_input &input)
 {
-    char buf[200];
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u, %u, %uf, %u, %u], \"wnd\": [%f, %f, %f, %f]}\n",
+    char buf[2000];
+    const int len = snprintf(buf, sizeof(buf)-1, "{\"pwm\": [%d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0, %d.0], \"wnd\": [%3.3f, %f, %3.3f, %3.3f]}\n",
              input.servos[0], input.servos[1], input.servos[2], input.servos[3],
              input.servos[4], input.servos[5], input.servos[6], input.servos[7],
              input.servos[8], input.servos[9], input.servos[10], input.servos[11],
              input.servos[12], input.servos[13], input.servos[14], input.servos[15],
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
-    buf[len ] = 0;
+    buf[len] = 0;
     sim_sock->send(buf, len);
 }
 
 
 void Webots::output (const struct sitl_input &input)
 {
-    
+
     switch (output_type) {
         case OUTPUT_ROVER:
             output_rover(input);
@@ -467,73 +468,37 @@ void Webots::output (const struct sitl_input &input)
  */
 void Webots::update(const struct sitl_input &input)
 {   
-    
+    static bool first = true;
     if (!connect_sockets()) {
         return;
     }
 
-    last_state = state;
     const bool valid = sensors_receive();
-    if (valid) {
-        // update average frame time used for extrapolation
-        double dt = constrain_float(state.timestamp - last_state.timestamp, 0.001, 1.0/50);
-        if (average_frame_time_s < 1.0e-6) {
-            //if average is too small take the current dt as a good start.
-            average_frame_time_s = dt;
-        }
-        
-        // this is complementry filter for updating average.
-        average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
-        
+    if (!valid)
+    {
+        return ;
     }
+
+    //printf("%lf     %lf\n", state.timestamp, state.timestamp * 1.0e6f);
+    // printf("state.timestamp %lf\n", state.timestamp);
     
-    // again measure dt as dt_s but with no constraints....
-    double dt_s = state.timestamp - last_state.timestamp;
-    last_state = state;
-    if (dt_s < 0 || dt_s > 1) {
-        // cope with restarting while connected
-        initial_time_s = time_now_us * 1.0e-6f;
-        return;
+    
+    //time frame from simulator
+    frame_time_us = ((state.timestamp - last_state.timestamp) * 1.0e6f); //HERE
+    if ((!first) && (frame_time_us ==0)) 
+    {
+        first = false;
+        printf("frame_time_us Zero \n");
+        output(input);
+        return ;
     }
 
-    if (dt_s < 0.00001f) {
-        float delta_time = 0.001;
-        // don't go past the next expected frame
-        if (delta_time + extrapolated_s > average_frame_time_s) {
-            delta_time = average_frame_time_s - extrapolated_s;
-        }
-
-        // check if extrapolation_s duration is longer than average_frame_time_s
-        if (delta_time <= 0) {
-            // dont extrapolate anymore untill there is valid data with long-enough dt_s
-            usleep(1000);
-            return;
-        }
-
-        // extrapolated_s duration is safe. keep on extrapolation.
-        time_now_us += delta_time * 1.0e6;
-        extrapolate_sensors(delta_time);
-        update_position();
-
-        //update body magnetic field from position and rotation
-        update_mag_field_bf();
-        usleep(delta_time * 1.0e6);
-        extrapolated_s += delta_time;
-
-        //output(input);
-        report_FPS();
-        return;
-    }
+    //printf ("state.timestamp %lf   last_state.timestamp %lf    frame_time_us %ld\n", state.timestamp, last_state.timestamp, frame_time_us);
+    time_now_us += frame_time_us;
+    
 
     if (valid)
     {
-        // reset extrapolation duration.
-        extrapolated_s = 0;
-        
-        if (initial_time_s <= 0) {
-            dt_s = 0.001f;
-            initial_time_s = state.timestamp - dt_s;
-        }
 
         // convert from state variables to ardupilot conventions
         dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
@@ -564,28 +529,23 @@ void Webots::update(const struct sitl_input &input)
         scanner.ranges = state.scanner.ranges;
 
         update_position();
-        uint64_t new_time_us = (state.timestamp - initial_time_s)*1.0e6;
-        if (new_time_us < time_now_us) {
-            uint64_t dt_us = time_now_us - new_time_us;
-            if (dt_us > 500000) {
-                // time going backwards
-                time_now_us = new_time_us;
-            }
-        } else {
-            // update SITL time with webots time.
-            time_now_us = new_time_us;
-        }
-
-        time_advance();
         
         // update magnetic field
         update_mag_field_bf();
-
+        
+        time_advance();
+        
         update_wind (input);
-        output(input);
+        
+        
 
-        report_FPS();
+        //report_FPS();
     }
+
+    output(input);
+
+    last_state = state;
+
 }
 
 
@@ -594,16 +554,16 @@ void Webots::update(const struct sitl_input &input)
  */
 void Webots::report_FPS(void)
 {
-    if (frame_counter++ % 1000 == 0) {
-        if (!is_zero(last_frame_count_s)) {
-            uint64_t frames = socket_frame_counter - last_socket_frame_counter;
-            last_socket_frame_counter = socket_frame_counter;
-            double dt = state.timestamp - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f\n",
-                    frames / dt, 1000 / dt, 1.0/average_frame_time_s);
-        } else {
-            printf("Initial position %f %f %f\n", position.x, position.y, position.z);
-        }
-        last_frame_count_s = state.timestamp;
-    }
+    // if (frame_counter++ % 1000 == 0) {
+    //     if (!is_zero(last_frame_count_s)) {
+    //         uint64_t frames = socket_frame_counter - last_socket_frame_counter;
+    //         last_socket_frame_counter = socket_frame_counter;
+    //         double dt = state.timestamp - last_frame_count_s;
+    //         printf("%.2f/%.2f FPS avg=%.2f\n",
+    //                 frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+    //     } else {
+    //         printf("Initial position %f %f %f\n", position.x, position.y, position.z);
+    //     }
+    //     last_frame_count_s = state.timestamp;
+    // }
 }

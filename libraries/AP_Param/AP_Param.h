@@ -39,7 +39,7 @@
   maximum size of embedded parameter file
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
-#if HAL_MINIMIZE_FEATURES
+#if BOARD_FLASH_SIZE <= 1024
 # define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 #else
 # define AP_PARAM_MAX_EMBEDDED_PARAM 8192
@@ -292,7 +292,7 @@ public:
     /// gat a value by name, used by scripting
     ///
     /// @param  name            The full name of the variable to be found.
-    /// @param  value           A refernce to the variable
+    /// @param  value           A reference to the variable
     /// @return                 true if the variable is found
     static bool get(const char *name, float &value);
 
@@ -313,6 +313,9 @@ public:
     ///                         it does not exist.
     ///
     static AP_Param * find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token);
+
+    // by-name equivalent of find_by_index()
+    static AP_Param* find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token);
 
     /// Find a variable by pointer
     ///
@@ -454,6 +457,9 @@ public:
     /// as needed
     static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
 
+    /// get the size of a type in bytes
+    static uint8_t				type_size(enum ap_var_type type);
+
     /// cast a variable to a float given its type
     float                   cast_to_float(enum ap_var_type type) const;
 
@@ -471,15 +477,21 @@ public:
 
     // return true if the parameter is read-only
     bool is_read_only(void) const;
+
+    // return the persistent top level key for the ParamToken key
+    static uint16_t get_persistent_key(uint16_t key) { return _var_info[key].key; }
     
     // count of parameters in tree
     static uint16_t count_parameters(void);
+
+    // invalidate parameter count
+    static void invalidate_count(void);
 
     static void set_hide_disabled_groups(bool value) { _hide_disabled_groups = value; }
 
     // set frame type flags. Used to unhide frame specific parameters
     static void set_frame_type_flags(uint16_t flags_to_set) {
-        _parameter_count = 0;
+        invalidate_count();
         _frame_type_flags |= flags_to_set;
     }
 
@@ -628,7 +640,6 @@ private:
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
-    static uint8_t				type_size(enum ap_var_type type);
     static void                 eeprom_write_check(
                                     const void *ptr,
                                     uint16_t ofs,
@@ -669,6 +680,9 @@ private:
     static StorageAccess        _storage;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
+    static uint16_t             _count_marker;
+    static uint16_t             _count_marker_done;
+    static HAL_Semaphore        _count_sem;
     static const struct Info *  _var_info;
 
     /*
@@ -733,6 +747,14 @@ public:
         _value = v;
     }
 
+    // set a parameter that is an ENABLE param
+    void set_enable(const T &v) {
+        if (v != _value) {
+            invalidate_count();
+        }
+        _value = v;
+    }
+    
     /// Sets if the parameter is unconfigured
     ///
     void set_default(const T &v) {
@@ -769,7 +791,10 @@ public:
     /// value separately, as otherwise the value in EEPROM won't be
     /// updated correctly.
     void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
         if (v == _value) {
+#pragma GCC diagnostic pop
             return;
         }
         set(v);
@@ -867,6 +892,23 @@ public:
         set(v);
         save(force);
     }
+
+    /// Combined set and save, but only does the save if the value is
+    /// different from the current ram value, thus saving us a
+    /// scan(). This should only be used where we have not set() the
+    /// value separately, as otherwise the value in EEPROM won't be
+    /// updated correctly.
+    void set_and_save_ifchanged(const T &v) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+        if (_value == v) {
+#pragma GCC diagnostic pop
+            return;
+        }
+        set(v);
+        save(true);
+    }
+
 
     /// Conversion to T returns a reference to the value.
     ///

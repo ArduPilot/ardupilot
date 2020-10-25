@@ -421,6 +421,18 @@ float Vector2<T>::closest_distance_between_radial_and_point(const Vector2<T> &w,
     return sqrtf(closest_distance_between_radial_and_point_squared(w,p));
 }
 
+// rotate vector by angle in radians
+template <typename T>
+void Vector2<T>::rotate(float angle_rad)
+{
+    const float cs = cosf(angle_rad);
+    const float sn = sinf(angle_rad);
+    float rx = x * cs - y * sn;
+    float ry = x * sn + y * cs;
+    x = rx;
+    y = ry;
+}
+
 // only define for float
 template float Vector2<float>::length_squared(void) const;
 template float Vector2<float>::length(void) const;
@@ -453,6 +465,9 @@ template float Vector2<float>::closest_distance_between_radial_and_point(const V
 template float Vector2<float>::closest_distance_between_line_and_point(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_line_and_point_squared(const Vector2<float> &w1, const Vector2<float> &w2, const Vector2<float> &p);
 template float Vector2<float>::closest_distance_between_lines_squared(const Vector2<float> &a1,const Vector2<float> &a2,const Vector2<float> &b1,const Vector2<float> &b2);
+template Vector2<float> Vector2<float>::projected(const Vector2<float> &v);
+template void Vector2<float>::rotate(float angle);
+
 
 template void Vector2<float>::reflect(const Vector2<float> &n);
 

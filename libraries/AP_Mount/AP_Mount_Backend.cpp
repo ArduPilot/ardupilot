@@ -1,4 +1,5 @@
 #include "AP_Mount_Backend.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -208,3 +209,5 @@ bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     }
     return true;
 }
+
+#endif // HAL_MOUNT_ENABLED

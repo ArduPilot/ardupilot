@@ -1,6 +1,8 @@
 #include "AP_Vehicle.h"
 
+#include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_Arming/AP_Arming.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -19,11 +21,28 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_GyroFFT/AP_GyroFFT.cpp
     AP_SUBGROUPINFO(gyro_fft, "FFT_",  2, AP_Vehicle, AP_GyroFFT),
 #endif
+
+#if HAL_VISUALODOM_ENABLED
+    // @Group: VISO
+    // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
+    AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
+#endif
+
+    // @Group: VTX_
+    // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
+    AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
+
+#if HAL_MSP_ENABLED
+    // @Group: MSP
+    // @Path: ../AP_MSP/AP_MSP.cpp
+    AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
+#endif
+
     AP_GROUPEND
 };
 
 // reference to the vehicle. using AP::vehicle() here does not work on clang
-#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 AP_Vehicle& vehicle = *AP_Vehicle::get_singleton();
 #else
 extern AP_Vehicle& vehicle;
@@ -77,8 +96,14 @@ void AP_Vehicle::setup()
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 
+#if HAL_MSP_ENABLED
+    // call MSP init before init_ardupilot to allow for MSP sensors
+    msp.init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
+    gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
@@ -90,6 +115,11 @@ void AP_Vehicle::setup()
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
 #endif
+#if HAL_VISUALODOM_ENABLED
+    // init library used for visual position estimation
+    visual_odom.init();
+#endif
+    vtx.init();
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
@@ -103,6 +133,16 @@ void AP_Vehicle::loop()
 }
 
 /*
+ fast loop callback for all vehicles. This will get called at the end of any vehicle-specific fast loop.
+ */
+void AP_Vehicle::fast_loop()
+{
+#if HAL_GYROFFT_ENABLED
+    gyro_fft.sample_gyros();
+#endif
+}
+
+/*
   common scheduler table for fast CPUs - all common vehicle tasks
   should be listed here, along with how often they should be called (in hz)
   and the maximum time they are expected to take (in microseconds)
@@ -112,9 +152,12 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50),
 #endif
 #if HAL_GYROFFT_ENABLED
-    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       sample_gyros,      LOOP_RATE, 50),
+    SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
+    SCHED_TASK(update_dynamic_notch,                   200,    200),
+    SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
+    SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -131,6 +174,11 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
  */
 void AP_Vehicle::scheduler_delay_callback()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // compass.init() delays, so we end up here.
+    return;
+#endif
+
     static uint32_t last_1hz, last_50hz, last_5s;
 
     AP_Logger &logger = AP::logger();
@@ -156,6 +204,83 @@ void AP_Vehicle::scheduler_delay_callback()
     }
 
     logger.EnableWrites(true);
+}
+
+// if there's been a watchdog reset, notify the world via a statustext:
+void AP_Vehicle::send_watchdog_reset_statustext()
+{
+    if (!hal.util->was_watchdog_reset()) {
+        return;
+    }
+    const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+    gcs().send_text(MAV_SEVERITY_CRITICAL,
+                    "WDG: T%d SL%u FL%u FT%u FA%x FTP%u FLR%x FICSR%u MM%u MC%u IE%u IEC%u TN:%.4s",
+                    pd.scheduler_task,
+                    pd.semaphore_line,
+                    pd.fault_line,
+                    pd.fault_type,
+                    (unsigned)pd.fault_addr,
+                    pd.fault_thd_prio,
+                    (unsigned)pd.fault_lr,
+                    (unsigned)pd.fault_icsr,
+                    pd.last_mavlink_msgid,
+                    pd.last_mavlink_cmd,
+                    (unsigned)pd.internal_errors,
+                    (unsigned)pd.internal_error_count,
+                    pd.thread_name4
+        );
+}
+
+bool AP_Vehicle::is_crashed() const
+{
+    if (AP::arming().is_armed()) {
+        return false;
+    }
+    return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
+}
+
+// @LoggerMessage: FTN
+// @Description: Filter Tuning Messages
+// @Field: TimeUS: microseconds since system startup
+// @Field: NDn: number of active dynamic harmonic notches
+// @Field: DnF1: dynamic harmonic notch centre frequency for motor 1
+// @Field: DnF2: dynamic harmonic notch centre frequency for motor 2
+// @Field: DnF3: dynamic harmonic notch centre frequency for motor 3
+// @Field: DnF4: dynamic harmonic notch centre frequency for motor 4
+void AP_Vehicle::write_notch_log_messages() const
+{
+    const float* notches = ins.get_gyro_dynamic_notch_center_frequencies_hz();
+    AP::logger().Write(
+        "FTN", "TimeUS,NDn,DnF1,DnF2,DnF3,DnF4", "s-zzzz", "F-----", "QBffff", AP_HAL::micros64(), ins.get_num_gyro_dynamic_notch_center_frequencies(),
+            notches[0], notches[1], notches[2], notches[3]);
+}
+
+// reboot the vehicle in an orderly manner, doing various cleanups and
+// flashing LEDs as appropriate
+void AP_Vehicle::reboot(bool hold_in_bootloader)
+{
+    if (should_zero_rc_outputs_on_reboot()) {
+        SRV_Channels::zero_rc_outputs();
+    }
+
+    // Notify might want to blink some LEDs:
+    AP_Notify::flags.firmware_update = 1;
+    notify.update();
+
+    // force safety on
+    hal.rcout->force_safety_on();
+
+    // flush pending parameter writes
+    AP_Param::flush();
+
+    // do not process incoming mavlink messages while we delay:
+    hal.scheduler->register_delay_callback(nullptr, 5);
+
+    // delay to give the ACK a chance to get out, the LEDs to flash,
+    // the IO board safety to be forced on, the parameters to flush, ...
+    hal.scheduler->delay(200);
+
+    hal.scheduler->reboot(hold_in_bootloader);
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;

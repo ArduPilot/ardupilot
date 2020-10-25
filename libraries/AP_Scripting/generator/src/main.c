@@ -68,8 +68,8 @@ FILE *description;
 FILE *header;
 FILE *source;
 
-static struct generator_state state = {};
-static struct header * headers = NULL;
+static struct generator_state state;
+static struct header * headers;
 
 enum trace_level {
   TRACE_TOKENS    = (1 << 0),
@@ -171,9 +171,12 @@ void trace(const int trace, const char *message, ...) {
     va_start(args, message);
     vfprintf(stderr, fmt, args);
     va_end(args);
+    free(fmt);
+    fmt = NULL;
   }
 }
 
+void error(const int code, const char *message, ...) __attribute__ ((noreturn));
 void error(const int code, const char *message, ...) {
   char * fmt = malloc(strlen(message)+1024);
   if (fmt == NULL) {
@@ -190,7 +193,8 @@ void error(const int code, const char *message, ...) {
   va_start(args, message);
   vfprintf(stderr, fmt, args);
   va_end(args);
-
+  free(fmt);
+  fmt = NULL;
   exit(code);
 }
 
@@ -202,7 +206,7 @@ char * next_token(void) {
   trace(TRACE_TOKENS, "Token %d:%d %s", state.line_num, state.token_num, state.token);
   if ((state.token!= NULL) && (strcmp(state.token, keyword_comment) == 0)) {
     trace(TRACE_TOKENS, "Detected comment %d", state.line_num);
-    while (next_token()) {} // burn all the symbols
+    state.token = NULL; // burn the line
   }
   return state.token;
 }
@@ -211,12 +215,27 @@ char * start_line(void) {
   while (fgets(state.line, sizeof(state.line)/sizeof(state.line[0]), description) != NULL) {//state.line = readline(NULL))) {
       state.line_num++;
     
+      const size_t length = strlen(state.line);
+      if (length > 1 && state.line[length - 2] == '\r') {
+        trace(TRACE_TOKENS, "Discarding carriage return");
+        if (length == 2) { // empty line of just carriage return, loop again
+          continue;
+        }
+        state.line[length - 2] = '\0';
+      } else if (length > 0 && state.line[length - 1] == '\n') {
+        trace(TRACE_TOKENS, "Discarding newline");
+        if (length == 1) { // empty line of just carriage return, loop again
+          continue;
+        }
+        state.line[length - 1] = '\0';
+      }
+
       state.token = strtok(state.line, token_delimiters);
       state.token_num = 1;
-      trace(TRACE_TOKENS, "Token %d:%d %s", state.line_num, state.token_num, state.token);
+      trace(TRACE_TOKENS, "Start of line token %d:%d %s", state.line_num, state.token_num, state.token);
 
       if (state.token != NULL) {
-          break;
+        break;
       }
   }
 
@@ -321,8 +340,8 @@ struct userdata {
   int flags; // flags from the userdata_flags enum
 };
 
-static struct userdata *parsed_userdata = NULL;
-static struct userdata *parsed_ap_objects = NULL;
+static struct userdata *parsed_userdata;
+static struct userdata *parsed_ap_objects;
 
 
 struct dependency {
@@ -332,7 +351,7 @@ struct dependency {
   char *error_msg; // message if the check fails
 };
 
-static struct dependency *parsed_dependencies = NULL;
+static struct dependency *parsed_dependencies;
 
 // lazy helper that allocates a storage buffer and does strcpy for us
 void string_copy(char **dest, const char * src) {
@@ -673,7 +692,7 @@ void handle_operator(struct userdata *data) {
     error(ERROR_USERDATA, "Needed a symbol for the operator");
   }
 
-  enum operator_type operation;
+  enum operator_type operation = OP_ADD;
   if (strcmp(operator, "+") == 0) {
     operation = OP_ADD;
   } else if (strcmp(operator, "-") == 0) {
@@ -1330,7 +1349,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       // extract the userdata, it was a pointer, so we need to grab it
       fprintf(source, "    %s * ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
       fprintf(source, "    if (ud == NULL) {\n");
-      fprintf(source, "        luaL_error(L, \"Internal error, null pointer\");\n");
+      fprintf(source, "        return luaL_error(L, \"Internal error, null pointer\");\n");
       fprintf(source, "    }\n");
       break;
   }
@@ -1360,49 +1379,80 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
   }
 
+  int static_cast = TRUE;
+
   switch (method->return_type.type) {
-    case TYPE_BOOLEAN:
-      fprintf(source, "    const bool data = ud->%s(", method->name);
-      break;
-    case TYPE_FLOAT:
-      fprintf(source, "    const float data = ud->%s(", method->name);
-      break;
-    case TYPE_INT8_T:
-      fprintf(source, "    const int8_t data = ud->%s(", method->name);
-      break;
-    case TYPE_INT16_T:
-      fprintf(source, "    const int16_t data = ud->%s(", method->name);
-      break;
-    case TYPE_INT32_T:
-      fprintf(source, "    const int32_t data = ud->%s(", method->name);
-      break;
     case TYPE_STRING:
       fprintf(source, "    const char * data = ud->%s(", method->name);
-      break;
-    case TYPE_UINT8_T:
-      fprintf(source, "    const uint8_t data = ud->%s(", method->name);
-      break;
-    case TYPE_UINT16_T:
-      fprintf(source, "    const uint16_t data = ud->%s(", method->name);
-      break;
-    case TYPE_UINT32_T:
-      fprintf(source, "    const uint32_t data = ud->%s(", method->name);
+      static_cast = FALSE;
       break;
     case TYPE_ENUM:
       fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.enum_name, method->name);
+      static_cast = FALSE;
       break;
     case TYPE_USERDATA:
       fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.ud.name, method->name);
+      static_cast = FALSE;
       break;
     case TYPE_AP_OBJECT:
       fprintf(source, "    %s *data = ud->%s(", method->return_type.data.ud.name, method->name);
+      static_cast = FALSE;
       break;
     case TYPE_NONE:
       fprintf(source, "    ud->%s(", method->name);
+      static_cast = FALSE;
       break;
     case TYPE_LITERAL:
       error(ERROR_USERDATA, "Can't return a literal from a method");
       break;
+    case TYPE_BOOLEAN:
+    case TYPE_FLOAT:
+    case TYPE_INT8_T:
+    case TYPE_INT16_T:
+    case TYPE_INT32_T:
+    case TYPE_UINT8_T:
+    case TYPE_UINT16_T:
+    case TYPE_UINT32_T:
+      break;
+  }
+
+  if (static_cast) {
+    char *var_type_name;
+    switch (method->return_type.type) {
+      case TYPE_BOOLEAN:
+        var_type_name = "bool";
+        break;
+      case TYPE_FLOAT:
+        var_type_name = "float";
+        break;
+      case TYPE_INT8_T:
+        var_type_name = "int8_t";
+        break;
+      case TYPE_INT16_T:
+        var_type_name = "int16_t";
+        break;
+      case TYPE_INT32_T:
+        var_type_name = "int32_t";
+        break;
+      case TYPE_UINT8_T:
+        var_type_name = "uint8_t";
+        break;
+      case TYPE_UINT16_T:
+        var_type_name = "uint16_t";
+        break;
+      case TYPE_UINT32_T:
+        var_type_name = "uint32_t";
+        break;
+    case TYPE_STRING:
+    case TYPE_ENUM:
+    case TYPE_USERDATA:
+    case TYPE_AP_OBJECT:
+    case TYPE_NONE:
+    case TYPE_LITERAL:
+        error(ERROR_USERDATA, "Unexpected type");
+        break;
+    }
+    fprintf(source, "    const %s data = static_cast<%s>(ud->%s(", var_type_name, var_type_name, method->name);
   }
 
   if (arg_count != 2) {
@@ -1442,7 +1492,11 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
             fprintf(source, ",\n");
     }
   }
-  fprintf(source, "%s);\n\n", "");
+  if (static_cast) {
+    fprintf(source, "%s));\n\n", "");
+  } else {
+    fprintf(source, "%s);\n\n", "");
+  }
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
     fprintf(source, "    ud->get_semaphore().give();\n");
@@ -1506,8 +1560,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
           arg_index++;
           arg = arg->next;
         }
+        fprintf(source, "        return %d;\n", return_count);
         fprintf(source, "    } else {\n");
-        fprintf(source, "        lua_pushnil(L);\n");
+        fprintf(source, "        return 0;\n");
         fprintf(source, "    }\n");
       } else {
         fprintf(source, "    lua_pushboolean(L, data);\n");
@@ -1551,7 +1606,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       break;
   }
 
-  fprintf(source, "    return %d;\n", return_count);
+  if ((method->return_type.type != TYPE_BOOLEAN) || ((method->flags & TYPE_FLAGS_NULLABLE) == 0)) {
+      fprintf(source, "    return %d;\n", return_count);
+  }
 
   fprintf(source, "}\n\n");
 }
@@ -1928,7 +1985,7 @@ int main(int argc, char **argv) {
   sanity_check_userdata();
 
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
-  fprintf(source, "#include \"lua_boxed_numerics.h\"\n");
+  fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 
@@ -1980,7 +2037,7 @@ int main(int argc, char **argv) {
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
   emit_headers(header);
-  fprintf(header, "#include \"lua/src/lua.hpp\"\n");
+  fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
   fprintf(header, "#include <new>\n\n");
   emit_dependencies(header);
   fprintf(header, "\n\n");

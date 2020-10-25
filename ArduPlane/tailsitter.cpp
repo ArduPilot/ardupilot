@@ -26,9 +26,18 @@
  */
 bool QuadPlane::is_tailsitter(void) const
 {
-    return available() 
+    return available()
         && ((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0))
         && (tilt.tilt_type != TILT_TYPE_BICOPTER);
+}
+
+/*
+  return true when flying a control surface only tailsitter tailsitter
+ */
+bool QuadPlane::is_contol_surface_tailsitter(void) const
+{
+    return frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER
+           && ( is_zero(tailsitter.vectored_hover_gain) || !SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft));
 }
 
 /*
@@ -61,49 +70,73 @@ void QuadPlane::tailsitter_output(void)
 
     float tilt_left = 0.0f;
     float tilt_right = 0.0f;
-    uint16_t mask = tailsitter.motor_mask;
+
+
 
     // handle forward flight modes and transition to VTOL modes
     if (!tailsitter_active() || in_tailsitter_vtol_transition()) {
-        // in forward flight: set motor tilt servos and throttles using FW controller
-        if (tailsitter.vectored_forward_gain > 0) {
-            // thrust vectoring in fixed wing flight
-            float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-            float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-            tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
-            tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
-        }
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
-
         // get FW controller throttle demand and mask of motors enabled during forward flight
         float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-        if (hal.util->get_soft_armed()) {
-            if (in_tailsitter_vtol_transition() && !throttle_wait && is_flying()) {
-                /*
-                  during transitions to vtol mode set the throttle to
-                  hover thrust, center the rudder and set the altitude controller
-                  integrator to the same throttle level
-                 */
-                throttle = motors->get_throttle_hover() * 100;
-                SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-                pos_control->get_accel_z_pid().set_integrator(throttle*10);
+        if (hal.util->get_soft_armed() && in_tailsitter_vtol_transition() && !throttle_wait && is_flying()) {
+            /*
+              during transitions to vtol mode set the throttle to
+              hover thrust, center the rudder and set the altitude controller
+              integrator to the same throttle level
+            */
+            throttle = motors->get_throttle_hover() * 100;
+            SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
+            pos_control->get_accel_z_pid().set_integrator(throttle*10);
 
-                // override AP_MotorsTailsitter throttles during back transition
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
-            }
+            // override AP_MotorsTailsitter throttles during back transition
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
         }
-        // set AP_MotorsMatrix throttles for forward flight
-        motors->output_motor_mask(throttle * 0.01f, mask, plane.rudder_dt);
-        return;
+
+        if (!assisted_flight) {
+            // set AP_MotorsMatrix throttles for forward flight
+            motors->output_motor_mask(throttle * 0.01f, tailsitter.motor_mask, plane.rudder_dt);
+
+            // in forward flight: set motor tilt servos and throttles using FW controller
+            if (tailsitter.vectored_forward_gain > 0) {
+                // thrust vectoring in fixed wing flight
+                float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+                float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+                tilt_left  = (elevator + aileron) * tailsitter.vectored_forward_gain;
+                tilt_right = (elevator - aileron) * tailsitter.vectored_forward_gain;
+            }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+            return;
+        }
     }
 
-    // handle VTOL modes
+    // handle Copter controller
     // the MultiCopter rate controller has already been run in an earlier call
-    // to motors_output() from quadplane.update()
-    motors_output(false);
+    // to motors_output() from quadplane.update(), unless we are in assisted flight
+    if (assisted_flight && tailsitter_transition_fw_complete()) {
+        hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
+        motors_output(true);
+
+        if ((options & OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
+            // only use motors for Q assist, control surfaces remain under plane control
+            // zero copter I terms and use plane
+            attitude_control->reset_rate_controller_I_terms();
+
+            // output tilt motors
+            if (tailsitter.vectored_hover_gain > 0) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain);
+            }
+
+            // skip remainder of the function that overwrites plane control surface outputs with copter
+            return;
+        }
+    } else {
+        motors_output(false);
+    }
+
+    // In full Q assist it is better to use cotper I and zero plane
     plane.pitchController.reset_I();
     plane.rollController.reset_I();
 

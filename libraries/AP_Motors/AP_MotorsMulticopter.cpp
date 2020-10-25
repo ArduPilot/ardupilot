@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsMulticopter.cpp - ArduCopter multicopter motors library
- *       Code by Randy Mackay and Robert Lefebvre. DIYDrones.com
- *
- */
-
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
@@ -313,7 +307,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     float _batt_current;
 
     if (_batt_current_max <= 0 || // return maximum if current limiting is disabled
-        !_flags.armed || // remove throttle limit if disarmed
+        !armed() || // remove throttle limit if disarmed
         !battery.current_amps(_batt_current, _batt_idx)) { // no current monitoring is available
         _throttle_limit = 1.0f;
         return 1.0f;
@@ -539,7 +533,7 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 // run spool logic
 void AP_MotorsMulticopter::output_logic()
 {
-    if (_flags.armed) {
+    if (armed()) {
         if (_disarm_disable_pwm && (_disarm_safe_timer < _safe_time)) {
             _disarm_safe_timer += 1.0f/_loop_rate;
         } else {
@@ -550,7 +544,7 @@ void AP_MotorsMulticopter::output_logic()
     }
 
     // force desired and current spool mode if disarmed or not interlocked
-    if (!_flags.armed || !_flags.interlock) {
+    if (!armed() || !get_interlock()) {
         _spool_desired = DesiredSpoolState::SHUT_DOWN;
         _spool_state = SpoolState::SHUT_DOWN;
     }

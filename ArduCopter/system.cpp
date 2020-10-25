@@ -22,8 +22,8 @@ void Copter::init_ardupilot()
 #endif
 
     BoardConfig.init();
-#if HAL_WITH_UAVCAN
-    BoardConfig_CAN.init();
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    can_mgr.init();
 #endif
 
     // init cargo gripper
@@ -35,8 +35,10 @@ void Copter::init_ardupilot()
     fence.init();
 #endif
 
-    // init winch and wheel encoder
-    winch_init();
+    // init winch
+#if WINCH_ENABLED == ENABLED
+    g2.winch.init();
+#endif
 
     // initialise notify system
     notify.init();
@@ -52,6 +54,10 @@ void Copter::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
+
+#if GENERATOR_ENABLED
+    generator.init();
+#endif
 
 #if OSD_ENABLED == ENABLED
     osd.init();
@@ -126,7 +132,7 @@ void Copter::init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
 #endif
@@ -170,9 +176,6 @@ void Copter::init_ardupilot()
     // init beacons used for non-gps position estimation
     g2.beacon.init();
 #endif
-
-    // init visual odometry
-    init_visual_odom();
 
 #if RPM_ENABLED == ENABLED
     // initialise AP_RPM library
@@ -220,8 +223,6 @@ void Copter::init_ardupilot()
     // disable safety if requested
     BoardConfig.init_safety();
 
-    hal.console->printf("\nReady to FLY ");
-
     // flag that initialisation has completed
     ap.initialised = true;
 }
@@ -251,16 +252,17 @@ void Copter::update_dynamic_notch()
     }
     const float ref_freq = ins.get_gyro_harmonic_notch_center_freq_hz();
     const float ref = ins.get_gyro_harmonic_notch_reference();
-
     if (is_zero(ref)) {
         ins.update_harmonic_notch_freq_hz(ref_freq);
         return;
     }
 
+    const float throttle_freq = ref_freq * MAX(1.0f, sqrtf(motors->get_throttle_out() / ref));
+
     switch (ins.get_gyro_harmonic_notch_tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
-            ins.update_harmonic_notch_freq_hz(ref_freq * MAX(1.0f, sqrtf(motors->get_throttle_out() / ref)));
+            ins.update_harmonic_notch_freq_hz(throttle_freq);
             break;
 
 #if RPM_ENABLED == ENABLED
@@ -276,13 +278,35 @@ void Copter::update_dynamic_notch()
 #endif
 #ifdef HAVE_AP_BLHELI_SUPPORT
         case HarmonicNotchDynamicMode::UpdateBLHeli: // BLHeli based tracking
-            ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP_BLHeli::get_singleton()->get_average_motor_frequency_hz() * ref));
+            // set the harmonic notch filter frequency scaled on measured frequency
+            if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+                float notches[INS_MAX_NOTCHES];
+                const uint8_t num_notches = AP_BLHeli::get_singleton()->get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
+
+                for (uint8_t i = 0; i < num_notches; i++) {
+                    notches[i] =  MAX(ref_freq, notches[i]);
+                }
+                if (num_notches > 0) {
+                    ins.update_harmonic_notch_frequencies_hz(num_notches, notches);
+                } else {    // throttle fallback
+                    ins.update_harmonic_notch_freq_hz(throttle_freq);
+                }
+            } else {
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, AP_BLHeli::get_singleton()->get_average_motor_frequency_hz() * ref));
+            }
             break;
 #endif
 #if HAL_GYROFFT_ENABLED
         case HarmonicNotchDynamicMode::UpdateGyroFFT: // FFT based tracking
             // set the harmonic notch filter frequency scaled on measured frequency
-            ins.update_harmonic_notch_freq_hz(gyro_fft.get_weighted_noise_center_freq_hz());
+            if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+                float notches[INS_MAX_NOTCHES];
+                const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(INS_MAX_NOTCHES, notches);
+
+                ins.update_harmonic_notch_frequencies_hz(peaks, notches);
+            } else {
+                ins.update_harmonic_notch_freq_hz(gyro_fft.get_weighted_noise_center_freq_hz());
+            }
             break;
 #endif
         case HarmonicNotchDynamicMode::Fixed: // static
@@ -327,9 +351,6 @@ bool Copter::ekf_position_ok() const
 // optflow_position_ok - returns true if optical flow based position estimate is ok
 bool Copter::optflow_position_ok() const
 {
-#if OPTFLOW != ENABLED && VISUAL_ODOMETRY_ENABLED != ENABLED
-    return false;
-#else
     // return immediately if EKF not used
     if (!ahrs.have_inertial_nav()) {
         return false;
@@ -342,8 +363,8 @@ bool Copter::optflow_position_ok() const
         enabled = true;
     }
 #endif
-#if VISUAL_ODOMETRY_ENABLED == ENABLED
-    if (g2.visual_odom.enabled()) {
+#if HAL_VISUALODOM_ENABLED
+    if (visual_odom.enabled()) {
         enabled = true;
     }
 #endif
@@ -360,7 +381,21 @@ bool Copter::optflow_position_ok() const
     } else {
         return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
     }
-#endif
+}
+
+// returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
+bool Copter::ekf_alt_ok() const
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow alt control with only dcm
+        return false;
+    }
+
+    // with EKF use filter status and ekf check
+    nav_filter_status filt_status = inertial_nav.get_filter_status();
+
+    // require both vertical velocity and position
+    return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);
 }
 
 // update_auto_armed - update status of auto_armed flag
@@ -618,6 +653,9 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG == HELI_FRAME
     convert_tradheli_parameters();
 #endif
+
+    // param count could have changed
+    AP_Param::invalidate_count();
 }
 
 bool Copter::is_tradheli() const

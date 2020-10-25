@@ -59,7 +59,7 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
     }
 
     if (entry == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
 
@@ -72,7 +72,7 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
     case AC_PolyFenceType::CIRCLE_INCLUSION:
     case AC_PolyFenceType::CIRCLE_EXCLUSION:
         if (delta != 0) {
-            AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return false;
         }
         break;
@@ -84,12 +84,12 @@ bool AC_PolyFence_loader::find_storage_offset_for_seq(const uint16_t seq, uint16
         break;
     case AC_PolyFenceType::RETURN_POINT:
         if (delta != 0) {
-            AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return false;
         }
         break;
     case AC_PolyFenceType::END_OF_STORAGE:
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
     return true;
@@ -117,7 +117,6 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
             return false;
         }
         item.radius = fence_storage.read_uint32(offset);
-        offset += 4;
         break;
     case AC_PolyFenceType::POLYGON_INCLUSION:
     case AC_PolyFenceType::POLYGON_EXCLUSION:
@@ -133,7 +132,7 @@ bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item)
         break;
     case AC_PolyFenceType::END_OF_STORAGE:
         // read end-of-storage when I should never do so
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
     return true;
@@ -433,7 +432,7 @@ void AC_PolyFence_loader::scan_eeprom_count_fences(const AC_PolyFenceType type, 
     _eeprom_fence_count++;
     switch (type) {
     case AC_PolyFenceType::END_OF_STORAGE:
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
     case AC_PolyFenceType::POLYGON_EXCLUSION:
     case AC_PolyFenceType::POLYGON_INCLUSION: {
@@ -460,7 +459,7 @@ bool AC_PolyFence_loader::count_eeprom_fences()
 void AC_PolyFence_loader::scan_eeprom_index_fences(const AC_PolyFenceType type, uint16_t read_offset)
 {
     if (_index == nullptr) {
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
     if (type == AC_PolyFenceType::END_OF_STORAGE) {
@@ -471,7 +470,7 @@ void AC_PolyFence_loader::scan_eeprom_index_fences(const AC_PolyFenceType type, 
     index.storage_offset = read_offset;
     switch (type) {
     case AC_PolyFenceType::END_OF_STORAGE:
-        AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
     case AC_PolyFenceType::POLYGON_EXCLUSION:
     case AC_PolyFenceType::POLYGON_INCLUSION: {
@@ -595,7 +594,7 @@ uint16_t AC_PolyFence_loader::sum_of_polygon_point_counts_and_returnpoint()
             ret += index.count;
             break;
         case AC_PolyFenceType::END_OF_STORAGE:
-            AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
         }
     }
@@ -865,6 +864,19 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
     return true;
 }
 
+bool AC_PolyFence_loader::check_inclusion_circle_margin(float margin) const
+{
+    // check circular includes
+    for (uint8_t i=0; i<_num_loaded_circle_inclusion_boundaries; i++) {
+        const InclusionCircle &circle = _loaded_circle_inclusion_boundary[i];
+        if (circle.radius < margin) {
+            // circle radius should never be less than margin
+            return false;
+        } 
+    }
+    return true;
+}
+
 bool AC_PolyFence_loader::validate_fence(const AC_PolyFenceItem *new_items, uint16_t count) const
 {
     // validate the fence items...
@@ -966,7 +978,7 @@ uint16_t AC_PolyFence_loader::fence_storage_space_required(const AC_PolyFenceIte
             i += new_items[i].vertex_count - 1; // i is incremented down below
             break;
         case AC_PolyFenceType::END_OF_STORAGE:
-            AP::internalerror().error(AP_InternalError::error_t::flow_of_control);
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             break;
         case AC_PolyFenceType::CIRCLE_INCLUSION:
         case AC_PolyFenceType::CIRCLE_EXCLUSION:

@@ -294,7 +294,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         bus.dma_handle->unlock();
 
         if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
-            AP::internalerror().error(AP_InternalError::error_t::i2c_isr);
+            INTERNAL_ERROR(AP_InternalError::error_t::i2c_isr);
             break;
         }
 

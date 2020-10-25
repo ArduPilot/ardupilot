@@ -124,6 +124,22 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_elevon_right:
     case k_vtail_left:
     case k_vtail_right:
+    case k_scripting1:
+    case k_scripting2:
+    case k_scripting3:
+    case k_scripting4:
+    case k_scripting5:
+    case k_scripting6:
+    case k_scripting7:
+    case k_scripting8:
+    case k_scripting9:
+    case k_scripting10:
+    case k_scripting11:
+    case k_scripting12:
+    case k_scripting13:
+    case k_scripting14:
+    case k_scripting15:
+    case k_scripting16:
     case k_roll_out:
     case k_pitch_out:
     case k_yaw_out:
@@ -132,6 +148,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_throttle:
     case k_throttleLeft:
     case k_throttleRight:
+    case k_airbrake:
         // fixed wing throttle
         set_range(100);
         break;
@@ -269,7 +286,7 @@ SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::Aux_servo_function_t functi
     }
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function.get() == function) {
-            channels[i].servo_trim.set_and_save_ifchanged(channels[i].output_pwm);
+            channels[i].servo_trim.set_and_save_ifchanged(channels[i].get_output_pwm());
         }
     }
 }
@@ -602,7 +619,7 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
         return false;
     }
     channels[chan].calc_pwm(functions[function].output_scaled);
-    value = channels[chan].output_pwm;
+    value = channels[chan].get_output_pwm();
     return true;
 }
 
@@ -612,17 +629,6 @@ void SRV_Channels::set_output_to_trim(SRV_Channel::Aux_servo_function_t function
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
             channels[i].set_output_pwm(channels[i].servo_trim);
-        }
-    }
-}
-
-// set output pwm to for first matching channel
-void SRV_Channels::set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t pwm)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            channels[i].set_output_pwm(pwm);
-            break;
         }
     }
 }
@@ -641,6 +647,20 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
     return channels[chan].get_output_norm();
 }
 
+// set normalised output (-1 to 1 with 0 at mid point of servo_min/servo_max) for the given function
+void SRV_Channels::set_output_norm(SRV_Channel::Aux_servo_function_t function, float value)
+{
+    if (!function_assigned(function)) {
+        return;
+    }
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
+        if (c.function == function) {
+            c.set_output_norm(value);
+        }
+    }
+}
+
 /*
   limit slew rate for an output function to given rate in percent per
   second. This assumes output has not yet done to the hal
@@ -656,7 +676,7 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
         if (c.function == function) {
             c.calc_pwm(functions[function].output_scaled);
             uint16_t last_pwm = hal.rcout->read_last_sent(c.ch_num);
-            if (last_pwm == c.output_pwm) {
+            if (last_pwm == c.get_output_pwm()) {
                 continue;
             }
             uint16_t max_change = (c.get_output_max() - c.get_output_min()) * slew_rate * dt * 0.01f;
@@ -666,7 +686,7 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
                 // change for this loop
                 max_change = 1;
             }
-            c.output_pwm = constrain_int16(c.output_pwm, last_pwm-max_change, last_pwm+max_change);
+            c.set_output_pwm(constrain_int16(c.get_output_pwm(), last_pwm-max_change, last_pwm+max_change));
         }
     }
 }
@@ -708,7 +728,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {
-            c.output_pwm = constrain_int16(c.output_pwm, c.servo_min, c.servo_max);
+            c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
         }
     }
 }

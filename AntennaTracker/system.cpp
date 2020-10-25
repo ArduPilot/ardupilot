@@ -9,8 +9,8 @@ void Tracker::init_ardupilot()
     stats.init();
 
     BoardConfig.init();
-#if HAL_WITH_UAVCAN
-    BoardConfig_CAN.init();
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    can_mgr.init();
 #endif
 
     // initialise notify
@@ -79,7 +79,6 @@ void Tracker::init_ardupilot()
         get_home_eeprom(current_loc);
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO,"Ready to track");
     hal.scheduler->delay(1000); // Why????
 
     Mode *newmode = mode_from_mode_num((Mode::Number)g.initial_mode.get());
@@ -247,6 +246,7 @@ bool Tracker::should_log(uint32_t mask)
 // dummy method to avoid linking AFS
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
-
+#if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
+#endif

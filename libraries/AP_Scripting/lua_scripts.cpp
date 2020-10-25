@@ -18,15 +18,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include "AP_Scripting.h"
 
-#include "lua_generated_bindings.h"
-
-#ifndef SCRIPTING_DIRECTORY
-  #if HAL_OS_FATFS_IO
-    #define SCRIPTING_DIRECTORY "/APM/scripts"
-  #else
-    #define SCRIPTING_DIRECTORY "./scripts"
-  #endif //HAL_OS_FATFS_IO
-#endif // SCRIPTING_DIRECTORY
+#include <AP_Scripting/lua_generated_bindings.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -130,7 +122,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         return;
     }
 
-    DIR *d = AP::FS().opendir(dirname);
+    auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: open directory (%s) failed", dirname);
         return;
@@ -372,8 +364,11 @@ void lua_scripts::run(void) {
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+    load_all_scripts_in_dir(L, "@ROMFS/scripts");
 
+#ifndef __clang_analyzer__
     succeeded_initial_load = true;
+#endif // __clang_analyzer__
 
     while (AP_Scripting::get_singleton()->enabled()) {
         // handle terminal data if we have any

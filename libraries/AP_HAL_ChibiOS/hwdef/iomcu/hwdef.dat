@@ -18,11 +18,9 @@ FLASH_SIZE_KB 64
 # ChibiOS system timer
 
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER EMPTY
+SERIAL_ORDER EMPTY EMPTY EMPTY EMPTY
 define HAL_USE_UART TRUE
 
 # UART connected to FMU, uses DMA

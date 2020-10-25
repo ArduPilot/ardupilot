@@ -14,6 +14,15 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef HAL_VISUALODOM_ENABLED
+#define HAL_VISUALODOM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -26,7 +35,6 @@ class AP_VisualOdom_Backend;
 class AP_VisualOdom
 {
 public:
-    friend class AP_VisualOdom_Backend;
 
     AP_VisualOdom();
 
@@ -37,27 +45,13 @@ public:
 
     // external position backend types (used by _TYPE parameter)
     enum AP_VisualOdom_Type {
-        AP_VisualOdom_Type_None   = 0,
-        AP_VisualOdom_Type_MAV    = 1
-    };
-
-    // The VisualOdomState structure is filled in by the backend driver
-    struct VisualOdomState {
-        Vector3f angle_delta;       // attitude delta (in radians) of most recent update
-        Vector3f position_delta;    // position delta (in meters) of most recent update
-        uint64_t time_delta_usec;   // time delta (in usec) between previous and most recent update
-        float confidence;           // confidence expressed as a value from 0 (no confidence) to 100 (very confident)
-        uint32_t last_sensor_update_ms;    // system time (in milliseconds) of last update from sensor
-        uint32_t last_processed_sensor_update_ms; // timestamp of last sensor update that was processed
-
+        AP_VisualOdom_Type_None         = 0,
+        AP_VisualOdom_Type_MAV          = 1,
+        AP_VisualOdom_Type_IntelT265    = 2
     };
 
     // detect and initialise any sensors
     void init();
-
-    // should be called really, really often.  The faster you call
-    // this the lower the latency of the data fed to the estimator.
-    void update();
 
     // return true if sensor is enabled
     bool enabled() const;
@@ -65,11 +59,44 @@ public:
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
+    // get user defined orientation
+    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
+
+    // get user defined scaling applied to position estimates
+    float get_pos_scale() const { return _pos_scale; }
+
     // return a 3D vector defining the position offset of the camera in meters relative to the body frame origin
     const Vector3f &get_pos_offset(void) const { return _pos_offset; }
 
-    // consume data from MAVLink messages
-    void handle_msg(const mavlink_message_t &msg);
+    // return the sensor delay in milliseconds (see _DELAY_MS parameter)
+    uint16_t get_delay_ms() const { return MAX(0, _delay_ms); }
+
+    // return velocity measurement noise in m/s
+    float get_vel_noise() const { return _vel_noise; }
+    
+    // return position measurement noise in m
+    float get_pos_noise() const { return _pos_noise; }
+
+    // return yaw measurement noise in rad
+    float get_yaw_noise() const { return _yaw_noise; }
+
+    // consume vision_position_delta mavlink messages
+    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+
+    // general purpose methods to consume position estimate data and send to EKF
+    // distances in meters, roll, pitch and yaw are in radians
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter);
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter);
+    
+    // general purpose methods to consume velocity estimate data and send to EKF
+    // velocity in NED meters per second
+    void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter);
+
+    // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
+    void align_sensor_to_vehicle();
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -77,25 +104,22 @@ private:
 
     static AP_VisualOdom *_singleton;
 
-    // state accessors
-    const Vector3f &get_angle_delta() const { return _state.angle_delta; }
-    const Vector3f &get_position_delta() const { return _state.position_delta; }
-    uint64_t get_time_delta_usec() const { return _state.time_delta_usec; }
-    float get_confidence() const { return _state.confidence; }
-    uint32_t get_last_update_ms() const { return _state.last_sensor_update_ms; }
-
     // parameters
-    AP_Int8 _type;
+    AP_Int8 _type;              // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
+    AP_Float _pos_scale;        // position scale factor applied to sensor values
+    AP_Int16 _delay_ms;         // average delay relative to inertial measurements
+    AP_Float _vel_noise;        // velocity measurement noise in m/s
+    AP_Float _pos_noise;        // position measurement noise in meters
+    AP_Float _yaw_noise;        // yaw measurement noise in radians
 
     // reference to backends
     AP_VisualOdom_Backend *_driver;
-
-    // state of backend
-    VisualOdomState _state;
 };
 
 namespace AP {
     AP_VisualOdom *visualodom();
 };
+
+#endif // HAL_VISUALODOM_ENABLED

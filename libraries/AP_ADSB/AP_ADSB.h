@@ -22,10 +22,17 @@
 */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+
+#ifndef HAL_ADSB_ENABLED
+#define HAL_ADSB_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
+
+#if HAL_ADSB_ENABLED
 
 class AP_ADSB {
 public:
@@ -217,3 +224,5 @@ private:
 namespace AP {
     AP_ADSB *ADSB();
 };
+
+#endif // HAL_ADSB_ENABLED

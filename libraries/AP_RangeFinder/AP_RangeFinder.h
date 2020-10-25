@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
@@ -31,6 +32,10 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   0
 #else
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
+#endif
+
+#ifndef HAL_MSP_RANGEFINDER_ENABLED
+#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
 #endif
 
 class AP_RangeFinder_Backend;
@@ -79,6 +84,10 @@ public:
         BenewakeTF03 = 27,
         VL53L1X_Short = 28,
         LeddarVu8_Serial = 29,
+        HC_SR04 = 30,
+        GYUS42v2 = 31,
+        MSP = 32,
+        SITL = 100,
     };
 
     enum class Function {
@@ -131,6 +140,10 @@ public:
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
     void handle_msg(const mavlink_message_t &msg);
 
+#if HAL_MSP_RANGEFINDER_ENABLED
+    // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
+    void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt);
+#endif
     // return true if we have a range finder with the specified orientation
     bool has_orientation(enum Rotation orientation) const;
 
@@ -144,6 +157,11 @@ public:
         return id >= RANGEFINDER_MAX_INSTANCES? Type::NONE : Type(params[id].type.get());
     }
 
+    // get rangefinder address (for AP_Periph CAN)
+    uint8_t get_address(uint8_t id) const {
+        return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+    }
+    
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
     uint16_t distance_cm_orient(enum Rotation orientation) const;
@@ -157,9 +175,6 @@ public:
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
     const Vector3f &get_pos_offset_orient(enum Rotation orientation) const;
     uint32_t last_reading_ms(enum Rotation orientation) const;
-
-    // indicate which bit in LOG_BITMASK indicates RFND should be logged
-    void set_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
 
     /*
       set an externally estimated terrain height. Used to enable power
@@ -180,6 +195,8 @@ private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
+    bool init_done;
+    HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 

@@ -215,32 +215,32 @@ static inline auto MAX(const A &one, const B &two) -> decltype(one > two ? one :
     return one > two ? one : two;
 }
 
-inline uint32_t hz_to_nsec(uint32_t freq)
+inline constexpr uint32_t hz_to_nsec(uint32_t freq)
 {
     return AP_NSEC_PER_SEC / freq;
 }
 
-inline uint32_t nsec_to_hz(uint32_t nsec)
+inline constexpr uint32_t nsec_to_hz(uint32_t nsec)
 {
     return AP_NSEC_PER_SEC / nsec;
 }
 
-inline uint32_t usec_to_nsec(uint32_t usec)
+inline constexpr uint32_t usec_to_nsec(uint32_t usec)
 {
     return usec * AP_NSEC_PER_USEC;
 }
 
-inline uint32_t nsec_to_usec(uint32_t nsec)
+inline constexpr uint32_t nsec_to_usec(uint32_t nsec)
 {
     return nsec / AP_NSEC_PER_USEC;
 }
 
-inline uint32_t hz_to_usec(uint32_t freq)
+inline constexpr uint32_t hz_to_usec(uint32_t freq)
 {
     return AP_USEC_PER_SEC / freq;
 }
 
-inline uint32_t usec_to_hz(uint32_t usec)
+inline constexpr uint32_t usec_to_hz(uint32_t usec)
 {
     return AP_USEC_PER_SEC / usec;
 }
@@ -256,7 +256,7 @@ float linear_interpolate(float low_output, float high_output,
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */
-float expo_curve(float alpha, float input);
+constexpr float expo_curve(float alpha, float input);
 
 /* throttle curve generator
  * thr_mid: output at mid stick
@@ -276,6 +276,15 @@ Vector3f rand_vec3f(void);
 
 // return true if two rotations are equal
 bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;
+
+/*
+ * return a velocity correction (in m/s in NED) for a sensor's position given it's position offsets
+ * this correction should be added to the sensor NED measurement
+ * sensor_offset_bf is in meters in body frame (Foward, Right, Down)
+ * rot_ef_to_bf is a rotation matrix to rotate from earth-frame (NED) to body frame
+ * angular_rate is rad/sec
+ */
+Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL

@@ -7,17 +7,25 @@
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
 
+#include <AP_HAL/AP_HAL.h>
+
 /**
    maximum number of INS instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
 #define INS_MAX_INSTANCES 3
 #define INS_MAX_BACKENDS  6
-#define INS_VIBRATION_CHECK_INSTANCES 2
+#define INS_MAX_NOTCHES 4
+#ifndef INS_VIBRATION_CHECK_INSTANCES
+  #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+    #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
+  #else
+    #define INS_VIBRATION_CHECK_INSTANCES 1
+  #endif
+#endif
 #define XYZ_AXIS_COUNT    3
 // The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
 #define INS_MAX_GYRO_WINDOW_SAMPLES 8
-typedef float* GyroWindow;
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
@@ -25,6 +33,7 @@ typedef float* GyroWindow;
 
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
@@ -96,6 +105,9 @@ public:
     ///
     void init_gyro(void);
 
+    // get startup messages to output to the GCS
+    bool get_output_banner(uint8_t instance_id, char* banner, uint8_t banner_len);
+
     /// Fetch the current gyro values
     ///
     /// @returns	vector of rotational rates in radians/sec
@@ -155,11 +167,8 @@ public:
     // FFT support access
 #if HAL_WITH_DSP
     const Vector3f     &get_raw_gyro(void) const { return _gyro_raw[_primary_gyro]; }
-    GyroWindow  get_raw_gyro_window(uint8_t instance, uint8_t axis) const { return _gyro_window[instance][axis]; }
-    GyroWindow  get_raw_gyro_window(uint8_t axis) const { return get_raw_gyro_window(_primary_gyro, axis); }
-    // returns the index one above the last valid gyro sample
-    uint16_t  get_raw_gyro_window_index(void) const { return get_raw_gyro_window_index(_primary_gyro); }
-    uint16_t  get_raw_gyro_window_index(uint8_t instance) const { return _circular_buffer_idx[instance]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
 #endif
@@ -208,8 +217,8 @@ public:
         _custom_rotation = custom_rotation;
     }
 
-    // return the selected sample rate
-    uint16_t get_sample_rate(void) const { return _sample_rate; }
+    // return the selected loop rate at which samples are made avilable
+    uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
@@ -221,6 +230,8 @@ public:
 
     // Update the harmonic notch frequency
     void update_harmonic_notch_freq_hz(float scaled_freq);
+    // Update the harmonic notch frequencies
+    void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
 
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
@@ -232,7 +243,13 @@ public:
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
     // harmonic notch current center frequency
-    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
+
+    // set of harmonic notch current center frequencies
+    const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+
+    // number of harmonic notch current center frequencies
+    uint8_t get_num_gyro_dynamic_notch_center_frequencies(void) const { return _num_calculated_harmonic_notch_frequencies; }
 
     // harmonic notch reference center frequency
     float get_gyro_harmonic_notch_center_freq_hz(void) const { return _harmonic_notch_filter.center_freq_hz(); }
@@ -245,6 +262,11 @@ public:
 
     // harmonic notch harmonics
     uint8_t get_gyro_harmonic_notch_harmonics(void) const { return _harmonic_notch_filter.harmonics(); }
+
+    // harmonic notch options
+    bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
+        return _harmonic_notch_filter.hasOption(option);
+    }
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -422,8 +444,8 @@ private:
     uint8_t _accel_count;
     uint8_t _backend_count;
 
-    // the selected sample rate
-    uint16_t _sample_rate;
+    // the selected loop rate at which samples are made available
+    uint16_t _loop_rate;
     float _loop_delta_t;
     float _loop_delta_t_max;
 
@@ -445,9 +467,7 @@ private:
 #if HAL_WITH_DSP
     // Thread-safe public version of _last_raw_gyro
     Vector3f _gyro_raw[INS_MAX_INSTANCES];
-    // circular buffer of gyro data for frequency analysis
-    uint16_t _circular_buffer_idx[INS_MAX_INSTANCES];
-    GyroWindow _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
+    FloatBuffer _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
     uint16_t _gyro_window_size;
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];
@@ -461,7 +481,8 @@ private:
     HarmonicNotchFilterParams _harmonic_notch_filter;
     HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
     // the current center frequency for the notch
-    float _calculated_harmonic_notch_freq_hz;
+    float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
+    uint8_t _num_calculated_harmonic_notch_frequencies;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
@@ -530,6 +551,9 @@ private:
 
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
+
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_rate;
 
     // control enable of detected sensors
     AP_Int8     _enable_mask;

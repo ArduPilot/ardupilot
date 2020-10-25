@@ -16,14 +16,13 @@
 #include "RCOutput.h"
 #include "Scheduler.h"
 #include "Semaphores.h"
+#include "EventHandle.h"
 #include "Util.h"
 #include "OpticalFlow.h"
 #include "Flash.h"
 #include "DSP.h"
 
-#if HAL_WITH_UAVCAN
-#include "CAN.h"
-#endif
+#include "CANIface.h"
 
 #include "utility/BetterStream.h"
 

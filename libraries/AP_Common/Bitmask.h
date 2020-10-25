@@ -43,7 +43,7 @@ public:
     void set(uint16_t bit) {
         // ignore an invalid bit number
         if (bit >= numbits) {
-            AP::internalerror().error(AP_InternalError::error_t::bitmask_range);
+            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
             return;
         }
         uint16_t word = bit/32;
@@ -80,7 +80,7 @@ public:
         uint8_t ofs = bit & 0x1f;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (bit >= numbits) {
-            AP::internalerror().error(AP_InternalError::error_t::bitmask_range);
+            INTERNAL_ERROR(AP_InternalError::error_t::bitmask_range);
             return false;
         }
 #endif

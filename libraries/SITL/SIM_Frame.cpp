@@ -18,6 +18,7 @@
 
 #include "SIM_Frame.h"
 #include <AP_Motors/AP_Motors.h>
+#include <AP_Baro/AP_Baro.h>
 
 #include <stdio.h>
 
@@ -314,14 +315,17 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 {
     Vector3f thrust; // newtons
 
+    // scale thrust for altitude
+    float scaling = thrust_scale * AP::baro().get_air_density_ratio();
+
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mraccel, mthrust;
-        motors[i].calculate_forces(input, thrust_scale, motor_offset, mraccel, mthrust);
+        motors[i].calculate_forces(input, scaling, motor_offset, mraccel, mthrust);
         rot_accel += mraccel;
         thrust += mthrust;
         // simulate motor rpm
         if (!is_zero(AP::sitl()->vibe_motor)) {
-            rpm[i] = sqrtf(mthrust.length() / thrust_scale) * AP::sitl()->vibe_motor * 60.0f;
+            rpm[i] = sqrtf(mthrust.length() / scaling) * AP::sitl()->vibe_motor * 60.0f;
         }
     }
 

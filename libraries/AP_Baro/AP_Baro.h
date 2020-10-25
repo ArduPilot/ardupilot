@@ -4,6 +4,11 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
+#include <AP_MSP/msp.h>
+
+#ifndef HAL_MSP_BARO_ENABLED
+#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
 
 // maximum number of sensor instances
 #define BARO_MAX_INSTANCES 3
@@ -54,6 +59,9 @@ public:
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
+
+    // get primary sensor
+    uint8_t get_primary(void) const { return _primary; }
 
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
@@ -185,7 +193,11 @@ public:
     HAL_Semaphore &get_semaphore(void) {
         return _rsem;
     }
-    
+
+#if HAL_MSP_BARO_ENABLED
+    void handle_msp(const MSP::msp_baro_data_message_t &pkt);
+#endif
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -202,6 +214,12 @@ private:
 
     uint32_t _log_baro_bit = -1;
 
+    bool init_done;
+
+#if HAL_MSP_BARO_ENABLED
+    uint8_t msp_instance_mask;
+#endif
+
     // bitmask values for GND_PROBE_EXT
     enum {
         PROBE_BMP085=(1<<0),
@@ -215,7 +233,8 @@ private:
         PROBE_KELLER=(1<<8),
         PROBE_MS5837=(1<<9),
         PROBE_BMP388=(1<<10),
-        PROBE_SPL06=(1<<11),
+        PROBE_SPL06 =(1<<11),
+        PROBE_MSP   =(1<<12),
     };
     
     struct sensor {
@@ -230,6 +249,7 @@ private:
         bool healthy;                   // true if sensor is healthy
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
+        AP_Int32 bus_id;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;

@@ -151,7 +151,7 @@ void Copter::update_throttle_mix()
 
     if (flightmode->has_manual_throttle()) {
         // manual throttle
-        if(channel_throttle->get_control_in() <= 0) {
+        if (channel_throttle->get_control_in() <= 0 || air_mode == AirMode::AIRMODE_DISABLED) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
@@ -173,7 +173,10 @@ void Copter::update_throttle_mix()
         // check for requested decent
         bool descent_not_demanded = pos_control->get_desired_velocity().z >= 0.0f;
 
-        if (large_angle_request || large_angle_error || accel_moving || descent_not_demanded) {
+        // check if landing
+        const bool landing = flightmode->is_landing();
+
+        if ((large_angle_request && !landing) || large_angle_error || accel_moving || descent_not_demanded) {
             attitude_control->set_throttle_mix_max(pos_control->get_vel_z_control_ratio());
         } else {
             attitude_control->set_throttle_mix_min();

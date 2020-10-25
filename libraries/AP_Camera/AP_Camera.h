@@ -56,11 +56,8 @@ public:
 
     void take_picture();
 
-    // Update - to be called periodically @at least 10Hz
+    // Update - to be called periodically @at least 50Hz
     void update();
-
-    // update camera trigger - 50Hz
-    void update_trigger();
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -128,6 +125,9 @@ private:
 
     uint32_t log_camera_bit;
     const struct Location &current_loc;
+
+    // update camera trigger - 50Hz
+    void update_trigger();
 
     // entry point to trip local shutter (e.g. by relay or servo)
     void trigger_pic();

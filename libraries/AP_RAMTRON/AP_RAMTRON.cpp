@@ -27,6 +27,7 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
     { 0x21, 0x08,  16, 2, RDID_type::Cypress }, // FM25V01A
     { 0x22, 0x00,  32, 2, RDID_type::Cypress }, // FM25V02
     { 0x22, 0x08,  32, 2, RDID_type::Cypress }, // FM25V02A
+    { 0x22, 0x48,  32, 2, RDID_type::Cypress }, // FM25V02A - Extended Temperature Version
     { 0x22, 0x01,  32, 2, RDID_type::Cypress }, // FM25VN02
     { 0x23, 0x00,  64, 2, RDID_type::Cypress }, // FM25V05
     { 0x23, 0x01,  64, 2, RDID_type::Cypress }, // FM25VN05
@@ -70,14 +71,14 @@ bool AP_RAMTRON::init(void)
 
     for (uint8_t i = 0; i < ARRAY_SIZE(ramtron_ids); i++) {
         if (ramtron_ids[i].rdid_type == RDID_type::Cypress) {
-            cypress_rdid const * const cypress = (cypress_rdid const * const)rdid;
+            const cypress_rdid *cypress = (const cypress_rdid *)rdid;
             if (ramtron_ids[i].id1 == cypress->id1 &&
                 ramtron_ids[i].id2 == cypress->id2) {
                 id = i;
                 break;
             }
         } else if (ramtron_ids[i].rdid_type == RDID_type::Fujitsu) {
-            fujitsu_rdid const * const fujitsu = (fujitsu_rdid const * const)rdid;
+            const fujitsu_rdid *fujitsu = (const fujitsu_rdid *)rdid;
             if (ramtron_ids[i].id1 == fujitsu->id1 &&
                 ramtron_ids[i].id2 == fujitsu->id2) {
                 id = i;

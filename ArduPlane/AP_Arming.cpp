@@ -4,6 +4,8 @@
 #include "AP_Arming.h"
 #include "Plane.h"
 
+constexpr uint32_t AP_ARMING_DELAY_MS = 2000; // delay from arming to start of motor spoolup
+
 const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     // variables from parent vehicle
     AP_NESTEDGROUPINFO(AP_Arming, 0),
@@ -58,7 +60,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
 
     if (plane.channel_throttle->get_reverse() && 
-        plane.g.throttle_fs_enabled &&
+        Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
         plane.g.throttle_fs_value < 
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
@@ -72,6 +74,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
     if (plane.quadplane.available() && plane.scheduler.get_loop_rate_hz() < 100) {
         check_failed(display_failure, "quadplane needs SCHED_LOOP_RATE >= 100");
+        ret = false;
+    }
+
+    if (plane.quadplane.available() && !plane.quadplane.motors->initialised_ok()) {
+        check_failed(display_failure, "Quadplane: check motor setup");
         ret = false;
     }
 
@@ -117,12 +124,9 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     // additional plane specific checks
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        if (!AP::ahrs().prearm_healthy()) {
-            const char *reason = AP::ahrs().prearm_failure_reason();
-            if (reason == nullptr) {
-                reason = "AHRS not healthy";
-            }
-            check_failed(ARMING_CHECK_INS, display_failure, "%s", reason);
+        char failure_msg[50] = {};
+        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+            check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
     }
@@ -179,7 +183,17 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
+    if ((method == Method::AUXSWITCH) && (plane.quadplane.options & QuadPlane::OPTION_AIRMODE)) {
+        // if no airmode switch assigned, honour the QuadPlane option bit:
+        if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+            plane.quadplane.air_mode = AirMode::ON;
+        }
+    }
+
     change_arm_state();
+
+    // rising edge of delay_arming oneshot
+    delay_arming = true;
 
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle armed");
 
@@ -201,6 +215,11 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
 
     // suppress the throttle in auto-throttle modes
     plane.throttle_suppressed = plane.auto_throttle_mode;
+
+    // if no airmode switch assigned, ensure airmode is off:
+    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
+        plane.quadplane.air_mode = AirMode::OFF;
+    }
 
     //only log if disarming was successful
     change_arm_state();
@@ -233,5 +252,12 @@ void AP_Arming_Plane::update_soft_armed()
     hal.util->set_soft_armed(is_armed() &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+
+    // update delay_arming oneshot
+    if (delay_arming &&
+        (AP_HAL::millis() - hal.util->get_last_armed_change() >= AP_ARMING_DELAY_MS)) {
+
+        delay_arming = false;
+    }
 }
 

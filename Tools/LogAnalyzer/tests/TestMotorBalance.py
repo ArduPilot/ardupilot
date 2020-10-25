@@ -30,8 +30,9 @@ class TestBalanceTwist(Test):
 
         ch = zip(*ch)
         num_channels = 0
+        ch = list(ch)
         for i in range(len(ch)):
-            ch[i] = filter(lambda x: (x>0 and x<3000), ch[i])
+            ch[i] = list(filter(lambda x: (x>0 and x<3000), ch[i]))
             if num_channels < len(ch[i]):
                 num_channels = len(ch[i])
 
@@ -46,7 +47,7 @@ class TestBalanceTwist(Test):
         except KeyError as e:
             min_throttle = logdata.parameters["MOT_PWM_MIN"] / (logdata.parameters["MOT_PWM_MAX"]-logdata.parameters["RC3_MIN"])/1000.0
 
-        ch = filter(lambda x:sum(x)/num_channels > min_throttle, ch)
+        ch = list(filter(lambda x:sum(x)/num_channels > min_throttle, ch))
 
         if len(ch) == 0:
             return
@@ -54,7 +55,7 @@ class TestBalanceTwist(Test):
         avg_sum = 0
         avg_ch = []
         for i in range(num_channels):
-            avg = map(lambda x: x[i],ch)
+            avg = list(map(lambda x: x[i],ch))
             avg = sum(avg)/len(avg)
             avg_ch.append(avg)
             avg_sum += avg

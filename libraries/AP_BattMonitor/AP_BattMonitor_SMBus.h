@@ -3,6 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/I2CDevice.h>
 #include "AP_BattMonitor_Backend.h"
 #include <utility>
 
@@ -60,9 +61,12 @@ protected:
     bool read_full_charge_capacity(void);
 
     // reads the remaining capacity
-    // returns true if the read was succesful, which is only considered to be the
+    // returns true if the read was successful, which is only considered to be the
     // we know the full charge capacity
     bool read_remaining_capacity(void);
+
+    // return a scaler that should be multiplied by the battery's reported capacity numbers to arrive at the actual capacity in mAh
+    virtual uint16_t get_capacity_scaler() const { return 1; }
 
     // reads the temperature word from the battery
     // returns true if the read was successful
@@ -96,7 +100,3 @@ protected:
 
     AP_HAL::Device::PeriodicHandle timer_handle;
 };
-
-// include specific implementations
-#include "AP_BattMonitor_SMBus_Solo.h"
-#include "AP_BattMonitor_SMBus_Maxell.h"

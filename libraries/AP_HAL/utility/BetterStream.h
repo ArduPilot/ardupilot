@@ -19,10 +19,11 @@
 //
 #pragma once
 
-#include <stdarg.h>
-
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Namespace.h>
+
+#include <stdarg.h>
+#include <unistd.h>
 
 class AP_HAL::BetterStream {
 public:
@@ -42,6 +43,15 @@ public:
     /* return value for read():
      * -1 if nothing available, uint8_t value otherwise. */
     virtual int16_t read() = 0;
+
+    // no base-class implementation to force descendants to
+    // do things efficiently.  Looping over 2^32-1 bytes would be bad.
+    // returns false if discard failed (e.g. port locked)
+    virtual bool discard_input() = 0; // discard all bytes available for reading
+
+    // returns -1 on error (e.g. port locked), number of bytes read
+    // otherwise
+    virtual ssize_t read(uint8_t *buffer, uint16_t count);
 
     /* NB txspace was traditionally a member of BetterStream in the
      * FastSerial library. As far as concerns go, it belongs with available() */

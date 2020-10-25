@@ -232,18 +232,19 @@ function track_return_time()
     end
 
     -- print updates tracking progress
+    local return_time = time_to_home()
+    local total_time = return_time + ((now-return_start)/1000)
     if last_print + (print_time * 1000) < now and print_time > 0 then
       last_print = now
-      local return_time = time_to_home()
       if (return_time < 0) then
         gcs:send_text(6, "Failsafe: ground speed low can not get home")
       elseif (return_time > 0) then
-        local total_time = return_time + ((now-return_start)/1000)
         -- cannot get string.format() to work with total time, wrong variable type? ie not %f or %i?
         gcs:send_text(0, "Failsafe: Estimated " .. tostring(total_time) .. string.format("s, %.0fs remain", return_time) )
       end
     end
 
+    logger.write('SFSC','total_return_time,remaining_return_time','If','ss','--',total_time,return_time)
   end
   return track_return_time, 100
 end
@@ -331,6 +332,8 @@ function update()
     return_q = 0.5 * density * return_airspeed^2 -- we could estimate the change in density also, but will be negligible
   end
 
+  logger.write('SFSA','return_time,return_airspeed,Q,return_Q','ffff','snPP','----',return_time,return_airspeed,q,return_q)
+
   for i = 1, #batt_info do
     local instance, norm_filtered_amps, rated_capacity_mah = table.unpack(batt_info[i])
     local amps = battery:current_amps(instance)
@@ -351,6 +354,7 @@ function update()
       local remaining_time = remaining_capacity / return_amps
 
       local buffer_time = remaining_time - ((return_time * time_SF) + margin)
+      logger.write('SFSB','Instance,current,rem_cap,rem_time,buffer','Bffff','#Aiss','--C--',i-1,return_amps,remaining_capacity,remaining_time,buffer_time)
       if  (return_time < 0) or buffer_time < 0 then
         if return_time < 0 then
           gcs:send_text(0, "Failsafe: ground speed low can not get home")
@@ -408,7 +412,18 @@ for i = 1, #batt_info do
   -- subtract the capacity we want remaining when we get home
   local rated_cap = battery:pack_capacity_mah(instance)
   if rated_cap then
-    batt_info[i][3] = rated_cap - batt_info[i][4]
+    -- read in the critical MAH
+    local param_string = 'BATT' .. tostring(instance + 1) .. '_CRT_MAH'
+    if instance == 0 then
+      param_string = 'BATT_CRT_MAH'
+    end
+
+    local value = param:get(param_string)
+    if  not value then
+      error('LUA: get '.. param_string .. ' failed')
+    end
+
+    batt_info[i][3] = rated_cap - (batt_info[i][4] + value)
   else
     error("Battery " .. instance .. " does not support current monitoring")
   end

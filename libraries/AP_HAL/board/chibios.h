@@ -26,8 +26,8 @@
 #define HAL_GPIO_LED_OFF          1
 #endif
 
-#ifndef HAL_WITH_UAVCAN
-#define HAL_WITH_UAVCAN 0
+#ifndef HAL_NUM_CAN_IFACES
+#define HAL_NUM_CAN_IFACES 0
 #endif
 
 #ifndef HAL_HAVE_BOARD_VOLTAGE
@@ -59,6 +59,9 @@
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
+
+#include <AP_HAL/EventHandle.h>
+#define HAL_EventHandle AP_HAL::EventHandle
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"

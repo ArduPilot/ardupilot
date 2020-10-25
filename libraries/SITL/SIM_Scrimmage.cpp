@@ -36,44 +36,6 @@ Scrimmage::Scrimmage(const char *_frame_str) :
     send_sock(true),
     frame_str(_frame_str)
 {
-    // Set defaults for scrimmage-copter
-    if (strcmp(frame_str, "scrimmage-copter")== 0) {
-        mission_name = "arducopter.xml";
-        motion_model = "Multirotor";
-        visual_model = "iris";
-    }
-}
-
-void Scrimmage::set_config(const char *config)
-{
-    // The configuration string is a comma-separated sequence of key:value
-    // pairs
-
-    // Iterate over comma-separated strings and store parameters
-    char *end_str;
-    char* copy_config = strdup(config);
-    char *token = strtok_r(copy_config, ",", &end_str);
-    while (token != NULL)
-    {
-        char *end_token;
-        char *token2 = strtok_r(token, "=", &end_token);
-        if (strcmp(token2, "mission")==0) {
-            mission_name = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "motion_model")==0) {
-            motion_model = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "visual_model")==0) {
-            visual_model = strtok_r(NULL, "=", &end_token);
-        } else if (strcmp(token2, "terrain")==0) {
-            terrain = strtok_r(NULL, "=", &end_token);
-        } else {
-            printf("Invalid scrimmage param: %s", token2);
-        }
-        token = strtok_r(NULL, ",", &end_str);
-    }
-    free(copy_config);
-
-    // start scrimmage after parsing simulation configuration
-    start_scrimmage();
 }
 
 void Scrimmage::set_interface_ports(const char* address, const int port_in, const int port_out)
@@ -91,43 +53,6 @@ void Scrimmage::set_interface_ports(const char* address, const int port_in, cons
 
     send_sock.reuseaddress();
     send_sock.set_blocking(false);
-}
-
-// Start Scrimmage child
-void Scrimmage::start_scrimmage(void)
-{
-    pid_t child_pid = fork();
-    if (child_pid == 0) {
-        // In child
-
-        // Construct the scrimmage command string with overrides for initial
-        // position and heading.
-        char* full_exec_str;
-        int len;
-        // Get required string length
-        len = snprintf(NULL, 0, "xterm +hold -T SCRIMMAGE -e 'scrimmage %s -o \"latitude_origin=%f,"
-        "longitude_origin=%f,altitude_origin=%f,heading=%f,motion_model=%s,visual_model=%s,terrain=%s,"
-        "to_ardupilot_port=%d,from_ardupilot_port=%d,to_ardupilot_ip=%s\"'", mission_name, home.lat*1.0e-7f,home.lng*1.0e-7f,
-        home.alt*1.0e-2f, home_yaw, motion_model, visual_model, terrain, fdm_port_in, fdm_port_out, fdm_address);
-
-        full_exec_str = (char *)malloc(len+1);
-        snprintf(full_exec_str, len+1, "xterm +hold -T SCRIMMAGE -e 'scrimmage %s -o \"latitude_origin=%f,"
-        "longitude_origin=%f,altitude_origin=%f,heading=%f,motion_model=%s,visual_model=%s,terrain=%s,"
-        "to_ardupilot_port=%d,from_ardupilot_port=%d,to_ardupilot_ip=%s\"'", mission_name, home.lat*1.0e-7f,home.lng*1.0e-7f,
-        home.alt*1.0e-2f, home_yaw, motion_model, visual_model, terrain, fdm_port_in, fdm_port_out, fdm_address);
-
-        printf("%s\n", full_exec_str);
-
-        // system call worked
-        int ret = system(full_exec_str);
-
-        if (ret != 0) {
-            ::fprintf(stderr, "scrimmage didn't open.\n");
-            perror("scrimmage");
-        }
-
-        free(full_exec_str);
-    }
 }
 
 void Scrimmage::send_servos(const struct sitl_input &input)
@@ -170,9 +95,6 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
     // subtract gravity to get specific force measuremnt of the IMU
     accel_body = Vector3f(pkt.xAccel, pkt.yAccel, pkt.zAccel) - dcm.transposed()*Vector3f(0.0f, 0.0f, GRAVITY_MSS);
     gyro = Vector3f(pkt.rollRate, pkt.pitchRate, pkt.yawRate);
-
-    ang_accel = (gyro - gyro_prev) * std::min((float)1000000, dt_inv);
-    gyro_prev = gyro;
 
     velocity_ef = Vector3f(pkt.speedN, pkt.speedE, pkt.speedD);
 

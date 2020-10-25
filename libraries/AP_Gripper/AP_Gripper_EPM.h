@@ -9,8 +9,8 @@
  *      EPM docs:    https://docs.zubax.com/opengrab_epm_v3
  */
 
-/// @file	AP_EPM.h
-/// @brief	AP_EPM control class
+/// @file   AP_EPM.h
+/// @brief  AP_EPM control class
 #pragma once
 
 #include "AP_Gripper.h"
@@ -20,8 +20,8 @@
 
 #define EPM_RETURN_TO_NEUTRAL_MS    500         // EPM PWM returns to neutral position this many milliseconds after grab or release
 
-/// @class	AP_Gripper_EPM
-/// @brief	Class to manage the EPM_CargoGripper 
+/// @class  AP_Gripper_EPM
+/// @brief  Class to manage the EPM_CargoGripper 
 class AP_Gripper_EPM : public AP_Gripper_Backend {
 public:
     AP_Gripper_EPM(struct AP_Gripper::Backend_Config &_config);

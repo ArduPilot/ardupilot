@@ -16,6 +16,8 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include <AP_Logger/AP_Logger.h>
+#include <time.h>
+#include <AP_RTC/AP_RTC.h>
 
 #define GPS_BACKEND_DEBUGGING 0
 
@@ -76,34 +78,25 @@ int16_t AP_GPS_Backend::swap_int16(int16_t v) const
  */
 void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
 {
-    uint8_t year, mon, day, hour, min, sec;
-    uint16_t msec;
+    struct tm tm {};
 
-    year = bcd_date % 100;
-    mon  = (bcd_date / 100) % 100;
-    day  = bcd_date / 10000;
+    tm.tm_year = 100U + bcd_date % 100U;
+    tm.tm_mon  = ((bcd_date / 100U) % 100U)-1;
+    tm.tm_mday = bcd_date / 10000U;
 
     uint32_t v = bcd_milliseconds;
-    msec = v % 1000; v /= 1000;
-    sec  = v % 100; v /= 100;
-    min  = v % 100; v /= 100;
-    hour = v % 100;
+    uint16_t msec = v % 1000U; v /= 1000U;
+    tm.tm_sec = v % 100U; v /= 100U;
+    tm.tm_min = v % 100U; v /= 100U;
+    tm.tm_hour = v % 100U;
 
-    int8_t rmon = mon - 2;
-    if (0 >= rmon) {    
-        rmon += 12;
-        year -= 1;
-    }
-
-    // get time in seconds since unix epoch
-    uint32_t ret = (year/4) - (GPS_LEAPSECONDS_MILLIS / 1000UL) + 367*rmon/12 + day;
-    ret += year*365 + 10501;
-    ret = ret*24 + hour;
-    ret = ret*60 + min;
-    ret = ret*60 + sec;
+    // convert from time structure to unix time
+    time_t unix_time = AP::rtc().mktime(&tm);
 
     // convert to time since GPS epoch
-    ret -= 272764785UL;
+    const uint32_t unix_to_GPS_secs = 315964800UL;
+    const uint16_t leap_seconds_unix = GPS_LEAPSECONDS_MILLIS/1000U;
+    uint32_t ret = unix_time + leap_seconds_unix - unix_to_GPS_secs;
 
     // get GPS week and time
     state.time_week = ret / AP_SEC_PER_WEEK;
@@ -252,7 +245,12 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         const uint32_t gps_min_period_ms = 50;
 
         // get the time the packet arrived on the UART
-        uint64_t uart_us = port->receive_time_constraint_us(msg_length);
+        uint64_t uart_us;
+        if (port) {
+            uart_us = port->receive_time_constraint_us(msg_length);
+        } else {
+            uart_us = AP_HAL::micros64();
+        }
 
         uint32_t now = AP_HAL::millis();
         uint32_t dt_ms = now - _last_ms;
@@ -287,5 +285,19 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // use msg arrival time, and correct for jitter
         uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
         state.uart_timestamp_ms = local_us / 1000U;
+
+        // look for lagged data from the GPS. This is meant to detect
+        // the case that the GPS is trying to push more data into the
+        // UART than can fit (eg. with GPS_RAW_DATA at 115200).
+        float expected_lag;
+        if (gps.get_lag(state.instance, expected_lag)) {
+            float lag_s = (now - state.uart_timestamp_ms) * 0.001;
+            if (lag_s > expected_lag+0.05) {
+                // more than 50ms over expected lag, increment lag counter
+                state.lagged_sample_count++;
+            } else {
+                state.lagged_sample_count = 0;
+            }
+        }
     }
 }

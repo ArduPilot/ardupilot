@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
     // @Param: TRIGG_DIST
     // @DisplayName: Camera trigger distance
-    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the GPS position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
+    // @Description: Distance in meters between camera triggers. If this value is non-zero then the camera will trigger whenever the position changes by this number of meters regardless of what mode the APM is in. Note that this parameter can also be set in an auto mission using the DO_SET_CAM_TRIGG_DIST command, allowing you to enable/disable the triggering of the camera during the flight.
     // @User: Standard
     // @Units: m
     // @Range: 0 1000
@@ -153,8 +153,12 @@ void AP_Camera::trigger_pic()
     case CamTrigType::relay:
         relay_pic();            // basic relay activation
         break;
+#if HAL_SOLO_GIMBAL_ENABLED
     case CamTrigType::gopro:  // gopro in Solo Gimbal
         AP_Camera_SoloGimbal::gopro_shutter_toggle();
+        break;
+#endif
+    default:
         break;
     }
 
@@ -208,6 +212,7 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
         control_msg(msg);
         break;
+#if HAL_SOLO_GIMBAL_ENABLED
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT:
         // heartbeat from the Solo gimbal with a GoPro
         if (get_trigger_type() == CamTrigType::gopro) {
@@ -215,6 +220,7 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
             break;
         }
         break;
+#endif
     }
 }
 
@@ -222,9 +228,11 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
 void AP_Camera::cam_mode_toggle()
 {
     switch (get_trigger_type()) {
+#if HAL_SOLO_GIMBAL_ENABLED
     case CamTrigType::gopro:
         AP_Camera_SoloGimbal::gopro_capture_mode_toggle();
         break;
+#endif
     default:
         // no other cameras use this yet
         break;
@@ -334,15 +342,20 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
 }
 
 
-/*  update; triggers by distance moved
+/*
+  update; triggers by distance moved and camera trigger
 */
 void AP_Camera::update()
 {
+    update_trigger();
+
     if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
         return;
     }
 
     if (is_zero(_trigg_dist)) {
+        _last_location.lat = 0;
+        _last_location.lng = 0;
         return;
     }
     if (_last_location.lat == 0 && _last_location.lng == 0) {

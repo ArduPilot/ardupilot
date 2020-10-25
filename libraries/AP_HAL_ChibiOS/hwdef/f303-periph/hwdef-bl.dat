@@ -4,7 +4,10 @@
 MCU STM32F303 STM32F303xC
 
 FLASH_RESERVE_START_KB 0
-FLASH_BOOTLOADER_LOAD_KB 26
+FLASH_BOOTLOADER_LOAD_KB 22
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
 
 # board ID for firmware load
 APJ_BOARD_ID 1004
@@ -23,11 +26,9 @@ FLASH_SIZE_KB 256
 STDOUT_SERIAL SD1
 STDOUT_BAUDRATE 57600
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER
+SERIAL_ORDER
 define HAL_USE_UART FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
@@ -46,9 +47,6 @@ define HAL_USE_SERIAL TRUE
 define STM32_SERIAL_USE_USART1 TRUE
 define STM32_SERIAL_USE_USART2 TRUE
 define STM32_SERIAL_USE_USART3 FALSE
-
-PA13 SWDIO-JTMS SWD
-PA14 SWCLK-JTCK SWD
 
 define HAL_NO_GPIO_IRQ
 define CH_CFG_ST_TIMEDELTA 0
@@ -81,6 +79,10 @@ PA12 CAN_TX CAN
 define HAL_USE_CAN TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600
 
@@ -95,11 +97,6 @@ PB6 STAY_IN_BOOTLOADER INPUT FLOATING
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
-
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
-
-define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_gps"
 
 # Add CS pins to ensure they are high in bootloader
 PB0 MAG_CS CS

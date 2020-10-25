@@ -137,6 +137,9 @@ bool AP_Baro_BMP085::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_BMP085);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP085::_timer, void));
     return true;
 }
@@ -318,7 +321,7 @@ bool AP_Baro_BMP085::_data_ready()
 
     // No EOC pin: use time from last read instead.
     if (_state == 0) {
-        return AP_HAL::millis() > _last_temp_read_command_time + 5;
+        return AP_HAL::millis() - _last_temp_read_command_time > 5u;
     }
 
     uint32_t conversion_time_msec;
@@ -340,5 +343,5 @@ bool AP_Baro_BMP085::_data_ready()
         break;
     }
 
-    return AP_HAL::millis() > _last_press_read_command_time + conversion_time_msec;
+    return AP_HAL::millis() - _last_press_read_command_time > conversion_time_msec;
 }

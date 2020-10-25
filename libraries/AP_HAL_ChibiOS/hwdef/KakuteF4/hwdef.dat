@@ -1,8 +1,6 @@
 # hw definition file for KakuteF4 hardware
 
-# STATUS:
-# This port is mostly complete. Main missing feature are OSD,
-# dataflash
+
 
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
@@ -15,15 +13,12 @@ APJ_BOARD_ID 122
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 define STM32_ST_USE_TIMER 4
 define CH_CFG_ST_RESOLUTION 16
 
 FLASH_SIZE_KB 1024
 
-# board voltage
-STM32_VDD 330U
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -73,7 +68,7 @@ define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
 # order of UARTs (and USB)
-UART_ORDER OTG1 UART4 USART6 USART1 UART5 USART3
+SERIAL_ORDER OTG1 USART6 USART1 UART4 UART5 USART3
 
 # rcinput is PB11
 PB11 TIM2_CH4 TIM2 RCININT FLOAT LOW
@@ -156,4 +151,3 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # 8 PWM available by default
 define BOARD_PWM_COUNT_DEFAULT 8
-

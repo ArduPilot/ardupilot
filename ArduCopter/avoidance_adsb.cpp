@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <AP_Notify/AP_Notify.h>
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
 void Copter::avoidance_adsb_update(void)
 {
     adsb.update();
@@ -97,7 +97,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
     return actual_action;
 }
 
-void AP_Avoidance_Copter::handle_recovery(uint8_t recovery_action)
+void AP_Avoidance_Copter::handle_recovery(RecoveryAction recovery_action)
 {
     // check we are coming out of failsafe
     if (copter.failsafe.adsb) {
@@ -109,19 +109,19 @@ void AP_Avoidance_Copter::handle_recovery(uint8_t recovery_action)
         if (copter.control_mode_reason == ModeReason::AVOIDANCE) {
             switch (recovery_action) {
 
-            case AP_AVOIDANCE_RECOVERY_REMAIN_IN_AVOID_ADSB:
+            case RecoveryAction::REMAIN_IN_AVOID_ADSB:
                 // do nothing, we'll stay in the AVOID_ADSB mode which is guided which will loiter forever
                 break;
 
-            case AP_AVOIDANCE_RECOVERY_RESUME_PREVIOUS_FLIGHTMODE:
+            case RecoveryAction::RESUME_PREVIOUS_FLIGHTMODE:
                 set_mode_else_try_RTL_else_LAND(prev_control_mode);
                 break;
 
-            case AP_AVOIDANCE_RECOVERY_RTL:
+            case RecoveryAction::RTL:
                 set_mode_else_try_RTL_else_LAND(Mode::Number::RTL);
                 break;
 
-            case AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER:
+            case RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER:
                 if (prev_control_mode == Mode::Number::AUTO) {
                     set_mode_else_try_RTL_else_LAND(Mode::Number::AUTO);
                 }

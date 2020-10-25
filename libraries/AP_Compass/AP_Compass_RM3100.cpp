@@ -177,7 +177,6 @@ void AP_Compass_RM3100::timer()
         uint8_t magz_1;
         uint8_t magz_0;
     } data;
-    Vector3f field;
 
     int32_t magx = 0;
     int32_t magy = 0;
@@ -209,10 +208,16 @@ void AP_Compass_RM3100::timer()
     magy >>= 8;
     magz >>= 8;
 
-    // apply scaler and store in field vector
-    field(magx * _scaler, magy * _scaler, magz * _scaler);
+    {
+        // apply scaler and store in field vector
+         Vector3f field{
+             magx * _scaler,
+             magy * _scaler,
+             magz * _scaler
+         };
 
-    accumulate_sample(field, compass_instance);
+        accumulate_sample(field, compass_instance);
+    }
 
 check_registers:
     dev->check_next_register();

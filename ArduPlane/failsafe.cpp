@@ -102,5 +102,14 @@ void Plane::failsafe_check(void)
         flaperon_update(0);
 
         servos_output();
+
+        // in SITL we send through the servo outputs so we can verify
+        // we're manipulating surfaces
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        GCS_MAVLINK *chan = gcs().chan(0);
+        if (HAVE_PAYLOAD_SPACE(chan->get_chan(), SERVO_OUTPUT_RAW)) {
+            chan->send_servo_output_raw();
+        }
+#endif
     }
 }

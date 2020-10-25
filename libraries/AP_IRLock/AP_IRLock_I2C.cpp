@@ -28,9 +28,9 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define IRLOCK_I2C_ADDRESS		0x54
+#define IRLOCK_I2C_ADDRESS      0x54
 
-#define IRLOCK_SYNC			0xAA55AA55
+#define IRLOCK_SYNC         0xAA55AA55
 
 void AP_IRLock_I2C::init(int8_t bus)
 {

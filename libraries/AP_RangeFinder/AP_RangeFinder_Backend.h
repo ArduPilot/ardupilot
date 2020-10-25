@@ -32,6 +32,9 @@ public:
     virtual void update() = 0;
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
+#if HAL_MSP_RANGEFINDER_ENABLED
+    virtual void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt) { return; }
+#endif
 
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     uint16_t distance_cm() const { return state.distance_cm; }

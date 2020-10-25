@@ -3,7 +3,7 @@ g# hw definition file for processing by chibios_pins.py
 # MCU class and specific type
 MCU STM32F303 STM32F303xC
 
-# bootloader starts firmware at 26k
+# bootloader starts firmware at 22k + 4k (STORAGE_FLASH)
 FLASH_RESERVE_START_KB 26
 
 # store parameters in pages 11 and 12
@@ -28,11 +28,9 @@ define CH_CFG_ST_TIMEDELTA 0
 # assume the 256k flash part for now
 FLASH_SIZE_KB 256
 
-# board voltage
-STM32_VDD 330U
 
 # order of UARTs
-UART_ORDER USART2 USART1
+SERIAL_ORDER USART2 EMPTY EMPTY USART1
 
 # a LED to flash
 PA4 LED OUTPUT LOW
@@ -89,8 +87,12 @@ define HAL_DISABLE_LOOP_DELAY
 # enable CAN support
 PA11 CAN_RX CAN
 PA12 CAN_TX CAN
-define HAL_USE_CAN TRUE
-define STM32_CAN_USE_CAN1 TRUE
+
+
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
 
 define HAL_USE_I2C TRUE
 define STM32_I2C_USE_I2C1 TRUE
@@ -133,8 +135,9 @@ env APP_DESCRIPTOR MissionPlanner
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
 
-# define CH_DBG_ENABLE_STACK_CHECK TRUE
-
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
+
+# reduce the number of CAN RX Buffer
+define HAL_CAN_RX_QUEUE_SIZE 32

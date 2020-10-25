@@ -56,7 +56,7 @@ float AP_Proximity_LightWareSF40C_v09::distance_min() const
     return 0.20f;
 }
 
-// initialise sensor (returns true if sensor is succesfully initialised)
+// initialise sensor (returns true if sensor is successfully initialised)
 bool AP_Proximity_LightWareSF40C_v09::initialise()
 {
     // set motor direction once per second

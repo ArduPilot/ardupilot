@@ -16,8 +16,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // allow extra mavlink channels in SITL for:
-//    Vicon
-#define MAVLINK_COMM_NUM_BUFFERS 6
+//    Vicon, ship
+#define MAVLINK_COMM_NUM_BUFFERS 7
 #else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5

@@ -6,4 +6,5 @@
 #include "UARTDriver.h"
 #include "SITL_State.h"
 #include "Semaphores.h"
+#include "CANSocketIface.h"
 #include "DSP.h"

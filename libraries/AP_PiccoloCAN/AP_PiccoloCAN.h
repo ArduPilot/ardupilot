@@ -18,8 +18,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/CAN.h>
+#include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
+
+#include <AP_Param/AP_Param.h>
 
 #include "piccolo_protocol/ESCPackets.h"
 
@@ -28,12 +30,16 @@
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
-#define HAL_PICCOLO_CAN_ENABLE (HAL_WITH_UAVCAN && !HAL_MINIMIZE_FEATURES)
+#define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
 #endif
 
 #if HAL_PICCOLO_CAN_ENABLE
 
-class AP_PiccoloCAN : public AP_HAL::CANProtocol
+#define PICCOLO_MSG_RATE_HZ_MIN 1
+#define PICCOLO_MSG_RATE_HZ_MAX 500
+#define PICCOLO_MSG_RATE_HZ_DEFAULT 50
+
+class AP_PiccoloCAN : public AP_CANDriver
 {
 public:
     AP_PiccoloCAN();
@@ -60,17 +66,23 @@ public:
     AP_PiccoloCAN(const AP_PiccoloCAN &other) = delete;
     AP_PiccoloCAN &operator=(const AP_PiccoloCAN&) = delete;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
     // Return PiccoloCAN from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_PiccoloCAN *get_pcan(uint8_t driver_index);
 
     // initialize PiccoloCAN bus
     void init(uint8_t driver_index, bool enable_filters) override;
+    bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // called from SRV_Channels
     void update();
 
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
+
+    // return true if a particular ESC is 'active' on the Piccolo interface
+    bool is_esc_channel_active(uint8_t chan);
 
     // return true if a particular ESC has been detected
     bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
@@ -87,23 +99,22 @@ private:
     void loop();
 
     // write frame on CAN bus, returns true on success
-    bool write_frame(uavcan::CanFrame &out_frame, uavcan::MonotonicTime timeout);
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout);
 
     // read frame on CAN bus, returns true on succses
-    bool read_frame(uavcan::CanFrame &recv_frame, uavcan::MonotonicTime timeout);
+    bool read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout);
 
     // send ESC commands over CAN
     void send_esc_messages(void);
 
     // interpret an ESC message received over CAN
-    bool handle_esc_message(uavcan::CanFrame &frame);
+    bool handle_esc_message(AP_HAL::CANFrame &frame);
 
     bool _initialized;
     char _thread_name[16];
     uint8_t _driver_index;
-    uavcan::ICanDriver* _can_driver;
-    const uavcan::CanFrame* _select_frames[uavcan::MaxCanIfaces] { };
-
+    AP_HAL::CANIface* _can_iface;
+    HAL_EventHandle _event_handle;
     HAL_Semaphore _telem_sem;
 
     struct PiccoloESC_Info_t {
@@ -124,6 +135,10 @@ private:
         uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
 
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
+
+    // Piccolo CAN parameters
+    AP_Int32 _esc_bm;       //! ESC selection bitmask
+    AP_Int16 _esc_hz;       //! ESC update rate (Hz)
 
 };
 

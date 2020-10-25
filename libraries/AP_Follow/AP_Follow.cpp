@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OFS", 7, AP_Follow, _offset, 0),
 
-#if !(APM_BUILD_TYPE(APM_BUILD_APMrover2))
+#if !(APM_BUILD_TYPE(APM_BUILD_Rover))
     // @Param: _YAW_BEHAVE
     // @DisplayName: Follow yaw behaviour
     // @Description: Follow yaw behaviour
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P),
 
-#if !(APM_BUILD_TYPE(APM_BUILD_APMrover2)) 
+#if !(APM_BUILD_TYPE(APM_BUILD_Rover)) 
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
     // @Description: Follow altitude type
@@ -322,6 +322,18 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         }
 
         // log lead's estimated vs reported position
+// @LoggerMessage: FOLL
+// @Description: Follow library diagnostic data
+// @Field: TimeUS: Time since system startup
+// @Field: Lat: Target latitude
+// @Field: Lon: Target longitude
+// @Field: Alt: Target absolute altitude
+// @Field: VelN: Target earth-frame velocity, North
+// @Field: VelE: Target earth-frame velocity, East
+// @Field: VelD: Target earth-frame velocity, Down
+// @Field: LatE: Vehicle latitude
+// @Field: LonE: Vehicle longitude
+// @Field: AltE: Vehicle absolute altitude
         AP::logger().Write("FOLL",
                                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
                                                "sDUmnnnDUm",    // units

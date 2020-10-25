@@ -1,17 +1,15 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include "AP_OpticalFlow_HereFlow.h"
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <com/hex/equipment/flow/Measurement.hpp>
 
 extern const AP_HAL::HAL& hal;
-
-#define debug_flow_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
 
 //UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(MeasurementCb, com::hex::equipment::flow::Measurement);
@@ -103,5 +101,5 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
     new_data = false;
 }
 
-#endif // HAL_WITH_UAVCAN
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
 

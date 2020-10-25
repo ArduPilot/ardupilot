@@ -13,13 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_MotorsMatrix.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -509,6 +505,20 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4);
                     add_motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2);
                     break;
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) 
+                case MOTOR_FRAME_TYPE_NYT_PLUS:
+                    add_motor(AP_MOTORS_MOT_1,  90, 0, 2);
+                    add_motor(AP_MOTORS_MOT_2, -90, 0, 4);
+                    add_motor(AP_MOTORS_MOT_3,   0, 0, 1);
+                    add_motor(AP_MOTORS_MOT_4, 180, 0, 3);
+                    break;
+                case MOTOR_FRAME_TYPE_NYT_X:
+                    add_motor(AP_MOTORS_MOT_1,   45, 0, 1);
+                    add_motor(AP_MOTORS_MOT_2, -135, 0, 3);
+                    add_motor(AP_MOTORS_MOT_3,  -45, 0, 4);
+                    add_motor(AP_MOTORS_MOT_4,  135, 0, 2);
+                    break;
+#endif
                 case MOTOR_FRAME_TYPE_BF_X:
                     // betaflight quad X order
                     // see: https://fpvfrenzy.com/betaflight-motor-order/
@@ -873,7 +883,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     // normalise factors to magnitude 0.5
     normalise_rpy_factors();
 
-    _flags.initialised_ok = success;
+    set_initialised_ok(success);
 }
 
 // normalizes the roll, pitch and yaw factors so maximum magnitude is 0.5

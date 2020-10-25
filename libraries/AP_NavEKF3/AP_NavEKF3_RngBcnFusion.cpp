@@ -1,12 +1,5 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL& hal;
 
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
@@ -31,7 +24,7 @@ void NavEKF3_core::SelectRngBcnFusion()
                 FuseRngBcn();
             } else {
                 // If we are using GPS, then GPS is the primary reference, but we continue to use the beacon data
-                // to calculate an independant position that is used to update the beacon position offset if we need to
+                // to calculate an independent position that is used to update the beacon position offset if we need to
                 // start using beacon data as the primary reference.
                 FuseRngBcnStatic();
                 // record that the beacon origin needs to be initialised

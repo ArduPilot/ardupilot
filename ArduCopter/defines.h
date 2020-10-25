@@ -19,6 +19,7 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AHEAD =       4,  // point in the direction the copter is moving
     AUTO_YAW_RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
     AUTO_YAW_RATE =             6,  // turn at a specified rate (held in auto_yaw_rate)
+    AUTO_YAW_CIRCLE =           7,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
 };
 
 // Frame types
@@ -57,9 +58,9 @@ enum tuning_func {
     TUNING_CIRCLE_RATE =                39, // circle turn rate in degrees (hard coded to about 45 degrees in either direction)
     TUNING_ACRO_YAW_KP =                40, // acro controller's P term.  converts pilot input to a desired roll, pitch or yaw rate
     TUNING_RANGEFINDER_GAIN =           41, // rangefinder gain
-    TUNING_EKF_VERTICAL_POS =           42, // EKF's baro vs accel (higher rely on accels more, baro impact is reduced).  Range should be 0.2 ~ 4.0?  2.0 is default
-    TUNING_EKF_HORIZONTAL_POS =         43, // EKF's gps vs accel (higher rely on accels more, gps impact is reduced).  Range should be 1.0 ~ 3.0?  1.5 is default
-    TUNING_EKF_ACCEL_NOISE =            44, // EKF's accel noise (lower means trust accels more, gps & baro less).  Range should be 0.02 ~ 0.5  0.5 is default (but very robust at that level)
+    TUNING_EKF_VERTICAL_POS =           42, // unused
+    TUNING_EKF_HORIZONTAL_POS =         43, // unused
+    TUNING_EKF_ACCEL_NOISE =            44, // unused
     TUNING_RC_FEEL_RP =                 45, // roll-pitch input smoothing
     TUNING_RATE_PITCH_KP =              46, // body frame pitch rate controller's P term
     TUNING_RATE_PITCH_KI =              47, // body frame pitch rate controller's I term
@@ -72,7 +73,7 @@ enum tuning_func {
     TUNING_RATE_YAW_FF =                54, // body frame yaw rate controller FF term
     TUNING_RATE_MOT_YAW_HEADROOM =      55, // motors yaw headroom minimum
     TUNING_RATE_YAW_FILT =              56, // yaw rate input filter
-    TUNING_WINCH =                      57, // winch control (not actually a value to be tuned)
+    UNUSED =                            57, // was winch control
     TUNING_SYSTEM_ID_MAGNITUDE =        58  // magnitude of the system ID signal
 };
 
@@ -106,6 +107,13 @@ enum GuidedMode {
     Guided_Angle,
 };
 
+// Airmode
+enum class AirMode {
+    AIRMODE_NONE,
+    AIRMODE_DISABLED,
+    AIRMODE_ENABLED,
+};
+
 // Safe RTL states
 enum SmartRTLState {
     SmartRTL_WaitForPathCleanup,
@@ -133,6 +141,7 @@ enum PayloadPlaceStateType {
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
     DevOptionVFR_HUDRelativeAlt = 2,
+    DevOptionSetAttitudeTarget_ThrustAsThrust = 4,
 };
 
 //  Logging parameters
@@ -193,14 +202,6 @@ enum LoggingParameters {
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
 #define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
 #define FS_EKF_ACTION_LAND_EVEN_STABILIZE   3       // switch to Land mode on EKF failsafe even if in a manual flight mode like stabilize
-
-// for mavlink SET_POSITION_TARGET messages
-#define MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE      ((1<<0) | (1<<1) | (1<<2))
-#define MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE      ((1<<3) | (1<<4) | (1<<5))
-#define MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE      ((1<<6) | (1<<7) | (1<<8))
-#define MAVLINK_SET_POS_TYPE_MASK_FORCE           (1<<9)
-#define MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE      (1<<10)
-#define MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE (1<<11)
 
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)

@@ -4,7 +4,7 @@
 
 
 #include "lua_scripts.h"
-#include "lua_generated_bindings.h"
+#include <AP_Scripting/lua_generated_bindings.h>
 
 #include "lua/src/lua.h"
 #include "lua/src/lauxlib.h"
@@ -98,7 +98,6 @@ int lua_scripts::incomplete(lua_State *L, int status) {
 */
 int lua_scripts::pushline(lua_State *L, int firstline) {
     char buffer[LUA_MAXINPUT + 1] = {};
-    ssize_t read_bytes;
     size_t l = 0;
 
     // send prompt to the user
@@ -109,15 +108,12 @@ int lua_scripts::pushline(lua_State *L, int firstline) {
         int input_fd = AP::FS().open(REPL_IN, O_RDONLY);
         if (input_fd != -1) {
             AP::FS().lseek(input_fd, terminal.input_offset, SEEK_SET);
-            read_bytes = AP::FS().read(input_fd, buffer, ARRAY_SIZE(buffer) - 1);
+            ssize_t read_bytes = AP::FS().read(input_fd, buffer, ARRAY_SIZE(buffer) - 1);
             AP::FS().close(input_fd);
             if (read_bytes > 0) {
                 // locate the first newline
                 char * newline_chr = strchr(buffer, '\n');
-                if (newline_chr == NULL) {
-                    // we don't have something that looks like a newline, just keep reading till it's longer
-                    read_bytes = 0;
-                } else {
+                if (newline_chr != NULL) {
                     newline_chr[0] = '\0';
                     // only advance to the newline
                     l = strlen(buffer);

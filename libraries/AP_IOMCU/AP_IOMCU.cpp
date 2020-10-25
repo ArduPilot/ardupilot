@@ -19,6 +19,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -247,6 +248,8 @@ void AP_IOMCU::thread_main(void)
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
+
+        send_rc_protocols();
     }
     done_shutdown = true;
 }
@@ -287,6 +290,9 @@ void AP_IOMCU::read_rc_input()
     uint16_t *r = (uint16_t *)&rc_input;
     if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
+    }
+    if (rc_input.flags_failsafe && rc().ignore_rc_failsafe()) {
+        rc_input.flags_failsafe = false;
     }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_last_input_ms = AP_HAL::millis();
@@ -335,6 +341,15 @@ void AP_IOMCU::read_status()
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
         if (AP_Logger::get_singleton()) {
+// @LoggerMessage: IOMC
+// @Description: IOMCU diagnostic information
+// @Field: TimeUS: Time since system startup
+// @Field: Mem: Free memory
+// @Field: TS: IOMCU uptime
+// @Field: NPkt: Number of packets received by IOMCU
+// @Field: Nerr: Protocol failures on MCU side
+// @Field: Nerr2: Reported number of failures on IOMCU side
+// @Field: NDel: Number of delayed packets received by MCU
             AP::logger().Write("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
                                AP_HAL::micros64(),
                                reg_status.freemem,
@@ -380,10 +395,7 @@ void AP_IOMCU::read_servo()
  */
 void AP_IOMCU::discard_input(void)
 {
-    uint32_t n = uart.available();
-    while (n--) {
-        uart.read();
-    }
+    uart.discard_input();
 }
 
 /*
@@ -763,6 +775,18 @@ void AP_IOMCU::update_safety_options(void)
     }
 }
 
+// update enabled RC protocols mask
+void AP_IOMCU::send_rc_protocols()
+{
+    const uint32_t v = rc().enabled_protocols();
+    if (last_rc_protocols == v) {
+        return;
+    }
+    if (write_registers(PAGE_SETUP, PAGE_REG_SETUP_RC_PROTOCOLS, 2, (uint16_t *)&v)) {
+        last_rc_protocols = v;
+    }
+}
+
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
@@ -978,7 +1002,7 @@ void AP_IOMCU::handle_repeated_failures(void)
         // initial sync with IOMCU
         return;
     }
-    AP::internalerror().error(AP_InternalError::error_t::iomcu_fail);
+    INTERNAL_ERROR(AP_InternalError::error_t::iomcu_fail);
 }
 
 /*
@@ -1000,9 +1024,16 @@ void AP_IOMCU::check_iomcu_reset(void)
         return;
     }
     detected_io_reset = true;
-    AP::internalerror().error(AP_InternalError::error_t::iomcu_reset);
+    INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
     hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
                         unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
+
+    if (safety_forced_off && !reg_status.flag_safety_off && hal.util->get_soft_armed()) {
+        // IOMCU has reset while armed with safety off - force it off
+        // again so we can keep flying
+        force_safety_off();
+    }
+
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
     if (mixing.enabled) {
@@ -1010,6 +1041,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    last_rc_protocols = 0;
 }
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from __future__ import print_function
 
@@ -35,9 +35,10 @@ class BuildBinariesHistory():
         text = int(sizes[0])
         data = int(sizes[1])
         bss = int(sizes[2])
-        print("text=%u" % text)
-        print("data=%u" % data)
-        print("bss=%u" % bss)
+        self.progress("Binary size of %s:" % filepath)
+        self.progress("text=%u" % text)
+        self.progress("data=%u" % data)
+        self.progress("bss=%u" % bss)
         return (text, data, bss)
 
     def assure_db_present(self):

@@ -204,7 +204,11 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
         else:
             dmamux1_peripherals.append(p)
     map1 = generate_DMAMUX_map_mask(dmamux1_peripherals, 0xFFFF, noshare_list, dma_exclude)
-    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0xFF, noshare_list, dma_exclude)
+    # there are 8 BDMA channels, but an issue has been found where if I2C4 and SPI6
+    # use neighboring channels then we sometimes lose a BDMA completion interrupt. To
+    # avoid this we set the BDMA available mask to 0x33, which forces the channels not to be
+    # adjacent. This issue was found on a CUAV-X7, with H743 RevV.
+    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0x33, noshare_list, dma_exclude)
     # translate entries from map2 to "DMA controller 3", which is used for BDMA
     for p in map2.keys():
         streams = []

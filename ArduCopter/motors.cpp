@@ -52,7 +52,9 @@ void Copter::arm_motors_check()
 
         // arm the motors and configure for flight
         if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && control_mode == Mode::Number::STABILIZE) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
             auto_trim_counter = 250;
+            auto_trim_started = false;
             // ensure auto-disarm doesn't trigger immediately
             auto_disarm_begin = millis();
         }

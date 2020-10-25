@@ -11,7 +11,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @Range: 0 200
     // @Increment: 1
     // @Units: m
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("ALT", 1, ModeTakeoff, target_alt, 50),
 
     // @Param: LVL_ALT
@@ -20,7 +20,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @Range: 0 50
     // @Increment: 1
     // @Units: m
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 20),
 
     // @Param: LVL_PITCH
@@ -29,7 +29,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @Range: 0 30
     // @Increment: 1
     // @Units: deg
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("LVL_PITCH", 3, ModeTakeoff, level_pitch, 15),
 
     // @Param: DIST
@@ -38,7 +38,7 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @Range: 0 500
     // @Increment: 1
     // @Units: m
-    // @User: User
+    // @User: Standard
     AP_GROUPINFO("DIST", 4, ModeTakeoff, target_dist, 200),
     
     AP_GROUPEND
@@ -129,5 +129,11 @@ void ModeTakeoff::update()
         plane.calc_nav_pitch();
         plane.calc_throttle();
     }
+}
+
+void ModeTakeoff::navigate()
+{
+    // Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(0);
 }
 

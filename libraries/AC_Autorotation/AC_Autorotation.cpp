@@ -119,8 +119,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 };
 
 // Constructor
-AC_Autorotation::AC_Autorotation(AP_InertialNav& inav) :
-    _inav(inav),
+AC_Autorotation::AC_Autorotation() :
     _p_hs(HS_CONTROLLER_HEADSPEED_P),
     _p_fw_vel(AP_FW_VEL_P)
     {
@@ -251,6 +250,22 @@ float AC_Autorotation::get_rpm(bool update_counter)
 
 void AC_Autorotation::Log_Write_Autorotation(void)
 {
+// @LoggerMessage: AROT
+// @Description: Helicopter AutoRotation information
+// @Field: TimeUS: Time since system startup
+// @Field: P: P-term for headspeed controller response
+// @Field: hserr: head speed error; difference between current and desired head speed
+// @Field: ColOut: Collective Out
+// @Field: FFCol: FF-term for headspeed controller response
+// @Field: CRPM: current headspeed RPM
+// @Field: SpdF: current forward speed
+// @Field: CmdV: desired forward speed
+// @Field: p: p-term of velocity response
+// @Field: ff: ff-term of velocity response
+// @Field: AccO: forward acceleration output
+// @Field: AccT: forward acceleration target
+// @Field: PitT: pitch target
+
     //Write to data flash log
     AP::logger().Write("AROT",
                        "TimeUS,P,hserr,ColOut,FFCol,CRPM,SpdF,CmdV,p,ff,AccO,AccT,PitT",

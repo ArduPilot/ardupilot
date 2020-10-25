@@ -224,6 +224,15 @@ void AP_Compass_MMC3416::timer()
         }
 
 #if 0
+// @LoggerMessage: MMO
+// @Description: MMC3416 compass data
+// @Field: TimeUS: Time since system startup
+// @Field: Nx: new measurement X axis
+// @Field: Ny: new measurement Y axis
+// @Field: Nz: new measurement Z axis
+// @Field: Ox: new offset X axis
+// @Field: Oy: new offset Y axis
+// @Field: Oz: new offset Z axis
         AP::logger().Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
                                                AP_HAL::micros64(),
                                                (double)new_offset.x,

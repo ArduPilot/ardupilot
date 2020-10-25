@@ -20,7 +20,10 @@
  
 #pragma once
 
-#include <AP_HAL/CAN.h>
+#include <AP_CANManager/AP_CANDriver.h>
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+
 #include <AP_HAL/Semaphores.h>
 
 #include <AP_Param/AP_Param.h>
@@ -30,7 +33,7 @@
 // there are 12 motor functions in SRV_Channel but CAN driver can't keep up
 #define KDECAN_MAX_NUM_ESCS 8
 
-class AP_KDECAN : public AP_HAL::CANProtocol {
+class AP_KDECAN : public AP_CANDriver {
 public:
     AP_KDECAN();
     
@@ -44,6 +47,7 @@ public:
     static AP_KDECAN *get_kdecan(uint8_t driver_index);
 
     void init(uint8_t driver_index, bool enable_filters) override;
+    bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     // called from SRV_Channels
     void update();
@@ -64,7 +68,8 @@ private:
     bool _initialized;
     char _thread_name[11];
     uint8_t _driver_index;
-    uavcan::ICanDriver* _can_driver;
+    AP_HAL::CANIface* _can_iface;
+    HAL_EventHandle _event_handle;
 
     AP_Int8 _num_poles;
 
@@ -132,6 +137,5 @@ private:
     static const uint32_t SET_PWM_TIMEOUT_US = 2000;
     static const uint16_t TELEMETRY_TIMEOUT_US = 500;
     static const uint16_t ENUMERATION_TIMEOUT_MS = 30000;
-
-    static const uint8_t CAN_IFACE_INDEX = 0;
 };
+#endif //HAL_NUM_CAN_IFACES

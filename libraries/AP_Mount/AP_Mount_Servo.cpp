@@ -1,5 +1,5 @@
 #include "AP_Mount_Servo.h"
-#include <AP_GPS/AP_GPS.h>
+#if HAL_MOUNT_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -209,3 +209,4 @@ void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t ang
 	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
 	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }
+#endif // HAL_MOUNT_ENABLED

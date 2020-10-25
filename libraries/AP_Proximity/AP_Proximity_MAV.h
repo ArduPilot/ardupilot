@@ -24,10 +24,6 @@ public:
     void handle_msg(const mavlink_message_t &msg) override;
 
 private:
-
-    // initialise sensor (returns true if sensor is succesfully initialised)
-    bool initialise();
-
     // horizontal distance support
     uint32_t _last_update_ms;   // system time of last DISTANCE_SENSOR message received
     float _distance_max;        // max range of sensor in meters

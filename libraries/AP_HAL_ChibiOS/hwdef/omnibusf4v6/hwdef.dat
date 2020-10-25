@@ -11,10 +11,6 @@ APJ_BOARD_ID 137
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
-
-# board voltage
-STM32_VDD 330U
 
 # ChibiOS system timer
 STM32_ST_USE_TIMER 5
@@ -28,7 +24,7 @@ I2C_ORDER I2C1
 
 # order of UARTs     
 
-UART_ORDER OTG1 USART6 USART1 UART4 USART3
+SERIAL_ORDER OTG1 USART1 UART4 USART6 USART3 USART2
 
 
 #PINS 
@@ -45,6 +41,8 @@ PB11 USART3_RX USART3
 # UART4 (only RX) #"TX" pin PA0 is used for RSSI_ADC_CHANNEL
 PA1 UART4_RX UART4 
 
+# transmit only usart2, for telemetry output (eg. Hott telem)
+PA2 USART2_TX USART2
 
 #adc
 PC1 BAT_CURR_SENS ADC1 SCALE(1)
