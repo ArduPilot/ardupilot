@@ -288,6 +288,7 @@ void NavEKF3_core::InitialiseVariables()
     baroHgtOffset = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
+    tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;
     have_table_earth_field = false;
