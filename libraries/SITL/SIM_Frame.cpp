@@ -19,25 +19,11 @@
 #include "SIM_Frame.h"
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <stdio.h>
 #include <sys/stat.h>
-
-/*
-  use picojson to load optional frame files
- */
-#define PICOJSON_NOEXCEPT
-#ifndef PICOJSON_ASSERT
-#define PICOJSON_ASSERT(e)                                                                                                         \
-  do {                                                                                                                             \
-    if (!(e))                                                                                                                      \
-        ::printf(#e "\n");                          \
-  } while (0)
-#endif
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
 #include "picojson.h"
-#pragma GCC diagnostic pop
 
 using namespace SITL;
 
@@ -311,25 +297,32 @@ float Frame::get_air_density(float alt_amsl) const
  */
 void Frame::load_frame_params(const char *model_json)
 {
-    ::printf("Loading model %s\n", model_json);
-    int fd = open(model_json, O_RDONLY);
+    char *fname = nullptr;
+    struct stat st;
+    if (AP::FS().stat(model_json, &st) == 0) {
+        fname = strdup(model_json);
+    } else {
+        IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
+    }
+    if (fname == nullptr) {
+        AP_HAL::panic("%s failed to load\n", model_json);
+    }
+    ::printf("Loading model %s\n", fname);
+    int fd = AP::FS().open(model_json, O_RDONLY);
     if (fd == -1) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    struct stat st;
-    if (fstat(fd, &st) != 0) {
-        AP_HAL::panic("%s failed to load\n", model_json);
-    }
     char buf[st.st_size];
-    if (read(fd, buf, st.st_size) != st.st_size) {
+    if (AP::FS().read(fd, buf, st.st_size) != st.st_size) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    close(fd);
+    AP::FS().close(fd);
 
     char *start = strchr(buf, '{');
     if (!start) {
         AP_HAL::panic("Invalid json %s", model_json);
     }
+    free(fname);
 
     /*
       remove comments, as not allowed by the parser
@@ -450,6 +443,11 @@ void Frame::init(const char *frame_str, Battery *_battery)
         motors[0].set_slew_max(model.slew_max);
     }
 #endif
+
+    // setup reasonable defaults for battery
+    AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
+    AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
+    AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
 }
 
 /*
