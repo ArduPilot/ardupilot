@@ -30,6 +30,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+  use picojson to load optional frame files
+ */
+#define PICOJSON_NOEXCEPT
+#ifndef PICOJSON_ASSERT
+#define PICOJSON_ASSERT(e)                                                                                                         \
+  do {                                                                                                                             \
+    if (!(e))                                                                                                                      \
+        ::printf(#e "\n");                          \
+  } while (0)
+#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+
 #ifndef picojson_h
 #define picojson_h
 
@@ -1180,3 +1195,5 @@ inline std::ostream &operator<<(std::ostream &os, const picojson::value &x) {
 #endif
 
 #endif
+
+#pragma GCC diagnostic pop
