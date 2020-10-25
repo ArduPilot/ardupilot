@@ -454,6 +454,10 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
+        for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
+                    
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
             for f in os.listdir('ROMFS/scripts'):
