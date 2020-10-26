@@ -318,11 +318,19 @@ void loop()
     const uint8_t ibus_bytes[] = {0x20, 0x40, 0xdc, 0x05, 0xdc, 0x05, 0xe8, 0x03, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0xdc, 0x05, 0x47, 0xf3};
     const uint16_t ibus_output[] = {1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
 
+    const uint8_t fport_bytes[] = {0x7e, 0x19, 0x00, 0xe7, 0x3b, 0xdf, 0x5a, 0xce,
+                                   0x07, 0x10, 0x75, 0x49, 0x9c, 0x15, 0xe0, 0x03,
+                                   0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f,
+                                   0x7c, 0x00, 0x38, 0xfa, 0x7e};
+
+    const uint16_t fport_output[] = {1499, 1499, 1101, 1499, 1035, 1341, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+
     const uint8_t fport2_bytes[] = {0x18, 0xff, 0xac, 0x00, 0x5f, 0xf8, 0xc0, 0x07,
                                     0x3e, 0xf0, 0x81, 0x0f, 0x7c, 0xe0, 0x03, 0x1f,
                                     0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c,
                                     0x00, 0x5e, 0x98};
     const uint16_t fport2_output[] = {982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+
 
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
@@ -344,6 +352,7 @@ void loop()
     test_protocol("DSMX11", 115200, dsmx11ms_bytes, sizeof(dsmx11ms_bytes), dsmx11ms_output, ARRAY_SIZE(dsmx11ms_output), 9, 16);
     test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 9, 16);
 
+    test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
     test_protocol("FPORT2", 115200, fport2_bytes, sizeof(fport2_bytes), fport2_output, ARRAY_SIZE(fport2_output), 3, 0, true);
 }
 
