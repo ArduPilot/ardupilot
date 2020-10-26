@@ -20,24 +20,41 @@
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
-class AP_RCProtocol_SBUS : public AP_RCProtocol_Backend {
+#define FPORT2_CONTROL_FRAME_SIZE 38
+
+struct FPort2_Frame;
+
+class AP_RCProtocol_FPort2 : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool inverted);
+    AP_RCProtocol_FPort2(AP_RCProtocol &_frontend, bool inverted);
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    bool sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
-                     bool *sbus_failsafe, bool *sbus_frame_drop, uint16_t max_values);
+    void decode_control(const FPort2_Frame &frame);
+    void decode_downlink(const FPort2_Frame &frame);
+    bool check_checksum(void);
 
-    bool inverted;
-    SoftSerial ss{100000, SoftSerial::SERIAL_CONFIG_8E2I};
+    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
     uint32_t saved_width;
 
     struct {
-        uint8_t buf[25];
+        uint8_t buf[FPORT2_CONTROL_FRAME_SIZE];
         uint8_t ofs;
         uint32_t last_byte_us;
+        uint8_t control_len;
+        bool is_downlink;
     } byte_input;
+
+    uint8_t chan_count;
+
+    const bool inverted;
+
+    struct {
+        bool available;
+        uint32_t data;
+        uint16_t appid;
+        uint8_t frame;
+    } telem_data;
 };
