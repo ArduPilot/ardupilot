@@ -76,28 +76,28 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
 }
 
 
-// decode channels from the standard 11bit format (used by CRSF and SBUS)
+/*
+  decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)
+  must be used on multiples of 8 channels
+*/
 void AP_RCProtocol_Backend::decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset)
 {
 #define CHANNEL_SCALE(x) ((int32_t(x) * mult) / div + offset)
+    while (nchannels >= 8) {
+        const Channels11Bit_8Chan* channels = (const Channels11Bit_8Chan*)data;
+        values[0] = CHANNEL_SCALE(channels->ch0);
+        values[1] = CHANNEL_SCALE(channels->ch1);
+        values[2] = CHANNEL_SCALE(channels->ch2);
+        values[3] = CHANNEL_SCALE(channels->ch3);
+        values[4] = CHANNEL_SCALE(channels->ch4);
+        values[5] = CHANNEL_SCALE(channels->ch5);
+        values[6] = CHANNEL_SCALE(channels->ch6);
+        values[7] = CHANNEL_SCALE(channels->ch7);
 
-    const Channels11Bit* channels = (const Channels11Bit*)data;
-    values[0] = CHANNEL_SCALE(channels->ch0);
-    values[1] = CHANNEL_SCALE(channels->ch1);
-    values[2] = CHANNEL_SCALE(channels->ch2);
-    values[3] = CHANNEL_SCALE(channels->ch3);
-    values[4] = CHANNEL_SCALE(channels->ch4);
-    values[5] = CHANNEL_SCALE(channels->ch5);
-    values[6] = CHANNEL_SCALE(channels->ch6);
-    values[7] = CHANNEL_SCALE(channels->ch7);
-    values[8] = CHANNEL_SCALE(channels->ch8);
-    values[9] = CHANNEL_SCALE(channels->ch9);
-    values[10] = CHANNEL_SCALE(channels->ch10);
-    values[11] = CHANNEL_SCALE(channels->ch11);
-    values[12] = CHANNEL_SCALE(channels->ch12);
-    values[13] = CHANNEL_SCALE(channels->ch13);
-    values[14] = CHANNEL_SCALE(channels->ch14);
-    values[15] = CHANNEL_SCALE(channels->ch15);
+        nchannels -= 8;
+        data += sizeof(*channels);
+        values += 8;
+    }
 }
 
 /*
