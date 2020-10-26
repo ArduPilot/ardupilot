@@ -306,7 +306,7 @@ void NavEKF3_core::setAidingMode()
              } else if (posAidLossCritical) {
                 // if the loss of position is critical, declare all sources of position aiding as being timed out
                 posTimeout = true;
-                velTimeout = true;
+                velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
                 rngBcnTimeout = true;
                 gpsNotAvailable = true;
 

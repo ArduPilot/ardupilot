@@ -670,11 +670,8 @@ void NavEKF3_core::FuseVelPosNED()
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
-                    // reset the velocity to the external sensor velocity
-                    ResetVelocity(resetDataSource::DEFAULT);
                     // don't fuse external sensor data on this time step
                     fusePosData = false;
-                    fuseVelData = false;
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
@@ -682,7 +679,13 @@ void NavEKF3_core::FuseVelPosNED()
                     P[8][8] = P[7][7];
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
-                    velTestRatio = 0.0f;
+                    // also reset velocity if it has timed out
+                    if (velTimeout) {
+                        // reset the velocity to the external sensor velocity
+                        ResetVelocity(resetDataSource::DEFAULT);
+                        fuseVelData = false;
+                        velTestRatio = 0.0f;
+                    }
                 }
             } else {
                 posHealth = false;
