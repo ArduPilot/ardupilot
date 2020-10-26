@@ -23,6 +23,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,8 +38,9 @@ extern const AP_HAL::HAL& hal;
 #define FLAGS_FAILSAFE_BIT	3
 #define FLAGS_FRAMELOST_BIT	2
 
-#define CHAN_SCALE_FACTOR ((2000.0 - 1000.0) / (1800.0 - 200.0))
-#define CHAN_SCALE_OFFSET (int)(1000.0 - (CHAN_SCALE_FACTOR * 200.0 + 0.5f))
+#define CHAN_SCALE_FACTOR1 1000U
+#define CHAN_SCALE_FACTOR2 1600U
+#define CHAN_SCALE_OFFSET 875U
 
 #define FPORT_TYPE_CONTROL 0
 #define FPORT_TYPE_DOWNLINK 1
@@ -55,22 +57,7 @@ struct PACKED FPort_Frame {
     uint8_t type;
     union {
         struct PACKED {
-            uint16_t chan0 : 11;
-            uint16_t chan1 : 11;
-            uint16_t chan2 : 11;
-            uint16_t chan3 : 11;
-            uint16_t chan4 : 11;
-            uint16_t chan5 : 11;
-            uint16_t chan6 : 11;
-            uint16_t chan7 : 11;
-            uint16_t chan8 : 11;
-            uint16_t chan9 : 11;
-            uint16_t chan10 : 11;
-            uint16_t chan11 : 11;
-            uint16_t chan12 : 11;
-            uint16_t chan13 : 11;
-            uint16_t chan14 : 11;
-            uint16_t chan15 : 11;
+            uint8_t data[22]; // 16 11-bit channels
             uint8_t flags;
             uint8_t rssi;
             uint8_t crc;
@@ -99,28 +86,7 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
 {
     uint16_t values[MAX_CHANNELS];
 
-    // pull out of bitfields
-    values[0] = frame.control.chan0;
-    values[1] = frame.control.chan1;
-    values[2] = frame.control.chan2;
-    values[3] = frame.control.chan3;
-    values[4] = frame.control.chan4;
-    values[5] = frame.control.chan5;
-    values[6] = frame.control.chan6;
-    values[7] = frame.control.chan7;
-    values[8] = frame.control.chan8;
-    values[9] = frame.control.chan9;
-    values[10] = frame.control.chan10;
-    values[11] = frame.control.chan11;
-    values[12] = frame.control.chan12;
-    values[13] = frame.control.chan13;
-    values[14] = frame.control.chan14;
-    values[15] = frame.control.chan15;
-
-    // scale values
-    for (uint8_t i=0; i<MAX_CHANNELS; i++) {
-        values[i] = (uint16_t)(values[i] * CHAN_SCALE_FACTOR + 0.5f) + CHAN_SCALE_OFFSET;
-    }
+    decode_11bit_channels(frame.control.data, MAX_CHANNELS, values, CHAN_SCALE_FACTOR1, CHAN_SCALE_FACTOR2, CHAN_SCALE_OFFSET);
 
     bool failsafe = ((frame.control.flags & (1 << FLAGS_FAILSAFE_BIT)) != 0);
 
@@ -210,15 +176,7 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
     buf[3] = telem_data.appid & 0xFF;
     buf[4] = telem_data.appid >> 8;
     memcpy(&buf[5], &telem_data.data, 4);
-
-    uint16_t sum = 0;
-    for (uint8_t i=0; i<sizeof(buf)-1; i++) {
-        sum += buf[i];
-        sum += sum >> 8;
-        sum &= 0xFF;              
-    }
-    sum = 0xff - ((sum & 0xff) + (sum >> 8));
-    buf[9] = (uint8_t)sum;
+    buf[9] = crc_sum8(&buf[0], 9);
 
     // perform byte stuffing per FPort spec
     uint8_t len = 0;
@@ -345,16 +303,8 @@ reset:
 // check checksum byte
 bool AP_RCProtocol_FPort::check_checksum(void)
 {
-    uint8_t len = byte_input.buf[1]+2;
-    const uint8_t *b = &byte_input.buf[1];
-    uint16_t sum = 0;
-    for (uint8_t i=0; i<len; i++) {
-        sum += b[i];
-        sum += sum >> 8;
-        sum &= 0xFF;            
-    }
-    sum = (sum & 0xff) + (sum >> 8);
-    return sum == 0xff;
+    const uint8_t len = byte_input.buf[1]+2;
+    return crc_sum8(&byte_input.buf[1], len) == 0x00;
 }
 
 // support byte input
