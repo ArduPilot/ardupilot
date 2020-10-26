@@ -202,8 +202,11 @@ function update()
       end
 
       -- calculate acceleration limited climb rate
-      climb_rate = math.min(climb_rate_target, climb_rate + climb_rate_chg_max, climb_rate_max)
-      climb_rate = math.max(climb_rate_target, climb_rate - climb_rate_chg_max, -climb_rate_max)
+      if (climb_rate_target >= climb_rate) then
+        climb_rate = math.min(climb_rate_target, climb_rate + climb_rate_chg_max, climb_rate_max)
+      else
+        climb_rate = math.max(climb_rate_target, climb_rate - climb_rate_chg_max, -climb_rate_max)
+      end
     end
   end
 
