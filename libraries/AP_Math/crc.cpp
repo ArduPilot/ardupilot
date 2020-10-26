@@ -334,3 +334,16 @@ uint32_t crc_crc24(const uint8_t *bytes, uint16_t len)
     }
     return crc;
 }
+
+// simple 8 bit checksum used by FPort
+uint8_t crc_sum8(const uint8_t *p, uint8_t len)
+{
+    uint16_t sum = 0;
+    for (uint8_t i=0; i<len; i++) {
+        sum += p[i];
+        sum += sum >> 8;
+        sum &= 0xFF;              
+    }
+    sum = 0xff - ((sum & 0xff) + (sum >> 8));
+    return sum;
+}
