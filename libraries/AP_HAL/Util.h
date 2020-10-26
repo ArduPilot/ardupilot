@@ -100,6 +100,11 @@ public:
      */
     virtual uint64_t get_hw_rtc() const;
 
+    /*
+      get the requested usb baudrate - 0 = none
+    */
+    virtual uint32_t get_usb_baud(uint16_t endpoint_id) { return 0; }
+
     enum class FlashBootloader {
         OK=0,
         NO_CHANGE=1,
