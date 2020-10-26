@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.5-rc2 08-Oct-2020
+Copter 4.0.5 27-Oct-2020 / 4.0.5-rc2 08-Oct-2020
 Changes from 4.0.5-rc1
 1) Bug fixes:
     a) Serial/UART DMA race condition that could cause watdog reset fixed (Critical fix)
