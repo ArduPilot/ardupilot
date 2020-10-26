@@ -41,6 +41,16 @@
 SerialUSBDriver SDU1;
 SerialUSBDriver SDU2;
 
+cdc_linecoding_t linecoding = {
+  {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
+  LC_STOP_1, LC_PARITY_NONE, 8
+};
+
+cdc_linecoding_t linecoding2 = {
+  {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
+  LC_STOP_1, LC_PARITY_NONE, 8
+};
+
 /*
  * Endpoints.
  */
@@ -287,6 +297,20 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
   return NULL;
 }
 
+/*
+    get the requested usb baudrate - 0 = none
+*/
+uint32_t get_usb_baud(uint16_t endpoint_id)
+{
+#if defined(HAL_USB_PRODUCT_ID) && HAL_HAVE_DUAL_USB_CDC
+    if(endpoint_id == 0)
+        return *((uint32_t*)linecoding.dwDTERate);
+    if(endpoint_id == 2)
+        return *((uint32_t*)linecoding2.dwDTERate);
+#endif
+    return 0;
+}
+
 /**
  * @brief   IN EP1 state.
  */
@@ -446,11 +470,39 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
  * SerialUSB handler.
  */
 static bool requests_hook(USBDriver *usbp) {
-
   if (((usbp->setup[0] & USB_RTYPE_RECIPIENT_MASK) == USB_RTYPE_RECIPIENT_INTERFACE) &&
       (usbp->setup[1] == USB_REQ_SET_INTERFACE)) {
     usbSetupTransfer(usbp, NULL, 0, NULL);
     return true;
+  }
+  // process only index=2 commands here - ie the second interface - the first interface is handled via the default handler
+  if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS && usbp->setup[4] == 0x02 && usbp->setup[5] == 0x00) {
+    switch (usbp->setup[1]) {
+    case CDC_GET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding2, sizeof(linecoding2), NULL);
+      return true;
+    case CDC_SET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding2, sizeof(linecoding2), NULL);
+      return true;
+    case CDC_SET_CONTROL_LINE_STATE:
+      /* Nothing to do, there are no control lines.*/
+      usbSetupTransfer(usbp, NULL, 0, NULL);
+      return true;
+    }
+  }
+  if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS && usbp->setup[4] == 0x00 && usbp->setup[5] == 0x00) {
+    switch (usbp->setup[1]) {
+    case CDC_GET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_CONTROL_LINE_STATE:
+      /* Nothing to do, there are no control lines.*/
+      usbSetupTransfer(usbp, NULL, 0, NULL);
+      return true;
+    }
   }
   return sduRequestsHook(usbp);
 }
