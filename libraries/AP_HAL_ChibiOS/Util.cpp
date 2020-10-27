@@ -288,16 +288,6 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
     return true;
 }
 
-#ifdef USE_POSIX
-/*
-  initialise filesystem
- */
-bool Util::fs_init(void)
-{
-    return sdcard_retry();
-}
-#endif
-
 // return true if the reason for the reboot was a watchdog reset
 bool Util::was_watchdog_reset() const
 {

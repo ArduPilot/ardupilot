@@ -3,6 +3,7 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -27,7 +28,6 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
-
     // @Group: VTX_
     // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
@@ -36,6 +36,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: MSP
     // @Path: ../AP_MSP/AP_MSP.cpp
     AP_SUBGROUPINFO(msp, "MSP",  5, AP_Vehicle, AP_MSP),
+#endif
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    // @Group: FRSKY_
+    // @Path: ../AP_Frsky_Telem/AP_Frsky_Parameters.cpp
+    AP_SUBGROUPINFO(frsky_parameters, "FRSKY_", 6, AP_Vehicle, AP_Frsky_Parameters),
 #endif
 
     AP_GROUPEND

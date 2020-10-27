@@ -48,6 +48,13 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
 
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-gcc-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
   build-clang:
     runs-on: ubuntu-20.04
     container: khancyr/ardupilot-dev-clang:latest
@@ -91,3 +98,11 @@ jobs:
           export CXX=clang++-7
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-clang-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+

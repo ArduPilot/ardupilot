@@ -139,7 +139,7 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
-    // return tilt error convergence metric
+    // return estimated 1-sigma tilt error in radians
     void getTiltError(float &ang) const;
 
     // reset body axis gyro bias estimates
@@ -560,6 +560,7 @@ private:
         Vector3f    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
         uint32_t    time_ms;        // measurement timestamp (msec)
         uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
+        bool        corrected;      // true when the position and velocity have been corrected for sensor position
     };
 
     struct mag_elements {
@@ -624,15 +625,17 @@ private:
 
     struct ext_nav_elements {
         Vector3f        pos;        // XYZ position measured in a RH navigation frame (m)
-        float           posErr;     // spherical poition measurement error 1-std (m)
+        float           posErr;     // spherical position measurement error 1-std (m)
         uint32_t        time_ms;    // measurement timestamp (msec)
         bool            posReset;   // true when the position measurement has been reset
+        bool            corrected;  // true when the position has been corrected for sensor position
     };
 
     struct ext_nav_vel_elements {
         Vector3f vel;               // velocity in NED (m/s)
         float err;                  // velocity measurement error (m/s)
         uint32_t time_ms;           // measurement timestamp (msec)
+        bool corrected;             // true when the velocity has been corrected for sensor position
     };
 
     // bias estimates for the IMUs that are enabled but not being used
@@ -655,6 +658,12 @@ private:
         EXTNAV=7        // Use external nav data
     };
 
+    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
+    enum class rotationOrder {
+        TAIT_BRYAN_321=0,
+        TAIT_BRYAN_312=1
+    };
+
     // update the navigation filter status
     void updateFilterStatus(void);
 
@@ -662,7 +671,9 @@ private:
     void UpdateStrapdownEquationsNED();
 
     // calculate the predicted state covariance matrix
-    void CovariancePrediction();
+    // Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
+    // used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
+    void CovariancePrediction(Vector3f *rotVarVecPtr);
 
     // force symmetry on the state covariance matrix
     void ForceSymmetry();
@@ -714,44 +725,6 @@ private:
 
     // Rotate the stored output quaternion history through a quaternion rotation
     void StoreQuatRotate(const Quaternion &deltaQuat);
-
-    // store altimeter data
-    void StoreBaro();
-
-    // recall altimeter data at the fusion time horizon
-    // return true if data found
-    bool RecallBaro();
-
-    // store range finder data
-    void StoreRange();
-
-    // recall range finder data at the fusion time horizon
-    // return true if data found
-    bool RecallRange();
-
-    // store magnetometer data
-    void StoreMag();
-
-    // recall magetometer data at the fusion time horizon
-    // return true if data found
-    bool RecallMag();
-
-    // store true airspeed data
-    void StoreTAS();
-
-    // recall true airspeed data at the fusion time horizon
-    // return true if data found
-    bool RecallTAS();
-
-    // store optical flow data
-    void StoreOF();
-
-    // recall optical flow data at the fusion time horizon
-    // return true if data found
-    bool RecallOF();
-
-    // calculate nav to body quaternions from body to nav rotation matrix
-    void quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const;
 
     // calculate the NED earth spin vector in rad/sec
     void calcEarthRateNED(Vector3f &omega, int32_t latitude) const;
@@ -934,6 +907,9 @@ private:
     // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
     void fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor);
 
+    // return the best Tait-Bryan rotation order to use
+    void bestRotationOrder(rotationOrder &order);
+
     // Fuse declination angle to keep earth field declination from changing when we don't have earth relative observations.
     // Input is 1-sigma uncertainty in published declination
     void FuseDeclination(float declErr);
@@ -966,11 +942,14 @@ private:
     // effective value of MAG_CAL
     MagCal effective_magCal(void) const;
 
-    // calculate the variances for the rotation vector equivalent
-    Vector3f calcRotVecVariances(void);
+    // calculate the tilt error variance
+    void calcTiltErrorVariance(void);
     
-    // initialise the quaternion covariances using rotation vector variances
-    void initialiseQuatCovariances(const Vector3f &rotVarVec);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // calculate the tilt error variance using an alternative numerical difference technique
+    // and log with value generated by NavEKF3_core::calcTiltErrorVariance()
+    void verifyTiltErrorVariance();
+#endif
 
     // update timing statistics structure
     void updateTimingStatistics(void);
@@ -982,10 +961,10 @@ private:
     void CorrectGPSForAntennaOffset(gps_elements &gps_data) const;
 
     // correct external navigation earth-frame position using sensor body-frame offset
-    void CorrectExtNavForSensorOffset(Vector3f &ext_position);
+    void CorrectExtNavForSensorOffset(ext_nav_elements &ext_nav_data);
 
     // correct external navigation earth-frame velocity using sensor body-frame offset
-    void CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const;
+    void CorrectExtNavVelForSensorOffset(ext_nav_vel_elements &ext_nav_vel_data) const;
 
     // Runs the IMU prediction step for an independent GSF yaw estimator algorithm
     // that uses IMU, GPS horizontal velocity and optionally true airspeed data.
@@ -1000,7 +979,8 @@ private:
     // reset the quaternion state covariances using the supplied yaw variance
     // yaw          : new yaw angle (rad)
     // yaw_variance : variance of new yaw angle (rad^2)
-    void resetQuatStateYawOnly(float yaw, float yawVariance);
+    // order : enum defining Tait-Bryan rotation order used in calculation of the yaw angle
+    void resetQuatStateYawOnly(float yaw, float yawVariance, rotationOrder order);
 
     // attempt to reset the yaw to the EKF-GSF value
     // returns false if unsuccessful
@@ -1055,7 +1035,6 @@ private:
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     float defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
-    bool magFuseRequired;           // boolean set to true when magnetometer fusion will be perfomred in the next time step
     MagCal effectiveMagCal;         // the actual mag calibration and yaw fusion method being used as the default
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
     uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
@@ -1090,6 +1069,7 @@ private:
     bool inhibitMagStates;          // true when magnetic field states are inactive
     bool lastInhibitMagStates;      // previous inhibitMagStates
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
+    bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelVelBiasStates;   // true when IMU delta velocity bias states are inactive
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
@@ -1117,15 +1097,11 @@ private:
     uint8_t fifoIndexDelayed;       // Global index for inertial and output solution at delayed/fusion time horizon
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
-    uint8_t baroStoreIndex;         // Baro data storage index
     range_elements rangeDataNew;    // Range finder data at the current time horizon
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
-    uint8_t rangeStoreIndex;        // Range finder data storage index
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
-    uint8_t tasStoreIndex;          // TAS data storage index
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
-    uint8_t magStoreIndex;          // Magnetometer data storage index
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
     uint8_t last_gps_idx;           // sensor ID of the GPS receiver used for the last fusion or reset
@@ -1179,6 +1155,7 @@ private:
     Vector3f posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
+    float tiltErrorVariance;        // variance of the angular uncertainty measured perpendicular to the vertical (rad^2)
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
     struct {
@@ -1204,15 +1181,10 @@ private:
     uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
 
-    // States used for unwrapping of compass yaw error
-    float innovationIncrement;
-    float lastInnovation;
-
     // variables added for optical flow fusion
     obs_ring_buffer_t<of_elements> storedOF;    // OF data buffer
     of_elements ofDataNew;          // OF data at the current time horizon
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
-    uint8_t ofStoreIndex;           // OF data storage index
     bool flowDataValid;             // true while optical flow data is still fresh
     Vector2f auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
@@ -1240,7 +1212,6 @@ private:
     bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
-    Vector2f heldVelNE;             // velocity held when no aiding is available
     enum AidingMode {AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
                      AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
@@ -1290,7 +1261,6 @@ private:
     // Range Beacon Sensor Fusion
     obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
     rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
-    uint8_t rngBcnStoreIndex;           // Range beacon data storage index
     uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
     float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
     bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check

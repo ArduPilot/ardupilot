@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -50,6 +51,10 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
 // init sets up INS board orientation
 void AP_AHRS_NavEKF::init()
 {
+    // EKF1 is no longer supported - handle case where it is selected
+    if (_ekf_type.get() == 1) {
+        AP_BoardConfig::config_error("EKF1 not available");
+    }
 #if !HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
     if (_ekf_type.get() == 2) {
         _ekf_type.set(3);
@@ -117,11 +122,6 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     // drop back to normal priority if we were boosted by the INS
     // calling delay_microseconds_boost()
     hal.scheduler->boost_end();
-    
-    // EKF1 is no longer supported - handle case where it is selected
-    if (_ekf_type == 1) {
-        _ekf_type.set(2);
-    }
 
     update_DCM(skip_ins_update);
 
@@ -2051,7 +2051,7 @@ bool AP_AHRS_NavEKF::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vec
 // indicates prefect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
 // inconsistency that will be accpeted by the filter
 // boolean false is returned if variances are not available
-bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
     switch (ekf_type()) {
     case EKFType::NONE:
@@ -2059,17 +2059,21 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
         return false;
 
 #if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
+    case EKFType::TWO: {
         // use EKF to get variance
-        EKF2.getVariances(-1,velVar, posVar, hgtVar, magVar, tasVar, offset);
+        Vector2f offset;
+        EKF2.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
         return true;
+    }
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
+    case EKFType::THREE: {
         // use EKF to get variance
-        EKF3.getVariances(-1,velVar, posVar, hgtVar, magVar, tasVar, offset);
+        Vector2f offset;
+        EKF3.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
         return true;
+    }
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -2079,7 +2083,6 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
         hgtVar = 0;
         magVar.zero();
         tasVar = 0;
-        offset.zero();
         return true;
 #endif
     }

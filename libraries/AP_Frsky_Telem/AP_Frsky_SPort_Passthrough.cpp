@@ -9,6 +9,11 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <GCS_MAVLink/GCS.h>
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+#include "AP_Frsky_MAVlite.h"
+#include "AP_Frsky_Parameters.h"
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+
 /*
 for FrSky SPort Passthrough
 */
@@ -52,6 +57,8 @@ for FrSky SPort Passthrough
 #define ATTIANDRNG_PITCH_LIMIT      0x3FF
 #define ATTIANDRNG_PITCH_OFFSET     11
 #define ATTIANDRNG_RNGFND_OFFSET    21
+
+extern const AP_HAL::HAL& hal;
 
 bool AP_Frsky_SPort_Passthrough::init()
 {
@@ -99,12 +106,50 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(GPS_STATUS, 700, 500);  // 0x5002 GPS status
     set_scheduler_entry(HOME, 400, 500);        // 0x5004 Home
     set_scheduler_entry(BATT_2, 1300, 500);     // 0x5008 Battery 2 status
-    set_scheduler_entry(BATT_1, 1300, 500);     // 0x5008 Battery 1 status
+    set_scheduler_entry(BATT_1, 1300, 500);     // 0x5003 Battery 1 status
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    set_scheduler_entry(MAV, 35, 25);           // mavlite
+    // initialize sport sensor IDs
+    set_sensor_id(_frsky_parameters->_uplink_id, _SPort_bidir.uplink_sensor_id);
+    set_sensor_id(_frsky_parameters->_dnlink1_id, _SPort_bidir.downlink1_sensor_id);
+    set_sensor_id(_frsky_parameters->_dnlink2_id, _SPort_bidir.downlink2_sensor_id);
+    // initialize sport
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Frsky_SPort_Passthrough::process_rx_queue, void));
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 }
 
+/*
+  dynamically change scheduler priorities based on queue sizes
+*/
 void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
 {
+    /*
+        When queues are empty set a low priority (high weight), when queues
+        are not empty set a higher priority (low weight) based on the following
+        relative priority order: mavlite > status text > attitude.
+     */
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    if (!_SPort_bidir.tx_packet_queue.is_empty()) {
+        _scheduler.packet_weight[MAV] = 30;             // mavlite
+        if (!queue_empty) {
+            _scheduler.packet_weight[TEXT] = 45;        // messages
+            _scheduler.packet_weight[ATTITUDE] = 80;    // attitude
+        } else {
+            _scheduler.packet_weight[TEXT] = 5000;      // messages
+            _scheduler.packet_weight[ATTITUDE] = 80;    // attitude
+        }
+    } else {
+        _scheduler.packet_weight[MAV] = 5000;           // mavlite
+        if (!queue_empty) {
+            _scheduler.packet_weight[TEXT] = 45;        // messages
+            _scheduler.packet_weight[ATTITUDE] = 80;    // attitude
+        } else {
+            _scheduler.packet_weight[TEXT] = 5000;      // messages
+            _scheduler.packet_weight[ATTITUDE] = 45;    // attitude
+        }
+    }
+#else   //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     if (!queue_empty) {
         _scheduler.packet_weight[TEXT] = 45;     // messages
         _scheduler.packet_weight[ATTITUDE] = 80;     // attitude
@@ -112,6 +157,7 @@ void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
         _scheduler.packet_weight[TEXT] = 5000;   // messages
         _scheduler.packet_weight[ATTITUDE] = 45;     // attitude
     }
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 }
 
 // WFQ scheduler
@@ -122,12 +168,22 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case TEXT:
         packet_ready = !queue_empty;
         break;
+    case GPS_LAT:
+    case GPS_LON:
+        // force gps coords to use sensor 0x1B, always send when used with external data
+        packet_ready = _use_external_data || (_passthrough.new_byte == SENSOR_ID_27);
+        break;
     case AP_STATUS:
         packet_ready = gcs().vehicle_initialised();
         break;
     case BATT_2:
         packet_ready = AP::battery().num_instances() > 1;
         break;
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        case MAV:
+            packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
+            break;
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     default:
         packet_ready = true;
         break;
@@ -154,11 +210,10 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
         break;
     case GPS_LAT: // 0x800 GPS lat
         // sample both lat and lon at the same time
-        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(&_passthrough.send_latitude)); // gps latitude or longitude
-        _passthrough.gps_lng_sample = calc_gps_latlng(&_passthrough.send_latitude);
+        send_sport_frame(SPORT_DATA_FRAME, GPS_LONG_LATI_FIRST_ID, calc_gps_latlng(_passthrough.send_latitude)); // gps latitude or longitude
+        _passthrough.gps_lng_sample = calc_gps_latlng(_passthrough.send_latitude);
         // force the scheduler to select GPS lon as packet that's been waiting the most
-        // this guarantees that gps coords are sent at max
-        // _scheduler.avg_polling_period*number_of_downlink_sensors time separation
+            // this guarantees that lat and lon are sent as consecutive packets
         _scheduler.packet_timer[GPS_LON] = _scheduler.packet_timer[GPS_LAT] - 10000;
         break;
     case GPS_LON: // 0x800 GPS lon
@@ -185,6 +240,11 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case PARAM: // 0x5007 parameters
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
         break;
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    case MAV: // mavlite
+        process_tx_queue();
+        break;
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     }
 }
 
@@ -194,13 +254,7 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
  */
 void AP_Frsky_SPort_Passthrough::send(void)
 {
-    int16_t numc;
-    numc = _port->available();
-
-    // check if available is negative
-    if (numc < 0) {
-        return;
-    }
+    const uint16_t numc = MIN(_port->available(), 1024U);
 
     // this is the constant for hub data frame
     if (_port->txspace() < 19) {
@@ -208,14 +262,20 @@ void AP_Frsky_SPort_Passthrough::send(void)
     }
     // keep only the last two bytes of the data found in the serial buffer, as we shouldn't respond to old poll requests
     uint8_t prev_byte = 0;
-    for (int16_t i = 0; i < numc; i++) {
+    for (uint16_t i = 0; i < numc; i++) {
         prev_byte = _passthrough.new_byte;
         _passthrough.new_byte = _port->read();
-    }
-    if (prev_byte == FRAME_HEAD) {
-        if (_passthrough.new_byte == SENSOR_ID_27) { // byte 0x7E is the header of each poll request
-            run_wfq_scheduler();
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        AP_Frsky_SPort::sport_packet_t sp;
+
+        if (_sport_handler.process_byte(sp, _passthrough.new_byte)) {
+            queue_rx_packet(sp);
         }
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    }
+    // check if we should respond to this polling byte
+    if (prev_byte == FRAME_HEAD && is_passthrough_byte(_passthrough.new_byte)) {
+        run_wfq_scheduler();
     }
 }
 
@@ -237,14 +297,14 @@ bool AP_Frsky_SPort_Passthrough::get_next_msg_chunk(void)
         uint8_t character = 0;
         _msg_chunk.chunk = 0; // clear the 4 bytes of the chunk buffer
 
-        for (int i = 3; i > -1 && _msg_chunk.char_index < sizeof(_statustext.next.text); i--) {
+        for (uint8_t i = 0; i < 4 && _msg_chunk.char_index < sizeof(_statustext.next.text); i++) {
             character = _statustext.next.text[_msg_chunk.char_index++];
 
             if (!character) {
                 break;
             }
 
-            _msg_chunk.chunk |= character << i * 8;
+            _msg_chunk.chunk |= character << (3-i) * 8;
         }
 
         if (!character || (_msg_chunk.char_index == sizeof(_statustext.next.text))) { // we've reached the end of the message (string terminated by '\0' or last character of the string has been processed)
@@ -325,10 +385,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
 {
     const AP_GPS &gps = AP::gps();
 
-    uint32_t gps_status;
-
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
-    gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
+    uint32_t gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
     gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
@@ -349,7 +407,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
 {
     const AP_BattMonitor &_battery = AP::battery();
 
-    uint32_t batt;
     float current, consumed_mah;
     if (!_battery.current_amps(current, instance)) {
         current = 0;
@@ -359,7 +416,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
     }
 
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
-    batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
+    uint32_t batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
     batt |= prep_number(roundf(current * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
@@ -368,18 +425,30 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_batt(uint8_t instance)
 }
 
 /*
+ * true if we need to respond to the last polling byte
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+bool AP_Frsky_SPort_Passthrough::is_passthrough_byte(const uint8_t byte)
+{
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    if( byte == _SPort_bidir.downlink1_sensor_id || byte == _SPort_bidir.downlink2_sensor_id ) {
+        return true;
+    }
+#endif
+    return byte == SENSOR_ID_27;
+}
+
+/*
  * prepare various autopilot status data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
 {
-    uint32_t ap_status;
-
     // IMU temperature: offset -19, 0 means temp =< 19°, 63 means temp => 82°
     uint8_t imu_temp = (uint8_t) roundf(constrain_float(AP::ins().get_temperature(0), AP_IMU_TEMP_MIN, AP_IMU_TEMP_MAX) - AP_IMU_TEMP_MIN);
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
+    uint32_t ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
     ap_status |= (uint8_t)(gcs().simple_input_active())<<AP_SIMPLE_OFFSET;
     ap_status |= (uint8_t)(gcs().supersimple_input_active())<<AP_SSIMPLE_OFFSET;
@@ -393,8 +462,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
-    //hal.console->printf("flying=%d\n",AP_Notify::flags.flying);
-    //hal.console->printf("ap_status=%08X\n",ap_status);
     return ap_status;
 }
 
@@ -407,17 +474,17 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
     uint32_t home = 0;
     Location loc;
     Location home_loc;
-    bool get_position;
+    bool got_position = false;
     float _relative_home_altitude = 0;
 
     {
         AP_AHRS &_ahrs = AP::ahrs();
         WITH_SEMAPHORE(_ahrs.get_semaphore());
-        get_position = _ahrs.get_position(loc);
+        got_position = _ahrs.get_position(loc);
         home_loc = _ahrs.get_home();
     }
 
-    if (get_position) {
+    if (got_position) {
         // check home_loc is valid
         if (home_loc.lat != 0 || home_loc.lng != 0) {
             // distance between vehicle and home_loc in meters
@@ -468,15 +535,35 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
     const RangeFinder *_rng = RangeFinder::get_singleton();
 
-    uint32_t attiandrng;
     AP_AHRS &_ahrs = AP::ahrs();
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
+    uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
+}
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+/*
+  allow external transports (e.g. FPort), to supply telemetry data
+ */
+bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+{
+    // queue only Uplink packets
+    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
+        const AP_Frsky_SPort::sport_packet_t sp {
+            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
+            frame,
+            appid,
+            data
+        };
+
+        _SPort_bidir.rx_packet_queue.push_force(sp);
+        return true;
+    }
+    return false;
 }
 
 /*
@@ -559,3 +646,86 @@ uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits,
     }
     return res;
 }
+
+
+
+
+/*
+ * Queue uplink packets in the sport rx queue
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_SPort_Passthrough::queue_rx_packet(const AP_Frsky_SPort::sport_packet_t packet)
+{
+    // queue only Uplink packets
+    if (packet.sensor == _SPort_bidir.uplink_sensor_id && packet.frame == SPORT_UPLINK_FRAME) {
+        _SPort_bidir.rx_packet_queue.push_force(packet);
+    }
+}
+
+/*
+ * Extract up to 1 mavlite message from the sport rx packet queue
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_SPort_Passthrough::process_rx_queue()
+{
+    AP_Frsky_SPort::sport_packet_t packet;
+    uint8_t loop_count = 0; // prevent looping forever
+    while (_SPort_bidir.rx_packet_queue.pop(packet) && loop_count++ < MAVLITE_MSG_SPORT_PACKETS_COUNT(MAVLITE_MAX_PAYLOAD_LEN)) {
+        AP_Frsky_MAVlite_Message rxmsg;
+
+        if (sport_to_mavlite.process(rxmsg, packet)) {
+            mavlite.process_message(rxmsg);
+            break; // process only 1 mavlite message each call
+        }
+    }
+}
+
+/*
+ * Process the sport tx queue
+ * pop and send 1 sport packet
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_SPort_Passthrough::process_tx_queue()
+{
+    AP_Frsky_SPort::sport_packet_t packet;
+
+    if (!_SPort_bidir.tx_packet_queue.peek(packet)) {
+        return;
+    }
+
+    // when using fport repeat each packet to account for
+    // fport packet loss (around 15%)
+    if (!_use_external_data || _SPort_bidir.tx_packet_duplicates++ == SPORT_TX_PACKET_DUPLICATES) {
+        _SPort_bidir.tx_packet_queue.pop();
+        _SPort_bidir.tx_packet_duplicates = 0;
+    }
+
+    send_sport_frame(SPORT_DOWNLINK_FRAME, packet.appid, packet.data);
+}
+
+/*
+ * Utility method to apply constraints in changing sensor id values
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+void AP_Frsky_SPort_Passthrough::set_sensor_id(AP_Int8 param_idx, uint8_t &sensor)
+{
+    int8_t idx = param_idx.get();
+
+    if (idx == -1) {
+        // disable this sensor
+        sensor = 0xFF;
+        return;
+    }
+    sensor = calc_sensor_id(idx);
+}
+
+/*
+ * Send a mavlite message
+ * Message is chunked in sport packets pushed in the tx queue
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &txmsg)
+{
+    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
+}
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL

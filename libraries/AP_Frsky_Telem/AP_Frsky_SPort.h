@@ -11,6 +11,16 @@ public:
 
     void send() override;
 
+    typedef union {
+        struct PACKED {
+            uint8_t sensor;
+            uint8_t frame;
+            uint16_t appid;
+            uint32_t data;
+        };
+        uint8_t raw[8];
+    } sport_packet_t;
+
 protected:
 
     void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
@@ -21,7 +31,9 @@ protected:
         uint8_t new_byte;
     } _passthrough;
 
-    uint32_t calc_gps_latlng(bool *send_latitude);
+    uint32_t calc_gps_latlng(bool &send_latitude);
+
+    static uint8_t calc_sensor_id(const uint8_t physical_id);
 
 private:
 

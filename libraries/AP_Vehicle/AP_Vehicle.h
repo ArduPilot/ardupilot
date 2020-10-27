@@ -43,6 +43,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_RCTelemetry/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
+#include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -212,6 +213,10 @@ public:
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    AP_Frsky_Parameters frsky_parameters;
+#endif
 
 protected:
 

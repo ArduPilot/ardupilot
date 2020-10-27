@@ -196,7 +196,6 @@ void NavEKF2_core::InitialiseVariables()
     inhibitGndState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    heldVelNE.zero();
     PV_AidingMode = AID_NONE;
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
@@ -226,12 +225,6 @@ void NavEKF2_core::InitialiseVariables()
     tiltErrFilt = 1.0f;
     tiltAlignComplete = false;
     stateIndexLim = 23;
-    baroStoreIndex = 0;
-    rangeStoreIndex = 0;
-    magStoreIndex = 0;
-    gpsStoreIndex = 0;
-    tasStoreIndex = 0;
-    ofStoreIndex = 0;
     delAngCorrection.zero();
     velErrintegral.zero();
     posErrintegral.zero();
@@ -239,8 +232,6 @@ void NavEKF2_core::InitialiseVariables()
     gpsNotAvailable = true;
     motorsArmed = false;
     prevMotorsArmed = false;
-    innovationIncrement = 0;
-    lastInnovation = 0;
     memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
     gpsSpdAccPass = false;
     ekfInnovationsPass = false;
@@ -290,7 +281,6 @@ void NavEKF2_core::InitialiseVariables()
     // range beacon fusion variables
     memset((void *)&rngBcnDataNew, 0, sizeof(rngBcnDataNew));
     memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
-    rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
     rngBcnHealth = false;
@@ -1502,13 +1492,6 @@ void NavEKF2_core::StoreQuatRotate(const Quaternion &deltaQuat)
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
-}
-
-// calculate nav to body quaternions from body to nav rotation matrix
-void NavEKF2_core::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
-{
-    // Calculate the body to nav cosine matrix
-    quat.rotation_matrix(Tbn);
 }
 
 // force symmetry on the covariance matrix to prevent ill-conditioning

@@ -7,6 +7,13 @@ include ../CubeBlack/hwdef.dat
 # board ID for firmware load
 APJ_BOARD_ID 1003
 
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1101
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubeBlack+"
+USB_STRING_SERIAL  "%SERIAL%"
+
 undef IMU
 
 IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270

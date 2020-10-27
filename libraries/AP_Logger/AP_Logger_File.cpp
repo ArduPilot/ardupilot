@@ -62,11 +62,6 @@ void AP_Logger_File::ensure_log_directory_exists()
     int ret;
     struct stat st;
 
-    const char* custom_dir = hal.util->get_custom_log_directory();
-    if (custom_dir != nullptr){
-        _log_directory = custom_dir;
-    }
-
     EXPECT_DELAY_MS(3000);
     ret = AP::FS().stat(_log_directory, &st);
     if (ret == -1) {
@@ -105,6 +100,11 @@ void AP_Logger_File::Init()
 
     _initialised = true;
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
+
+    const char* custom_dir = hal.util->get_custom_log_directory();
+    if (custom_dir != nullptr){
+        _log_directory = custom_dir;
+    }
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const

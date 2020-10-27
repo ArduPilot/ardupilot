@@ -1129,7 +1129,13 @@ private:
 
     CrowMode crow_mode = CrowMode::NORMAL;
 
-    bool flare_switch_active;
+    enum class FlareMode {
+        FLARE_DISABLED = 0,
+        ENABLED_NO_PITCH_TARGET,
+        ENABLED_PITCH_TARGET
+    };
+
+    FlareMode flare_mode;
 
 public:
     void failsafe_check(void);

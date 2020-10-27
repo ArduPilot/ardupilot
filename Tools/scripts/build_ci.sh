@@ -37,6 +37,9 @@ function run_autotest() {
     BVEHICLE="$2"
     RVEHICLE="$3"
 
+    # report on what cpu's we have for later log review if needed
+    cat /proc/cpuinfo
+
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
@@ -78,14 +81,48 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Heli" "build.Helicopter" "test.Helicopter"
         continue
     fi
+    # travis-ci
     if [ "$t" == "sitltest-copter-tests1" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests1"
         continue
     fi
+    #github actions ci
+    if [ "$t" == "sitltest-copter-tests1a" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1b" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1d"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1e" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1e"
+        continue
+    fi
+
+    # travis-ci
     if [ "$t" == "sitltest-copter-tests2" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests2"
         continue
     fi
+    #github actions ci
+    if [ "$t" == "sitltest-copter-tests2a" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2a"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2b" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2b"
+        continue
+    fi
+
     if [ "$t" == "sitltest-plane" ]; then
         run_autotest "Plane" "build.Plane" "test.Plane"
         continue

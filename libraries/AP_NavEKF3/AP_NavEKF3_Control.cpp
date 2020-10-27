@@ -275,7 +275,7 @@ void NavEKF3_core::setAidingMode()
 
             // Check if the loss of position accuracy has become critical
             bool posAidLossCritical = false;
-            if (!posAiding ) {
+            if (!posAiding) {
                 uint16_t maxLossTime_ms;
                 if (!velAiding) {
                     maxLossTime_ms = frontend->posRetryTimeNoVel_ms;
@@ -289,7 +289,7 @@ void NavEKF3_core::setAidingMode()
             // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
             // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
             // and declare attitude aiding loss so that we fall back into a non-aiding mode
-            if (assume_zero_sideslip() && onGround && !use_compass()){
+            if (assume_zero_sideslip() && onGround && !use_compass() && !using_external_yaw()) {
                 yawAlignComplete = false;
                 finalInflightYawInit = false;
                 attAidLossCritical = true;
@@ -408,11 +408,10 @@ void NavEKF3_core::setAidingMode()
 void NavEKF3_core::checkAttitudeAlignmentStatus()
 {
     // Check for tilt convergence - used during initial alignment
-    // Once the tilt variances have reduced to equivalent of 3deg uncertainty, re-set the yaw and magnetic field states
+    // Once the tilt variances have reduced, re-set the yaw and magnetic field states
     // and declare the tilt alignment complete
     if (!tiltAlignComplete) {
-        Vector3f angleErrVarVec = calcRotVecVariances();
-        if ((angleErrVarVec.x + angleErrVarVec.y) < sq(0.05235f)) {
+        if (tiltErrorVariance < sq(radians(5.0f))) {
             tiltAlignComplete = true;
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u tilt alignment complete",(unsigned)imu_index);
         }

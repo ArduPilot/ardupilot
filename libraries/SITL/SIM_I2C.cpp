@@ -23,6 +23,7 @@
 #include "SIM_I2C.h"
 #include "SIM_ToshibaLED.h"
 #include "SIM_MaxSonarI2CXL.h"
+#include "SIM_BattMonitor_SMBus_Maxell.h"
 
 #include <signal.h>
 
@@ -43,6 +44,7 @@ static IgnoredI2CDevice ignored;
 
 static ToshibaLED toshibaled;
 static MaxSonarI2CXL maxsonari2cxl;
+static Maxell maxell;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -55,7 +57,15 @@ struct i2c_device_at_address {
     { 1, 0x40, ignored }, // KellerLD
     { 1, 0x70, maxsonari2cxl },
     { 1, 0x76, ignored }, // MS56XX
+    { 2, 0x0B, maxell },
 };
+
+void I2C::init()
+{
+    for (auto &i : i2c_devices) {
+        i.device.init();
+    }
+}
 
 void I2C::update(const class Aircraft &aircraft)
 {

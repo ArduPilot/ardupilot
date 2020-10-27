@@ -2,6 +2,8 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
+
+#include <AP_Compass/AP_Compass.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -92,13 +94,13 @@ void NavEKF3_core::controlMagYawReset()
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
     if (magYawResetRequest && use_compass()) {
-        // set yaw from a single mag sample
-        setYawFromMag();
-
         // send initial alignment status to console
         if (!yawAlignComplete) {
             gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initial yaw alignment complete",(unsigned)imu_index);
         }
+
+        // set yaw from a single mag sample
+        setYawFromMag();
 
         // send in-flight yaw alignment status to console
         if (finalResetRequest) {
@@ -155,7 +157,9 @@ void NavEKF3_core::realignYawGPS()
             }
 
             // keep roll and pitch and reset yaw
-            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)));
+            rotationOrder order;
+            bestRotationOrder(order);
+            resetQuatStateYawOnly(gpsYaw, sq(radians(45.0f)), order);
 
             // reset the velocity and position states as they will be inaccurate due to bad yaw
             ResetVelocity(resetDataSource::GPS);
@@ -176,10 +180,6 @@ void NavEKF3_core::realignYawGPS()
 
 void NavEKF3_core::alignYawAngle()
 {
-    // calculate the variance for the rotation estimate expressed as a rotation vector
-    // this will be used later to reset the quaternion state covariances
-    Vector3f angleErrVarVec = calcRotVecVariances();
-
     if (yawAngDataDelayed.type == 2) {
         Vector3f euler321;
         stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
@@ -189,13 +189,10 @@ void NavEKF3_core::alignYawAngle()
         stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
     }
 
-    // set the yaw angle variance to a larger value to reflect the uncertainty in yaw
-    angleErrVarVec.z = sq(yawAngDataDelayed.yawAngErr);
-
-    // reset the quaternion covariances using the rotation vector variances
-    zeroRows(P,0,3);
-    zeroCols(P,0,3);
-    initialiseQuatCovariances(angleErrVarVec);
+    // set the yaw angle variance reflect the yaw sensor single sample uncertainty in yaw
+    // assume tilt uncertainty split equally between roll and pitch
+    Vector3f angleErrVarVec = Vector3f(0.5f * tiltErrorVariance, 0.5f * tiltErrorVariance, sq(yawAngDataDelayed.yawAngErr));
+    CovariancePrediction(&angleErrVarVec);
 
     // send yaw alignment information to console
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
@@ -636,8 +633,6 @@ void NavEKF3_core::FuseMagnetometer()
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
-            magFuseRequired = true;
-
         } else if (obsIndex == 1) { // Fuse Y axis
 
             // calculate observation jacobians
@@ -714,7 +709,6 @@ void NavEKF3_core::FuseMagnetometer()
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
-            magFuseRequired = true;
         }
         else if (obsIndex == 2) // we are now fusing the Z measurement
         {
@@ -872,11 +866,9 @@ void NavEKF3_core::FuseMagnetometer()
     }
 }
 
-
 /*
- * Fuse magnetic heading measurement using explicit algebraic equations generated with Matlab symbolic toolbox.
- * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
+ * Fuse yaw measurements using explicit algebraic equations auto-generated from
+ * /AP_NavEKF3/derivation/main.py with output recorded in /AP_NavEKF3/derivation/generated/yaw_generated.cpp
  * This fusion method only modifies the orientation, does not require use of the magnetic field states and is computationally cheaper.
  * It is suitable for use when the external magnetic field environment is disturbed (eg close to metal structures, on ground).
  * It is not as robust to magnetometer failures.
@@ -891,10 +883,10 @@ void NavEKF3_core::FuseMagnetometer()
 */
 void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
 {
-    float q0 = stateStruct.quat[0];
-    float q1 = stateStruct.quat[1];
-    float q2 = stateStruct.quat[2];
-    float q3 = stateStruct.quat[3];
+    const float &q0 = stateStruct.quat[0];
+    const float &q1 = stateStruct.quat[1];
+    const float &q2 = stateStruct.quat[2];
+    const float &q3 = stateStruct.quat[3];
 
     // external yaw available check
     bool canUseGsfYaw = false;
@@ -939,35 +931,56 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
     Matrix3f Tbn_zeroYaw;
 
     if (useEuler321) {
-        // calculate observation jacobian when we are observing the first rotation in a 321 sequence
-        float t9 = q0*q3;
-        float t10 = q1*q2;
-        float t2 = t9+t10;
-        float t3 = q0*q0;
-        float t4 = q1*q1;
-        float t5 = q2*q2;
-        float t6 = q3*q3;
-        float t7 = t3+t4-t5-t6;
-        float t8 = t7*t7;
-        if (t8 > 1e-6f) {
-            t8 = 1.0f/t8;
-        } else {
-            return;
-        }
-        float t11 = t2*t2;
-        float t12 = t8*t11*4.0f;
-        float t13 = t12+1.0f;
-        float t14;
-        if (fabsf(t13) > 1e-6f) {
-            t14 = 1.0f/t13;
-        } else {
-            return;
+        // calculate 321 yaw observation matrix - option A or B to avoid singularity in derivation at +-90 degrees yaw
+        bool canUseA = false;
+        const float SA0 = 2*q3;
+        const float SA1 = 2*q2;
+        const float SA2 = SA0*q0 + SA1*q1;
+        const float SA3 = sq(q0) + sq(q1) - sq(q2) - sq(q3);
+        float SA4, SA5_inv;
+        if (is_positive(sq(SA3))) {
+            SA4 = 1.0F/sq(SA3);
+            SA5_inv = sq(SA2)*SA4 + 1;
+            canUseA = is_positive(fabsf(SA5_inv));
         }
 
-        H_YAW[0] = t8*t14*(q3*t3-q3*t4+q3*t5+q3*t6+q0*q1*q2*2.0f)*-2.0f;
-        H_YAW[1] = t8*t14*(-q2*t3+q2*t4+q2*t5+q2*t6+q0*q1*q3*2.0f)*-2.0f;
-        H_YAW[2] = t8*t14*(q1*t3+q1*t4+q1*t5-q1*t6+q0*q2*q3*2.0f)*2.0f;
-        H_YAW[3] = t8*t14*(q0*t3+q0*t4-q0*t5+q0*t6+q1*q2*q3*2.0f)*2.0f;
+        bool canUseB = false;
+        const float SB0 = 2*q0;
+        const float SB1 = 2*q1;
+        const float SB2 = SB0*q3 + SB1*q2;
+        const float SB4 = sq(q0) + sq(q1) - sq(q2) - sq(q3);
+        float SB3, SB5_inv;
+        if (is_positive(sq(SB2))) {
+            SB3 = 1.0F/sq(SB2);
+            SB5_inv = SB3*sq(SB4) + 1;
+            canUseB = is_positive(fabsf(SB5_inv));
+        }
+
+        if (canUseA && (!canUseB || fabsf(SA5_inv) >= fabsf(SB5_inv))) {
+            const float SA5 = 1.0F/SA5_inv;
+            const float SA6 = 1.0F/SA3;
+            const float SA7 = SA2*SA4;
+            const float SA8 = 2*SA7;
+            const float SA9 = 2*SA6;
+
+            H_YAW[0] = SA5*(SA0*SA6 - SA8*q0);
+            H_YAW[1] = SA5*(SA1*SA6 - SA8*q1);
+            H_YAW[2] = SA5*(SA1*SA7 + SA9*q1);
+            H_YAW[3] = SA5*(SA0*SA7 + SA9*q0);
+        } else if (canUseB && (!canUseA || fabsf(SB5_inv) > fabsf(SA5_inv))) {
+            const float SB5 = 1.0F/SB5_inv;
+            const float SB6 = 1.0F/SB2;
+            const float SB7 = SB3*SB4;
+            const float SB8 = 2*SB7;
+            const float SB9 = 2*SB6;
+
+            H_YAW[0] = -SB5*(SB0*SB6 - SB8*q3);
+            H_YAW[1] = -SB5*(SB1*SB6 - SB8*q2);
+            H_YAW[2] = -SB5*(-SB1*SB7 - SB9*q2);
+            H_YAW[3] = -SB5*(-SB0*SB7 - SB9*q3);
+        } else {
+            return;
+        }
 
         // Get the 321 euler angles
         Vector3f euler321;
@@ -978,37 +991,58 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
         Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
 
     } else {
-        // calculate observation jacobian when we are observing a rotation in a 312 sequence
-        float t9 = q0*q3;
-        float t10 = q1*q2;
-        float t2 = t9-t10;
-        float t3 = q0*q0;
-        float t4 = q1*q1;
-        float t5 = q2*q2;
-        float t6 = q3*q3;
-        float t7 = t3-t4+t5-t6;
-        float t8 = t7*t7;
-        if (t8 > 1e-6f) {
-            t8 = 1.0f/t8;
-        } else {
-            return;
+        // calculate 312 yaw observation matrix - option A or B to avoid singularity in derivation at +-90 degrees yaw
+        bool canUseA = false;
+        const float SA0 = 2*q3;
+        const float SA1 = 2*q2;
+        const float SA2 = SA0*q0 - SA1*q1;
+        const float SA3 = sq(q0) - sq(q1) + sq(q2) - sq(q3);
+        float SA4, SA5_inv;
+        if (is_positive(sq(SA3))) {
+            SA4 = 1.0F/sq(SA3);
+            SA5_inv = sq(SA2)*SA4 + 1;
+            canUseA = is_positive(fabsf(SA5_inv));
         }
-        float t11 = t2*t2;
-        float t12 = t8*t11*4.0f;
-        float t13 = t12+1.0f;
-        float t14;
-        if (fabsf(t13) > 1e-6f) {
-            t14 = 1.0f/t13;
+
+        bool canUseB = false;
+        const float SB0 = 2*q0;
+        const float SB1 = 2*q1;
+        const float SB2 = -SB0*q3 + SB1*q2;
+        const float SB4 = -sq(q0) + sq(q1) - sq(q2) + sq(q3);
+        float SB3, SB5_inv;
+        if (is_positive(sq(SB2))) {
+            SB3 = 1.0F/sq(SB2);
+            SB5_inv = SB3*sq(SB4) + 1;
+            canUseB = is_positive(fabsf(SB5_inv));
+        }
+
+        if (canUseA && (!canUseB || fabsf(SA5_inv) >= fabsf(SB5_inv))) {
+            const float SA5 = 1.0F/SA5_inv;
+            const float SA6 = 1.0F/SA3;
+            const float SA7 = SA2*SA4;
+            const float SA8 = 2*SA7;
+            const float SA9 = 2*SA6;
+
+            H_YAW[0] = SA5*(SA0*SA6 - SA8*q0);
+            H_YAW[1] = SA5*(-SA1*SA6 + SA8*q1);
+            H_YAW[2] = SA5*(-SA1*SA7 - SA9*q1);
+            H_YAW[3] = SA5*(SA0*SA7 + SA9*q0);
+        } else if (canUseB && (!canUseA || fabsf(SB5_inv) > fabsf(SA5_inv))) {
+            const float SB5 = 1.0F/SB5_inv;
+            const float SB6 = 1.0F/SB2;
+            const float SB7 = SB3*SB4;
+            const float SB8 = 2*SB7;
+            const float SB9 = 2*SB6;
+
+            H_YAW[0] = -SB5*(-SB0*SB6 + SB8*q3);
+            H_YAW[1] = -SB5*(SB1*SB6 - SB8*q2);
+            H_YAW[2] = -SB5*(-SB1*SB7 - SB9*q2);
+            H_YAW[3] = -SB5*(SB0*SB7 + SB9*q3);
         } else {
             return;
         }
 
-        H_YAW[0] = t8*t14*(q3*t3+q3*t4-q3*t5+q3*t6-q0*q1*q2*2.0f)*-2.0f;
-        H_YAW[1] = t8*t14*(q2*t3+q2*t4+q2*t5-q2*t6-q0*q1*q3*2.0f)*-2.0f;
-        H_YAW[2] = t8*t14*(-q1*t3+q1*t4+q1*t5+q1*t6-q0*q2*q3*2.0f)*2.0f;
-        H_YAW[3] = t8*t14*(q0*t3-q0*t4+q0*t5+q0*t6-q1*q2*q3*2.0f)*2.0f;
-
-        // Get the 321 euler angles
+        // Get the 312 Tait Bryan rotation angles
         Vector3f euler312 = stateStruct.quat.to_vector312();
         yawAngPredicted = euler312.z;
 
@@ -1457,7 +1491,9 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
     if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG))) {
 
         // keep roll and pitch and reset yaw
-        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF);
+        rotationOrder order;
+        bestRotationOrder(order);
+        resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, order);
 
         // record the emergency reset event
         EKFGSF_yaw_reset_request_ms = 0;
@@ -1492,23 +1528,25 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
 }
 
-void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
+void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, rotationOrder order)
 {
     Quaternion quatBeforeReset = stateStruct.quat;
-    Vector3f angleErrVarVec = calcRotVecVariances();
 
-    // check if we should use a 321 or 312 Rotation sequence and update the quaternion
+    // check if we should use a 321 or 312 Rotation order and update the quaternion
     // states using the preferred yaw definition
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
     Vector3f eulerAngles;
-    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+    if (order == rotationOrder::TAIT_BRYAN_321) {
         // rolled more than pitched so use 321 rotation order
         stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
         stateStruct.quat.from_euler(eulerAngles.x, eulerAngles.y, yaw);
-    } else {
+    } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // pitched more than rolled so use 312 rotation order
         eulerAngles = stateStruct.quat.to_vector312();
         stateStruct.quat.from_vector312(eulerAngles.x, eulerAngles.y, yaw);
+    } else {
+        // rotation order not supported
+        return;
     }
 
     // Update the rotation matrix
@@ -1520,11 +1558,9 @@ void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance)
     Quaternion quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
 
-    // update the yaw angle variance using the variance of the EKF-GSF estimate
-    angleErrVarVec.z = yawVariance;
-    zeroRows(P,0,3);
-    zeroCols(P,0,3);
-    initialiseQuatCovariances(angleErrVarVec);
+    // assume tilt uncertainty split equally between roll and pitch
+    Vector3f angleErrVarVec = Vector3f(0.5f * tiltErrorVariance, 0.5f * tiltErrorVariance, yawVariance);
+    CovariancePrediction(&angleErrVarVec);
 
     // record the yaw reset event
     yawResetAngle += deltaYaw;

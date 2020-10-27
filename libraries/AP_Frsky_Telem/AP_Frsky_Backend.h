@@ -26,6 +26,10 @@ public:
     {
         return false;
     }
+    virtual bool set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+    {
+        return false;
+    }
 
     virtual void queue_text_message(MAV_SEVERITY severity, const char *text) { }
 

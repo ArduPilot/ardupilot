@@ -1,60 +1,49 @@
 <!DOCTYPE HTML>
+<html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>ArduPilot Automatic Testing</title>
 
 <!--CSS -->
-<link href="/css/main.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="css/main.css" type="text/css" />
 </head>
 
 <body>
-<div id="main">
+<div class="main">
 <a href="https://autotest.ardupilot.org/">
-<div id="logo">
+<div class="logo">
 </div>
 </a>
 
-<style>
-#jdlogo {
-        top: 15px;
-        right: 20px;
-        position: absolute;
-}
-</style>
-
-<div id=jdlogo>
-Servers by <a href=http://www.jDrones.com/>jDrones</a>
-</div>
-       
 <h2>Automatic test run at ${date}</h2>
 
-<div id="git">Test run on git commit <a href="https://github.com/ArduPilot/ardupilot/commit/${githash}">${githash}</a>
+<div class="git">Test run on git commit <a href="https://github.com/ArduPilot/ardupilot/commit/${githash}">${githash}</a>
 </div>
 
 <h2>Test Results</h2>
-<img src="autotest-badge.svg"></img>
+<img src="autotest-badge.svg" alt="missing autotest badge"/>
 
-<ul id="testresults">
+<ul class="testresults">
 ${{tests:<li>${name} - ${result} (${elapsed} seconds)</li>
 }}
 </ul>
 
 <h2>Test logs</h2>
 
-<ul id=testlogs>
+<ul class=testlogs>
 ${{files:<li>${name} - <a href="${fname}">${fname}</a>
 }}
 </ul>
 
 <h2>Flight Tracks</h2>
 
-<ul id=testlogs>
-${{images:${fname}<br><img src="${fname}" alt="${name}" /><p></a>
+<ul class=testlogs>
+${{images:${fname}<br><img src="${fname}" alt="${name}" />
 }}
 </ul>
 
 <h2>Older results</h2>
-<div id="git">
+<div class="git">
 Older test results are <a href="history">available here</a>
 </div>
 </div>
@@ -66,7 +55,8 @@ Older test results are <a href="history">available here</a>
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-75650032-5');
+  gtag('config', 'UA-75650032-5', { 'anonymize_ip': true });
+
 </script>
 
 

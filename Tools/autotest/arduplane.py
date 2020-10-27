@@ -2086,6 +2086,10 @@ class AutoTestPlane(AutoTest):
              "Test FrSky PassThrough serial output",
              self.test_frsky_passthrough),
 
+            ("FRSkyMAVlite",
+             "Test FrSky MAVlite serial output",
+             self.test_frsky_mavlite),
+
             ("FRSkyD",
              "Test FrSkyD serial output",
              self.test_frsky_d),

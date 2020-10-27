@@ -165,6 +165,8 @@ void Sub::init_ardupilot()
     g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
+    g2.airspeed.init();
+
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
     // ready to fly

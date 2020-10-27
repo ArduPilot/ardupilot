@@ -92,8 +92,13 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            sitltest-copter-tests1,
-            sitltest-copter-tests2
+            sitltest-copter-tests1a,
+            sitltest-copter-tests1b,
+            sitltest-copter-tests1c,
+            sitltest-copter-tests1d,
+            sitltest-copter-tests1e,
+            sitltest-copter-tests2a,
+            sitltest-copter-tests2b,
         ]
 
     steps:
@@ -129,6 +134,21 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: BIN-files-for-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7
+
 
   build-gcc-heli:
     needs: build-gcc  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
@@ -213,3 +233,18 @@ jobs:
         run: |
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: BIN-files-for-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7
+

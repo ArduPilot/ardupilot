@@ -105,28 +105,23 @@ float AP_Frsky_Backend::format_gps(float dec)
  */
 void AP_Frsky_Backend::calc_gps_position(void)
 {
-    float lat;
-    float lon;
-    float alt;
-    float speed;
-
     if (AP::gps().status() >= 3) {
         const Location &loc = AP::gps().location(); //get gps instance 0
-        lat = format_gps(fabsf(loc.lat/10000000.0f));
+        float lat = format_gps(fabsf(loc.lat/10000000.0f));
         _SPort_data.latdddmm = lat;
         _SPort_data.latmmmm = (lat - _SPort_data.latdddmm) * 10000;
         _SPort_data.lat_ns = (loc.lat < 0) ? 'S' : 'N';
 
-        lon = format_gps(fabsf(loc.lng/10000000.0f));
+        float lon = format_gps(fabsf(loc.lng/10000000.0f));
         _SPort_data.londddmm = lon;
         _SPort_data.lonmmmm = (lon - _SPort_data.londddmm) * 10000;
         _SPort_data.lon_ew = (loc.lng < 0) ? 'W' : 'E';
 
-        alt = loc.alt * 0.01f;
+        float alt = loc.alt * 0.01f;
         _SPort_data.alt_gps_meters = (int16_t)alt;
         _SPort_data.alt_gps_cm = (alt - _SPort_data.alt_gps_meters) * 100;
 
-        speed = AP::gps().ground_speed();
+        float speed = AP::gps().ground_speed();
         _SPort_data.speed_in_meter = speed;
         _SPort_data.speed_in_centimeter = (speed - _SPort_data.speed_in_meter) * 100;
     } else {

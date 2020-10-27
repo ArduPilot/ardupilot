@@ -49,12 +49,11 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
-        FLAG_NONE = 0,
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
     // Constructor
-    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = 0);
 
     // initialise
     void init(void) override;
@@ -265,7 +264,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // returns the expected NED magnetic field
     bool get_mag_field_NED(Vector3f& ret) const;
@@ -360,7 +359,7 @@ private:
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms = 0;
+    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
@@ -371,7 +370,7 @@ private:
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
-    uint32_t _last_body_odm_update_ms = 0;
+    uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
 #endif    
 };

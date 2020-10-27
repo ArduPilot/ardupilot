@@ -1679,7 +1679,7 @@ void GCS_MAVLINK::send_raw_imu()
 
     mavlink_msg_raw_imu_send(
         chan,
-        AP_HAL::micros(),
+        AP_HAL::micros64(),
         accel.x * 1000.0f / GRAVITY_MSS,
         accel.y * 1000.0f / GRAVITY_MSS,
         accel.z * 1000.0f / GRAVITY_MSS,
@@ -1743,8 +1743,8 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     bool have_data = false;
 
     float press_abs = 0.0f;
-    float temperature = 0.0f; // Absolute pressure temperature
-    float temperature_press_diff = 0.0f; // TODO: Differential pressure temperature
+    int16_t temperature = 0; // Absolute pressure temperature
+    int16_t temperature_press_diff = 0; // Differential pressure temperature
     if (instance < barometer.num_instances()) {
         press_abs = barometer.get_pressure(instance) * 0.01f;
         temperature = barometer.get_temperature(instance)*100;
@@ -1756,6 +1756,14 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     if (airspeed != nullptr &&
         airspeed->enabled(instance)) {
         press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+        float temp;
+        if (airspeed->get_temperature(instance,temp)) {
+            temperature_press_diff = temp * 100;
+            if (temperature_press_diff == 0) {
+                // don't send zero as that is the value for 'no data'
+                temperature_press_diff = 1;
+            }
+        }
         have_data = true;
     }
 
@@ -2238,6 +2246,11 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint16_t product_id = 0;
     uint64_t uid = 0;
     uint8_t  uid2[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_UID2_LEN] = {0};
+
+    uint8_t uid_len = sizeof(uid2); // taken as reference and modified
+                                    // by following call:
+    hal.util->get_system_id_unformatted(uid2, uid_len);
+
     const AP_FWVersion &version = AP::fwversion();
 
     flight_sw_version = version.major << (8 * 3) | \

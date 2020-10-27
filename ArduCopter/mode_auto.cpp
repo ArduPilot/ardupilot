@@ -59,11 +59,6 @@ bool ModeAuto::init(bool ignore_checks)
     }
 }
 
-bool ModeAuto::allows_arming(bool from_gcs) const
-{
-    return (copter.g2.auto_options & (int32_t)Options::AllowArming) != 0;
-};
-
 // auto_run - runs the auto controller
 //      should be called at 100hz or more
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
@@ -116,6 +111,11 @@ void ModeAuto::run()
         break;
     }
 }
+
+bool ModeAuto::allows_arming(bool from_gcs) const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
+};
 
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
