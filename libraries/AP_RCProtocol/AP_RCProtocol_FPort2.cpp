@@ -116,7 +116,11 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
      */
     if (!telem_data.available) {
         if (!AP_Frsky_Telem::get_telem_data(telem_data.frame, telem_data.appid, telem_data.data)) {
-            return;
+            // nothing to send, send a null frame. This ensures the
+            // receiver keeps requesting data from us at the full rate
+            telem_data.frame = 0x00; 
+            telem_data.appid = 0x00; 
+            telem_data.data = 0x00;
         }
         telem_data.available = true;
     }
