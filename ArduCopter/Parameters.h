@@ -372,6 +372,9 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_low_slow_alt = 258,
+        k_param_low_slow_rate = 259,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -622,7 +625,8 @@ public:
 #if MODE_AUTO_ENABLED == ENABLED
     AP_Int32 auto_options;
 #endif
-
+    AP_Int32 low_slow_alt;
+    AP_Float low_slow_rate;
 };
 
 extern const AP_Param::Info        var_info[];
