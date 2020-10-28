@@ -33,6 +33,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Generator/AP_Generator_RichenPower.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_ADSB/AP_ADSB.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Camera/AP_RunCam.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
@@ -799,6 +800,13 @@ bool AP_Arming::system_checks(bool report)
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && scripting->enabled() && scripting->init_failed()) {
             check_failed(ARMING_CHECK_SYSTEM, report, "Scripting out of memory");
+            return false;
+        }
+#endif
+#if HAL_ADSB_ENABLED
+        AP_ADSB *adsb = AP::ADSB();
+        if ((adsb != nullptr) && adsb->enabled() && adsb->init_failed()) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "ADSB out of memory");
             return false;
         }
 #endif
