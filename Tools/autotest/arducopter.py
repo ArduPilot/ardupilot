@@ -1021,7 +1021,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
 
-        # cut motor 1 to 65% efficiency
+        # cut motor 1's to efficiency
         self.progress("Cutting motor 1 to 65% efficiency")
         self.set_parameter("SIM_ENGINE_MUL", 0.65)
 
@@ -1561,8 +1561,8 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SUPER_SIMPLE", 63)
 
         # switch to stabilize mode
-        self.change_mode("STABILIZE")
-        self.set_rc(3, 1550)
+        self.change_mode("ALT_HOLD")
+        self.set_rc(3, 1500)
 
         # start copter yawing slowly
         self.set_rc(4, 1550)
@@ -1756,8 +1756,7 @@ class AutoTestCopter(AutoTest):
 
             # we can't takeoff in loiter as we need flow healthy
             self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
-            self.mavproxy.send('mode loiter\n')
-            self.wait_mode('LOITER')
+            self.change_mode('LOITER')
 
             # speed should be limited to <10m/s
             self.set_rc(2, 1000)
@@ -1804,8 +1803,7 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
 
         # hold position in loiter
-        self.mavproxy.send('mode autotune\n')
-        self.wait_mode('AUTOTUNE')
+        self.change_mode('AUTOTUNE')
 
         tstart = self.get_sim_time()
         sim_time_expected = 5000
@@ -3444,8 +3442,7 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('mode loiter\n')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
             self.set_rc(3, 1500)
             self.wait_altitude(10, 3000, relative=True)
         except Exception as e:
@@ -3559,8 +3556,7 @@ class AutoTestCopter(AutoTest):
             if m.pointing_a != 0 or m.pointing_b != 0 or m.pointing_c != 0:
                 raise NotAchievedException("Mount stabilising when not requested")
 
-            self.mavproxy.send('mode guided\n')
-            self.wait_mode('GUIDED')
+            self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
 
@@ -4560,8 +4556,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(2, 1550)
             self.wait_distance(5, accuracy=1)
             self.set_rc(2, 1500)
-            self.mavproxy.send('mode loiter\n')
-            self.wait_mode('LOITER')
+            self.change_mode('LOITER')
 
             # turn precision loiter on:
             self.set_rc(7, 2000)
@@ -4620,8 +4615,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.mavproxy.send('mode POSHOLD\n')
-            self.wait_mode('POSHOLD')
+            self.change_mode('POSHOLD')
             self.set_rc(3, 1000)
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -5893,8 +5887,7 @@ class AutoTestHeli(AutoTestCopter):
         self.set_parameter("AROT_ENABLE", 1)
         start_alt = 100 # metres
         self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
-        self.mavproxy.send('mode POSHOLD\n')
-        self.wait_mode('POSHOLD')
+        self.change_mode('POSHOLD')
         self.set_rc(3, 1000)
         self.set_rc(8, 1000)
         self.wait_ready_to_arm()
