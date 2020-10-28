@@ -590,7 +590,7 @@ class AutoTestQuadPlane(AutoTest):
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
 
-        # disable stall prevention to roll angle is not limited
+        # disable stall prevention so roll angle is not limited
         self.set_parameter("STALL_PREVENTION", 0)
 
         thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
@@ -633,7 +633,6 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
         self.set_rc(1, 1500)
-        self.mavproxy.send('rally clear\n')
         self.set_parameter("Q_RTL_MODE", 1)
         self.change_mode("RTL")
         self.wait_disarmed(timeout=300)
