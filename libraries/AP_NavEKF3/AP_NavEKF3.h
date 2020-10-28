@@ -557,7 +557,7 @@ private:
     uint32_t lastLaneSwitch_ms;
 
     struct {
-        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of yaw change between cores when a change happened
