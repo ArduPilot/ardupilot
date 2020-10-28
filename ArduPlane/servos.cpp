@@ -169,10 +169,6 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
  */
 void Plane::flaperon_update(int8_t flap_percent)
 {
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_flaperon_left) &&
-        !SRV_Channels::function_assigned(SRV_Channel::k_flaperon_right)) {
-        return;
-    }
     /*
       flaperons are implemented as a mixer between aileron and a
       percentage of flaps. Flap input can come from a manual channel
@@ -194,11 +190,6 @@ void Plane::flaperon_update(int8_t flap_percent)
  */
 void Plane::dspoiler_update(void)
 {
-    // just check we have a left dspoiler, and if so calculate all outputs
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_dspoilerLeft1)) {
-        return;
-    }
-
     const int8_t bitmask = g2.crow_flap_options.get();
     const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
     const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
