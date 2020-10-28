@@ -79,6 +79,9 @@ void GPIO::init()
 }
 
 #ifdef HAL_PIN_ALT_CONFIG
+// chosen alternative config
+uint8_t GPIO::alt_config;
+
 /*
   alternative config table, selected using BRD_ALT_CONFIG
  */
@@ -86,6 +89,8 @@ static const struct alt_config {
     uint8_t alternate;
     uint16_t mode;
     ioline_t line;
+    PERIPH_TYPE periph_type;
+    uint8_t periph_instance;
 } alternate_config[] HAL_PIN_ALT_CONFIG;
 
 /*
@@ -97,21 +102,58 @@ void GPIO::setup_alt_config(void)
     if (!bc) {
         return;
     }
-    const uint8_t alt = bc->get_alt_config();
-    if (alt == 0) {
+    alt_config = bc->get_alt_config();
+    if (alt_config == 0) {
         // use defaults
         return;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
-        if (alt == alternate_config[i].alternate) {
-            const iomode_t mode = alternate_config[i].mode & ~PAL_STM32_HIGH;
-            const uint8_t odr = (alternate_config[i].mode & PAL_STM32_HIGH)?1:0;
-            palSetLineMode(alternate_config[i].line, mode);
-            palWriteLine(alternate_config[i].line, odr);
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
+            const uint8_t odr = (alt.mode & PAL_STM32_HIGH)?1:0;
+            palSetLineMode(alt.line, mode);
+            palWriteLine(alt.line, odr);
         }
     }
 }
 #endif // HAL_PIN_ALT_CONFIG
+
+/*
+  resolve an ioline_t to take account of alternative
+  configurations. This allows drivers to get the right ioline_t for an
+  alternative config. Note that this may return 0, meaning the pin is
+  not mapped to this peripheral in the active config
+*/
+ioline_t GPIO::resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance)
+{
+#ifdef HAL_PIN_ALT_CONFIG
+    if (alt_config == 0) {
+        // unchanged
+        return base;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            if (ptype == alt.periph_type && instance == alt.periph_instance) {
+                // we've reconfigured this peripheral with a different line
+                return alt.line;
+            }
+        }
+    }
+    // now search for pins that have been configured off via BRD_ALT_CONFIG
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            if (alt.line == base) {
+                // this line is no longer available in this config
+                return 0;
+            }
+        }
+    }
+#endif
+    return base;
+}
 
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
