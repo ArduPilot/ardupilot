@@ -26,6 +26,7 @@ class BuildBinariesHistory():
         c.execute("create table build (hash text, tag text, vehicle text, board text, "
                   "frame text, text integer, data integer, bss integer, start_time real, duration real)")
         c.execute("create table run (hash text, tag text, start_time real, duration real)")
+        c.commit()
 
     def sizes_for_file(self, filepath):
         cmd = "size %s" % (filepath,)
