@@ -85,6 +85,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @DisplayName: OSD Font
     // @Description: This sets which OSD font to use. It is an integer from 0 to the number of fonts available
     // @User: Standard
+    // @Values: 0:English clarity, 1:English clarity_medium, 2:English Betaflight style, 3:English bold, 4:Simplified Chinese
     // @RebootRequired: True
     AP_GROUPINFO("_FONT", 9, AP_OSD, font_num, 0),
 
