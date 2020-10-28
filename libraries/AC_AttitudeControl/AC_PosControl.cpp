@@ -862,7 +862,7 @@ void AC_PosControl::update_xy_controller()
     }
 
     // check for ekf xy position reset
-    check_for_ekf_xy_reset();
+    check_for_ekf_xy_reset(dt);
 
     // check if xy leash needs to be recalculated
     calc_leash_length_xy();
@@ -1004,7 +1004,12 @@ void AC_PosControl::run_xy_controller(float dt)
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position();
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos, _leash, _accel_cms);
+    Vector2f target {_pos_target.x, _pos_target.y};
+    target += _ekf_xy_reset;
+    Vector2f vel_target = _p_pos_xy.update_all(target.x, target.y, curr_pos, _leash, _accel_cms);
+    _pos_target.x = target.x - _ekf_xy_reset.x;
+    _pos_target.y = target.y - _ekf_xy_reset.y;
+
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ekfNavVelGainScaler;
@@ -1122,18 +1127,36 @@ void AC_PosControl::init_ekf_xy_reset()
 {
     Vector2f pos_shift;
     _ekf_xy_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    _ekf_xy_reset.zero();
 }
 
-/// check for ekf position reset and adjust loiter or brake target position
-void AC_PosControl::check_for_ekf_xy_reset()
+/// check for ekf position reset and adjust target position to remove offset with a given slewrate
+void AC_PosControl::check_for_ekf_xy_reset(float dt)
 {
     // check for position shift
     Vector2f pos_shift;
     uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
-    if (reset_ms != _ekf_xy_reset_ms) {
-        shift_pos_xy_target(pos_shift.x * 100.0f, pos_shift.y * 100.0f);
+    if (reset_ms != 0 && reset_ms != _ekf_xy_reset_ms) {
+        _ekf_xy_reset.x += pos_shift.x * 100.0f;
+        _ekf_xy_reset.y += pos_shift.y * 100.0f;
         _ekf_xy_reset_ms = reset_ms;
     }
+
+    // decay the EKF offset to zero using slew limit
+    const float dist = _ekf_xy_reset.length();
+    if (is_positive(dist)) {
+        // slew at 5% of max speed
+        _ekf_xy_reset *= MAX(0,dist - dt*(_speed_cms * 0.05f)) / dist;
+    }
+
+}
+
+/// Directly apply the curent xy offset to the target position and clear
+void AC_PosControl::clear_ekf_xy_reset()
+{
+    _pos_target.x += _ekf_xy_reset.x;
+    _pos_target.y += _ekf_xy_reset.y;
+    _ekf_xy_reset.zero();
 }
 
 /// initialise ekf z axis reset check
