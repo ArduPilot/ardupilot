@@ -68,6 +68,7 @@ public:
 
     struct SerialDef {
         BaseSequentialStream* serial;
+        uint8_t instance;
         bool is_usb;
 #ifndef HAL_UART_NODMA
         bool dma_rx;
@@ -127,6 +128,12 @@ private:
     bool rx_dma_enabled;
     bool tx_dma_enabled;
 
+    /*
+      copy of rx_line and tx_line with alternative configs resolved
+     */
+    ioline_t atx_line;
+    ioline_t arx_line;
+    
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
 
