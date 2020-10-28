@@ -206,7 +206,11 @@ void AP_Vehicle::scheduler_delay_callback()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+        if (AP_BoardConfig::in_config_error()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO, "Initialising ArduPilot");
+        }
     }
 
     logger.EnableWrites(true);
