@@ -253,7 +253,7 @@ private:
     // Rally Ponints
     AP_Rally rally;
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
     
@@ -974,7 +974,7 @@ private:
     void update_control_mode(void);
     void update_flight_stage();
     void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     void publish_osd_info();
 #endif
 
