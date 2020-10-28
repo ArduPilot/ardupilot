@@ -419,7 +419,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
 
     // submit yaw and magnetic field reset request
     if (!yawAlignComplete && tiltAlignComplete && use_compass()) {
-            magYawResetRequest = true;
+        magYawResetRequest = true;
     }
 
 }
