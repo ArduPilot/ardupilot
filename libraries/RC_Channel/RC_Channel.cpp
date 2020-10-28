@@ -637,8 +637,8 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
     }
     if (ch_flag == AuxSwitchPos::HIGH) {
         // try to enable AP_Avoidance
-        if (!adsb->enabled()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB not enabled");
+        if (!adsb->enabled() || !adsb->healthy()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB not available");
             return;
         }
         avoidance->enable();
