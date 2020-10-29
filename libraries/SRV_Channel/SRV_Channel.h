@@ -144,6 +144,7 @@ public:
         k_scripting15           = 108,
         k_scripting16           = 109,
 		k_gimbal_focus			= 110,
+		k_gimbal_track			= 111,
 		k_LED_neopixel1         = 120,
 		k_LED_neopixel2         = 121,
 		k_LED_neopixel3         = 122,
@@ -152,6 +153,7 @@ public:
 		k_gimbal_pan			= 125,
 		k_gimbal_zoom			= 126,
 		k_gimbal_rec			= 127,
+
 
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;

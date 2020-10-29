@@ -466,18 +466,16 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(acro_rp_expo,  "ACRO_RP_EXPO",    ACRO_RP_EXPO_DEFAULT),
 #endif
 
-    // @Param: VEHICLE_WEIGHT
+    // @Param: RPM HOVER
     // @DisplayName:
     // @Description:
-
     // @Values:
     // @Range:
     // @User:
-    GSCALAR(vec_weight,  "VEC_WEIGHT",    10.0),
+    GSCALAR(rpm_hover,  "MOT_RPM_HOVER",    3500),
 
 
-
-    // @Param: VEHICLE_WEIGHT
+    // @Param: ENABLE HERELINK
     // @DisplayName:
     // @Description:
     // @Values:
@@ -494,6 +492,23 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range:
     // @User:
     GSCALAR(spool_delta,  "MOT_SPL_DELTA",    0.5),
+
+
+    // @Param: SPIRIT_BATT_NUM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(battery_number,  "SPIRIT_BATT_NUM",    0),
+
+    // @Param: MOT_SPOOLUP_DELTA
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(payload_weight,  "SPIRIT_PAYLD_WT",    0),
 
 
 

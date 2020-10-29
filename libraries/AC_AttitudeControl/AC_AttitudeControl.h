@@ -331,6 +331,11 @@ public:
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+
+    void set_angle_kp(float gain){
+    	_p_angle_roll.kP(gain);
+    	_p_angle_pitch.kP(gain);}
+
 protected:
 
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad

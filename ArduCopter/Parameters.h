@@ -373,9 +373,11 @@ public:
 
         // 254,255: reserved
 
-		k_param_vec_weight,
 		k_param_herelink_enable,
 		k_param_spool_delta,
+		k_param_rpm_hover,
+		k_param_battery_number,
+		k_param_payload_weight,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -472,6 +474,11 @@ public:
     AP_Float				vec_weight;
     AP_Int8					herelink_enable;
     AP_Float				spool_delta;
+    AP_Float				rpm_hover;
+
+    AP_Int8					battery_number;
+    AP_Float				payload_weight;
+
 
     // Note: keep initializers here in the same order as they are declared
     // above.

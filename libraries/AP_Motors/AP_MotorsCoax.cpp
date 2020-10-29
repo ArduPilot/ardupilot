@@ -52,6 +52,8 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 	_stabilized_counter = 0;
 
 	_spoolup_complete = false;
+	_enable_rpm_compensation = false;
+
 }
 
 
@@ -216,8 +218,62 @@ void AP_MotorsCoax::output_armed_stabilizing()
     yaw_thrust = (_yaw_in + _yaw_in_ff);// * compensation_gain;
     throttle_thrust = get_throttle();
 
-    _pitch_FF_total_log = pitch_thrust;
-	_roll_FF_total_log = roll_thrust;
+
+    //-------------RPM Scaling----------------//
+
+
+	////sanity check RPM comp parameters, if set wrong -> disable RPM Comp ///////
+	if(_rpm_scale_factor > 0.6f or _rpm_scale_factor < 0.0f){
+		_enable_rpm_compensation = 0;
+	}
+
+	if(_rpm_deadband > 750 or _rpm_deadband < 0 ){
+		_enable_rpm_compensation = 0;
+	}
+
+      if(_enable_rpm_comp and _enable_rpm_compensation){
+
+  		if(_aft_rotor_RPM > 1500.0f and _aft_rotor_RPM < 5500.0f){
+
+  		   float rpm_delta = _aft_rotor_RPM - _rpm_hover;
+
+  		   rpm_delta = constrain_float(rpm_delta, -750.0f, 750.0f);
+
+  		   float half_deadband = _rpm_deadband / 2.0f;
+
+  			if(rpm_delta < -half_deadband ){   /// rpm is below average
+  				_rpm_comp_factor_pitch = ((rpm_delta + half_deadband)/(half_deadband - 750.0f))*_rpm_scale_factor;
+  				_rpm_comp_factor_roll = ((rpm_delta + half_deadband)/(half_deadband - 750.0f))*_rpm_scale_factor;
+
+  				pitch_thrust += pitch_thrust*_rpm_comp_factor_pitch;
+  				roll_thrust += roll_thrust*_rpm_comp_factor_roll;
+
+  			}else if(rpm_delta > half_deadband){       //// rpm is above average
+  				_rpm_comp_factor_pitch = ((rpm_delta - (half_deadband))/(half_deadband - 750.0f))*_rpm_scale_factor;
+  				_rpm_comp_factor_roll = ((rpm_delta - (half_deadband))/(half_deadband - 750.0f))*_rpm_scale_factor;
+
+  				pitch_thrust += pitch_thrust*_rpm_comp_factor_pitch;
+  				roll_thrust +=  roll_thrust*_rpm_comp_factor_roll;
+
+  			}else{
+  				_rpm_comp_factor_pitch = 0;
+  				_rpm_comp_factor_roll = 0;
+  			}
+
+  		}else{
+  			_rpm_comp_factor_pitch = -1;
+  			_rpm_comp_factor_roll = -1;
+
+  		}
+
+      } else {
+  		_rpm_comp_factor_pitch = -2;
+  		_rpm_comp_factor_roll = -2;
+
+      }
+
+      //-------------RPM Scaling----------------//
+
 
     // sanity check throttle is above zero and below current limited throttle
     if (throttle_thrust <= 0.0f) {

@@ -117,6 +117,7 @@ void Copter::Log_Write_MotBatt()
 #endif
 }
 
+
 // Wrote an event packet
 void Copter::Log_Write_Event(Log_Event id)
 {
@@ -232,67 +233,33 @@ void Copter::Log_Write_Data(uint8_t id, float value)
 }
 
 
+
 ////////////RPM Logging /////////////////
 
 struct PACKED log_vehicle_state {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float adv_ratio_x;
-    float adv_ratio_y;
-    float hover_rpm;
-    float thrust;
+    float pitch_offset;
+    float roll_offset;
+    float rpm_hover;
+
 };
 
 
 
-void Copter::Log_Write_Vehicle_State(float Adv_Ratio_X, float Adv_Ratio_Y, float Hover_RPM, float Rotor_Thrust)
+void Copter::Log_Write_Vehicle_State(float pitch_rpm_offset, float roll_rpm_offset, float hover_rpm)
 {
         struct log_vehicle_state vec_state_pkt = {
             LOG_PACKET_HEADER_INIT(LOG_DATA_VEC_STATE),
             time_us      : AP_HAL::micros64(),
-			adv_ratio_x  : Adv_Ratio_X,
-			adv_ratio_y  : Adv_Ratio_Y,
-			hover_rpm	 : Hover_RPM,
-			thrust       : Rotor_Thrust
+			pitch_offset  : pitch_rpm_offset,
+			roll_offset  : roll_rpm_offset,
+			rpm_hover    : hover_rpm,
         };
         logger.WriteBlock(&vec_state_pkt, sizeof(vec_state_pkt));
 
 }
 
-/*
-struct PACKED log_land_detect {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    bool dis_home;
-    bool low_motor;
-    bool stat_accel;
-    bool velo_hover;
-    bool acc_td;
-    bool touchdown;
-    bool topple;
-};
-
-
-
-void Copter::Log_Write_Land_Detect(bool home, bool motor_low, bool accel_stationary, bool speed, bool accel_TD, bool td, bool top)
-{
-        struct log_land_detect vec_land_detect = {
-            LOG_PACKET_HEADER_INIT(LOG_DATA_VEC_STATE),
-            time_us    		 : AP_HAL::micros64(),
-			dis_home  		: home,
-			low_motor   	: motor_low,
-			stat_accel	 	: accel_stationary,
-			velo_hover      : speed,
-			acc_td       	: accel_TD,
-			touchdown      	: td,
-			topple       	: top
-        };
-        logger.WriteBlock(&vec_land_detect, sizeof(vec_land_detect));
-
-}
-*/
-
-////////////////////////////////
 
 
 struct PACKED log_ParameterTuning {
@@ -542,7 +509,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 	  //////////////////////////////
 	  { LOG_DATA_VEC_STATE, sizeof(log_vehicle_state),
-	       "STATE",  "Qffff",         "TimeUS,advR_x,advR_y,H_RPM,Fz", "s----", "F----" },
+	       "STAT",  "Qfff",         "TimeUS,P_Off,R_OFF,H_RPM", "s---", "F---" },
 
 
 

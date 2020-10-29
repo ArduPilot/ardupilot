@@ -46,6 +46,7 @@ void Copter::userhook_init()
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
+	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1000);
 
 
 	// startup spirit state
@@ -62,6 +63,34 @@ void Copter::userhook_init()
 
 	//Spool up support
 	timer_trigger = false;
+
+	float _RPM_hover;
+
+	if(g.battery_number > 0){
+
+		vehicle_weight = 4.0 + ((float)g.battery_number*3.0) + g.payload_weight;
+		vehicle_weight = constrain_float(vehicle_weight, 8.0, 13.5);
+
+		_RPM_hover = 156*vehicle_weight + 1553;
+		g.rpm_hover = _RPM_hover;
+
+	}
+
+
+	//RPM compensation support
+	start_rpm_comp_time = 0;
+	hover_rpm_filter.set_cutoff_frequency(50.0f, 0.25f);
+	hover_rpm_filter.reset(g.rpm_hover);
+	motors->set_hover_RPM(g.rpm_hover);
+	motors->set_aft_rotor_RPM(0.0f);
+
+	num_battery = g.battery_number;
+	payload_weight = g.payload_weight;
+
+
+   if(g.battery_number != 0){
+    	auto_config();
+    }
 
 }
 #endif
@@ -86,6 +115,28 @@ void Copter::userhook_50Hz()
 		Detect_Buttons();
 	}
 
+	update_rpm_hover();
+
+
+
+	if(spirit_state < 4){  //if state is disarmed, spoolup or takeoff, don't use comp and set timer
+		motors->enable_rpm_comp(false);
+		start_rpm_comp_time = AP_HAL::millis16();
+	}else if(AP_HAL::millis16() - start_rpm_comp_time > 3000){
+		motors->enable_rpm_comp(true);
+	}
+
+
+
+	motors->set_aft_rotor_RPM((float)rpm_sensor.get_rpm(1));
+
+	float pitch_offset = motors->get_pitch_rpm_offset();
+	float roll_offset = motors->get_roll_rpm_offset();
+	float hover_rpm = motors->get_hover_RPM();
+
+	Log_Write_Vehicle_State(pitch_offset, roll_offset, hover_rpm);
+
+
 	//Call topple sense
 
 	topple_sense();
@@ -105,23 +156,23 @@ void Copter::userhook_50Hz()
 
 		spirit_state = spoolup;
 		spoolup_watcher = AP_HAL::millis16();
-	//	gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
+		gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
 
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
 
 		spirit_state = takeoff;
-	//	gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
+		gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
 
 	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle()) ){
 
 		spirit_state = hover;
-	//	gcs().send_text(MAV_SEVERITY_INFO,"hover");
+		gcs().send_text(MAV_SEVERITY_INFO,"hover");
 
 
 	}else if((spirit_state == hover or spirit_state == landing) and ap.land_complete){
 
 		spirit_state = land;
-	//	gcs().send_text(MAV_SEVERITY_INFO,"land");
+		gcs().send_text(MAV_SEVERITY_INFO,"land");
 
 	}
 
@@ -169,7 +220,7 @@ void Copter::userhook_50Hz()
 			if(_fwd_rpm >= 1000.0f and _aft_rpm >= 1000.0f){  //fully spun up
 				motors->spoolup_complete(true);
 				spirit_state = land;
-				//gcs().send_text(MAV_SEVERITY_INFO,"landed");
+				gcs().send_text(MAV_SEVERITY_INFO,"landed");
 				timer_trigger = false;
 
 			}else if((AP_HAL::millis16() - spoolup_timer) > (uint16_t)(g.spool_delta*1000)){
@@ -184,13 +235,14 @@ void Copter::userhook_50Hz()
 
 		break;
 
+	case land:
+
+		break;
+
 	case takeoff:
 
 		break;
 
-	case land:
-
-		break;
 
 	case hover:
 
@@ -200,16 +252,15 @@ void Copter::userhook_50Hz()
 			if(copter.flightmode->is_landing()){
 				spirit_state = landing;
 				attitude_control->enable_angle_boost(false);
-				//gcs().send_text(MAV_SEVERITY_INFO,"L:auto");
+				gcs().send_text(MAV_SEVERITY_INFO,"L:auto");
 				break;
 			// for manual also need to be decending
 			}else if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate((float)channel_throttle->get_control_in()) < 0.0f){
 				spirit_state = landing;
 				attitude_control->enable_angle_boost(false);
-				//gcs().send_text(MAV_SEVERITY_INFO,"L:dct");
+				gcs().send_text(MAV_SEVERITY_INFO,"L:dct");
 				break;
 			}
-
 		}
 
 		break;
@@ -220,14 +271,14 @@ void Copter::userhook_50Hz()
 			if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate(channel_throttle->get_control_in()) >= 0.0f){
 				spirit_state = hover;
 				attitude_control->enable_angle_boost(true);
-				//gcs().send_text(MAV_SEVERITY_INFO,"H:cr");
+				gcs().send_text(MAV_SEVERITY_INFO,"H:cr");
 				break;
 			}
 
 			if(copter.flightmode->is_autopilot() and !copter.flightmode->is_landing()){
 				spirit_state = hover;
 				attitude_control->enable_angle_boost(true);
-				//gcs().send_text(MAV_SEVERITY_INFO,"H:!land");
+				gcs().send_text(MAV_SEVERITY_INFO,"H:!land");
 				break;
 			}
 
@@ -259,13 +310,23 @@ void Copter::userhook_SlowLoop()
 {
     // put your 3.3Hz code here
 
-
 	if(g.herelink_enable){
 		Decode_Buttons();
 	}else{
 		copter.ap.gimbal_control_active = false;
 	}
 
+
+	if( g.battery_number != num_battery){
+			auto_config();
+			num_battery = g.battery_number;
+	}
+
+
+	if( g.payload_weight != payload_weight){
+			auto_config();
+			payload_weight = g.payload_weight;
+	}
 
 }
 #endif
@@ -414,6 +475,8 @@ void Copter::Killswitch(){
 
 void Copter::Detect_Buttons(){
 
+
+
 	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800){
 				if(!ch9_button_hold){
 					if(!ch9_button_pressed){
@@ -493,6 +556,30 @@ void Copter::Detect_Buttons(){
 
 void Copter::Decode_Buttons(){
 
+/*
+	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800){
+
+		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1500);
+
+	}
+
+
+	if(RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
+
+		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 2000);
+
+	}
+
+
+	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
+
+		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1000);
+
+	}
+
+	*/
+
+
 	if(RC_Channels::rc_channel(CH_7)->get_radio_in() >= 1700){
 		copter.ap.gimbal_control_active = true;
 		cam_button_pressed = true;
@@ -570,10 +657,10 @@ void Copter::Decode_Buttons(){
 
 		if(short_press_flag_ch11){
 			short_press_flag_ch11 = false;
-			if(!flight_mode_switch){
+			if(flight_mode_switch){
 				copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
 				 AP_Notify::events.user_mode_change = 1;
-				flight_mode_switch = true;
+				flight_mode_switch = false;
 			}else{
 				if(!copter.set_mode((Mode::Number)copter.flight_modes[2].get(), ModeReason::GCS_COMMAND)){
 					 AP_Notify::events.user_mode_change_failed = 1;
@@ -581,7 +668,7 @@ void Copter::Decode_Buttons(){
 					AP_Notify::events.user_mode_change = 1;
 				}
 
-				flight_mode_switch = false;
+				flight_mode_switch = true;
 			}
 		}
 
@@ -591,4 +678,159 @@ void Copter::Decode_Buttons(){
 		}
 
 }
+
+
+
+void Copter::update_rpm_hover(){
+
+	    if (!motors->armed() || ap.land_complete) {
+	        return;
+	    }
+
+	    if(spirit_state == land or spirit_state == takeoff or spirit_state == spoolup or spirit_state == landing){
+	    	return;
+	    }
+
+
+	    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+	    accel_ef.z += GRAVITY_MSS;
+
+	    if(fabsf(accel_ef.z) > 1.0f){
+	    	return;
+	    }
+
+
+	    if(!is_zero(pos_control->get_desired_velocity().z)){
+
+	    	return;
+	    }
+
+	    if(fabsf(inertial_nav.get_velocity_z()) > 50){
+	    	return;
+	    }
+
+    	if(labs(ahrs.pitch_sensor) > 500 or labs(ahrs.roll_sensor) > 500){
+    		return;
+    	}
+
+    	if(position_ok()){
+    		if(inertial_nav.get_speed_xy() > 400.0){
+    			return;
+    		}
+    	}
+
+	    if(rpm_sensor.healthy(1)){
+
+	    	hover_rpm_filter.apply(rpm_sensor.get_rpm(1));
+
+	    	if(hover_rpm_filter.get() > 2400.0 and hover_rpm_filter.get() < 4100.0){   //no vehicles hover at this low an RPM
+
+	    		motors->set_hover_RPM(hover_rpm_filter.get());
+	    	}
+
+	    }else if(rpm_sensor.healthy(0)){
+
+	    	hover_rpm_filter.apply(rpm_sensor.get_rpm(0));
+
+	    	if(hover_rpm_filter.get() > 2400.0 and hover_rpm_filter.get() < 4100.0){    //no vehicles hover at this low an RPM
+
+	    		motors->set_hover_RPM(hover_rpm_filter.get());
+	    	}
+	    }
+
+}
+
+
+void Copter::auto_config(){
+
+	float ang_kp;
+	float rate_kp;
+	float rate_kd ;
+	float ang_rate;
+	float _rpm_hover;
+
+	if(g.battery_number == 1){
+
+		vehicle_weight = 7.0 + g.payload_weight;
+		vehicle_weight = constrain_float(vehicle_weight, 8.0, 13.5);
+		attitude_control->get_rate_pitch_pid().imax(0.35);
+		attitude_control->get_rate_roll_pid().imax(0.35);
+
+	}else if(g.battery_number == 2){
+
+		vehicle_weight = 10.0 + g.payload_weight;
+		vehicle_weight = constrain_float(vehicle_weight, 10.0, 14.0);
+		attitude_control->get_rate_pitch_pid().imax(0.5);
+		attitude_control->get_rate_roll_pid().imax(0.5);
+
+	}else{
+
+		return;
+	}
+
+	if(g.radio_tuning != TUNING_STABILIZE_ROLL_PITCH_KP){
+		ang_kp = (-0.23*vehicle_weight)+7.0;
+		ang_kp = constrain_float(ang_kp, 4.0, 5.25);
+
+		attitude_control->set_angle_kp(ang_kp);
+	}
+
+	if(g.radio_tuning != TUNING_RATE_ROLL_PITCH_KP){
+
+		rate_kp = (0.0225*vehicle_weight)+0.0211;
+		rate_kp = constrain_float(rate_kp, 0.18, 0.35);
+
+		if(g.radio_tuning != TUNING_RATE_PITCH_KP){
+			attitude_control->get_rate_pitch_pid().kP(rate_kp);
+		}
+
+		if(g.radio_tuning != TUNING_RATE_ROLL_KP){
+			attitude_control->get_rate_roll_pid().kP(rate_kp);
+		}
+	}
+
+	if(g.radio_tuning != TUNING_RATE_ROLL_PITCH_KI){
+
+		rate_kp = (0.0225*vehicle_weight)+0.0211;
+		rate_kp = constrain_float(rate_kp, 0.18, 0.35);
+
+		if(g.radio_tuning != TUNING_RATE_PITCH_KI){
+			attitude_control->get_rate_pitch_pid().kI(rate_kp-0.06);
+		}
+
+		if(g.radio_tuning != TUNING_RATE_ROLL_KI){
+			attitude_control->get_rate_roll_pid().kI(rate_kp-0.06);
+		}
+	}
+
+
+	if(g.radio_tuning != TUNING_RATE_ROLL_PITCH_KD){
+
+		rate_kd = (0.002*vehicle_weight)-0.01;
+		rate_kd = constrain_float(rate_kd, 0.005, 0.018);
+
+		if(g.radio_tuning != TUNING_RATE_PITCH_KD){
+			attitude_control->get_rate_pitch_pid().kD(rate_kd);
+		}
+
+		if(g.radio_tuning != TUNING_RATE_ROLL_KD){
+			attitude_control->get_rate_roll_pid().kD(rate_kd);
+		}
+	}
+
+	ang_rate = (-9000*vehicle_weight)+180000;
+	ang_rate = constrain_float(ang_rate, 58500, 108000);
+
+	attitude_control->set_accel_roll_max(ang_rate);
+	attitude_control->set_accel_pitch_max(ang_rate);
+
+	_rpm_hover = 156*vehicle_weight + 1553;
+	_rpm_hover = constrain_float(_rpm_hover, 2700, 4000);
+	g.rpm_hover = _rpm_hover;
+
+	hover_rpm_filter.reset(g.rpm_hover);
+	motors->set_hover_RPM(g.rpm_hover);
+
+}
+
 

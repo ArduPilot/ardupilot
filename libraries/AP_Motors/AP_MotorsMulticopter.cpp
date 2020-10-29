@@ -212,6 +212,40 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+
+
+    // @Param: ENABLE RPM COMP
+    // @DisplayName: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Description: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("EN_RPM_COMP", 43, AP_MotorsMulticopter, _enable_rpm_comp, 0),
+
+
+
+    // @Param: ENABLE RPM COMP
+    // @DisplayName: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Description: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("RPM_DEADBAND", 44, AP_MotorsMulticopter, _rpm_deadband, 400),
+
+
+    // @Param: ENABLE RPM COMP
+    // @DisplayName: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Description: Time taken to disable and enable the motor PWM output when disarmed and armed.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("RPM_SCALE", 45, AP_MotorsMulticopter, _rpm_scale_factor, 0),
+
+
+
     AP_GROUPEND
 };
 

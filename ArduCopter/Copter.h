@@ -472,6 +472,12 @@ private:
     // Current location of the vehicle (altitude is relative to home)
     Location current_loc;
 
+
+
+    //Hover RPM filter
+    LowPassFilterFloat hover_rpm_filter;
+
+
     // IMU variables
     // Integration time (in seconds) for the gyros (DCM algorithm)
     // Updated with the fast loop
@@ -786,6 +792,8 @@ private:
     void servo_voltage_watcher();
     // landing_gear.cpp
     void landinggear_update();
+    void update_rpm_hover();
+    void auto_config();
 
     // standby.cpp
     void standby_update();
@@ -814,7 +822,7 @@ private:
     void Log_Write_Vehicle_Startup_Messages();
     void log_init(void);
 
-    void Log_Write_Vehicle_State(float Adv_x, float Adv_y, float hov_rpm, float thrust);
+    void Log_Write_Vehicle_State(float rpm_comp_pitch, float rpm_comp_roll, float hov_rpm);
    // void Log_Write_Land_Detect(bool home, bool motor_low, bool accel_stationary, bool speed, bool accel_TD, bool TD, bool TOP);
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);

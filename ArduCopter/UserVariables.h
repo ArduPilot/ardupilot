@@ -49,15 +49,22 @@ bool ch12_button_hold;
 
 bool no_RC_in;
 
+int8_t num_battery;
+float payload_weight;
+float vehicle_weight;
+
+uint16_t start_rpm_comp_time;
+
 enum vehicle_state{
 	disarm,
 	spoolup,
+	land,
 	takeoff,
 	hover,
 	//fwd_flight,
 	//brake,
 	landing,
-	land
+
 }spirit_state;
 #if WII_CAMERA == 1
 WiiCamera           ircam;

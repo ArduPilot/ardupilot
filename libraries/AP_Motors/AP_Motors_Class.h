@@ -110,6 +110,7 @@ public:
     virtual uint8_t     get_lost_motor() const { return 0; }
 
 
+////Spirit related funcitons
 
     void				set_dynamic_trim(float pitch_FF_trim, float roll_FF_trim){
     																				_pitch_FF_trim = pitch_FF_trim;
@@ -117,11 +118,15 @@ public:
     																				}
 
     void				enable_aft_rotor(bool enable){ _enable_aft_rotor = enable; }
+
     void				spoolup_complete(bool complete){ _spoolup_complete = complete; }
     bool				spoolup_complete() const { return _spoolup_complete; }
 
-    float				get_pitch_FF_total_values() const {  return _pitch_FF_total_log; }
-    float				get_pitch_FF_values() const {  return _pitch_FF_trim; }
+    float				get_pitch_rpm_offset() const {  return _rpm_comp_factor_pitch; }
+    float				get_roll_rpm_offset() const {  return _rpm_comp_factor_roll; }
+
+    void				set_aft_rotor_RPM(float RPM)  {  _aft_rotor_RPM = RPM; }
+    void				enable_rpm_comp(bool en){ _enable_rpm_compensation = en;}
 
 
     // desired spool states
@@ -258,8 +263,8 @@ protected:
     float 				_pitch_FF_trim;
 	float 				_roll_FF_trim;
 
-    float 				_pitch_FF_total_log; //for logging
-	float 				_roll_FF_total_log; //for logging
+    float 				_rpm_comp_factor_pitch; //for logging
+	float 				_rpm_comp_factor_roll; //for logging
 
 	bool				_remain_stabilized;
 	uint16_t			_stabilized_counter;
@@ -267,6 +272,8 @@ protected:
 	bool				_enable_aft_rotor;
 	bool				_spoolup_complete;
 
+	float 				_aft_rotor_RPM;
+	bool				_enable_rpm_compensation;
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
