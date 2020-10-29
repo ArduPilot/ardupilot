@@ -226,7 +226,7 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
         stbuf->st_size = 0; // just a placeholder value
         return 0;
     }
-    int8_t pos = file_in_sysfs(&pathname[1]);
+    int8_t pos = file_in_sysfs(pathname);
     if (pos < 0) {
         errno = ENOENT;
         return -1;
