@@ -218,6 +218,7 @@ void AC_Loiter::update(bool avoidance_on)
     // initialise pos controller speed and acceleration
     _pos_control.set_max_speed_xy(_speed_cms);
     _pos_control.set_max_accel_xy(_accel_cmss);
+    _pos_control.clear_ekf_xy_reset();
 
     calc_desired_velocity(dt, avoidance_on);
     _pos_control.update_xy_controller();
