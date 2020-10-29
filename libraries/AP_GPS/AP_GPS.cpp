@@ -101,8 +101,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
-    // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used
-    // @Values: 0:Use primary, 1:UseBest, 2:Blend
+    // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert over 'UseBest' behaviour if 3D fix is lost on primary
+    // @Values: 0:Use primary, 1:UseBest, 2:Blend, 4:Use primary if 3D fix or better
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
@@ -984,6 +984,17 @@ void AP_GPS::update_primary(void)
                 primary_instance = i;
                 _last_instance_swap_ms = now;
             }
+        }
+        return;
+    }
+
+
+    // Use primary if 3D fix or better
+    if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
+        // Primary GPS has a least a 3D fix, switch to it if necessary
+        if (primary_instance != primary_param) {
+            primary_instance = primary_param;
+            _last_instance_swap_ms = now;
         }
         return;
     }
