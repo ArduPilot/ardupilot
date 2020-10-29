@@ -659,7 +659,7 @@ private:
         NONE        = 0,
         USE_BEST    = 1,
         BLEND       = 2,
-        USE_SECOND  = 3,
+        //USE_SECOND  = 3, deprecated for new primary param
     };
 
     // used for flight testing with GPS loss
