@@ -45,5 +45,5 @@ def build(bld):
         program_name='arducopter-heli',
         program_groups=['bin', 'heli'],
         use=vehicle + '_libs',
-        defines=['FRAME_CONFIG=HELI_FRAME'],
+        defines=['FRAME_CONFIG=HELI_FRAME', 'HELI_BUILD'],
         )
