@@ -262,9 +262,19 @@ void QuadPlane::tailsitter_check_input(void)
 /*
   return true if we are a tailsitter transitioning to VTOL flight
  */
-bool QuadPlane::in_tailsitter_vtol_transition(void) const
+bool QuadPlane::in_tailsitter_vtol_transition(uint32_t now) const
 {
-    return is_tailsitter() && in_vtol_mode() && transition_state == TRANSITION_ANGLE_WAIT_VTOL;
+    if (!is_tailsitter() || !in_vtol_mode()) {
+        return false;
+    }
+    if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
+        return true;
+    }
+    if ((now != 0) && ((now - last_vtol_mode_ms) > 1000)) {
+        // only just come out of forward flight
+        return true;
+    }
+    return false;
 }
 
 /*
