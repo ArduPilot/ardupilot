@@ -472,9 +472,9 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: TAILSIT_GSCMSK
     // @DisplayName: Tailsitter gain scaling mask
-    // @Description: Bitmask of gain scaling methods to be applied: BOOST: boost gain at low throttle, ATT_THR: reduce gain at high throttle/tilt, INTERP: interpolate between fixed-wing and copter controls
+    // @Description: Bitmask of gain scaling methods to be applied: BOOST: boost gain at low throttle, ATT_THR: reduce gain at high throttle/tilt
     // @User: Standard
-    // @Bitmask: 0:BOOST,1:ATT_THR,2:INTERP
+    // @Bitmask: 0:BOOST,1:ATT_THR
     AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_BOOST),
 
     // @Param: TAILSIT_GSCMIN
