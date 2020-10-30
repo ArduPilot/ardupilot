@@ -956,10 +956,15 @@ void QuadPlane::run_z_controller(void)
 {
     const uint32_t now = AP_HAL::millis();
     if (now - last_pidz_active_ms > 2000) {
-        // set alt target to current height on transition. This
-        // starts the Z controller off with the right values
-        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)inertial_nav.get_altitude() / 100);
-        set_alt_target_current();
+        if (!is_tailsitter()) {
+            // set alt target to current height on transition. This
+            // starts the Z controller off with the right values
+            set_alt_target_current();
+        } else {
+            // tailsitters gain lots of vertical speed in transisison, set target to the stopping point
+            pos_control->set_target_to_stopping_point_z();
+        }
+        gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)pos_control->get_alt_target() * 0.01f);
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
         // initialize vertical speeds and leash lengths
