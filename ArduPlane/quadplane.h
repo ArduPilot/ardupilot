@@ -494,7 +494,6 @@ private:
     enum tailsitter_gscl_mask {
         TAILSITTER_GSCL_BOOST   = (1U<<0),
         TAILSITTER_GSCL_ATT_THR = (1U<<1),
-        TAILSITTER_GSCL_INTERP  = (1U<<2),
     };
 
     // tailsitter control variables
