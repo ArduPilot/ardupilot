@@ -5284,7 +5284,69 @@ class AutoTestCopter(AutoTest):
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
+
+    def test_dcm_yaw_inconsistent(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("LOG_REPLAY", 1)
+            self.reboot_sitl()
+
+            current_log_filepath = self.current_onboard_log_filepath()
+
+            self.context_collect("STATUSTEXT")
+            self.set_parameter("EK2_ENABLE", 0)
+            self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", 3)
+            self.set_parameter("COMPASS_USE2", 0)
+            self.set_parameter("COMPASS_USE3", 0)
+            self.set_parameter("SIM_MAG_ORIENT", 2)
+#            self.wait_statustext("PreArm: Compasses inconsistent", timeout=20)
+            self.wait_statustext("Yaw inconsistent by",
+                                 timeout=60,
+                                 check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
+            self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                         1,  # ARM
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED
+            )
+            self.set_parameter("SIM_MAG_ORIENT", 0)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("Did not recover from bad mag")
+                try:
+                    self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                                 1,  # ARM
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 )
+                    break
+                    self.delay_sim_time(1)
+                except ValueError as e:
+                    pass
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle()
         self.reboot_sitl()
+
+        self.progress("Current log path: %s" % str(current_log_filepath))
+#        self.replay_log(current_log_filepath)
+
         if ex is not None:
             raise ex
 
@@ -5631,6 +5693,10 @@ class AutoTestCopter(AutoTest):
             ("DataFlashErase",
              "Test DataFlash Block backend erase",
              self.test_dataflash_erase),
+
+            ("DCMYawInconsistent",
+             "Test Arming with bad compass orientation",
+             self.test_dcm_yaw_inconsistent),
 
             ("LogUpload",
              "Log upload",
