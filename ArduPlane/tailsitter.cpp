@@ -338,6 +338,9 @@ void QuadPlane::tailsitter_speed_scaling(void)
         }
     }
 
+    // record for QTUN log
+    log_spd_scaler = spd_scaler;
+
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
         SRV_Channel::Aux_servo_function_t::k_elevator,
