@@ -302,14 +302,15 @@ void AP_Logger::Write_Baro(uint64_t time_us)
     }
 }
 
-void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
+void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance)
 {
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f &gyro = ins.get_gyro(imu_instance);
     const Vector3f &accel = ins.get_accel(imu_instance);
     const struct log_IMU pkt{
-        LOG_PACKET_HEADER_INIT(type),
+        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
         time_us : time_us,
+        instance: imu_instance,
         gyro_x  : gyro.x,
         gyro_y  : gyro.y,
         gyro_z  : gyro.z,
@@ -334,18 +335,10 @@ void AP_Logger::Write_IMU()
 
     const AP_InertialSensor &ins = AP::ins();
 
-    Write_IMU_instance(time_us, 0, LOG_IMU_MSG);
-    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
-        return;
+    uint8_t n = MAX(ins.get_accel_count(), ins.get_gyro_count());
+    for (uint8_t i=0; i<n; i++) {
+        Write_IMU_instance(time_us, i);
     }
-
-    Write_IMU_instance(time_us, 1, LOG_IMU2_MSG);
-
-    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
-        return;
-    }
-
-    Write_IMU_instance(time_us, 2, LOG_IMU3_MSG);
 }
 
 // Write an accel/gyro delta time data packet

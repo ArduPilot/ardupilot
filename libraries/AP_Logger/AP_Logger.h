@@ -453,9 +453,7 @@ private:
     bool seen_nonzero_rcin15_or_rcin16;
 
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
-    void Write_IMU_instance(uint64_t time_us,
-                                uint8_t imu_instance,
-                                enum LogMessages type);
+    void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us,
                                     uint8_t mag_instance,
                                     enum LogMessages type);

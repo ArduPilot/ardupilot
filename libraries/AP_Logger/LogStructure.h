@@ -238,6 +238,7 @@ struct PACKED log_Message {
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
     uint32_t gyro_error, accel_error;
@@ -991,16 +992,18 @@ struct PACKED log_AIRSPEED {
     uint8_t primary;
 };
 
-struct PACKED log_ACCEL {
+struct PACKED log_ACC {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     uint64_t sample_us;
     float AccX, AccY, AccZ;
 };
 
-struct PACKED log_GYRO {
+struct PACKED log_GYR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     uint64_t sample_us;
     float GyrX, GyrY, GyrZ;
 };
@@ -1296,11 +1299,6 @@ struct PACKED log_PSC {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-#define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
-#define ACC_FMT   "QQfff"
-#define ACC_UNITS "ssooo"
-#define ACC_MULTS "FF000"
-
 // see "struct sensor" in AP_Baro.h and "Write_Baro":
 #define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health"
 #define BARO_FMT   "QffcfIffB"
@@ -1318,11 +1316,6 @@ struct PACKED log_PSC {
 #define GPS_UNITS "s---SmDUmnhnh-"
 #define GPS_MULTS "F---0BGGB000--"
 
-#define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
-#define GYR_FMT    "QQfff"
-#define GYR_UNITS  "ssEEE"
-#define GYR_MULTS  "FF000"
-
 #define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
 #define IMT_FMT    "Qfffffffff"
 #define IMT_UNITS  "ssssrrrnnn"
@@ -1337,11 +1330,6 @@ struct PACKED log_PSC {
 #define ISBD_FMT    "QHHaaa"
 #define ISBD_UNITS  "s--ooo"
 #define ISBD_MULTS  "F--???"
-
-#define IMU_LABELS "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz"
-#define IMU_FMT   "QffffffIIfBBHH"
-#define IMU_UNITS "sEEEooo--O--zz"
-#define IMU_MULTS "F000000-----00"
 
 #define MAG_LABELS "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S"
 #define MAG_FMT   "QhhhhhhhhhBI"
@@ -1363,9 +1351,10 @@ struct PACKED log_PSC {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
-// @LoggerMessage: ACC1,ACC2,ACC3
+// @LoggerMessage: ACC
 // @Description: IMU accelerometer data
 // @Field: TimeUS: Time since system startup
+// @Field: I: accelerometer sensor instance number
 // @Field: SampleUS: time since system startup this sample was taken
 // @Field: AccX: acceleration along X axis
 // @Field: AccY: acceleration along Y axis
@@ -1717,9 +1706,10 @@ struct PACKED log_PSC {
 // @Field: doD: estimated Doppler measurement standard deviation
 // @Field: trk: tracking status bitfield
 
-// @LoggerMessage: GYR1,GYR2,GYR3
+// @LoggerMessage: GYR
 // @Description: IMU gyroscope data
 // @Field: TimeUS: Time since system startup
+// @Field: I: gyroscope sensor instance number
 // @Field: SampleUS: time since system startup this sample was taken
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
@@ -1738,9 +1728,10 @@ struct PACKED log_PSC {
 // @Field: DelVY: Accumulated delta velocity Y
 // @Field: DelVZ: Accumulated delta velocity Z
 
-// @LoggerMessage: IMU,IMU2,IMU3
+// @LoggerMessage: IMU
 // @Description: Inertial Measurement Unit data
 // @Field: TimeUS: Time since system startup
+// @Field: I: IMU sensor instance number
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
 // @Field: GyrZ: measured rotation rate about Z axis
@@ -2515,7 +2506,7 @@ struct PACKED log_PSC {
     { LOG_GPAB_MSG, sizeof(log_GPA), \
       "GPAB", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
+      "IMU",  "QBffffffIIfBBHH",     "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -2570,10 +2561,6 @@ struct PACKED log_PSC {
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
       "SA",  "QBffffB","TimeUS,State,DVelX,DVelY,MVelX,MVelY,Back", "sbnnnnb", "F------"}, \
-    { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
-    { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
@@ -2636,18 +2623,10 @@ struct PACKED log_PSC {
       "MAG2",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
     { LOG_COMPASS3_MSG, sizeof(log_Compass), \
       "MAG3",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
-    { LOG_ACC1_MSG, sizeof(log_ACCEL), \
-      "ACC1", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_ACC2_MSG, sizeof(log_ACCEL), \
-      "ACC2", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_ACC3_MSG, sizeof(log_ACCEL), \
-      "ACC3", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_GYR1_MSG, sizeof(log_GYRO), \
-      "GYR1", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
-    { LOG_GYR2_MSG, sizeof(log_GYRO), \
-      "GYR2", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
-    { LOG_GYR3_MSG, sizeof(log_GYRO), \
-      "GYR3", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
+    { LOG_ACC_MSG, sizeof(log_ACC), \
+      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
+    { LOG_GYR_MSG, sizeof(log_GYR), \
+      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -2773,7 +2752,6 @@ enum LogMessages : uint8_t {
     LOG_RCIN2_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
-    LOG_IMU2_MSG,
     LOG_BARO_MSG,
     LOG_POWR_MSG,
     LOG_AHR2_MSG,
@@ -2783,7 +2761,6 @@ enum LogMessages : uint8_t {
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
     LOG_CAMERA_MSG,
-    LOG_IMU3_MSG,
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
@@ -2807,12 +2784,8 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_GPS_RAWS_MSG,
-    LOG_ACC1_MSG,
-    LOG_ACC2_MSG,
-    LOG_ACC3_MSG,
-    LOG_GYR1_MSG,
-    LOG_GYR2_MSG,
-    LOG_GYR3_MSG,
+    LOG_ACC_MSG,
+    LOG_GYR_MSG,
     LOG_POS_MSG,
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,
