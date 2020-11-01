@@ -515,7 +515,8 @@ private:
     } tailsitter;
 
     // tailsitter speed scaler
-    float last_spd_scaler = 1.0f;
+    float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
+    float log_spd_scaler; // for QTUN log
 
     // the attitude view of the VTOL attitude controller
     AP_AHRS_View *ahrs_view;
