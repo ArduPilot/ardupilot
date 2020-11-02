@@ -353,6 +353,7 @@ struct PACKED log_RSSI {
 struct PACKED log_BARO {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float   altitude;
     float   pressure;
     int16_t temperature;
@@ -1299,12 +1300,6 @@ struct PACKED log_PSC {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-// see "struct sensor" in AP_Baro.h and "Write_Baro":
-#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health"
-#define BARO_FMT   "QffcfIffB"
-#define BARO_UNITS "smPOnsmO-"
-#define BARO_MULTS "F00B0C?0-"
-
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCfBIH"
 #define GPA_UNITS "smmmnd-ss"
@@ -1419,9 +1414,10 @@ struct PACKED log_PSC {
 // @Field: ErrRP: lowest estimated gyro drift error
 // @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
 
-// @LoggerMessage: BARO,BAR2,BAR3
+// @LoggerMessage: BARO
 // @Description: Gathered Barometer data
 // @Field: TimeUS: Time since system startup
+// @Field: I: barometer sensor instance number
 // @Field: Alt: calculated altitude
 // @Field: Press: measured atmospheric pressure
 // @Field: Temp: measured atmospheric temperature
@@ -2518,7 +2514,7 @@ struct PACKED log_PSC {
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI", "s-", "F-"  }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
+      "BARO",  "QBffcfIffB", "TimeUS,I,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health", "s#mPOnsmO-", "F-00B0C?0-" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -2639,10 +2635,6 @@ struct PACKED log_PSC {
       "PIDS", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
       "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
-    { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
-    { LOG_BAR3_MSG, sizeof(log_BARO), \
-      "BAR3",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QBfffI",     "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
@@ -2767,7 +2759,6 @@ enum LogMessages : uint8_t {
     LOG_ESC_MSG,
     LOG_CSRV_MSG,
     LOG_CESC_MSG,
-    LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
@@ -2803,7 +2794,6 @@ enum LogMessages : uint8_t {
     LOG_GPA2_MSG,
     LOG_GPAB_MSG,
     LOG_RFND_MSG,
-    LOG_BAR3_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,

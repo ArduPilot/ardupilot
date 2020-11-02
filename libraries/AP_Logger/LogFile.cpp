@@ -265,15 +265,16 @@ void AP_Logger::Write_RSSI()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
+void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
 {
     AP_Baro &baro = AP::baro();
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     const struct log_BARO pkt{
-        LOG_PACKET_HEADER_INIT(type),
+        LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
+        instance      : baro_instance,
         altitude      : baro.get_altitude(baro_instance),
         pressure      : baro.get_pressure(baro_instance),
         temperature   : (int16_t)(baro.get_temperature(baro_instance) * 100 + 0.5f),
@@ -293,12 +294,8 @@ void AP_Logger::Write_Baro(uint64_t time_us)
         time_us = AP_HAL::micros64();
     }
     const AP_Baro &baro = AP::baro();
-    Write_Baro_instance(time_us, 0, LOG_BARO_MSG);
-    if (baro.num_instances() > 1) {
-        Write_Baro_instance(time_us, 1, LOG_BAR2_MSG);
-    }
-    if (baro.num_instances() > 2) {
-        Write_Baro_instance(time_us, 2, LOG_BAR3_MSG);
+    for (uint8_t i=0; i< baro.num_instances(); i++) {
+        Write_Baro_instance(time_us, i);
     }
 }
 
