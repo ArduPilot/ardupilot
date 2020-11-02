@@ -454,9 +454,7 @@ private:
 
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
-    void Write_Compass_instance(uint64_t time_us,
-                                    uint8_t mag_instance,
-                                    enum LogMessages type);
+    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
     void Write_Current_instance(uint64_t time_us, uint8_t battery_instance);
     void Write_IMUDT_instance(uint64_t time_us,
                                   uint8_t imu_instance,

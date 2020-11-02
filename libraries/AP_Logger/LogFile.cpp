@@ -713,16 +713,17 @@ void AP_Logger::Write_Current()
     }
 }
 
-void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
+void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance)
 {
     const Compass &compass = AP::compass();
 
     const Vector3f &mag_field = compass.get_field(mag_instance);
     const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
-    const struct log_Compass pkt{
-        LOG_PACKET_HEADER_INIT(type),
+    const struct log_MAG pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_MSG),
         time_us         : time_us,
+        instance        : mag_instance,
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
         mag_z           : (int16_t)mag_field.z,
@@ -745,16 +746,8 @@ void AP_Logger::Write_Compass(uint64_t time_us)
         time_us = AP_HAL::micros64();
     }
     const Compass &compass = AP::compass();
-    if (compass.get_count() > 0) {
-        Write_Compass_instance(time_us, 0, LOG_COMPASS_MSG);
-    }
-
-    if (compass.get_count() > 1) {
-        Write_Compass_instance(time_us, 1, LOG_COMPASS2_MSG);
-    }
-
-    if (compass.get_count() > 2) {
-        Write_Compass_instance(time_us, 2, LOG_COMPASS3_MSG);
+    for (uint8_t i=0; i<compass.get_count(); i++) {
+        Write_Compass_instance(time_us, i);
     }
 }
 

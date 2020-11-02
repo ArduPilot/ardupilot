@@ -827,9 +827,10 @@ struct PACKED log_Current_Cells {
     uint16_t cell_voltages[12];
 };
 
-struct PACKED log_Compass {
+struct PACKED log_MAG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     int16_t  mag_x;
     int16_t  mag_y;
     int16_t  mag_z;
@@ -1326,11 +1327,6 @@ struct PACKED log_PSC {
 #define ISBD_UNITS  "s--ooo"
 #define ISBD_MULTS  "F--???"
 
-#define MAG_LABELS "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S"
-#define MAG_FMT   "QhhhhhhhhhBI"
-#define MAG_UNITS "sGGGGGGGGG-s"
-#define MAG_MULTS "FCCCCCCCCC-F"
-
 #define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod"
 #define PID_FMT    "Qffffffff"
 #define PID_UNITS  "s--------"
@@ -1748,18 +1744,19 @@ struct PACKED log_PSC {
 // @Field: LandingGear: Current landing gear state
 // @Field: WeightOnWheels: True if there is weight on wheels
 
-// @LoggerMessage: MAG,MAG2,MAG3
+// @LoggerMessage: MAG
 // @Description: Information received from compasses
 // @Field: TimeUS: Time since system startup
+// @Field: I: magnetometer sensor instance number
 // @Field: MagX: magnetic field strength in body frame
 // @Field: MagY: magnetic field strength in body frame
 // @Field: MagZ: magnetic field strength in body frame
 // @Field: OfsX: magnetic field offset in body frame
 // @Field: OfsY: magnetic field offset in body frame
 // @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOfsX: motor interference magnetic field offset in body frame
-// @Field: MOfsY: motor interference magnetic field offset in body frame
-// @Field: MOfsZ: motor interference magnetic field offset in body frame
+// @Field: MOX: motor interference magnetic field offset in body frame
+// @Field: MOY: motor interference magnetic field offset in body frame
+// @Field: MOZ: motor interference magnetic field offset in body frame
 // @Field: Health: true if the compass is considered healthy
 // @Field: S: time measurement was taken
 
@@ -2535,8 +2532,8 @@ struct PACKED log_PSC {
       "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
-    { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
+    { LOG_MAG_MSG, sizeof(log_MAG), \
+      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -2615,10 +2612,6 @@ struct PACKED log_PSC {
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
       "CESC","QBIfffiB","TimeUS,Id,ECnt,Voltage,Curr,Temp,RPM,Pow", "s#-vAOq%", "F-000000" }, \
-    { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
-    { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
     { LOG_ACC_MSG, sizeof(log_ACC), \
       "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
     { LOG_GYR_MSG, sizeof(log_GYR), \
@@ -2763,9 +2756,7 @@ enum LogMessages : uint8_t {
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
     LOG_CURRENT_CELLS_MSG,
-    LOG_COMPASS_MSG,
-    LOG_COMPASS2_MSG,
-    LOG_COMPASS3_MSG,
+    LOG_MAG_MSG,
     LOG_MODE_MSG,
     LOG_GPS_RAW_MSG,
 
