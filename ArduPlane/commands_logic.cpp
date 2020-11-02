@@ -236,7 +236,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
             // ground
             height -= auto_state.terrain_correction;
             return landing.verify_land(prev_WP_loc, next_WP_loc, current_loc,
-                height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(), rangefinder_state.in_range);
+                                       height, auto_state.sink_rate, auto_state.wp_proportion, auto_state.last_flying_ms, arming.is_armed(), is_flying(),
+                                       g.rangefinder_landing && rangefinder_state.in_range);
         }
 
     case MAV_CMD_NAV_LOITER_UNLIM:
