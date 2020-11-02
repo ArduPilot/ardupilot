@@ -702,7 +702,9 @@ void Plane::rangefinder_height_update(void)
         if (now - rangefinder_state.last_correction_time_ms > 5000) {
             rangefinder_state.correction = correction;
             rangefinder_state.initial_correction = correction;
-            landing.set_initial_slope();
+            if (g.rangefinder_landing) {
+                landing.set_initial_slope();
+            }
             rangefinder_state.last_correction_time_ms = now;
         } else {
             rangefinder_state.correction = 0.8f*rangefinder_state.correction + 0.2f*correction;
