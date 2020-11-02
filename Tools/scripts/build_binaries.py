@@ -710,7 +710,7 @@ is bob we will attempt to checkout bob-AVR'''
 
 
     def generate_manifest(self):
-        '''generate manigest files for GCS to download'''
+        '''generate manifest files for GCS to download'''
         self.progress("Generating manifest")
         base_url = 'https://firmware.ardupilot.org'
         generator = generate_manifest.ManifestGenerator(self.binaries,
@@ -736,6 +736,17 @@ is bob we will attempt to checkout bob-AVR'''
         gen_stable.make_all_stable(self.binaries)
         self.progress("Generate stable releases done")
 
+    def generate_firmware_size_json(self):
+        """Generate firmware size json file to download."""
+        self.progress("Generating firmware_size.json")
+        binaries_json_filepath = os.path.join(self.buildlogs_dirpath(),
+                                              "firmware_sizes.json")
+        githash = self.run_git(["rev-parse", "HEAD"]).rstrip()
+        # remove previous file
+        if os.path.isfile(binaries_json_filepath):
+            os.remove(binaries_json_filepath)
+        self.history.generate_firmware_size_json(binaries_json_filepath, githash)
+        self.progress("firmware_size.json generation successful")
 
     def validate(self):
         '''run pre-run validation checks'''
@@ -826,6 +837,7 @@ is bob we will attempt to checkout bob-AVR'''
             shutil.rmtree(self.tmpdir)
 
         self.generate_manifest()
+        self.generate_firmware_size_json()
 
         for error_string in self.error_strings:
             self.progress("%s" % error_string)
