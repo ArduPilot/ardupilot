@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import sqlite3
+import json
 
 
 class BuildBinariesHistory():
@@ -87,3 +88,53 @@ class BuildBinariesHistory():
                   "values (?, ?, ?, ?)",
                   (hash, tag, start_time, duration))
         c.commit()
+
+    def generate_firmware_size_json(self, json_filepath, githash):
+        c = self.conn()
+        sql_query = "SELECT * FROM build WHERE hash = ?"
+        sql_result = c.execute(sql_query, (githash,))
+        records = sql_result.fetchall()
+        # print("Total rows are:  ", len(records))
+        c.close()
+        sql_dict = {
+            "hash": 0,
+            "tag": 1,
+            "vehicle": 2,
+            "board": 3,
+            "frame": 4,
+            "text": 5,
+            "data": 6,
+            "bss": 7,
+            "start_time": 8,
+            "duration": 9,
+        }
+        # check file exist to prevent json failure
+        with open(json_filepath, "a") as summary_json:
+            pass
+        # sort the record by boards
+        records.sort(key=lambda x: x[sql_dict["board"]])
+        records_dict = {}
+        for row in records:
+            vehicle = row[sql_dict["vehicle"]].lower()
+            board = row[sql_dict["board"]].lower()
+            frame = row[sql_dict["frame"]].lower()
+            text = row[sql_dict["text"]]
+            data = row[sql_dict["data"]]
+            bss = row[sql_dict["bss"]]
+
+            if vehicle == "Rover":
+                vehicle = "ardurover"  # match binary name on build/board/bin
+            if frame is not None:
+                vehicle = vehicle + "-" + frame
+            build_dict = {
+                board: {vehicle: {"text": text, "data": data, "bss": bss}},
+            }
+            if board in records_dict:
+                records_dict[board].update(build_dict[board])
+            else:
+                records_dict[board] = build_dict[board]
+
+            with open(json_filepath, "w") as summary_json:
+                # rewrite the json file
+                summary_data_json = json.dumps([records_dict])
+                summary_json.write(summary_data_json)
