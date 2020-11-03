@@ -473,10 +473,10 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: TAILSIT_GSCMSK
     // @DisplayName: Tailsitter gain scaling mask
-    // @Description: Bitmask of gain scaling methods to be applied: BOOST: boost gain at low throttle, ATT_THR: reduce gain at high throttle/tilt
+    // @Description: Bitmask of gain scaling methods to be applied: Throttle: scale gains with throttle, ATT_THR: reduce gain at high throttle/tilt, 2:Disk theory velocity calculation, requires Q_TAILSIT_DSKLD to be set, ATT_THR must not be set, 3:Altitude correction, scale with air density
     // @User: Standard
-    // @Bitmask: 0:BOOST,1:ATT_THR
-    AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_BOOST),
+    // @Bitmask: 0:Throttle,1:ATT_THR,2:Disk Theory,3:Altitude correction
+    AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_THROTTLE),
 
     // @Param: TAILSIT_GSCMIN
     // @DisplayName: Minimum gain scaling based on throttle and attitude
@@ -500,6 +500,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 100
     // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
+
+    // @Param: TAILSIT_DSKLD
+    // @DisplayName: Tailsitter disk loading
+    // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. Only used with Q_TAILSIT_GSCMSK = 4
+    // @Units: kg/m.m
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_DSKLD", 21, QuadPlane, tailsitter.disk_loading, 0),
 
     AP_GROUPEND
 };
