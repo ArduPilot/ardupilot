@@ -298,3 +298,8 @@ singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 include AP_Notify/ScriptingLED.h
 singleton ScriptingLED alias LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
+
+include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane alias quadplane
+singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane method in_vtol_mode boolean
