@@ -285,6 +285,7 @@ singleton ScriptingLED alias LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
 include AP_Motors/AP_Motors_Class.h
+singleton AP_Motors depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter) 
 singleton AP_Motors alias motors
 singleton AP_Motors enum MOTOR_FRAME_UNDEFINED MOTOR_FRAME_QUAD MOTOR_FRAME_HEXA MOTOR_FRAME_OCTA
 singleton AP_Motors enum MOTOR_FRAME_TYPE_PLUS MOTOR_FRAME_TYPE_X MOTOR_FRAME_TYPE_CUSTOM
@@ -293,6 +294,7 @@ singleton AP_Motors method get_frame_type uint8_t
 singleton AP_Motors method set_initialised_ok void
 
 include AP_Motors/AP_MotorsMatrix.h
+singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter) 
 singleton AP_MotorsMatrix alias motorsMatrix
 singleton AP_MotorsMatrix method remove_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
