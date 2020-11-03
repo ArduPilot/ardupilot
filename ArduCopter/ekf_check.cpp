@@ -156,6 +156,13 @@ void Copter::failsafe_ekf_event()
         return;
     }
 
+    if (copter.flightmode->is_landing() && failsafe_option(FailsafeOption::CONTINUE_IF_LANDING)) {
+        // Allow landing to continue when FS_OPTIONS is set to continue landing
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF Failsafe - Continuing Landing");
+        set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
+        return;
+    }
+
     // does this mode require position?
     if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;
