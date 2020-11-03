@@ -152,8 +152,7 @@ singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATI
 
 include AP_Terrain/AP_Terrain.h
 
-depends AP_TERRAIN_AVAILABLE 1 Scripting requires terrain to be available
-
+singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
 singleton AP_Terrain alias terrain
 singleton AP_Terrain method enabled boolean
 singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
