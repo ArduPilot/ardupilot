@@ -1,21 +1,15 @@
-Release 4.0.7beta2, 8th October 2020
-------------------------------------
+Release 4.0.7, 3rd November 2020
+--------------------------------
 
-This is a minor release over 4.0.7beta1. The changes from beta1 are:
+This is a minor release over 4.0.6. The changes are:
 
  - enable telem3 on Durandal
+
  - fixed SBUS output when scanning for FPort on IOMCU
+
  - keep a backup of storage of last 100 boots
+
  - fixed a race condition in handling UART DMA transmit
-
-Happy flying!
-
-Release 4.0.7beta1, 2nd October 2020
-------------------------------------
-
-This is a minor release with some important bug fixes against 4.0.6.
-
-The changes are:
 
  - Fixed F32Lightening board IMU fast sampling issue
 
@@ -31,7 +25,7 @@ The changes are:
 
  - Fixed UDP RC input on Linux boards to accept up to 16 RC inputs on UDP
 
-The most critical fix in the above list is the ISR flood issue.
+The most critical fixes in the above list are:
 
 ISR Flood Issue
 ---------------
@@ -46,6 +40,20 @@ added a limit of 100k interrupts per second. If a single interrupt
 source produces more than 10k interrupts in a single 0.1 second period
 then we disable that interrupt source, print a warning to the user and
 raise an internal error.
+
+SBUS Issue
+----------
+
+When the dedicated SBUS output port is used on boards with a IOMCU
+(such as Hex Cube or Holybro Duandal) then SBUS would be interrupted
+on loss of RC input. The problem was that the same UART was used for
+both SBUS output and RC input. When RC input is lost the RC protocol
+system starts searching for a receiver, which involves changing
+baudrate on that UART. That baudrate change affected SBUS output. This
+means if your aircraft depends on SBUS output to fly and you get an RC
+failsafe you risk losing RC outputs. The fix is to not change
+baudrates on that port when SBUS output is enabled (which means
+protocols like FPort can't be used when IOMCU SBUS output is used).
 
 Happy flying!
 
