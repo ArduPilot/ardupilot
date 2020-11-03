@@ -2845,9 +2845,9 @@ bool QuadPlane::check_land_complete(void)
             // disarm on land unless we have MIS_OPTIONS setup to
             // continue after land in AUTO
             plane.arming.disarm(AP_Arming::Method::LANDED);
-        }
-        return true;
     }
+        return true;
+}
     return false;
 }
 
@@ -2972,7 +2972,7 @@ int8_t QuadPlane::forward_throttle_pct()
         plane.control_mode == &plane.mode_qhover) {
 
         if (rc_fwd_thr_ch == nullptr) {
-            return 0;
+        return 0;
         } else {
             // calculate fwd throttle demand from manual input
             float fwd_thr = rc_fwd_thr_ch->percent_input();
@@ -2980,7 +2980,7 @@ int8_t QuadPlane::forward_throttle_pct()
             // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
             fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
-        }
+    }
     }
 
     /*

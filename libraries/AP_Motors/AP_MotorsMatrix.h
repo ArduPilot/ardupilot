@@ -51,9 +51,10 @@ public:
     // return number of motor that has failed.  Should only be called if get_thrust_boost() returns true
     uint8_t             get_lost_motor() const override { return _motor_lost_index; }
 
-    // return the roll factor of any motor, this is used for tilt rotors and tail sitters
+    // return the roll or pitch factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
+    float               get_pitch_factor(uint8_t i) override { return _pitch_factor[i]; }
 
 protected:
     // output - sends commands to the motors
