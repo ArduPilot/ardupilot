@@ -172,7 +172,7 @@ public:
     }
 
     // method for AP_Scripting to indicate successful frame setup
-    void                set_initialised_ok() { _flags.initialised_ok = true; }
+    void                set_initialised_ok() { _initialised_ok = true; }
 
     // output - sends commands to the motors
     virtual void        output() = 0;
