@@ -2585,7 +2585,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.wait_groundspeed(0-tolerance, 0+tolerance)
         self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
-        self.monitor_groundspeed(wpnav_speed_ms, timeout=5)
+        self.monitor_groundspeed(wpnav_speed_ms, tolerance=0.6, timeout=5)
         self.do_RTL()
 
     def fly_nav_delay(self):
