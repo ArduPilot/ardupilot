@@ -24,24 +24,13 @@
 
 #if HAL_ADSB_ENABLED
 #include "AP_ADSB_uAvionix_MAVLink.h"
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <stdio.h>  // for sprintf
-#include <limits.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 
 #define VEHICLE_TIMEOUT_MS              5000   // if no updates in this time, drop it from the list
-
-#define ADSB_CHAN_TIMEOUT_MS            15000
 #define ADSB_SQUAWK_OCTAL_DEFAULT       1200
-
-#define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
-#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
 
 #ifndef ADSB_VEHICLE_LIST_SIZE_DEFAULT
     #define ADSB_VEHICLE_LIST_SIZE_DEFAULT  25
@@ -322,33 +311,9 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = 0; // send now
     }
 
-
-    update_uavionix();
-}
-
-void AP_ADSB::update_uavionix()
-{
-    const uint32_t now = AP_HAL::millis();
-
-    // send static configuration data to transceiver, every 5s
-    if (out_state.chan_last_ms > 0 && now - out_state.chan_last_ms > ADSB_CHAN_TIMEOUT_MS) {
-        // haven't gotten a heartbeat health status packet in a while, assume hardware failure
-        // TODO: reset out_state.chan
-        out_state.chan = -1;
-        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
-    } else if (out_state.chan >= 0 && !_my_loc.is_zero() && out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
-        const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + out_state.chan);
-        if (now - out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
-            out_state.last_config_ms = now;
-            send_configure(chan);
-        } // last_config_ms
-
-        // send dynamic data to transceiver at 5Hz
-        if (now - out_state.last_report_ms >= 200 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_DYNAMIC)) {
-            out_state.last_report_ms = now;
-            send_dynamic_out(chan);
-        } // last_report_ms
-    } // chan_last_ms
+    if (_backend != nullptr) {
+        _backend->update();
+    }
 }
 
 /*
@@ -569,166 +534,6 @@ void AP_ADSB::send_adsb_vehicle(const mavlink_channel_t chan)
     }
 }
 
-
-void AP_ADSB::send_dynamic_out(const mavlink_channel_t chan) const
-{
-    const AP_GPS &gps = AP::gps();
-    const Vector3f &gps_velocity = gps.velocity();
-
-    const int32_t latitude = _my_loc.lat;
-    const int32_t longitude = _my_loc.lng;
-    const int32_t altGNSS = _my_loc.alt * 10; // convert cm to mm
-    const int16_t velVert = gps_velocity.z * 1E2; // convert m/s to cm/s
-    const int16_t nsVog = gps_velocity.x * 1E2; // convert m/s to cm/s
-    const int16_t ewVog = gps_velocity.y * 1E2; // convert m/s to cm/s
-    const uint8_t fixType = gps.status(); // this lines up perfectly with our enum
-    const uint8_t emStatus = 0; // TODO: implement this ENUM. no emergency = 0
-    const uint8_t numSats = gps.num_sats();
-    const uint16_t squawk = out_state.cfg.squawk_octal;
-
-    uint32_t accHoriz = UINT_MAX;
-    float accHoriz_f;
-    if (gps.horizontal_accuracy(accHoriz_f)) {
-        accHoriz = accHoriz_f * 1E3; // convert m to mm
-    }
-
-    uint16_t accVert = USHRT_MAX;
-    float accVert_f;
-    if (gps.vertical_accuracy(accVert_f)) {
-        accVert = accVert_f * 1E2; // convert m to cm
-    }
-
-    uint16_t accVel = USHRT_MAX;
-    float accVel_f;
-    if (gps.speed_accuracy(accVel_f)) {
-        accVel = accVel_f * 1E3; // convert m/s to mm/s
-    }
-
-    uint16_t state = 0;
-    if (out_state.is_in_auto_mode) {
-        state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_AUTOPILOT_ENABLED;
-    }
-    if (!out_state.is_flying) {
-        state |= UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ON_GROUND;
-    }
-
-    // TODO: confirm this sets utcTime correctly
-    const uint64_t gps_time = gps.time_epoch_usec();
-    const uint32_t utcTime = gps_time / 1000000ULL;
-
-    const AP_Baro &baro = AP::baro();
-    int32_t altPres = INT_MAX;
-    if (baro.healthy()) {
-        // Altitude difference between sea level pressure and current pressure. Result in millimeters
-        altPres = baro.get_altitude_difference(SSL_AIR_PRESSURE, baro.get_pressure()) * 1E3; // convert m to mm;
-    }
-
-
-
-    mavlink_msg_uavionix_adsb_out_dynamic_send(
-            chan,
-            utcTime,
-            latitude,
-            longitude,
-            altGNSS,
-            fixType,
-            numSats,
-            altPres,
-            accHoriz,
-            accVert,
-            accVel,
-            velVert,
-            nsVog,
-            ewVog,
-            emStatus,
-            state,
-            squawk);
-}
-
-
-/*
- * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
- * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
- * this function is used to create the encoded verison without ever writing to the actual ICAO number. It's created on-demand
- */
-uint32_t AP_ADSB::encode_icao(const uint32_t icao_id) const
-{
-    // utilize the upper unused 8bits of the icao with special flags.
-    // This encoding is required for uAvionix devices that break the MAVLink spec.
-
-    // ensure the user assignable icao is 24 bits
-    uint32_t encoded_icao = icao_id & 0x00FFFFFF;
-
-    encoded_icao &= ~0x20000000;    // useGnssAltitude should always be FALSE
-    encoded_icao |=  0x10000000;    // csidLogic       should always be TRUE
-
-    //SIL/SDA are special fields that should be set to 0 with only expert user adjustment
-    encoded_icao &= ~0x03000000;    // SDA should always be FALSE
-    encoded_icao &= ~0x0C000000;    // SIL should always be FALSE
-
-    return encoded_icao;
-}
-
-/*
- * To expand functionality in their HW, uAvionix has extended a few of the unused MAVLink bits to pack in more new features
- * This function will override the usually-null ending char of the callsign. It always encodes the last byte [8], even if
- * the callsign string is less than 9 chars and there are other zero-padded nulls.
- */
-uint8_t AP_ADSB::get_encoded_callsign_null_char()
-{
-//  Encoding of the 8bit null char
-//  (LSB) - knots
-//  bit.1 - knots
-//  bit.2 - knots
-//  bit.3 - (unused)
-//  bit.4 - flag - ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN
-//  bit.5 - flag - ADSB_BITBASK_RF_CAPABILITIES_UAT_IN
-//  bit.6 - flag - 0 = callsign is treated as callsign, 1 = callsign is treated as flightPlanID/Squawk
-//  (MSB) - (unused)
-
-    uint8_t encoded_null = 0;
-
-    if (out_state.cfg.maxAircraftSpeed_knots <= 0) {
-        // not set or unknown. no bits set
-    } else if (out_state.cfg.maxAircraftSpeed_knots <= 75) {
-        encoded_null |= 0x01;
-    } else if (out_state.cfg.maxAircraftSpeed_knots <= 150) {
-        encoded_null |= 0x02;
-    } else if (out_state.cfg.maxAircraftSpeed_knots <= 300) {
-        encoded_null |= 0x03;
-    } else if (out_state.cfg.maxAircraftSpeed_knots <= 600) {
-        encoded_null |= 0x04;
-    } else if (out_state.cfg.maxAircraftSpeed_knots <= 1200) {
-        encoded_null |= 0x05;
-    } else {
-        encoded_null |= 0x06;
-    }
-
-
-    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) {
-        encoded_null |= 0x10;
-    }
-    if (out_state.cfg.rf_capable & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) {
-        encoded_null |= 0x20;
-    }
-
-
-    /*
-    If the user has an 8 digit flightPlanID assigned from a filed flight plan, this should be assigned to FlightPlanID, (assigned by remote app)
-    else if the user has an assigned squawk code from ATC this should be converted from 4 digit octal to 4 character alpha string and assigned to FlightPlanID,
-    else if a tail number is known it should be set to the tail number of the aircraft, (assigned by remote app)
-    else it should be left blank (all 0's)
-     */
-
-    // using the above logic, we must always assign the squawk. once we get configured
-    // externally then get_encoded_callsign_null_char() stops getting called
-    snprintf(out_state.cfg.callsign, 5, "%04d", unsigned(out_state.cfg.squawk_octal) & 0x1FFF);
-    memset(&out_state.cfg.callsign[4], 0, 5); // clear remaining 5 chars
-    encoded_null |= 0x40;
-
-    return encoded_null;
-}
-
 /*
  * handle incoming packet UAVIONIX_ADSB_OUT_CFG.
  * This allows a GCS to send cfg info through the autopilot to the ADSB hardware.
@@ -759,39 +564,6 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 
     // send now
     out_state.last_config_ms = 0;
-}
-
-/*
- * populate and send MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG
- */
-void AP_ADSB::send_configure(const mavlink_channel_t chan)
-{
-    // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
-    // Here we temporarily set some flags in that null char to signify the callsign
-    // may be a flightplanID instead
-    int8_t callsign[sizeof(out_state.cfg.callsign)];
-    uint32_t icao;
-
-    memcpy(callsign, out_state.cfg.callsign, sizeof(out_state.cfg.callsign));
-
-    if (out_state.cfg.was_set_externally) {
-        // take values as-is
-        icao = out_state.cfg.ICAO_id;
-    } else {
-        callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = (int8_t)get_encoded_callsign_null_char();
-        icao = encode_icao((uint32_t)out_state.cfg.ICAO_id);
-    }
-
-    mavlink_msg_uavionix_adsb_out_cfg_send(
-            chan,
-            icao,
-            (const char*)callsign,
-            (uint8_t)out_state.cfg.emitterType,
-            (uint8_t)out_state.cfg.lengthWidth,
-            (uint8_t)out_state.cfg.gpsOffsetLat,
-            (uint8_t)out_state.cfg.gpsOffsetLon,
-            out_state.cfg.stall_speed_cm,
-            (uint8_t)out_state.cfg.rfSelect);
 }
 
 /*
