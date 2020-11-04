@@ -85,8 +85,27 @@ elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
 else
-    SITLFML_VERSION="2.4"
-    SITLCFML_VERSION="2.4"
+    # Extract the floating point number that is the version of the libcsfml package.
+    SITLCFML_VERSION=`dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+    # And same for libsfml-audio.
+    SITLFML_VERSION=`dpkg-query --search libsfml-audio | cut -d":" -f1 | grep libsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+fi
+
+# Check whether the specific ARM pkg-config package is available or whether we should emulate the effect of installing it.
+ARM_PKG_CONFIG_NOT_PRESENT=`dpkg-query --search pkg-config-arm-linux-gnueabihf |& grep -c "no path found matching pattern"`
+if [ $ARM_PKG_CONFIG_NOT_PRESENT -eq 1 ]; then
+    INSTALL_PKG_CONFIG=""
+    # No need to install Ubuntu's pkg-config-arm-linux-gnueabihf, instead install the base pkg-config.
+    sudo apt-get install pkg-config
+    if [ -f /usr/share/pkg-config-crosswrapper ]; then
+        # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
+        sudo ln -s /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
+    else
+        echo "Warning: unable to link to pkg-config-crosswrapper"
+    fi
+else
+    # Package is available so install it later.
+    INSTALL_PKG_CONFIG="pkg-config-arm-linux-gnueabihf"
 fi
 
 # Lists of packages to install
@@ -96,7 +115,8 @@ PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8"
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 fi
-ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
+# Check for
+ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
 # add some packages required for commonly-used MAVProxy modules:
