@@ -57,6 +57,7 @@ fi
 RELEASE_CODENAME=$(lsb_release -c -s)
 PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
 PIP=pip2
+PKGCONFIG="pkg-config-arm-linux-gnueabihf"
 
 if [ ${RELEASE_CODENAME} == 'xenial' ]; then
     SITLFML_VERSION="2.3v5"
@@ -76,8 +77,14 @@ elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
 else
-    SITLFML_VERSION="2.4"
-    SITLCFML_VERSION="2.4"
+    # Extract the floating point number that is the version of the libcsfml package.
+    SITLCFML_VERSION=`dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+    # And same for libsfml-audio.
+    SITLFML_VERSION=`dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+    # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
+    sudo ln -s /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
+    # No need to install Ubuntu's pkg-config-arm-linux-gnueabihf, instead install the base pkg-config.
+    PKGCONFIG="pkg-config"
 fi
 
 # Lists of packages to install
@@ -87,7 +94,8 @@ PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 fi
-ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
+# Check for
+ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $PKGCONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing"
 # add some packages required for commonly-used MAVProxy modules:
@@ -218,7 +226,15 @@ if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
 fi
 echo "Done!"
 
-SHELL_LOGIN=".profile"
+# As per https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Bash-Startup-Files
+# look for ~/.bash_profile, ~/.bash_login, and ~/.profile in order.
+if [ -f ~/.bash_profile ]; then
+    SHELL_LOGIN=".bash_profile"
+elif [ -f ~/.bash_login ]; then
+    SHELL_LOGIN=".bash_login"
+else
+    SHELL_LOGIN=".profile"
+fi
 if $IS_DOCKER; then
     echo "Inside docker, we add the tools path into .bashrc directly"
     SHELL_LOGIN=".bashrc"
