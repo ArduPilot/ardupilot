@@ -25,7 +25,13 @@ public:
     void update() override;
 
 private:
+    // send static and dynamic data to ADSB transceiver
+    void send_configure(const mavlink_channel_t chan);
+    void send_dynamic_out(const mavlink_channel_t chan) const;
 
+    // special helpers for uAvionix workarounds
+    uint32_t encode_icao(const uint32_t icao_id) const;
+    uint8_t get_encoded_callsign_null_char(void);
 };
 #endif // HAL_ADSB_ENABLED
 

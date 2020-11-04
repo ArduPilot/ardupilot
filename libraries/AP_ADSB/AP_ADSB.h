@@ -149,14 +149,6 @@ private:
     // set callsign: 8char string (plus null termination) then optionally append last 4 digits of icao
     void set_callsign(const char* str, const bool append_icao);
 
-    // send static and dynamic data to ADSB transceiver
-    void send_configure(const mavlink_channel_t chan);
-    void send_dynamic_out(const mavlink_channel_t chan) const;
-
-    // special helpers for uAvionix workarounds
-    uint32_t encode_icao(const uint32_t icao_id) const;
-    uint8_t get_encoded_callsign_null_char(void);
-
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
 
@@ -236,9 +228,6 @@ private:
         SPECIAL_ONLY    = 1,
         ALL             = 2
     };
-
-
-    void update_uavionix();
 
     // reference to backend
     AP_ADSB_Backend *_backend;
