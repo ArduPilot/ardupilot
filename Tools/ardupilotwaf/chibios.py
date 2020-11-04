@@ -246,7 +246,7 @@ def chibios_firmware(self):
         if self.env.BOOTLOADER:
             hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_bootloader_intel_hex', src=bin_target, tgt=hex_target)
-            hex_task.set_run_after(generate_apj_task)
+            hex_task.set_run_after(generate_bin_task)
             # copy hex
             copy_hex_target = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.hex" % self.env.BOARD)
             copy_hex_task = self.create_task('copy_and_rename', src=hex_target, tgt=copy_hex_target)
