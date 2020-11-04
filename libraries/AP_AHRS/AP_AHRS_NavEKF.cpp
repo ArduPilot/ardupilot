@@ -608,13 +608,20 @@ bool AP_AHRS_NavEKF::get_secondary_attitude(Vector3f &eulers) const
     switch (active_EKF_type()) {
     case EKFType::NONE:
         // EKF is secondary
-#if HAL_NAVEKF2_AVAILABLE
-        EKF2.getEulerAngles(-1, eulers);
-        return _ekf2_started;
-#else
-        return false;
+        switch ((EKFType)_ekf_type.get()) {
+#if HAL_NAVEKF3_AVAILABLE
+        case EKFType::THREE:
+            EKF3.getEulerAngles(-1, eulers);
+            return _ekf3_started;
 #endif
-
+#if HAL_NAVEKF2_AVAILABLE
+        case EKFType::TWO:
+            EKF2.getEulerAngles(-1, eulers);
+            return _ekf2_started;
+#endif
+        default:
+            return false;
+        }
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
 #endif
