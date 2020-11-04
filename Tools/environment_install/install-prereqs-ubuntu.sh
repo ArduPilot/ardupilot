@@ -80,7 +80,7 @@ else
     # Extract the floating point number that is the version of the libcsfml package.
     SITLCFML_VERSION=`dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
     # And same for libsfml-audio.
-    SITLFML_VERSION=`dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
+    SITLFML_VERSION=`dpkg-query --search libsfml-audio | cut -d":" -f1 | grep libsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?'`
     # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
     sudo ln -s /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
     # No need to install Ubuntu's pkg-config-arm-linux-gnueabihf, instead install the base pkg-config.
