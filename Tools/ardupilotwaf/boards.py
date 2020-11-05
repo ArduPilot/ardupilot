@@ -64,6 +64,10 @@ class Board:
         else:
             cfg.options.disable_scripting = True
 
+        # allow GCS disable for AP_DAL example
+        if cfg.options.no_gcs:
+            env.CXXFLAGS += ['-DHAL_NO_GCS=1']
+            
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
