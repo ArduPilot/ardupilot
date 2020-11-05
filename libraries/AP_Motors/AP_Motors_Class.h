@@ -47,6 +47,10 @@ public:
         MOTOR_FRAME_DECA = 14,
         MOTOR_FRAME_SCRIPTING_MATRIX = 15,
     };
+
+    // return string corresponding to frame_class
+    virtual const char* get_frame_string() = 0;
+
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
         MOTOR_FRAME_TYPE_X = 1,
@@ -65,6 +69,9 @@ public:
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
     };
+
+    // return string corresponding to frame_type
+    virtual const char* get_type_string() { return ""; }
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);

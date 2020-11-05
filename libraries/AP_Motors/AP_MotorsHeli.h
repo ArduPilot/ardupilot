@@ -159,6 +159,8 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
+    const char* get_frame_string() override { return "HELI"; }
+
 protected:
 
     // manual servo modes (used for setup)
