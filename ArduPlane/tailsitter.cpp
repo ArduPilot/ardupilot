@@ -180,16 +180,25 @@ void QuadPlane::tailsitter_output(void)
         }
         tilt_left  = extra_elevator + tilt_left * tailsitter.vectored_hover_gain;
         tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
-        if (fabsf(tilt_left) >= SERVO_MAX || fabsf(tilt_right) >= SERVO_MAX) {
-            // prevent integrator windup
-            motors->limit.roll = 1;
-            motors->limit.pitch = 1;
-            motors->limit.yaw = 1;
-        }
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
 
+    // Check for saturated limits
+    bool tilt_lim = (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX);
+    bool roll_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_rudder)) == SERVO_MAX;
+    bool pitch_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_elevator)) == SERVO_MAX;
+    bool yaw_lim = labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_aileron)) == SERVO_MAX;
+
+    if (roll_lim) {
+        motors->limit.roll = true;
+    }
+    if (pitch_lim || tilt_lim) {
+        motors->limit.pitch = true;
+    }
+    if (yaw_lim || tilt_lim) {
+        motors->limit.yaw = true;
+    }
 
     if (tailsitter.input_mask_chan > 0 &&
         tailsitter.input_mask > 0 &&
