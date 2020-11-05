@@ -13,6 +13,8 @@ public:
         _logger_backend = backend;
     }
 
+    bool out_of_time_for_writing_messages() const;
+
 protected:
     bool _finished = false;
     AP_Logger_Backend *_logger_backend = nullptr;
@@ -86,9 +88,12 @@ public:
         _writeallrallypoints.set_logger_backend(backend);
     }
 
+    bool out_of_time_for_writing_messages() const;
+
     void reset() override;
     void process() override;
     bool fmt_done() { return _fmt_done; }
+    bool params_done() { return _params_done; }
 
     // reset some writers so we push stuff out to logs again.  Will
     // only work if we are in state DONE!
@@ -109,6 +114,7 @@ private:
     };
 
     bool _fmt_done;
+    bool _params_done;
 
     Stage stage;
 
