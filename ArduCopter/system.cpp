@@ -478,42 +478,6 @@ MAV_TYPE Copter::get_frame_mav_type()
     return MAV_TYPE_GENERIC;
 }
 
-// return string corresponding to frame_class
-const char* Copter::get_frame_string()
-{
-    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
-        case AP_Motors::MOTOR_FRAME_QUAD:
-            return "QUAD";
-        case AP_Motors::MOTOR_FRAME_HEXA:
-            return "HEXA";
-        case AP_Motors::MOTOR_FRAME_Y6:
-            return "Y6";
-        case AP_Motors::MOTOR_FRAME_OCTA:
-            return "OCTA";
-        case AP_Motors::MOTOR_FRAME_OCTAQUAD:
-            return "OCTA_QUAD";
-        case AP_Motors::MOTOR_FRAME_HELI:
-            return "HELI";
-        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
-            return "HELI_DUAL";
-        case AP_Motors::MOTOR_FRAME_HELI_QUAD:
-            return "HELI_QUAD";
-        case AP_Motors::MOTOR_FRAME_TRI:
-            return "TRI";
-        case AP_Motors::MOTOR_FRAME_SINGLE:
-            return "SINGLE";
-        case AP_Motors::MOTOR_FRAME_COAX:
-            return "COAX";
-        case AP_Motors::MOTOR_FRAME_TAILSITTER:
-            return "TAILSITTER";
-        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
-            return "DODECA_HEXA";
-        case AP_Motors::MOTOR_FRAME_UNDEFINED:
-        default:
-            return "UNKNOWN";
-    }
-}
-
 /*
   allocate the motors class
  */
