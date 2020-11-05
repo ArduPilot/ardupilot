@@ -603,6 +603,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoControlZeroF7",
                 "mRoNexus",
                 "mRoPixracerPro",
+                "mRoControlZeroOEMH7",
                 "F35Lightning",
                 "speedybeef4",
                 "SuccexF4",

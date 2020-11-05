@@ -46,6 +46,8 @@ brand_map = {
     'Pixracer' : ('PixRacer', 'mRobotics'),
     'mRoX21' : ('mRo X2.1', 'mRobotics'),
     'mRoX21-777' : ('mRo X2.1-777', 'mRobotics'),
+    'mRoPixracerPro' : ('mRo PixracerPro', 'mRobotics'),
+    'mRoControlZeroOEMH7' : ('mRo ControlZero OEM H7', 'mRobotics'),
     'mRoNexus' : ('mRo Nexus', 'mRobotics'),
     'TBS-Colibri-F7' : ('Colibri F7', 'TBS'),
     'sparky2' : ('Sparky2', 'TauLabs'),
