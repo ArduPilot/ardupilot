@@ -26,6 +26,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -194,11 +195,18 @@ void AP_AHRS_NavEKF::update_EKF2(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms || _force_ekf) {
-            _ekf2_started = EKF2.InitialiseFilter();
-            if (_force_ekf) {
-                return;
+        // if we're doing Replay logging then don't allow any data
+        // into the EKF yet.  Don't allow it to block us for long.
+        if (!hal.util->was_watchdog_reset()) {
+            if (AP_HAL::millis() - start_time_ms < 5000) {
+                if (!AP::logger().allow_start_ekf()) {
+                    return;
+                }
             }
+        }
+
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+            _ekf2_started = EKF2.InitialiseFilter();
         }
     }
     if (_ekf2_started) {
@@ -268,11 +276,17 @@ void AP_AHRS_NavEKF::update_EKF3(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms || _force_ekf) {
-            _ekf3_started = EKF3.InitialiseFilter();
-            if (_force_ekf) {
-                return;
+        // if we're doing Replay logging then don't allow any data
+        // into the EKF yet.  Don't allow it to block us for long.
+        if (!hal.util->was_watchdog_reset()) {
+            if (AP_HAL::millis() - start_time_ms < 5000) {
+                if (!AP::logger().allow_start_ekf()) {
+                    return;
+                }
             }
+        }
+        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+            _ekf3_started = EKF3.InitialiseFilter();
         }
     }
     if (_ekf3_started) {
