@@ -348,56 +348,6 @@ void AP_Logger::Write_IMU()
     Write_IMU_instance(time_us, 2, LOG_IMU3_MSG);
 }
 
-// Write an accel/gyro delta time data packet
-void AP_Logger::Write_IMUDT_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    float delta_t = ins.get_delta_time();
-    float delta_vel_t = ins.get_delta_velocity_dt(imu_instance);
-    float delta_ang_t = ins.get_delta_angle_dt(imu_instance);
-    Vector3f delta_angle, delta_velocity;
-    ins.get_delta_angle(imu_instance, delta_angle);
-    ins.get_delta_velocity(imu_instance, delta_velocity);
-
-    const struct log_IMUDT pkt{
-        LOG_PACKET_HEADER_INIT(type),
-        time_us : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    if (imu_mask & 1) {
-        Write_IMUDT_instance(time_us, 0, LOG_IMUDT_MSG);
-    }
-    if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
-        return;
-    }
-
-    if (imu_mask & 2) {
-        Write_IMUDT_instance(time_us, 1, LOG_IMUDT2_MSG);
-    }
-
-    if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
-        return;
-    }
-
-    if (imu_mask & 4) {
-        Write_IMUDT_instance(time_us, 2, LOG_IMUDT3_MSG);
-    }
-}
-
 void AP_Logger::Write_Vibration()
 {
     const AP_InertialSensor &ins = AP::ins();
