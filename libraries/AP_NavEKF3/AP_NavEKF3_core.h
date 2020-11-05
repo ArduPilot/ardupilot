@@ -24,8 +24,6 @@
     #pragma GCC optimize("O2")
 #endif
 
-#define EK3_DISABLE_INTERRUPTS 0
-
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
@@ -85,8 +83,6 @@
 
 // number of continuous valid GSF yaw estimates required to confirm valid hostory
 #define GSF_YAW_VALID_HISTORY_THRESHOLD 5
-
-class AP_AHRS;
 
 class NavEKF3_core : public NavEKF_core_common
 {
@@ -516,8 +512,6 @@ private:
     typedef ftype Matrix34_50[34][50];
     typedef uint32_t Vector_u32_50[50];
 #endif
-
-    const AP_AHRS *_ahrs;
 
     // the states are available in two forms, either as a Vector24, or
     // broken down as individual elements. Both are equivalent (same
@@ -1418,18 +1412,6 @@ private:
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
-
-    // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
-    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
-    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
-    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
-    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
-    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
-    AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
-    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
-    AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
-    AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // earth field from WMM tables
     bool have_table_earth_field;   // true when we have initialised table_earth_field_ga
