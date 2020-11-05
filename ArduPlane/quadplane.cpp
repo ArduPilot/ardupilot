@@ -354,12 +354,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     AP_SUBGROUPPTR(loiter_nav, "LOIT_",  2, QuadPlane, AC_Loiter),
 
-    // @Param: TAILSIT_THSCMX
-    // @DisplayName: Maximum control throttle scaling value
-    // @Description: Maximum value of throttle scaling for tailsitter velocity scaling, reduce this value to remove low throttle oscillations
+    // @Param: TAILSIT_GSCMAX
+    // @DisplayName: Maximum tailsitter gain scaling
+    // @Description: Maximum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
     // @Range: 1 5
     // @User: Standard
-    AP_GROUPINFO("TAILSIT_THSCMX", 3, QuadPlane, tailsitter.throttle_scale_max, 2),
+    AP_GROUPINFO("TAILSIT_GSCMAX", 3, QuadPlane, tailsitter.throttle_scale_max, 2),
 
     // @Param: TRIM_PITCH
     // @DisplayName: Quadplane AHRS trim pitch
@@ -479,8 +479,8 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     AP_GROUPINFO("TAILSIT_GSCMSK", 17, QuadPlane, tailsitter.gain_scaling_mask, TAILSITTER_GSCL_THROTTLE),
 
     // @Param: TAILSIT_GSCMIN
-    // @DisplayName: Minimum gain scaling based on throttle and attitude
-    // @Description: Minimum gain scaling at high throttle/tilt angle
+    // @DisplayName: Minimum tailsitter gain scaling
+    // @Description: Minimum gain scaling for tailsitter Q_TAILSIT_GSCMSK options
     // @Range: 0.1 1
     // @User: Standard
     AP_GROUPINFO("TAILSIT_GSCMIN", 18, QuadPlane, tailsitter.gain_scaling_min, 0.4),
