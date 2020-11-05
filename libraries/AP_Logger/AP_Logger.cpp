@@ -361,7 +361,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 #define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
     do {                                                                \
         if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
-            Debug("  Message " fieldname_s " not NULL-terminated or too long"); \
+            Debug("  Message %s." fieldname_s " not NULL-terminated or too long", logstructure->name); \
             passed = false;                                             \
         }                                                               \
     } while (false)
@@ -383,8 +383,8 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     uint8_t fieldcount = strlen(logstructure->format);
     uint8_t labelcount = count_commas(logstructure->labels)+1;
     if (fieldcount != labelcount) {
-        Debug("  fieldcount=%u does not match labelcount=%u",
-              fieldcount, labelcount);
+        Debug("  %s fieldcount=%u does not match labelcount=%u",
+              logstructure->name, fieldcount, labelcount);
         passed = false;
     }
 
@@ -401,15 +401,15 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 
     // ensure we have units for each field:
     if (strlen(logstructure->units) != fieldcount) {
-        Debug("  fieldcount=%u does not match unitcount=%u",
-              (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
+        Debug("  %s fieldcount=%u does not match unitcount=%u",
+              logstructure->name, (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
         passed = false;
     }
 
     // ensure we have multipliers for each field
     if (strlen(logstructure->multipliers) != fieldcount) {
-        Debug("  fieldcount=%u does not match multipliercount=%u",
-              (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
+        Debug("  %s fieldcount=%u does not match multipliercount=%u",
+              logstructure->name, (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
         passed = false;
     }
 
