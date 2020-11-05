@@ -61,7 +61,7 @@ void AP_LoggerFileReader::get_packet_counts(uint64_t dest[])
     memcpy(dest, packet_counts, sizeof(packet_counts));
 }
 
-bool AP_LoggerFileReader::update(char type[5], uint8_t &core)
+bool AP_LoggerFileReader::update()
 {
     uint8_t hdr[3];
     if (read_input(hdr, 3) != 3) {
@@ -81,8 +81,6 @@ bool AP_LoggerFileReader::update(char type[5], uint8_t &core)
             return false;
         }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
-        strncpy(type, "FMT", 3);
-        type[3] = 0;
 
         message_count++;
         return handle_log_format_msg(f);
@@ -103,9 +101,6 @@ bool AP_LoggerFileReader::update(char type[5], uint8_t &core)
         return false;
     }
 
-    strncpy(type, f.name, 4);
-    type[4] = 0;
-
     message_count++;
-    return handle_msg(f, msg, core);
+    return handle_msg(f, msg);
 }
