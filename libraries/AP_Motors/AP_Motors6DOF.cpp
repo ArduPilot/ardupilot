@@ -283,9 +283,9 @@ float AP_Motors6DOF::get_current_limit_max_throttle()
 // ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/lateral commands
 void AP_Motors6DOF::output_armed_stabilizing()
 {
-    if ((sub_frame_t)_last_frame_class == SUB_FRAME_VECTORED) {
+    if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED) {
         output_armed_stabilizing_vectored();
-    } else if ((sub_frame_t)_last_frame_class == SUB_FRAME_VECTORED_6DOF) {
+    } else if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED_6DOF) {
         output_armed_stabilizing_vectored_6dof();
     } else {
         uint8_t i;                          // general purpose counter

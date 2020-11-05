@@ -23,8 +23,8 @@ extern const AP_HAL::HAL& hal;
 void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // record requested frame class and type
-    _last_frame_class = frame_class;
-    _last_frame_type = frame_type;
+    _active_frame_class = frame_class;
+    _active_frame_type = frame_type;
 
     // setup the motors
     setup_motors(frame_class, frame_type);
@@ -52,11 +52,11 @@ void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
 void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // exit immediately if armed or no change
-    if (armed() || (frame_class == _last_frame_class && _last_frame_type == frame_type)) {
+    if (armed() || (frame_class == _active_frame_class && _active_frame_type == frame_type)) {
         return;
     }
-    _last_frame_class = frame_class;
-    _last_frame_type = frame_type;
+    _active_frame_class = frame_class;
+    _active_frame_type = frame_type;
 
     // setup the motors
     setup_motors(frame_class, frame_type);

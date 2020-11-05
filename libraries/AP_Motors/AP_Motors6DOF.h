@@ -29,6 +29,30 @@ public:
         SUB_FRAME_CUSTOM
     } sub_frame_t;
 
+    virtual const char* get_frame_string() override
+    {
+        switch ((sub_frame_t)_active_frame_class) {
+            case sub_frame_t::SUB_FRAME_BLUEROV1:
+                return "BLUEROV1";
+            case sub_frame_t::SUB_FRAME_VECTORED:
+                return "VECTORED";
+            case sub_frame_t::SUB_FRAME_VECTORED_6DOF:
+                return "VECTORED_6DOF";
+            case sub_frame_t::SUB_FRAME_VECTORED_6DOF_90DEG:
+                return "VECTORED_6DOF_90DEG";
+            case sub_frame_t::SUB_FRAME_SIMPLEROV_3:
+                return "SIMPLEROV_3";
+            case sub_frame_t::SUB_FRAME_SIMPLEROV_4:
+                return "SIMPLEROV_4";
+            case sub_frame_t::SUB_FRAME_SIMPLEROV_5:
+                return "SIMPLEROV_5";
+            case sub_frame_t::SUB_FRAME_CUSTOM:
+                return "CUSTOM";
+            default:
+                return "UNKNOWN";
+        }
+    };
+
     // Override parent
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
