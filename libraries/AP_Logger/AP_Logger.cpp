@@ -651,6 +651,25 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
+// write a replay block. This differs from other as it returns false if a backend doesn't
+// have space for the msg
+bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) {
+    bool ret = true;
+    if (log_replay()) {
+        uint8_t buf[3+size];
+        buf[0] = HEAD_BYTE1;
+        buf[1] = HEAD_BYTE2;
+        buf[2] = msg_id;
+        memcpy(&buf[3], pBuffer, size);
+        for (uint8_t i=0; i<_next_backend; i++) {
+            if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
+                ret = false;
+            }
+        }
+    }
+    return ret;
+}
+
 void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
@@ -855,6 +874,8 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
 
 void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
 {
+    // WriteV is not safe in replay as we can re-use IDs
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
@@ -875,8 +896,23 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         backends[i]->Write(f->msg_type, arg_copy, is_critical);
         va_end(arg_copy);
     }
+#endif
 }
 
+bool AP_Logger::allow_start_ekf() const
+{
+    if (!AP::logger().log_replay()) {
+        return true;
+    }
+
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!backends[i]->allow_start_ekf()) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
