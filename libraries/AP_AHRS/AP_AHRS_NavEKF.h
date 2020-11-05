@@ -364,6 +364,16 @@ private:
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
 
+    // avoid setting current state repeatedly across all cores on all EKFs:
+    enum class TriState {
+        False = 0,
+        True = 1,
+        UNKNOWN = 3,
+    };
+    TriState touchdownExpectedState = TriState::UNKNOWN;
+    TriState takeoffExpectedState = TriState::UNKNOWN;
+    TriState terrainHgtStableState = TriState::UNKNOWN;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms;
