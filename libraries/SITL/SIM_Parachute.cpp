@@ -54,7 +54,7 @@ void Parachute::update(const struct sitl_input &input)
     if (pwm >= 1250) {
         if (!deployed_ms) {
             deployed_ms = AP_HAL::millis();
-            gcs().send_text(MAV_SEVERITY_WARNING, "BANG!  Parachute deployed");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BANG!  Parachute deployed");
         }
     }
     last_update_us = now;

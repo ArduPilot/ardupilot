@@ -94,7 +94,7 @@ void RF_Wasp::check_configuration()
             }
         }
         if (!set) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Wasp: unknown setting (%s)", &_buffer[0]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Wasp: unknown setting (%s)", &_buffer[0]);
         }
     }
 
