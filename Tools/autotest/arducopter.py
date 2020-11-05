@@ -398,7 +398,7 @@ class AutoTestCopter(AutoTest):
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
         self.change_mode('LOITER')
-        self.set_rc(3, 1300)
+        self.set_rc(3, 1200)
         time_left = timeout - (self.get_sim_time() - tstart)
         self.progress("timeleft = %u" % time_left)
         if time_left < 20:
