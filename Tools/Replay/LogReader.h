@@ -1,3 +1,5 @@
+#pragma once
+
 #include "VehicleType.h"
 #include "DataFlashFileReader.h"
 #include "LR_MsgHandler.h"
@@ -6,15 +8,7 @@
 class LogReader : public AP_LoggerFileReader
 {
 public:
-    LogReader(AP_AHRS &_ahrs,
-              AP_InertialSensor &_ins,
-              Compass &_compass,
-              AP_GPS &_gps,
-              AP_Airspeed &_airspeed,
-              AP_Logger &_logger,
-              struct LogStructure *log_structure,
-              uint8_t log_structure_count,
-              const char **&nottypes);
+    LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf, NavEKF3 &_ekf3);
 
     const Vector3f &get_attitude(void) const { return attitude; }
     const Vector3f &get_ahr2_attitude(void) const { return ahr2_attitude; }
@@ -34,19 +28,17 @@ public:
 
     uint64_t last_timestamp_us(void) const { return last_timestamp_usec; }
     bool handle_log_format_msg(const struct log_Format &f) override;
-    bool handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) override;
+    bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
 
     static bool in_list(const char *type, const char *list[]);
 
 protected:
 
 private:
-    AP_AHRS &ahrs;
-    AP_InertialSensor &ins;
-    Compass &compass;
-    AP_GPS &gps;
-    AP_Airspeed &airspeed;
-    AP_Logger &logger;
+
+    NavEKF2 &ekf2;
+    NavEKF3 &ekf3;
+
     struct LogStructure *_log_structure;
     uint8_t _log_structure_count;
 
@@ -74,7 +66,6 @@ private:
     LR_MsgHandler::CheckState check_state;
 
     bool installed_vehicle_specific_parsers;
-    const char **&nottypes;
 
     bool save_chek_messages;
 
