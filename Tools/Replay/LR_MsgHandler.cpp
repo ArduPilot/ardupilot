@@ -242,6 +242,16 @@ void LR_MsgHandler_ROFH::process_message(uint8_t *msg)
     AP::dal().handle_message(MSG_CAST(ROFH,msg), ekf2, ekf3);
 }
 
+void LR_MsgHandler_REPH::process_message(uint8_t *msg)
+{
+    AP::dal().handle_message(MSG_CAST(REPH,msg), ekf2, ekf3);
+}
+
+void LR_MsgHandler_REVH::process_message(uint8_t *msg)
+{
+    AP::dal().handle_message(MSG_CAST(REVH,msg), ekf2, ekf3);
+}
+
 #include <AP_AHRS/AP_AHRS.h>
 #include "VehicleType.h"
 
