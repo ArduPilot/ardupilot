@@ -595,6 +595,7 @@ bool QuadPlane::setup(void)
     float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
 
     enum AP_Motors::motor_frame_class motor_class;
+    enum AP_Motors::motor_frame_type motor_type;
     enum Rotation rotation = ROTATION_NONE;
 
     /*
@@ -624,8 +625,6 @@ bool QuadPlane::setup(void)
         }
         frame_class.set_and_save(new_value);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialise, class: %u, type: %u", 
-                    (unsigned)frame_class.get(), (unsigned)frame_type.get());
     
     if (hal.util->available_memory() <
         4096 + sizeof(*motors) + sizeof(*attitude_control) + sizeof(*pos_control) + sizeof(*wp_nav) + sizeof(*ahrs_view) + sizeof(*loiter_nav)) {
@@ -637,7 +636,9 @@ bool QuadPlane::setup(void)
       that the objects don't affect the vehicle unless enabled and
       also saves memory when not in use
      */
-    motor_class = (enum AP_Motors::motor_frame_class)frame_class.get();
+    motor_class = (AP_Motors::motor_frame_class)frame_class.get();
+    motor_type  = (AP_Motors::motor_frame_type)frame_type.get();
+    bool coptar_tailsitter_supported = true;
     switch (motor_class) {
     case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
@@ -658,12 +659,15 @@ bool QuadPlane::setup(void)
         SRV_Channels::set_default_function(CH_8, SRV_Channel::k_motor4);
         SRV_Channels::set_default_function(CH_11, SRV_Channel::k_motor7);
         AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
+        coptar_tailsitter_supported = false;
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
+        coptar_tailsitter_supported = false;
         break;
     default:
-        AP_BoardConfig::config_error("Unknown Q_FRAME_CLASS %u", (unsigned)frame_class.get());
+        AP_BoardConfig::config_error("Unsupported Q_FRAME_CLASS %u", motor_class);
     }
+    ::printf("QuadPlane initialise, class: %u, type: %u\n", motor_class, motor_type);
 
     if (tailsitter.motor_mask == 0) {
         // this is a normal quadplane
@@ -688,8 +692,12 @@ bool QuadPlane::setup(void)
     } else {
         // this is a copter tailsitter with motor layout specified by frame_class and frame_type
         // tilting motors are not supported (tiltrotor control variables are ignored)
+        if (!coptar_tailsitter_supported) {
+            AP_BoardConfig::config_error("unsupported copterTS class: %u", motor_class);
+        }
+        ::printf("configuring copter tailsitter\n");
         if (tilt.tilt_mask != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Warning: Motor tilt not supported");
+            ::printf("Warning: Motor tilt not supported\n");
         }
         rotation = ROTATION_PITCH_90;
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
@@ -730,10 +738,10 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
-    motors->init((AP_Motors::motor_frame_class)frame_class.get(), (AP_Motors::motor_frame_type)frame_type.get());
+    motors->initialise(motor_class, motor_type);
 
     if (!motors->initialised_ok()) {
-        AP_BoardConfig::config_error("unknown Q_FRAME_TYPE %u", (unsigned)frame_type.get());
+        AP_BoardConfig::config_error("init failed: class: %u type: %u", motor_class, motor_type);
     }
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
@@ -772,7 +780,7 @@ bool QuadPlane::setup(void)
     // param count will have changed
     AP_Param::invalidate_count();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
+    ::printf("QuadPlane initialised, class: %s, type: %s\n", motors->get_frame_string(), motors->get_type_string());
     initialised = true;
     return true;
 }
