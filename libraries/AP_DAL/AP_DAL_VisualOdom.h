@@ -6,6 +6,8 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if HAL_VISUALODOM_ENABLED
+
 class AP_DAL_VisualOdom {
 public:
 
@@ -49,3 +51,5 @@ private:
 
     struct log_RVOH RVOH;
 };
+
+#endif // HAL_VISUALODOM_ENABLED
