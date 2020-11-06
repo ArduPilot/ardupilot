@@ -27,6 +27,7 @@ public:
     friend class AP_Arming_Plane;
     friend class RC_Channel_Plane;
     friend class RC_Channel;
+    friend class tailsitter;
 
     friend class Mode;
     friend class ModeAuto;
@@ -50,7 +51,7 @@ public:
     void control_run(void);
     void control_auto(void);
     bool init_mode(void);
-    bool setup(void);
+    virtual bool setup(void);
 
     void vtol_position_controller(void);
     void setup_target_position(void);
@@ -60,7 +61,7 @@ public:
     void update_throttle_mix(void);
     
     // update transition handling
-    void update(void);
+    virtual void update(void);
 
     // set motor arming
     void set_armed(bool armed);
@@ -83,7 +84,7 @@ public:
     /*
       return true if we are a tailsitter transitioning to VTOL flight
     */
-    bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
+    virtual bool in_tailsitter_vtol_transition(uint32_t now = 0) const {return false;}
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
 
@@ -95,10 +96,10 @@ public:
     bool in_vtol_mode(void) const;
     bool in_vtol_posvel_mode(void) const;
     void update_throttle_hover();
-    bool show_vtol_view() const;
+    virtual bool show_vtol_view() const;
 
     // vtol help for is_flying()
-    bool is_flying(void);
+    virtual bool is_flying(void);
 
     // return current throttle as a percentate
     uint8_t throttle_percentage(void) const {
@@ -113,32 +114,18 @@ public:
     bool is_flying_vtol(void) const;
 
     // return true when tailsitter frame configured
-    bool is_tailsitter(void) const;
-
-    // return true when flying a control surface only tailsitter tailsitter
-    bool is_contol_surface_tailsitter(void) const;
+    virtual bool is_tailsitter(void) const {return false;}
 
     // return true when flying a tailsitter in VTOL
-    bool tailsitter_active(void);
-    
-    // create outputs for tailsitters
-    void tailsitter_output(void);
+    virtual bool tailsitter_active(void) const {return false;}
 
-    // handle different tailsitter input types
-    void tailsitter_check_input(void);
-    
-    // check if we have completed transition to fixed wing
-    bool tailsitter_transition_fw_complete(void);
+    // create servo outputs
+    virtual void output(void) {};
 
+    // handle different input types
+    virtual void check_input(void) {};
     // return true if we are a tailsitter in FW flight
-    bool is_tailsitter_in_fw_flight(void) const;
-
-    // check if we have completed transition to vtol
-    bool tailsitter_transition_vtol_complete(void) const;
-
-    // account for control surface speed scaling in VTOL modes
-    void tailsitter_speed_scaling(void);
-
+    virtual bool is_tailsitter_in_fw_flight(void) const {return false;}
     // user initiated takeoff for guided mode
     bool do_user_takeoff(float takeoff_altitude);
 
@@ -201,13 +188,13 @@ private:
     AirMode air_mode;
 
     // check for quadplane assistance needed
-    bool assistance_needed(float aspeed, bool have_airspeed);
+    virtual bool assistance_needed(float aspeed, bool have_airspeed);
 
     // check if it is safe to provide assistance
     bool assistance_safe();
 
     // update transition handling
-    void update_transition(void);
+    virtual void update_transition(void);
 
     // check for an EKF yaw reset
     void check_yaw_reset(void);
@@ -216,7 +203,7 @@ private:
     void hold_hover(float target_climb_rate);    
 
     // hold stabilize (for transition)
-    void hold_stabilize(float throttle_in);    
+    virtual void hold_stabilize(float throttle_in);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
@@ -231,7 +218,7 @@ private:
     void init_throttle_wait();
 
     // use multicopter rate controller
-    void multicopter_attitude_rate_update(float yaw_rate_cds);
+    virtual void multicopter_attitude_rate_update(float yaw_rate_cds);
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -241,6 +228,7 @@ private:
     void init_qacro(void);
     float get_pilot_throttle(void);
     void control_qacro(void);
+    virtual void get_acro_target_roll_yaw(float &target_roll, float &target_yaw);
     void init_hover(void);
     void control_hover(void);
 
@@ -273,6 +261,7 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
+    virtual void init_z_target() {set_alt_target_current();}
 
     void setup_defaults(void);
 
@@ -512,7 +501,7 @@ private:
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
-    } tailsitter;
+    } tailsitter_vars;
 
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option

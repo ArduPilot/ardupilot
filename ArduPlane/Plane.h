@@ -89,6 +89,7 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
 #include "quadplane.h"
+#include "tailsitter.h"
 #include "tuning.h"
 
 // Configuration
@@ -127,6 +128,7 @@ public:
     friend class ParametersG2;
     friend class AP_Arming_Plane;
     friend class QuadPlane;
+    friend class tailsitter;
     friend class QAutoTune;
     friend class AP_Tuning_Plane;
     friend class AP_AdvancedFailsafe_Plane;
