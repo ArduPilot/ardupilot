@@ -1274,6 +1274,8 @@ bool NavEKF2::use_compass(void) const
 // posOffset is the XYZ flow sensor position in the body frame in m
 void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
@@ -1681,6 +1683,8 @@ void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing) co
 */
 void NavEKF2::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+    AP::dal().writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
+
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
@@ -1739,7 +1743,7 @@ void NavEKF2::writeDefaultAirSpeed(float airspeed)
  */
 void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    // AP_DAL::log_writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+    AP::dal().writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
