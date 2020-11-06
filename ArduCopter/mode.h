@@ -973,6 +973,7 @@ private:
     void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
     float mix_controls(float mix_ratio, float first_control, float second_control);
     void update_brake_angle_from_velocity(float &brake_angle, float velocity);
+    void init_wind_comp_estimate();
     void update_wind_comp_estimate();
     void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
     void roll_controller_to_pilot_override();
