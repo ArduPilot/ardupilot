@@ -22,37 +22,7 @@ void LR_MsgHandler_RFRH::process_message(uint8_t *msg)
 
 void LR_MsgHandler_RFRF::process_message(uint8_t *msg)
 {
-    AP::dal().handle_message(MSG_CAST(RFRF,msg));
-    const log_RFRF &RFRF = MSG_CAST(RFRF,msg);
-    uint8_t frame_types = RFRF.frame_types;
-    if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF2)) {
-        ekf2_init_done = ekf2.InitialiseFilter();
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::UpdateFilterEKF2)) {
-        if (!ekf2_init_done) {
-            ekf2_init_done = ekf2.InitialiseFilter();
-        }
-        if (ekf2_init_done) {
-            ekf2.UpdateFilter();
-        }
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF3)) {
-        ekf3_init_done = ekf3.InitialiseFilter();
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::UpdateFilterEKF3)) {
-        if (!ekf3_init_done) {
-            ekf3_init_done = ekf3.InitialiseFilter();
-        }
-        if (ekf3_init_done) {
-            ekf3.UpdateFilter();
-        }
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF2)) {
-        ekf2.Log_Write();
-    }
-    if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF3)) {
-        ekf3.Log_Write();
-    }
+    AP::dal().handle_message(MSG_CAST(RFRF,msg), ekf2, ekf3);
 }
 
 void LR_MsgHandler_RFRN::process_message(uint8_t *msg)
@@ -265,6 +235,11 @@ void LR_MsgHandler_RBCI::process_message(uint8_t *msg)
 void LR_MsgHandler_RVOH::process_message(uint8_t *msg)
 {
     AP::dal().handle_message(MSG_CAST(RVOH,msg));
+}
+
+void LR_MsgHandler_ROFH::process_message(uint8_t *msg)
+{
+    AP::dal().handle_message(MSG_CAST(ROFH,msg), ekf2, ekf3);
 }
 
 #include <AP_AHRS/AP_AHRS.h>
