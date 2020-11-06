@@ -135,8 +135,15 @@ void QuadPlane::tailsitter_output(void)
 
             // output tilt motors
             if (tailsitter.vectored_hover_gain > 0) {
-                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain);
+                const float hover_throttle = motors->get_throttle_hover();
+                const float throttle = motors->get_throttle();
+                float throttle_scaler = tailsitter.throttle_scale_max;
+                if (is_positive(throttle)) {
+                    throttle_scaler = constrain_float(hover_throttle / throttle, tailsitter.gain_scaling_min, tailsitter.throttle_scale_max);
+                }
+
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain * throttle_scaler);
+                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain * throttle_scaler);
             }
 
             // skip remainder of the function that overwrites plane control surface outputs with copter
