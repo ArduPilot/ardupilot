@@ -15,7 +15,7 @@
 
 #include "AP_ADSB_uAvionix_MAVLink.h"
 
-#if HAL_ADSB_ENABLED
+#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
 #include <stdio.h>  // for sprintf
 #include <limits.h>
 #include <GCS_MAVLink/GCS.h>
@@ -30,6 +30,14 @@
 
 
 extern const AP_HAL::HAL& hal;
+
+// detect if an port is configured as MAVLink
+bool AP_ADSB_uAvionix_MAVLink::detect()
+{
+    // this actually requires SerialProtocol_MAVLink or SerialProtocol_MAVLink2 but
+    // we can't have a running system with that, so its safe to assume it's already defined
+    return true;
+}
 
 void AP_ADSB_uAvionix_MAVLink::update()
 {

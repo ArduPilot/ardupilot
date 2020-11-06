@@ -21,16 +21,21 @@ class AP_ADSB_Backend
 {
 public:
     // constructor.
-    AP_ADSB_Backend(AP_ADSB &frontend);
+    AP_ADSB_Backend(AP_ADSB &frontend, uint8_t instance);
 
+    // we declare a virtual destructor so that ADSB drivers can
+    // override with a custom destructor if need be
+    virtual ~AP_ADSB_Backend(void) {}
+
+    // static detection function
+    static bool detect();
 
     virtual void update() = 0;
 protected:
 
+    uint8_t _instance;
+
     // references
     AP_ADSB &_frontend;
-
-private:
-
 };
 #endif // HAL_ADSB_ENABLED
