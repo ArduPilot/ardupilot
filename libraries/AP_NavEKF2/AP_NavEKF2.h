@@ -476,6 +476,9 @@ private:
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
     
     struct {
         uint32_t last_function_call;  // last time getLastYawResetAngle was called
