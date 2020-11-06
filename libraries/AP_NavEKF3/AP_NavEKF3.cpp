@@ -818,8 +818,7 @@ void NavEKF3::UpdateFilter(void)
         // loop then suppress the prediction step. This allows
         // multiple EKF instances to cooperate on scheduling
         if (core[i].getFramesSincePredict() < (_framesPerPrediction+3) &&
-            // need sub-frame micros for this test
-            (AP::dal().micros64() - imuSampleTime_us) > _frameTimeUsec/3) {
+            AP::dal().ekf_low_time_remaining(AP_DAL::EKFType::EKF3, i)) {
             statePredictEnabled[i] = false;
         } else {
             statePredictEnabled[i] = true;
