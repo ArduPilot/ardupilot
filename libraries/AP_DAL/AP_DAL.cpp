@@ -93,6 +93,10 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 #endif
 }
 
+/*
+  end a frame. Must be called on all events and injections of data (eg
+  flow) and before starting a new frame
+ */
 void AP_DAL::end_frame(void)
 {
     if (_RFRF.frame_types != 0) {
@@ -262,6 +266,8 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 // log optical flow data
 void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
+    end_frame();
+
     const log_ROFH old = _ROFH;
     _ROFH.rawFlowQuality = rawFlowQuality;
     _ROFH.rawFlowRates = rawFlowRates;
