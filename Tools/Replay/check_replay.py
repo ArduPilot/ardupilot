@@ -83,7 +83,7 @@ def check_log(logfile):
     if args.verbose:
         for mtype in counts.keys():
             print("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
-    if count == 0 or count != base_count:
+    if count == 0 or abs(count - base_count) > 30:
         failure += 1
 
 for filename in args.logs:
