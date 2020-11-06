@@ -778,7 +778,8 @@ private:
     uint32_t rudder_arm_timer;
 
     // support for quadcopter-plane
-    QuadPlane quadplane{ahrs};
+    //QuadPlane quadplane{ahrs};
+    tailsitter quadplane{ahrs};
 
     // support for transmitter tuning
     AP_Tuning_Plane tuning;
