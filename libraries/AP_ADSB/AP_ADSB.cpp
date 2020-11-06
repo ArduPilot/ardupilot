@@ -50,12 +50,12 @@ AP_ADSB *AP_ADSB::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
-    // @Param: ENABLE
-    // @DisplayName: Enable ADSB
-    // @Description: Enable ADS-B
-    // @Values: 0:Disabled,1:Enabled
+    // @Param: TYPE
+    // @DisplayName: ADSB Type
+    // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
+    // @Values: 0:Disabled,1:uAvionix-MAVLink
     // @User: Standard
-    AP_GROUPINFO_FLAGS("ENABLE",     0, AP_ADSB, _enabled,    0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
 
     // index 1 is reserved - was BEHAVIOR
 
@@ -194,16 +194,23 @@ void AP_ADSB::init(void)
         in_state.list_size_allocated = in_state.list_size_param;
     }
 
-    if (_backend == nullptr) {
-        _backend = new AP_ADSB_uAvionix_MAVLink(*this);
-
-        if (_backend == nullptr) {
-            _init_failed = true;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
-            return;
+    if (detected_num_instances == 0) {
+        for (uint8_t i=0; i<ADSB_MAX_INSTANCES; i++) {
+            detect_instance(i);
+            if (_backend[i] != nullptr) {
+                // we loaded a driver for this instance, so it must be
+                // present (although it may not be healthy)
+                detected_num_instances = i+1;
+            }
         }
     }
+
+    if (detected_num_instances == 0) {
+        _init_failed = true;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
+    }
 }
+
 
 /*
  * de-initialize and free up some memory
@@ -214,11 +221,26 @@ void AP_ADSB::deinit(void)
         delete [] in_state.vehicle_list;
         in_state.vehicle_list = nullptr;
     }
+    for (uint8_t i=0; i<ADSB_MAX_INSTANCES; i++) {
+        if (_backend[i] != nullptr) {
+            delete _backend[i];
+            _backend[i] = nullptr;
+        }
+    }
+    detected_num_instances = 0;
 }
 
 bool AP_ADSB::check_startup()
 {
-    if (!_enabled || _init_failed) {
+    bool all_backends_disabled = true;
+    for (uint8_t instance=0; instance<ADSB_MAX_INSTANCES; instance++) {
+        if (_type[instance] > 0) {
+            all_backends_disabled = false;
+            break;
+        }
+    }
+
+    if (all_backends_disabled || _init_failed) {
         if (in_state.vehicle_list != nullptr) {
             deinit();
         }
@@ -229,6 +251,31 @@ bool AP_ADSB::check_startup()
         init();
     }
     return in_state.vehicle_list != nullptr;
+}
+
+
+//  detect if an instance of an ADSB sensor is connected.
+void AP_ADSB::detect_instance(uint8_t instance)
+{
+    switch (get_type(instance)) {
+    case Type::None:
+        return;
+    case Type::uAvionix_MAVLink:
+        if (AP_ADSB_uAvionix_MAVLink::detect()) {
+            _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
+            return;
+        }
+        break;
+    }
+}
+
+// get instance type from instance
+AP_ADSB::Type AP_ADSB::get_type(uint8_t instance) const
+{
+    if (instance < ADSB_MAX_INSTANCES) {
+        return (Type)(_type[instance].get());
+    }
+    return Type::None;
 }
 
 bool AP_ADSB::is_valid_callsign(uint16_t octal)
@@ -311,9 +358,12 @@ void AP_ADSB::update(void)
         out_state.last_config_ms = 0; // send now
     }
 
-    if (_backend != nullptr) {
-        _backend->update();
+    for (uint8_t i=0; i<detected_num_instances; i++) {
+        if (_backend[i] != nullptr) {
+            _backend[i]->update();
+        }
     }
+
 }
 
 /*
