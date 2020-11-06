@@ -22,6 +22,7 @@ void LR_MsgHandler_RFRH::process_message(uint8_t *msg)
 
 void LR_MsgHandler_RFRF::process_message(uint8_t *msg)
 {
+    AP::dal().handle_message(MSG_CAST(RFRF,msg));
     const log_RFRF &RFRF = MSG_CAST(RFRF,msg);
     uint8_t frame_types = RFRF.frame_types;
     if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF2)) {
