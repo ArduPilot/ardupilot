@@ -288,6 +288,12 @@ void NavEKF2::Log_Write()
         return;
     }
 
+    if (lastLogWrite_us == imuSampleTime_us) {
+        // vehicle is doubling up on logging
+        return;
+    }
+    lastLogWrite_us = imuSampleTime_us;
+
     const uint64_t time_us = AP::dal().micros64();
 
     // note that several of these functions exit-early if they're not

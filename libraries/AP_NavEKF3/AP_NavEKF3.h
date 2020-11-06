@@ -534,6 +534,9 @@ private:
     // time of last lane switch
     uint32_t lastLaneSwitch_ms;
 
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
+
     struct {
         uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise

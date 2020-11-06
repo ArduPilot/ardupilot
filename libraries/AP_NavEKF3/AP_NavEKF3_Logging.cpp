@@ -352,6 +352,11 @@ void NavEKF3::Log_Write()
     if (activeCores() <= 0) {
         return;
     }
+    if (lastLogWrite_us == imuSampleTime_us) {
+        // vehicle is doubling up on logging
+        return;
+    }
+    lastLogWrite_us = imuSampleTime_us;
 
     uint64_t time_us = AP::dal().micros64();
 
