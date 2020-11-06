@@ -5,6 +5,7 @@ check that replay produced identical results
 '''
 
 import time
+import sys
 
 from argparse import ArgumentParser
 parser = ArgumentParser(description=__doc__)
@@ -18,13 +19,17 @@ args = parser.parse_args()
 
 from pymavlink import mavutil
 
+failure = 0
+errors = 0
 
 def check_log(logfile):
     '''check replay log for matching output'''
     print("Processing log %s" % filename)
     count = 0
-    errors = 0
+    base_count = 0
     counts = {}
+    base_counts = {}
+    global errors, failure
 
     mlog = mavutil.mavlink_connection(filename)
 
@@ -49,14 +54,17 @@ def check_log(logfile):
         if not hasattr(m,'C'):
             continue
         mtype = m.get_type()
+        if not mtype in counts:
+            counts[mtype] = 0
+            base_counts[mtype] = 0
         core = m.C
         if core < 100:
             base[mtype][core] = m
+            base_count += 1
+            base_counts[mtype] += 1
             continue
         mb = base[mtype][core-100]
         count += 1
-        if not mtype in counts:
-            counts[mtype] = 0
         counts[mtype] += 1
         mismatch = False
         for f in m._fieldnames:
@@ -71,9 +79,18 @@ def check_log(logfile):
         if mismatch:
             print(mb)
             print(m)
-    print("Processed %u messages, %u errors" % (count, errors))
+    print("Processed %u/%u messages, %u errors" % (count, base_count, errors))
     if args.verbose:
-        print(counts)
+        for mtype in counts.keys():
+            print("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
+    if count == 0 or count != base_count:
+        failure += 1
 
 for filename in args.logs:
     check_log(filename)
+
+if failure != 0 or errors != 0:
+    print("FAILED: %u %u" % (failure, errors))
+    sys.exit(1)
+print("Passed")
+sys.exit(0)
