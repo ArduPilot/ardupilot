@@ -571,6 +571,9 @@ AP_GPS_UBLOX::read(void)
 
         // read the next byte
         data = port->read();
+        if (state.disabled) {
+            continue;
+        }
 
 #if GPS_UBLOX_MOVING_BASELINE
         if (rtcm3_parser) {

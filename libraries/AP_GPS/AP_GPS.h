@@ -185,6 +185,9 @@ public:
         int32_t  rtk_baseline_z_mm;        ///< Current baseline in ECEF z or NED down component in mm
         uint32_t rtk_accuracy;             ///< Current estimate of 3D baseline accuracy (receiver dependent, typical 0 to 9999)
         int32_t  rtk_iar_num_hypotheses;   ///< Current number of integer ambiguity hypotheses
+
+        // disabled by user switch
+        bool disabled;
     };
 
     /// Startup initialisation.
@@ -474,6 +477,11 @@ public:
     // get configured type by instance
     GPS_Type get_type(uint8_t instance) const {
         return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
+    }
+
+    // to kill the GPS for testing purposes
+    void set_kill(uint8_t instance, bool set) {
+        state[instance].disabled = set;
     }
 
 protected:
