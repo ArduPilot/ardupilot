@@ -230,6 +230,30 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
     }
 }
 
+/*
+  check if we are low on CPU for this core. This needs to capture the
+  timing of running the cores
+*/
+bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
+{
+    static_assert(INS_MAX_INSTANCES <= 4, "max 4 IMUs");
+    const uint8_t mask = (1U<<(core+(uint8_t(etype)*4)));
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+    /*
+      if we have used more than 1/3 of the time for a loop then we
+      return true, indicating that we are low on CPU. This changes the
+      scheduling of fusion between lanes
+     */
+    const auto &ins = AP::ins();
+    if ((AP_HAL::micros() - ins.get_last_update_usec())*1.0e-6 > ins.get_loop_delta_t()*0.33) {
+        _RFRF.core_slow |= mask;
+    } else {
+        _RFRF.core_slow &= ~mask;
+    }
+#endif
+    return (_RFRF.core_slow & mask) != 0;
+}
+
 #include <stdio.h>
 
 namespace AP {

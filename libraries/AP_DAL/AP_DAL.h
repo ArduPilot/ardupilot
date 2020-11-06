@@ -98,6 +98,15 @@ public:
         ARMED = (1U<<0),
     };
 
+    // EKF ID for timing checks
+    enum class EKFType : uint8_t {
+        EKF2 = 0,
+        EKF3 = 1,
+    };
+
+    // check if we are low on CPU for this core
+    bool ekf_low_time_remaining(EKFType etype, uint8_t core);
+    
     // returns armed state for the current frame
     bool get_armed() { return _RFRN.state_bitmask & uint8_t(StateMask::ARMED); }
 
@@ -210,6 +219,9 @@ public:
         _home.alt = msg.alt;
     }
 
+    void handle_message(const log_RFRF &msg) {
+        _RFRF.core_slow = msg.core_slow;
+    }
     void handle_message(const log_RISH &msg) {
         _ins.handle_message(msg);
     }

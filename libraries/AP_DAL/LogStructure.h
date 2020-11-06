@@ -40,6 +40,7 @@ struct log_RFRH {
 
 struct log_RFRF {
     uint8_t frame_types;
+    uint8_t core_slow;
     uint8_t _end;
 };
 
@@ -307,7 +308,7 @@ struct log_RVOH {
     { LOG_RFRH_MSG, RLOG_SIZE(RFRH),                          \
       "RFRH", "QI", "TimeUS,TF", "s-", "F-" }, \
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
-      "RFRF", "B", "FTypes", "-", "-" }, \
+      "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
       "RFRN", "IIIfIBBBBBBBB", "HLat,HLon,HAlt,E2T,AM,State,NlRF,NlCRP,NlAS,FF,VC,ASE,EKT", "DUm??????????", "GGB----------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
