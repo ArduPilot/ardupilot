@@ -23,16 +23,11 @@ void AP_DAL_GPS::start_frame()
 
     for (uint8_t i=0; i<ARRAY_SIZE(_RGPI); i++) {
         log_RGPI &RGPI = _RGPI[i];
+        const log_RGPI old_RGPI = RGPI;
 
         RGPI.status = (GPS_Status)gps.status(i);
 
         const uint32_t last_message_time_ms = gps.last_message_time_ms(i);
-        if (last_message_time_ms == _last_logged_message_time_ms[i]) {
-            // assume that no other state changes if we don't get a message.
-            return;
-        }
-        _last_logged_message_time_ms[i] = last_message_time_ms;
-
         const Location &loc = gps.location(i);
         RGPI.last_message_time_ms = last_message_time_ms;
         RGPI.lat = loc.lat;
@@ -45,14 +40,15 @@ void AP_DAL_GPS::start_frame()
         RGPI.hdop = gps.get_hdop(i);
         RGPI.num_sats = gps.num_sats(i);
         RGPI.get_lag_returncode = gps.get_lag(i, RGPI.lag_sec);
-        WRITE_REPLAY_BLOCK(RGPI, RGPI);
+        WRITE_REPLAY_BLOCK_IFCHANGD(RGPI, RGPI, old_RGPI);
 
         log_RGPJ &RGPJ = _RGPJ[i];
+        const log_RGPJ old_RGPJ = RGPJ;
 
         RGPJ.velocity = gps.velocity(i);
         RGPJ.speed_accuracy_returncode = gps.speed_accuracy(i, RGPJ.sacc);
         RGPJ.gps_yaw_deg_returncode = gps.gps_yaw_deg(i, RGPJ.yaw_deg, RGPJ.yaw_accuracy_deg);
-        WRITE_REPLAY_BLOCK(RGPJ, RGPJ);
+        WRITE_REPLAY_BLOCK_IFCHANGD(RGPJ, RGPJ, old_RGPJ);
 
         // also fetch antenna offset for this frame
         antenna_offset[i] = gps.get_antenna_offset(i);

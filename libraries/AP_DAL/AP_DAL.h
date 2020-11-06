@@ -308,7 +308,9 @@ private:
 };
 
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))
-#define WRITE_REPLAY_BLOCK_IFCHANGD(sname,v,old) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, &old, offsetof(log_ ##sname, _end))
+#define WRITE_REPLAY_BLOCK_IFCHANGD(sname,v,old) do { static_assert(sizeof(v) == sizeof(old), "types must match"); \
+                                                      AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, &old, offsetof(log_ ##sname, _end)); } \
+                                                 while (0)
 
 namespace AP {
     AP_DAL &dal();
