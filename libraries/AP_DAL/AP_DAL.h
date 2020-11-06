@@ -139,9 +139,11 @@ public:
     AP_DAL_Beacon *beacon() {
         return _beacon.beacon();
     }
+#if HAL_VISUALODOM_ENABLED
     AP_DAL_VisualOdom *visualodom() {
         return _visualodom.visualodom();
     }
+#endif
 
     // this method *always* returns you the compass.  This is in
     // constrast to get_compass, which only returns the compass once
@@ -260,7 +262,9 @@ public:
         _beacon.handle_message(msg);
     }
     void handle_message(const log_RVOH &msg) {
+#if HAL_VISUALODOM_ENABLED
         _visualodom.handle_message(msg);
+#endif
     }
 #endif
 
@@ -295,7 +299,9 @@ private:
     AP_DAL_Compass _compass;
     AP_DAL_Airspeed _airspeed;
     AP_DAL_Beacon _beacon;
+#if HAL_VISUALODOM_ENABLED
     AP_DAL_VisualOdom _visualodom;
+#endif
 
     static bool logging_started;
     static bool force_write;

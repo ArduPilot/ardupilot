@@ -74,7 +74,9 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _airspeed.start_frame();
     _rangefinder.start_frame();
     _beacon.start_frame();
+#if HAL_VISUALODOM_ENABLED
     _visualodom.start_frame();
+#endif
 
     // populate some derivative values:
     _micros = _RFRH.time_us;
