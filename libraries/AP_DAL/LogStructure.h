@@ -2,6 +2,7 @@
 
 #include <AP_Logger/LogStructure.h>
 #include <AP_Math/vector3.h>
+#include <AP_Math/vector2.h>
 
 #define LOG_IDS_FROM_DAL \
     LOG_RFRH_MSG, \
@@ -29,7 +30,8 @@
     LOG_RBCI_MSG, \
     LOG_RVOH_MSG, \
     LOG_RMGH_MSG, \
-    LOG_RMGI_MSG
+    LOG_RMGI_MSG, \
+    LOG_ROFH_MSG
 
 // Replay Data Structures
 struct log_RFRH {
@@ -302,6 +304,17 @@ struct log_RVOH {
     uint8_t _end;
 };
 
+// @LoggerMessage: ROFH
+// @Description: Replay optical flow data
+struct log_ROFH {
+    Vector2f rawFlowRates;
+    Vector2f rawGyroRates;
+    uint32_t msecFlowMeas;
+    Vector3f posOffset;
+    uint8_t rawFlowQuality;
+    uint8_t _end;
+};
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -356,4 +369,6 @@ struct log_RVOH {
     { LOG_RBCI_MSG, RLOG_SIZE(RBCI),                                   \
       "RBCI", "IffffBB", "LU,PX,PY,PZ,Dist,H,I", "smmmm-#", "?0000--" }, \
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
-      "RVOH", "fffIBBB", "OX,OY,OZ,Del,H,Ena,NPtr", "-------", "-------" },
+      "RVOH", "fffIBBB", "OX,OY,OZ,Del,H,Ena,NPtr", "-------", "-------" }, \
+    { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
+      "ROFH", "ffffIfffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,Qual", "---------", "---------" },

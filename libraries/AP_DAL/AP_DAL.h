@@ -17,6 +17,11 @@
 
 #define DAL_CORE(c) AP::dal().logging_core(c)
 
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+class NavEKF2;
+class NavEKF3;
+#endif
+
 class AP_DAL {
 public:
 
@@ -205,6 +210,9 @@ public:
         return _RFRH.time_flying_ms;
     }
 
+    // log optical flow data
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
+    
     // Replay support:
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RFRH &msg) {
@@ -218,10 +226,8 @@ public:
         _home.lng = msg.lng;
         _home.alt = msg.alt;
     }
+    void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
-    void handle_message(const log_RFRF &msg) {
-        _RFRF.core_slow = msg.core_slow;
-    }
     void handle_message(const log_RISH &msg) {
         _ins.handle_message(msg);
     }
@@ -278,6 +284,7 @@ public:
         _visualodom.handle_message(msg);
 #endif
     }
+    void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 #endif
 
     // map core number for replay
@@ -294,6 +301,7 @@ private:
     struct log_RFRH _RFRH;
     struct log_RFRF _RFRF;
     struct log_RFRN _RFRN;
+    struct log_ROFH _ROFH;
 
     // cached variables for speed:
     uint32_t _micros;
@@ -317,6 +325,9 @@ private:
 
     static bool logging_started;
     static bool force_write;
+
+    bool ekf2_init_done;
+    bool ekf3_init_done;
 };
 
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))

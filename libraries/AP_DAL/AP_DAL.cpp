@@ -5,6 +5,11 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#include <AP_NavEKF2/AP_NavEKF2.h>
+#include <AP_NavEKF3/AP_NavEKF3.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 enum class FrameItem : uint8_t {
@@ -253,6 +258,72 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 #endif
     return (_RFRF.core_slow & mask) != 0;
 }
+
+// log optical flow data
+void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+{
+    const log_ROFH old = _ROFH;
+    _ROFH.rawFlowQuality = rawFlowQuality;
+    _ROFH.rawFlowRates = rawFlowRates;
+    _ROFH.rawGyroRates = rawGyroRates;
+    _ROFH.msecFlowMeas = msecFlowMeas;
+    _ROFH.posOffset = posOffset;
+    WRITE_REPLAY_BLOCK_IFCHANGD(ROFH, _ROFH, old);
+}
+
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+/*
+  handle frame message. This message triggers the EKF2/EKF3 updates and logging
+ */
+void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RFRF.core_slow = msg.core_slow;
+
+    /*
+      note that we need to handle the case of LOG_REPLAY=1 with
+      LOG_DISARMED=0. To handle this we need to record the start of the filter
+     */
+    const uint8_t frame_types = msg.frame_types;
+    if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF2)) {
+        ekf2_init_done = ekf2.InitialiseFilter();
+    }
+    if (frame_types & uint8_t(AP_DAL::FrameType::UpdateFilterEKF2)) {
+        if (!ekf2_init_done) {
+            ekf2_init_done = ekf2.InitialiseFilter();
+        }
+        if (ekf2_init_done) {
+            ekf2.UpdateFilter();
+        }
+    }
+    if (frame_types & uint8_t(AP_DAL::FrameType::InitialiseFilterEKF3)) {
+        ekf3_init_done = ekf3.InitialiseFilter();
+    }
+    if (frame_types & uint8_t(AP_DAL::FrameType::UpdateFilterEKF3)) {
+        if (!ekf3_init_done) {
+            ekf3_init_done = ekf3.InitialiseFilter();
+        }
+        if (ekf3_init_done) {
+            ekf3.UpdateFilter();
+        }
+    }
+    if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF2)) {
+        ekf2.Log_Write();
+    }
+    if (frame_types & uint8_t(AP_DAL::FrameType::LogWriteEKF3)) {
+        ekf3.Log_Write();
+    }
+}
+
+/*
+  handle optical flow message
+ */
+void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _ROFH = msg;
+    ekf2.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
+    ekf3.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
+}
+#endif // APM_BUILD_Replay
 
 #include <stdio.h>
 
