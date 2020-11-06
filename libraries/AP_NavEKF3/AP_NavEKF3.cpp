@@ -1435,6 +1435,8 @@ bool NavEKF3::using_external_yaw(void) const
 // posOffset is the XYZ flow sensor position in the body frame in m
 void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
@@ -1468,7 +1470,7 @@ void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t tim
 */
 void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
-    // AP::dal().log_WriteExtNavData(....);
+    AP::dal().writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1485,7 +1487,8 @@ void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float
 */
 void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
-    // AP::dal().log_WriteExtNavVelData(....);
+    AP::dal().writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
