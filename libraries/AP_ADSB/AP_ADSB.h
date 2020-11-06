@@ -34,6 +34,8 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#define ADSB_MAX_INSTANCES             1   // Maximum number of ADSB sensor instances available on this platform
+
 class AP_ADSB_Backend;
 
 class AP_ADSB {
@@ -52,6 +54,12 @@ public:
     static AP_ADSB *get_singleton(void) {
         return _singleton;
     }
+
+    // ADSB driver types
+    enum class Type {
+        None                = 0,
+        uAvionix_MAVLink    = 1,
+    };
 
     struct adsb_vehicle_t {
         mavlink_adsb_vehicle_t info; // the whole mavlink struct with all the juicy details. sizeof() == 38
@@ -92,8 +100,14 @@ public:
     // extract a location out of a vehicle item
     Location get_location(const adsb_vehicle_t &vehicle) const;
 
+    // ADSB is considered enabled if there are any configured backends
     bool enabled() const {
-        return _enabled;
+        for (uint8_t instance=0; instance<detected_num_instances; instance++) {
+            if (_type[instance] > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     bool init_failed() const {
@@ -121,6 +135,8 @@ public:
 
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
+
+    AP_ADSB::Type get_type(uint8_t instance) const;
 
 private:
     static AP_ADSB *_singleton;
@@ -155,7 +171,9 @@ private:
     // mavlink handler
     void handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet);
 
-    AP_Int8     _enabled;
+    void detect_instance(uint8_t instance);
+
+    AP_Int8 _type[ADSB_MAX_INSTANCES];
 
     Location  _my_loc;
 
@@ -211,6 +229,7 @@ private:
 
     } out_state;
 
+    uint8_t detected_num_instances;
 
     // special ICAO of interest that ignored filters when != 0
     AP_Int32 _special_ICAO_target;
@@ -230,7 +249,7 @@ private:
     };
 
     // reference to backend
-    AP_ADSB_Backend *_backend;
+    AP_ADSB_Backend *_backend[ADSB_MAX_INSTANCES];
 };
 
 namespace AP {

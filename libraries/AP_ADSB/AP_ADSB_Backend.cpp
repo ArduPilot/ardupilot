@@ -20,8 +20,9 @@
 /*
   base class constructor.
 */
-AP_ADSB_Backend::AP_ADSB_Backend(AP_ADSB &frontend) :
-    _frontend(frontend)
+AP_ADSB_Backend::AP_ADSB_Backend(AP_ADSB &frontend, uint8_t instance) :
+    _frontend(frontend),
+    _instance(instance)
 {
 }
 
