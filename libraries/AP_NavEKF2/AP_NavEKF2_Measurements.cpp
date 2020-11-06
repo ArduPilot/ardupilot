@@ -121,6 +121,8 @@ void NavEKF2_core::readRangeFinder(void)
 // this needs to be called externally.
 void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+
     // The raw measurements need to be optical flow rates in radians/second averaged across the time since the last update
     // The PX4Flow sensor outputs flow rates with the following axis and sign conventions:
     // A positive X rate is produced by a positive sensor rotation about the X axis
