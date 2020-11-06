@@ -43,6 +43,10 @@ public:
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
+    static QuadPlane *get_singleton() {
+        return _singleton;
+    }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
@@ -652,4 +656,6 @@ public:
                                         uint8_t motor_count);
 private:
     void motor_test_stop();
+
+    static QuadPlane *_singleton;
 };
