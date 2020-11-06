@@ -188,8 +188,8 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AP_Int8 frame_class;
-    AP_Int8 frame_type;
+    AP_Enum<AP_Motors::motor_frame_class> frame_class;
+    AP_Enum<AP_Motors::motor_frame_type> frame_type;
     
     AP_MotorsMulticopter *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
