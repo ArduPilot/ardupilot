@@ -125,4 +125,7 @@ private:
     float _mean_field_length;
     // number of dropped samples. Not used for now, but can be usable to choose more reliable sensor
     uint32_t _error_count;
+
+    // return true if this is disabled using kill_primary
+    bool is_disabled(uint8_t instance);
 };

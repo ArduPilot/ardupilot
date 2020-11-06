@@ -344,6 +344,11 @@ public:
     MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
                                  float lat_deg, float lon_deg);
 
+    // option to kill primary compass
+    void set_kill_primary(bool set) {
+        _kill_primary = set;
+    }
+
 private:
     static Compass *_singleton;
 
@@ -587,6 +592,9 @@ private:
     ///
     void try_set_initial_location();
     bool _initial_location_set;
+
+    // enable killing of primary sensor
+    bool _kill_primary;
 };
 
 namespace AP {

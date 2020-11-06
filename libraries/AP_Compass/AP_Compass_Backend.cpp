@@ -45,6 +45,9 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag, uint8_t instance)
 
 void AP_Compass_Backend::publish_raw_field(const Vector3f &mag, uint8_t instance)
 {
+    if (is_disabled(instance)) {
+        return;
+    }
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
 
     // note that we do not set last_update_usec here as otherwise the
@@ -171,6 +174,9 @@ void AP_Compass_Backend::drain_accumulated_samples(uint8_t instance,
  */
 void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t instance)
 {
+    if (is_disabled(instance)) {
+        return;
+    }
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
 
     state.field = mag;
@@ -181,6 +187,9 @@ void AP_Compass_Backend::publish_filtered_field(const Vector3f &mag, uint8_t ins
 
 void AP_Compass_Backend::set_last_update_usec(uint32_t last_update, uint8_t instance)
 {
+    if (is_disabled(instance)) {
+        return;
+    }
     Compass::mag_state &state = _compass._state[Compass::StateIndex(instance)];
     state.last_update_usec = last_update;
 }
@@ -285,4 +294,10 @@ bool AP_Compass_Backend::field_ok(const Vector3f &field)
 enum Rotation AP_Compass_Backend::get_board_orientation(void) const
 {
     return _compass._board_orientation;
+}
+
+// return true if this is disabled using kill_primary
+bool AP_Compass_Backend::is_disabled(uint8_t instance)
+{
+    return instance == 0 && _compass._kill_primary;
 }
