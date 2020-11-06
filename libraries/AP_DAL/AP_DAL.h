@@ -212,7 +212,11 @@ public:
 
     // log optical flow data
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
-    
+
+    // log external nav data
+    void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
+    void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
+
     // Replay support:
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RFRH &msg) {
@@ -285,6 +289,8 @@ public:
 #endif
     }
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 #endif
 
     // map core number for replay
@@ -298,10 +304,15 @@ private:
 
     static AP_DAL *_singleton;
 
+    // framing structures
     struct log_RFRH _RFRH;
     struct log_RFRF _RFRF;
     struct log_RFRN _RFRN;
+
+    // push-based sensor structures
     struct log_ROFH _ROFH;
+    struct log_REPH _REPH;
+    struct log_REVH _REVH;
 
     // cached variables for speed:
     uint32_t _micros;

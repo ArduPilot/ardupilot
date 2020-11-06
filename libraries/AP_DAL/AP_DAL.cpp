@@ -277,6 +277,34 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     WRITE_REPLAY_BLOCK_IFCHANGD(ROFH, _ROFH, old);
 }
 
+void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
+{
+    end_frame();
+
+    const log_REPH old = _REPH;
+    _REPH.pos = pos;
+    _REPH.quat = quat;
+    _REPH.posErr = posErr;
+    _REPH.angErr = angErr;
+    _REPH.timeStamp_ms = timeStamp_ms;
+    _REPH.delay_ms = delay_ms;
+    _REPH.resetTime_ms = resetTime_ms;
+    WRITE_REPLAY_BLOCK_IFCHANGD(REPH, _REPH, old);
+}
+
+void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
+{
+    end_frame();
+
+    const log_REVH old = _REVH;
+    _REVH.vel = vel;
+    _REVH.err = err;
+    _REVH.timeStamp_ms = timeStamp_ms;
+    _REVH.delay_ms = delay_ms;
+    WRITE_REPLAY_BLOCK_IFCHANGD(REVH, _REVH, old);
+
+}
+
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 /*
   handle frame message. This message triggers the EKF2/EKF3 updates and logging
@@ -328,6 +356,26 @@ void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     _ROFH = msg;
     ekf2.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
     ekf3.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
+}
+
+/*
+  handle external position data
+ */
+void AP_DAL::handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _REPH = msg;
+    ekf2.writeExtNavData(_REPH.pos, _REPH.quat, _REPH.posErr, _REPH.angErr, _REPH.timeStamp_ms, _REPH.delay_ms, _REPH.resetTime_ms);
+    ekf3.writeExtNavData(_REPH.pos, _REPH.quat, _REPH.posErr, _REPH.angErr, _REPH.timeStamp_ms, _REPH.delay_ms, _REPH.resetTime_ms);
+}
+
+/*
+  handle external position data
+ */
+void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _REVH = msg;
+    ekf2.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
+    ekf3.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
 }
 #endif // APM_BUILD_Replay
 
