@@ -2,6 +2,8 @@
 
 #include <AP_VisualOdom/AP_VisualOdom.h>
 
+#if HAL_VISUALODOM_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
 
@@ -21,3 +23,5 @@ void AP_DAL_VisualOdom::start_frame()
 
     WRITE_REPLAY_BLOCK_IFCHANGD(RVOH, RVOH, old);
 }
+
+#endif // HAL_VISUALODOM_ENABLED
