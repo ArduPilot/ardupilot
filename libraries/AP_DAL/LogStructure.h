@@ -3,6 +3,8 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Math/vector3.h>
 #include <AP_Math/vector2.h>
+#include <AP_Math/matrix3.h>
+#include <AP_Math/quaternion.h>
 
 #define LOG_IDS_FROM_DAL \
     LOG_RFRH_MSG, \
@@ -31,7 +33,9 @@
     LOG_RVOH_MSG, \
     LOG_RMGH_MSG, \
     LOG_RMGI_MSG, \
-    LOG_ROFH_MSG
+    LOG_ROFH_MSG, \
+    LOG_REPH_MSG, \
+    LOG_REVH_MSG
 
 // Replay Data Structures
 struct log_RFRH {
@@ -315,6 +319,29 @@ struct log_ROFH {
     uint8_t _end;
 };
 
+// @LoggerMessage: REPH
+// @Description: Replay external position data
+struct log_REPH {
+    Vector3f pos;
+    Quaternion quat;
+    float posErr;
+    float angErr;
+    uint32_t timeStamp_ms;
+    uint32_t resetTime_ms;
+    uint16_t delay_ms;
+    uint8_t _end;
+};
+
+// @LoggerMessage: REVH
+// @Description: Replay external position data
+struct log_REVH {
+    Vector3f vel;
+    float err;
+    uint32_t timeStamp_ms;
+    uint16_t delay_ms;
+    uint8_t _end;
+};
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -371,4 +398,8 @@ struct log_ROFH {
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBBB", "OX,OY,OZ,Del,H,Ena,NPtr", "-------", "-------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIfffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,Qual", "---------", "---------" },
+      "ROFH", "ffffIfffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,Qual", "---------", "---------" }, \
+    { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
+      "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
+    { LOG_REVH_MSG, RLOG_SIZE(REVH),                                   \
+      "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" },
