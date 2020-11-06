@@ -23,8 +23,8 @@ void ModeQStabilize::update()
     // Scale from normalized input [-1,1] to centidegrees
     if (plane.quadplane.tailsitter_active()) {
         // separate limit for tailsitter roll, if set
-        if (plane.quadplane.tailsitter.max_roll_angle > 0) {
-            roll_limit = plane.quadplane.tailsitter.max_roll_angle * 100.0f;
+        if (plane.quadplane.tailsitter_vars.max_roll_angle > 0) {
+            roll_limit = plane.quadplane.tailsitter_vars.max_roll_angle * 100.0f;
         }
 
         // angle max for tailsitter pitch
