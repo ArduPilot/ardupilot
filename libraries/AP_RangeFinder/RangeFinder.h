@@ -102,6 +102,9 @@ public:
         uint32_t last_reading_ms;       // system time of last successful update from sensor
 
         const struct AP_Param::GroupInfo *var_info;
+
+        // disabled by user switch
+        bool disabled;
     };
 
     static const struct AP_Param::GroupInfo *backend_var_info[RANGEFINDER_MAX_INSTANCES];
@@ -163,6 +166,13 @@ public:
     }
 
     static RangeFinder *get_singleton(void) { return _singleton; }
+
+    // allow for killing of rangefinders
+    void set_kill(bool set) {
+        for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+            state[i].disabled = set;
+        }
+    }
 
 protected:
     AP_RangeFinder_Params params[RANGEFINDER_MAX_INSTANCES];

@@ -55,6 +55,10 @@ bool AP_RangeFinder_Backend::has_data() const {
 // update status based on distance measurement
 void AP_RangeFinder_Backend::update_status()
 {
+    if (state.disabled) {
+        state.status = RangeFinder::RangeFinder_NoData;
+        return;
+    }
     // check distance
     if ((int16_t)state.distance_cm > params.max_distance_cm) {
         set_status(RangeFinder::RangeFinder_OutOfRangeHigh);
@@ -68,6 +72,10 @@ void AP_RangeFinder_Backend::update_status()
 // set status and update valid count
 void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status _status)
 {
+    if (state.disabled) {
+        state.status = RangeFinder::RangeFinder_NoData;
+        return;
+    }
     state.status = _status;
 
     // update valid count
