@@ -150,6 +150,4 @@ private:
     struct log_RGPJ _RGPJ[GPS_MAX_INSTANCES];
 
     Vector3f antenna_offset[GPS_MAX_INSTANCES];
-
-    uint32_t _last_logged_message_time_ms[GPS_MAX_INSTANCES];
 };
