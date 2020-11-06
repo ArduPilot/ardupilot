@@ -72,13 +72,16 @@ private:
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
-    volatile bool _open_error;
+    volatile uint32_t _open_error_ms;
     const char *_log_directory;
     bool _last_write_failed;
 
     uint32_t _io_timer_heartbeat;
     bool io_thread_alive() const;
     uint8_t io_thread_warning_decimation_counter;
+
+    // do we have a recent open error?
+    bool recent_open_error(void) const;
 
     // possibly time-consuming preparations handling
     void Prep_MinSpace();

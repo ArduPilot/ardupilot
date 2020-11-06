@@ -18,6 +18,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <time.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #define GPS_BACKEND_DEBUGGING 0
 
@@ -301,3 +302,80 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         }
     }
 }
+
+#if GPS_MOVING_BASELINE
+bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D)
+{
+    constexpr float minimum_antenna_seperation = 0.05; // meters
+    constexpr float permitted_error_length_pct = 0.2;  // percentage
+
+    bool selectedOffset = false;
+    Vector3f offset;
+    switch (MovingBase::Type(gps.mb_params[state.instance].type.get())) {
+        case MovingBase::Type::RelativeToAlternateInstance:
+            offset = gps._antenna_offset[state.instance^1].get() - gps._antenna_offset[state.instance].get();
+            selectedOffset = true;
+            break;
+        case MovingBase::Type::RelativeToCustomBase:
+            offset = gps.mb_params[state.instance].base_offset.get();
+            selectedOffset = true;
+            break;
+    }
+
+    if (!selectedOffset) {
+        // invalid type, let's throw up a flag
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        goto bad_yaw;
+    }
+
+    {
+        const float offset_dist = offset.length();
+        const float min_dist = MIN(offset_dist, reported_distance);
+
+        if (offset_dist < minimum_antenna_seperation) {
+            // offsets have to be sufficently large to get a meaningful angle off of them
+            Debug("Insufficent antenna offset (%f, %f, %f)", (double)offset.x, (double)offset.y, (double)offset.z);
+            goto bad_yaw;
+        }
+
+        if (reported_distance < minimum_antenna_seperation) {
+            // if the reported distance is less then the minimum seperation it's not sufficently robust
+            Debug("Reported baseline distance (%f) was less then the minimum antenna seperation (%f)",
+                  (double)reported_distance, (double)minimum_antenna_seperation);
+            goto bad_yaw;
+        }
+
+
+        if ((offset_dist - reported_distance) > (min_dist * permitted_error_length_pct)) {
+            // the magnitude of the vector is much further then we were expecting
+            Debug("Exceeded the permitted error margin %f > %f",
+                  (double)(offset_dist - reported_distance), (double)(min_dist * permitted_error_length_pct));
+            goto bad_yaw;
+        }
+
+#ifndef HAL_BUILD_AP_PERIPH
+        {
+            const Vector3f antenna_tilt = AP::ahrs().get_rotation_body_to_ned() * offset;
+            const float alt_error = reported_D + antenna_tilt.z;
+            if (fabsf(alt_error) > permitted_error_length_pct * min_dist) {
+                // the vertical component is out of range, reject it
+                goto bad_yaw;
+            }
+        }
+#endif // HAL_BUILD_AP_PERIPH
+
+        {
+            // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
+            const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
+            state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
+            state.have_gps_yaw = true;
+        }
+    }
+
+    return true;
+
+bad_yaw:
+    state.have_gps_yaw = false;
+    return false;
+}
+#endif // GPS_MOVING_BASELINE

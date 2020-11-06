@@ -3,6 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if defined(HAL_BUILD_AP_PERIPH)
+#include "SITL_Periph_State.h"
+#else
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -295,4 +298,5 @@ private:
     const char *_home_str;
 };
 
+#endif // defined(HAL_BUILD_AP_PERIPH)
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

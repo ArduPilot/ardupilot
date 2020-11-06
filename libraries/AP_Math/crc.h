@@ -28,6 +28,9 @@ uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 
+// checksum used by SPORT/FPort
+uint8_t crc_sum8(const uint8_t *p, uint8_t len);
+
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);

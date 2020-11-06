@@ -34,10 +34,16 @@ using namespace HALSITL;
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
+#if !defined(HAL_BUILD_AP_PERIPH)
 static RCInput  sitlRCInput(&sitlState);
 static RCOutput sitlRCOutput(&sitlState);
-static AnalogIn sitlAnalogIn(&sitlState);
 static GPIO sitlGPIO(&sitlState);
+#else
+static Empty::RCInput  sitlRCInput;
+static Empty::RCOutput sitlRCOutput;
+static Empty::GPIO sitlGPIO;
+#endif
+static AnalogIn sitlAnalogIn(&sitlState);
 static DSP dspDriver;
 
 
@@ -55,8 +61,11 @@ static UARTDriver sitlUart5Driver(5, &sitlState);
 static UARTDriver sitlUart6Driver(6, &sitlState);
 static UARTDriver sitlUart7Driver(7, &sitlState);
 
+#if defined(HAL_BUILD_AP_PERIPH)
+static Empty::I2CDeviceManager i2c_mgr_instance;
+#else
 static I2CDeviceManager i2c_mgr_instance;
-
+#endif
 static Util utilInstance(&sitlState);
 
 
@@ -201,6 +210,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->system_initialized();
 
+#ifndef HAL_NO_LOGGING
     if (getenv("SITL_WATCHDOG_RESET")) {
         const AP_HAL::Util::PersistentData &pd = util->persistent_data;
         AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine", "QbIHHHHH",
@@ -213,6 +223,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
                                    pd.last_mavlink_cmd,
                                    pd.semaphore_line);
     }
+#endif
 
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
     if (using_watchdog) {

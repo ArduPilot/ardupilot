@@ -411,9 +411,9 @@ class AutoTestQuadPlane(AutoTest):
         freq = psd["F"][numpy.argmax(psd["X"][sminhz:smaxhz]) + sminhz]
         peakdb = numpy.amax(psd["X"][sminhz:smaxhz])
         if peakdb < dblevel or (peakhz is not None and abs(freq - peakhz) / peakhz > 0.05):
-            raise NotAchievedException("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
+            raise NotAchievedException("No motor peak, found %fHz at %fdB" % (freq, peakdb))
         else:
-            self.progress("Detected motor peak at %fHz, throttle %f%%, %fdB" % (freq, vfr_hud.throttle, peakdb))
+            self.progress("motor peak %fHz, thr %f%%, %fdB" % (freq, vfr_hud.throttle, peakdb))
 
         # we have a peak make sure that the FFT detected something close
         # logging is at 10Hz
@@ -512,10 +512,11 @@ class AutoTestQuadPlane(AutoTest):
             self.do_RTL()
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
-            if numpy.amax(psd["X"][ignore_bins:]) < -10:
-                self.progress("Did not detect a motor peak, found %f at %f dB" % (freq, numpy.amax(psd["X"][ignore_bins:])))
+            peakdB = numpy.amax(psd["X"][ignore_bins:])
+            if peakdB < -10:
+                self.progress("No motor peak, %f at %f dB" % (freq, peakdB))
             else:
-                raise NotAchievedException("Detected motor peak at %f Hz" % (freq))
+                raise NotAchievedException("Detected peak at %f Hz of %.2f dB" % (freq, peakdB))
 
             # Step 4: take off as a copter land as a plane, make sure we track
             self.progress("Flying with gyro FFT - vtol to plane")
@@ -588,7 +589,12 @@ class AutoTestQuadPlane(AutoTest):
         self.takeoff(10, mode="QHOVER")
         self.set_rc(3, 1800)
         self.change_mode("FBWA")
+
+        # disable stall prevention so roll angle is not limited
+        self.set_parameter("STALL_PREVENTION", 0)
+
         thr_min_pwm = self.get_parameter("Q_THR_MIN_PWM")
+        lim_roll_deg = self.get_parameter("LIM_ROLL_CD") * 0.01
         self.progress("Waiting for motors to stop (transition completion)")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
@@ -610,12 +616,12 @@ class AutoTestQuadPlane(AutoTest):
                                       thr_min_pwm,
                                       timeout=30,
                                       comparator=operator.eq)
-        self.set_rc(3, 1500)
+        self.set_rc(3, 1300)
 
         self.context_push()
-        self.progress("Rolling over hard")
+        self.progress("Rolling over to %.0f degrees" % -lim_roll_deg)
         self.set_rc(1, 1000)
-        self.wait_roll(-65, 5)
+        self.wait_roll(-lim_roll_deg, 5)
         self.progress("Killing servo outputs to force qassist to help")
         self.set_parameter("SERVO1_MIN", 1480)
         self.set_parameter("SERVO1_MAX", 1480)
@@ -624,12 +630,11 @@ class AutoTestQuadPlane(AutoTest):
         self.set_rc(1, 2000)
         self.progress("Waiting for qassist (angle) to kick in")
         self.wait_servo_channel_value(5, 1100, timeout=30, comparator=operator.gt)
-        self.wait_roll(85, 5)
+        self.wait_roll(lim_roll_deg, 5)
         self.context_pop()
-
+        self.set_rc(1, 1500)
+        self.set_parameter("Q_RTL_MODE", 1)
         self.change_mode("RTL")
-        self.delay_sim_time(20)
-        self.change_mode("QRTL")
         self.wait_disarmed(timeout=300)
 
     def tests(self):

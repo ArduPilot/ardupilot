@@ -136,10 +136,10 @@ class AutoTestCopter(AutoTest):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def wait_for_alt(self, alt_min=30, timeout=30):
-        """Wait for altitude to be reached."""
+    def wait_for_alt(self, alt_min=30, timeout=30, max_err=5):
+        """Wait for minimum altitude to be reached."""
         self.wait_altitude(alt_min - 1,
-                           (alt_min + 5),
+                           (alt_min + max_err),
                            relative=True,
                            timeout=timeout)
 
@@ -1021,9 +1021,9 @@ class AutoTestCopter(AutoTest):
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
 
-        # cut motor 1 to 55% efficiency
-        self.progress("Cutting motor 1 to 60% efficiency")
-        self.set_parameter("SIM_ENGINE_MUL", 0.60)
+        # cut motor 1's to efficiency
+        self.progress("Cutting motor 1 to 65% efficiency")
+        self.set_parameter("SIM_ENGINE_MUL", 0.65)
 
         while self.get_sim_time_cached() < tstart + holdtime:
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -1561,8 +1561,8 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SUPER_SIMPLE", 63)
 
         # switch to stabilize mode
-        self.change_mode("STABILIZE")
-        self.set_rc(3, 1700)
+        self.change_mode("ALT_HOLD")
+        self.set_rc(3, 1500)
 
         # start copter yawing slowly
         self.set_rc(4, 1550)
@@ -1714,8 +1714,8 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Regaining altitude")
             self.change_mode('STABILIZE')
-            self.set_rc(3, 1800)
-            self.wait_for_alt(20)
+            self.set_rc(3, 1650)
+            self.wait_for_alt(20, max_err=40)
             self.hover()
 
             self.progress("Flipping in pitch")
@@ -1754,10 +1754,9 @@ class AutoTestCopter(AutoTest):
 
             self.reboot_sitl()
 
-            self.takeoff(alt_min=2, require_absolute=False)
-
-            self.mavproxy.send('mode loiter\n')
-            self.wait_mode('LOITER')
+            # we can't takeoff in loiter as we need flow healthy
+            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.change_mode('LOITER')
 
             # speed should be limited to <10m/s
             self.set_rc(2, 1000)
@@ -1765,9 +1764,13 @@ class AutoTestCopter(AutoTest):
             tstart = self.get_sim_time()
             timeout = 60
             while self.get_sim_time_cached() - tstart < timeout:
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-                spd = m.groundspeed
-                max_speed = 8
+                m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
+                alt = m.relative_alt*0.001
+
+                # calculate max speed from altitude above the ground
+                margin = 2.0
+                max_speed = alt * 1.4 + margin
                 self.progress("%0.1f: Low Speed: %f (want <= %u)" %
                               (self.get_sim_time_cached() - tstart,
                                spd,
@@ -1800,8 +1803,7 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
 
         # hold position in loiter
-        self.mavproxy.send('mode autotune\n')
-        self.wait_mode('AUTOTUNE')
+        self.change_mode('AUTOTUNE')
 
         tstart = self.get_sim_time()
         sim_time_expected = 5000
@@ -1954,6 +1956,13 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Auto mission completed: passed!")
 
+    # fly_auto_test using CAN GPS - fly mission which tests normal operation alongside CAN GPS
+    def fly_auto_test_using_can_gps(self):
+        self.set_parameter("CAN_P1_DRIVER", 1)
+        self.set_parameter("GPS_TYPE", 9)
+        self.reboot_sitl()
+        self.fly_auto_test()
+
     def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
         """Test flight with reduced motor efficiency"""
 
@@ -2102,7 +2111,7 @@ class AutoTestCopter(AutoTest):
             # ignore the first 20Hz and look for a peak at -15dB or more
             ignore_bins = 20
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
-            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 200 or freq > 300:
+            if numpy.amax(psd["X"][ignore_bins:]) < -15 or freq < 180 or freq > 300:
                 raise NotAchievedException("Did not detect a motor peak, found %f at %f dB" % (freq, numpy.amax(psd["X"][ignore_bins:])))
             else:
                 self.progress("Detected motor peak at %fHz" % freq)
@@ -2125,10 +2134,11 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
-            if numpy.amax(psd["X"][ignore_bins:]) < -30:
-                self.progress("Did not detect a motor peak, found %f at %f dB" % (freq, numpy.amax(psd["X"][ignore_bins:])))
+            peakdB = numpy.amax(psd["X"][ignore_bins:])
+            if peakdB < -23:
+                self.progress("Did not detect a motor peak, found %f at %f dB" % (freq, peakdB))
             else:
-                raise NotAchievedException("Detected motor peak at %f Hz" % (freq))
+                raise NotAchievedException("Detected peak %.1f Hz %.2f dB" % (freq, peakdB))
         except Exception as e:
             ex = e
 
@@ -3439,8 +3449,7 @@ class AutoTestCopter(AutoTest):
             self.mavproxy.send('mode loiter\n')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
             self.set_rc(3, 1500)
             self.wait_altitude(10, 3000, relative=True)
         except Exception as e:
@@ -3554,8 +3563,7 @@ class AutoTestCopter(AutoTest):
             if m.pointing_a != 0 or m.pointing_b != 0 or m.pointing_c != 0:
                 raise NotAchievedException("Mount stabilising when not requested")
 
-            self.mavproxy.send('mode guided\n')
-            self.wait_mode('GUIDED')
+            self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
 
@@ -4555,8 +4563,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(2, 1550)
             self.wait_distance(5, accuracy=1)
             self.set_rc(2, 1500)
-            self.mavproxy.send('mode loiter\n')
-            self.wait_mode('LOITER')
+            self.change_mode('LOITER')
 
             # turn precision loiter on:
             self.set_rc(7, 2000)
@@ -4615,8 +4622,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("PILOT_TKOFF_ALT", 700)
-            self.mavproxy.send('mode POSHOLD\n')
-            self.wait_mode('POSHOLD')
+            self.change_mode('POSHOLD')
             self.set_rc(3, 1000)
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -5639,6 +5645,15 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
+    def testcan(self):
+        ret = ([
+            ("CANGPSCopterMission",
+             "Fly copter mission",
+             self.fly_auto_test_using_can_gps),
+        ])
+        return ret
+
+
     def tests(self):
         ret = []
         ret.extend(self.tests1())
@@ -5888,8 +5903,7 @@ class AutoTestHeli(AutoTestCopter):
         self.set_parameter("AROT_ENABLE", 1)
         start_alt = 100 # metres
         self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
-        self.mavproxy.send('mode POSHOLD\n')
-        self.wait_mode('POSHOLD')
+        self.change_mode('POSHOLD')
         self.set_rc(3, 1000)
         self.set_rc(8, 1000)
         self.wait_ready_to_arm()
@@ -5982,6 +5996,7 @@ class AutoTestCopterTests2a(AutoTestCopter):
 class AutoTestCopterTests2b(AutoTestCopter):
     def tests(self):
         return self.tests2b()
+class AutoTestCAN(AutoTestCopter):
 
-
-
+    def tests(self):
+        return self.testcan()

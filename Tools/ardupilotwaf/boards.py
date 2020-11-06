@@ -441,8 +441,12 @@ class sitl(Board):
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
-            'SITL',
         ]
+
+        if not cfg.env.AP_PERIPH:
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
 
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
@@ -454,6 +458,10 @@ class sitl(Board):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
+        for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
+                    
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
             for f in os.listdir('ROMFS/scripts'):
@@ -487,6 +495,39 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+        
+        def srcpath(path):
+            return cfg.srcnode.make_node(path).abspath()
+        env.SRCROOT = srcpath('')
+
+class sitl_periph_gps(sitl):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        cfg.env.DISABLE_SCRIPTING = 1
+        super(sitl_periph_gps, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
+            HAL_PERIPH_ENABLE_GPS = 1,
+            HAL_WITH_DSP = 1,
+            HAL_CAN_DEFAULT_NODE_ID = 0,
+            HAL_RAM_RESERVE_START = 0,
+            APJ_BOARD_ID = 100,
+            HAL_NO_GCS = 1,
+            HAL_NO_LOGGING = 1,
+        )
+        # libcanard is written for 32bit platforms
+        env.CXXFLAGS += [
+            '-m32',
+        ]
+        env.CFLAGS += [
+            '-m32',
+        ]
+        env.LDFLAGS += [
+            '-m32',
+        ]
+
 
 class chibios(Board):
     abstract = True

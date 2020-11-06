@@ -484,52 +484,12 @@ void NavEKF3_core::SelectVelPosFusion()
         // record the ID of the GPS that we are using for the reset
         last_gps_idx = gpsDataDelayed.sensor_idx;
 
-        // Store the position before the reset so that we can record the reset delta
-        posResetNE.x = stateStruct.position.x;
-        posResetNE.y = stateStruct.position.y;
-
-        // Set the position states to the position from the new GPS
-        stateStruct.position.x = gpsDataDelayed.pos.x;
-        stateStruct.position.y = gpsDataDelayed.pos.y;
-
-        // Calculate the position offset due to the reset
-        posResetNE.x = stateStruct.position.x - posResetNE.x;
-        posResetNE.y = stateStruct.position.y - posResetNE.y;
-
-        // Add the offset to the output observer states
-        for (uint8_t i=0; i<imu_buffer_length; i++) {
-            storedOutput[i].position.x += posResetNE.x;
-            storedOutput[i].position.y += posResetNE.y;
-        }
-        outputDataNew.position.x += posResetNE.x;
-        outputDataNew.position.y += posResetNE.y;
-        outputDataDelayed.position.x += posResetNE.x;
-        outputDataDelayed.position.y += posResetNE.y;
-
-        // store the time of the reset
-        lastPosReset_ms = imuSampleTime_ms;
+        // reset the position to the GPS position
+        ResetPositionNE(gpsDataDelayed.pos.x, gpsDataDelayed.pos.y);
 
         // If we are also using GPS as the height reference, reset the height
         if (activeHgtSource == HGT_SOURCE_GPS) {
-            // Store the position before the reset so that we can record the reset delta
-            posResetD = stateStruct.position.z;
-
-            // write to the state vector
-            stateStruct.position.z = -hgtMea;
-
-            // Calculate the position jump due to the reset
-            posResetD = stateStruct.position.z - posResetD;
-
-            // Add the offset to the output observer states
-            outputDataNew.position.z += posResetD;
-            vertCompFiltState.pos = outputDataNew.position.z;
-            outputDataDelayed.position.z += posResetD;
-            for (uint8_t i=0; i<imu_buffer_length; i++) {
-                storedOutput[i].position.z += posResetD;
-            }
-
-            // store the time of the reset
-            lastPosResetD_ms = imuSampleTime_ms;
+            ResetPositionD(-hgtMea);
         }
     }
 
@@ -710,11 +670,8 @@ void NavEKF3_core::FuseVelPosNED()
                 if (posTimeout || ((P[8][8] + P[7][7]) > sq(float(frontend->_gpsGlitchRadiusMax)))) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
-                    // reset the velocity to the external sensor velocity
-                    ResetVelocity(resetDataSource::DEFAULT);
                     // don't fuse external sensor data on this time step
                     fusePosData = false;
-                    fuseVelData = false;
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroRows(P,7,8);
                     zeroCols(P,7,8);
@@ -722,7 +679,13 @@ void NavEKF3_core::FuseVelPosNED()
                     P[8][8] = P[7][7];
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
-                    velTestRatio = 0.0f;
+                    // also reset velocity if it has timed out
+                    if (velTimeout) {
+                        // reset the velocity to the external sensor velocity
+                        ResetVelocity(resetDataSource::DEFAULT);
+                        fuseVelData = false;
+                        velTestRatio = 0.0f;
+                    }
                 }
             } else {
                 posHealth = false;

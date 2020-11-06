@@ -70,15 +70,55 @@ public:
     {}
 
     void calculate_forces(const struct sitl_input &input,
-                          float thrust_scale,
                           uint8_t motor_offset,
                           Vector3f &rot_accel, // rad/sec
-                          Vector3f &body_thrust); // Z is down
+                          Vector3f &body_thrust, // Z is down
+                          const Vector3f &velocity_air_bf,
+                          float air_density,
+                          float velocity_max,
+                          float effective_prop_area,
+                          float voltage);
 
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value);
 
-    // calculate current and voltage
-    void current_and_voltage(const struct sitl_input &input, float &voltage, float &current, uint8_t motor_offset);
+    // get current
+    float get_current(void) const;
+
+    // convert a PWM value to a thrust demand from 0 to 1
+    float pwm_to_command(float pwm) const;
+
+    // setup motor key parameters
+    void setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
+                      float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max);
+
+    // override slew limit
+    void set_slew_max(float _slew_max) {
+        slew_max = _slew_max;
+    }
+
+    float get_command(void) const {
+        return last_command;
+    }
+
+    // calculate thrust of motor
+    float calc_thrust(float command, float air_density, float effective_prop_area, float velocity_in, float velocity_max) const;
+
+private:
+    float mot_pwm_min;
+    float mot_pwm_max;
+    float mot_spin_min;
+    float mot_spin_max;
+    float mot_expo;
+    float slew_max;
+    float vehicle_mass;
+    float diagonal_size;
+    float current;
+    float power_factor;
+    float voltage_max;
+    Vector3f moment_of_inertia;
+
+    float last_command;
+    uint64_t last_calc_us;
 };
 
 }

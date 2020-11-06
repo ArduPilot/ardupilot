@@ -491,7 +491,7 @@ private:
     uint64_t imuSampleTime_us;
     
     struct {
-        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of yaw change between cores when a change happened
@@ -555,7 +555,7 @@ private:
 
     // return true if a new core has a better score than an existing core, including
     // checks for alignment
-    bool coreBetterScore(uint8_t new_core, uint8_t current_core);
+    bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
     
     // logging functions shared by cores:
     void Log_Write_NKF1(uint8_t core, uint64_t time_us) const;

@@ -1897,7 +1897,6 @@ void NavEKF3_core::setYawFromMag()
         return;
     }
 
-    //Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
 

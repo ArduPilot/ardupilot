@@ -180,30 +180,14 @@ void NavEKF3_core::realignYawGPS()
 
 void NavEKF3_core::alignYawAngle()
 {
-    if (yawAngDataDelayed.type == 2) {
-        Vector3f euler321;
-        stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
-        stateStruct.quat.from_euler(euler321.x, euler321.y, yawAngDataDelayed.yawAng);
-    } else if (yawAngDataDelayed.type == 1) {
-        Vector3f euler312 = stateStruct.quat.to_vector312();
-        stateStruct.quat.from_vector312(euler312.x, euler312.y, yawAngDataDelayed.yawAng);
-    }
+    // update quaternion states and covariances
+    const rotationOrder order = (yawAngDataDelayed.type == 1) ? rotationOrder::TAIT_BRYAN_312 : rotationOrder::TAIT_BRYAN_321;
 
-    // set the yaw angle variance reflect the yaw sensor single sample uncertainty in yaw
-    // assume tilt uncertainty split equally between roll and pitch
-    Vector3f angleErrVarVec = Vector3f(0.5f * tiltErrorVariance, 0.5f * tiltErrorVariance, sq(yawAngDataDelayed.yawAngErr));
-    CovariancePrediction(&angleErrVarVec);
+    // update quaternion states and covariances
+    resetQuatStateYawOnly(yawAngDataDelayed.yawAng, sq(MAX(yawAngDataDelayed.yawAngErr, 1.0e-2f)), order);
 
     // send yaw alignment information to console
     gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned",(unsigned)imu_index);
-
-    // record the yaw reset event
-    recordYawReset();
-
-    // clear any pending yaw reset requests
-    gpsYawResetRequest = false;
-    magYawResetRequest = false;
-
 }
 
 /********************************************************

@@ -50,6 +50,12 @@ public:
         bool session;
     } terminal;
 
+    enum class SCR_DIR {
+        ROMFS = 1 << 0,
+        SCRIPTS = 1 << 1,
+    };
+    uint16_t get_disabled_dir() { return uint16_t(_dir_disable.get());}
+
 private:
 
     bool repl_start(void);
@@ -63,6 +69,7 @@ private:
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
     AP_Int8 _debug_level;
+    AP_Int16 _dir_disable;
 
     bool _init_failed;  // true if memory allocation failed
 

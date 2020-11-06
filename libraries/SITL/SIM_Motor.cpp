@@ -23,26 +23,55 @@ using namespace SITL;
 
 // calculate rotational accel and thrust for a motor
 void Motor::calculate_forces(const struct sitl_input &input,
-                             const float thrust_scale,
                              uint8_t motor_offset,
                              Vector3f &rot_accel,
-                             Vector3f &thrust)
+                             Vector3f &thrust,
+                             const Vector3f &velocity_air_bf,
+                             float air_density,
+                             float velocity_max,
+                             float effective_prop_area,
+                             float voltage)
 {
     // fudge factors
-    const float arm_scale = radians(5000);
     const float yaw_scale = radians(400);
 
-    // get motor speed from 0 to 1
-    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+    const float pwm = input.servos[motor_offset+servo];
+    float command = pwm_to_command(pwm);
+    float voltage_scale = voltage / voltage_max;
+
+    if (voltage_scale < 0.1) {
+        // battery is dead
+        rot_accel.zero();
+        thrust.zero();
+        current = 0;
+        return;
+    }
+
+    // apply slew limiter to command
+    uint64_t now_us = AP_HAL::micros64();
+    if (last_calc_us != 0 && slew_max > 0) {
+        float dt = (now_us - last_calc_us)*1.0e-6;
+        float slew_max_change = slew_max * dt;
+        command = constrain_float(command, last_command-slew_max_change, last_command+slew_max_change);
+    }
+    last_calc_us = now_us;
+    last_command = command;
 
     // the yaw torque of the motor
-    Vector3f rotor_torque(0, 0, yaw_factor * motor_speed * yaw_scale);
+    Vector3f rotor_torque(0, 0, yaw_factor * command * yaw_scale * voltage_scale);
+
+    // calculate velocity into prop, clipping at zero, assumes zero roll/pitch
+    float velocity_in = MAX(0, -velocity_air_bf.z);
 
     // get thrust for untilted motor
-    thrust = {0, 0, -motor_speed};
+    float motor_thrust = calc_thrust(command, air_density, effective_prop_area, velocity_in, velocity_max * voltage_scale);
+
+    // thrust in NED
+    thrust = {0, 0, -motor_thrust};
 
     // define the arm position relative to center of mass
-    Vector3f arm(arm_scale * cosf(radians(angle)), arm_scale * sinf(radians(angle)), 0);
+    Vector3f arm(cosf(radians(angle)), sinf(radians(angle)), 0);
+    arm *= diagonal_size;
 
     // work out roll and pitch of motor relative to it pointing straight up
     float roll = 0, pitch = 0;
@@ -76,11 +105,17 @@ void Motor::calculate_forces(const struct sitl_input &input,
         rotor_torque = rotation * rotor_torque;
     }
 
-    // calculate total rotational acceleration
-    rot_accel = (arm % thrust) + rotor_torque;
+    // calculate torque in newton-meters
+    Vector3f torque = (arm % thrust) + rotor_torque;
 
-    // scale the thrust
-    thrust = thrust * thrust_scale;
+    // calculate total rotational acceleration
+    rot_accel.x = torque.x / moment_of_inertia.x;
+    rot_accel.y = torque.y / moment_of_inertia.y;
+    rot_accel.z = torque.z / moment_of_inertia.z;
+
+    // calculate current
+    float power = power_factor * fabsf(motor_thrust);
+    current = power / MAX(voltage, 0.1);
 }
 
 /*
@@ -111,17 +146,56 @@ uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_va
 
 
 // calculate current and voltage
-void Motor::current_and_voltage(const struct sitl_input &input, float &voltage, float &current,
-                                uint8_t motor_offset)
+float Motor::get_current(void) const
 {
-    // get motor speed from 0 to 1
-    float motor_speed = constrain_float((input.servos[motor_offset+servo]-1100)/900.0, 0, 1);
+    return current;
+}
 
-    // assume 10A per motor at full speed
-    current = 10 * motor_speed;
+// setup PWM ranges for this motor
+void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
+                         float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max)
+{
+    mot_pwm_min = _pwm_min;
+    mot_pwm_max = _pwm_max;
+    mot_spin_min = _spin_min;
+    mot_spin_max = _spin_max;
+    mot_expo = _expo;
+    slew_max = _slew_max;
+    vehicle_mass = _vehicle_mass;
+    diagonal_size = _diagonal_size;
+    power_factor = _power_factor;
+    voltage_max = _voltage_max;
 
-    // assume 3S, and full throttle drops voltage by 0.7V
-    if (AP::sitl()) {
-        voltage = AP::sitl()->batt_voltage - motor_speed * 0.7;
+    // assume 50% of mass on ring around center
+    moment_of_inertia.x = vehicle_mass * 0.25 * sq(diagonal_size*0.5);
+    moment_of_inertia.y = moment_of_inertia.x;
+    moment_of_inertia.z = vehicle_mass * 0.5 * sq(diagonal_size*0.5);
+}
+
+/*
+  convert a PWM value to a command value from 0 to 1
+*/
+float Motor::pwm_to_command(float pwm) const
+{
+    const float pwm_thrust_max = mot_pwm_min + mot_spin_max * (mot_pwm_max - mot_pwm_min);
+    const float pwm_thrust_min = mot_pwm_min + mot_spin_min * (mot_pwm_max - mot_pwm_min);
+    const float pwm_thrust_range = pwm_thrust_max - pwm_thrust_min;
+    return constrain_float((pwm-pwm_thrust_min)/pwm_thrust_range, 0, 1);
+}
+
+/*
+  calculate thrust given a command value
+*/
+float Motor::calc_thrust(float command, float air_density, float effective_prop_area, float velocity_in, float velocity_max) const
+{
+    float velocity_out = velocity_max * sqrtf((1-mot_expo)*command + mot_expo*sq(command));
+    float ret = 0.5 * air_density * effective_prop_area * (sq(velocity_out) - sq(velocity_in));
+#if 0
+    if (command > 0) {
+        ::printf("air_density=%f effective_prop_area=%f velocity_in=%f velocity_max=%f\n",
+                 air_density, effective_prop_area, velocity_in, velocity_max);
+        ::printf("calc_thrust %.3f %.3f\n", command, ret);
     }
+#endif
+    return ret;
 }

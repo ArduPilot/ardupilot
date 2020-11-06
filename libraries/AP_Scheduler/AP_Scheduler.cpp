@@ -397,6 +397,7 @@ void AP_Scheduler::Log_Write_Performance()
         max_time         : perf_info.get_max_time(),
         mem_avail        : hal.util->available_memory(),
         load             : (uint16_t)(load_average() * 1000),
+        internal_error_last_line : AP::internalerror().last_error_line(),
         internal_errors  : AP::internalerror().errors(),
         internal_error_count : AP::internalerror().count(),
         spi_count        : pd.spi_count,

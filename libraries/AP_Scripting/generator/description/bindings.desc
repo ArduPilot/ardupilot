@@ -255,6 +255,7 @@ singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
 singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
 singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+singleton AP_Mission method clear boolean
 
 userdata mavlink_mission_item_int_t field param1 float read write -FLT_MAX FLT_MAX
 userdata mavlink_mission_item_int_t field param2 float read write -FLT_MAX FLT_MAX
@@ -279,3 +280,8 @@ singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 include AP_Button/AP_Button.h
 singleton AP_Button alias button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
+
+
+include AP_Notify/ScriptingLED.h
+singleton ScriptingLED alias LED
+singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref

@@ -758,7 +758,7 @@ bool NavEKF2::InitialiseFilter(void)
   return true if a new core index has a better score than the current
   core
  */
-bool NavEKF2::coreBetterScore(uint8_t new_core, uint8_t current_core)
+bool NavEKF2::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 {
     const NavEKF2_core &oldCore = core[current_core];
     const NavEKF2_core &newCore = core[new_core];

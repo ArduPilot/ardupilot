@@ -859,8 +859,8 @@ private:
     void startup_INS_ground();
     void update_dynamic_notch() override;
     bool position_ok() const;
-    bool ekf_position_ok() const;
-    bool optflow_position_ok() const;
+    bool ekf_has_absolute_position() const;
+    bool ekf_has_relative_position() const;
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);

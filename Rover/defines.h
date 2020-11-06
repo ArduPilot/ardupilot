@@ -85,7 +85,8 @@ enum fs_crash_action {
 
 enum fs_ekf_action {
     FS_EKF_DISABLE = 0,
-    FS_EFK_HOLD = 1
+    FS_EKF_HOLD = 1,
+    FS_EKF_REPORT_ONLY = 2,
 };
 
 #define DISTANCE_HOME_MINCHANGE 0.5f  // minimum distance to adjust home location

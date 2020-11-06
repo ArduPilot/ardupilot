@@ -525,6 +525,28 @@ class generic_pin(object):
 
         return ret
 
+    def periph_type(self):
+        '''return peripheral type from GPIO_PIN_TYPE class'''
+        patterns = {
+            'USART*RX' : 'PERIPH_TYPE::UART_RX',
+            'UART*RX' : 'PERIPH_TYPE::UART_RX',
+            'USART*TX' : 'PERIPH_TYPE::UART_TX',
+            'UART*TX' : 'PERIPH_TYPE::UART_TX',
+            'I2C*SDA' : 'PERIPH_TYPE::I2C_SDA',
+            'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
+        }
+        for k in patterns.keys():
+            if fnmatch.fnmatch(self.label, k):
+                return patterns[k]
+        return 'PERIPH_TYPE::OTHER'
+
+    def periph_instance(self):
+        '''return peripheral instance'''
+        result = re.match(r'[A-Z]*([0-9]*)', self.type)
+        if result:
+            return int(result.group(1))
+        return 0
+
     def __str__(self):
         str = ''
         if self.af is not None:
@@ -1186,19 +1208,19 @@ def write_UART_config(f):
 
         if dev.startswith('OTG2'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
             OTG2_index = uart_list.index(dev)
             dual_USB_enabled = True
         elif dev.startswith('OTG'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
         else:
             need_uart_driver = True
             f.write(
-                "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, "
-                % (dev, n))
+                "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, %u, false, "
+                % (dev, n, n))
             if mcu_series.startswith("STM32F1"):
                 f.write("%s, %s, %s, " % (tx_line, rx_line, rts_line))
             else:
@@ -1300,12 +1322,12 @@ def write_I2C_config(f):
         scl_line = make_line('I2C%u_SCL' % n)
         f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
-#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
 #else
-#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
 #endif
 '''
-                % (n, n, n, n, n, n, scl_line, sda_line, n, n, scl_line, sda_line))
+                % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
     f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 
@@ -1657,7 +1679,7 @@ def write_alt_config(f):
     for alt in altmap.keys():
         for pp in altmap[alt].keys():
             p = altmap[alt][pp]
-            f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, str(p)))
+            f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU), %s, %u}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, p.periph_type(), p.periph_instance(), str(p)))
     f.write('}\n\n')
 
 def write_all_lines(hwdat):

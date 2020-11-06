@@ -43,7 +43,11 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANLinuxIface", fmt, ##args); } while (0)
+#else
+#define Debug(fmt, args...)
+#endif
 
 CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
@@ -465,6 +469,8 @@ bool CANIface::select(bool &read_select, bool &write_select,
 {
     // Detecting whether we need to block at all
     bool need_block = !write_select;    // Write queue is infinite
+    // call poll here to flush some tx
+    _poll(true, true);
 
     if (read_select && _hasReadyRx()) {
         need_block = false;
