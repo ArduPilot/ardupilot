@@ -1852,6 +1852,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: NKF0
 // @Description: EKF2 beacon sensor diagnostics
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
 // @Field: ID: Beacon sensor ID
 // @Field: rng: Beacon range
 // @Field: innov: Beacon range innovation
@@ -1942,6 +1943,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: NKF5
 // @Description: EKF2 Sensor innovations (primary core) and general dumping ground
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
 // @Field: NI: Normalised flow variance
 // @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
 // @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
@@ -2309,6 +2311,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: ID: Beacon sensor ID
 // @Field: rng: Beacon range
 // @Field: innov: Beacon range innovation
@@ -2397,6 +2400,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: XKF5
 // @Description: EKF3 Sensor innovations (primary core) and general dumping ground
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: NI: Normalised flow variance
 // @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
 // @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
@@ -2422,6 +2426,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: IX: Innovation in velocity (X-axis)
 // @Field: IY: Innovation in velocity (Y-axis)
 // @Field: IZ: Innovation in velocity (Z-axis)
@@ -2441,6 +2446,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: XKV1
 // @Description: EKF3 State variances (primary core)
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: V00: Variance for state 0
 // @Field: V01: Variance for state 1
 // @Field: V02: Variance for state 2
@@ -2457,6 +2463,7 @@ struct PACKED log_PSC {
 // @LoggerMessage: XKV2
 // @Description: more EKF3 State Variances (primary core)
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: V12: Variance for state 12
 // @Field: V13: Variance for state 13
 // @Field: V14: Variance for state 14
