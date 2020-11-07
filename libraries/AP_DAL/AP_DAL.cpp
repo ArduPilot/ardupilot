@@ -247,7 +247,7 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 {
     static_assert(INS_MAX_INSTANCES <= 4, "max 4 IMUs");
     const uint8_t mask = (1U<<(core+(uint8_t(etype)*4)));
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     /*
       if we have used more than 1/3 of the time for a loop then we
       return true, indicating that we are low on CPU. This changes the

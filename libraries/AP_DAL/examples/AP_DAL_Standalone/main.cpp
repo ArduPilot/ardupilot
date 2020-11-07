@@ -4,14 +4,12 @@
 //
 
 #include <AP_DAL/AP_DAL.h>
-
 #include <AP_NavEKF3/AP_NavEKF3.h>
-
 #include <AP_Logger/AP_Logger.h>
 
 void AP_Param::setup_object_defaults(void const*, AP_Param::GroupInfo const*) {}
 
-int AP_HAL::Util::vsnprintf(char*, unsigned long, char const*, va_list) { return -1; }
+int AP_HAL::Util::vsnprintf(char*, size_t, char const*, va_list) { return -1; }
 
 void *nologger = nullptr;
 AP_Logger &AP::logger() {
@@ -54,14 +52,20 @@ public:
 AP_HAL_DAL_Standalone _hal;
 const AP_HAL::HAL &hal = _hal;
 
+#ifdef HAL_NO_GCS
 NavEKF2 navekf2;
 NavEKF3 navekf3;
+#endif
 
 int main(int argc, const char *argv[])
 {
+#ifdef HAL_NO_GCS
     navekf2.InitialiseFilter();
     navekf3.InitialiseFilter();
     navekf2.UpdateFilter();
     navekf3.UpdateFilter();
     return navekf2.healthy() && navekf3.healthy()?0:1;
+#else
+    return 0;
+#endif
 }
