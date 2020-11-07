@@ -428,8 +428,6 @@ const Vector3f &AP_AHRS_NavEKF::get_accel_ef_blended(void) const
     return _accel_ef_ekf_blended;
 }
 
-#include <stdio.h>
-
 void AP_AHRS_NavEKF::reset(bool recover_eulers)
 {
     // support locked access functions to AHRS data
@@ -2188,32 +2186,6 @@ bool AP_AHRS_NavEKF::getGpsGlitchStatus() const
         return false;
     }
     return ekf_status.flags.gps_glitching;
-}
-
-// is the EKF backend doing its own sensor logging?
-bool AP_AHRS_NavEKF::have_ekf_logging(void) const
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        return false;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.have_ekf_logging();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.have_ekf_logging();
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        return false;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
 }
 
 //get the index of the active airspeed sensor, wrt the primary core
