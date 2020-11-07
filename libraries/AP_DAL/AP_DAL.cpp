@@ -277,6 +277,7 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     WRITE_REPLAY_BLOCK_IFCHANGD(ROFH, _ROFH, old);
 }
 
+// log external navigation data
 void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
     end_frame();
@@ -292,6 +293,7 @@ void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float 
     WRITE_REPLAY_BLOCK_IFCHANGD(REPH, _REPH, old);
 }
 
+// log external velocity data
 void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
     end_frame();
@@ -303,6 +305,20 @@ void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSta
     _REVH.delay_ms = delay_ms;
     WRITE_REPLAY_BLOCK_IFCHANGD(REVH, _REVH, old);
 
+}
+
+// log wheel odomotry data
+void AP_DAL::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
+{
+    end_frame();
+
+    const log_RWOH old = _RWOH;
+    _RWOH.delAng = delAng;
+    _RWOH.delTime = delTime;
+    _RWOH.timeStamp_ms = timeStamp_ms;
+    _RWOH.posOffset = posOffset;
+    _RWOH.radius = radius;
+    WRITE_REPLAY_BLOCK_IFCHANGD(RWOH, _RWOH, old);
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -369,13 +385,23 @@ void AP_DAL::handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 }
 
 /*
-  handle external position data
+  handle external velocity data
  */
 void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _REVH = msg;
     ekf2.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
     ekf3.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
+}
+
+/*
+  handle wheel odomotry data
+ */
+void AP_DAL::handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RWOH = msg;
+    // note that EKF2 does not support wheel odomotry
+    ekf3.writeWheelOdom(msg.delAng, msg.delTime, msg.timeStamp_ms, msg.posOffset, msg.radius);
 }
 #endif // APM_BUILD_Replay
 
