@@ -45,7 +45,7 @@ float NavEKF3_core::errorScore() const
         // a better one. This only comes into effect for a forward flight vehicle. A sensitivity factor of 0.3 is added to keep the
         // EKF less sensitive to innovations arising due events like strong gusts of wind, thus, prevent reporting high error scores
         if (assume_zero_sideslip()) {
-            const auto *arsp = AP::dal().airspeed();
+            const auto *arsp = dal.airspeed();
             if (arsp->get_num_sensors() >= 2 && (frontend->_affinity & EKF_AFFINITY_ARSP)) {
                 score = MAX(score, 0.3f * tasTestRatio);
             }
@@ -121,7 +121,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->_fusionModeGPS == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        const auto *_rng = AP::dal().rangefinder();
+        const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
@@ -142,7 +142,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
 void NavEKF3_core::getEulerAngles(Vector3f &euler) const
 {
     outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - AP::dal().get_trim();
+    euler = euler - dal.get_trim();
 }
 
 // return body axis gyro bias estimates in rad/sec
@@ -175,7 +175,7 @@ void NavEKF3_core::getTiltError(float &ang) const
 void NavEKF3_core::getRotationBodyToNED(Matrix3f &mat) const
 {
     outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * AP::dal().get_rotation_vehicle_body_to_autopilot_body();
+    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
@@ -262,7 +262,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            auto &gps = AP::dal().gps();
+            auto &gps = dal.gps();
             if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const struct Location &gpsloc = gps.location(selected_gps);
@@ -326,7 +326,7 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(struct Location &loc) const
 {
-    const auto &gps = AP::dal().gps();
+    const auto &gps = dal.gps();
 
     Location origin;
     float posD;
@@ -429,7 +429,7 @@ void NavEKF3_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    if (!AP::dal().get_compass()) {
+    if (!dal.get_compass()) {
         return false;
     }
     // compass offsets are valid if we have finalised magnetic field initialisation, magnetic field learning is not prohibited,
@@ -439,12 +439,12 @@ bool NavEKF3_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     if ((mag_idx == magSelectIndex) &&
             finalInflightMagInit &&
             !inhibitMagStates &&
-            AP::dal().get_compass()->healthy(magSelectIndex) &&
+            dal.get_compass()->healthy(magSelectIndex) &&
             variancesConverged) {
-        magOffsets = AP::dal().get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
-        magOffsets = AP::dal().get_compass()->get_offsets(magSelectIndex);
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex);
         return false;
     }
 }
