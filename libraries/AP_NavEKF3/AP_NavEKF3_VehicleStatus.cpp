@@ -482,10 +482,13 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
         Vector3f angRateVec;
         Vector3f gyroBias;
         getGyroBias(gyroBias);
+#if INS_MAX_INSTANCES > 1
         bool dual_ins = ins.use_gyro(0) && ins.use_gyro(1);
         if (dual_ins) {
             angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
-        } else {
+        } else
+#endif
+        {
             angRateVec = ins.get_gyro() - gyroBias;
         }
 
