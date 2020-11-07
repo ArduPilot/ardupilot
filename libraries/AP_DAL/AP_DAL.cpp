@@ -321,6 +321,19 @@ void AP_DAL::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, 
     WRITE_REPLAY_BLOCK_IFCHANGD(RWOH, _RWOH, old);
 }
 
+void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
+{
+    end_frame();
+
+    const log_RBOH old = _RBOH;
+    _RBOH.quality = quality;
+    _RBOH.delPos = delPos;
+    _RBOH.delAng = delAng;
+    _RBOH.delTime = delTime;
+    _RBOH.timeStamp_ms = timeStamp_ms;
+    WRITE_REPLAY_BLOCK_IFCHANGD(RBOH, _RBOH, old);
+}
+
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 /*
   handle frame message. This message triggers the EKF2/EKF3 updates and logging
@@ -370,8 +383,8 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
-    ekf3.writeOptFlowMeas(_ROFH.rawFlowQuality, _ROFH.rawFlowRates, _ROFH.rawGyroRates, _ROFH.msecFlowMeas, _ROFH.posOffset);
+    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
 }
 
 /*
@@ -380,8 +393,8 @@ void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _REPH = msg;
-    ekf2.writeExtNavData(_REPH.pos, _REPH.quat, _REPH.posErr, _REPH.angErr, _REPH.timeStamp_ms, _REPH.delay_ms, _REPH.resetTime_ms);
-    ekf3.writeExtNavData(_REPH.pos, _REPH.quat, _REPH.posErr, _REPH.angErr, _REPH.timeStamp_ms, _REPH.delay_ms, _REPH.resetTime_ms);
+    ekf2.writeExtNavData(msg.pos, msg.quat, msg.posErr, msg.angErr, msg.timeStamp_ms, msg.delay_ms, msg.resetTime_ms);
+    ekf3.writeExtNavData(msg.pos, msg.quat, msg.posErr, msg.angErr, msg.timeStamp_ms, msg.delay_ms, msg.resetTime_ms);
 }
 
 /*
@@ -390,8 +403,8 @@ void AP_DAL::handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _REVH = msg;
-    ekf2.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
-    ekf3.writeExtNavVelData(_REVH.vel, _REVH.err, _REVH.timeStamp_ms, _REVH.delay_ms);
+    ekf2.writeExtNavVelData(msg.vel, msg.err, msg.timeStamp_ms, msg.delay_ms);
+    ekf3.writeExtNavVelData(msg.vel, msg.err, msg.timeStamp_ms, msg.delay_ms);
 }
 
 /*
@@ -402,6 +415,16 @@ void AP_DAL::handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
     _RWOH = msg;
     // note that EKF2 does not support wheel odomotry
     ekf3.writeWheelOdom(msg.delAng, msg.delTime, msg.timeStamp_ms, msg.posOffset, msg.radius);
+}
+
+/*
+  handle body frame odomotry
+ */
+void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+    _RBOH = msg;
+    // note that EKF2 does not support body frame odomotry
+    ekf3.writeBodyFrameOdom(msg.quality, msg.delPos, msg.delAng, msg.delTime, msg.timeStamp_ms, msg.delay_ms, msg.posOffset);
 }
 #endif // APM_BUILD_Replay
 
