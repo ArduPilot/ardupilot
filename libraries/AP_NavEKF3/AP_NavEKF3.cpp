@@ -1538,7 +1538,7 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
 */
 void NavEKF3::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
-    // AP::dal().log_WriteWheeloDom(....);
+    AP::dal().writeWheelOdom(delAng, delTime, timeStamp_ms, posOffset, radius);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
