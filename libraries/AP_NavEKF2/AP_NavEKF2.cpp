@@ -611,7 +611,6 @@ NavEKF2::NavEKF2()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#include <stdio.h>
 
 // Initialise the filter
 bool NavEKF2::InitialiseFilter(void)
@@ -1571,8 +1570,6 @@ uint32_t NavEKF2::getLastPosDownReset(float &posDelta)
 // update the yaw reset data to capture changes due to a lane switch
 void NavEKF2::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    // AP_DAL::log_updateLaneSwitchYawResetData(new_primary, old_primary);
-
     Vector3f eulers_old_primary, eulers_new_primary;
     float old_yaw_delta;
 
@@ -1599,8 +1596,6 @@ void NavEKF2::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
 // update the position reset data to capture changes due to a lane switch
 void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    // AP_DAL::log_updateLaneSwitchPosResetData(new_primary, old_primary);
-
     Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
 
     // If core position reset data has been consumed reset delta to zero
@@ -1628,8 +1623,6 @@ void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
 // new primary EKF update has been run
 void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    // AP_DAL::log_updateLaneSwitchPosResetData(new_primary, old_primary);
-
     float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
 
     // If core position reset data has been consumed reset delta to zero

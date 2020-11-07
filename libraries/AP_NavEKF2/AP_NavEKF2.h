@@ -314,9 +314,6 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
-    // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return false; }
-
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
 
