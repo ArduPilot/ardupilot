@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <signal.h>
+
 
 #define DEBUG 1
 #if DEBUG
@@ -16,6 +19,8 @@
 #endif
 
 #define streq(x, y) (!strcmp(x, y))
+
+extern struct user_parameter *user_parameters;
 
 LogReader::LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf2, NavEKF3 &_ekf3) :
     AP_LoggerFileReader(),
@@ -115,24 +120,7 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
     if (in_list(name, log_write_names)) {
         // debug("%s is a Log_Write-written message\n", name);
     } else {
-        if (in_list(name, generated_names)) {
-            // debug("Log format for type (%d) (%s) taken from running code\n",
-            //       f.type, name);
-            // bool found = false;
-            // for (uint8_t n=0; n<ARRAY_SIZE(running_codes_log_structure); n++) {
-            //     if (streq(name, running_codes_log_structure[n].name)) {
-            //         found = true;
-            //         memcpy(&s, &running_codes_log_structure[n], sizeof(LogStructure));
-            //         break;
-            //     }
-            // }
-            // if (!found) {
-            //     ::fprintf(stderr, "Expected to be able to emit an FMT for (%s), but no FMT message found in running code\n", name);
-            //     abort();
-            // }
-        } else {
-            // debug("Log format for type (%d) (%s) taken from log\n", f.type, name);
-            // generate a LogStructure entry for this FMT
+        if (!in_list(name, generated_names)) {
             s.msg_type = map_fmt_type(name, f.type);
             s.msg_len = f.length;
             s.name = f.name;
@@ -150,7 +138,6 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         memcpy(pkt.name, s.name, sizeof(pkt.name));
         memcpy(pkt.format, s.format, sizeof(pkt.format));
         memcpy(pkt.labels, s.labels, sizeof(pkt.labels));
-        // AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
     }
 
     if (msgparser[f.type] != NULL) {
@@ -161,7 +148,6 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	if (streq(name, "PARM")) {
             msgparser[f.type] = new LR_MsgHandler_PARM
                 (formats[f.type],
-                 last_timestamp_usec,
                  [this](const char *xname, const float xvalue) {
                     return set_parameter(xname, xvalue);
                  });
@@ -238,10 +224,6 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
     // emit the output as we receive it:
     AP::logger().WriteBlock(msg, f.length);
 
-    // char name[5];
-    // memset(name, '\0', 5);
-    // memcpy(name, f.name, 4);
-
     LR_MsgHandler *p = msgparser[f.type];
     if (p == NULL) {
         return true;
@@ -251,11 +233,6 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
 
     return true;
 }
-
-#include <sys/types.h>
-#include <signal.h>
-
-extern struct user_parameter *user_parameters;
 
 /*
   see if a user parameter is set

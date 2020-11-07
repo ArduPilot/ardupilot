@@ -18,17 +18,6 @@ public:
         // like it.
         process_message(msg);
     }
-
-    // state for CHEK message
-    struct CheckState {
-        uint64_t time_us;
-        Vector3f euler;
-        Location pos;
-        Vector3f velocity;
-    };
-
-protected:
-
 };
 
 class LR_MsgHandler_RFRH : public LR_MsgHandler
@@ -274,7 +263,6 @@ class LR_MsgHandler_PARM : public LR_MsgHandler
 {
 public:
     LR_MsgHandler_PARM(log_Format &_f,
-                       uint64_t &_last_timestamp_usec,
                        const std::function<bool(const char *name, const float)>&set_parameter_callback) :
         LR_MsgHandler(_f),
         _set_parameter_callback(set_parameter_callback)
