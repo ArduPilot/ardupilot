@@ -690,6 +690,9 @@ private:
     // crash_check.cpp
     void crash_check();
     void thrust_loss_check();
+    void yaw_imbalance_check();
+    LowPassFilterFloat yaw_I_filt{0.05f};
+    uint32_t last_yaw_warn_ms;
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
