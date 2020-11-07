@@ -355,5 +355,6 @@ namespace AP {
     AP_DAL &dal();
 };
 
-void xxprintf(const char *format, ...);
+// replay printf for debugging
+void rprintf(const char *format, ...);
 
