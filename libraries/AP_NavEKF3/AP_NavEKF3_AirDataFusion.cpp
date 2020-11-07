@@ -25,7 +25,7 @@ void NavEKF3_core::FuseAirspeed()
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = AP::dal().get_EAS2TAS();
+    float EAS2TAS = dal.get_EAS2TAS();
     const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     float SH_TAS[3];
     float SK_TAS[2];

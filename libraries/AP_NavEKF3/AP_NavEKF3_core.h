@@ -31,6 +31,7 @@
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -453,6 +454,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
+    AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF3 *frontend;
