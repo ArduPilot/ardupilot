@@ -161,8 +161,8 @@ void LR_MsgHandler_RWA3::process_message(uint8_t *msg)
 
 void LR_MsgHandler_REY3::process_message(uint8_t *msg)
 {
-    const log_RWA3 &rwa3 = MSG_CAST(RWA3,msg);
-    ekf3.writeDefaultAirSpeed(rwa3.airspeed);
+    const log_REY3 &rey3 = MSG_CAST(REY3,msg);
+    ekf3.writeEulerYawAngle(rey3.yawangle, rey3.yawangleerr, rey3.timestamp_ms, rey3.type);
 }
 
 void LR_MsgHandler_RISH::process_message(uint8_t *msg)
