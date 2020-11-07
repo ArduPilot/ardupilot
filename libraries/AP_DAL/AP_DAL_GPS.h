@@ -32,9 +32,9 @@ public:
     }
     const Location &location(uint8_t instance) const {
         Location &loc = tmp_location[instance];
-        loc.lat = _RGPI[instance].lat;
-        loc.lng = _RGPI[instance].lng;
-        loc.alt = _RGPI[instance].alt;
+        loc.lat = _RGPJ[instance].lat;
+        loc.lng = _RGPJ[instance].lng;
+        loc.alt = _RGPJ[instance].alt;
         return loc;
     }
     bool have_vertical_velocity(uint8_t instance) const {
@@ -44,7 +44,7 @@ public:
         return have_vertical_velocity(primary_sensor());
     }
     bool horizontal_accuracy(uint8_t instance, float &hacc) const {
-        hacc = _RGPI[instance].hacc;
+        hacc = _RGPJ[instance].hacc;
         return _RGPI[instance].horizontal_accuracy_returncode;
     }
     bool horizontal_accuracy(float &hacc) const {
@@ -52,7 +52,7 @@ public:
     }
 
     bool vertical_accuracy(uint8_t instance, float &vacc) const {
-        vacc = _RGPI[instance].vacc;
+        vacc = _RGPJ[instance].vacc;
         return _RGPI[instance].vertical_accuracy_returncode;
     }
     bool vertical_accuracy(float &vacc) const {
@@ -60,14 +60,14 @@ public:
     }
 
     uint16_t get_hdop(uint8_t instance) const {
-        return _RGPI[instance].hdop;
+        return _RGPJ[instance].hdop;
     }
     uint16_t get_hdop() const {
         return get_hdop(primary_sensor());
     }
 
     uint32_t last_message_time_ms(uint8_t instance) const {
-        return _RGPI[instance].last_message_time_ms;
+        return _RGPJ[instance].last_message_time_ms;
     }
 
     uint8_t num_sats(uint8_t instance) const {
@@ -94,7 +94,7 @@ public:
 
     bool speed_accuracy(uint8_t instance, float &sacc) const {
         sacc = _RGPJ[instance].sacc;
-        return _RGPJ[instance].speed_accuracy_returncode;
+        return _RGPI[instance].speed_accuracy_returncode;
     }
     bool speed_accuracy(float &sacc) const {
         return speed_accuracy(primary_sensor(), sacc);
@@ -107,7 +107,7 @@ public:
     bool gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg) const {
         yaw_deg = _RGPJ[instance].yaw_deg;
         accuracy_deg = _RGPJ[instance].yaw_accuracy_deg;
-        return _RGPJ[instance].gps_yaw_deg_returncode;
+        return _RGPI[instance].gps_yaw_deg_returncode;
     }
 
     uint8_t num_sensors(void) const {
@@ -125,7 +125,7 @@ public:
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const {
-        return antenna_offset[instance];
+        return _RGPI[instance].antenna_offset;
     }
 
     void start_frame();
@@ -136,7 +136,6 @@ public:
     }
     void handle_message(const log_RGPI &msg) {
         _RGPI[msg.instance] = msg;
-        antenna_offset[msg.instance] = AP::gps().get_antenna_offset(msg.instance);
     }
     void handle_message(const log_RGPJ &msg) {
         _RGPJ[msg.instance] = msg;

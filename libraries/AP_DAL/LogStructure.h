@@ -198,35 +198,36 @@ struct log_RGPH {
 };
 
 // @LoggerMessage: RGPI
-// @Description: Replay Data GPS Instance
+// @Description: Replay Data GPS Instance, infrequently changing data
 struct log_RGPI {
-    uint32_t last_message_time_ms;
-    int32_t lat;
-    int32_t lng;
-    int32_t alt;
-    float hacc;
-    float vacc;
+    Vector3f antenna_offset;
     float lag_sec;
-    uint16_t hdop;
+    uint8_t have_vertical_velocity:1;
+    uint8_t horizontal_accuracy_returncode:1;
+    uint8_t vertical_accuracy_returncode:1;
+    uint8_t get_lag_returncode:1;
+    uint8_t speed_accuracy_returncode:1;
+    uint8_t gps_yaw_deg_returncode:1;
     uint8_t status;
-    uint8_t have_vertical_velocity;
-    uint8_t horizontal_accuracy_returncode;
-    uint8_t vertical_accuracy_returncode;
     uint8_t num_sats;
-    uint8_t get_lag_returncode;
     uint8_t instance;
     uint8_t _end;
 };
 
 // @LoggerMessage: RGPJ
-// @Description: Replay Data GPS Instance - more data
+// @Description: Replay Data GPS Instance - rapidly changing data
 struct log_RGPJ {
+    uint32_t last_message_time_ms;
     Vector3f velocity;
-    uint32_t speed_accuracy_returncode;
     float sacc;
     float yaw_deg;
     float yaw_accuracy_deg;
-    uint8_t gps_yaw_deg_returncode;
+    int32_t lat;
+    int32_t lng;
+    int32_t alt;
+    float hacc;
+    float vacc;
+    uint16_t hdop;
     uint8_t instance;
     uint8_t _end;
 };
@@ -410,9 +411,9 @@ struct log_RBOH {
     { LOG_RGPH_MSG, RLOG_SIZE(RGPH),                                   \
       "RGPH", "BB", "NumInst,Primary", "--", "--" },  \
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \
-      "RGPI", "IiiifffHBBBBBBB", "LMT,lat,lon,alt,ha,va,lg,hdp,st,hvv,harc,varc,ns,lgrc,I", "--------------#", "---------------" }, \
+      "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
-      "RGPJ", "fffIfffBB", "vx,vy,vz,sarc,sa,yd,yda,ydrc,I", "--------#", "---------" }, \
+      "RGPJ", "IffffffiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,Lat,Lon,Alt,HA,VA,HD,I", "-------------#", "--------------" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
       "RMGH", "BBfBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C", "------", "------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
