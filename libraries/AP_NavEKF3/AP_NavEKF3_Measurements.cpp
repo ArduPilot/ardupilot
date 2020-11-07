@@ -18,7 +18,7 @@ void NavEKF3_core::readRangeFinder(void)
     uint8_t minIndex;
     // get theoretical correct range when the vehicle is on the ground
     // don't allow range to go below 5cm because this can cause problems with optical flow processing
-    const auto *_rng = AP::dal().rangefinder();
+    const auto *_rng = dal.rangefinder();
     if (_rng == nullptr) {
         return;
     }
@@ -243,7 +243,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
 // try changing compass, return true if a new compass is found
 void NavEKF3_core::tryChangeCompass(void)
 {
-    const auto &compass = AP::dal().compass();
+    const auto &compass = dal.compass();
     const uint8_t maxCount = compass.get_count();
 
     // search through the list of magnetometers
@@ -280,12 +280,12 @@ void NavEKF3_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF3_core::readMagData()
 {
-    if (!AP::dal().get_compass()) {
+    if (!dal.get_compass()) {
         allMagSensorsFailed = true;
         return;        
     }
 
-    const auto &compass = AP::dal().compass();
+    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -380,7 +380,7 @@ void NavEKF3_core::readMagData()
  */
 void NavEKF3_core::readIMUData()
 {
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
 
     // calculate an averaged IMU update rate using a spike and lowpass filter combination
     dtIMUavg = 0.02f * constrain_float(ins.get_loop_delta_t(),0.5f * dtIMUavg, 2.0f * dtIMUavg) + 0.98f * dtIMUavg;
@@ -521,7 +521,7 @@ void NavEKF3_core::readIMUData()
 // read the delta velocity and corresponding time interval from the IMU
 // return false if data is not available
 bool NavEKF3_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
@@ -540,7 +540,7 @@ void NavEKF3_core::readGpsData()
 {
     // check for new GPS data
     // limit update rate to avoid overflowing the FIFO buffer
-    const auto &gps = AP::dal().gps();
+    const auto &gps = dal.gps();
 
         if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms > frontend->sensorIntervalMin_ms) {
             if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
@@ -653,7 +653,7 @@ void NavEKF3_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                const auto *compass = AP::dal().get_compass();
+                const auto *compass = dal.get_compass();
                 if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
@@ -681,7 +681,7 @@ void NavEKF3_core::readGpsData()
 
             // if the GPS has yaw data then input that as well
             float yaw_deg, yaw_accuracy_deg;
-            if (AP::dal().gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg)) {
+            if (dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg)) {
                 // GPS modules are rather too optimistic about their
                 // accuracy. Set to min of 5 degrees here to prevent
                 // the user constantly receiving warnings about high
@@ -694,7 +694,7 @@ void NavEKF3_core::readGpsData()
         } else {
             // report GPS fix status
             gpsCheckStatus.bad_fix = true;
-            AP::dal().snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
+            dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         }
     }
 }
@@ -702,7 +702,7 @@ void NavEKF3_core::readGpsData()
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
 bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
@@ -721,7 +721,7 @@ void NavEKF3_core::readBaroData()
 {
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // limit update rate to avoid overflowing the FIFO buffer
-    const auto &baro = AP::dal().baro();
+    const auto &baro = dal.baro();
     if (baro.get_last_update(selected_baro) - lastBaroReceived_ms > frontend->sensorIntervalMin_ms) {
 
         baroDataNew.hgt = baro.get_altitude(selected_baro);
@@ -809,11 +809,11 @@ void NavEKF3_core::readAirSpdData()
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
-    const auto *airspeed = AP::dal().airspeed();
+    const auto *airspeed = dal.airspeed();
     if (airspeed &&
         airspeed->use(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * AP::dal().get_EAS2TAS();
+        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * dal.get_EAS2TAS();
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
@@ -839,7 +839,7 @@ void NavEKF3_core::readRngBcnData()
     static_assert(ARRAY_SIZE(rngBcnFusionReport) >= AP_BEACON_MAX_BEACONS, "rngBcnFusionReport should have at least AP_BEACON_MAX_BEACONS elements");
 
     // get the location of the beacon data
-    const AP_DAL_Beacon *beacon = AP::dal().beacon();
+    const AP_DAL_Beacon *beacon = dal.beacon();
 
     // exit immediately if no beacon object
     if (beacon == nullptr) {
@@ -1054,7 +1054,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
  */
 void NavEKF3_core::update_gps_selection(void)
 {
-    const auto &gps = AP::dal().gps();
+    const auto &gps = dal.gps();
 
     // in normal operation use the primary GPS
     selected_gps = gps.primary_sensor();
@@ -1079,7 +1079,7 @@ void NavEKF3_core::update_gps_selection(void)
  */
 void NavEKF3_core::update_mag_selection(void)
 {
-    const auto *compass = AP::dal().get_compass();
+    const auto *compass = dal.get_compass();
     if (compass == nullptr) {
         return;
     }
@@ -1099,7 +1099,7 @@ void NavEKF3_core::update_mag_selection(void)
  */
 void NavEKF3_core::update_baro_selection(void)
 {
-    auto &baro = AP::dal().baro();
+    auto &baro = dal.baro();
 
     // in normal operation use the primary baro
     selected_baro = baro.get_primary();
@@ -1118,7 +1118,7 @@ void NavEKF3_core::update_baro_selection(void)
  */
 void NavEKF3_core::update_airspeed_selection(void)
 {
-    const auto *arsp = AP::dal().airspeed();
+    const auto *arsp = dal.airspeed();
     if (arsp == nullptr) {
         return;
     }
@@ -1188,7 +1188,7 @@ void NavEKF3_core::getTimingStatistics(struct ekf_timing &_timing)
  */
 void NavEKF3_core::learnInactiveBiases(void)
 {
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
 
     // learn gyro biases
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -1264,7 +1264,7 @@ float NavEKF3_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return AP::dal().get_compass()->get_declination();
+    return dal.get_compass()->get_declination();
 }
 
 /*
@@ -1289,7 +1289,7 @@ void NavEKF3_core::updateMovementCheck(void)
     const float dtEkfAvgInv = 1.0f / dtEkfAvg;
 
     // get latest bias corrected gyro and accelerometer data
-    const auto &ins = AP::dal().ins();
+    const auto &ins = dal.ins();
     Vector3f gyro = ins.get_gyro(gyro_index_active) - stateStruct.gyro_bias * dtEkfAvgInv;
     Vector3f accel = ins.get_accel(accel_index_active) - stateStruct.accel_bias * dtEkfAvgInv;
 
@@ -1339,7 +1339,7 @@ void NavEKF3_core::updateMovementCheck(void)
         lastMoveCheckLogTime_ms = imuSampleTime_ms;
         const struct log_XKFM pkt{
             LOG_PACKET_HEADER_INIT(LOG_XKFM_MSG),
-            time_us            : AP::dal().micros64(),
+            time_us            : dal.micros64(),
             core               : core_index,
             ongroundnotmoving  : onGroundNotMoving,
             gyro_length_ratio  : gyro_length_ratio,
