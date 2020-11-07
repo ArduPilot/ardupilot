@@ -22,10 +22,11 @@ void AP_DAL_Beacon::start_frame()
         _RBCH.count = bcon->count();
         _RBCH.get_vehicle_position_ned_returncode = bcon->get_vehicle_position_ned(_RBCH.vehicle_position_ned, _RBCH.accuracy_estimate);
 
-        _RBCH.get_origin_returncode = bcon->get_origin(_origin);
-        _RBCH.origin_lat = _origin.lat;
-        _RBCH.origin_lng = _origin.lng;
-        _RBCH.origin_alt = _origin.alt;
+        Location loc;
+        _RBCH.get_origin_returncode = bcon->get_origin(loc);
+        _RBCH.origin_lat = loc.lat;
+        _RBCH.origin_lng = loc.lng;
+        _RBCH.origin_alt = loc.alt;
     }
     WRITE_REPLAY_BLOCK_IFCHANGD(RBCH, _RBCH, old);
     if (bcon == nullptr) {
@@ -36,7 +37,6 @@ void AP_DAL_Beacon::start_frame()
         log_RBCI &RBCI = _RBCI[i];
         const log_RBCI old_RBCI = RBCI;
         const uint32_t last_update_ms = bcon->beacon_last_update_ms(i);
-        _last_logged_update_ms[i] = last_update_ms;
         RBCI.last_update_ms = last_update_ms;
         RBCI.position = bcon->beacon_position(i);
         RBCI.distance = bcon->beacon_distance(i);

@@ -60,6 +60,4 @@ private:
 
     struct log_RASH _RASH;
     struct log_RASI _RASI[AIRSPEED_MAX_SENSORS];
-
-    uint32_t _last_logged_update_ms[AIRSPEED_MAX_SENSORS];
 };
