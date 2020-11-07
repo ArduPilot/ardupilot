@@ -866,7 +866,7 @@ void AP_Baro::update(void)
 
     // logging
 #ifndef HAL_NO_LOGGING
-    if (should_log() && !AP::ahrs().have_ekf_logging()) {
+    if (should_log()) {
         AP::logger().Write_Baro();
     }
 #endif
