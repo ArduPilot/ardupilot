@@ -16,8 +16,8 @@ void AP_DAL_Beacon::start_frame()
 {
     const auto *bcon = AP::beacon();
 
-    _RBCH.ptr_is_nullptr = (bcon == nullptr);
     const log_RBCH old = _RBCH;
+    _RBCH.ptr_is_nullptr = (bcon == nullptr);
     if (bcon != nullptr) {
         _RBCH.count = bcon->count();
         _RBCH.get_vehicle_position_ned_returncode = bcon->get_vehicle_position_ned(_RBCH.vehicle_position_ned, _RBCH.accuracy_estimate);
@@ -36,8 +36,7 @@ void AP_DAL_Beacon::start_frame()
     for (uint8_t i=0; i<ARRAY_SIZE(_RBCI); i++) {
         log_RBCI &RBCI = _RBCI[i];
         const log_RBCI old_RBCI = RBCI;
-        const uint32_t last_update_ms = bcon->beacon_last_update_ms(i);
-        RBCI.last_update_ms = last_update_ms;
+        RBCI.last_update_ms = bcon->beacon_last_update_ms(i);
         RBCI.position = bcon->beacon_position(i);
         RBCI.distance = bcon->beacon_distance(i);
         RBCI.healthy = bcon->beacon_healthy(i);
