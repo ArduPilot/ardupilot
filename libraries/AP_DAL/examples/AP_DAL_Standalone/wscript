@@ -19,6 +19,6 @@ def build(bld):
     )
 
     bld.ap_program(
-        program_groups=['examples'],
+        program_groups=['tools'],
         use='AP_DAL_libs',
     )
