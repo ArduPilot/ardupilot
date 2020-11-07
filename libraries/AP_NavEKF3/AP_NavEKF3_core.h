@@ -593,13 +593,13 @@ private:
         Vector2f    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
         uint32_t    time_ms;        // measurement timestamp (msec)
         Vector3f    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
-        const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
+        Vector3f    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
     };
 
     struct vel_odm_elements {
         Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
         float           velErr;     // velocity measurement error 1-std (m/s)
-        const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
+        Vector3f        body_offset;// XYZ position of the velocity sensor in body frame (m)
         Vector3f        angRate;    // angular rate estimated from odometry (rad/sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
@@ -607,7 +607,7 @@ private:
     struct wheel_odm_elements {
         float           delAng;     // wheel rotation angle measured in body frame - positive is forward movement of vehicle (rad/s)
         float           radius;     // wheel radius (m)
-        const Vector3f *hub_offset; // pointer to XYZ position of the wheel hub in body frame (m)
+        Vector3f        hub_offset; // XYZ position of the wheel hub in body frame (m)
         float           delTime;    // time interval that the measurement was accumulated over (sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
