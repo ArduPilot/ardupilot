@@ -405,6 +405,8 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
 
     // do not use z-axis desired velocity feed forward
     _vel_desired.z = 0.0f;
+
+    clear_ekf_z_reset();
 }
 
 /// set_alt_target_from_climb_rate_ff - adjusts target up or down using a climb rate in cm/s using feed-forward
@@ -450,6 +452,8 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     if ((_vel_desired.z < 0 && (!_motors.limit.throttle_lower || force_descend)) || (_vel_desired.z > 0 && !_motors.limit.throttle_upper && !_limit.pos_up)) {
         _pos_target.z += _vel_desired.z * dt;
     }
+
+    clear_ekf_z_reset();
 }
 
 /// add_takeoff_climb_rate - adjusts alt target up or down using a climb rate in cm/s
@@ -478,6 +482,7 @@ void AC_PosControl::relax_alt_hold_controllers(float throttle_setting)
     _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
     _accel_target.z = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
     _pid_accel_z.reset_filter();
+    clear_ekf_z_reset();
 }
 
 // get_alt_error - returns altitude error in cm
