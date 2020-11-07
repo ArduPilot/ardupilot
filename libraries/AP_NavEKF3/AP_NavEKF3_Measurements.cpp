@@ -682,7 +682,7 @@ void NavEKF3_core::readGpsData()
 
             // if the GPS has yaw data then input that as well
             float yaw_deg, yaw_accuracy_deg;
-            if (AP::dal().gps().gps_yaw_deg(yaw_deg, yaw_accuracy_deg)) {
+            if (AP::dal().gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg)) {
                 // GPS modules are rather too optimistic about their
                 // accuracy. Set to min of 5 degrees here to prevent
                 // the user constantly receiving warnings about high
