@@ -10,7 +10,7 @@ class AP_DAL_Beacon {
 public:
 
     // Beacon-like methods:
-    bool count() const {
+    uint8_t count() const {
         return _RBCH.count;
     }
 
