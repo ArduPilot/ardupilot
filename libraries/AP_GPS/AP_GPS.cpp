@@ -842,8 +842,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
-    if (data_should_be_logged &&
-        (should_log() || AP::ahrs().have_ekf_logging())) {
+    if (data_should_be_logged && should_log()) {
         AP::logger().Write_GPS(instance);
     }
 
