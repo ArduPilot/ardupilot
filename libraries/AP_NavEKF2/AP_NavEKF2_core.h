@@ -500,11 +500,11 @@ private:
     };
 
     struct of_elements {
-        Vector2f    flowRadXY;      // 0..1
-        Vector2f    flowRadXYcomp;  // 2..3
-        uint32_t    time_ms;        // 4
-        Vector3f    bodyRadXYZ;     //8..10
-        const Vector3f *body_offset;// 5..7
+        Vector2f    flowRadXY;
+        Vector2f    flowRadXYcomp;
+        uint32_t    time_ms;
+        Vector3f    bodyRadXYZ;
+        Vector3f    body_offset;
     };
 
     struct ext_nav_elements {
