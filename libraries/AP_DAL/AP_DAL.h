@@ -1,9 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-
-#include <cstddef>
-
 #include "AP_DAL_InertialSensor.h"
 #include "AP_DAL_Baro.h"
 #include "AP_DAL_GPS.h"
@@ -15,6 +11,10 @@
 
 #include "LogStructure.h"
 
+#include <stdint.h>
+#include <cstddef>
+
+
 #define DAL_CORE(c) AP::dal().logging_core(c)
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -25,16 +25,16 @@ class NavEKF3;
 class AP_DAL {
 public:
 
-    enum class FrameType {
-        InitialiseFilterEKF2 = 1<<0,
-        UpdateFilterEKF2 = 1<<1,
+    enum class FrameType : uint8_t {
+        InitialiseFilterEKF2 = 1U<<0,
+        UpdateFilterEKF2 = 1U<<1,
         InitialiseFilterEKF3 = 1<<2,
         UpdateFilterEKF3 = 1<<3,
         LogWriteEKF2 = 1<<4,
         LogWriteEKF3 = 1<<5,
     };
 
-    enum class Event2 {
+    enum class Event2 : uint8_t {
         resetGyroBias             =  0,
         resetHeightDatum          =  1,
         setInhibitGPS             =  2,
@@ -50,7 +50,7 @@ public:
         checkLaneSwitch           = 12,
     };
 
-    enum class Event3 {
+    enum class Event3 : uint8_t {
         resetGyroBias             =  0,
         resetHeightDatum          =  1,
         setInhibitGPS             =  2,
@@ -350,7 +350,7 @@ private:
 };
 
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))
-#define WRITE_REPLAY_BLOCK_IFCHANGD(sname,v,old) do { static_assert(sizeof(v) == sizeof(old), "types must match"); \
+#define WRITE_REPLAY_BLOCK_IFCHANGED(sname,v,old) do { static_assert(sizeof(v) == sizeof(old), "types must match"); \
                                                       AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, &old, offsetof(log_ ##sname, _end)); } \
                                                  while (0)
 

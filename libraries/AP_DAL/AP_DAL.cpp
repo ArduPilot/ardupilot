@@ -12,10 +12,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-enum class FrameItem : uint8_t {
-    AVAILABLE_MEMORY = 0,
-};
-
 AP_DAL *AP_DAL::_singleton = nullptr;
 
 bool AP_DAL::force_write;
@@ -67,7 +63,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.ahrs_airspeed_sensor_enabled = AP::ahrs().airspeed_sensor_enabled();
     _RFRN.available_memory = hal.util->available_memory();
-    WRITE_REPLAY_BLOCK_IFCHANGD(RFRN, _RFRN, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
     _rotation_vehicle_body_to_autopilot_body = ahrs.get_rotation_vehicle_body_to_autopilot_body();
@@ -274,7 +270,7 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     _ROFH.rawGyroRates = rawGyroRates;
     _ROFH.msecFlowMeas = msecFlowMeas;
     _ROFH.posOffset = posOffset;
-    WRITE_REPLAY_BLOCK_IFCHANGD(ROFH, _ROFH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
 }
 
 // log external navigation data
@@ -290,7 +286,7 @@ void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float 
     _REPH.timeStamp_ms = timeStamp_ms;
     _REPH.delay_ms = delay_ms;
     _REPH.resetTime_ms = resetTime_ms;
-    WRITE_REPLAY_BLOCK_IFCHANGD(REPH, _REPH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(REPH, _REPH, old);
 }
 
 // log external velocity data
@@ -303,7 +299,7 @@ void AP_DAL::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSta
     _REVH.err = err;
     _REVH.timeStamp_ms = timeStamp_ms;
     _REVH.delay_ms = delay_ms;
-    WRITE_REPLAY_BLOCK_IFCHANGD(REVH, _REVH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(REVH, _REVH, old);
 
 }
 
@@ -318,7 +314,7 @@ void AP_DAL::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, 
     _RWOH.timeStamp_ms = timeStamp_ms;
     _RWOH.posOffset = posOffset;
     _RWOH.radius = radius;
-    WRITE_REPLAY_BLOCK_IFCHANGD(RWOH, _RWOH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RWOH, _RWOH, old);
 }
 
 void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
@@ -331,7 +327,7 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
     _RBOH.delAng = delAng;
     _RBOH.delTime = delTime;
     _RBOH.timeStamp_ms = timeStamp_ms;
-    WRITE_REPLAY_BLOCK_IFCHANGD(RBOH, _RBOH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RBOH, _RBOH, old);
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)

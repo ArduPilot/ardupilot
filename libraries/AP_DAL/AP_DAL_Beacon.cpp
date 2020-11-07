@@ -28,7 +28,7 @@ void AP_DAL_Beacon::start_frame()
         _RBCH.origin_lng = loc.lng;
         _RBCH.origin_alt = loc.alt;
     }
-    WRITE_REPLAY_BLOCK_IFCHANGD(RBCH, _RBCH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RBCH, _RBCH, old);
     if (bcon == nullptr) {
         return;
     }
@@ -41,6 +41,6 @@ void AP_DAL_Beacon::start_frame()
         RBCI.distance = bcon->beacon_distance(i);
         RBCI.healthy = bcon->beacon_healthy(i);
 
-        WRITE_REPLAY_BLOCK_IFCHANGD(RBCI, RBCI, old_RBCI);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RBCI, RBCI, old_RBCI);
     }
 }
