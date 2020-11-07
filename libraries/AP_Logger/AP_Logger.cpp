@@ -899,9 +899,14 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
 #endif
 }
 
+/*
+  when we are doing replay logging we want to delay start of the EKF
+  until after the headers are out so that on replay all parameter
+  values are available
+ */
 bool AP_Logger::allow_start_ekf() const
 {
-    if (!AP::logger().log_replay()) {
+    if (!log_replay() || !log_while_disarmed()) {
         return true;
     }
 
