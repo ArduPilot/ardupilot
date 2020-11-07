@@ -19,7 +19,8 @@ public:
 
     VehicleType::vehicle_type vehicle;
 
-    bool set_parameter(const char *name, float value);
+    bool check_user_param(const char *name);
+    bool set_parameter(const char *name, float value, bool force=false);
 
     void set_accel_mask(uint8_t mask) { accel_mask = mask; }
     void set_gyro_mask(uint8_t mask) { gyro_mask = mask; }

@@ -1,6 +1,7 @@
 #include "LogReader.h"
 
 #include "MsgHandler.h"
+#include "Replay.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -15,10 +16,6 @@
 #endif
 
 #define streq(x, y) (!strcmp(x, y))
-
-// const struct LogStructure running_codes_log_structure[] = {
-//     LOG_COMMON_STRUCTURES,
-// };
 
 LogReader::LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf2, NavEKF3 &_ekf3) :
     AP_LoggerFileReader(),
@@ -254,14 +251,31 @@ bool LogReader::handle_msg(const struct log_Format &f, uint8_t *msg) {
 
     return true;
 }
-       #include <sys/types.h>
-       #include <signal.h>
 
-bool LogReader::set_parameter(const char *name, float value)
+#include <sys/types.h>
+#include <signal.h>
+
+extern struct user_parameter *user_parameters;
+
+/*
+  see if a user parameter is set
+ */
+bool LogReader::check_user_param(const char *name)
 {
-    // if (!strcmp(name, "EK3_ENABLE")) {
-    //     kill(0, SIGTRAP);
-    // }
+    for (struct user_parameter *u=user_parameters; u; u=u->next) {
+        if (strcmp(name, u->name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool LogReader::set_parameter(const char *name, float value, bool force)
+{
+    if (!force && check_user_param(name)) {
+        // ignore user set parameters
+        return false;
+    }
     enum ap_var_type var_type;
     AP_Param *vp = AP_Param::find(name, &var_type);
     if (vp == NULL) {

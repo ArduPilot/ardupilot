@@ -17,6 +17,14 @@
 
 #include "LogReader.h"
 
+struct user_parameter {
+    struct user_parameter *next;
+    char name[17];
+    float value;
+};
+
+extern user_parameter *user_parameters;
+
 class ReplayVehicle : public AP_Vehicle {
 public:
     friend class Replay;
@@ -67,6 +75,9 @@ public:
     void setup() override;
     void loop() override;
 
+    // return true if a user parameter of name is set
+    bool check_user_param(const char *name);
+    
 private:
     const char *filename;
     ReplayVehicle &_vehicle;
@@ -75,5 +86,8 @@ private:
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
-
+    void set_user_parameters(void);
+    bool parse_param_line(char *line, char **vname, float &value);
+    void load_param_file(const char *filename);
+    void usage();
 };
