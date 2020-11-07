@@ -2005,12 +2005,10 @@ void NavEKF3_core::verifyTiltErrorVariance()
     }
 
     tiltErrorVarianceAlt = MIN(tiltErrorVarianceAlt, sq(radians(30.0f)));
-#if 0
     static uint32_t lastLogTime_ms = 0;
     if (imuSampleTime_ms - lastLogTime_ms > 500) {
         lastLogTime_ms = imuSampleTime_ms;
-
-        const struct log_XKTV msg{
+        const struct log_XKTV msg {
             LOG_PACKET_HEADER_INIT(LOG_XKTV_MSG),
             time_us      : dal.micros64(),
             core         : core_index,
@@ -2019,6 +2017,5 @@ void NavEKF3_core::verifyTiltErrorVariance()
         };
         AP::logger().WriteBlock(&msg, sizeof(msg));
     }
-#endif
 }
 #endif
