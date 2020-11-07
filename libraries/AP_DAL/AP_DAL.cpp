@@ -184,7 +184,7 @@ void AP_DAL::log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t 
 #endif
 }
 
-int AP_DAL::snprintf(char* str, size_t size, const char *format, ...)
+int AP_DAL::snprintf(char* str, size_t size, const char *format, ...) const
 {
     va_list ap;
     va_start(ap, format);
@@ -193,7 +193,7 @@ int AP_DAL::snprintf(char* str, size_t size, const char *format, ...)
     return res;
 }
 
-void *AP_DAL::malloc_type(size_t size, Memory_Type mem_type)
+void *AP_DAL::malloc_type(size_t size, Memory_Type mem_type) const
 {
     return hal.util->malloc_type(size, AP_HAL::Util::Memory_Type(mem_type));
 }
