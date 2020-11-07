@@ -17,10 +17,8 @@
 
 #define DAL_CORE(c) AP::dal().logging_core(c)
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
 class NavEKF2;
 class NavEKF3;
-#endif
 
 class AP_DAL {
 public:
@@ -222,7 +220,6 @@ public:
     void writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset);
 
     // Replay support:
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RFRH &msg) {
         _RFRH = msg;
         _micros = _RFRH.time_us;
@@ -297,7 +294,6 @@ public:
     void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
-#endif
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
