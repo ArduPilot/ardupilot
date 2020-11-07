@@ -268,13 +268,6 @@ void LR_MsgHandler_REVH::process_message(uint8_t *msg)
 bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
     const char *ignore_parms[] = {
-        // "GPS_TYPE",
-        // "AHRS_EKF_TYPE",
-        // "EK2_ENABLE",
-        // "EK3_ENABLE",
-        // "COMPASS_ORIENT",
-        // "COMPASS_ORIENT2",
-        // "COMPASS_ORIENT3",
         "LOG_FILE_BUFSIZE",
         "LOG_DISARMED"
     };
@@ -307,9 +300,5 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
     float value = require_field_float(msg, "Value");
-    // if (globals.no_params || replay.check_user_param(parameter_name)) {
-    //     printf("Not changing %s to %f\n", parameter_name, value);
-    // } else {
     set_parameter(parameter_name, value);
-    // }
 }
