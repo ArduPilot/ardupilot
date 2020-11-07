@@ -5,8 +5,6 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 
-#include <stdio.h>
-
 extern const AP_HAL::HAL& hal;
 
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances

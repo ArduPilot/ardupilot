@@ -4,8 +4,6 @@
 #include "AP_NavEKF2_core.h"
 #include <GCS_MAVLink/GCS.h>
 
-#include <stdio.h>
-
 extern const AP_HAL::HAL& hal;
 
 
