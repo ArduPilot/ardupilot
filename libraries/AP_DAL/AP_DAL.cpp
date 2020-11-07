@@ -416,7 +416,11 @@ AP_DAL &dal()
 
 };
 
-void xxprintf(const char *format, ...)
+/*
+  replay printf. To debug replay failures add rprintf() calls into
+  EKF2/EKF3 and compare /tmp/replay.log to /tmp/real.log
+ */
+void rprintf(const char *format, ...)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
