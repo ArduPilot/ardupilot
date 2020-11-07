@@ -242,6 +242,11 @@ void LR_MsgHandler_ROFH::process_message(uint8_t *msg)
     AP::dal().handle_message(MSG_CAST(ROFH,msg), ekf2, ekf3);
 }
 
+void LR_MsgHandler_RWOH::process_message(uint8_t *msg)
+{
+    AP::dal().handle_message(MSG_CAST(RWOH,msg), ekf2, ekf3);
+}
+
 void LR_MsgHandler_REPH::process_message(uint8_t *msg)
 {
     AP::dal().handle_message(MSG_CAST(REPH,msg), ekf2, ekf3);
