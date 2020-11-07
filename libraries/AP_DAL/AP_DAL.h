@@ -217,6 +217,9 @@ public:
     void writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms);
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    // log wheel odomotry data
+    void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
+
     // Replay support:
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RFRH &msg) {
@@ -291,6 +294,7 @@ public:
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 #endif
 
     // map core number for replay
@@ -313,6 +317,7 @@ private:
     struct log_ROFH _ROFH;
     struct log_REPH _REPH;
     struct log_REVH _REVH;
+    struct log_RWOH _RWOH;
 
     // cached variables for speed:
     uint32_t _micros;

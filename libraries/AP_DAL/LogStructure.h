@@ -35,7 +35,8 @@
     LOG_RMGI_MSG, \
     LOG_ROFH_MSG, \
     LOG_REPH_MSG, \
-    LOG_REVH_MSG
+    LOG_REVH_MSG, \
+    LOG_RWOH_MSG
 
 // Replay Data Structures
 struct log_RFRH {
@@ -342,6 +343,17 @@ struct log_REVH {
     uint8_t _end;
 };
 
+// @LoggerMessage: RWOH
+// @Description: Replay wheel odometry data
+struct log_RWOH {
+    float delAng;
+    float delTime;
+    uint32_t timeStamp_ms;
+    Vector3f posOffset;
+    float radius;
+    uint8_t _end;
+};
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -402,4 +414,6 @@ struct log_REVH {
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_REVH_MSG, RLOG_SIZE(REVH),                                   \
-      "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" },
+      "REVH", "ffffIH", "VX,VY,VZ,Er,TS,D", "------", "------" }, \
+    { LOG_RWOH_MSG, RLOG_SIZE(RWOH),                                   \
+      "RWOH", "ffIffff", "DA,DT,TS,PX,PY,PZ,R", "-------", "-------" },
