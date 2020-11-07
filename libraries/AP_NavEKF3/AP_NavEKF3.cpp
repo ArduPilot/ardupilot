@@ -658,7 +658,6 @@ NavEKF3::NavEKF3()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#include <stdio.h>
 
 // Initialise the filter
 bool NavEKF3::InitialiseFilter(void)
@@ -1519,7 +1518,7 @@ void NavEKF3::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, fl
 */
 void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
-    // AP::dal().log_WriteBodyFrameOdom(....);
+    AP::dal().writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, delay_ms, posOffset);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
