@@ -29,9 +29,6 @@ public:
         return RVOH.pos_offset;
     }
 
-    // AP_DAL methods:
-    AP_DAL_VisualOdom();
-
     AP_DAL_VisualOdom *visualodom() {
         if (RVOH.ptr_is_nullptr) {
             return nullptr;

@@ -19,7 +19,7 @@ void AP_DAL_GPS::start_frame()
     _RGPH.primary_sensor = gps.primary_sensor();
     _RGPH.num_sensors = gps.num_sensors();
 
-    WRITE_REPLAY_BLOCK_IFCHANGD(RGPH, _RGPH, old_RGPH);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RGPH, _RGPH, old_RGPH);
 
     for (uint8_t i=0; i<ARRAY_SIZE(_RGPI); i++) {
         log_RGPI &RGPI = _RGPI[i];
@@ -39,7 +39,7 @@ void AP_DAL_GPS::start_frame()
         RGPI.hdop = gps.get_hdop(i);
         RGPI.num_sats = gps.num_sats(i);
         RGPI.get_lag_returncode = gps.get_lag(i, RGPI.lag_sec);
-        WRITE_REPLAY_BLOCK_IFCHANGD(RGPI, RGPI, old_RGPI);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
 
         log_RGPJ &RGPJ = _RGPJ[i];
         const log_RGPJ old_RGPJ = RGPJ;
@@ -47,7 +47,7 @@ void AP_DAL_GPS::start_frame()
         RGPJ.velocity = gps.velocity(i);
         RGPJ.speed_accuracy_returncode = gps.speed_accuracy(i, RGPJ.sacc);
         RGPJ.gps_yaw_deg_returncode = gps.gps_yaw_deg(i, RGPJ.yaw_deg, RGPJ.yaw_accuracy_deg);
-        WRITE_REPLAY_BLOCK_IFCHANGD(RGPJ, RGPJ, old_RGPJ);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
 
         // also fetch antenna offset for this frame
         antenna_offset[i] = gps.get_antenna_offset(i);

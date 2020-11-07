@@ -23,9 +23,9 @@ void AP_DAL_Compass::start_frame()
     _RMGH.num_enabled = compass.get_num_enabled();
     _RMGH.consistent = compass.consistent();
 
-    WRITE_REPLAY_BLOCK_IFCHANGD(RMGH, _RMGH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RMGH, _RMGH, old);
 
-    for (uint8_t i=0; i<ARRAY_SIZE(_RMGI); i++) {
+    for (uint8_t i=0; i<_RMGH.count; i++) {
         log_RMGI &RMGI = _RMGI[i];
         const log_RMGI old_RMGI = RMGI;
         RMGI.use_for_yaw = compass.use_for_yaw(i);
@@ -35,6 +35,6 @@ void AP_DAL_Compass::start_frame()
         RMGI.last_update_usec = compass.last_update_usec(i);
         RMGI.field = compass.get_field(i);
 
-        WRITE_REPLAY_BLOCK_IFCHANGD(RMGI, RMGI, old_RMGI);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RMGI, RMGI, old_RMGI);
     }
 }

@@ -20,7 +20,7 @@ void AP_DAL_Airspeed::start_frame()
     const log_RASH old = _RASH;
     _RASH.num_sensors = airspeed->get_num_sensors();
     _RASH.primary = airspeed->get_primary();
-    WRITE_REPLAY_BLOCK_IFCHANGD(RASH, _RASH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RASH, _RASH, old);
 
     for (uint8_t i=0; i<ARRAY_SIZE(_RASI); i++) {
         log_RASI &RASI = _RASI[i];
@@ -29,6 +29,6 @@ void AP_DAL_Airspeed::start_frame()
         RASI.healthy = airspeed->healthy(i);
         RASI.use = airspeed->use(i);
         RASI.airspeed = airspeed->get_airspeed(i);
-        WRITE_REPLAY_BLOCK_IFCHANGD(RASI, RASI, old_RASI);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RASI, RASI, old_RASI);
     }
 }
