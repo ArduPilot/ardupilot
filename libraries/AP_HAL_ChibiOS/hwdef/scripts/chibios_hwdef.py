@@ -1017,6 +1017,8 @@ def write_IMU_config(f):
             '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
             % (n, wrapper, driver, ','.join(dev[1:])))
     if len(devlist) > 0:
+        if len(devlist) < 3:
+            f.write('#define INS_MAX_INSTANCES %u\n' % len(devlist))
         f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
 
