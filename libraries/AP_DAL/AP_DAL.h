@@ -86,9 +86,9 @@ public:
 
     void start_frame(FrameType frametype);
     void end_frame(void);
-    uint64_t micros64() { return _RFRH.time_us; }
-    uint32_t micros() { return _micros; }
-    uint32_t millis() { return _millis; }
+    uint64_t micros64() const { return _RFRH.time_us; }
+    uint32_t micros() const { return _micros; }
+    uint32_t millis() const { return _millis; }
 
     void log_event2(Event2 event);
     void log_SetOriginLLH2(const Location &loc);
@@ -113,27 +113,27 @@ public:
     bool ekf_low_time_remaining(EKFType etype, uint8_t core);
     
     // returns armed state for the current frame
-    bool get_armed() { return _RFRN.state_bitmask & uint8_t(StateMask::ARMED); }
+    bool get_armed() const { return _RFRN.state_bitmask & uint8_t(StateMask::ARMED); }
 
     // memory available at start of current frame.  While this could
     // potentially change as we go through the frame, the
     // ramifications of being out of memory are that you don't start
     // the EKF, so the simplicity of having one value for the entire
     // frame is worthwhile.
-    uint32_t available_memory() { return _RFRN.available_memory; }
+    uint32_t available_memory() const { return _RFRN.available_memory; }
 
     int8_t get_ekf_type(void) const {
         return _RFRN.ekf_type;
     }
 
-    int snprintf(char* str, size_t size, const char *format, ...);
+    int snprintf(char* str, size_t size, const char *format, ...) const;
 
     // copied in AP_HAL/Util.h
     enum Memory_Type {
         MEM_DMA_SAFE,
         MEM_FAST
     };
-    void *malloc_type(size_t size, enum Memory_Type mem_type);
+    void *malloc_type(size_t size, enum Memory_Type mem_type) const;
 
     AP_DAL_InertialSensor &ins() { return _ins; }
     AP_DAL_Baro &baro() { return _baro; }
