@@ -40,14 +40,12 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RBRH &msg) {
         _RBRH = msg;
     }
     void handle_message(const log_RBRI &msg) {
         _RBRI[msg.instance] = msg;
     }
-#endif
 
 private:
 
