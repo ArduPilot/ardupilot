@@ -53,7 +53,6 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RISH &msg) {
         _RISH = msg;
     }
@@ -62,7 +61,6 @@ public:
         pos[msg.instance] = AP::ins().get_imu_pos_offset(msg.instance);
         update_filtered(msg.instance);
     }
-#endif
 
 private:
     // filter constant for deltas to gyro/accel

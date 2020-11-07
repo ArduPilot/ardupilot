@@ -58,14 +58,12 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RMGH &msg) {
         _RMGH = msg;
     }
     void handle_message(const log_RMGI &msg) {
         _RMGI[msg.instance] = msg;
     }
-#endif
 
 private:
 

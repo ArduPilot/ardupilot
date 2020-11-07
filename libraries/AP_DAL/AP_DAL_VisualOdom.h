@@ -38,11 +38,9 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RVOH &msg) {
         RVOH = msg;
    }
-#endif
 
 private:
 

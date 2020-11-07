@@ -30,14 +30,12 @@ public:
 
     class AP_DAL_RangeFinder_Backend *get_backend(uint8_t id) const;
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RRNH &msg) {
         _RRNH = msg;
     }
     void handle_message(const log_RRNI &msg) {
         _RRNI[msg.instance] = msg;
     }
-#endif
 
 private:
 

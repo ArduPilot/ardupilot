@@ -130,7 +130,6 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RGPH &msg) {
         _RGPH = msg;
     }
@@ -140,7 +139,6 @@ public:
     void handle_message(const log_RGPJ &msg) {
         _RGPJ[msg.instance] = msg;
     }
-#endif
 
 private:
 

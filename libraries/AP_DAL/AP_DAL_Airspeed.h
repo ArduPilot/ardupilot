@@ -47,14 +47,12 @@ public:
 
     void start_frame();
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
     void handle_message(const log_RASH &msg) {
         _RASH = msg;
     }
     void handle_message(const log_RASI &msg) {
         _RASI[msg.instance] = msg;
     }
-#endif
 
 private:
 
