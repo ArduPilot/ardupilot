@@ -30,6 +30,9 @@
 
 static ReplayVehicle replayvehicle;
 
+// list of user parameters
+user_parameter *user_parameters;
+
 #define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
@@ -116,20 +119,56 @@ void ReplayVehicle::init_ardupilot(void)
     logger.set_force_log_disarmed(true);
 }
 
+void Replay::usage(void)
+{
+    ::printf("Options:\n");
+    ::printf("\t--parm NAME=VALUE  set parameter NAME to VALUE\n");
+    ::printf("\t--param-file FILENAME  load parameters from a file\n");
+}
+
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
     const struct GetOptLong::option options[] = {
         // name           has_arg flag   val
+        {"parm",            true,   0, 'p'},
+        {"param",           true,   0, 'p'},
+        {"param-file",      true,   0, 'F'},
+        {"help",            false,  0, 'h'},
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "r:p:ha:g:A:n", options);
+    GetOptLong gopt(argc, argv, "p:F:h", options);
 
     int opt;
     while ((opt = gopt.getoption()) != -1) {
+		switch (opt) {
+        case 'p': {
+            const char *eq = strchr(gopt.optarg, '=');
+            if (eq == NULL) {
+                ::printf("Usage: -p NAME=VALUE\n");
+                exit(1);
+            }
+            struct user_parameter *u = new user_parameter;
+            strncpy(u->name, gopt.optarg, eq-gopt.optarg);
+            u->value = atof(eq+1);
+            u->next = user_parameters;
+            user_parameters = u;
+            break;
+        }
+
+        case 'F':
+            load_param_file(gopt.optarg);
+            break;
+
+        case 'h':
+        default:
+            usage();
+            exit(0);
+        }
     }
-       argv += gopt.optind;
-       argc -= gopt.optind;
+
+	argv += gopt.optind;
+	argc -= gopt.optind;
 
     if (argc > 0) {
         filename = argv[0];
@@ -148,6 +187,8 @@ void Replay::setup()
     _parse_command_line(argc, argv);
 
     _vehicle.setup();
+
+    set_user_parameters();
 }
 
 void Replay::loop()
@@ -165,6 +206,72 @@ void Replay::loop()
     ((Linux::Scheduler*)hal.scheduler)->teardown();
 
     exit(0);
+}
+
+/*
+  setup user -p parameters
+ */
+void Replay::set_user_parameters(void)
+{
+    for (struct user_parameter *u=user_parameters; u; u=u->next) {
+        if (!reader.set_parameter(u->name, u->value, true)) {
+            ::printf("Failed to set parameter %s to %f\n", u->name, u->value);
+            exit(1);
+        }
+    }
+}
+
+/*
+  parse a parameter file line
+ */
+bool Replay::parse_param_line(char *line, char **vname, float &value)
+{
+    if (line[0] == '#') {
+        return false;
+    }
+    char *saveptr = NULL;
+    char *pname = strtok_r(line, ", =\t", &saveptr);
+    if (pname == NULL) {
+        return false;
+    }
+    if (strlen(pname) > AP_MAX_NAME_SIZE) {
+        return false;
+    }
+    const char *value_s = strtok_r(NULL, ", =\t", &saveptr);
+    if (value_s == NULL) {
+        return false;
+    }
+    value = atof(value_s);
+    *vname = pname;
+    return true;
+}
+
+
+/*
+  load a default set of parameters from a file
+ */
+void Replay::load_param_file(const char *pfilename)
+{
+    FILE *f = fopen(pfilename, "r");
+    if (f == NULL) {
+        printf("Failed to open parameter file: %s\n", pfilename);
+        exit(1);
+    }
+    char line[100];
+
+    while (fgets(line, sizeof(line)-1, f)) {
+        char *pname;
+        float value;
+        if (!parse_param_line(line, &pname, value)) {
+            continue;
+        }
+        struct user_parameter *u = new user_parameter;
+        strncpy(u->name, pname, sizeof(u->name));
+        u->value = value;
+        u->next = user_parameters;
+        user_parameters = u;
+    }
+    fclose(f);
 }
 
 Replay replay(replayvehicle);
