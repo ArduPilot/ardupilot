@@ -214,9 +214,12 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     if (roll_cd > 9000) {
         roll_cd = 18000 - roll_cd;
     }
+
     if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
         roll_cd > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > uint32_t(transition_time_ms)) {
+        inertial_nav.get_velocity_z() >= vertical_acceleration_min_climb_rate * 100.0f ||
+        (AP_HAL::millis() - transition_start_ms > vertical_acceleration_time && 
+        (uint32_t)(AP_HAL::millis() - transition_start_ms - vertical_acceleration_time) > uint32_t(transition_time_ms))) {
         return true;
     }
     // still waiting

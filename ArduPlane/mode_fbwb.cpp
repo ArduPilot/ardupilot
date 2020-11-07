@@ -13,7 +13,7 @@ bool ModeFBWB::_enter()
 #endif
 
     plane.set_target_altitude_current();
-
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "SET TARGET ALTITUDE");
     return true;
 }
 
@@ -23,6 +23,4 @@ void ModeFBWB::update()
     plane.nav_roll_cd = plane.channel_roll->norm_input() * plane.roll_limit_cd;
     plane.update_load_factor();
     plane.update_fbwb_speed_height();
-
 }
-

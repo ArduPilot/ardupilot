@@ -375,6 +375,11 @@ private:
     uint32_t transition_start_ms;
     float transition_initial_pitch;
     uint32_t transition_low_airspeed_ms;
+    // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
+    uint16_t vertical_acceleration_time = 0;
+    // Minimum climb rate plane must achieve when transitioning from vtol mode to normal mode
+    float vertical_acceleration_min_climb_rate = 5.0f;
+    uint32_t climb_rate_reached_at = 0; 
 
     Location last_auto_target;
 

@@ -1016,6 +1016,7 @@ void QuadPlane::init_hover(void)
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INIT HOVER");
 }
 
 /*
@@ -1631,17 +1632,18 @@ void QuadPlane::update_transition(void)
             transition_state = TRANSITION_DONE;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
-        }
+            climb_rate_reached_at = 0;
+        } 
     }
     
     // if rotors are fully forward then we are not transitioning,
     // unless we are waiting for airspeed to increase (in which case
     // the tilt will decrease rapidly)
-    if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
-        transition_state = TRANSITION_DONE;
-        transition_start_ms = 0;
-        transition_low_airspeed_ms = 0;
-    }
+    // if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
+    //     transition_state = TRANSITION_DONE;
+    //     transition_start_ms = 0;
+    //     transition_low_airspeed_ms = 0;
+    // }
     
     if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
@@ -1750,17 +1752,29 @@ void QuadPlane::update_transition(void)
         // in half the transition time
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
-        float pitch_cd;
-        pitch_cd = constrain_float((-transition_rate * dt)*100, -8500, 0);
-        // if already pitched forward at start of transition, wait until curve catches up
-        plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch)? transition_initial_pitch : pitch_cd;
+
+        if (dt < vertical_acceleration_time || inertial_nav.get_velocity_z() < vertical_acceleration_min_climb_rate * 100.0f) {
+            plane.nav_pitch_cd = 0.0f;
+            // Full power!
+            attitude_control->set_throttle_out(1.0f, false, 0);
+            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", inertial_nav.get_velocity_z());
+        } else {
+            if (climb_rate_reached_at == 0)
+                climb_rate_reached_at = now;
+            float pitch_cd;
+            pitch_cd = constrain_float((-transition_rate * (dt - MAX(vertical_acceleration_time, climb_rate_reached_at))) * 100, -8500, 0);
+            // if already pitched forward at start of transition, wait until curve catches up
+            // Angle is always 0 with acceleration time
+            // plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
+            plane.nav_pitch_cd = pitch_cd;
+            // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
+            attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(), attitude_control->get_throttle_in()), true, 0);
+        }
         plane.nav_roll_cd = 0;
         check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       0);
-        // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
-        attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(),attitude_control->get_throttle_in()), true, 0);
         break;
     }
 
