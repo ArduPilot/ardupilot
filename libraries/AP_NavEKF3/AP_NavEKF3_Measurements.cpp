@@ -127,7 +127,7 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
     // subtract delay from timestamp
     timeStamp_ms -= delay_ms;
 
-    bodyOdmDataNew.body_offset = &posOffset;
+    bodyOdmDataNew.body_offset = posOffset;
     bodyOdmDataNew.vel = delPos * (1.0f/delTime);
     bodyOdmDataNew.time_ms = timeStamp_ms;
     bodyOdmDataNew.angRate = delAng * (1.0f/delTime);
@@ -155,7 +155,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     }
 
     wheel_odm_elements wheelOdmDataNew = {};
-    wheelOdmDataNew.hub_offset = &posOffset;
+    wheelOdmDataNew.hub_offset = posOffset;
     wheelOdmDataNew.delAng = delAng;
     wheelOdmDataNew.radius = radius;
     wheelOdmDataNew.delTime = delTime;
@@ -218,7 +218,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         // note correction for different axis and sign conventions used by the px4flow sensor
         ofDataNew.flowRadXY = - rawFlowRates; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
-        ofDataNew.body_offset = &posOffset;
+        ofDataNew.body_offset = posOffset;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
