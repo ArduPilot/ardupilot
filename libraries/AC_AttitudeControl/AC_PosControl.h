@@ -374,6 +374,7 @@ protected:
     void check_for_ekf_xy_reset(float dt);
     void init_ekf_z_reset();
     void check_for_ekf_z_reset();
+    void clear_ekf_z_reset();
 
     // references to inertial nav and ahrs libraries
     AP_AHRS_View &        _ahrs;
@@ -426,6 +427,7 @@ protected:
     uint32_t    _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
     uint32_t    _ekf_z_reset_ms;       // system time of last recorded ekf altitude reset
     Vector2f    _ekf_xy_reset;         // the size of the current xy reset, this is decayed to zero
+    float       _ekf_z_reset;          // the size of the current z reset, this is decayed to zero
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
