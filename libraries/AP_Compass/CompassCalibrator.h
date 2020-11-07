@@ -6,8 +6,8 @@
 #define COMPASS_CAL_NUM_ELLIPSOID_PARAMS    9
 #define COMPASS_CAL_NUM_SAMPLES             300     // number of samples required before fitting begins
 
-#define COMPASS_MIN_SCALE_FACTOR 0.85
-#define COMPASS_MAX_SCALE_FACTOR 1.4
+#define COMPASS_MAX_SCALE_FACTOR 1.5
+#define COMPASS_MIN_SCALE_FACTOR (1.0/COMPASS_MAX_SCALE_FACTOR)
 
 class CompassCalibrator {
 public:
