@@ -240,7 +240,7 @@ for t in $CI_BUILD_TARGET; do
         $way --target tools/Replay
         echo "Building AP_DAL standalone test"
         $waf configure --board linux --disable-scripting --disable-gcs
-        $way --target examples/AP_DAL_Standalone
+        $way --target tools/AP_DAL_Standalone
         $waf clean
         $waf bootloader
         continue
