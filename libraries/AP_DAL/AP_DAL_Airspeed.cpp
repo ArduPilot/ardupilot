@@ -25,8 +25,7 @@ void AP_DAL_Airspeed::start_frame()
     for (uint8_t i=0; i<ARRAY_SIZE(_RASI); i++) {
         log_RASI &RASI = _RASI[i];
         log_RASI old_RASI = RASI;
-        const uint32_t last_update_ms = airspeed->last_update_ms(i);
-        RASI.last_update_ms = last_update_ms;
+        RASI.last_update_ms = airspeed->last_update_ms(i);
         RASI.healthy = airspeed->healthy(i);
         RASI.use = airspeed->use(i);
         RASI.airspeed = airspeed->get_airspeed(i);
