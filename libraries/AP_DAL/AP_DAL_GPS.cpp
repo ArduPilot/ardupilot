@@ -27,9 +27,8 @@ void AP_DAL_GPS::start_frame()
 
         RGPI.status = (GPS_Status)gps.status(i);
 
-        const uint32_t last_message_time_ms = gps.last_message_time_ms(i);
         const Location &loc = gps.location(i);
-        RGPI.last_message_time_ms = last_message_time_ms;
+        RGPI.last_message_time_ms = gps.last_message_time_ms(i);
         RGPI.lat = loc.lat;
         RGPI.lng = loc.lng;
         RGPI.alt = loc.alt;
