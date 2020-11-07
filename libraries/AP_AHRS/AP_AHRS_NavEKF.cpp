@@ -1995,6 +1995,8 @@ bool AP_AHRS_NavEKF::get_hgt_ctrl_limit(float& limit) const
 // this is not related to terrain following
 void AP_AHRS_NavEKF::set_terrain_hgt_stable(bool stable)
 {
+    // avoid repeatedly setting variable in NavEKF objects to prevent
+    // spurious event logging
     switch (terrainHgtStableState) {
     case TriState::UNKNOWN:
         break;
