@@ -456,7 +456,6 @@ timee to reduce the resulting tilt error. Yaw alignment is not performed by this
 function, but is perfomred later and initiated the SelectMagFusion() function
 after the tilt has stabilised.
 */
-#include <stdio.h>
 
 bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
