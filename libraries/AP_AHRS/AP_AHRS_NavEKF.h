@@ -277,9 +277,6 @@ public:
 
     bool getGpsGlitchStatus() const;
 
-    // is the EKF backend doing its own sensor logging?
-    bool have_ekf_logging(void) const override;
-
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
     // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
