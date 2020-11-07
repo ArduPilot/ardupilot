@@ -128,11 +128,11 @@ void AP_DAL::log_SetOriginLLH2(const Location &loc)
 #endif
 }
 
-void AP_DAL::log_writeDefaultAirSpeed2(const float airspeed)
+void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_RWA2 pkt{
-        airspeed:      airspeed,
+        airspeed:      aspeed,
     };
     WRITE_REPLAY_BLOCK(RWA2, pkt);
 #endif
@@ -161,11 +161,11 @@ void AP_DAL::log_SetOriginLLH3(const Location &loc)
 #endif
 }
 
-void AP_DAL::log_writeDefaultAirSpeed3(const float airspeed)
+void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_RWA3 pkt{
-        airspeed:      airspeed,
+        airspeed:      aspeed,
     };
     WRITE_REPLAY_BLOCK(RWA3, pkt);
 #endif
@@ -253,8 +253,8 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
       return true, indicating that we are low on CPU. This changes the
       scheduling of fusion between lanes
      */
-    const auto &ins = AP::ins();
-    if ((AP_HAL::micros() - ins.get_last_update_usec())*1.0e-6 > ins.get_loop_delta_t()*0.33) {
+    const auto &imu = AP::ins();
+    if ((AP_HAL::micros() - imu.get_last_update_usec())*1.0e-6 > imu.get_loop_delta_t()*0.33) {
         _RFRF.core_slow |= mask;
     } else {
         _RFRF.core_slow &= ~mask;
