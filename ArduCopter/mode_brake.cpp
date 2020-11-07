@@ -48,6 +48,7 @@ void ModeBrake::run()
 
     // use position controller to stop
     pos_control->set_desired_velocity_xy(0.0f, 0.0f);
+    pos_control->clear_ekf_xy_reset();
     pos_control->update_xy_controller();
 
     // call attitude controller
