@@ -375,11 +375,6 @@ private:
     uint32_t transition_start_ms;
     float transition_initial_pitch;
     uint32_t transition_low_airspeed_ms;
-    // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
-    uint16_t vertical_acceleration_time = 0;
-    // Minimum climb rate plane must achieve when transitioning from vtol mode to normal mode
-    float vertical_acceleration_min_climb_rate = 5.0f;
-    uint32_t climb_rate_reached_at = 0; 
 
     Location last_auto_target;
 
@@ -580,6 +575,8 @@ private:
 
     float last_land_final_agl;
 
+    // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
+    uint16_t transition_acceleration_time = 2000;
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set

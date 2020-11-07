@@ -1632,7 +1632,6 @@ void QuadPlane::update_transition(void)
             transition_state = TRANSITION_DONE;
             transition_start_ms = 0;
             transition_low_airspeed_ms = 0;
-            climb_rate_reached_at = 0;
         } 
     }
     
@@ -1753,16 +1752,14 @@ void QuadPlane::update_transition(void)
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
 
-        if (dt < vertical_acceleration_time || inertial_nav.get_velocity_z() < vertical_acceleration_min_climb_rate * 100.0f) {
+        if (dt < transition_acceleration_time) {
             plane.nav_pitch_cd = 0.0f;
             // Full power!
             attitude_control->set_throttle_out(1.0f, false, 0);
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", inertial_nav.get_velocity_z());
         } else {
-            if (climb_rate_reached_at == 0)
-                climb_rate_reached_at = now;
             float pitch_cd;
-            pitch_cd = constrain_float((-transition_rate * (dt - MAX(vertical_acceleration_time, climb_rate_reached_at))) * 100, -8500, 0);
+            pitch_cd = constrain_float((-transition_rate * (dt - transition_acceleration_time)) * 100, -8500, 0);
             // if already pitched forward at start of transition, wait until curve catches up
             // Angle is always 0 with acceleration time
             // plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
