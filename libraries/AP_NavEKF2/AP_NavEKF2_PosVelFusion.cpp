@@ -285,7 +285,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     // record the old height estimate
     float oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
-    AP::dal().baro().update_calibration();
+    dal.baro().update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
@@ -301,7 +301,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            EKF_origin.alt = AP::dal().gps().location().alt;
+            EKF_origin.alt = dal.gps().location().alt;
         }
         ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
@@ -317,7 +317,7 @@ bool NavEKF2_core::resetHeightDatum(void)
 */
 void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 {
-    const Vector3f &posOffsetBody = AP::dal().gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
+    const Vector3f &posOffsetBody = dal.gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
     if (posOffsetBody.is_zero()) {
         return;
     }
@@ -343,7 +343,7 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 {
 #if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = AP::dal().visualodom();
+    const auto *visual_odom = dal.visualodom();
     if (visual_odom == nullptr) {
         return;
     }
@@ -362,7 +362,7 @@ void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 void NavEKF2_core::CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const
 {
 #if HAL_VISUALODOM_ENABLED
-    const auto *visual_odom = AP::dal().visualodom();
+    const auto *visual_odom = dal.visualodom();
     if (visual_odom == nullptr) {
         return;
     }
@@ -957,7 +957,7 @@ void NavEKF2_core::selectHeightForFusion()
     // correct range data for the body frame position offset relative to the IMU
     // the corrected reading is the reading that would have been taken if the sensor was
     // co-located with the IMU
-    const auto *_rng = AP::dal().rangefinder();
+    const auto *_rng = dal.rangefinder();
     if (_rng && rangeDataToFuse) {
         const auto *sensor = _rng->get_backend(rangeDataDelayed.sensor_idx);
         if (sensor != nullptr) {

@@ -12,7 +12,7 @@ void NavEKF2_core::controlFilterModes()
 {
     // Determine motor arm status
     prevMotorsArmed = motorsArmed;
-    motorsArmed = AP::dal().get_armed();
+    motorsArmed = dal.get_armed();
     if (motorsArmed && !prevMotorsArmed) {
         // set the time at which we arm to assist with checks
         timeAtArming_ms =  imuSampleTime_ms;
@@ -69,7 +69,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
 
             // set the wind sate variances to the measurement uncertainty
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(AP::dal().get_EAS2TAS(), 0.9f, 10.0f));
+                P[index][index] = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(dal.get_EAS2TAS(), 0.9f, 10.0f));
             }
         } else {
             // set the variances using a typical wind speed
@@ -371,7 +371,7 @@ void NavEKF2_core::checkAttitudeAlignmentStatus()
 // return true if we should use the airspeed sensor
 bool NavEKF2_core::useAirspeed(void) const
 {
-    return AP::dal().airspeed_sensor_enabled();
+    return dal.airspeed_sensor_enabled();
 }
 
 // return true if we should use the range finder sensor
@@ -408,7 +408,7 @@ bool NavEKF2_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF2_core::use_compass(void) const
 {
-    return AP::dal().get_compass() && AP::dal().get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
+    return dal.get_compass() && dal.get_compass()->use_for_yaw(magSelectIndex) && !allMagSensorsFailed;
 }
 
 /*
@@ -419,7 +419,7 @@ bool NavEKF2_core::assume_zero_sideslip(void) const
     // we don't assume zero sideslip for ground vehicles as EKF could
     // be quite sensitive to a rapid spin of the ground vehicle if
     // traction is lost
-    return AP::dal().get_fly_forward() && AP::dal().get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
+    return dal.get_fly_forward() && dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
 }
 
 // set the LLH location of the filters NED origin
@@ -545,7 +545,7 @@ void NavEKF2_core::runYawEstimatorPrediction()
             if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
                 trueAirspeed = tasDataDelayed.tas;
             } else {
-                trueAirspeed = defaultAirSpeed * AP::dal().get_EAS2TAS();
+                trueAirspeed = defaultAirSpeed * dal.get_EAS2TAS();
             }
         } else {
             trueAirspeed = 0.0f;
