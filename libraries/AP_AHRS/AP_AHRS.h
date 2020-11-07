@@ -177,11 +177,6 @@ public:
     // check all cores providing consistent attitudes for prearm checks
     virtual bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const { return true; }
 
-    // is the EKF backend doing its own sensor logging?
-    virtual bool have_ekf_logging(void) const {
-        return false;
-    }
-
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
