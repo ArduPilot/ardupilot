@@ -368,6 +368,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
+    AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF2 *frontend;
