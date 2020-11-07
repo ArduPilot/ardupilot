@@ -7,10 +7,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
 
-AP_DAL_VisualOdom::AP_DAL_VisualOdom()
-{
-}
-
 void AP_DAL_VisualOdom::start_frame()
 {
     const auto *vo = AP::visualodom();
@@ -21,7 +17,7 @@ void AP_DAL_VisualOdom::start_frame()
         RVOH.healthy = vo->healthy();
     }
 
-    WRITE_REPLAY_BLOCK_IFCHANGD(RVOH, RVOH, old);
+    WRITE_REPLAY_BLOCK_IFCHANGED(RVOH, RVOH, old);
 }
 
 #endif // HAL_VISUALODOM_ENABLED
