@@ -1789,7 +1789,7 @@ class AutoTest(ABC):
         REPLAY_MSGS = [ 'RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
                         'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
                         'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                        'ROFH', 'REPH', 'REVH', 'RWOH' ]
+                        'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH' ]
 
         docco_ids = {}
         for thing in tree.logformat:
