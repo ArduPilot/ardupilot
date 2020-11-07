@@ -4,8 +4,6 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_DAL/AP_DAL.h>
 
-#include <stdio.h>
-
 extern const AP_HAL::HAL& hal;
 
 /********************************************************
