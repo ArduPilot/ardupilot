@@ -345,7 +345,7 @@ public:
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
         AP_Int8 backend_types;
-        AP_Int8 file_bufsize; // in kilobytes
+        AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
