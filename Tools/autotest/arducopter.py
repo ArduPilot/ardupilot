@@ -8,6 +8,8 @@ import os
 import shutil
 import time
 import numpy
+import sys
+import shutil
 
 from pymavlink import mavutil
 from pymavlink import mavextra
@@ -5292,6 +5294,67 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.disarm_vehicle(force=True)
 
+    def test_replay(self):
+        '''test replay correctness'''
+        self.context_push()
+        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameter("LOG_DISARMED", 1)
+        self.set_parameter("EK3_ENABLE", 1)
+        self.set_parameter("EK2_ENABLE", 1)
+        self.set_parameter("AHRS_TRIM_X", 0.01)
+        self.set_parameter("AHRS_TRIM_Y", -0.03)
+        self.set_parameter("GPS_TYPE2", 1)
+        self.set_parameter("GPS_POS1_X", 0.1)
+        self.set_parameter("GPS_POS1_Y", 0.2)
+        self.set_parameter("GPS_POS1_Z", 0.3)
+        self.set_parameter("GPS_POS2_X", -0.1)
+        self.set_parameter("GPS_POS2_Y", -0.02)
+        self.set_parameter("GPS_POS2_Z", -0.31)
+        self.set_parameter("INS_POS1_X", 0.12)
+        self.set_parameter("INS_POS1_Y", 0.14)
+        self.set_parameter("INS_POS1_Z", -0.02)
+        self.set_parameter("INS_POS2_X", 0.07)
+        self.set_parameter("INS_POS2_Y", 0.012)
+        self.set_parameter("INS_POS2_Z", -0.06)
+        self.set_parameter("RNGFND1_TYPE", 1)
+        self.set_parameter("RNGFND1_PIN", 0)
+        self.set_parameter("RNGFND1_SCALING", 30)
+        self.set_parameter("RNGFND1_POS_X", 0.17)
+        self.set_parameter("RNGFND1_POS_Y", -0.07)
+        self.set_parameter("RNGFND1_POS_Z", -0.005)
+        self.set_parameter("SIM_SONAR_SCALE", 30)
+        self.set_parameter("SIM_GPS2_DISABLE", 0)
+        self.reboot_sitl()
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        self.change_mode("LOITER")
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        self.progress("Running replay")
+
+        shutil.rmtree("logs/replay")
+        util.run_cmd(['build/linux/tools/Replay', '--log-directory=logs/replay', '--', current_log_filepath],
+                     directory=util.topdir(), checkfail=True, show=True)
+
+        self.context_pop()
+
+        check_replay_py = os.path.join(util.topdir(), "Tools/Replay/check_replay.py")
+        if sys.version_info.major >= 3:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("check_replay", check_replay_py)
+            check_replay = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(check_replay)
+        else:
+            import imp
+            check_replay = imp.load_source("check_replay", os.path.join(util.topdir(), "Tools/Replay/check_replay.py"))
+        ok = check_replay.check_log("logs/replay/00000001.BIN", self.progress)
+        if not ok:
+            raise NotAchievedException("check_replay failed")
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -5635,6 +5698,10 @@ class AutoTestCopter(AutoTest):
             ("DataFlashErase",
              "Test DataFlash Block backend erase",
              self.test_dataflash_erase),
+
+            ("Replay",
+             "Test Replay",
+             self.test_replay),
 
             ("LogUpload",
              "Log upload",
