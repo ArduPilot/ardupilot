@@ -99,6 +99,7 @@ void mount_sdcard()
     esp_err_t ret = esp_vfs_fat_sdmmc_mount("/SDCARD", &host, &slot_config, &mount_config, &card);
     if (ret == ESP_OK) {
         mkdir("/SDCARD/APM", 0777);
+        mkdir("/SDCARD/APM/LOGS", 0777);
         printf("sdcard is mounted\n");
         //update_fw();
     } else {

@@ -28,9 +28,9 @@ int errno;
 #endif // HAL_BOARD_CHIBIOS
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-static AP_Filesystem_Backend fs_local;
-int errno;
-#endif // HAL_BOARD_CHIBIOS
+#include "AP_Filesystem_ESP32.h"
+static AP_Filesystem_ESP32 fs_local;
+#endif // HAL_BOARD_ESP32
 
 
 
