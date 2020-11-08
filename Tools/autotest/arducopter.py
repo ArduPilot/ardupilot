@@ -5296,6 +5296,9 @@ class AutoTestCopter(AutoTest):
 
     def test_replay(self):
         '''test replay correctness'''
+        self.progress("Building Replay")
+        util.build_SITL('tools/Replay', clean=False, configure=False)
+
         self.context_push()
         self.set_parameter("LOG_REPLAY", 1)
         self.set_parameter("LOG_DISARMED", 1)
