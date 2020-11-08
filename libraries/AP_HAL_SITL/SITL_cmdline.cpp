@@ -272,6 +272,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    model_str = "quad";
+    HALSITL::UARTDriver::_console = true;
+#endif
+
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
     }
