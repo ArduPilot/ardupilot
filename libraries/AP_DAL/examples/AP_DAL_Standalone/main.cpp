@@ -1,6 +1,6 @@
 //
-// Ensure that AP_NavEKF3 can be compiled when not linked to anything
-// except the DAL.
+// Ensure that AP_NavEKF libraries can be compiled when not linked to
+// anything except the DAL.
 //
 
 #include <AP_DAL/AP_DAL.h>
