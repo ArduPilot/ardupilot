@@ -325,13 +325,7 @@ float AC_PID::get_filt_D_alpha() const
 // get_filt_alpha - calculate a filter alpha
 float AC_PID::get_filt_alpha(float filt_hz) const
 {
-    if (is_zero(filt_hz)) {
-        return 1.0f;
-    }
-
-    // calculate alpha
-    float rc = 1 / (M_2PI * filt_hz);
-    return _dt / (_dt + rc);
+    return calc_lowpass_alpha_dt(_dt, filt_hz);
 }
 
 void AC_PID::set_integrator(float target, float measurement, float i)
