@@ -189,9 +189,9 @@ public:
         return _RFRN.fly_forward;
     }
 
-    // get trim
+    // get ahrs trim
     const Vector3f &get_trim() const {
-        return _trim;
+        return _RFRN.ahrs_trim;
     }
 
     const Matrix3f &get_rotation_vehicle_body_to_autopilot_body(void) const {
@@ -322,7 +322,6 @@ private:
     uint32_t _micros;
     uint32_t _millis;
 
-    Vector3f _trim;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
     Location _home;
     uint32_t _last_imu_time_us;

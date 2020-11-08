@@ -60,6 +60,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.ahrs_airspeed_sensor_enabled = AP::ahrs().airspeed_sensor_enabled();
     _RFRN.available_memory = hal.util->available_memory();
+    _RFRN.ahrs_trim = ahrs.get_trim();
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
@@ -79,8 +80,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     // populate some derivative values:
     _micros = _RFRH.time_us;
     _millis = _RFRH.time_us / 1000UL;
-
-    _trim = ahrs.get_trim();
 
     force_write = false;
 #endif

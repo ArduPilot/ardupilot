@@ -58,6 +58,7 @@ struct log_RFRN {
     int32_t alt;
     float EAS2TAS;
     uint32_t available_memory;
+    Vector3f ahrs_trim;
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
@@ -377,7 +378,7 @@ struct log_RBOH {
     { LOG_RFRF_MSG, RLOG_SIZE(RFRF),                          \
       "RFRF", "BB", "FTypes,Slow", "--", "--" }, \
     { LOG_RFRN_MSG, RLOG_SIZE(RFRN),                            \
-      "RFRN", "IIIfIBBB", "HLat,HLon,HAlt,E2T,AM,VC,EKT,Flags", "DUm?????", "GGB-----" }, \
+      "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm????????", "GGB--------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
       "REV2", "B", "Event", "-", "-" }, \
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
