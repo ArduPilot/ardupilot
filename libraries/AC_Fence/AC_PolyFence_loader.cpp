@@ -620,14 +620,11 @@ bool AC_PolyFence_loader::load_from_eeprom()
     _load_attempted = true;
 
     // find indexes of each fence:
-    if (!get_loaded_fence_semaphore().take(1)) {
-        return false;
-    }
+    WITH_SEMAPHORE(get_loaded_fence_semaphore());
 
     unload();
 
     if (_eeprom_item_count == 0) {
-        get_loaded_fence_semaphore().give();
         _load_time_ms = AP_HAL::millis();
         return true;
     }
@@ -639,7 +636,6 @@ bool AC_PolyFence_loader::load_from_eeprom()
         _loaded_offsets_from_origin = new Vector2f[count];
         if (_loaded_offsets_from_origin == nullptr) {
             unload();
-            get_loaded_fence_semaphore().give();
             return false;
         }
     }
@@ -653,7 +649,6 @@ bool AC_PolyFence_loader::load_from_eeprom()
         _loaded_inclusion_boundary = new InclusionBoundary[count];
         if (_loaded_inclusion_boundary == nullptr) {
             unload();
-            get_loaded_fence_semaphore().give();
             return false;
         }
     }
@@ -665,7 +660,6 @@ bool AC_PolyFence_loader::load_from_eeprom()
         _loaded_exclusion_boundary = new ExclusionBoundary[count];
         if (_loaded_exclusion_boundary == nullptr) {
             unload();
-            get_loaded_fence_semaphore().give();
             return false;
         }
     }
@@ -677,7 +671,6 @@ bool AC_PolyFence_loader::load_from_eeprom()
         _loaded_circle_inclusion_boundary = new InclusionCircle[count];
         if (_loaded_circle_inclusion_boundary == nullptr) {
             unload();
-            get_loaded_fence_semaphore().give();
             return false;
         }
     }
@@ -689,7 +682,6 @@ bool AC_PolyFence_loader::load_from_eeprom()
         _loaded_circle_exclusion_boundary = new ExclusionCircle[count];
         if (_loaded_circle_exclusion_boundary == nullptr) {
             unload();
-            get_loaded_fence_semaphore().give();
             return false;
         }
     }
@@ -802,13 +794,11 @@ bool AC_PolyFence_loader::load_from_eeprom()
 
     if (!storage_valid) {
         unload();
-        get_loaded_fence_semaphore().give();
         return false;
     }
 
     _load_time_ms = AP_HAL::millis();
 
-    get_loaded_fence_semaphore().give();
     return true;
 }
 
