@@ -420,8 +420,6 @@ void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 }
 #endif // APM_BUILD_Replay
 
-#include <stdio.h>
-
 namespace AP {
 
 AP_DAL &dal()
