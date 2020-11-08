@@ -4,12 +4,12 @@
 check that replay produced identical results
 '''
 
+from __future__ import print_function
 import time
 import sys
 
 from argparse import ArgumentParser
 parser = ArgumentParser(description=__doc__)
-parser.add_argument("--condition", default=None, help="condition for packets")
 parser.add_argument("--ekf2-only", action='store_true', help="only check EKF2")
 parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
 parser.add_argument("--verbose", action='store_true', help="verbose output")
@@ -22,23 +22,23 @@ from pymavlink import mavutil
 failure = 0
 errors = 0
 
-def check_log(logfile):
+def check_log(logfile, progress, ekf2_only=False, ekf3_only=False, verbose=False):
     '''check replay log for matching output'''
-    print("Processing log %s" % filename)
+    progress("Processing log %s" % logfile)
     count = 0
     base_count = 0
     counts = {}
     base_counts = {}
     global errors, failure
 
-    mlog = mavutil.mavlink_connection(filename)
+    mlog = mavutil.mavlink_connection(logfile)
 
     ek2_list = ['NKF1','NKF2','NKF3','NKF4','NKF5','NKF0','NKQ']
     ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2']
     
-    if args.ekf2_only:
+    if ekf2_only:
         mlist = ek2_list
-    elif args.ekf3_only:
+    elif ekf3_only:
         mlist = ek3_list
     else:
         mlist = ek2_list + ek3_list
@@ -75,22 +75,26 @@ def check_log(logfile):
             if v1 != v2:
                 mismatch = True
                 errors += 1
-                print("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
+                progress("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
         if mismatch:
-            print(mb)
-            print(m)
-    print("Processed %u/%u messages, %u errors" % (count, base_count, errors))
-    if args.verbose:
+            progress(mb)
+            progress(m)
+    progress("Processed %u/%u messages, %u errors" % (count, base_count, errors))
+    if verbose:
         for mtype in counts.keys():
-            print("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
+            progress("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
     if count == 0 or abs(count - base_count) > 30:
         failure += 1
+    if failure != 0 or errors != 0:
+        return False
+    return True
 
-for filename in args.logs:
-    check_log(filename)
+if __name__ == '__main__':
+    for filename in args.logs:
+        check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose)
 
-if failure != 0 or errors != 0:
-    print("FAILED: %u %u" % (failure, errors))
-    sys.exit(1)
-print("Passed")
-sys.exit(0)
+    if failure != 0 or errors != 0:
+        print("FAILED: %u %u" % (failure, errors))
+        sys.exit(1)
+    print("Passed")
+    sys.exit(0)
