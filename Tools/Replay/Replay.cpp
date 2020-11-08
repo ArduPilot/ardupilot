@@ -83,10 +83,11 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
 void ReplayVehicle::load_parameters(void)
 {
-    unlink("Replay.stg");
     if (!AP_Param::check_var_info()) {
         AP_HAL::panic("Bad parameter table");
     }
+    StorageManager::erase();
+    AP_Param::erase_all();
     // Load all auto-loaded EEPROM variables - also registers thread
     // which saves parameters, which Compass now does in its init() routine
     AP_Param::load_all();
@@ -184,28 +185,35 @@ void Replay::setup()
 
     hal.util->commandline_arguments(argc, argv);
 
-    _parse_command_line(argc, argv);
+    if (argc > 0) {
+        _parse_command_line(argc, argv);
+    }
 
     _vehicle.setup();
 
     set_user_parameters();
-}
 
-void Replay::loop()
-{
+    if (filename == nullptr) {
+        ::printf("You must supply a log filename\n");
+        exit(1);
+    }
     // LogReader reader = LogReader(log_structure);
     if (!reader.open_log(filename)) {
         ::fprintf(stderr, "open(%s): %m\n", filename);
         exit(1);
     }
-    while (reader.update()) {
-    }
+}
 
+void Replay::loop()
+{
+    if (!reader.update()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // If we don't tear down the threads then they continue to access
     // global state during object destruction.
-    ((Linux::Scheduler*)hal.scheduler)->teardown();
-
-    exit(0);
+        ((Linux::Scheduler*)hal.scheduler)->teardown();
+#endif
+        exit(0);
+    }
 }
 
 /*
