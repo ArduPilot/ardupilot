@@ -490,6 +490,8 @@ bool AP_Logger_File::StartNewLogOK() const
 /* Write a block of data at current offset */
 bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+    WITH_SEMAPHORE(semaphore);
+
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
         return false;
@@ -502,10 +504,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     return true;
 #endif
 
-    if (!semaphore.take(1)) {
-        return false;
-    }
-        
+
     uint32_t space = _writebuf.space();
 
     if (_writing_startup_messages &&
@@ -519,7 +518,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
-            semaphore.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -527,7 +525,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space(_writebuf.get_size())) {
             _dropped++;
-            semaphore.give();
             return false;
         }
     }
@@ -536,13 +533,11 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     if (space < size) {
         hal.util->perf_count(_perf_overruns);
         _dropped++;
-        semaphore.give();
         return false;
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, _writebuf.space());
-    semaphore.give();
     return true;
 }
 
