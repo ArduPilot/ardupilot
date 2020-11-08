@@ -5339,22 +5339,17 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Running replay")
 
-        shutil.rmtree("logs/replay", ignore_errors=True)
-        util.run_cmd(['build/linux/tools/Replay', '--log-directory=logs/replay', '--', current_log_filepath],
+        util.run_cmd(['build/sitl/tools/Replay', current_log_filepath],
                      directory=util.topdir(), checkfail=True, show=True)
 
         self.context_pop()
 
-        check_replay_py = os.path.join(util.topdir(), "Tools/Replay/check_replay.py")
-        if sys.version_info.major >= 3:
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("check_replay", check_replay_py)
-            check_replay = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(check_replay)
-        else:
-            import imp
-            check_replay = imp.load_source("check_replay", os.path.join(util.topdir(), "Tools/Replay/check_replay.py"))
-        ok = check_replay.check_log("logs/replay/00000001.BIN", self.progress)
+        replay_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Replay log path: %s" % str(replay_log_filepath))
+
+        check_replay = util.load_local_module("Tools/Replay/check_replay.py")
+
+        ok = check_replay.check_log(replay_log_filepath, self.progress)
         if not ok:
             raise NotAchievedException("check_replay failed")
 
