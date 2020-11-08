@@ -63,11 +63,9 @@ public:
     }
 
 private:
-    // filter constant for deltas to gyro/accel
-    const float alpha = 0.9;
-
     struct log_RISH _RISH;
     struct log_RISI _RISI[INS_MAX_INSTANCES];
+    float alpha;
 
     // sensor positions
     Vector3f pos[INS_MAX_INSTANCES];

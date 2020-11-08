@@ -55,10 +55,16 @@ void AP_DAL_InertialSensor::start_frame()
 // update filtered gyro and accel
 void AP_DAL_InertialSensor::update_filtered(uint8_t i)
 {
+    if (!is_positive(alpha)) {
+        // we use a constant 20Hz for EKF filtered accel/gyro, making the EKF
+        // independent of the INS filter settings
+        const float cutoff_hz = 20.0;
+        alpha = calc_lowpass_alpha_dt(get_loop_delta_t(), cutoff_hz);
+    }
     if (is_positive(_RISI[i].delta_angle_dt)) {
-        gyro_filtered[i] = gyro_filtered[i] * alpha + (_RISI[i].delta_angle/_RISI[i].delta_angle_dt) * (1-alpha);
+        gyro_filtered[i] += ((_RISI[i].delta_angle/_RISI[i].delta_angle_dt) - gyro_filtered[i]) * alpha;
     }
     if (is_positive(_RISI[i].delta_velocity_dt)) {
-        accel_filtered[i] = accel_filtered[i] * alpha + (_RISI[i].delta_velocity/_RISI[i].delta_velocity_dt) * (1-alpha);
+        accel_filtered[i] += ((_RISI[i].delta_velocity/_RISI[i].delta_velocity_dt) - accel_filtered[i]) * alpha;
     }
 }
