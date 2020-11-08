@@ -147,4 +147,13 @@ void HALSITL::Util::set_cmdline_parameters()
         AP_Param::set_default_by_name(param.name, param.value);
     }
 }
+
+/**
+   return commandline arguments, if available
+*/
+void HALSITL::Util::commandline_arguments(uint8_t &argc, char * const *&argv)
+{
+    argc = saved_argc;
+    argv = saved_argv;
+}
 #endif
