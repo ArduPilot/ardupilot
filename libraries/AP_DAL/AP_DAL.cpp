@@ -47,10 +47,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 
     // update RFRN data
     const log_RFRN old = _RFRN;
-    _RFRN.state_bitmask = 0;
-    if (hal.util->get_soft_armed()) {
-        _RFRN.state_bitmask |= uint8_t(StateMask::ARMED);
-    }
+    _RFRN.armed = hal.util->get_soft_armed();
     _home = ahrs.get_home();
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;

@@ -111,7 +111,7 @@ public:
     bool ekf_low_time_remaining(EKFType etype, uint8_t core);
     
     // returns armed state for the current frame
-    bool get_armed() const { return _RFRN.state_bitmask & uint8_t(StateMask::ARMED); }
+    bool get_armed() const { return _RFRN.armed; }
 
     // memory available at start of current frame.  While this could
     // potentially change as we go through the frame, the
