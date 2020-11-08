@@ -4,9 +4,6 @@
 import boards
 
 def build(bld):
-    if not isinstance(bld.get_board(), boards.linux):
-        return
-
     vehicle = bld.path.name
 
     bld.ap_stlib(
