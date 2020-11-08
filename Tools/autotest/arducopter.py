@@ -5336,7 +5336,7 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Running replay")
 
-        shutil.rmtree("logs/replay")
+        shutil.rmtree("logs/replay", ignore_errors=True)
         util.run_cmd(['build/linux/tools/Replay', '--log-directory=logs/replay', '--', current_log_filepath],
                      directory=util.topdir(), checkfail=True, show=True)
 
