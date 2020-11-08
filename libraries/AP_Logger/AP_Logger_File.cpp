@@ -79,9 +79,6 @@ void AP_Logger_File::Init()
 {
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
-    if (bufsize > 64) {
-        bufsize = 64; // PixHawk has DMA limitations.
-    }
     bufsize *= 1024;
 
     const uint32_t desired_bufsize = bufsize;
