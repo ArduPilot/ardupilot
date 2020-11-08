@@ -398,8 +398,9 @@ float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
+    const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
-        *f++ = std::numeric_limits<float>::signaling_NaN();
+        *f++ = n;
     }
 }
 #endif
