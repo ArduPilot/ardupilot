@@ -508,6 +508,8 @@ private:
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
+        // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
+        AP_Int16 vertical_acceleration_time;
     } tailsitter;
 
     // tailsitter speed scaler
@@ -574,9 +576,6 @@ private:
     uint32_t takeoff_time_limit_ms;
 
     float last_land_final_agl;
-
-    // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
-    uint16_t transition_acceleration_time = 2000;
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set

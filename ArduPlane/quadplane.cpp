@@ -500,6 +500,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
+    // @Param: TAILSIT_VACCT
+    // @DisplayName: Vertical acceleration time
+    // @Description: Time to accelerate vertically in milliseconds when transitioning from vtol to fw
+    // @Range: 0 10000
+    // @Units: millisecond
+    // @Incerement 1
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_VACCT", 21, QuadPlane, tailsitter.vertical_acceleration_time, 2000),
+
     AP_GROUPEND
 };
 
@@ -1752,14 +1761,14 @@ void QuadPlane::update_transition(void)
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
 
-        if (dt < transition_acceleration_time) {
+        if (dt < (uint32_t)tailsitter.vertical_acceleration_time) {
             plane.nav_pitch_cd = 0.0f;
             // Full power!
             attitude_control->set_throttle_out(1.0f, false, 0);
-            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", inertial_nav.get_velocity_z());
+            // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", inertial_nav.get_velocity_z());
         } else {
             float pitch_cd;
-            pitch_cd = constrain_float((-transition_rate * (dt - transition_acceleration_time)) * 100, -8500, 0);
+            pitch_cd = constrain_float((-transition_rate * (dt - (uint32_t)tailsitter.vertical_acceleration_time)) * 100, -8500, 0);
             // if already pitched forward at start of transition, wait until curve catches up
             // Angle is always 0 with acceleration time
             // plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
@@ -1886,7 +1895,7 @@ void QuadPlane::update(void)
                  */
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
-                transition_initial_pitch= constrain_float(ahrs_view->pitch_sensor,-8500,0);
+                transition_initial_pitch = constrain_float(ahrs_view->pitch_sensor,-8500,0);
             } else {
                 /*
                   setup for airspeed wait for later

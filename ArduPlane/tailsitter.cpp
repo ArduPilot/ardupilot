@@ -215,14 +215,12 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
         roll_cd = 18000 - roll_cd;
     }
 
-    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
-        roll_cd > tailsitter.transition_angle*100 ||
-        (AP_HAL::millis() - transition_start_ms > transition_acceleration_time && 
-        (uint32_t)(AP_HAL::millis() - transition_start_ms - transition_acceleration_time) > uint32_t(transition_time_ms))) {
+    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle * 100 || roll_cd > tailsitter.transition_angle * 100) {
         return true;
     }
-    // still waiting
-    return false;
+
+    // If too much time has elapsed, return true
+    return (uint32_t)(AP_HAL::millis() - transition_start_ms) > uint32_t(transition_time_ms) + (uint32_t)tailsitter.vertical_acceleration_time;
 }
 
 

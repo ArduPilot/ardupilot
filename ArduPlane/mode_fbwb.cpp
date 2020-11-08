@@ -13,7 +13,7 @@ bool ModeFBWB::_enter()
 #endif
 
     plane.set_target_altitude_current();
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "SET TARGET ALTITUDE");
+
     return true;
 }
 

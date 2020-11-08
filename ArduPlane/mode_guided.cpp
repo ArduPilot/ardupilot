@@ -13,7 +13,6 @@ bool ModeGuided::_enter()
     */
     plane.guided_WP_loc = plane.current_loc;
     plane.set_guided_WP();
-
     return true;
 }
 
