@@ -482,15 +482,7 @@ void NavEKF2_core::detectOptFlowTakeoff(void)
         Vector3f angRateVec;
         Vector3f gyroBias;
         getGyroBias(gyroBias);
-#if INS_MAX_INSTANCES > 1
-        bool dual_ins = ins.use_gyro(0) && ins.use_gyro(1);
-        if (dual_ins) {
-            angRateVec = (ins.get_gyro(0) + ins.get_gyro(1)) * 0.5f - gyroBias;
-        } else
-#endif
-        {
-            angRateVec = ins.get_gyro() - gyroBias;
-        }
+        angRateVec = ins.get_gyro(gyro_index_active) - gyroBias;
 
         takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
     } else if (onGround) {
