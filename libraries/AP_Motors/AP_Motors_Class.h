@@ -47,9 +47,9 @@ public:
     };
 
     // return string corresponding to frame_class
-    virtual const char* get_frame_string()
+    const char* get_frame_string()
     {
-        switch (_active_frame_class) {
+        switch (_last_frame_class) {
             case AP_Motors::MOTOR_FRAME_QUAD:
                 return "QUAD";
             case AP_Motors::MOTOR_FRAME_HEXA:
@@ -99,13 +99,12 @@ public:
         MOTOR_FRAME_TYPE_NYT_PLUS = 16, // plus frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_NYT_X = 17, // X frame, no differential torque for yaw
         MOTOR_FRAME_TYPE_BF_X_REV = 18, // X frame, betaflight ordering, reversed motors
-        MOTOR_FRAME_TYPE_UNUSED
     };
 
     // return string corresponding to frame_type
     const char* get_type_string()
     {
-        switch(_active_frame_type) {
+        switch(_last_frame_type) {
             case MOTOR_FRAME_TYPE_PLUS:
                 return "PLUS";
             case MOTOR_FRAME_TYPE_X:
@@ -138,8 +137,6 @@ public:
                 return "NYT_X";
             case MOTOR_FRAME_TYPE_BF_X_REV:
                 return "BF_X_REV";
-            case MOTOR_FRAME_TYPE_UNUSED:
-                return "UNUSED";
             default:
                 return "UNKNOWN";
         }
@@ -237,10 +234,11 @@ public:
     virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
 
     // init
-    void                initialise(motor_frame_class frame_class, motor_frame_type frame_type)
+    virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
+    void                _init_(motor_frame_class frame_class, motor_frame_type frame_type)
     {
-        _active_frame_class = frame_class;
-        _active_frame_type = frame_type;
+        _last_frame_class = frame_class;
+        _last_frame_type = frame_type;
         init(frame_class, frame_type);
     }
 
@@ -294,10 +292,8 @@ protected:
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
     virtual uint32_t    rc_map_mask(uint32_t mask) const;
 
-    motor_frame_class   _active_frame_class; // active frame class (i.e. quad, hexa, octa, etc)
-    motor_frame_type    _active_frame_type;  // active frame type (i.e. plus, x, v, etc)
-
-    virtual void init(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
+    motor_frame_class   _last_frame_class; // active frame class (i.e. quad, hexa, octa, etc)
+    motor_frame_type    _last_frame_type;  // active frame type (i.e. plus, x, v, etc)
 
     // add a motor to the motor map
     void add_motor_num(int8_t motor_num);
