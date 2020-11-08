@@ -176,6 +176,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
+    utilInstance.init(argc, argv);
     _sitl_state->init(argc, argv);
 
     scheduler->init();
