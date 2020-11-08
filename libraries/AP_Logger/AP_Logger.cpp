@@ -16,7 +16,11 @@ AP_Logger *AP_Logger::_singleton;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_FILE_BUFSIZE
-#if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+#if HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+#define HAL_LOGGING_FILE_BUFSIZE  200
+#elif HAL_MEM_CLASS >= HAL_MEM_CLASS_500
+#define HAL_LOGGING_FILE_BUFSIZE  80
+#elif HAL_MEM_CLASS >= HAL_MEM_CLASS_300
 #define HAL_LOGGING_FILE_BUFSIZE  50
 #else
 #define HAL_LOGGING_FILE_BUFSIZE  16
@@ -120,6 +124,9 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
+    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
+    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
+
     if (hal.util->was_watchdog_armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
