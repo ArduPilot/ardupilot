@@ -266,7 +266,7 @@ void Replay::load_param_file(const char *pfilename)
             continue;
         }
         struct user_parameter *u = new user_parameter;
-        strncpy(u->name, pname, sizeof(u->name));
+        strncpy_noterm(u->name, pname, sizeof(u->name));
         u->value = value;
         u->next = user_parameters;
         user_parameters = u;
