@@ -1772,11 +1772,11 @@ class AutoTestCopter(AutoTest):
 
                 # calculate max speed from altitude above the ground
                 margin = 2.0
-                max_speed = alt * 1.4 + margin
-                self.progress("%0.1f: Low Speed: %f (want <= %u)" %
+                max_speed = alt * 1.5 + margin
+                self.progress("%0.1f: Low Speed: %f (want <= %u) alt=%.1f" %
                               (self.get_sim_time_cached() - tstart,
                                spd,
-                               max_speed))
+                               max_speed, alt))
                 if spd > max_speed:
                     raise NotAchievedException(("Speed should be limited by"
                                                 "EKF optical flow limits"))
