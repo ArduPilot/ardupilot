@@ -758,17 +758,17 @@ def constrain(value, minv, maxv):
         value = maxv
     return value
 
-def load_local_module(filename):
+def load_local_module(fname):
     '''load a python module from within the ardupilot tree'''
-    filename = os.path.join(topdir(), filename)
+    fname = os.path.join(topdir(), fname)
     if sys.version_info.major >= 3:
         import importlib.util
-        spec = importlib.util.spec_from_file_location("local_module", filename)
+        spec = importlib.util.spec_from_file_location("local_module", fname)
         ret = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ret)
     else:
         import imp
-        ret = imp.load_source("local_module", filename)
+        ret = imp.load_source("local_module", fname)
     return ret
 
 
