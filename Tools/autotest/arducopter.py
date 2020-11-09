@@ -1757,7 +1757,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
 
             # we can't takeoff in loiter as we need flow healthy
-            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.takeoff(alt_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
             self.change_mode('LOITER')
 
             # speed should be limited to <10m/s
