@@ -84,7 +84,7 @@ void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
         return;
     }
 
-    get_angles();
+    get_angles_ext();
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
 }
 
@@ -95,6 +95,15 @@ void AP_Mount_Alexmos::get_angles()
 {
     uint8_t data[1] = {(uint8_t)1};
     send_command(CMD_GET_ANGLES, data, 1);
+}
+
+/*
+ * get_angles_ext
+ */
+void AP_Mount_Alexmos::get_angles_ext()
+{
+    uint8_t data[1] = {(uint8_t)1};
+    send_command(CMD_GET_ANGLES_EXT, data, 1);
 }
 
 /*
@@ -124,6 +133,23 @@ void AP_Mount_Alexmos::get_boardinfo()
 }
 
 /*
+  Translate the MAVLink input mode into the corresponding alexmos control mode
+ */
+unsigned int AP_Mount_Alexmos::get_control_mode(unsigned int input_mode)
+{
+    switch(input_mode) {
+        case AP_Mount::Input_Mode_Angle_Body_Frame:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE_REL_FRAME;
+        case AP_Mount::Input_Mode_Angular_Rate:
+            return AP_MOUNT_ALEXMOS_MODE_SPEED;
+        case AP_Mount::Input_Mode_Angle_Absolute_Frame:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE;
+        default:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE;
+    }
+}
+
+/*
   control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
 */
 void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees)
@@ -134,12 +160,14 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
         target_deg *= RAD_TO_DEG;
     }
     alexmos_parameters outgoing_buffer;
-    outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
-    outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.mode_roll = get_control_mode(_state._roll_input_mode);
+    outgoing_buffer.angle_speed.mode_pitch = get_control_mode(_state._pitch_input_mode);
+    outgoing_buffer.angle_speed.mode_yaw = get_control_mode(_state._yaw_input_mode);
+    outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(target_deg.x);
     outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(target_deg.x);
-    outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(target_deg.y);
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
-    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(target_deg.z);
     outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
 }
@@ -203,6 +231,24 @@ void AP_Mount_Alexmos::parse_body()
             _current_angle.x = VALUE_TO_DEGREE(_buffer.angles.angle_roll);
             _current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
             _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
+            break;
+
+        case CMD_GET_ANGLES_EXT:
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
+            if (_state._roll_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_roll);
+            }
+            if (_state._pitch_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_pitch);
+            }
+            // The yaw angle reported by the IMU (angle_yaw) is very unreliable
+            // so use the body frame angle (stator_rotor_angle_yaw) unless
+            // the user specifically requests it (AP_Mount::Input_Mode_Angle_Absolute_Frame)
+            if (_state._yaw_input_mode != AP_Mount::Input_Mode_Angle_Absolute_Frame) {
+                _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw);
+            }
             break;
 
         case CMD_READ_PARAMS:
@@ -286,3 +332,4 @@ void AP_Mount_Alexmos::read_incoming()
         }
     }
 }
+

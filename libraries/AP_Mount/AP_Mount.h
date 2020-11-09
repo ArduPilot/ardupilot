@@ -72,6 +72,13 @@ public:
         Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
     };
 
+    enum InputMode {
+      Input_Mode_Angle_Body_Frame = 0,    /// Angles relative to the vehicle body
+      Input_Mode_Angular_Rate = 1,        /// Angular Rate
+      Input_Mode_Angle_Absolute_Frame = 2 /// Absolule Angles
+
+    };
+
     // init - detect and initialise all mounts
     void init();
 
@@ -148,6 +155,10 @@ protected:
         AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
+
+        AP_Int8         _roll_input_mode;   // roll input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
+        AP_Int8         _pitch_input_mode;  // pitch input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
+        AP_Int8         _yaw_input_mode;    // yaw input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
 
         // RC input channels from receiver used for direct angular input from pilot
         AP_Int8         _roll_rc_in;        // pilot provides roll input on this channel

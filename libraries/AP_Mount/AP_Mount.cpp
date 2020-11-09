@@ -568,6 +568,9 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_lon
     state[0]._stab_roll = packet.param2;
     state[0]._stab_tilt = packet.param3;
     state[0]._stab_pan = packet.param4;
+    state[0]._roll_input_mode = packet.param5;
+    state[0]._pitch_input_mode = packet.param6;
+    state[0]._yaw_input_mode = packet.param7;
 
     return MAV_RESULT_ACCEPTED;
 }
