@@ -32,6 +32,7 @@
 #ifndef HAL_BOOTLOADER_BUILD
 #include <AP_Logger/AP_Logger.h>
 #endif
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <hwdef.h>
 
