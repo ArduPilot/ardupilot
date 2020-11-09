@@ -23,6 +23,9 @@ public:
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
 
+    // return true if we have a range finder with the specified orientation
+    bool has_orientation(enum Rotation orientation) const;
+
     // DAL methods:
     AP_DAL_RangeFinder();
 
