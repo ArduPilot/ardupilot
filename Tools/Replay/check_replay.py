@@ -5,31 +5,17 @@ check that replay produced identical results
 '''
 
 from __future__ import print_function
-import time
-import sys
-
-from argparse import ArgumentParser
-parser = ArgumentParser(description=__doc__)
-parser.add_argument("--ekf2-only", action='store_true', help="only check EKF2")
-parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
-parser.add_argument("--verbose", action='store_true', help="verbose output")
-parser.add_argument("logs", metavar="LOG", nargs="+")
-
-args = parser.parse_args()
-
-from pymavlink import mavutil
-
-failure = 0
-errors = 0
 
 def check_log(logfile, progress, ekf2_only=False, ekf3_only=False, verbose=False):
     '''check replay log for matching output'''
+    from pymavlink import mavutil
     progress("Processing log %s" % logfile)
+    failure = 0
+    errors = 0
     count = 0
     base_count = 0
     counts = {}
     base_counts = {}
-    global errors, failure
 
     mlog = mavutil.mavlink_connection(logfile)
 
@@ -90,11 +76,23 @@ def check_log(logfile, progress, ekf2_only=False, ekf3_only=False, verbose=False
     return True
 
 if __name__ == '__main__':
-    for filename in args.logs:
-        check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose)
+    import sys
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--ekf2-only", action='store_true', help="only check EKF2")
+    parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
+    parser.add_argument("--verbose", action='store_true', help="verbose output")
+    parser.add_argument("logs", metavar="LOG", nargs="+")
 
-    if failure != 0 or errors != 0:
-        print("FAILED: %u %u" % (failure, errors))
+    args = parser.parse_args()
+
+    failed = False
+    for filename in args.logs:
+        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose):
+            failed = True
+
+    if failed:
+        print("FAILED")
         sys.exit(1)
     print("Passed")
     sys.exit(0)
