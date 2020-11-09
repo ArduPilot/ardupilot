@@ -29,6 +29,7 @@
 #define APM_BUILD_iofirmware     8
 #define APM_BUILD_AP_Periph      9
 #define APM_BUILD_AP_DAL_Standalone 10
+#define APM_BUILD_AP_Bootloader  11
 
 #ifndef APM_BUILD_DIRECTORY
 #define APM_BUILD_DIRECTORY APM_BUILD_UNKNOWN
