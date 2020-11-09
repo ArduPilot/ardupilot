@@ -4,6 +4,10 @@
 import boards
 
 def build(bld):
+    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1':
+        # we need a filesystem for replay
+        return
+
     vehicle = bld.path.name
 
     bld.ap_stlib(
