@@ -12,8 +12,8 @@ public:
 
     VehicleType::vehicle_type vehicle;
 
-    bool check_user_param(const char *name);
-    bool set_parameter(const char *name, float value, bool force=false);
+    static bool check_user_param(const char *name);
+    static bool set_parameter(const char *name, float value, bool force=false);
 
     bool handle_log_format_msg(const struct log_Format &f) override;
     bool handle_msg(const struct log_Format &f, uint8_t *msg) override;
