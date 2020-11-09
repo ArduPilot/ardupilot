@@ -792,3 +792,17 @@
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Planck Items
+//
+// Planck Land kP alt
+#ifndef PLANCK_LAND_KP_ALT
+ #define PLANCK_LAND_KP_ALT          .1     // Proportional alt gain used in planck land
+ #define PLANCK_NOM_KP_ALT           1
+#endif
+
+// Emergency Mode Throttle setting
+#ifndef PLANCK_HT_THR
+ #define PLANCK_HT_THR              0.65 //65%
+#endif

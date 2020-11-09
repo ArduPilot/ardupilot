@@ -427,6 +427,7 @@ void Copter::three_hz_loop()
     fence_check();
 #endif // AC_FENCE_ENABLED
 
+    failsafe_tether_status_check();
 
     // update ch6 in flight tuning
     tuning();

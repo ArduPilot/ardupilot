@@ -114,7 +114,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 // failsafe_gcs_check - check for ground station failsafe
 void Copter::failsafe_gcs_check()
 {
-    bool planck_ok = planck_interface.get_commbox_state();
+    bool planck_ok = true; //No commbox GPS failsafe for AVEMIndago
 
     // Bypass GCS failsafe checks if disabled or GCS never connected
     if (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0) {
@@ -283,6 +283,35 @@ void Copter::failsafe_terrain_on_event()
     } else {
         //set_mode_RTL_or_land_with_pause(ModeReason::TERRAIN_FAILSAFE);
         set_mode_planck_RTB_or_planck_land(ModeReason::TERRAIN_FAILSAFE);
+    }
+}
+
+// check for tether fault
+void Copter::failsafe_tether_status_check()
+{
+    bool tether_trigger = copter.planck_interface.get_spool_status() == PLANCK_DECK_SPOOL_RETRIEVE;
+
+    if (tether_trigger != failsafe.tether) {
+        if (tether_trigger) {
+            failsafe_tether_on_event();
+        } else {
+            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TETHER, LogErrorCode::ERROR_RESOLVED);
+            failsafe.tether = false;
+        }
+    }
+}
+
+// tether failsafe action
+// TODO: Make this handle/react differently to diffrent tether faults
+void Copter::failsafe_tether_on_event()
+{
+    failsafe.tether = true;
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Tether Fault"); //TODO: Make this account for diffrent tether faults
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_TETHER, LogErrorCode::FAILSAFE_OCCURRED);
+
+    if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb))
+    {
+        set_mode_planck_RTB_or_planck_land(ModeReason::TETHER_FAILSAFE);
     }
 }
 

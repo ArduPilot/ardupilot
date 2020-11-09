@@ -222,6 +222,11 @@ public:
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
 
+        // 127: Planck Params
+        k_param_planck_land_kp_z, // 127
+        k_param_planck_high_tension_throttle, // 128
+        k_param_nav_lights_on, // 129
+
         //
         // 135 : reserved for Solo until features merged with master
         //
@@ -464,6 +469,11 @@ public:
     AP_Float                acro_balance_pitch;
     AP_Int8                 acro_trainer;
     AP_Float                acro_rp_expo;
+
+    // planck Parameters
+    AP_Float                planck_land_kp_z;
+    AP_Float                planck_high_tension_throttle;
+    AP_Int8                 nav_lights_on;
 
     // Note: keep initializers here in the same order as they are declared
     // above.

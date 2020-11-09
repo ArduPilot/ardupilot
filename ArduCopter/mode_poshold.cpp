@@ -88,7 +88,7 @@ void ModePosHold::run()
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
 
-    // get pilot's desired yaw rate
+    // get pilot's desired yaw rate, or let the gimbal steer the vehicle
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
@@ -498,8 +498,46 @@ void ModePosHold::run()
     roll = constrain_float(roll, -angle_max, angle_max);
     pitch = constrain_float(pitch, -angle_max, angle_max);
 
+    AP_Mount *mount = AP::mount();
+    if (mount != nullptr){
+
+        // allow the pilot to override the yaw_condition command if the commanded yaw is outside the deadband
+        // the total range of target_yaw_rate is about -10000 to 10000,
+        // set the deadband to 200/10000 or 2% of the total range,
+        if ((target_yaw_rate > 200) || (target_yaw_rate < -200)) {
+            auto_yaw.set_mode(AUTO_YAW_RATE);
+        }
+        else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle){
+            //auto_yaw.yaw() is set when a CMD_DO_MOUNT_CONTROL message is received
+            target_yaw_rate = AP_HAL::micros64() - mount->get_last_mount_control_time_us() < 500000 ? auto_yaw.rate_cds() : 0;
+//            auto_yaw.set_mode(AUTO_YAW_RATE);
+        }
+        else if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
+            //only set new yaw command if payload data is recent (1/2 sec)
+            if(AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
+            {
+                float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
+                int8_t direction = 1;
+                bool relative_angle = false;
+
+                // update auto_yaw private variable _fixed_yaw
+                copter.flightmode->auto_yaw.set_fixed_yaw(
+                    angle_deg,
+                    0, // use default angle change rate
+                    direction,
+                    relative_angle);
+            }
+        }
+    }
+
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll, pitch, target_yaw_rate);
+    if (auto_yaw.mode() != AUTO_YAW_FIXED) {
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll, pitch, target_yaw_rate);
+    }
+    else {
+        // roll, pitch from pilot, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(roll, pitch, auto_yaw.yaw(), true);
+    }
 
     // call z-axis position controller
     pos_control->update_z_controller();

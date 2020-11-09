@@ -610,21 +610,35 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet)
 {
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
+    AP_Mount *mount = AP::mount();
+    // if the mount doesn't do pan control or mount is in follow-the-vehicle mode, then yaw the entire vehicle instead:
     switch (packet.command) {
 #if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-        if(!copter.camera_mount.has_pan_control()) {
-            copter.flightmode->auto_yaw.set_fixed_yaw(
-                (float)packet.param3 * 0.01f,
-                0.0f,
-                0,0);
+    {
+        bool no_mount_pan_control = (!copter.camera_mount.has_pan_control() || (mount == nullptr));
+        bool is_normal_tension_planck_tracking =
+            !(copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out())
+            && (copter.flightmode == &copter.mode_plancktracking);
+
+        if(no_mount_pan_control && is_normal_tension_planck_tracking) {
+            copter.flightmode->auto_yaw.set_rate((float)packet.param3);
+            if(mount != nullptr)
+            {
+                mount->set_last_mount_control_time_us(AP_HAL::micros64());
+            }
+        }
+        else {
+            mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
         }
         break;
+    }
 #endif
     default:
         break;
     }
+
+    // GCS_MAVLINK::handle_command_mount handles all mount commands and checks if mount != nullptr
     return GCS_MAVLINK::handle_command_mount(packet);
 }
 
@@ -681,21 +695,37 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 #endif
 
     case MAV_CMD_CONDITION_YAW:
-        // param1 : target angle [0-360]
+    {
+        AP_Mount *mount = AP::mount();
+
+        // switch gimbal YAW follow mode upon a vehicle YAW command
+        if (mount != nullptr) {
+            mount->mount_yaw_follow_mode = AP_Mount::gimbal_yaw_follows_vehicle;
+        }
+
+        // param1 : target angle [0-360)
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
         // param4 : relative offset (1) or absolute angle (0)
-        if ((packet.param1 >= 0.0f)   &&
-            (packet.param1 <= 360.0f) &&
-            (is_zero(packet.param4) || is_equal(packet.param4,1.0f))) {
+        if ((packet.param1 < 0.0f) || (packet.param1 >= 360.0f)) {
+            return MAV_RESULT_FAILED;
+        }
+        if (is_zero(packet.param4) || is_equal(packet.param4,1.0f)) {
+            float scaled_p1 = packet.param1;
+            bool relative_angle = is_positive(packet.param4);
+            if ((relative_angle) && (mount != nullptr)) {
+                // apply zoom scaling only to the relative offset
+                scaled_p1 = scaled_p1 * mount->mount_scale_with_zoom;
+            }
             copter.flightmode->auto_yaw.set_fixed_yaw(
-                packet.param1,
+                scaled_p1,
                 packet.param2,
                 (int8_t)packet.param3,
-                is_positive(packet.param4));
+                relative_angle);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+    }
 
     case MAV_CMD_DO_CHANGE_SPEED:
         // param1 : unused
@@ -892,21 +922,25 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 {
+    AP_Mount *mount = AP::mount();
+    // if the mount doesn't do pan control or mount is in follow-the-vehicle mode, then yaw the entire vehicle instead:
     switch (msg.msgid) {
 #if MOUNT == ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        if(!copter.camera_mount.has_pan_control()) {
-            // if the mount doesn't do pan control then yaw the entire vehicle instead:
+        if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
                 0.0f,
                 0,
                 0);
-
             break;
+        }
+        else {
+            mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
         }
 #endif
     }
+    // GCS_MAVLINK::handle_command_mount handles all mount commands and checks if mount != nullptr
     GCS_MAVLINK::handle_mount_message(msg);
 }
 
@@ -917,6 +951,8 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
     //Handle any messages coming from planck's software
     case MAVLINK_MSG_ID_PLANCK_STATUS:
     case MAVLINK_MSG_ID_PLANCK_CMD_MSG:
+    case MAVLINK_MSG_ID_PLANCK_LANDING_TAG_ESTIMATE_NED:
+    case MAVLINK_MSG_ID_PLANCK_DECK_TETHER_STATUS:
         copter.planck_interface.handle_planck_mavlink_msg(chan, &msg, copter.ahrs);
         break;
 
@@ -1301,7 +1337,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         copter.g2.toy_mode.handle_message(msg);
         break;
 #endif
-        
+
     default:
         handle_common_message(msg);
         break;
@@ -1357,6 +1393,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_l
     }
 #endif
 
+    //Immediately emit a heartbeat indicating a disarmed state
+    send_heartbeat();
+
     return result;
 }
 
@@ -1399,4 +1438,9 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
         return MAV_LANDED_STATE_TAKEOFF;
     }
     return MAV_LANDED_STATE_IN_AIR;
+}
+
+void* GCS_MAVLINK_Copter::get_planck_ptr()
+{
+    return (void*)(&(copter.planck_interface));
 }

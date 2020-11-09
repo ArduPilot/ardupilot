@@ -1,6 +1,7 @@
-#include "AP_Mount_Alexmos.h"
+﻿#include "AP_Mount_Alexmos.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -14,6 +15,13 @@ void AP_Mount_Alexmos::init()
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
     }
+
+
+    _log_encoder_readback = 0.0f;
+    _yaw_follow_mode = 7;
+
+    // Responsiveness of the gimbal to recenter with the vehicle
+    gimbal_yaw_scale = 1.0/20.0f;
 }
 
 // update mount position - should be called periodically
@@ -23,6 +31,7 @@ void AP_Mount_Alexmos::update()
         return;
     }
 
+    get_angles_ext();
     read_incoming(); // read the incoming messages from the gimbal
 
     // update based on mount mode
@@ -39,9 +48,18 @@ void AP_Mount_Alexmos::update()
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+        {
+            AP_Mount *mount = AP::mount();
+            if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle))
+            {
+                // use yaw encoder to move yaw with the vehicle
+                _angle_ef_target_rad.z = -_current_angle.z * gimbal_yaw_scale;
+            }
+
+            // yaw angle (_current_angle.z) when gimbal follows the vehicle
             control_axis(_angle_ef_target_rad, false);
-            break;
+        }
+        break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
@@ -84,7 +102,7 @@ void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
         return;
     }
 
-    get_angles();
+    get_angles_ext();
     mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
 }
 
@@ -95,6 +113,15 @@ void AP_Mount_Alexmos::get_angles()
 {
     uint8_t data[1] = {(uint8_t)1};
     send_command(CMD_GET_ANGLES, data, 1);
+}
+
+/*
+ * get_angles_ext
+ */
+void AP_Mount_Alexmos::get_angles_ext()
+{
+    uint8_t data[1] = {(uint8_t)1};
+    send_command(CMD_GET_ANGLES_EXT, data, 1);
 }
 
 /*
@@ -124,6 +151,23 @@ void AP_Mount_Alexmos::get_boardinfo()
 }
 
 /*
+  Translate the MAVLink input mode into the corresponding alexmos control mode
+ */
+unsigned int AP_Mount_Alexmos::get_control_mode(unsigned int input_mode)
+{
+    switch(input_mode) {
+        case AP_Mount::Input_Mode_Angle_Body_Frame:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE_REL_FRAME;
+        case AP_Mount::Input_Mode_Angular_Rate:
+            return AP_MOUNT_ALEXMOS_MODE_SPEED;
+        case AP_Mount::Input_Mode_Angle_Absolute_Frame:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE;
+        default:
+            return AP_MOUNT_ALEXMOS_MODE_ANGLE;
+    }
+}
+
+/*
   control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
 */
 void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees)
@@ -133,13 +177,16 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     if (!target_in_degrees) {
         target_deg *= RAD_TO_DEG;
     }
+
     alexmos_parameters outgoing_buffer;
-    outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
-    outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.mode_roll = get_control_mode(_state._roll_input_mode);
+    outgoing_buffer.angle_speed.mode_pitch = get_control_mode(_state._pitch_input_mode);
+    outgoing_buffer.angle_speed.mode_yaw = get_control_mode(_state._yaw_input_mode);
+    outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(target_deg.x);
     outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(target_deg.x);
-    outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(target_deg.y);
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
-    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
+    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(target_deg.z);
     outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
 }
@@ -204,6 +251,35 @@ void AP_Mount_Alexmos::parse_body()
             _current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
             _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
             break;
+
+        case CMD_GET_ANGLES_EXT:
+        {
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
+            if (_state._roll_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_roll);
+            }
+            if (_state._pitch_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_pitch);
+            }
+            // The yaw angle reported by the IMU (angle_yaw) is very unreliable
+            // so use the body frame angle (stator_rotor_angle_yaw) unless
+            // the user specifically requests it (AP_Mount::Input_Mode_Angle_Absolute_Frame)
+            if (_state._yaw_input_mode != AP_Mount::Input_Mode_Angle_Absolute_Frame) {
+                _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw);
+            }
+
+            // make yaw encoder value visible outside the AP_Mount class
+            AP_Mount *mount = AP::mount();
+            if (mount != nullptr) {
+                mount->yaw_encoder_readback = _current_angle.z;
+                mount->yaw_encoder_readback_time_us = AP_HAL::micros64();
+                _log_encoder_readback = mount->yaw_encoder_readback;
+                _yaw_follow_mode=mount->mount_yaw_follow_mode;
+            }
+        }
+        break;
 
         case CMD_READ_PARAMS:
             _param_read_once = true;
@@ -286,3 +362,4 @@ void AP_Mount_Alexmos::read_incoming()
         }
     }
 }
+

@@ -85,7 +85,6 @@ void Copter::init_ardupilot()
 
     // Init RSSI
     rssi.init();
-    
     barometer.init();
 
     // setup telem slots with serial ports
@@ -252,6 +251,27 @@ void Copter::init_ardupilot()
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {
         enable_motor_output();
+    }
+
+    if(g.nav_lights_on)
+    {
+      // For an unknown reason, the commands to turn on nav LEDS must be sent 4 times
+      bool success = false;
+      uint8_t num_attempts = 0;
+
+      while ((!success) && (num_attempts <= 5))
+      {
+        success = false;
+        for(int i_led=0;i_led<4;i_led++)
+        {
+          success = notify.set_led(0x51,1);
+          success &= notify.set_led(0x52,1);
+          success &= notify.set_led(0x53,1);
+          success &= notify.set_led(0x54,1);
+        }
+
+        num_attempts += 1;
+      }
     }
 
     // disable safety if requested

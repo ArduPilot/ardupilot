@@ -421,6 +421,29 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
+
+    // @Param: PLANCK_LAND_KP_Z
+    // @DisplayName: Planck Land KP alt
+    // @Description: Alt proportional gain used in Planck Land
+    // @Units: 1/s
+    // @Range: 0 100000
+    // @User: Advanced
+    GSCALAR(planck_land_kp_z, "PLANCK_LAND_KP_Z",                 PLANCK_LAND_KP_ALT),
+
+    // @Param: planck_high_tension_throttle
+    // @DisplayName: Planck High Tension throttle 
+    // @Description: fixed throttle value during high tension events
+    // @Range: 0.5 1
+    // @User: Advanced
+    GSCALAR(planck_high_tension_throttle, "PLANCK_HT_THR", PLANCK_HT_THR),
+
+    // @Param: NAV_LEDS_ON
+    // @DisplayName: Nav Lights On
+    // @Description: Enable motor LED lights
+    // @Values: 0:Disabled,1:enabled
+    // @User: Advanced
+    GSCALAR(nav_lights_on,   "NAV_LEDS_ON",     0),
+
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
     // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.

@@ -198,7 +198,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
-    // 20 formerly _OFF_JNT
+    // @Param: _YAW_MINALT formerly _OFF_JNT
+    // @DisplayName: Mount yaw control minimum alatitude
+    // @Description: Min altitude for threshold for mount to control aircraft yaw
+    // @Units: cm
+    // @Range: 0 100000
+    // @User: Advanced
+    AP_GROUPINFO("_YAW_MINALT", 20, AP_Mount, _min_yaw_alt_cm, 1000),
 
     // 21 formerly _OFF_ACC
 
@@ -424,6 +430,19 @@ void AP_Mount::init()
         }
     }
 
+    // start with scaling disabled
+    mount_scale_with_zoom = 1.0;
+
+    // responsiveness of the vehicle yaw when steered by the mount
+    vehicle_yaw_scale = 1.0;
+
+    AP_Mount::yaw_encoder_readback = 0.0; // readback yaw encoder position from the gimbal
+    AP_Mount::yaw_encoder_readback_time_us = 0;
+    last_mount_control_time_us = 0;
+
+    // default is gimbal yaw follows the vehicle, use yaw encoder to move gimbal with the vehicle
+    AP_Mount::mount_yaw_follow_mode = gimbal_yaw_follows_vehicle;
+
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
@@ -559,6 +578,11 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
     _backends[instance]->set_angle_targets(roll, tilt, pan);
 }
 
+float AP_Mount::get_follow_yaw_rate()
+{
+    return vehicle_yaw_scale * yaw_encoder_readback;
+}
+
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
 {
     if (_primary >= AP_MOUNT_MAX_INSTANCES || _backends[_primary] == nullptr) {
@@ -568,6 +592,9 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_lon
     state[0]._stab_roll = packet.param2;
     state[0]._stab_tilt = packet.param3;
     state[0]._stab_pan = packet.param4;
+    state[0]._roll_input_mode = packet.param5;
+    state[0]._pitch_input_mode = packet.param6;
+    state[0]._yaw_input_mode = packet.param7;
 
     return MAV_RESULT_ACCEPTED;
 }

@@ -33,3 +33,8 @@ void ModePlanckRTB::run(){
     }
     copter.mode_plancktracking.run();
 }
+
+void ModePlanckRTB::exit()
+{
+  auto_yaw.set_mode_to_default(false);
+}

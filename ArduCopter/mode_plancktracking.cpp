@@ -35,6 +35,101 @@ bool ModePlanckTracking::init(bool ignore_checks){
 
 void ModePlanckTracking::run() {
 
+    // check if gimbal steering needs to controlling the vehicle yaw
+    AP_Mount *mount = AP::mount();
+    bool paylod_yaw_rate = false;
+
+    //Check for tether high tension
+    bool high_tension = copter.planck_interface.is_tether_high_tension() || copter.planck_interface.is_tether_timed_out();
+    bool use_positive_throttle = high_tension;
+
+    // Don't use/set heading command from gimbal if tether is in high tension.
+    if(!high_tension)
+    {
+      // If the gimbal is in vehicle_yaw_follows_gimbal mode, it sends a heading offset command,
+      // so we add that offset to the current vehicle heading to obtain the desired absoute heading.
+      // Note that the getter method "get_follow_yaw_rate()" is poorly named; it is not a rate,
+      // it's the differene between vehicle and gimbal heading.
+      if(mount != nullptr) {
+        if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
+
+          //only set new yaw command if payload data is recent (1/2 sec)
+          if (AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
+          {
+            float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
+            int8_t direction = 1;
+            bool relative_angle = false;
+
+            // update auto_yaw private variable _fixed_yaw
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  angle_deg,
+                  0, // use default angle change rate
+                  direction,
+                  relative_angle);
+          }
+          paylod_yaw_rate = false;
+        }
+        else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
+        {
+          //in this case, APM is getting yaw rate commands from the tablet via mavlink,
+          //so we set the set the fixed yaw command to this rate, and tell the
+          //angle controller in mode guided to interpret as a rate. Note that the
+          //auto yaw will be set to mode fixed, though it is actually controlling rate.
+          paylod_yaw_rate = true;
+
+          //If we've stopped getting the mavlink yaw rate commands, use 0 yaw rate command
+          if(AP_HAL::micros64() - mount->get_last_mount_control_time_us() > 500000)
+          {
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  0.0f,
+                  0.0f,
+                  0,
+                  0);
+          }
+          else if(copter.flightmode->auto_yaw.mode() == AUTO_YAW_RATE)
+          {
+            copter.flightmode->auto_yaw.set_fixed_yaw(
+                  copter.flightmode->auto_yaw.rate_cds(),
+                  0.0f,
+                  0,
+                  0);
+
+          }
+        }
+      }
+    }
+
+    if(high_tension) {
+        //If we ever enter high tension, make sure ACE is landing
+        if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb) && copter.planck_interface.ready_for_land()) {
+            copter.set_mode_planck_RTB_or_planck_land(ModeReason::GCS_FAILSAFE);
+        }
+
+        if(!copter.planck_interface.check_for_high_tension_timeout()) { //High tension hasn't failed
+            //While in high tension:
+            // - If actively tracking the tag, continue to do so, but use pos throttle
+            // - If not tracking the tag, but have GPS, command zero velocity but use pos throttle
+            // - If not tracking tag or and no GPS, use zero attitude with pos throttle
+            if(!copter.planck_interface.get_tag_tracking_state()) {
+                if(copter.position_ok()) {
+                  copter.planck_interface.override_with_zero_vel_cmd();
+
+                  //Force the position controller to use the current position
+                  const Vector3f& curr_pos = inertial_nav.get_position();
+                  // set target position to current position
+                  pos_control->set_xy_target(curr_pos.x, curr_pos.y);
+                } else {
+                  copter.planck_interface.override_with_zero_att_cmd();
+                }
+            }
+        } else { //High tension has timed out
+            //If high tension has failed, attempt to use a planck land or regular land
+            copter.set_mode_land_with_pause(ModeReason::GCS_FAILSAFE, false);
+            copter.mode_land.run();
+            return;
+        }
+    }
+
     //If there is new command data, send it to Guided
     if(copter.planck_interface.new_command_available()) {
         switch(copter.planck_interface.get_cmd_type()) {
@@ -63,6 +158,8 @@ void ModePlanckTracking::run() {
                 roll_cd,
                 pitch_cd);
 
+              float min_yaw_alt_cm = (mount != nullptr ? mount->get_min_yaw_alt_cm() : 1000.f);
+
               //If we are in WINGMAN mode, the user controls yaw, even though
               //we might be getting attitude/acceleration commands
               if(copter.flightmode == &copter.mode_planckwingman && !copter.failsafe.radio)
@@ -71,6 +168,16 @@ void ModePlanckTracking::run() {
                   float pilot_yaw_rate_cds = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
                   yaw_cd = pilot_yaw_rate_cds;
                   is_yaw_rate = true;
+              }
+              //Some applications require a fixed yaw command when in PLANCKTRACK
+              //Only use gimbal yaw (or yaw rate) commands if in mode_plancktracking and above alt threshold, and not high tension
+              else if((copter.flightmode == &copter.mode_plancktracking)
+                      && (copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED )
+                      && (copter.planck_interface.get_tag_pos().z > min_yaw_alt_cm)
+                      && !high_tension)
+              {
+                  yaw_cd = copter.flightmode->auto_yaw.yaw();
+                  is_yaw_rate = paylod_yaw_rate;
               }
 
               //Convert this to quaternions, yaw rates
@@ -194,7 +301,7 @@ void ModePlanckTracking::run() {
     }
 
     //Run the guided mode controller
-    ModeGuided::run(true); //use high-jerk
+    ModeGuided::run(true, use_positive_throttle); //use high-jerk, positive throttle if necessary
 }
 
 bool ModePlanckTracking::do_user_takeoff_start(float final_alt_above_home)
@@ -240,3 +347,7 @@ bool ModePlanckTracking::allows_arming(bool from_gcs) const
     return true;
 }
 
+void ModePlanckTracking::exit()
+{
+  auto_yaw.set_mode_to_default(false);
+}

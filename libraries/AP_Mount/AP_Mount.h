@@ -72,6 +72,13 @@ public:
         Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
     };
 
+    enum InputMode {
+      Input_Mode_Angle_Body_Frame = 0,    /// Angles relative to the vehicle body
+      Input_Mode_Angular_Rate = 1,        /// Angular Rate
+      Input_Mode_Angle_Absolute_Frame = 2 /// Absolule Angles
+
+    };
+
     // init - detect and initialise all mounts
     void init();
 
@@ -125,7 +132,33 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
+    float mount_scale_with_zoom;
+
+    // responsiveness of the vehicle yaw when steered by the mount
+    float vehicle_yaw_scale;
+
+    enum MountYawFollowMode {
+        gimbal_yaw_follows_vehicle = 0,
+        vehicle_yaw_follows_gimbal = 1
+    };
+    MountYawFollowMode mount_yaw_follow_mode;
+
+    float get_follow_yaw_rate();
+
+    float get_min_yaw_alt_cm() { return _min_yaw_alt_cm; };
+
+    uint64_t get_last_payload_update_us() { return yaw_encoder_readback_time_us; };
+
+    uint64_t get_last_mount_control_time_us() { return last_mount_control_time_us; };
+
+    void set_last_mount_control_time_us(uint64_t time_us) {  last_mount_control_time_us=time_us; };
+
 protected:
+
+    float yaw_encoder_readback;
+
+    uint64_t yaw_encoder_readback_time_us;
+    uint64_t last_mount_control_time_us;
 
     static AP_Mount *_singleton;
 
@@ -134,6 +167,9 @@ protected:
 
     // frontend parameters
     AP_Int8             _joystick_speed;    // joystick gain
+
+    // Minimum alt at which the mount can command yaw
+    AP_Float            _min_yaw_alt_cm;
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated
@@ -148,6 +184,10 @@ protected:
         AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
+
+        AP_Int8         _roll_input_mode;   // roll input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
+        AP_Int8         _pitch_input_mode;  // pitch input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
+        AP_Int8         _yaw_input_mode;    // yaw input (0 = angle body frame, 1 = angular rate, 2 = angle absolute frame)
 
         // RC input channels from receiver used for direct angular input from pilot
         AP_Int8         _roll_rc_in;        // pilot provides roll input on this channel

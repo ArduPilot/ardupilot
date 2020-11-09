@@ -47,6 +47,7 @@
 #define CMD_WRITE_PARAMS_EXT 34
 #define CMD_AUTO_PID 35
 #define CMD_SERVO_OUT 36
+#define CMD_GET_ANGLES_EXT 61
 #define CMD_ERROR 255
 
 #define AP_MOUNT_ALEXMOS_MODE_NO_CONTROL 0
@@ -54,11 +55,13 @@
 #define AP_MOUNT_ALEXMOS_MODE_ANGLE 2
 #define AP_MOUNT_ALEXMOS_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_ALEXMOS_MODE_RC 4
+#define AP_MOUNT_ALEXMOS_MODE_ANGLE_REL_FRAME 5
 
 #define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
 
-#define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
-#define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
+// degree mapped to range 0.0-1.0, with fixed point 14-bit fraction
+#define VALUE_TO_DEGREE(d) ((float)(d)*(360.0f/16384.0f))
+#define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(16384.0f/360.0f)))
 #define DEGREE_PER_SEC_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.1220740379f)))
 
 class AP_Mount_Alexmos : public AP_Mount_Backend
@@ -86,8 +89,14 @@ public:
 
 private:
 
+    uint8_t _yaw_follow_mode;
+    float _log_encoder_readback;
+
     // get_angles -
     void get_angles();
+
+    // get_angles_ext -
+    void get_angles_ext();
 
     // set_motor will activate motors if true, and disable them if false
     void set_motor(bool on);
@@ -116,6 +125,9 @@ private:
     // read_incoming - detect and read the header of the incoming message from the gimbal
     void read_incoming();
 
+    // Translate the MAVLink input mode into the corresponding alexmos control mode
+    unsigned int get_control_mode(unsigned int input_mode);
+
     // structure for the Serial Protocol
 
     // CMD_BOARD_INFO
@@ -139,9 +151,27 @@ private:
         int16_t rc_speed_yaw;
     };
 
+    // CMD_GET_ANGLES_EXT
+    struct PACKED alexmos_angles_ext {
+        int16_t angle_roll;
+        int16_t rc_angle_roll;
+        int32_t stator_rotor_angle_roll;
+        uint8_t reserved_roll[10];
+        int16_t angle_pitch;
+        int16_t rc_angle_pitch;
+        int32_t stator_rotor_angle_pitch;
+        uint8_t reserved_pitch[10];
+        int16_t angle_yaw;
+        int16_t rc_angle_yaw;
+        int32_t stator_rotor_angle_yaw;
+        uint8_t reserved_yaw[10];
+    };
+
     // CMD_CONTROL
     struct PACKED alexmos_angles_speed {
-        int8_t mode;
+        int8_t mode_roll;
+        int8_t mode_pitch;
+        int8_t mode_yaw;
         int16_t speed_roll;
         int16_t angle_roll;
         int16_t speed_pitch;
@@ -269,6 +299,7 @@ private:
         DEFINE_BYTE_ARRAY_METHODS
         alexmos_version version;
         alexmos_angles angles;
+        alexmos_angles_ext angles_ext;
         alexmos_params params;
         alexmos_angles_speed angle_speed;
     } _buffer,_current_parameters;
@@ -298,4 +329,7 @@ private:
 
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
+
+    // Responsiveness of the gimbal to recenter with the vehicle
+    float gimbal_yaw_scale;
 };

@@ -78,11 +78,12 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     float current;
 
     // default compensation type to use current if possible
-    if (battery.current_amps(current)) {
-        comp_type = AP_COMPASS_MOT_COMP_CURRENT;
-    } else {
-        comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
-    }
+//    if (battery.current_amps(current)) {
+//        comp_type = AP_COMPASS_MOT_COMP_CURRENT;
+//    } else {
+//        comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
+//    }
+    comp_type = AP_COMPASS_MOT_COMP_THROTTLE;
 
     // send back initial ACK
     mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION,0);

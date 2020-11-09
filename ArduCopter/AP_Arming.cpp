@@ -58,6 +58,10 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
             check_failed(ARMING_CHECK_PLANCK_GPS, display_failure, "Planck Commbox GPS unhealthy");
             return false;
         }
+        if(copter.planck_interface.is_tether_timed_out()) {
+            check_failed(ARMING_CHECK_PLANCK_GPS, display_failure, "Planck Tether unhealthy");
+            return false;
+        }
     }
 
     return fence_checks(display_failure)

@@ -14,7 +14,7 @@
  */
 
 #include "AP_Notify.h"
-
+#include <GCS_MAVLink/GCS.h>
 #include "AP_BoardLED.h"
 #include "PixRacerLED.h"
 #include "Buzzer.h"
@@ -207,6 +207,21 @@ void AP_Notify::add_backend_helper(NotifyDevice *backend)
 
 #define ADD_BACKEND(backend) do { add_backend_helper(backend); if (_num_devices >= CONFIG_NOTIFY_DEVICES_MAX) return;} while(0)
 
+bool AP_Notify::set_led(uint8_t device_address, bool on) {
+  AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev =  std::move(hal.i2c_mgr->get_device(0, device_address,100000, true, 20));
+
+  bool success = false;
+  if(!dev->get_semaphore()->take(10)) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to set LED %i\n", device_address);
+  } else {
+    success = dev->write_register(0x0A,0x40);
+    success &= dev->write_register(0x0B, (uint8_t)on);
+    dev->get_semaphore()->give();
+  }
+
+  return success;
+}
+
 // add notify backends to _devices array
 void AP_Notify::add_backends(void)
 {
@@ -288,7 +303,6 @@ void AP_Notify::add_backends(void)
 
         }
     }
-
 
     // Always try and add a display backend
     ADD_BACKEND(new Display());

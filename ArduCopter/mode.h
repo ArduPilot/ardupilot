@@ -784,8 +784,8 @@ public:
     using Mode::Mode;
 
     bool init(bool ignore_checks) override;
-    void run() override { this->run(false); };
-    void run(bool high_jerk_z);
+    void run() override { this->run(false, false); };
+    void run(bool high_jerk_z, bool force_positive_throttle);
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
@@ -838,6 +838,8 @@ private:
 
     // controls which controller is run (pos or vel):
     GuidedMode guided_mode = Guided_TakeOff;
+
+    bool _force_positive_throttle = false;
 
 };
 
@@ -1514,6 +1516,7 @@ public:
     virtual bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool do_user_takeoff_start(float final_alt_above_home) override;
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
 
@@ -1533,11 +1536,13 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
-    bool requires_GPS() const override { return true; }
+    bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    bool is_landing() const override { return _is_landing; }
+    void exit();
 
 protected:
 
@@ -1561,8 +1566,11 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
+
+    float _kpz_nom = 1;
 
     const char *name() const override { return "PLANCKLAND"; }
     const char *name4() const override { return "PLND"; }
@@ -1582,6 +1590,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
 

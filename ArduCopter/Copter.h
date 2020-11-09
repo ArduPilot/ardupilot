@@ -423,10 +423,11 @@ private:
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
         uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
+        uint8_t tether              : 1; // true if a tether related failsafe has occurred
     } failsafe;
 
     bool any_failsafe_triggered() const {
-        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
+        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.tether;
     }
 
     // sensor health for logging
@@ -743,6 +744,9 @@ private:
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
+    void failsafe_tether_status_check();
+    void failsafe_tether_on_event();
+
     void gpsglitch_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
@@ -819,7 +823,7 @@ private:
     void notify_flight_mode();
 
     // mode_land.cpp
-    void set_mode_land_with_pause(ModeReason reason);
+    void set_mode_land_with_pause(ModeReason reason, bool pause=true);
     bool landing_with_GPS();
 
     // motor_test.cpp
