@@ -233,13 +233,27 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         stage = Stage::RC_PROTOCOL;
         FALLTHROUGH;
 
-    case Stage::RC_PROTOCOL:
+    case Stage::RC_PROTOCOL: {
         const char *prot = hal.rcin->protocol();
         if (prot == nullptr) {
             prot = "None";
         }
         if (! _logger_backend->Write_MessageF("RC Protocol: %s", prot)) {
             return; // call me again
+        }
+        stage = Stage::BATT_CYCLES;
+        FALLTHROUGH;
+    }
+    case Stage::BATT_CYCLES:
+    
+        const AP_BattMonitor &battery = AP::battery();
+        for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+            uint16_t cycles = 0;
+            if(battery.get_cycle_count(i, cycles)) {
+                if (! _logger_backend->Write_MessageF("BATT%u_MONITOR: Cycles %u", i + 1, cycles)) {
+                    return; // call me again
+                }
+            }
         }
     }
 

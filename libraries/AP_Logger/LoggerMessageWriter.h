@@ -33,7 +33,8 @@ private:
         GIT_VERSIONS,
         SYSTEM_ID,
         PARAM_SPACE_USED,
-        RC_PROTOCOL
+        RC_PROTOCOL,
+        BATT_CYCLES
     };
     Stage stage;
 };

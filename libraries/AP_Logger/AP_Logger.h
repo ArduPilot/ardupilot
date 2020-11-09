@@ -19,6 +19,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_InertialSensor/AP_InertialSensor_Backend.h>
 #include <AP_Vehicle/ModeReason.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include <stdint.h>
 
