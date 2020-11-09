@@ -4,6 +4,9 @@
 import boards
 
 def build(bld):
+    if isinstance(bld.get_board(), boards.chibios):
+        return
+
     vehicle = bld.path.name
 
     bld.ap_stlib(
