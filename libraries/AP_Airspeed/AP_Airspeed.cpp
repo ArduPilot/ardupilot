@@ -448,8 +448,9 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
         if (state[i].cal.count == 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u unhealthy", i + 1);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
-            param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
+            float offset = state[i].cal.sum / state[i].cal.count;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated, offset %4.0f", i + 1, offset);
+            param[i].offset.set_and_save(offset);
         }
         state[i].cal.start_ms = 0;
         return;
