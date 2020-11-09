@@ -73,7 +73,6 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         return mapped_msgid[intype];
     }
     for (uint8_t n=next_msgid; n<255; n++) {
-        // ::fprintf(stderr, "next_msgid=%u\n", n);
         bool already_mapped = false;
         for (uint16_t i=0; i<sizeof(mapped_msgid); i++) {
             if (mapped_msgid[i] == n) {
@@ -97,14 +96,14 @@ uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
         break;
     }
     if (mapped_msgid[intype] == 0) {
-        ::fprintf(stderr, "mapping failed\n");
+        ::printf("mapping failed\n");
         abort();
     }
 
     return mapped_msgid[intype];    
 }
 
-bool LogReader::handle_log_format_msg(const struct log_Format &f) 
+bool LogReader::handle_log_format_msg(const struct log_Format &f)
 {
     // emit the output as we receive it:
     AP::logger().WriteBlock((void*)&f, sizeof(f));
@@ -144,14 +143,10 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         return true;
     }
 
-	// map from format name to a parser subclass:
+    // map from format name to a parser subclass:
 	if (streq(name, "PARM")) {
-            msgparser[f.type] = new LR_MsgHandler_PARM
-                (formats[f.type],
-                 [this](const char *xname, const float xvalue) {
-                    return set_parameter(xname, xvalue);
-                 });
-	} else if (streq(name, "RFRH")) {
+        msgparser[f.type] = new LR_MsgHandler_PARM(formats[f.type]);
+    } else if (streq(name, "RFRH")) {
         msgparser[f.type] = new LR_MsgHandler_RFRH(formats[f.type]);
     } else if (streq(name, "RFRF")) {
         msgparser[f.type] = new LR_MsgHandler_RFRF(formats[f.type], ekf2, ekf3);
@@ -258,7 +253,6 @@ bool LogReader::set_parameter(const char *name, float value, bool force)
     if (vp == NULL) {
         // a lot of parameters will not be found - e.g. FORMAT_VERSION
         // and all of the vehicle-specific parameters, ....
-        // ::fprintf(stderr, "Parameter (%s) not found\n", name);
         return false;
     }
     float old_value = 0;
@@ -278,7 +272,8 @@ bool LogReader::set_parameter(const char *name, float value, bool force)
         AP_HAL::panic("What manner of evil is var_type=%u", var_type);
     }
     if (fabsf(old_value - value) > 1.0e-12) {
-        ::fprintf(stderr, "Changed %s to %.8f from %.8f\n", name, value, old_value);
+        ::printf("Changed %s to %.8f from %.8f\n", name, value, old_value);
     }
     return true;
 }
+
