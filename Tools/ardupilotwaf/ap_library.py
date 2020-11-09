@@ -152,6 +152,7 @@ class ap_library_check_headers(Task.Task):
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Camera/AP_RunCam.h',
+        'libraries/AP_Common/AP_FWVersionDefine.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
