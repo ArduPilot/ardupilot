@@ -23,8 +23,12 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Filesystem/posix_compat.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Scheduler.h>
+#endif
 
 #define streq(x, y) (!strcmp(x, y))
 
@@ -194,12 +198,17 @@ void Replay::setup()
     set_user_parameters();
 
     if (filename == nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        // allow replay on stm32
+        filename = "APM/replayin.bin";
+#else
         ::printf("You must supply a log filename\n");
         exit(1);
+#endif
     }
     // LogReader reader = LogReader(log_structure);
     if (!reader.open_log(filename)) {
-        ::fprintf(stderr, "open(%s): %m\n", filename);
+        ::printf("open(%s): %m\n", filename);
         exit(1);
     }
 }

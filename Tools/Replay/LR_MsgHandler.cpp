@@ -2,39 +2,41 @@
 #include "LogReader.h"
 #include "Replay.h"
 
-#include <AP_HAL_Linux/Scheduler.h>
 #include <AP_DAL/AP_DAL.h>
 
 #include <cinttypes>
 
 extern const AP_HAL::HAL& hal;
 
-#define MSG_CAST(sname,msg) *((log_ ##sname *)(msg+3))
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, sizeof(msg));
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
 }
 
-void LR_MsgHandler_RFRH::process_message(uint8_t *msg)
+void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RFRH,msg));
+    MSG_CREATE(RFRH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RFRF::process_message(uint8_t *msg)
+void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RFRF,msg), ekf2, ekf3);
+    MSG_CREATE(RFRF, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
-void LR_MsgHandler_RFRN::process_message(uint8_t *msg)
+void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RFRN,msg));
+    MSG_CREATE(RFRN, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_REV2::process_message(uint8_t *msg)
+void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
 {
-    const log_REV2 &rev2 = MSG_CAST(REV2,msg);
+    MSG_CREATE(REV2, msgbytes);
 
-    switch ((AP_DAL::Event2)rev2.event) {
+    switch ((AP_DAL::Event2)msg.event) {
 
     case AP_DAL::Event2::resetGyroBias:
         ekf2.resetGyroBias();
@@ -78,28 +80,28 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msg)
     }
 }
 
-void LR_MsgHandler_RSO2::process_message(uint8_t *msg)
+void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
 {
-    const log_RSO2 &rso2 = MSG_CAST(RSO2,msg);
+    MSG_CREATE(RSO2, msgbytes);
     Location loc;
-    loc.lat = rso2.lat;
-    loc.lng = rso2.lng;
-    loc.alt = rso2.alt;
+    loc.lat = msg.lat;
+    loc.lng = msg.lng;
+    loc.alt = msg.alt;
     ekf2.setOriginLLH(loc);
 }
 
-void LR_MsgHandler_RWA2::process_message(uint8_t *msg)
+void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
 {
-    const log_RWA2 &rwa2 = MSG_CAST(RWA2,msg);
-    ekf2.writeDefaultAirSpeed(rwa2.airspeed);
+    MSG_CREATE(RWA2, msgbytes);
+    ekf2.writeDefaultAirSpeed(msg.airspeed);
 }
 
 
-void LR_MsgHandler_REV3::process_message(uint8_t *msg)
+void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
 {
-    const log_REV3 &rev3 = MSG_CAST(REV3,msg);
+    MSG_CREATE(REV3, msgbytes);
 
-    switch ((AP_DAL::Event3)rev3.event) {
+    switch ((AP_DAL::Event3)msg.event) {
 
     case AP_DAL::Event3::resetGyroBias:
         ekf3.resetGyroBias();
@@ -143,123 +145,150 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msg)
     }
 }
 
-void LR_MsgHandler_RSO3::process_message(uint8_t *msg)
+void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
 {
-    const log_RSO3 &rso3 = MSG_CAST(RSO3,msg);
+    MSG_CREATE(RSO3, msgbytes);
     Location loc;
-    loc.lat = rso3.lat;
-    loc.lng = rso3.lng;
-    loc.alt = rso3.alt;
+    loc.lat = msg.lat;
+    loc.lng = msg.lng;
+    loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
 }
 
-void LR_MsgHandler_RWA3::process_message(uint8_t *msg)
+void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
 {
-    const log_RWA3 &rwa3 = MSG_CAST(RWA3,msg);
-    ekf3.writeDefaultAirSpeed(rwa3.airspeed);
+    MSG_CREATE(RWA3, msgbytes);
+    ekf3.writeDefaultAirSpeed(msg.airspeed);
 }
 
-void LR_MsgHandler_REY3::process_message(uint8_t *msg)
+void LR_MsgHandler_REY3::process_message(uint8_t *msgbytes)
 {
-    const log_REY3 &rey3 = MSG_CAST(REY3,msg);
-    ekf3.writeEulerYawAngle(rey3.yawangle, rey3.yawangleerr, rey3.timestamp_ms, rey3.type);
+    MSG_CREATE(REY3, msgbytes);
+    ekf3.writeEulerYawAngle(msg.yawangle, msg.yawangleerr, msg.timestamp_ms, msg.type);
 }
 
-void LR_MsgHandler_RISH::process_message(uint8_t *msg)
+void LR_MsgHandler_RISH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RISH,msg));
+    MSG_CREATE(RISH, msgbytes);
+    AP::dal().handle_message(msg);
 }
-void LR_MsgHandler_RISI::process_message(uint8_t *msg)
+void LR_MsgHandler_RISI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RISI,msg));
-}
-
-void LR_MsgHandler_RASH::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RASH,msg));
-}
-void LR_MsgHandler_RASI::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RASI,msg));
+    MSG_CREATE(RISI, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RBRH::process_message(uint8_t *msg)
+void LR_MsgHandler_RASH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RBRH,msg));
+    MSG_CREATE(RASH, msgbytes);
+    AP::dal().handle_message(msg);
 }
-void LR_MsgHandler_RBRI::process_message(uint8_t *msg)
+void LR_MsgHandler_RASI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RBRI,msg));
-}
-
-void LR_MsgHandler_RRNH::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RRNH,msg));
-}
-void LR_MsgHandler_RRNI::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RRNI,msg));
+    MSG_CREATE(RASI, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RGPH::process_message(uint8_t *msg)
+void LR_MsgHandler_RBRH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RGPH,msg));
-}
-void LR_MsgHandler_RGPI::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RGPI,msg));
-}
-void LR_MsgHandler_RGPJ::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RGPJ,msg));
+    MSG_CREATE(RBRH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RMGH::process_message(uint8_t *msg)
+void LR_MsgHandler_RBRI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RMGH,msg));
-}
-void LR_MsgHandler_RMGI::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RMGI,msg));
+    MSG_CREATE(RBRI, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RBCH::process_message(uint8_t *msg)
+void LR_MsgHandler_RRNH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RBCH,msg));
-}
-void LR_MsgHandler_RBCI::process_message(uint8_t *msg)
-{
-    AP::dal().handle_message(MSG_CAST(RBCI,msg));
+    MSG_CREATE(RRNH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RVOH::process_message(uint8_t *msg)
+void LR_MsgHandler_RRNI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RVOH,msg));
+    MSG_CREATE(RRNI, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_ROFH::process_message(uint8_t *msg)
+void LR_MsgHandler_RGPH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(ROFH,msg), ekf2, ekf3);
+    MSG_CREATE(RGPH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RWOH::process_message(uint8_t *msg)
+void LR_MsgHandler_RGPI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RWOH,msg), ekf2, ekf3);
+    MSG_CREATE(RGPI, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_RBOH::process_message(uint8_t *msg)
+void LR_MsgHandler_RGPJ::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(RBOH,msg), ekf2, ekf3);
+    MSG_CREATE(RGPJ, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_REPH::process_message(uint8_t *msg)
+void LR_MsgHandler_RMGH::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(REPH,msg), ekf2, ekf3);
+    MSG_CREATE(RMGH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_REVH::process_message(uint8_t *msg)
+void LR_MsgHandler_RMGI::process_message(uint8_t *msgbytes)
 {
-    AP::dal().handle_message(MSG_CAST(REVH,msg), ekf2, ekf3);
+    MSG_CREATE(RMGI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBCH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBCH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBCI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBCI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RVOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RVOH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_ROFH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(ROFH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_RWOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RWOH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_RBOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBOH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_REPH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REPH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_REVH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REVH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
 #include <AP_AHRS/AP_AHRS.h>
@@ -278,24 +307,13 @@ bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
         }
     }
 
-    return _set_parameter_callback(name, value);
+    return LogReader::set_parameter(name, value);
 }
 
 void LR_MsgHandler_PARM::process_message(uint8_t *msg)
 {
     const uint8_t parameter_name_len = AP_MAX_NAME_SIZE + 1; // null-term
     char parameter_name[parameter_name_len];
-    uint64_t time_us;
-
-    if (field_value(msg, "TimeUS", time_us)) {
-    } else {
-        // older logs can have a lot of FMT and PARM messages up the
-        // front which don't have timestamps.  Since in Replay we run
-        // AP_Logger's IO only when stop_clock is called, we can
-        // overflow AP_Logger's ringbuffer.  This should force us to
-        // do IO:
-        hal.scheduler->stop_clock(((Linux::Scheduler*)hal.scheduler)->stopped_clock_usec());
-    }
 
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
