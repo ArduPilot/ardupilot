@@ -89,6 +89,17 @@ void AP_DAL_RangeFinder_Backend::start_frame(AP_RangeFinder_Backend *backend) {
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNI, _RRNI, old);
 }
 
+// return true if we have a range finder with the specified orientation
+bool AP_DAL_RangeFinder::has_orientation(enum Rotation orientation) const
+{
+    for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+        if (_RRNI[i].orientation == orientation) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 AP_DAL_RangeFinder_Backend *AP_DAL_RangeFinder::get_backend(uint8_t id) const
 {

@@ -67,6 +67,7 @@ struct log_RFRN {
     uint8_t airspeed_ptr_is_null:1;
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
+    uint8_t opticalflow_enabled:1;
     uint8_t _end;
 };
 
@@ -265,10 +266,11 @@ struct log_RBCH {
     int32_t origin_lat;
     int32_t origin_lng;
     int32_t origin_alt;
-    bool get_vehicle_position_ned_returncode;
+    uint8_t get_vehicle_position_ned_returncode:1;
+    uint8_t get_origin_returncode:1;
+    uint8_t enabled:1;
+    uint8_t ptr_is_nullptr:1;
     uint8_t count;
-    bool get_origin_returncode;
-    uint8_t ptr_is_nullptr;
     uint8_t _end;
 };
 
@@ -402,7 +404,7 @@ struct log_RBOH {
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \
-      "RBCH", "ffffiiiBBBB", "PX,PY,PZ,AE,OLat,OLng,OAlt,GVPR,NumInst,ORet,NPtr", "-----------", "-----------" },  \
+      "RBCH", "ffffiiiBB", "PX,PY,PZ,AE,OLat,OLng,OAlt,Flags,NumInst", "---------", "---------" },  \
     { LOG_RBCI_MSG, RLOG_SIZE(RBCI),                                   \
       "RBCI", "IffffBB", "LU,PX,PY,PZ,Dist,H,I", "smmmm-#", "?0000--" }, \
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
