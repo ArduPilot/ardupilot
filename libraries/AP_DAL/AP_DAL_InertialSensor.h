@@ -75,8 +75,5 @@ private:
 
     uint8_t _primary_gyro;
 
-    void log_header(uint64_t time_us);
-    void log_instance(uint64_t time_us, uint8_t i);
-
     void update_filtered(uint8_t i);
 };
