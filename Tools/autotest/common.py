@@ -1345,12 +1345,24 @@ class AutoTest(ABC):
                                        0,
                                        0)
 
+    def reboot_check_valgrind_log(self):
+        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
+                                                  model=self.frame)
+        if os.path.getsize(valgrind_log) > 0:
+            backup_valgrind_log = ("%s-%s" % (str(int(time.time())), valgrind_log))
+            shutil.move(valgrind_log, backup_valgrind_log)
+
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
-        self.send_reboot_command()
+        if self.valgrind:
+            self.reboot_check_valgrind_log()
+            self.stop_SITL()
+            self.start_SITL(wipe=False)
+        else:
+            self.send_reboot_command()
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
     def send_cmd_enter_cpu_lockup(self):
@@ -1873,11 +1885,15 @@ class AutoTest(ABC):
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
-        if os.path.exists(valgrind_log):
+        files = glob.glob("*" + valgrind_log)
+        for valgrind_log in files:
             os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("%s-valgrind.log" %
-                                            self.log_name()))
+            if os.path.getsize(valgrind_log) > 0:
+                target = self.buildlogs_path("%s-%s" % (
+                    self.log_name(),
+                    os.path.basename(valgrind_log)))
+                self.progress("Valgrind log: moving %s to %s" % (valgrind_log, target))
+                shutil.move(valgrind_log, target)
 
     def start_test(self, description):
         self.progress("##################################################################################")
