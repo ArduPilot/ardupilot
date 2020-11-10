@@ -67,7 +67,7 @@
 #define HAL_BATT_CURR_PIN (4)
 #define HAL_BATT_CURR_SCALE (36)
 
-
+#define HAL_ESP32_RCIN GPIO_NUM_17
 
 #define HAL_ESP32_UART_DEVICES \
     {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
@@ -87,6 +87,7 @@
 
 #define HAL_ESP32_SDSPI \
    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+
 
 
 
