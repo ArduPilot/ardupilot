@@ -26,9 +26,14 @@
 #include "piccolo_protocol/ESCPackets.h"
 #include "piccolo_protocol/LegacyESCPackets.h"
 
+#include "piccolo_protocol/ServoPackets.h"
+
 // maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 12
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
+
+#define PICCOLO_CAN_MAX_NUM_SERVO 12
+#define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
 #define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
@@ -114,7 +119,24 @@ private:
     AP_HAL::CANIface* _can_iface;
     HAL_EventHandle _event_handle;
 
-    struct PiccoloESC_Info_t {
+    // Data structure for representing the state of a CBS servo
+    struct CBSServo_Info_t {
+
+        /* Telemetry data provided across multiple packets */
+        Servo_StatusA_t statusA;
+        Servo_StatusB_t statusB;
+
+        /* Servo configuration information */
+        Servo_Firmware_t firmware;
+        Servo_Address_t address;
+        Servo_SettingsInfo_t settings;
+        Servo_SystemInfo_t systemInfo;
+        Servo_TelemetrySettings_t telemetry;
+
+    } _servo_info[PICCOLO_CAN_MAX_NUM_SERVO];
+
+    // Data structure for representing the state of a Velocity ESC
+    struct VelocityESC_Info_t {
 
         /* Telemetry data provided in the PKT_ESC_STATUS_A packet */
         uint8_t mode;                   //! ESC operational mode
