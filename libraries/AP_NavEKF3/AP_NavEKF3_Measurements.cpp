@@ -1175,13 +1175,6 @@ void NavEKF3_core::updateTimingStatistics(void)
     timing.count++;
 }
 
-// get timing statistics structure
-void NavEKF3_core::getTimingStatistics(struct ekf_timing &_timing)
-{
-    _timing = timing;
-    memset(&timing, 0, sizeof(timing));
-}
-
 /*
   update estimates of inactive bias states. This keeps inactive IMUs
   as hot-spares so we can switch to them without causing a jump in the
