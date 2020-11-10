@@ -51,7 +51,6 @@
 #define UBLOX_GNSS_SETTINGS 1
 
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
-#define UBX_MSG_TYPES 2
 
 #define UBX_TIMEGPS_VALID_WEEK_MASK 0x2
 
@@ -731,11 +730,6 @@ private:
     void log_mon_hw2(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
-
-    // Calculates the correct log message ID based on what GPS instance is being logged
-    uint8_t _ubx_msg_log_index(uint8_t ubx_msg) {
-        return (uint8_t)(ubx_msg + (state.instance * UBX_MSG_TYPES));
-    }
 
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
