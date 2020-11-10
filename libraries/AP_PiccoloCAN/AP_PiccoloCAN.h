@@ -85,11 +85,23 @@ public:
     // called from SRV_Channels
     void update();
 
+    // send ESC telemetry messages over MAVLink
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
+
+    // return true if a particular servo is 'active' on the Piccolo interface
+    bool is_servo_channel_active(uint8_t chan);
+
     // return true if a particular ESC is 'active' on the Piccolo interface
     bool is_esc_channel_active(uint8_t chan);
 
-    // return true if a particular ESC has been detected
-    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000) const;
+    // return true if a particular servo has been detected on the CAN interface
+    bool is_servo_present(uint8_t chan, uint64_t timeout_ms = 2000);
+
+    // return true if a particular ESC has been detected on the CAN interface
+    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
+
+    // return true if a particular servo is enabled
+    bool is_servo_enabled(uint8_t chan);
 
     // return true if a particular ESC is enabled
     bool is_esc_enabled(uint8_t chan);
@@ -114,6 +126,12 @@ private:
     // interpret an ESC message received over CAN
     bool handle_esc_message(AP_HAL::CANFrame &frame);
 
+    // send servo commands over CAN
+    void send_servo_messages(void);
+
+    // interpret a servo message received over CAN
+    bool handle_servo_message(AP_HAL::CANFrame &frame);
+
     bool _initialized;
     char _thread_name[16];
     uint8_t _driver_index;
@@ -133,7 +151,15 @@ private:
         Servo_Address_t address;
         Servo_SettingsInfo_t settings;
         Servo_SystemInfo_t systemInfo;
-        Servo_TelemetrySettings_t telemetry;
+        Servo_TelemetryConfig_t telemetry;
+
+        /* Internal state information */
+
+        int16_t command;    //! Raw command to send to each servo
+        bool newCommand;    //! Is the command "new"?
+        bool newTelemetry;  //! Is there new telemetry data available?
+
+        uint64_t last_rx_msg_timestamp = 0; //! Time of most recently received message
 
     } _servo_info[PICCOLO_CAN_MAX_NUM_SERVO];
 
@@ -180,6 +206,8 @@ private:
     AP_Int32 _esc_bm;       //! ESC selection bitmask
     AP_Int16 _esc_hz;       //! ESC update rate (Hz)
 
+    AP_Int32 _srv_bm;       //! Servo selection bitmask
+    AP_Int16 _srv_hz;       //! Servo update rate (Hz)
 };
 
 #endif // HAL_PICCOLO_CAN_ENABLE

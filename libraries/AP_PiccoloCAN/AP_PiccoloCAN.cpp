@@ -65,6 +65,21 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Range: 1 500
     AP_GROUPINFO("ESC_RT", 2, AP_PiccoloCAN, _esc_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
 
+    // @Param: SRV_BM
+    // @DisplayName: Servo channels
+    // @Description: Bitmask defining which servo channels are to be transmitted over Piccolo CAN
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16
+    // @User: Advanced
+    AP_GROUPINFO("SRV_BM", 3, AP_PiccoloCAN, _srv_bm, 0xFFFF),
+
+    // @Param: SRV_RT
+    // @DisplayName: Servo command output rate
+    // @Description: Output rate of servo command messages
+    // @Units: Hz
+    // @User: Advanced
+    // @Range: 1 500
+    AP_GROUPINFO("SRV_RT", 4, AP_PiccoloCAN, _srv_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -141,6 +156,7 @@ void AP_PiccoloCAN::loop()
     AP_HAL::CANFrame rxFrame;
 
     uint16_t esc_tx_counter = 0;
+    uint16_t servo_tx_counter = 0;
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -148,15 +164,21 @@ void AP_PiccoloCAN::loop()
 
     while (true) {
 
-        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
-
-        uint16_t escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
-
         if (!_initialized) {
             debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
             hal.scheduler->delay_microseconds(10000);
             continue;
         }
+
+        // Calculate the output rate for ESC commands
+        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+
+        uint16_t escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
+
+        // Calculate the output rate for servo commands
+        _srv_hz = constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+
+        uint16_t servoCmdRateMs = (uint16_t) ((float) 1000 / _srv_hz);
 
         uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
@@ -166,8 +188,13 @@ void AP_PiccoloCAN::loop()
         // Transmit ESC commands at regular intervals
         if (esc_tx_counter++ > escCmdRateMs) {
             esc_tx_counter = 0;
-
             send_esc_messages();
+        }
+
+        // Transmit servo commands at regular intervals
+        if (servo_tx_counter++ > servoCmdRateMs) {
+            servo_tx_counter = 0;
+            send_servo_messages();
         }
 
         // Look for any message responses on the CAN bus
@@ -187,6 +214,11 @@ void AP_PiccoloCAN::loop()
             case MessageGroup::ACTUATOR:
 
                 switch (ActuatorType(frame_id_device)) {
+                case ActuatorType::SERVO:
+                    if (handle_servo_message(rxFrame)) {
+                        // Returns true if the message was successfully decoded
+                    }
+                    break;
                 case ActuatorType::ESC:
                     if (handle_esc_message(rxFrame)) {
                         // Returns true if the message was successfully decoded
@@ -250,6 +282,16 @@ bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
 // called from SRV_Channels
 void AP_PiccoloCAN::update()
 {
+    uint64_t timestamp = AP_HAL::micros64();
+
+    /* Read out the servo commands from the channel mixer */
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
+
+        if (is_servo_channel_active(ii)) {
+            // TODO - Extract output command here
+        }
+    }
+
     /* Read out the ESC commands from the channel mixer */
     for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 
@@ -273,6 +315,8 @@ void AP_PiccoloCAN::update()
     if (logger && logger->logging_enabled()) {
 
         WITH_SEMAPHORE(_telem_sem);
+
+        // TODO - Add servo log data here
 
         for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 
@@ -366,6 +410,75 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 }
 
 
+// send servo messages over CAN
+void AP_PiccoloCAN::send_servo_messages(void)
+{
+    AP_HAL::CANFrame txFrame;
+
+    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
+
+    // No servos are selected? Don't send anything!
+    if (_srv_bm == 0x00) {
+        return;
+    }
+
+    bool send_cmd = false;
+    int16_t cmd[4] {};
+    uint8_t idx;
+
+    // Transmit bulk command packets to 4x servos simultaneously
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_GROUP_SERVO; ii++) {
+
+        send_cmd = false;
+
+        for (uint8_t jj = 0; jj < 4; jj++) {
+            
+            idx = (ii * 4) + jj;
+
+            // Set default command value if an output field is unused
+            cmd[jj] = 0x7FFF;
+
+            // Skip servo if the output is not enabled
+            if (!is_servo_channel_active(idx)) {
+                continue;
+            }
+
+            /* Check if the servo is enabled.
+             * If it is not enabled, send an enable message.
+             */
+
+            if (!is_servo_present(idx) || !is_servo_enabled(idx)) {
+                // Servo is not enabled
+                encodeServo_EnablePacket(&txFrame);
+                txFrame.id |= (idx + 1);
+                write_frame(txFrame, timeout);
+            } else if (_servo_info[idx].newCommand) {
+                // A new command is provided
+                send_cmd = true;
+                cmd[jj] = _servo_info[idx].command;
+                _servo_info[idx].newCommand = false;
+            }
+        }
+
+        if (send_cmd) {
+            encodeServo_MultiPositionCommandPacket(
+                &txFrame,
+                cmd[0],
+                cmd[1],
+                cmd[2],
+                cmd[3],
+                (PKT_SERVO_MULTI_COMMAND_1 + ii)
+            );
+
+            // Broadcast the command to all servos
+            txFrame.id |= 0xFF;
+
+            write_frame(txFrame, timeout);
+        }
+    }
+}
+
+
 // send ESC messages over CAN
 void AP_PiccoloCAN::send_esc_messages(void)
 {
@@ -394,6 +507,9 @@ void AP_PiccoloCAN::send_esc_messages(void)
 
                 idx = (ii * 4) + jj;
 
+                // Set default command value if an output field is unused
+                cmd[jj] = 0x7FFF;
+
                 // Skip an ESC if the motor channel is not enabled
                 if (!is_esc_channel_active(idx)) {
                     continue;
@@ -412,8 +528,8 @@ void AP_PiccoloCAN::send_esc_messages(void)
                     cmd[jj] = _esc_info[idx].command;
                     _esc_info[idx].newCommand = false;
                 } else {
-                    // A command of 0xFFFF is 'out of range' and will be ignored by the corresponding ESC
-                    cmd[jj] = 0xFFFF;
+                    // A command of 0x7FFF is 'out of range' and will be ignored by the corresponding ESC
+                    cmd[jj] = 0x7FFF;
                 }
             }
 
@@ -448,12 +564,63 @@ void AP_PiccoloCAN::send_esc_messages(void)
 }
 
 
+// interpret a servo message received over CAN
+bool AP_PiccoloCAN::handle_servo_message(AP_HAL::CANFrame &frame)
+{
+    uint64_t timestamp = AP_HAL::micros64();
+
+    // The servo address is the lower byte of the frame ID
+    uint8_t addr = frame.id & 0xFF;
+
+    // Ignore servo with an invalid node ID
+    if (addr == 0x00) {
+        return false;
+    }
+
+    // Subtract to get the address in memory
+    addr -= 1;
+
+    // Maximum number of servos allowed
+    if (addr >= PICCOLO_CAN_MAX_NUM_SERVO) {
+        return false;
+    }
+
+    CBSServo_Info_t &servo = _servo_info[addr];
+
+    bool result = true;
+
+    // Throw the incoming packet against each decoding routine
+    if (decodeServo_StatusAPacketStructure(&frame, &servo.statusA)) {
+        servo.newTelemetry = true;
+    } else if (decodeServo_StatusBPacketStructure(&frame, &servo.statusB)) {
+        servo.newTelemetry = true;
+    } else if (decodeServo_FirmwarePacketStructure(&frame, &servo.firmware)) {
+        // TODO
+    } else if (decodeServo_AddressPacketStructure(&frame, &servo.address)) {
+        // TODO
+    } else if (decodeServo_SettingsInfoPacketStructure(&frame, &servo.settings)) {
+        // TODO
+    } else if (decodeServo_TelemetryConfigPacketStructure(&frame, &servo.telemetry)) {
+    } else {
+        // Incoming frame did not match any of the packet decoding routines
+        result = false;
+    }
+
+    if (result) {
+        // Reset the rx timestamp
+        servo.last_rx_msg_timestamp = timestamp;
+    }
+
+    return result;
+}
+
+
 // interpret an ESC message received over CAN
 bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 {
     uint64_t timestamp = AP_HAL::micros64();
 
-    // The ESC address is the lower byte of the address
+    // The ESC address is the lower byte of the frame ID
     uint8_t addr = frame.id & 0xFF;
 
     // Ignore any ESC with node ID of zero
@@ -549,7 +716,27 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 }
 
 /**
- * Check if a given ESC channel is "active" (has been configured correctly)
+ * Check if a given servo channel is "active" (has been configured for Piccolo control output)
+ */
+bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
+{
+    // First check if the particular servo channel is enabled in the channel mask
+    if (((_srv_bm >> chan) & 0x01) == 0x00) {
+        return false;
+    }
+
+    // Check if a servo function is assigned for this motor channel
+    // TODO - ?
+    if (1) {
+        return true;
+    }
+
+    return false;
+
+}
+
+/**
+ * Check if a given ESC channel is "active" (has been configured for Piccolo control output)
  */
 bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
 {
@@ -566,6 +753,34 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
     }
 
     return false;
+}
+
+
+/**
+ * Determine if a servo is present on the CAN bus (has telemetry data been received)
+ */
+bool AP_PiccoloCAN::is_servo_present(uint8_t chan, uint64_t timeout_ms)
+{
+    if (chan >= PICCOLO_CAN_MAX_NUM_SERVO) {
+        return false;
+    }
+
+    CBSServo_Info_t &servo = _servo_info[chan];
+
+    // No messages received from this servo
+    if (servo.last_rx_msg_timestamp == 0) {
+        return false;
+    }
+
+    uint64_t now = AP_HAL::micros64();
+
+    uint64_t timeout_us = timeout_ms * 1000ULL;
+
+    if (now > (servo.last_rx_msg_timestamp + timeout_us)) {
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -598,6 +813,26 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms) const
 
 
 /**
+ * Check if a given servo is enabled
+ */
+bool AP_PiccoloCAN::is_servo_enabled(uint8_t chan)
+{
+    if (chan >= PICCOLO_CAN_MAX_NUM_SERVO) {
+        return false;
+    }
+
+    // If the servo is not present, we cannot determine if it is enabled or not
+    if (!is_servo_present(chan)) {
+        return false;
+    }
+
+    CBSServo_Info_t &servo = _servo_info[chan];
+
+    return servo.statusA.status.enabled;
+}
+
+
+/**
  * Check if a given ESC is enabled (both hardware and software enable flags)
  */
 bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
@@ -625,6 +860,18 @@ bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
 
 bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 {
+    // Check that each required servo is present on the bus
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
+
+        if (is_servo_channel_active(ii)) {
+
+            if (!is_servo_present(ii)) {
+                snprintf(reason, reason_len, "Servo %u not detected", ii + 1);
+                return false;
+            }
+        }
+    }
+
     // Check that each required ESC is present on the bus
     for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
 
