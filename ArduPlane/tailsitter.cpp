@@ -134,6 +134,8 @@ void QuadPlane::tailsitter_output(void)
             attitude_control->reset_rate_controller_I_terms();
 
             // output tilt motors
+            tilt_left = 0.0f;
+            tilt_right = 0.0f;
             if (tailsitter.vectored_hover_gain > 0) {
                 const float hover_throttle = motors->get_throttle_hover();
                 const float throttle = motors->get_throttle();
@@ -141,10 +143,12 @@ void QuadPlane::tailsitter_output(void)
                 if (is_positive(throttle)) {
                     throttle_scaler = constrain_float(hover_throttle / throttle, tailsitter.gain_scaling_min, tailsitter.throttle_scale_max);
                 }
-
-                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain * throttle_scaler);
-                SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain * throttle_scaler);
+                tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * tailsitter.vectored_hover_gain * throttle_scaler;
+                tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * tailsitter.vectored_hover_gain * throttle_scaler;
             }
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+
 
             // skip remainder of the function that overwrites plane control surface outputs with copter
             return;
@@ -168,6 +172,8 @@ void QuadPlane::tailsitter_output(void)
         tailsitter_speed_scaling();
     }
 
+    tilt_left = 0.0f;
+    tilt_right = 0.0f;
     if (tailsitter.vectored_hover_gain > 0) {
         // thrust vectoring VTOL modes
         tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft);
@@ -187,9 +193,9 @@ void QuadPlane::tailsitter_output(void)
         }
         tilt_left  = extra_elevator + tilt_left * tailsitter.vectored_hover_gain;
         tilt_right = extra_elevator + tilt_right * tailsitter.vectored_hover_gain;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
     }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
 
     // Check for saturated limits
     bool tilt_lim = (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft)) == SERVO_MAX) || (labs(SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) == SERVO_MAX);
