@@ -261,19 +261,19 @@ int decodeServo_Config_t(const uint8_t* _pg_data, int* _pg_bytecount, Servo_Conf
 /*!
  * \brief Create the Servo_MultiPositionCommand packet
  *
- * This command can be used to command multiple servos (1 to 4) with a single
- * CAN frame). The addresses of the targetted servos must be sequential, with
- * the initial address based on the packet ID. The example packet shown below
- * corresponds to servos with IDs {1, 2, 3, 4}. For other addresses refer to
- * the *ServoMultiCommandPackets* enumeration. Note: The CAN frame must be sent
- * to the broadcast ID (0xFF) for all servos to receive this message.
+ * This packet can be used to simultaneously command multiple servos which have
+ * sequential CAN ID values. This packet must be sent as a broadcast packet
+ * (address = 0xFF) such that all servos can receive it. These commands can be
+ * sent to groups of servos with ID values up to 64, using different
+ * PKT_SERVO_MULTI_COMMAND_x packet ID values.
  * \param _pg_pkt points to the packet which will be created by this function
  * \param commandA is Servo command for servo with address offset 0
  * \param commandB is Servo command for servo with address offset 1
  * \param commandC is Servo command for servo with address offset 3
  * \param commandD is Servo command for servo with address offset 3
+ * \param id is the packet identifier for _pg_pkt
  */
-void encodeServo_MultiPositionCommandPacket(void* _pg_pkt, int16_t commandA, int16_t commandB, int16_t commandC, int16_t commandD)
+void encodeServo_MultiPositionCommandPacket(void* _pg_pkt, int16_t commandA, int16_t commandB, int16_t commandC, int16_t commandD, uint32_t _pg_id)
 {
     uint8_t* _pg_data = getServoPacketData(_pg_pkt);
     int _pg_byteindex = 0;
@@ -295,19 +295,18 @@ void encodeServo_MultiPositionCommandPacket(void* _pg_pkt, int16_t commandA, int
     int16ToBeBytes(commandD, _pg_data, &_pg_byteindex);
 
     // complete the process of creating the packet
-    finishServoPacket(_pg_pkt, _pg_byteindex, getServo_MultiPositionCommandPacketID());
+    finishServoPacket(_pg_pkt, _pg_byteindex, _pg_id);
 
 }// encodeServo_MultiPositionCommandPacket
 
 /*!
  * \brief Decode the Servo_MultiPositionCommand packet
  *
- * This command can be used to command multiple servos (1 to 4) with a single
- * CAN frame). The addresses of the targetted servos must be sequential, with
- * the initial address based on the packet ID. The example packet shown below
- * corresponds to servos with IDs {1, 2, 3, 4}. For other addresses refer to
- * the *ServoMultiCommandPackets* enumeration. Note: The CAN frame must be sent
- * to the broadcast ID (0xFF) for all servos to receive this message.
+ * This packet can be used to simultaneously command multiple servos which have
+ * sequential CAN ID values. This packet must be sent as a broadcast packet
+ * (address = 0xFF) such that all servos can receive it. These commands can be
+ * sent to groups of servos with ID values up to 64, using different
+ * PKT_SERVO_MULTI_COMMAND_x packet ID values.
  * \param _pg_pkt points to the packet being decoded by this function
  * \param commandA receives Servo command for servo with address offset 0
  * \param commandB receives Servo command for servo with address offset 1
@@ -321,8 +320,24 @@ int decodeServo_MultiPositionCommandPacket(const void* _pg_pkt, int16_t* command
     const uint8_t* _pg_data = getServoPacketDataConst(_pg_pkt);
     int _pg_numbytes = getServoPacketSize(_pg_pkt);
 
-    // Verify the packet identifier
-    if(getServoPacketID(_pg_pkt) != getServo_MultiPositionCommandPacketID())
+    // Verify the packet identifier, multiple options exist
+    uint32_t packetid = getServoPacketID(_pg_pkt);
+    if( packetid != PKT_SERVO_MULTI_COMMAND_1 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_2 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_3 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_4 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_5 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_6 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_7 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_8 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_9 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_10 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_11 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_12 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_13 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_14 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_15 &&
+        packetid != PKT_SERVO_MULTI_COMMAND_16 )
         return 0;
 
     if(_pg_numbytes < getServo_MultiPositionCommandMinDataLength())
@@ -561,6 +576,92 @@ int decodeServo_SetTitlePacket(const void* _pg_pkt, uint8_t title[8])
  * The *SERVO_STATUS_A* packet contains status, warning and error information,
  * in addition to the servo position
  * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeServo_StatusAPacketStructure(void* _pg_pkt, const Servo_StatusA_t* _pg_user)
+{
+    uint8_t* _pg_data = getServoPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Status bits contain information on servo operation
+    encodeServo_StatusBits_t(_pg_data, &_pg_byteindex, &_pg_user->status);
+
+    // Warning bits indicate servo is operation outside of desired range
+    encodeServo_WarningBits_t(_pg_data, &_pg_byteindex, &_pg_user->warnings);
+
+    // These bits indicate critical system error information
+    encodeServo_ErrorBits_t(_pg_data, &_pg_byteindex, &_pg_user->errors);
+
+    // Servo position, mapped to input units
+    // Range of position is -32768 to 32767.
+    int16ToBeBytes(_pg_user->position, _pg_data, &_pg_byteindex);
+
+    // Servo commanded position
+    // Range of command is -32768 to 32767.
+    int16ToBeBytes(_pg_user->command, _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishServoPacket(_pg_pkt, _pg_byteindex, getServo_StatusAPacketID());
+
+}// encodeServo_StatusAPacketStructure
+
+/*!
+ * \brief Decode the Servo_StatusA packet
+ *
+ * The *SERVO_STATUS_A* packet contains status, warning and error information,
+ * in addition to the servo position
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeServo_StatusAPacketStructure(const void* _pg_pkt, Servo_StatusA_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getServoPacketID(_pg_pkt) != getServo_StatusAPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getServoPacketSize(_pg_pkt);
+    if(_pg_numbytes < getServo_StatusAMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getServoPacketDataConst(_pg_pkt);
+
+    // Status bits contain information on servo operation
+    if(decodeServo_StatusBits_t(_pg_data, &_pg_byteindex, &_pg_user->status) == 0)
+        return 0;
+
+    // Warning bits indicate servo is operation outside of desired range
+    if(decodeServo_WarningBits_t(_pg_data, &_pg_byteindex, &_pg_user->warnings) == 0)
+        return 0;
+
+    // These bits indicate critical system error information
+    if(decodeServo_ErrorBits_t(_pg_data, &_pg_byteindex, &_pg_user->errors) == 0)
+        return 0;
+
+    // Servo position, mapped to input units
+    // Range of position is -32768 to 32767.
+    _pg_user->position = int16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    // Servo commanded position
+    // Range of command is -32768 to 32767.
+    _pg_user->command = int16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeServo_StatusAPacketStructure
+
+/*!
+ * \brief Create the Servo_StatusA packet
+ *
+ * The *SERVO_STATUS_A* packet contains status, warning and error information,
+ * in addition to the servo position
+ * \param _pg_pkt points to the packet which will be created by this function
  * \param status is Status bits contain information on servo operation
  * \param warnings is Warning bits indicate servo is operation outside of desired range
  * \param errors is These bits indicate critical system error information
@@ -649,6 +750,77 @@ int decodeServo_StatusAPacket(const void* _pg_pkt, Servo_StatusBits_t* status, S
  *
  * The *SERVO_STATUS_B* packet contains various servo feedback data
  * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeServo_StatusBPacketStructure(void* _pg_pkt, const Servo_StatusB_t* _pg_user)
+{
+    uint8_t* _pg_data = getServoPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Servo current
+    // Range of current is 0 to 65535.
+    uint16ToBeBytes(_pg_user->current, _pg_data, &_pg_byteindex);
+
+    // Servo supply voltage
+    // Range of voltage is 0 to 65535.
+    uint16ToBeBytes(_pg_user->voltage, _pg_data, &_pg_byteindex);
+
+    // Servo temperature
+    // Range of temperature is -128 to 127.
+    int8ToBytes(_pg_user->temperature, _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishServoPacket(_pg_pkt, _pg_byteindex, getServo_StatusBPacketID());
+
+}// encodeServo_StatusBPacketStructure
+
+/*!
+ * \brief Decode the Servo_StatusB packet
+ *
+ * The *SERVO_STATUS_B* packet contains various servo feedback data
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeServo_StatusBPacketStructure(const void* _pg_pkt, Servo_StatusB_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getServoPacketID(_pg_pkt) != getServo_StatusBPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getServoPacketSize(_pg_pkt);
+    if(_pg_numbytes < getServo_StatusBMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getServoPacketDataConst(_pg_pkt);
+
+    // Servo current
+    // Range of current is 0 to 65535.
+    _pg_user->current = uint16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    // Servo supply voltage
+    // Range of voltage is 0 to 65535.
+    _pg_user->voltage = uint16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    // Servo temperature
+    // Range of temperature is -128 to 127.
+    _pg_user->temperature = int8FromBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeServo_StatusBPacketStructure
+
+/*!
+ * \brief Create the Servo_StatusB packet
+ *
+ * The *SERVO_STATUS_B* packet contains various servo feedback data
+ * \param _pg_pkt points to the packet which will be created by this function
  * \param current is Servo current
  * \param voltage is Servo supply voltage
  * \param temperature is Servo temperature
@@ -713,6 +885,63 @@ int decodeServo_StatusBPacket(const void* _pg_pkt, uint16_t* current, uint16_t* 
     return 1;
 
 }// decodeServo_StatusBPacket
+
+/*!
+ * \brief Create the Servo_StatusC packet
+ *
+ * The *SERVO_STATUS_C* packet contains servo position data. It is a cut-down
+ * packet to allow high-speed feedback on servo position
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeServo_StatusCPacketStructure(void* _pg_pkt, const Servo_StatusC_t* _pg_user)
+{
+    uint8_t* _pg_data = getServoPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+
+    // Servo position, mapped to input units
+    // Range of position is -32768 to 32767.
+    int16ToBeBytes(_pg_user->position, _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishServoPacket(_pg_pkt, _pg_byteindex, getServo_StatusCPacketID());
+
+}// encodeServo_StatusCPacketStructure
+
+/*!
+ * \brief Decode the Servo_StatusC packet
+ *
+ * The *SERVO_STATUS_C* packet contains servo position data. It is a cut-down
+ * packet to allow high-speed feedback on servo position
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeServo_StatusCPacketStructure(const void* _pg_pkt, Servo_StatusC_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getServoPacketID(_pg_pkt) != getServo_StatusCPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getServoPacketSize(_pg_pkt);
+    if(_pg_numbytes < getServo_StatusCMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getServoPacketDataConst(_pg_pkt);
+
+    // Servo position, mapped to input units
+    // Range of position is -32768 to 32767.
+    _pg_user->position = int16FromBeBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeServo_StatusCPacketStructure
 
 /*!
  * \brief Create the Servo_StatusC packet
@@ -1420,6 +1649,75 @@ int decodeServo_SystemInfoPacket(const void* _pg_pkt, uint32_t* msSinceReset, ui
     return 1;
 
 }// decodeServo_SystemInfoPacket
+
+/*!
+ * \brief Create the Servo_TelemetryConfig packet
+ *
+ * Telemetry settings configuration packet
+ * \param _pg_pkt points to the packet which will be created by this function
+ * \param _pg_user points to the user data that will be encoded in _pg_pkt
+ */
+void encodeServo_TelemetryConfigPacketStructure(void* _pg_pkt, const Servo_TelemetryConfig_t* _pg_user)
+{
+    uint8_t* _pg_data = getServoPacketData(_pg_pkt);
+    int _pg_byteindex = 0;
+    unsigned _pg_i = 0;
+
+    // Servo telemetry settings
+    encodeServo_TelemetrySettings_t(_pg_data, &_pg_byteindex, &_pg_user->settings);
+
+    // Reserved for future use
+    for(_pg_i = 0; _pg_i < 3; _pg_i++)
+        uint8ToBytes((uint8_t)(0), _pg_data, &_pg_byteindex);
+
+    // Servo ICD revision
+    uint8ToBytes((uint8_t)(getServoApi()), _pg_data, &_pg_byteindex);
+
+    // complete the process of creating the packet
+    finishServoPacket(_pg_pkt, _pg_byteindex, getServo_TelemetryConfigPacketID());
+
+}// encodeServo_TelemetryConfigPacketStructure
+
+/*!
+ * \brief Decode the Servo_TelemetryConfig packet
+ *
+ * Telemetry settings configuration packet
+ * \param _pg_pkt points to the packet being decoded by this function
+ * \param _pg_user receives the data decoded from the packet
+ * \return 0 is returned if the packet ID or size is wrong, else 1
+ */
+int decodeServo_TelemetryConfigPacketStructure(const void* _pg_pkt, Servo_TelemetryConfig_t* _pg_user)
+{
+    int _pg_numbytes;
+    int _pg_byteindex = 0;
+    const uint8_t* _pg_data;
+
+    // Verify the packet identifier
+    if(getServoPacketID(_pg_pkt) != getServo_TelemetryConfigPacketID())
+        return 0;
+
+    // Verify the packet size
+    _pg_numbytes = getServoPacketSize(_pg_pkt);
+    if(_pg_numbytes < getServo_TelemetryConfigMinDataLength())
+        return 0;
+
+    // The raw data from the packet
+    _pg_data = getServoPacketDataConst(_pg_pkt);
+
+    // Servo telemetry settings
+    if(decodeServo_TelemetrySettings_t(_pg_data, &_pg_byteindex, &_pg_user->settings) == 0)
+        return 0;
+
+    // Reserved for future use
+    _pg_byteindex += 1*3;
+
+    // Servo ICD revision
+    // Range of icdVersion is 0 to 255.
+    _pg_user->icdVersion = uint8FromBytes(_pg_data, &_pg_byteindex);
+
+    return 1;
+
+}// decodeServo_TelemetryConfigPacketStructure
 
 /*!
  * \brief Create the Servo_TelemetryConfig packet

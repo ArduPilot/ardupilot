@@ -72,12 +72,11 @@ int decodeServo_Config_t(const uint8_t* data, int* bytecount, Servo_Config_t* us
 #define getServo_ConfigMaxDataLength() (8)
 
 /*!
- * This command can be used to command multiple servos (1 to 4) with a single
- * CAN frame). The addresses of the targetted servos must be sequential, with
- * the initial address based on the packet ID. The example packet shown below
- * corresponds to servos with IDs {1, 2, 3, 4}. For other addresses refer to
- * the *ServoMultiCommandPackets* enumeration. Note: The CAN frame must be sent
- * to the broadcast ID (0xFF) for all servos to receive this message.
+ * This packet can be used to simultaneously command multiple servos which have
+ * sequential CAN ID values. This packet must be sent as a broadcast packet
+ * (address = 0xFF) such that all servos can receive it. These commands can be
+ * sent to groups of servos with ID values up to 64, using different
+ * PKT_SERVO_MULTI_COMMAND_x packet ID values.
  */
 typedef struct
 {
@@ -88,13 +87,10 @@ typedef struct
 }Servo_MultiPositionCommand_t;
 
 //! Create the Servo_MultiPositionCommand packet from parameters
-void encodeServo_MultiPositionCommandPacket(void* pkt, int16_t commandA, int16_t commandB, int16_t commandC, int16_t commandD);
+void encodeServo_MultiPositionCommandPacket(void* pkt, int16_t commandA, int16_t commandB, int16_t commandC, int16_t commandD, uint32_t id);
 
 //! Decode the Servo_MultiPositionCommand packet to parameters
 int decodeServo_MultiPositionCommandPacket(const void* pkt, int16_t* commandA, int16_t* commandB, int16_t* commandC, int16_t* commandD);
-
-//! return the packet ID for the Servo_MultiPositionCommand packet
-#define getServo_MultiPositionCommandPacketID() (PKT_SERVO_MULTI_COMMAND_1)
 
 //! return the minimum encoded length for the Servo_MultiPositionCommand packet
 #define getServo_MultiPositionCommandMinDataLength() (8)
@@ -208,6 +204,12 @@ typedef struct
     int16_t             command;  //!< Servo commanded position
 }Servo_StatusA_t;
 
+//! Create the Servo_StatusA packet
+void encodeServo_StatusAPacketStructure(void* pkt, const Servo_StatusA_t* user);
+
+//! Decode the Servo_StatusA packet
+int decodeServo_StatusAPacketStructure(const void* pkt, Servo_StatusA_t* user);
+
 //! Create the Servo_StatusA packet from parameters
 void encodeServo_StatusAPacket(void* pkt, const Servo_StatusBits_t* status, const Servo_WarningBits_t* warnings, const Servo_ErrorBits_t* errors, int16_t position, int16_t command);
 
@@ -233,6 +235,12 @@ typedef struct
     int8_t   temperature; //!< Servo temperature
 }Servo_StatusB_t;
 
+//! Create the Servo_StatusB packet
+void encodeServo_StatusBPacketStructure(void* pkt, const Servo_StatusB_t* user);
+
+//! Decode the Servo_StatusB packet
+int decodeServo_StatusBPacketStructure(const void* pkt, Servo_StatusB_t* user);
+
 //! Create the Servo_StatusB packet from parameters
 void encodeServo_StatusBPacket(void* pkt, uint16_t current, uint16_t voltage, int8_t temperature);
 
@@ -256,6 +264,12 @@ typedef struct
 {
     int16_t position; //!< Servo position, mapped to input units
 }Servo_StatusC_t;
+
+//! Create the Servo_StatusC packet
+void encodeServo_StatusCPacketStructure(void* pkt, const Servo_StatusC_t* user);
+
+//! Decode the Servo_StatusC packet
+int decodeServo_StatusCPacketStructure(const void* pkt, Servo_StatusC_t* user);
 
 //! Create the Servo_StatusC packet from parameters
 void encodeServo_StatusCPacket(void* pkt, int16_t position);
@@ -429,6 +443,12 @@ typedef struct
     Servo_TelemetrySettings_t settings;   //!< Servo telemetry settings
     uint8_t                   icdVersion; //!< Servo ICD revision. Field is encoded constant.
 }Servo_TelemetryConfig_t;
+
+//! Create the Servo_TelemetryConfig packet
+void encodeServo_TelemetryConfigPacketStructure(void* pkt, const Servo_TelemetryConfig_t* user);
+
+//! Decode the Servo_TelemetryConfig packet
+int decodeServo_TelemetryConfigPacketStructure(const void* pkt, Servo_TelemetryConfig_t* user);
 
 //! Create the Servo_TelemetryConfig packet from parameters
 void encodeServo_TelemetryConfigPacket(void* pkt, const Servo_TelemetrySettings_t* settings);
