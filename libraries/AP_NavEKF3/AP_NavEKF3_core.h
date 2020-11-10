@@ -163,9 +163,6 @@ public:
     void getMagXYZ(Vector3f &magXYZ) const;
 
     // return the index for the active sensors
-    uint8_t getActiveMag() const;
-    uint8_t getActiveBaro() const;
-    uint8_t getActiveGPS() const;
     uint8_t getActiveAirspeed() const;
 
     // Return estimated magnetometer offsets
@@ -208,9 +205,6 @@ public:
     // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
-    // return the diagonals from the covariance matrix
-    void getStateVariances(float stateVar[24]);
-
     // get a particular source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
@@ -227,9 +221,6 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
-
-    // return data for debugging optical flow fusion
-    void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
      * Write body frame linear and angular displacement measurements from a visual odometry sensor
@@ -264,23 +255,6 @@ public:
      * Return the time stamp of the last odometry fusion update (msec)
      */
     uint32_t getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar);
-
-    /*
-        Returns the following data for debugging range beacon fusion
-        ID : beacon identifier
-        rng : measured range to beacon (m)
-        innov : range innovation (m)
-        innovVar : innovation variance (m^2)
-        testRatio : innovation consistency test ratio
-        beaconPosNED : beacon NED position (m)
-        offsetHigh : high hypothesis for range beacons system vertical offset (m)
-        offsetLow : low hypothesis for range beacons system vertical offset (m)
-        posNED : North,East,Down position estimate of receiver from 3-state filter
-
-        returns true if data could be found, false if it could not
-    */
-    bool getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
-                             float &offsetHigh, float &offsetLow, Vector3f &posNED);
 
     /*
      * Writes the measurement from a yaw angle sensor
@@ -406,15 +380,9 @@ public:
     // this is used by other instances to level load
     uint8_t getFramesSincePredict(void) const;
 
-    // publish output observer angular, velocity and position tracking error
-    void getOutputTrackingError(Vector3f &error) const;
-
     // get the IMU index. For now we return the gyro index, as that is most
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
-
-    // get timing statistics structure
-    void getTimingStatistics(struct ekf_timing &timing);
 
     // values for EK3_MAG_CAL
     enum class MagCal {
@@ -429,10 +397,6 @@ public:
 
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
     bool using_external_yaw(void) const;
-    
-    // get solution data for the EKF-GSF emergency yaw estimator
-    // return false if data not available
-    bool getDataEKFGSF(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
 
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
@@ -449,7 +413,9 @@ public:
     bool have_aligned_yaw(void) const {
         return yawAlignComplete;
     }
-    
+
+    void Log_Write(uint64_t time_us);
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -1291,7 +1257,7 @@ private:
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
-    struct {
+    struct rngBcnFusionReport_t {
         float rng;          // measured range to beacon (m)
         float innov;        // range innovation (m)
         float innovVar;     // innovation variance (m^2)
@@ -1483,4 +1449,18 @@ private:
     bool posxy_source_reset;                        // true when the horizontal position source has changed but the position has not yet been reset
     AP_NavEKF_Source::SourceYaw yaw_source_last;    // yaw source on previous iteration (used to detect a change)
     bool yaw_source_reset;                          // true when the yaw source has changed but the yaw has not yet been reset
+
+    // logging functions shared by cores:
+    void Log_Write_XKF1(uint64_t time_us) const;
+    void Log_Write_XKF2(uint64_t time_us) const;
+    void Log_Write_XKF3(uint64_t time_us) const;
+    void Log_Write_XKF4(uint64_t time_us) const;
+    void Log_Write_XKF5(uint64_t time_us) const;
+    void Log_Write_XKFS(uint64_t time_us) const;
+    void Log_Write_Quaternion(uint64_t time_us) const;
+    void Log_Write_Beacon(uint64_t time_us);
+    void Log_Write_BodyOdom(uint64_t time_us);
+    void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_Timing(uint64_t time_us);
+    void Log_Write_GSF(uint64_t time_us);
 };

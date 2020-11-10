@@ -1239,39 +1239,6 @@ void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
     }
 }
 
-// return the magnetometer in use for the specified instance
-uint8_t NavEKF3::getActiveMag(int8_t instance) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getActiveMag();
-    } else {
-        return 255;
-    }
-}
-
-// return the baro in use for the specified instance
-uint8_t NavEKF3::getActiveBaro(int8_t instance) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getActiveBaro();
-    } else {
-        return 255;
-    }
-}
-
-// return the GPS in use for the specified instance
-uint8_t NavEKF3::getActiveGPS(int8_t instance) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getActiveGPS();
-    } else {
-        return 255;
-    }
-}
-
 // return the airspeed sensor in use for the specified instance
 uint8_t NavEKF3::getActiveAirspeed(int8_t instance) const
 {
@@ -1408,30 +1375,12 @@ void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posI
     }
 }
 
-// publish output observer angular, velocity and position tracking error
-void NavEKF3::getOutputTrackingError(int8_t instance, Vector3f &error) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getOutputTrackingError(error);
-    }
-}
-
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 void NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    }
-}
-
-// return the diagonals from the covariance matrix for the specified instance
-void NavEKF3::getStateVariances(int8_t instance, float stateVar[24]) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getStateVariances(stateVar);
     }
 }
 
@@ -1538,15 +1487,6 @@ void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 }
 
 // return data for debugging optical flow fusion
-void NavEKF3::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
-                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
-    }
-}
-
 /*
  * Write body frame linear and angular displacement measurements from a visual odometry sensor
  *
@@ -1601,19 +1541,6 @@ uint32_t NavEKF3::getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vec
     }
 
     return ret;
-}
-
-// return data for debugging EKF-GSF yaw estimator
-// return false if data not available
-bool NavEKF3::getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        if (core[instance].getDataEKFGSF(yaw_composite, yaw_composite_variance, yaw, innov_VN, innov_VE, weight)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // parameter conversion of EKF3 parameters
@@ -1714,18 +1641,6 @@ void NavEKF3::convert_parameters()
     // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
     if (AP::dal().opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
         AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
-    }
-}
-
-// return data for debugging range beacon fusion
-bool NavEKF3::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
-                                  float &offsetHigh, float &offsetLow, Vector3f &posNED) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getRangeBeaconDebug(ID, rng, innov, innovVar, testRatio, beaconPosNED, offsetHigh, offsetLow, posNED);
-    } else {
-        return false;
     }
 }
 
@@ -2071,21 +1986,6 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;
 
-}
-
-/*
-  get timing statistics structure
-*/
-void NavEKF3::getTimingStatistics(int8_t instance, struct ekf_timing &timing) const
-{
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
-    if (core) {
-        core[instance].getTimingStatistics(timing);
-    } else {
-        memset(&timing, 0, sizeof(timing));
-    }
 }
 
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
