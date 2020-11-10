@@ -617,12 +617,12 @@ bool AC_PolyFence_loader::load_from_eeprom()
         return false;
     }
 
-    _load_attempted = true;
-
     // find indexes of each fence:
-    if (!get_loaded_fence_semaphore().take(1)) {
+    if (!get_loaded_fence_semaphore().take_nonblocking()) {
         return false;
     }
+
+    _load_attempted = true;
 
     unload();
 
