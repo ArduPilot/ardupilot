@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Oliver Walters
+ * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
 
@@ -35,8 +35,13 @@
 
 #include <stdio.h>
 
+// Protocol files for the Velocity ESC
 #include <AP_PiccoloCAN/piccolo_protocol/ESCVelocityProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ESCPackets.h>
+
+// Protocol files for the CBS servo
+#include <AP_PiccoloCAN/piccolo_protocol/ServoProtocol.h>
+#include <AP_PiccoloCAN/piccolo_protocol/ServoPackets.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -261,7 +266,105 @@ void AP_PiccoloCAN::update()
             }
         }
     }
+
+    AP_Logger *logger = AP_Logger::get_singleton();
+
+    // Push received telemtry data into the logging system
+    if (logger && logger->logging_enabled()) {
+
+        WITH_SEMAPHORE(_telem_sem);
+
+        for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
+
+            PiccoloESC_Info_t &esc = _esc_info[i];
+
+            if (esc.newTelemetry) {
+
+                logger->Write_ESC(i, timestamp,
+                                  (int32_t) esc.rpm * 100,
+                                  esc.voltage,
+                                  esc.current,
+                                  (int16_t) esc.fetTemperature,
+                                  0,  // TODO - Accumulated current
+                                  (int16_t) esc.motorTemperature);
+
+                esc.newTelemetry = false;
+            }
+        }
+    }
 }
+
+// send ESC telemetry messages over MAVLink
+void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+    // Arrays to store ESC telemetry data
+    uint8_t temperature[4] {};
+    uint16_t voltage[4] {};
+    uint16_t rpm[4] {};
+    uint16_t count[4] {};
+    uint16_t current[4] {};
+    uint16_t totalcurrent[4] {};
+
+    bool dataAvailable = false;
+
+    uint8_t idx = 0;
+
+    WITH_SEMAPHORE(_telem_sem);
+
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
+
+        // Calculate index within storage array
+        idx = (ii % 4);
+
+        VelocityESC_Info_t &esc = _esc_info[idx];
+
+        // Has the ESC been heard from recently?
+        if (is_esc_present(ii)) {
+            dataAvailable = true;
+
+            temperature[idx] = esc.fetTemperature;
+            voltage[idx] = esc.voltage;
+            current[idx] = esc.current;
+            totalcurrent[idx] = 0;
+            rpm[idx] = esc.rpm;
+            count[idx] = 0;
+        } else {
+            temperature[idx] = 0;
+            voltage[idx] = 0;
+            current[idx] = 0;
+            totalcurrent[idx] = 0;
+            rpm[idx] = 0;
+            count[idx] = 0;
+        }
+
+        // Send ESC telemetry in groups of 4
+        if ((ii % 4) == 3) {
+
+            if (dataAvailable) {
+                if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
+                    continue;
+                }
+
+                switch (ii) {
+                case 3:
+                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 7:
+                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                case 11:
+                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            dataAvailable = false;
+        }
+    }
+}
+
 
 // send ESC messages over CAN
 void AP_PiccoloCAN::send_esc_messages(void)
@@ -366,7 +469,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    PiccoloESC_Info_t &esc = _esc_info[addr];
+    VelocityESC_Info_t &esc = _esc_info[addr];
 
     bool result = true;
 
@@ -475,7 +578,7 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms) const
         return false;
     }
 
-    const PiccoloESC_Info_t &esc = _esc_info[chan];
+    VelocityESC_Info_t &esc = _esc_info[chan];
 
     // No messages received from this ESC
     if (esc.last_rx_msg_timestamp == 0) {
@@ -508,7 +611,7 @@ bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
         return false;
     }
 
-    PiccoloESC_Info_t &esc = _esc_info[chan];
+    VelocityESC_Info_t &esc = _esc_info[chan];
 
     if (esc.status.hwInhibit || esc.status.swInhibit) {
         return false;
@@ -533,7 +636,7 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
                 return false;
             }
 
-            PiccoloESC_Info_t &esc = _esc_info[ii];
+            VelocityESC_Info_t &esc = _esc_info[ii];
 
             if (esc.status.hwInhibit) {
                 snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
@@ -544,7 +647,6 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 
     return true;
 }
-
 
 /* Piccolo Glue Logic
  * The following functions are required by the auto-generated protogen code.
@@ -614,6 +716,74 @@ uint32_t getESCVelocityPacketID(const void* pkt)
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
 
+/* Piccolo Glue Logic
+ * The following functions are required by the auto-generated protogen code.
+ */
+
+
+//! \return the packet data pointer from the packet
+uint8_t* getServoPacketData(void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (uint8_t*) frame->data;
+}
+
+//! \return the packet data pointer from the packet, const
+const uint8_t* getServoPacketDataConst(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (const uint8_t*) frame->data;
+}
+
+//! Complete a packet after the data have been encoded
+void finishServoPacket(void* pkt, int size, uint32_t packetID)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    if (size > AP_HAL::CANFrame::MaxDataLen) {
+        size = AP_HAL::CANFrame::MaxDataLen;
+    }
+
+    frame->dlc = size;
+
+    /* Encode the CAN ID
+     * 0x07mm20dd
+     * - 07 = ACTUATOR group ID
+     * - mm = Message ID
+     * - 00 = Servo actuator type
+     * - dd = Device ID
+     *
+     * Note: The Device ID (lower 8 bits of the frame ID) will have to be inserted later
+     */
+
+    uint32_t id = (((uint8_t) AP_PiccoloCAN::MessageGroup::ACTUATOR) << 24) |       // CAN Group ID
+                  ((packetID & 0xFF) << 16) |                                       // Message ID
+                  (((uint8_t) AP_PiccoloCAN::ActuatorType::SERVO) << 8);            // Actuator type
+
+    // Extended frame format
+    id |= AP_HAL::CANFrame::FlagEFF;
+
+    frame->id = id;
+}
+
+//! \return the size of a packet from the packet header
+int getServoPacketSize(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (int) frame->dlc;
+}
+
+//! \return the ID of a packet from the packet header
+uint32_t getServoPacketID(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    // Extract the message ID field from the 29-bit ID
+    return (uint32_t) ((frame->id >> 16) & 0xFF);
+}
 
 #endif // HAL_PICCOLO_CAN_ENABLE
 
