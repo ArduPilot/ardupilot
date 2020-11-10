@@ -705,7 +705,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
         return;
     }
     struct log_Ubx1 pkt = {
-        LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX1_MSG)),
+        LOG_PACKET_HEADER_INIT(LOG_GPS_UBX1_MSG),
         time_us    : AP_HAL::micros64(),
         instance   : state.instance,
         noisePerMS : _buffer.mon_hw_60.noisePerMS,
@@ -732,7 +732,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     }
 
     struct log_Ubx2 pkt = {
-        LOG_PACKET_HEADER_INIT(_ubx_msg_log_index(LOG_GPS_UBX2_MSG)),
+        LOG_PACKET_HEADER_INIT(LOG_GPS_UBX2_MSG),
         time_us   : AP_HAL::micros64(),
         instance  : state.instance,
         ofsI      : _buffer.mon_hw2.ofsI,
