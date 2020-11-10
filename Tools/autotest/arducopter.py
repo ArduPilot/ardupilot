@@ -5333,6 +5333,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Current log path: %s" % str(current_log_filepath))
 
         self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=True)
         self.arm_vehicle()
         self.takeoffAndMoveAway()
         self.do_RTL()
