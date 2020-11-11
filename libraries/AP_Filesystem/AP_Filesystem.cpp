@@ -53,6 +53,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #endif
     { "@PARAM/", fs_param },
     { "@SYS/", fs_sys },
+    { "@SYS", fs_sys },
 };
 
 #define MAX_FD_PER_BACKEND 256U
