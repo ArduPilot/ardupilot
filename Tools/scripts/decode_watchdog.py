@@ -89,7 +89,7 @@ class DecodeWatchDog(object):
             return "Fault Address"
 
         def string_value(self):
-            return hex(int(self.value))
+            return hex(int(self.value, 16))
 
     class ComponentFTP(Component):
 
@@ -110,7 +110,7 @@ class DecodeWatchDog(object):
             return "Fault ICS Register"   # ?? FIXME: expand further
 
         def string_value(self):
-            return hex(int(self.value))
+            return hex(int(self.value, 16))
 
         def decode(self):
             return "[Below]"
@@ -147,7 +147,7 @@ class DecodeWatchDog(object):
             return "Internal Error Mask"
 
         def string_value(self):
-            return hex(int(self.value))
+            return hex(int(self.value, 16))
 
     class ComponentIEC(Component):
 
