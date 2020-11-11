@@ -107,7 +107,10 @@ int apfs_fprintf(APFS_FILE *stream, const char *fmt, ...)
 int apfs_fflush(APFS_FILE *stream)
 {
     CHECK_STREAM(stream, EOF);
-    return 0;
+    if (AP::FS().fsync(stream->fd) == 0) {
+        return 0;
+    }
+    return EOF;
 }
 
 size_t apfs_fread(void *ptr, size_t size, size_t nmemb, APFS_FILE *stream)
