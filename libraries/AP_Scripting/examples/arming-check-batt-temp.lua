@@ -5,7 +5,6 @@ batt_temp_max = 35
 
 function update() -- this is the loop which periodically runs
   if auth_id then
-    now = millis()
     batt_temp = battery:get_temperature(0)
     if not batt_temp then
       arming:set_aux_auth_failed(auth_id, "Could not retrieve battery temperature")
