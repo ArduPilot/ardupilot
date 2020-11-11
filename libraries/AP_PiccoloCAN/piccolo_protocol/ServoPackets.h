@@ -233,6 +233,8 @@ typedef struct
     uint16_t current;     //!< Servo current
     uint16_t voltage;     //!< Servo supply voltage
     int8_t   temperature; //!< Servo temperature
+    int8_t   dutyCycle;   //!< Motor duty cycle
+    int16_t  speed;       //!< Servo output shaft speed
 }Servo_StatusB_t;
 
 //! Create the Servo_StatusB packet
@@ -242,10 +244,10 @@ void encodeServo_StatusBPacketStructure(void* pkt, const Servo_StatusB_t* user);
 int decodeServo_StatusBPacketStructure(const void* pkt, Servo_StatusB_t* user);
 
 //! Create the Servo_StatusB packet from parameters
-void encodeServo_StatusBPacket(void* pkt, uint16_t current, uint16_t voltage, int8_t temperature);
+void encodeServo_StatusBPacket(void* pkt, uint16_t current, uint16_t voltage, int8_t temperature, int8_t dutyCycle, int16_t speed);
 
 //! Decode the Servo_StatusB packet to parameters
-int decodeServo_StatusBPacket(const void* pkt, uint16_t* current, uint16_t* voltage, int8_t* temperature);
+int decodeServo_StatusBPacket(const void* pkt, uint16_t* current, uint16_t* voltage, int8_t* temperature, int8_t* dutyCycle, int16_t* speed);
 
 //! return the packet ID for the Servo_StatusB packet
 #define getServo_StatusBPacketID() (PKT_SERVO_STATUS_B)
@@ -254,7 +256,7 @@ int decodeServo_StatusBPacket(const void* pkt, uint16_t* current, uint16_t* volt
 #define getServo_StatusBMinDataLength() (5)
 
 //! return the maximum encoded length for the Servo_StatusB packet
-#define getServo_StatusBMaxDataLength() (5)
+#define getServo_StatusBMaxDataLength() (8)
 
 /*!
  * The *SERVO_STATUS_C* packet contains servo position data. It is a cut-down
