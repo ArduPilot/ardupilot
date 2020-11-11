@@ -29,10 +29,10 @@
 #include "piccolo_protocol/ServoPackets.h"
 
 // maximum number of ESC allowed on CAN bus simultaneously
-#define PICCOLO_CAN_MAX_NUM_ESC 12
+#define PICCOLO_CAN_MAX_NUM_ESC 16
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
 
-#define PICCOLO_CAN_MAX_NUM_SERVO 12
+#define PICCOLO_CAN_MAX_NUM_SERVO 16
 #define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
