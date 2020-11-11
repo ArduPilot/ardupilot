@@ -158,6 +158,7 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Camera/AP_RunCam.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
+        'libraries/AP_Scripting/lua_generated_bindings.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -195,7 +196,19 @@ class ap_library_check_headers(Task.Task):
             p = n.abspath()
             if not p.startswith(srcnode_path):
                 continue
-            if os.path.relpath(p, srcnode_path) in self.whitelist:
+            rel_p = os.path.relpath(p, srcnode_path)
+            if rel_p in self.whitelist:
+                continue
+
+            # check if the path ends with something in the white list
+            # this is required for white listing files in 'build/' (for scripting generated bindings)
+            found = False
+            for m in self.whitelist:
+                if rel_p.endswith(m):
+                    found = True
+                    break
+            
+            if found:
                 continue
 
             r.append(n)
