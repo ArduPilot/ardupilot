@@ -769,6 +769,14 @@ void encodeServo_StatusBPacketStructure(void* _pg_pkt, const Servo_StatusB_t* _p
     // Range of temperature is -128 to 127.
     int8ToBytes(_pg_user->temperature, _pg_data, &_pg_byteindex);
 
+    // Motor duty cycle
+    // Range of dutyCycle is -128 to 127.
+    int8ToBytes(_pg_user->dutyCycle, _pg_data, &_pg_byteindex);
+
+    // Servo output shaft speed
+    // Range of speed is -32768 to 32767.
+    int16ToBeBytes(_pg_user->speed, _pg_data, &_pg_byteindex);
+
     // complete the process of creating the packet
     finishServoPacket(_pg_pkt, _pg_byteindex, getServo_StatusBPacketID());
 
@@ -800,6 +808,10 @@ int decodeServo_StatusBPacketStructure(const void* _pg_pkt, Servo_StatusB_t* _pg
     // The raw data from the packet
     _pg_data = getServoPacketDataConst(_pg_pkt);
 
+    // this packet has default fields, make sure they are set
+    _pg_user->dutyCycle = 0;
+    _pg_user->speed = 0;
+
     // Servo current
     // Range of current is 0 to 65535.
     _pg_user->current = uint16FromBeBytes(_pg_data, &_pg_byteindex);
@@ -811,6 +823,20 @@ int decodeServo_StatusBPacketStructure(const void* _pg_pkt, Servo_StatusB_t* _pg
     // Servo temperature
     // Range of temperature is -128 to 127.
     _pg_user->temperature = int8FromBytes(_pg_data, &_pg_byteindex);
+
+    if(_pg_byteindex + 1 > _pg_numbytes)
+        return 1;
+
+    // Motor duty cycle
+    // Range of dutyCycle is -128 to 127.
+    _pg_user->dutyCycle = int8FromBytes(_pg_data, &_pg_byteindex);
+
+    if(_pg_byteindex + 2 > _pg_numbytes)
+        return 1;
+
+    // Servo output shaft speed
+    // Range of speed is -32768 to 32767.
+    _pg_user->speed = int16FromBeBytes(_pg_data, &_pg_byteindex);
 
     return 1;
 
@@ -824,8 +850,10 @@ int decodeServo_StatusBPacketStructure(const void* _pg_pkt, Servo_StatusB_t* _pg
  * \param current is Servo current
  * \param voltage is Servo supply voltage
  * \param temperature is Servo temperature
+ * \param dutyCycle is Motor duty cycle
+ * \param speed is Servo output shaft speed
  */
-void encodeServo_StatusBPacket(void* _pg_pkt, uint16_t current, uint16_t voltage, int8_t temperature)
+void encodeServo_StatusBPacket(void* _pg_pkt, uint16_t current, uint16_t voltage, int8_t temperature, int8_t dutyCycle, int16_t speed)
 {
     uint8_t* _pg_data = getServoPacketData(_pg_pkt);
     int _pg_byteindex = 0;
@@ -842,6 +870,14 @@ void encodeServo_StatusBPacket(void* _pg_pkt, uint16_t current, uint16_t voltage
     // Range of temperature is -128 to 127.
     int8ToBytes(temperature, _pg_data, &_pg_byteindex);
 
+    // Motor duty cycle
+    // Range of dutyCycle is -128 to 127.
+    int8ToBytes(dutyCycle, _pg_data, &_pg_byteindex);
+
+    // Servo output shaft speed
+    // Range of speed is -32768 to 32767.
+    int16ToBeBytes(speed, _pg_data, &_pg_byteindex);
+
     // complete the process of creating the packet
     finishServoPacket(_pg_pkt, _pg_byteindex, getServo_StatusBPacketID());
 
@@ -855,9 +891,11 @@ void encodeServo_StatusBPacket(void* _pg_pkt, uint16_t current, uint16_t voltage
  * \param current receives Servo current
  * \param voltage receives Servo supply voltage
  * \param temperature receives Servo temperature
+ * \param dutyCycle receives Motor duty cycle
+ * \param speed receives Servo output shaft speed
  * \return 0 is returned if the packet ID or size is wrong, else 1
  */
-int decodeServo_StatusBPacket(const void* _pg_pkt, uint16_t* current, uint16_t* voltage, int8_t* temperature)
+int decodeServo_StatusBPacket(const void* _pg_pkt, uint16_t* current, uint16_t* voltage, int8_t* temperature, int8_t* dutyCycle, int16_t* speed)
 {
     int _pg_byteindex = 0;
     const uint8_t* _pg_data = getServoPacketDataConst(_pg_pkt);
@@ -870,6 +908,10 @@ int decodeServo_StatusBPacket(const void* _pg_pkt, uint16_t* current, uint16_t* 
     if(_pg_numbytes < getServo_StatusBMinDataLength())
         return 0;
 
+    // this packet has default fields, make sure they are set
+    (*dutyCycle) = 0;
+    (*speed) = 0;
+
     // Servo current
     // Range of current is 0 to 65535.
     (*current) = uint16FromBeBytes(_pg_data, &_pg_byteindex);
@@ -881,6 +923,20 @@ int decodeServo_StatusBPacket(const void* _pg_pkt, uint16_t* current, uint16_t* 
     // Servo temperature
     // Range of temperature is -128 to 127.
     (*temperature) = int8FromBytes(_pg_data, &_pg_byteindex);
+
+    if(_pg_byteindex + 1 > _pg_numbytes)
+        return 1;
+
+    // Motor duty cycle
+    // Range of dutyCycle is -128 to 127.
+    (*dutyCycle) = int8FromBytes(_pg_data, &_pg_byteindex);
+
+    if(_pg_byteindex + 2 > _pg_numbytes)
+        return 1;
+
+    // Servo output shaft speed
+    // Range of speed is -32768 to 32767.
+    (*speed) = int16FromBeBytes(_pg_data, &_pg_byteindex);
 
     return 1;
 
