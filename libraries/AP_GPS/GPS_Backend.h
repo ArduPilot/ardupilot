@@ -127,6 +127,11 @@ protected:
     bool calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D);
 #endif //GPS_MOVING_BASELINE
 
+    // get GPS type, for subtype config
+    AP_GPS::GPS_Type get_type() const {
+        return gps.get_type(state.instance);
+    }
+
 private:
     // itow from previous message
     uint32_t _last_itow;
