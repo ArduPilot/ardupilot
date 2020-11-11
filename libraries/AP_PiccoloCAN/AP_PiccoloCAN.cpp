@@ -292,23 +292,31 @@ void AP_PiccoloCAN::update()
     for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
 
         if (is_servo_channel_active(ii)) {
-            // TODO - Extract output command here
+
+            uint16_t output = 0;
+
+            SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(ii);
+
+            if (SRV_Channels::get_output_pwm(function, output)) {
+                _servo_info[ii].command = output;
+                _servo_info[ii].newCommand = true;
+            }
         }
     }
 
     /* Read out the ESC commands from the channel mixer */
-    for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
+    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
 
-        if (is_esc_channel_active(i)) {
+        if (is_esc_channel_active(ii)) {
 
             uint16_t output = 0;
             
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
+            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
 
-                _esc_info[i].command = output;
-                _esc_info[i].newCommand = true;
+                _esc_info[ii].command = output;
+                _esc_info[ii].newCommand = true;
             }
         }
     }
@@ -731,14 +739,20 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
         return false;
     }
 
-    // Check if a servo function is assigned for this motor channel
-    // TODO - ?
-    if (1) {
-        return true;
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
+
+    // Ignore if the servo channel does not have a function assigned
+    if (function == SRV_Channel::k_none) {
+        return false;
     }
 
-    return false;
+    // Ignore if the assigned function is a motor function
+    if (SRV_Channel::is_motor(function)) {
+        return false;
+    }
 
+    // We can safely say that the particular servo channel is active
+    return true;
 }
 
 /**
