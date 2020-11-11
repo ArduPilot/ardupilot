@@ -22,7 +22,6 @@
 #include "Scheduler.h"
 #include "hwdef/common/flash.h"
 #include <AP_Filesystem/AP_Filesystem.h>
-#include "sdcard.h"
 #include <stdio.h>
 
 using namespace ChibiOS;
@@ -88,7 +87,7 @@ void Storage::_storage_open(void)
         }
 
         // use microSD based storage
-        if (sdcard_retry()) {
+        if (AP::FS().retry_mount()) {
             log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
             if (log_fd == -1) {
                 ::printf("open failed of " HAL_STORAGE_FILE "\n");
@@ -145,7 +144,7 @@ void Storage::_save_backup(void)
     // We want to do this desperately,
     // So we keep trying this for a second
     uint32_t start_millis = AP_HAL::millis();
-    while(!sdcard_retry() && (AP_HAL::millis() - start_millis) < 1000) {
+    while(!AP::FS().retry_mount() && (AP_HAL::millis() - start_millis) < 1000) {
         hal.scheduler->delay(1);        
     }
 

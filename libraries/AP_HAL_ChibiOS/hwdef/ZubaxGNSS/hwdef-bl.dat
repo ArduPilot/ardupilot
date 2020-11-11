@@ -60,8 +60,8 @@ define HAL_UART_NODMA
 # enable CAN support
 PA11 CAN_RX CAN
 PB9 CAN_TX CAN
-define HAL_USE_CAN TRUE
-define STM32_CAN_USE_CAN1 TRUE
+
+
 
 # no I2C buses
 # I2C_ORDER
@@ -127,3 +127,6 @@ define HAL_STORAGE_SIZE 800
 # Add CS pins to ensure they are high in bootloader
 PA15 BARO_CS CS
 PD2  MAG_CS CS
+
+# reduce the number of CAN RX Buffer
+define HAL_CAN_RX_QUEUE_SIZE 32

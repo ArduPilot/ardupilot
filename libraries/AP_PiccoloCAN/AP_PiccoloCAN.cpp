@@ -141,15 +141,11 @@ void AP_PiccoloCAN::loop()
     uint8_t frame_id_group;     // Piccolo message group
     uint16_t frame_id_device;   // Device identifier
 
-    uint64_t timeout;
-
-    uint16_t escCmdRateMs;
-
     while (true) {
 
         _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
 
-        escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
+        uint16_t escCmdRateMs = (uint16_t) ((float) 1000 / _esc_hz);
 
         if (!_initialized) {
             debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
@@ -157,10 +153,10 @@ void AP_PiccoloCAN::loop()
             continue;
         }
 
-        timeout = AP_HAL::micros64() + 250;
+        uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
-        hal.scheduler->delay_microseconds(1 * 1000);
+        hal.scheduler->delay_microseconds(1000);
 
         // Transmit ESC commands at regular intervals
         if (esc_tx_counter++ > escCmdRateMs) {
@@ -171,6 +167,8 @@ void AP_PiccoloCAN::loop()
 
         // Look for any message responses on the CAN bus
         while (read_frame(rxFrame, timeout)) {
+
+            // Extract group and device ID values from the frame identifier
             frame_id_group = (rxFrame.id >> 24) & 0x1F;
             frame_id_device = (rxFrame.id >> 8) & 0xFF;
 
@@ -212,13 +210,12 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 
     bool read_select = false;
     bool write_select = true;
-    bool ret;
-    do {
-        ret = _can_iface->select(read_select, write_select, &out_frame, timeout);
-        if (!ret || !write_select) {
-            hal.scheduler->delay_microseconds(50);
-        }
-    } while (!ret || !write_select);
+    
+    bool ret =  _can_iface->select(read_select, write_select, &out_frame, timeout);
+
+    if (!ret || !write_select) {
+        return false;
+    }
 
     return (_can_iface->send(out_frame, timeout, AP_HAL::CANIface::AbortOnError) == 1);
 }
@@ -233,6 +230,7 @@ bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
     bool read_select = true;
     bool write_select = false;
     bool ret = _can_iface->select(read_select, write_select, nullptr, timeout);
+
     if (!ret || !read_select) {
         // No frame available
         return false;
@@ -280,12 +278,12 @@ void AP_PiccoloCAN::update()
             if (esc.newTelemetry) {
 
                 logger->Write_ESC(i, timestamp,
-                                  (int32_t) esc.statusA.rpm * 100,
-                                  esc.statusB.voltage,
-                                  esc.statusB.current,
-                                  (int16_t) esc.statusB.escTemperature,
+                                  (int32_t) esc.rpm * 100,
+                                  esc.voltage,
+                                  esc.current,
+                                  (int16_t) esc.fetTemperature,
                                   0,  // TODO - Accumulated current
-                                  (int16_t) esc.statusB.motorTemperature);
+                                  (int16_t) esc.motorTemperature);
 
                 esc.newTelemetry = false;
             }
@@ -321,11 +319,11 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         if (is_esc_present(ii)) {
             dataAvailable = true;
 
-            temperature[idx] = esc.statusB.escTemperature;
-            voltage[idx] = esc.statusB.voltage;
-            current[idx] = esc.statusB.current;
+            temperature[idx] = esc.fetTemperature;
+            voltage[idx] = esc.voltage;
+            current[idx] = esc.current;
             totalcurrent[idx] = 0;
-            rpm[idx] = esc.statusA.rpm;
+            rpm[idx] = esc.rpm;
             count[idx] = 0;
         } else {
             temperature[idx] = 0;
@@ -370,10 +368,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
 {
     AP_HAL::CANFrame txFrame;
 
-    uint64_t timeout = AP_HAL::micros64() + 250;
-
-    // TODO - How to buffer CAN messages properly?
-    // Sending more than 2 messages at each loop instance means that sometimes messages are dropped
+    uint64_t timeout = AP_HAL::micros64() + 1000ULL;
 
     // No ESCs are selected? Don't send anything
     if (_esc_bm == 0x00) {
@@ -475,10 +470,47 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
     bool result = true;
 
+    /*
+     * The STATUS_A packet has slight variations between Gen-1 and Gen-2 ESCs.
+     * We can differentiate between the different versions,
+     * and coerce the "legacy" values into the modern values
+     * Legacy STATUS_A packet variables
+     */
+    ESC_LegacyStatusBits_t legacyStatus;
+    ESC_LegacyWarningBits_t legacyWarnings;
+    ESC_LegacyErrorBits_t legacyErrors;
+
     // Throw the packet against each decoding routine
-    if (decodeESC_StatusAPacketStructure(&frame, &esc.statusA)) {
+    if (decodeESC_StatusAPacket(&frame, &esc.mode, &esc.status, &esc.setpoint, &esc.rpm)) {
         esc.newTelemetry = true;
-    } else if (decodeESC_StatusBPacketStructure(&frame, &esc.statusB)) {
+    } else if (decodeESC_LegacyStatusAPacket(&frame, &esc.mode, &legacyStatus, &legacyWarnings, &legacyErrors, &esc.setpoint, &esc.rpm)) {
+        // The status / warning / error bits need to be converted to modern values
+        // Note: Not *all* of the modern status bits are available in the Gen-1 packet
+        esc.status.hwInhibit = legacyStatus.hwInhibit;
+        esc.status.swInhibit = legacyStatus.swInhibit;
+        esc.status.afwEnabled = legacyStatus.afwEnabled;
+        esc.status.direction = legacyStatus.timeout;
+        esc.status.timeout = legacyStatus.timeout;
+        esc.status.starting = legacyStatus.starting;
+        esc.status.commandSource = legacyStatus.commandSource;
+        esc.status.running = legacyStatus.running;
+
+        // Copy the legacy warning information across
+        esc.warnings.overspeed = legacyWarnings.overspeed;
+        esc.warnings.overcurrent = legacyWarnings.overcurrent;
+        esc.warnings.escTemperature = legacyWarnings.escTemperature;
+        esc.warnings.motorTemperature = legacyWarnings.motorTemperature;
+        esc.warnings.undervoltage = legacyWarnings.undervoltage;
+        esc.warnings.overvoltage = legacyWarnings.overvoltage;
+        esc.warnings.invalidPWMsignal = legacyWarnings.invalidPWMsignal;
+        esc.warnings.settingsChecksum = legacyErrors.settingsChecksum;
+
+        // There are no common error bits between the Gen-1 and Gen-2 ICD
+    } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
+        esc.newTelemetry = true;
+    } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
+        esc.newTelemetry = true;
+    } else if (decodeESC_WarningErrorStatusPacket(&frame, &esc.warnings, &esc.errors)) {
         esc.newTelemetry = true;
     } else if (decodeESC_FirmwarePacketStructure(&frame, &esc.firmware)) {
         // TODO
@@ -538,7 +570,7 @@ bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
 
     uint64_t now = AP_HAL::micros64();
 
-    uint64_t timeout_us = timeout_ms * 1000;
+    uint64_t timeout_us = timeout_ms * 1000ULL;
 
     if (now > (esc.last_rx_msg_timestamp + timeout_us)) {
         return false;
@@ -564,7 +596,7 @@ bool AP_PiccoloCAN::is_esc_enabled(uint8_t chan)
 
     PiccoloESC_Info_t &esc = _esc_info[chan];
 
-    if (esc.statusA.status.hwInhibit || esc.statusA.status.swInhibit) {
+    if (esc.status.hwInhibit || esc.status.swInhibit) {
         return false;
     }
 
@@ -589,7 +621,7 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 
             PiccoloESC_Info_t &esc = _esc_info[ii];
 
-            if (esc.statusA.status.hwInhibit) {
+            if (esc.status.hwInhibit) {
                 snprintf(reason, reason_len, "ESC %u is hardware inhibited", (ii + 1));
                 return false;
             }

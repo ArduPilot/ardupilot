@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: WIND_MAX
     // @DisplayName: Maximum wind
-    // @Description: This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is.
+    // @Description: This sets the maximum allowable difference between ground speed and airspeed. This allows the plane to cope with a failing airspeed sensor. A value of zero means to use the airspeed as is. See ARSPD_OPTIONS and ARSPD_MAX_WIND to disable airspeed sensors.
     // @Range: 0 127
     // @Units: m/s
     // @Increment: 1

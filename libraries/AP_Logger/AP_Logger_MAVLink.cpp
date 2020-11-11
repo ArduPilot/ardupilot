@@ -220,7 +220,7 @@ void AP_Logger_MAVLink::stop_logging()
     }
 }
 
-void AP_Logger_MAVLink::handle_ack(const mavlink_channel_t chan,
+void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
                                    const mavlink_message_t &msg,
                                    uint32_t seqno)
 {
@@ -245,7 +245,7 @@ void AP_Logger_MAVLink::handle_ack(const mavlink_channel_t chan,
             _sending_to_client = true;
             _target_system_id = msg.sysid;
             _target_component_id = msg.compid;
-            _chan = chan;
+            _link = &link;
             _next_seq_num = 0;
             start_new_log_reset_variables();
             _last_response_time = AP_HAL::millis();
@@ -266,7 +266,7 @@ void AP_Logger_MAVLink::handle_ack(const mavlink_channel_t chan,
     }
 }
 
-void AP_Logger_MAVLink::remote_log_block_status_msg(const mavlink_channel_t chan,
+void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
                                                     const mavlink_message_t& msg)
 {
     mavlink_remote_log_block_status_t packet;
@@ -277,7 +277,7 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const mavlink_channel_t chan
     if(packet.status == 0){
         handle_retry(packet.seqno);
     } else{
-        handle_ack(chan, msg, packet.seqno);
+        handle_ack(link, msg, packet.seqno);
     }
     semaphore.give();
 }
@@ -537,17 +537,24 @@ void AP_Logger_MAVLink::periodic_1Hz()
 //TODO: handle full txspace properly
 bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 {
-    mavlink_channel_t chan = mavlink_channel_t(_chan - MAVLINK_COMM_0);
     if (!_initialised) {
        return false;
     }
-    if (!HAVE_PAYLOAD_SPACE(chan, REMOTE_LOG_DATA_BLOCK)) {
+    if (_link == nullptr) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
-    if (comm_get_txspace(chan) < 500) {
+    // don't completely fill buffers - and also ensure there's enough
+    // room to send at least one packet:
+    const uint16_t min_payload_space = 500;
+    static_assert(MAVLINK_MSG_ID_REMOTE_LOG_DATA_BLOCK_LEN <= min_payload_space,
+                  "minimum allocated space is less than payload length");
+    if (_link->txspace() < min_payload_space) {
         return false;
     }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // deliberately fail 10% of the time in SITL:
     if (rand() < 0.1) {
         return false;
     }
@@ -561,7 +568,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
     hal.util->perf_begin(_perf_packing);
 
     mavlink_message_t msg;
-    mavlink_status_t *chan_status = mavlink_get_channel_status(chan);
+    mavlink_status_t *chan_status = mavlink_get_channel_status(_link->get_chan());
     uint8_t saved_seq = chan_status->current_tx_seq;
     chan_status->current_tx_seq = mavlink_seq++;
     // Debug("Sending block (%d)", block.seqno);
@@ -587,7 +594,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
     // problem and stop attempting to log
     _last_send_time = AP_HAL::millis();
 
-    _mavlink_resend_uart(chan, &msg);
+    _mavlink_resend_uart(_link->get_chan(), &msg);
 
     return true;
 }

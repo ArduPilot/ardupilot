@@ -2,36 +2,16 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AP_Logger/AP_Logger.h>
+#include <AP_DAL/AP_DAL.h>
 
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend) :
-    _perf_UpdateFilter(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_UpdateFilter")),
-    _perf_CovariancePrediction(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_CovariancePrediction")),
-    _perf_FuseVelPosNED(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseVelPosNED")),
-    _perf_FuseMagnetometer(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseMagnetometer")),
-    _perf_FuseAirspeed(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseAirspeed")),
-    _perf_FuseSideslip(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseSideslip")),
-    _perf_TerrainOffset(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_TerrainOffset")),
-    _perf_FuseOptFlow(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseOptFlow")),
-    _perf_FuseBodyOdom(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_FuseBodyOdom")),
-    frontend(_frontend)
+    frontend(_frontend),
+    dal(AP::dal())
 {
-    _perf_test[0] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test0");
-    _perf_test[1] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test1");
-    _perf_test[2] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test2");
-    _perf_test[3] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test3");
-    _perf_test[4] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test4");
-    _perf_test[5] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test5");
-    _perf_test[6] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test6");
-    _perf_test[7] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test7");
-    _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test8");
-    _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK3_Test9");
     firstInitTime_ms = 0;
     lastInitFailReport_ms = 0;
 }
@@ -43,7 +23,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     gyro_index_active = imu_index;
     accel_index_active = imu_index;
     core_index = _core_index;
-    _ahrs = frontend->_ahrs;
 
     /*
       The imu_buffer_length needs to cope with the worst case sensor delay at the
@@ -51,8 +30,8 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
      */
 
     // Calculate the expected EKF time step
-    if (AP::ins().get_loop_rate_hz() > 0) {
-        dtEkfAvg = 1.0f / AP::ins().get_loop_rate_hz();
+    if (dal.ins().get_loop_rate_hz() > 0) {
+        dtEkfAvg = 1.0f / dal.ins().get_loop_rate_hz();
         dtEkfAvg = MAX(dtEkfAvg,EKF_TARGET_DT);
     } else {
         return false;
@@ -70,18 +49,21 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if (frontend->_fusionModeGPS != 3) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
-        if (!AP::gps().get_lag(selected_gps, gps_delay_sec)) {
-            if (AP_HAL::millis() - lastInitFailReport_ms > 10000) {
-                lastInitFailReport_ms = AP_HAL::millis();
+        if (!dal.gps().get_lag(selected_gps, gps_delay_sec)) {
+#ifndef HAL_NO_GCS
+            const uint32_t now = dal.millis();
+            if (now - lastInitFailReport_ms > 10000) {
+                lastInitFailReport_ms = now;
                 // provide an escalating series of messages
-                if (AP_HAL::millis() > 30000) {
-                    gcs().send_text(MAV_SEVERITY_ERROR, "EKF3 waiting for GPS config data");
-                } else if (AP_HAL::millis() > 15000) {
-                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF3 waiting for GPS config data");
-                } else  {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 waiting for GPS config data");
+                MAV_SEVERITY severity = MAV_SEVERITY_INFO;
+                if (now > 30000) {
+                    severity = MAV_SEVERITY_ERROR;
+                } else if (now > 15000) {
+                    severity = MAV_SEVERITY_WARNING;
                 }
+                GCS_SEND_TEXT(severity, "EKF3 waiting for GPS config data");
             }
+#endif
             return false;
         }
         // limit the time delay value from the GPS library to a max of 250 msec which is the max value the EKF has been tested for.
@@ -89,13 +71,13 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
 
     // airspeed sensing can have large delays and should not be included if disabled
-    if (_ahrs->airspeed_sensor_enabled()) {
+    if (dal.airspeed_sensor_enabled()) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 
 #if HAL_VISUALODOM_ENABLED
     // include delay from visual odometry if enabled
-    AP_VisualOdom *visual_odom = AP::visualodom();
+    const auto *visual_odom = dal.visualodom();
     if ((visual_odom != nullptr) && visual_odom->enabled()) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms, MIN(visual_odom->get_delay_ms(), 250));
     }
@@ -166,7 +148,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u, dt=%.4f",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
                     (unsigned)imu_buffer_length,
                     (unsigned)obs_buffer_length,
@@ -176,15 +158,15 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 
     if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
         // check if there is enough memory to create the EKF-GSF object
-        if (hal.util->available_memory() < sizeof(EKFGSF_yaw) + 1024) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u GSF: not enough memory",(unsigned)imu_index);
+        if (dal.available_memory() < sizeof(EKFGSF_yaw) + 1024) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%u GSF: not enough memory",(unsigned)imu_index);
             return false;
         }
 
         // try to instantiate
         yawEstimator = new EKFGSF_yaw();
         if (yawEstimator == nullptr) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 IMU%uGSF: allocation failed",(unsigned)imu_index);
             return false;
         }
     }
@@ -201,7 +183,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 void NavEKF3_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
-    const AP_InertialSensor &ins = AP::ins();
+    const auto &ins = dal.ins();
     localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
     localFilterTimeStep_ms = MAX(localFilterTimeStep_ms, (uint8_t)EKF_TARGET_DT_MS);
 
@@ -259,7 +241,6 @@ void NavEKF3_core::InitialiseVariables()
     inhibitGndState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
-    heldVelNE.zero();
     PV_AidingMode = AID_NONE;
     PV_AidingModePrev = AID_NONE;
     posTimeout = true;
@@ -287,15 +268,12 @@ void NavEKF3_core::InitialiseVariables()
     baroHgtOffset = 0.0f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
+    tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;
     have_table_earth_field = false;
     stateIndexLim = 23;
-    baroStoreIndex = 0;
-    rangeStoreIndex = 0;
     last_gps_idx = 0;
-    tasStoreIndex = 0;
-    ofStoreIndex = 0;
     delAngCorrection.zero();
     velErrintegral.zero();
     posErrintegral.zero();
@@ -303,8 +281,6 @@ void NavEKF3_core::InitialiseVariables()
     gpsNotAvailable = true;
     motorsArmed = false;
     prevMotorsArmed = false;
-    innovationIncrement = 0;
-    lastInnovation = 0;
     memset(&gpsCheckStatus, 0, sizeof(gpsCheckStatus));
     gpsSpdAccPass = false;
     ekfInnovationsPass = false;
@@ -354,7 +330,6 @@ void NavEKF3_core::InitialiseVariables()
 
     // range beacon fusion variables
     memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
-    rngBcnStoreIndex = 0;
     lastRngBcnPassTime_ms = 0;
     rngBcnTestRatio = 0.0f;
     rngBcnHealth = false;
@@ -432,7 +407,7 @@ void NavEKF3_core::InitialiseVariables()
     storedExtNavVel.reset();
 
     // initialise pre-arm message
-    hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
+    dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
 
     InitialiseVariablesMag();
 
@@ -460,7 +435,6 @@ void NavEKF3_core::InitialiseVariablesMag()
     mag_state.q0 = 1;
     mag_state.DCM.identity();
     inhibitMagStates = true;
-    magStoreIndex = 0;
     magSelectIndex = 0;
     lastMagOffsetsValid = false;
     magStateResetRequest = false;
@@ -472,6 +446,8 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+    needMagBodyVarReset = false;
+    needEarthBodyVarReset = false;
 }
 
 /*
@@ -481,16 +457,17 @@ timee to reduce the resulting tilt error. Yaw alignment is not performed by this
 function, but is perfomred later and initiated the SelectMagFusion() function
 after the tilt has stabilised.
 */
+
 bool NavEKF3_core::InitialiseFilterBootstrap(void)
 {
     // update sensor selection (for affinity)
     update_sensor_selection();
 
     // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && AP::gps().status(preferred_gps) < AP_GPS::GPS_OK_FIX_3D) {
-        hal.util->snprintf(prearm_fail_string,
-                    sizeof(prearm_fail_string),
-                    "EKF3 init failure: No GPS lock");
+    if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+        dal.snprintf(prearm_fail_string,
+                     sizeof(prearm_fail_string),
+                     "EKF3 init failure: No GPS lock");
         statesInitialised = false;
         return false;
     }
@@ -523,7 +500,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     Vector3f initAccVec;
 
     // TODO we should average accel readings over several cycles
-    initAccVec = AP::ins().get_accel(accel_index_active);
+    initAccVec = dal.ins().get_accel(accel_index_active);
 
     // normalise the acceleration vector
     float pitch=0, roll=0;
@@ -557,7 +534,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     ResetHeight();
 
     // define Earth rotation vector in the NED navigation frame
-    calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
+    calcEarthRateNED(earthRateNED, dal.get_home().lat);
 
     // initialise the covariance matrix
     CovarianceInit();
@@ -574,7 +551,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         inactiveBias[i].accel_bias.zero();
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
     // we initially return false to wait for the IMU buffer to fill
     return false;
@@ -590,8 +567,8 @@ void NavEKF3_core::CovarianceInit()
     Vector3f rot_vec_var;
     rot_vec_var.x = rot_vec_var.y = rot_vec_var.z = sq(0.1f);
 
-    // update the quaternion state covariances
-    initialiseQuatCovariances(rot_vec_var);
+    // reset the quaternion state covariances
+    CovariancePrediction(&rot_vec_var);
 
     // velocities
     P[4][4]   = sq(frontend->_gpsHorizVelNoise);
@@ -610,11 +587,11 @@ void NavEKF3_core::CovarianceInit()
     P[14][14] = P[13][13];
     P[15][15] = P[13][13];
     // earth magnetic field
-    P[16][16] = 0.0f;
+    P[16][16] = sq(frontend->_magNoise);
     P[17][17] = P[16][16];
     P[18][18] = P[16][16];
     // body magnetic field
-    P[19][19] = 0.0f;
+    P[19][19] = sq(frontend->_magNoise);
     P[20][20] = P[19][19];
     P[21][21] = P[19][19];
     // wind velocities
@@ -641,12 +618,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
         return;
     }
 
-    // start the timer used for load measurement
-#if EK3_DISABLE_INTERRUPTS
-    void *istate = hal.scheduler->disable_interrupts_save();
-#endif
-    hal.util->perf_begin(_perf_UpdateFilter);
-
     fill_scratch_variables();
 
     // update sensor selection (for affinity)
@@ -666,7 +637,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
         UpdateStrapdownEquationsNED();
 
         // Predict the covariance growth
-        CovariancePrediction();
+        CovariancePrediction(nullptr);
 
         // Run the IMU prediction step for the GSF yaw estimator algorithm
         // using IMU and optionally true airspeed data.
@@ -705,12 +676,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     // Wind output forward from the fusion to output time horizon
     calcOutputStates();
-
-    // stop the timer used for load measurement
-    hal.util->perf_end(_perf_UpdateFilter);
-#if EK3_DISABLE_INTERRUPTS
-    hal.scheduler->restore_interrupts(istate);
-#endif
 }
 
 void NavEKF3_core::correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index)
@@ -737,6 +702,7 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
     // apply correction for earth's rotation rate
     // % * - and + operators have been overloaded
     stateStruct.quat.rotate(delAngCorrected - prevTnb * earthRateNED*imuDataDelayed.delAngDT);
+
     stateStruct.quat.normalize();
 
     // transform body delta velocities to delta velocities in the nav frame
@@ -961,13 +927,14 @@ void NavEKF3_core::calcOutputStates()
 }
 
 /*
- * Calculate the predicted state covariance matrix using algebraic equations generated with Matlab symbolic toolbox.
- * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
+ * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
+ * See AP_NavEKF3/derivation/main.py for derivation
+ * Output for change reference: AP_NavEKF3/derivation/generated/covariance_generated.cpp
+ * Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
+ * used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
 */
-void NavEKF3_core::CovariancePrediction()
+void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
 {
-    hal.util->perf_begin(_perf_CovariancePrediction);
     float daxVar;       // X axis delta angle noise variance rad^2
     float dayVar;       // Y axis delta angle noise variance rad^2
     float dazVar;       // Z axis delta angle noise variance rad^2
@@ -1022,12 +989,42 @@ void NavEKF3_core::CovariancePrediction()
         }
     }
 
+    if (!inhibitMagStates && lastInhibitMagStates) {
+        // when starting 3D fusion we want to reset mag variances
+        needMagBodyVarReset = true;
+        needEarthBodyVarReset = true;
+    }
+
+    if (needMagBodyVarReset) {
+        // reset body mag variances
+        needMagBodyVarReset = false;
+        zeroCols(P,19,21);
+        zeroRows(P,19,21);
+        P[19][19] = sq(frontend->_magNoise);
+        P[20][20] = P[19][19];
+        P[21][21] = P[19][19];
+    }
+
+    if (needEarthBodyVarReset) {
+        // reset mag earth field variances
+        needEarthBodyVarReset = false;
+        zeroCols(P,16,18);
+        zeroRows(P,16,18);
+        P[16][16] = sq(frontend->_magNoise);
+        P[17][17] = P[16][16];
+        P[18][18] = P[16][16];
+        // Fusing the declinaton angle as an observaton with a 20 deg uncertainty helps
+        // to stabilise the earth field.
+        FuseDeclination(radians(20.0f));
+    }
+
     if (!inhibitMagStates) {
         float magEarthVar = sq(dt * constrain_float(frontend->_magEarthProcessNoise, 0.0f, 1.0f));
         float magBodyVar  = sq(dt * constrain_float(frontend->_magBodyProcessNoise, 0.0f, 1.0f));
         for (uint8_t i=6; i<=8; i++) processNoiseVariance[i] = magEarthVar;
         for (uint8_t i=9; i<=11; i++) processNoiseVariance[i] = magBodyVar;
     }
+    lastInhibitMagStates = inhibitMagStates;
 
     if (!inhibitWindStates) {
         float windVelVar  = sq(dt * constrain_float(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_float(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsf(hgtRate)));
@@ -1051,8 +1048,31 @@ void NavEKF3_core::CovariancePrediction()
     dvx_b = stateStruct.accel_bias.x;
     dvy_b = stateStruct.accel_bias.y;
     dvz_b = stateStruct.accel_bias.z;
-    float _gyrNoise = constrain_float(frontend->_gyrNoise, 0.0f, 1.0f);
-    daxVar = dayVar = dazVar = sq(dt*_gyrNoise);
+
+    bool quatCovResetOnly = false;
+    if (rotVarVecPtr != nullptr) {
+        // Handle special case where we are initialising the quaternion covariances using an earth frame
+        // vector defining the variance of the angular alignment uncertainty. Convert he varaince vector
+        // to a matrix and rotate into body frame. Use the exisiting gyro error propagation mechanism to
+        // propagate the body frame angular uncertainty variances.
+        const Vector3f &rotVarVec = *rotVarVecPtr;
+        Matrix3f R_ef = Matrix3f (
+            rotVarVec.x, 0.0f, 0.0f,
+            0.0f, rotVarVec.y, 0.0f,
+            0.0f, 0.0f, rotVarVec.z);
+        Matrix3f Tnb;
+        stateStruct.quat.inverse().rotation_matrix(Tnb);
+        Matrix3f R_bf = Tnb * R_ef * Tnb.transposed();
+        daxVar = R_bf.a.x;
+        dayVar = R_bf.b.y;
+        dazVar = R_bf.c.z;
+        quatCovResetOnly = true;
+        zeroRows(P,0,3);
+        zeroCols(P,0,3);
+    } else {
+        float _gyrNoise = constrain_float(frontend->_gyrNoise, 0.0f, 1.0f);
+        daxVar = dayVar = dazVar = sq(dt*_gyrNoise);
+    }
     float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 10.0f);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
 
@@ -1060,200 +1080,344 @@ void NavEKF3_core::CovariancePrediction()
     // we calculate the lower diagonal and copy to take advantage of symmetry
 
     // intermediate calculations
-    Vector21 SF;
-    SF[0] = dvz - dvz_b;
-    SF[1] = dvy - dvy_b;
-    SF[2] = dvx - dvx_b;
-    SF[3] = 2*q1*SF[2] + 2*q2*SF[1] + 2*q3*SF[0];
-    SF[4] = 2*q0*SF[1] - 2*q1*SF[0] + 2*q3*SF[2];
-    SF[5] = 2*q0*SF[2] + 2*q2*SF[0] - 2*q3*SF[1];
-    SF[6] = day/2 - day_b/2;
-    SF[7] = daz/2 - daz_b/2;
-    SF[8] = dax/2 - dax_b/2;
-    SF[9] = dax_b/2 - dax/2;
-    SF[10] = daz_b/2 - daz/2;
-    SF[11] = day_b/2 - day/2;
-    SF[12] = 2*q1*SF[1];
-    SF[13] = 2*q0*SF[0];
-    SF[14] = q1/2;
-    SF[15] = q2/2;
-    SF[16] = q3/2;
-    SF[17] = sq(q3);
-    SF[18] = sq(q2);
-    SF[19] = sq(q1);
-    SF[20] = sq(q0);
+    const float PS0 = powf(q1, 2);
+    const float PS1 = 0.25F*daxVar;
+    const float PS2 = powf(q2, 2);
+    const float PS3 = 0.25F*dayVar;
+    const float PS4 = powf(q3, 2);
+    const float PS5 = 0.25F*dazVar;
+    const float PS6 = 0.5F*q1;
+    const float PS7 = 0.5F*q2;
+    const float PS8 = PS7*P[10][11];
+    const float PS9 = 0.5F*q3;
+    const float PS10 = PS9*P[10][12];
+    const float PS11 = 0.5F*dax - 0.5F*dax_b;
+    const float PS12 = 0.5F*day - 0.5F*day_b;
+    const float PS13 = 0.5F*daz - 0.5F*daz_b;
+    const float PS14 = PS10 - PS11*P[1][10] - PS12*P[2][10] - PS13*P[3][10] + PS6*P[10][10] + PS8 + P[0][10];
+    const float PS15 = PS6*P[10][11];
+    const float PS16 = PS9*P[11][12];
+    const float PS17 = -PS11*P[1][11] - PS12*P[2][11] - PS13*P[3][11] + PS15 + PS16 + PS7*P[11][11] + P[0][11];
+    const float PS18 = PS6*P[10][12];
+    const float PS19 = PS7*P[11][12];
+    const float PS20 = -PS11*P[1][12] - PS12*P[2][12] - PS13*P[3][12] + PS18 + PS19 + PS9*P[12][12] + P[0][12];
+    const float PS21 = PS12*P[1][2];
+    const float PS22 = -PS13*P[1][3];
+    const float PS23 = -PS11*P[1][1] - PS21 + PS22 + PS6*P[1][10] + PS7*P[1][11] + PS9*P[1][12] + P[0][1];
+    const float PS24 = -PS11*P[1][2];
+    const float PS25 = PS13*P[2][3];
+    const float PS26 = -PS12*P[2][2] + PS24 - PS25 + PS6*P[2][10] + PS7*P[2][11] + PS9*P[2][12] + P[0][2];
+    const float PS27 = PS11*P[1][3];
+    const float PS28 = -PS12*P[2][3];
+    const float PS29 = -PS13*P[3][3] - PS27 + PS28 + PS6*P[3][10] + PS7*P[3][11] + PS9*P[3][12] + P[0][3];
+    const float PS30 = PS11*P[0][1];
+    const float PS31 = PS12*P[0][2];
+    const float PS32 = PS13*P[0][3];
+    const float PS33 = -PS30 - PS31 - PS32 + PS6*P[0][10] + PS7*P[0][11] + PS9*P[0][12] + P[0][0];
+    const float PS34 = 0.5F*q0;
+    const float PS35 = q2*q3;
+    const float PS36 = q0*q1;
+    const float PS37 = q1*q3;
+    const float PS38 = q0*q2;
+    const float PS39 = q1*q2;
+    const float PS40 = q0*q3;
+    const float PS41 = -PS2;
+    const float PS42 = powf(q0, 2);
+    const float PS43 = -PS4 + PS42;
+    const float PS44 = PS0 + PS41 + PS43;
+    const float PS45 = -PS11*P[1][13] - PS12*P[2][13] - PS13*P[3][13] + PS6*P[10][13] + PS7*P[11][13] + PS9*P[12][13] + P[0][13];
+    const float PS46 = PS37 + PS38;
+    const float PS47 = -PS11*P[1][15] - PS12*P[2][15] - PS13*P[3][15] + PS6*P[10][15] + PS7*P[11][15] + PS9*P[12][15] + P[0][15];
+    const float PS48 = 2*PS47;
+    const float PS49 = dvy - dvy_b;
+    const float PS50 = dvx - dvx_b;
+    const float PS51 = dvz - dvz_b;
+    const float PS52 = PS49*q0 + PS50*q3 - PS51*q1;
+    const float PS53 = 2*PS29;
+    const float PS54 = -PS39 + PS40;
+    const float PS55 = -PS11*P[1][14] - PS12*P[2][14] - PS13*P[3][14] + PS6*P[10][14] + PS7*P[11][14] + PS9*P[12][14] + P[0][14];
+    const float PS56 = 2*PS55;
+    const float PS57 = -PS49*q3 + PS50*q0 + PS51*q2;
+    const float PS58 = 2*PS33;
+    const float PS59 = PS49*q1 - PS50*q2 + PS51*q0;
+    const float PS60 = 2*PS59;
+    const float PS61 = PS49*q2 + PS50*q1 + PS51*q3;
+    const float PS62 = 2*PS61;
+    const float PS63 = -PS11*P[1][4] - PS12*P[2][4] - PS13*P[3][4] + PS6*P[4][10] + PS7*P[4][11] + PS9*P[4][12] + P[0][4];
+    const float PS64 = -PS0;
+    const float PS65 = PS2 + PS43 + PS64;
+    const float PS66 = PS39 + PS40;
+    const float PS67 = 2*PS45;
+    const float PS68 = -PS35 + PS36;
+    const float PS69 = -PS11*P[1][5] - PS12*P[2][5] - PS13*P[3][5] + PS6*P[5][10] + PS7*P[5][11] + PS9*P[5][12] + P[0][5];
+    const float PS70 = PS4 + PS41 + PS42 + PS64;
+    const float PS71 = PS35 + PS36;
+    const float PS72 = 2*PS57;
+    const float PS73 = -PS37 + PS38;
+    const float PS74 = 2*PS52;
+    const float PS75 = -PS11*P[1][6] - PS12*P[2][6] - PS13*P[3][6] + PS6*P[6][10] + PS7*P[6][11] + PS9*P[6][12] + P[0][6];
+    const float PS76 = -PS34*P[10][11];
+    const float PS77 = PS11*P[0][11] - PS12*P[3][11] + PS13*P[2][11] - PS19 + PS76 + PS9*P[11][11] + P[1][11];
+    const float PS78 = PS13*P[0][2];
+    const float PS79 = PS12*P[0][3];
+    const float PS80 = PS11*P[0][0] - PS34*P[0][10] - PS7*P[0][12] + PS78 - PS79 + PS9*P[0][11] + P[0][1];
+    const float PS81 = PS11*P[0][2];
+    const float PS82 = PS13*P[2][2] + PS28 - PS34*P[2][10] - PS7*P[2][12] + PS81 + PS9*P[2][11] + P[1][2];
+    const float PS83 = PS9*P[10][11];
+    const float PS84 = PS7*P[10][12];
+    const float PS85 = PS11*P[0][10] - PS12*P[3][10] + PS13*P[2][10] - PS34*P[10][10] + PS83 - PS84 + P[1][10];
+    const float PS86 = -PS34*P[10][12];
+    const float PS87 = PS11*P[0][12] - PS12*P[3][12] + PS13*P[2][12] + PS16 - PS7*P[12][12] + PS86 + P[1][12];
+    const float PS88 = PS11*P[0][3];
+    const float PS89 = -PS12*P[3][3] + PS25 - PS34*P[3][10] - PS7*P[3][12] + PS88 + PS9*P[3][11] + P[1][3];
+    const float PS90 = PS13*P[1][2];
+    const float PS91 = PS12*P[1][3];
+    const float PS92 = PS30 - PS34*P[1][10] - PS7*P[1][12] + PS9*P[1][11] + PS90 - PS91 + P[1][1];
+    const float PS93 = PS11*P[0][13] - PS12*P[3][13] + PS13*P[2][13] - PS34*P[10][13] - PS7*P[12][13] + PS9*P[11][13] + P[1][13];
+    const float PS94 = PS11*P[0][15] - PS12*P[3][15] + PS13*P[2][15] - PS34*P[10][15] - PS7*P[12][15] + PS9*P[11][15] + P[1][15];
+    const float PS95 = 2*PS94;
+    const float PS96 = PS11*P[0][14] - PS12*P[3][14] + PS13*P[2][14] - PS34*P[10][14] - PS7*P[12][14] + PS9*P[11][14] + P[1][14];
+    const float PS97 = 2*PS96;
+    const float PS98 = PS11*P[0][4] - PS12*P[3][4] + PS13*P[2][4] - PS34*P[4][10] - PS7*P[4][12] + PS9*P[4][11] + P[1][4];
+    const float PS99 = 2*PS93;
+    const float PS100 = PS11*P[0][5] - PS12*P[3][5] + PS13*P[2][5] - PS34*P[5][10] - PS7*P[5][12] + PS9*P[5][11] + P[1][5];
+    const float PS101 = PS11*P[0][6] - PS12*P[3][6] + PS13*P[2][6] - PS34*P[6][10] - PS7*P[6][12] + PS9*P[6][11] + P[1][6];
+    const float PS102 = -PS34*P[11][12];
+    const float PS103 = -PS10 + PS102 + PS11*P[3][12] + PS12*P[0][12] - PS13*P[1][12] + PS6*P[12][12] + P[2][12];
+    const float PS104 = PS11*P[3][3] + PS22 - PS34*P[3][11] + PS6*P[3][12] + PS79 - PS9*P[3][10] + P[2][3];
+    const float PS105 = PS13*P[0][1];
+    const float PS106 = -PS105 + PS12*P[0][0] - PS34*P[0][11] + PS6*P[0][12] + PS88 - PS9*P[0][10] + P[0][2];
+    const float PS107 = PS6*P[11][12];
+    const float PS108 = PS107 + PS11*P[3][11] + PS12*P[0][11] - PS13*P[1][11] - PS34*P[11][11] - PS83 + P[2][11];
+    const float PS109 = PS11*P[3][10] + PS12*P[0][10] - PS13*P[1][10] + PS18 + PS76 - PS9*P[10][10] + P[2][10];
+    const float PS110 = PS12*P[0][1];
+    const float PS111 = PS110 - PS13*P[1][1] + PS27 - PS34*P[1][11] + PS6*P[1][12] - PS9*P[1][10] + P[1][2];
+    const float PS112 = PS11*P[2][3];
+    const float PS113 = PS112 + PS31 - PS34*P[2][11] + PS6*P[2][12] - PS9*P[2][10] - PS90 + P[2][2];
+    const float PS114 = PS11*P[3][13] + PS12*P[0][13] - PS13*P[1][13] - PS34*P[11][13] + PS6*P[12][13] - PS9*P[10][13] + P[2][13];
+    const float PS115 = PS11*P[3][15] + PS12*P[0][15] - PS13*P[1][15] - PS34*P[11][15] + PS6*P[12][15] - PS9*P[10][15] + P[2][15];
+    const float PS116 = 2*PS115;
+    const float PS117 = PS11*P[3][14] + PS12*P[0][14] - PS13*P[1][14] - PS34*P[11][14] + PS6*P[12][14] - PS9*P[10][14] + P[2][14];
+    const float PS118 = 2*PS117;
+    const float PS119 = PS11*P[3][4] + PS12*P[0][4] - PS13*P[1][4] - PS34*P[4][11] + PS6*P[4][12] - PS9*P[4][10] + P[2][4];
+    const float PS120 = 2*PS114;
+    const float PS121 = PS11*P[3][5] + PS12*P[0][5] - PS13*P[1][5] - PS34*P[5][11] + PS6*P[5][12] - PS9*P[5][10] + P[2][5];
+    const float PS122 = PS11*P[3][6] + PS12*P[0][6] - PS13*P[1][6] - PS34*P[6][11] + PS6*P[6][12] - PS9*P[6][10] + P[2][6];
+    const float PS123 = -PS11*P[2][10] + PS12*P[1][10] + PS13*P[0][10] - PS15 + PS7*P[10][10] + PS86 + P[3][10];
+    const float PS124 = PS105 + PS12*P[1][1] + PS24 - PS34*P[1][12] - PS6*P[1][11] + PS7*P[1][10] + P[1][3];
+    const float PS125 = PS110 + PS13*P[0][0] - PS34*P[0][12] - PS6*P[0][11] + PS7*P[0][10] - PS81 + P[0][3];
+    const float PS126 = -PS107 - PS11*P[2][12] + PS12*P[1][12] + PS13*P[0][12] - PS34*P[12][12] + PS84 + P[3][12];
+    const float PS127 = PS102 - PS11*P[2][11] + PS12*P[1][11] + PS13*P[0][11] - PS6*P[11][11] + PS8 + P[3][11];
+    const float PS128 = -PS11*P[2][2] + PS21 - PS34*P[2][12] - PS6*P[2][11] + PS7*P[2][10] + PS78 + P[2][3];
+    const float PS129 = -PS112 + PS32 - PS34*P[3][12] - PS6*P[3][11] + PS7*P[3][10] + PS91 + P[3][3];
+    const float PS130 = -PS11*P[2][13] + PS12*P[1][13] + PS13*P[0][13] - PS34*P[12][13] - PS6*P[11][13] + PS7*P[10][13] + P[3][13];
+    const float PS131 = -PS11*P[2][15] + PS12*P[1][15] + PS13*P[0][15] - PS34*P[12][15] - PS6*P[11][15] + PS7*P[10][15] + P[3][15];
+    const float PS132 = 2*PS131;
+    const float PS133 = -PS11*P[2][14] + PS12*P[1][14] + PS13*P[0][14] - PS34*P[12][14] - PS6*P[11][14] + PS7*P[10][14] + P[3][14];
+    const float PS134 = 2*PS133;
+    const float PS135 = -PS11*P[2][4] + PS12*P[1][4] + PS13*P[0][4] - PS34*P[4][12] - PS6*P[4][11] + PS7*P[4][10] + P[3][4];
+    const float PS136 = 2*PS130;
+    const float PS137 = -PS11*P[2][5] + PS12*P[1][5] + PS13*P[0][5] - PS34*P[5][12] - PS6*P[5][11] + PS7*P[5][10] + P[3][5];
+    const float PS138 = -PS11*P[2][6] + PS12*P[1][6] + PS13*P[0][6] - PS34*P[6][12] - PS6*P[6][11] + PS7*P[6][10] + P[3][6];
+    const float PS139 = 2*PS46;
+    const float PS140 = 2*PS54;
+    const float PS141 = -PS139*P[13][15] + PS140*P[13][14] - PS44*P[13][13] + PS60*P[2][13] + PS62*P[1][13] + PS72*P[0][13] - PS74*P[3][13] + P[4][13];
+    const float PS142 = -PS139*P[15][15] + PS140*P[14][15] - PS44*P[13][15] + PS60*P[2][15] + PS62*P[1][15] + PS72*P[0][15] - PS74*P[3][15] + P[4][15];
+    const float PS143 = PS62*P[1][3];
+    const float PS144 = PS72*P[0][3];
+    const float PS145 = -PS139*P[3][15] + PS140*P[3][14] + PS143 + PS144 - PS44*P[3][13] + PS60*P[2][3] - PS74*P[3][3] + P[3][4];
+    const float PS146 = -PS139*P[14][15] + PS140*P[14][14] - PS44*P[13][14] + PS60*P[2][14] + PS62*P[1][14] + PS72*P[0][14] - PS74*P[3][14] + P[4][14];
+    const float PS147 = PS60*P[0][2];
+    const float PS148 = PS74*P[0][3];
+    const float PS149 = -PS139*P[0][15] + PS140*P[0][14] + PS147 - PS148 - PS44*P[0][13] + PS62*P[0][1] + PS72*P[0][0] + P[0][4];
+    const float PS150 = PS62*P[1][2];
+    const float PS151 = PS72*P[0][2];
+    const float PS152 = -PS139*P[2][15] + PS140*P[2][14] + PS150 + PS151 - PS44*P[2][13] + PS60*P[2][2] - PS74*P[2][3] + P[2][4];
+    const float PS153 = PS60*P[1][2];
+    const float PS154 = PS74*P[1][3];
+    const float PS155 = -PS139*P[1][15] + PS140*P[1][14] + PS153 - PS154 - PS44*P[1][13] + PS62*P[1][1] + PS72*P[0][1] + P[1][4];
+    const float PS156 = 4*dvyVar;
+    const float PS157 = 4*dvzVar;
+    const float PS158 = -PS139*P[4][15] + PS140*P[4][14] - PS44*P[4][13] + PS60*P[2][4] + PS62*P[1][4] + PS72*P[0][4] - PS74*P[3][4] + P[4][4];
+    const float PS159 = 2*PS141;
+    const float PS160 = 2*PS68;
+    const float PS161 = PS65*dvyVar;
+    const float PS162 = 2*PS66;
+    const float PS163 = PS44*dvxVar;
+    const float PS164 = -PS139*P[5][15] + PS140*P[5][14] - PS44*P[5][13] + PS60*P[2][5] + PS62*P[1][5] + PS72*P[0][5] - PS74*P[3][5] + P[4][5];
+    const float PS165 = 2*PS71;
+    const float PS166 = 2*PS73;
+    const float PS167 = PS70*dvzVar;
+    const float PS168 = -PS139*P[6][15] + PS140*P[6][14] - PS44*P[6][13] + PS60*P[2][6] + PS62*P[1][6] + PS72*P[0][6] - PS74*P[3][6] + P[4][6];
+    const float PS169 = PS160*P[14][15] - PS162*P[13][14] - PS60*P[1][14] + PS62*P[2][14] - PS65*P[14][14] + PS72*P[3][14] + PS74*P[0][14] + P[5][14];
+    const float PS170 = PS160*P[13][15] - PS162*P[13][13] - PS60*P[1][13] + PS62*P[2][13] - PS65*P[13][14] + PS72*P[3][13] + PS74*P[0][13] + P[5][13];
+    const float PS171 = PS74*P[0][1];
+    const float PS172 = PS150 + PS160*P[1][15] - PS162*P[1][13] + PS171 - PS60*P[1][1] - PS65*P[1][14] + PS72*P[1][3] + P[1][5];
+    const float PS173 = PS160*P[15][15] - PS162*P[13][15] - PS60*P[1][15] + PS62*P[2][15] - PS65*P[14][15] + PS72*P[3][15] + PS74*P[0][15] + P[5][15];
+    const float PS174 = PS62*P[2][3];
+    const float PS175 = PS148 + PS160*P[3][15] - PS162*P[3][13] + PS174 - PS60*P[1][3] - PS65*P[3][14] + PS72*P[3][3] + P[3][5];
+    const float PS176 = PS60*P[0][1];
+    const float PS177 = PS144 + PS160*P[0][15] - PS162*P[0][13] - PS176 + PS62*P[0][2] - PS65*P[0][14] + PS74*P[0][0] + P[0][5];
+    const float PS178 = PS72*P[2][3];
+    const float PS179 = -PS153 + PS160*P[2][15] - PS162*P[2][13] + PS178 + PS62*P[2][2] - PS65*P[2][14] + PS74*P[0][2] + P[2][5];
+    const float PS180 = 4*dvxVar;
+    const float PS181 = PS160*P[5][15] - PS162*P[5][13] - PS60*P[1][5] + PS62*P[2][5] - PS65*P[5][14] + PS72*P[3][5] + PS74*P[0][5] + P[5][5];
+    const float PS182 = PS160*P[6][15] - PS162*P[6][13] - PS60*P[1][6] + PS62*P[2][6] - PS65*P[6][14] + PS72*P[3][6] + PS74*P[0][6] + P[5][6];
+    const float PS183 = -PS165*P[14][15] + PS166*P[13][15] + PS60*P[0][15] + PS62*P[3][15] - PS70*P[15][15] - PS72*P[2][15] + PS74*P[1][15] + P[6][15];
+    const float PS184 = -PS165*P[14][14] + PS166*P[13][14] + PS60*P[0][14] + PS62*P[3][14] - PS70*P[14][15] - PS72*P[2][14] + PS74*P[1][14] + P[6][14];
+    const float PS185 = -PS165*P[13][14] + PS166*P[13][13] + PS60*P[0][13] + PS62*P[3][13] - PS70*P[13][15] - PS72*P[2][13] + PS74*P[1][13] + P[6][13];
+    const float PS186 = -PS165*P[6][14] + PS166*P[6][13] + PS60*P[0][6] + PS62*P[3][6] - PS70*P[6][15] - PS72*P[2][6] + PS74*P[1][6] + P[6][6];
 
-    Vector8 SG;
-    SG[0] = q0/2;
-    SG[1] = sq(q3);
-    SG[2] = sq(q2);
-    SG[3] = sq(q1);
-    SG[4] = sq(q0);
-    SG[5] = 2*q2*q3;
-    SG[6] = 2*q1*q3;
-    SG[7] = 2*q1*q2;
+    nextP[0][0] = PS0*PS1 - PS11*PS23 - PS12*PS26 - PS13*PS29 + PS14*PS6 + PS17*PS7 + PS2*PS3 + PS20*PS9 + PS33 + PS4*PS5;
+    nextP[0][1] = -PS1*PS36 + PS11*PS33 - PS12*PS29 + PS13*PS26 - PS14*PS34 + PS17*PS9 - PS20*PS7 + PS23 + PS3*PS35 - PS35*PS5;
+    nextP[1][1] = PS1*PS42 + PS11*PS80 - PS12*PS89 + PS13*PS82 + PS2*PS5 + PS3*PS4 - PS34*PS85 - PS7*PS87 + PS77*PS9 + PS92;
+    nextP[0][2] = -PS1*PS37 + PS11*PS29 + PS12*PS33 - PS13*PS23 - PS14*PS9 - PS17*PS34 + PS20*PS6 + PS26 - PS3*PS38 + PS37*PS5;
+    nextP[1][2] = PS1*PS40 + PS11*PS89 + PS12*PS80 - PS13*PS92 - PS3*PS40 - PS34*PS77 - PS39*PS5 + PS6*PS87 + PS82 - PS85*PS9;
+    nextP[2][2] = PS0*PS5 + PS1*PS4 + PS103*PS6 + PS104*PS11 + PS106*PS12 - PS108*PS34 - PS109*PS9 - PS111*PS13 + PS113 + PS3*PS42;
+    nextP[0][3] = PS1*PS39 - PS11*PS26 + PS12*PS23 + PS13*PS33 + PS14*PS7 - PS17*PS6 - PS20*PS34 + PS29 - PS3*PS39 - PS40*PS5;
+    nextP[1][3] = -PS1*PS38 - PS11*PS82 + PS12*PS92 + PS13*PS80 - PS3*PS37 - PS34*PS87 + PS38*PS5 - PS6*PS77 + PS7*PS85 + PS89;
+    nextP[2][3] = -PS1*PS35 - PS103*PS34 + PS104 + PS106*PS13 - PS108*PS6 + PS109*PS7 - PS11*PS113 + PS111*PS12 + PS3*PS36 - PS36*PS5;
+    nextP[3][3] = PS0*PS3 + PS1*PS2 - PS11*PS128 + PS12*PS124 + PS123*PS7 + PS125*PS13 - PS126*PS34 - PS127*PS6 + PS129 + PS42*PS5;
 
-    Vector11 SQ;
-    SQ[0] = dvzVar*(SG[5] - 2*q0*q1)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvyVar*(SG[5] + 2*q0*q1)*(SG[1] - SG[2] + SG[3] - SG[4]) + dvxVar*(SG[6] - 2*q0*q2)*(SG[7] + 2*q0*q3);
-    SQ[1] = dvzVar*(SG[6] + 2*q0*q2)*(SG[1] - SG[2] - SG[3] + SG[4]) - dvxVar*(SG[6] - 2*q0*q2)*(SG[1] + SG[2] - SG[3] - SG[4]) + dvyVar*(SG[5] + 2*q0*q1)*(SG[7] - 2*q0*q3);
-    SQ[2] = dvzVar*(SG[5] - 2*q0*q1)*(SG[6] + 2*q0*q2) - dvyVar*(SG[7] - 2*q0*q3)*(SG[1] - SG[2] + SG[3] - SG[4]) - dvxVar*(SG[7] + 2*q0*q3)*(SG[1] + SG[2] - SG[3] - SG[4]);
-    SQ[3] = (dayVar*q1*SG[0])/2 - (dazVar*q1*SG[0])/2 - (daxVar*q2*q3)/4;
-    SQ[4] = (dazVar*q2*SG[0])/2 - (daxVar*q2*SG[0])/2 - (dayVar*q1*q3)/4;
-    SQ[5] = (daxVar*q3*SG[0])/2 - (dayVar*q3*SG[0])/2 - (dazVar*q1*q2)/4;
-    SQ[6] = (daxVar*q1*q2)/4 - (dazVar*q3*SG[0])/2 - (dayVar*q1*q2)/4;
-    SQ[7] = (dazVar*q1*q3)/4 - (daxVar*q1*q3)/4 - (dayVar*q2*SG[0])/2;
-    SQ[8] = (dayVar*q2*q3)/4 - (daxVar*q1*SG[0])/2 - (dazVar*q2*q3)/4;
-    SQ[9] = sq(SG[0]);
-    SQ[10] = sq(q1);
+    if (quatCovResetOnly) {
+        // covariance matrix is symmetrical, so copy diagonals and copy lower half in nextP
+        // to lower and upper half in P
+        for (uint8_t row = 0; row <= 3; row++) {
+            // copy diagonals
+            P[row][row] = constrain_float(nextP[row][row], 0.0f, 1.0f);
+            // copy off diagonals
+            for (uint8_t column = 0 ; column < row; column++) {
+                P[row][column] = P[column][row] = nextP[column][row];
+            }
+        }
+        calcTiltErrorVariance();
+        return;
+    }
 
-    Vector11 SPP;
-    SPP[0] = SF[12] + SF[13] - 2*q2*SF[2];
-    SPP[1] = SF[17] - SF[18] - SF[19] + SF[20];
-    SPP[2] = SF[17] - SF[18] + SF[19] - SF[20];
-    SPP[3] = SF[17] + SF[18] - SF[19] - SF[20];
-    SPP[4] = 2*q0*q2 - 2*q1*q3;
-    SPP[5] = 2*q0*q1 - 2*q2*q3;
-    SPP[6] = 2*q0*q3 - 2*q1*q2;
-    SPP[7] = 2*q0*q1 + 2*q2*q3;
-    SPP[8] = 2*q0*q3 + 2*q1*q2;
-    SPP[9] = 2*q0*q2 + 2*q1*q3;
-    SPP[10] = SF[16];
-
-
-    nextP[0][0] = P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10] + (daxVar*SQ[10])/4 + SF[9]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) + SF[11]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SF[10]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) + SF[14]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[10]) + SF[15]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[10]) + SPP[10]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[10]) + (dayVar*sq(q2))/4 + (dazVar*sq(q3))/4;
-    nextP[0][1] = P[0][1] + SQ[8] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10] + SF[8]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SF[7]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SF[11]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) - SF[15]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[10]) + SPP[10]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[10]) - (q0*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[10]))/2;
-    nextP[1][1] = P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] + daxVar*SQ[9] - (P[10][1]*q0)/2 + SF[8]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SF[7]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2) + SF[11]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2) - SF[15]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[10] - (P[10][12]*q0)/2) + SPP[10]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[10] - (P[10][11]*q0)/2) + (dayVar*sq(q3))/4 + (dazVar*sq(q2))/4 - (q0*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[10] - (P[10][10]*q0)/2))/2;
-    nextP[0][2] = P[0][2] + SQ[7] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10] + SF[6]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SF[10]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) + SF[8]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) + SF[14]*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[10]) - SPP[10]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[10]) - (q0*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[10]))/2;
-    nextP[1][2] = P[1][2] + SQ[5] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2 + SF[6]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SF[10]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] - (P[10][1]*q0)/2) + SF[8]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2) + SF[14]*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[10] - (P[10][12]*q0)/2) - SPP[10]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[10] - (P[10][10]*q0)/2) - (q0*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[10] - (P[10][11]*q0)/2))/2;
-    nextP[2][2] = P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[10] + dayVar*SQ[9] + (dazVar*SQ[10])/4 - (P[11][2]*q0)/2 + SF[6]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[10] - (P[11][0]*q0)/2) + SF[10]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[10] - (P[11][1]*q0)/2) + SF[8]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[10] - (P[11][3]*q0)/2) + SF[14]*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[10] - (P[11][12]*q0)/2) - SPP[10]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[10] - (P[11][10]*q0)/2) + (daxVar*sq(q3))/4 - (q0*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[10] - (P[11][11]*q0)/2))/2;
-    nextP[0][3] = P[0][3] + SQ[6] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10] + SF[7]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SF[6]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) + SF[9]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SF[15]*(P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[10]) - SF[14]*(P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[10]) - (q0*(P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[10]))/2;
-    nextP[1][3] = P[1][3] + SQ[4] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2 + SF[7]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SF[6]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] - (P[10][1]*q0)/2) + SF[9]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2) + SF[15]*(P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[10] - (P[10][10]*q0)/2) - SF[14]*(P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[10] - (P[10][11]*q0)/2) - (q0*(P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[10] - (P[10][12]*q0)/2))/2;
-    nextP[2][3] = P[2][3] + SQ[3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[10] - (P[11][3]*q0)/2 + SF[7]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[10] - (P[11][0]*q0)/2) + SF[6]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[10] - (P[11][1]*q0)/2) + SF[9]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[10] - (P[11][2]*q0)/2) + SF[15]*(P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[10] - (P[11][10]*q0)/2) - SF[14]*(P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[10] - (P[11][11]*q0)/2) - (q0*(P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[10] - (P[11][12]*q0)/2))/2;
-    nextP[3][3] = P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] + (dayVar*SQ[10])/4 + dazVar*SQ[9] - (P[12][3]*q0)/2 + SF[7]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[6]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) + SF[9]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[15]*(P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2) - SF[14]*(P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2) + (daxVar*sq(q2))/4 - (q0*(P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2))/2;
-    nextP[0][4] = P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[10] + SF[5]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SF[3]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) - SF[4]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) + SPP[0]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SPP[3]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[10]) + SPP[6]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[10]) - SPP[9]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[10]);
-    nextP[1][4] = P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[10] - (P[10][4]*q0)/2 + SF[5]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SF[3]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] - (P[10][1]*q0)/2) - SF[4]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2) + SPP[0]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2) + SPP[3]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[10] - (P[10][13]*q0)/2) + SPP[6]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[10] - (P[10][14]*q0)/2) - SPP[9]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[10] - (P[10][15]*q0)/2);
-    nextP[2][4] = P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[10] - (P[11][4]*q0)/2 + SF[5]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[10] - (P[11][0]*q0)/2) + SF[3]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[10] - (P[11][1]*q0)/2) - SF[4]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[10] - (P[11][3]*q0)/2) + SPP[0]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[10] - (P[11][2]*q0)/2) + SPP[3]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[10] - (P[11][13]*q0)/2) + SPP[6]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[10] - (P[11][14]*q0)/2) - SPP[9]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[10] - (P[11][15]*q0)/2);
-    nextP[3][4] = P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2 + SF[5]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) - SF[4]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[0]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SPP[3]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[6]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[9]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
-    nextP[4][4] = P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] - P[3][4]*SF[4] + P[2][4]*SPP[0] + P[13][4]*SPP[3] + P[14][4]*SPP[6] - P[15][4]*SPP[9] + dvyVar*sq(SG[7] - 2*q0*q3) + dvzVar*sq(SG[6] + 2*q0*q2) + SF[5]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] - P[3][0]*SF[4] + P[2][0]*SPP[0] + P[13][0]*SPP[3] + P[14][0]*SPP[6] - P[15][0]*SPP[9]) + SF[3]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] - P[3][1]*SF[4] + P[2][1]*SPP[0] + P[13][1]*SPP[3] + P[14][1]*SPP[6] - P[15][1]*SPP[9]) - SF[4]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] - P[3][3]*SF[4] + P[2][3]*SPP[0] + P[13][3]*SPP[3] + P[14][3]*SPP[6] - P[15][3]*SPP[9]) + SPP[0]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] - P[3][2]*SF[4] + P[2][2]*SPP[0] + P[13][2]*SPP[3] + P[14][2]*SPP[6] - P[15][2]*SPP[9]) + SPP[3]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] - P[3][13]*SF[4] + P[2][13]*SPP[0] + P[13][13]*SPP[3] + P[14][13]*SPP[6] - P[15][13]*SPP[9]) + SPP[6]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] - P[3][14]*SF[4] + P[2][14]*SPP[0] + P[13][14]*SPP[3] + P[14][14]*SPP[6] - P[15][14]*SPP[9]) - SPP[9]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] - P[3][15]*SF[4] + P[2][15]*SPP[0] + P[13][15]*SPP[3] + P[14][15]*SPP[6] - P[15][15]*SPP[9]) + dvxVar*sq(SG[1] + SG[2] - SG[3] - SG[4]);
-    nextP[0][5] = P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[10] + SF[4]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SF[3]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SF[5]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) - SPP[0]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) - SPP[8]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[10]) + SPP[2]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[10]) + SPP[5]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[10]);
-    nextP[1][5] = P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[10] - (P[10][5]*q0)/2 + SF[4]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SF[3]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2) + SF[5]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2) - SPP[0]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] - (P[10][1]*q0)/2) - SPP[8]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[10] - (P[10][13]*q0)/2) + SPP[2]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[10] - (P[10][14]*q0)/2) + SPP[5]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[10] - (P[10][15]*q0)/2);
-    nextP[2][5] = P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[10] - (P[11][5]*q0)/2 + SF[4]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[10] - (P[11][0]*q0)/2) + SF[3]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[10] - (P[11][2]*q0)/2) + SF[5]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[10] - (P[11][3]*q0)/2) - SPP[0]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[10] - (P[11][1]*q0)/2) - SPP[8]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[10] - (P[11][13]*q0)/2) + SPP[2]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[10] - (P[11][14]*q0)/2) + SPP[5]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[10] - (P[11][15]*q0)/2);
-    nextP[3][5] = P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2 + SF[4]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SF[3]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[5]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) - SPP[0]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) - SPP[8]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) + SPP[2]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) + SPP[5]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
-    nextP[4][5] = P[4][5] + SQ[2] + P[0][5]*SF[5] + P[1][5]*SF[3] - P[3][5]*SF[4] + P[2][5]*SPP[0] + P[13][5]*SPP[3] + P[14][5]*SPP[6] - P[15][5]*SPP[9] + SF[4]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] - P[3][0]*SF[4] + P[2][0]*SPP[0] + P[13][0]*SPP[3] + P[14][0]*SPP[6] - P[15][0]*SPP[9]) + SF[3]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] - P[3][2]*SF[4] + P[2][2]*SPP[0] + P[13][2]*SPP[3] + P[14][2]*SPP[6] - P[15][2]*SPP[9]) + SF[5]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] - P[3][3]*SF[4] + P[2][3]*SPP[0] + P[13][3]*SPP[3] + P[14][3]*SPP[6] - P[15][3]*SPP[9]) - SPP[0]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] - P[3][1]*SF[4] + P[2][1]*SPP[0] + P[13][1]*SPP[3] + P[14][1]*SPP[6] - P[15][1]*SPP[9]) - SPP[8]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] - P[3][13]*SF[4] + P[2][13]*SPP[0] + P[13][13]*SPP[3] + P[14][13]*SPP[6] - P[15][13]*SPP[9]) + SPP[2]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] - P[3][14]*SF[4] + P[2][14]*SPP[0] + P[13][14]*SPP[3] + P[14][14]*SPP[6] - P[15][14]*SPP[9]) + SPP[5]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] - P[3][15]*SF[4] + P[2][15]*SPP[0] + P[13][15]*SPP[3] + P[14][15]*SPP[6] - P[15][15]*SPP[9]);
-    nextP[5][5] = P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[8] + P[14][5]*SPP[2] + P[15][5]*SPP[5] + dvxVar*sq(SG[7] + 2*q0*q3) + dvzVar*sq(SG[5] - 2*q0*q1) + SF[4]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[8] + P[14][0]*SPP[2] + P[15][0]*SPP[5]) + SF[3]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[8] + P[14][2]*SPP[2] + P[15][2]*SPP[5]) + SF[5]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[8] + P[14][3]*SPP[2] + P[15][3]*SPP[5]) - SPP[0]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[8] + P[14][1]*SPP[2] + P[15][1]*SPP[5]) - SPP[8]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[8] + P[14][13]*SPP[2] + P[15][13]*SPP[5]) + SPP[2]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[8] + P[14][14]*SPP[2] + P[15][14]*SPP[5]) + SPP[5]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[8] + P[14][15]*SPP[2] + P[15][15]*SPP[5]) + dvyVar*sq(SG[1] - SG[2] + SG[3] - SG[4]);
-    nextP[0][6] = P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[10] + SF[4]*(P[0][1] + P[1][1]*SF[9] + P[2][1]*SF[11] + P[3][1]*SF[10] + P[10][1]*SF[14] + P[11][1]*SF[15] + P[12][1]*SPP[10]) - SF[5]*(P[0][2] + P[1][2]*SF[9] + P[2][2]*SF[11] + P[3][2]*SF[10] + P[10][2]*SF[14] + P[11][2]*SF[15] + P[12][2]*SPP[10]) + SF[3]*(P[0][3] + P[1][3]*SF[9] + P[2][3]*SF[11] + P[3][3]*SF[10] + P[10][3]*SF[14] + P[11][3]*SF[15] + P[12][3]*SPP[10]) + SPP[0]*(P[0][0] + P[1][0]*SF[9] + P[2][0]*SF[11] + P[3][0]*SF[10] + P[10][0]*SF[14] + P[11][0]*SF[15] + P[12][0]*SPP[10]) + SPP[4]*(P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[10]) - SPP[7]*(P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[10]) - SPP[1]*(P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[10]);
-    nextP[1][6] = P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[10] - (P[10][6]*q0)/2 + SF[4]*(P[1][1] + P[0][1]*SF[8] + P[2][1]*SF[7] + P[3][1]*SF[11] - P[12][1]*SF[15] + P[11][1]*SPP[10] - (P[10][1]*q0)/2) - SF[5]*(P[1][2] + P[0][2]*SF[8] + P[2][2]*SF[7] + P[3][2]*SF[11] - P[12][2]*SF[15] + P[11][2]*SPP[10] - (P[10][2]*q0)/2) + SF[3]*(P[1][3] + P[0][3]*SF[8] + P[2][3]*SF[7] + P[3][3]*SF[11] - P[12][3]*SF[15] + P[11][3]*SPP[10] - (P[10][3]*q0)/2) + SPP[0]*(P[1][0] + P[0][0]*SF[8] + P[2][0]*SF[7] + P[3][0]*SF[11] - P[12][0]*SF[15] + P[11][0]*SPP[10] - (P[10][0]*q0)/2) + SPP[4]*(P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[10] - (P[10][13]*q0)/2) - SPP[7]*(P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[10] - (P[10][14]*q0)/2) - SPP[1]*(P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[10] - (P[10][15]*q0)/2);
-    nextP[2][6] = P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[10] - (P[11][6]*q0)/2 + SF[4]*(P[2][1] + P[0][1]*SF[6] + P[1][1]*SF[10] + P[3][1]*SF[8] + P[12][1]*SF[14] - P[10][1]*SPP[10] - (P[11][1]*q0)/2) - SF[5]*(P[2][2] + P[0][2]*SF[6] + P[1][2]*SF[10] + P[3][2]*SF[8] + P[12][2]*SF[14] - P[10][2]*SPP[10] - (P[11][2]*q0)/2) + SF[3]*(P[2][3] + P[0][3]*SF[6] + P[1][3]*SF[10] + P[3][3]*SF[8] + P[12][3]*SF[14] - P[10][3]*SPP[10] - (P[11][3]*q0)/2) + SPP[0]*(P[2][0] + P[0][0]*SF[6] + P[1][0]*SF[10] + P[3][0]*SF[8] + P[12][0]*SF[14] - P[10][0]*SPP[10] - (P[11][0]*q0)/2) + SPP[4]*(P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[10] - (P[11][13]*q0)/2) - SPP[7]*(P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[10] - (P[11][14]*q0)/2) - SPP[1]*(P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[10] - (P[11][15]*q0)/2);
-    nextP[3][6] = P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2 + SF[4]*(P[3][1] + P[0][1]*SF[7] + P[1][1]*SF[6] + P[2][1]*SF[9] + P[10][1]*SF[15] - P[11][1]*SF[14] - (P[12][1]*q0)/2) - SF[5]*(P[3][2] + P[0][2]*SF[7] + P[1][2]*SF[6] + P[2][2]*SF[9] + P[10][2]*SF[15] - P[11][2]*SF[14] - (P[12][2]*q0)/2) + SF[3]*(P[3][3] + P[0][3]*SF[7] + P[1][3]*SF[6] + P[2][3]*SF[9] + P[10][3]*SF[15] - P[11][3]*SF[14] - (P[12][3]*q0)/2) + SPP[0]*(P[3][0] + P[0][0]*SF[7] + P[1][0]*SF[6] + P[2][0]*SF[9] + P[10][0]*SF[15] - P[11][0]*SF[14] - (P[12][0]*q0)/2) + SPP[4]*(P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2) - SPP[7]*(P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2) - SPP[1]*(P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2);
-    nextP[4][6] = P[4][6] + SQ[1] + P[0][6]*SF[5] + P[1][6]*SF[3] - P[3][6]*SF[4] + P[2][6]*SPP[0] + P[13][6]*SPP[3] + P[14][6]*SPP[6] - P[15][6]*SPP[9] + SF[4]*(P[4][1] + P[0][1]*SF[5] + P[1][1]*SF[3] - P[3][1]*SF[4] + P[2][1]*SPP[0] + P[13][1]*SPP[3] + P[14][1]*SPP[6] - P[15][1]*SPP[9]) - SF[5]*(P[4][2] + P[0][2]*SF[5] + P[1][2]*SF[3] - P[3][2]*SF[4] + P[2][2]*SPP[0] + P[13][2]*SPP[3] + P[14][2]*SPP[6] - P[15][2]*SPP[9]) + SF[3]*(P[4][3] + P[0][3]*SF[5] + P[1][3]*SF[3] - P[3][3]*SF[4] + P[2][3]*SPP[0] + P[13][3]*SPP[3] + P[14][3]*SPP[6] - P[15][3]*SPP[9]) + SPP[0]*(P[4][0] + P[0][0]*SF[5] + P[1][0]*SF[3] - P[3][0]*SF[4] + P[2][0]*SPP[0] + P[13][0]*SPP[3] + P[14][0]*SPP[6] - P[15][0]*SPP[9]) + SPP[4]*(P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] - P[3][13]*SF[4] + P[2][13]*SPP[0] + P[13][13]*SPP[3] + P[14][13]*SPP[6] - P[15][13]*SPP[9]) - SPP[7]*(P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] - P[3][14]*SF[4] + P[2][14]*SPP[0] + P[13][14]*SPP[3] + P[14][14]*SPP[6] - P[15][14]*SPP[9]) - SPP[1]*(P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] - P[3][15]*SF[4] + P[2][15]*SPP[0] + P[13][15]*SPP[3] + P[14][15]*SPP[6] - P[15][15]*SPP[9]);
-    nextP[5][6] = P[5][6] + SQ[0] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[8] + P[14][6]*SPP[2] + P[15][6]*SPP[5] + SF[4]*(P[5][1] + P[0][1]*SF[4] + P[2][1]*SF[3] + P[3][1]*SF[5] - P[1][1]*SPP[0] - P[13][1]*SPP[8] + P[14][1]*SPP[2] + P[15][1]*SPP[5]) - SF[5]*(P[5][2] + P[0][2]*SF[4] + P[2][2]*SF[3] + P[3][2]*SF[5] - P[1][2]*SPP[0] - P[13][2]*SPP[8] + P[14][2]*SPP[2] + P[15][2]*SPP[5]) + SF[3]*(P[5][3] + P[0][3]*SF[4] + P[2][3]*SF[3] + P[3][3]*SF[5] - P[1][3]*SPP[0] - P[13][3]*SPP[8] + P[14][3]*SPP[2] + P[15][3]*SPP[5]) + SPP[0]*(P[5][0] + P[0][0]*SF[4] + P[2][0]*SF[3] + P[3][0]*SF[5] - P[1][0]*SPP[0] - P[13][0]*SPP[8] + P[14][0]*SPP[2] + P[15][0]*SPP[5]) + SPP[4]*(P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[8] + P[14][13]*SPP[2] + P[15][13]*SPP[5]) - SPP[7]*(P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[8] + P[14][14]*SPP[2] + P[15][14]*SPP[5]) - SPP[1]*(P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[8] + P[14][15]*SPP[2] + P[15][15]*SPP[5]);
-    nextP[6][6] = P[6][6] + P[1][6]*SF[4] - P[2][6]*SF[5] + P[3][6]*SF[3] + P[0][6]*SPP[0] + P[13][6]*SPP[4] - P[14][6]*SPP[7] - P[15][6]*SPP[1] + dvxVar*sq(SG[6] - 2*q0*q2) + dvyVar*sq(SG[5] + 2*q0*q1) + SF[4]*(P[6][1] + P[1][1]*SF[4] - P[2][1]*SF[5] + P[3][1]*SF[3] + P[0][1]*SPP[0] + P[13][1]*SPP[4] - P[14][1]*SPP[7] - P[15][1]*SPP[1]) - SF[5]*(P[6][2] + P[1][2]*SF[4] - P[2][2]*SF[5] + P[3][2]*SF[3] + P[0][2]*SPP[0] + P[13][2]*SPP[4] - P[14][2]*SPP[7] - P[15][2]*SPP[1]) + SF[3]*(P[6][3] + P[1][3]*SF[4] - P[2][3]*SF[5] + P[3][3]*SF[3] + P[0][3]*SPP[0] + P[13][3]*SPP[4] - P[14][3]*SPP[7] - P[15][3]*SPP[1]) + SPP[0]*(P[6][0] + P[1][0]*SF[4] - P[2][0]*SF[5] + P[3][0]*SF[3] + P[0][0]*SPP[0] + P[13][0]*SPP[4] - P[14][0]*SPP[7] - P[15][0]*SPP[1]) + SPP[4]*(P[6][13] + P[1][13]*SF[4] - P[2][13]*SF[5] + P[3][13]*SF[3] + P[0][13]*SPP[0] + P[13][13]*SPP[4] - P[14][13]*SPP[7] - P[15][13]*SPP[1]) - SPP[7]*(P[6][14] + P[1][14]*SF[4] - P[2][14]*SF[5] + P[3][14]*SF[3] + P[0][14]*SPP[0] + P[13][14]*SPP[4] - P[14][14]*SPP[7] - P[15][14]*SPP[1]) - SPP[1]*(P[6][15] + P[1][15]*SF[4] - P[2][15]*SF[5] + P[3][15]*SF[3] + P[0][15]*SPP[0] + P[13][15]*SPP[4] - P[14][15]*SPP[7] - P[15][15]*SPP[1]) + dvzVar*sq(SG[1] - SG[2] - SG[3] + SG[4]);
-    nextP[0][7] = P[0][7] + P[1][7]*SF[9] + P[2][7]*SF[11] + P[3][7]*SF[10] + P[10][7]*SF[14] + P[11][7]*SF[15] + P[12][7]*SPP[10] + dt*(P[0][4] + P[1][4]*SF[9] + P[2][4]*SF[11] + P[3][4]*SF[10] + P[10][4]*SF[14] + P[11][4]*SF[15] + P[12][4]*SPP[10]);
-    nextP[1][7] = P[1][7] + P[0][7]*SF[8] + P[2][7]*SF[7] + P[3][7]*SF[11] - P[12][7]*SF[15] + P[11][7]*SPP[10] - (P[10][7]*q0)/2 + dt*(P[1][4] + P[0][4]*SF[8] + P[2][4]*SF[7] + P[3][4]*SF[11] - P[12][4]*SF[15] + P[11][4]*SPP[10] - (P[10][4]*q0)/2);
-    nextP[2][7] = P[2][7] + P[0][7]*SF[6] + P[1][7]*SF[10] + P[3][7]*SF[8] + P[12][7]*SF[14] - P[10][7]*SPP[10] - (P[11][7]*q0)/2 + dt*(P[2][4] + P[0][4]*SF[6] + P[1][4]*SF[10] + P[3][4]*SF[8] + P[12][4]*SF[14] - P[10][4]*SPP[10] - (P[11][4]*q0)/2);
-    nextP[3][7] = P[3][7] + P[0][7]*SF[7] + P[1][7]*SF[6] + P[2][7]*SF[9] + P[10][7]*SF[15] - P[11][7]*SF[14] - (P[12][7]*q0)/2 + dt*(P[3][4] + P[0][4]*SF[7] + P[1][4]*SF[6] + P[2][4]*SF[9] + P[10][4]*SF[15] - P[11][4]*SF[14] - (P[12][4]*q0)/2);
-    nextP[4][7] = P[4][7] + P[0][7]*SF[5] + P[1][7]*SF[3] - P[3][7]*SF[4] + P[2][7]*SPP[0] + P[13][7]*SPP[3] + P[14][7]*SPP[6] - P[15][7]*SPP[9] + dt*(P[4][4] + P[0][4]*SF[5] + P[1][4]*SF[3] - P[3][4]*SF[4] + P[2][4]*SPP[0] + P[13][4]*SPP[3] + P[14][4]*SPP[6] - P[15][4]*SPP[9]);
-    nextP[5][7] = P[5][7] + P[0][7]*SF[4] + P[2][7]*SF[3] + P[3][7]*SF[5] - P[1][7]*SPP[0] - P[13][7]*SPP[8] + P[14][7]*SPP[2] + P[15][7]*SPP[5] + dt*(P[5][4] + P[0][4]*SF[4] + P[2][4]*SF[3] + P[3][4]*SF[5] - P[1][4]*SPP[0] - P[13][4]*SPP[8] + P[14][4]*SPP[2] + P[15][4]*SPP[5]);
-    nextP[6][7] = P[6][7] + P[1][7]*SF[4] - P[2][7]*SF[5] + P[3][7]*SF[3] + P[0][7]*SPP[0] + P[13][7]*SPP[4] - P[14][7]*SPP[7] - P[15][7]*SPP[1] + dt*(P[6][4] + P[1][4]*SF[4] - P[2][4]*SF[5] + P[3][4]*SF[3] + P[0][4]*SPP[0] + P[13][4]*SPP[4] - P[14][4]*SPP[7] - P[15][4]*SPP[1]);
-    nextP[7][7] = P[7][7] + P[4][7]*dt + dt*(P[7][4] + P[4][4]*dt);
-    nextP[0][8] = P[0][8] + P[1][8]*SF[9] + P[2][8]*SF[11] + P[3][8]*SF[10] + P[10][8]*SF[14] + P[11][8]*SF[15] + P[12][8]*SPP[10] + dt*(P[0][5] + P[1][5]*SF[9] + P[2][5]*SF[11] + P[3][5]*SF[10] + P[10][5]*SF[14] + P[11][5]*SF[15] + P[12][5]*SPP[10]);
-    nextP[1][8] = P[1][8] + P[0][8]*SF[8] + P[2][8]*SF[7] + P[3][8]*SF[11] - P[12][8]*SF[15] + P[11][8]*SPP[10] - (P[10][8]*q0)/2 + dt*(P[1][5] + P[0][5]*SF[8] + P[2][5]*SF[7] + P[3][5]*SF[11] - P[12][5]*SF[15] + P[11][5]*SPP[10] - (P[10][5]*q0)/2);
-    nextP[2][8] = P[2][8] + P[0][8]*SF[6] + P[1][8]*SF[10] + P[3][8]*SF[8] + P[12][8]*SF[14] - P[10][8]*SPP[10] - (P[11][8]*q0)/2 + dt*(P[2][5] + P[0][5]*SF[6] + P[1][5]*SF[10] + P[3][5]*SF[8] + P[12][5]*SF[14] - P[10][5]*SPP[10] - (P[11][5]*q0)/2);
-    nextP[3][8] = P[3][8] + P[0][8]*SF[7] + P[1][8]*SF[6] + P[2][8]*SF[9] + P[10][8]*SF[15] - P[11][8]*SF[14] - (P[12][8]*q0)/2 + dt*(P[3][5] + P[0][5]*SF[7] + P[1][5]*SF[6] + P[2][5]*SF[9] + P[10][5]*SF[15] - P[11][5]*SF[14] - (P[12][5]*q0)/2);
-    nextP[4][8] = P[4][8] + P[0][8]*SF[5] + P[1][8]*SF[3] - P[3][8]*SF[4] + P[2][8]*SPP[0] + P[13][8]*SPP[3] + P[14][8]*SPP[6] - P[15][8]*SPP[9] + dt*(P[4][5] + P[0][5]*SF[5] + P[1][5]*SF[3] - P[3][5]*SF[4] + P[2][5]*SPP[0] + P[13][5]*SPP[3] + P[14][5]*SPP[6] - P[15][5]*SPP[9]);
-    nextP[5][8] = P[5][8] + P[0][8]*SF[4] + P[2][8]*SF[3] + P[3][8]*SF[5] - P[1][8]*SPP[0] - P[13][8]*SPP[8] + P[14][8]*SPP[2] + P[15][8]*SPP[5] + dt*(P[5][5] + P[0][5]*SF[4] + P[2][5]*SF[3] + P[3][5]*SF[5] - P[1][5]*SPP[0] - P[13][5]*SPP[8] + P[14][5]*SPP[2] + P[15][5]*SPP[5]);
-    nextP[6][8] = P[6][8] + P[1][8]*SF[4] - P[2][8]*SF[5] + P[3][8]*SF[3] + P[0][8]*SPP[0] + P[13][8]*SPP[4] - P[14][8]*SPP[7] - P[15][8]*SPP[1] + dt*(P[6][5] + P[1][5]*SF[4] - P[2][5]*SF[5] + P[3][5]*SF[3] + P[0][5]*SPP[0] + P[13][5]*SPP[4] - P[14][5]*SPP[7] - P[15][5]*SPP[1]);
-    nextP[7][8] = P[7][8] + P[4][8]*dt + dt*(P[7][5] + P[4][5]*dt);
-    nextP[8][8] = P[8][8] + P[5][8]*dt + dt*(P[8][5] + P[5][5]*dt);
-    nextP[0][9] = P[0][9] + P[1][9]*SF[9] + P[2][9]*SF[11] + P[3][9]*SF[10] + P[10][9]*SF[14] + P[11][9]*SF[15] + P[12][9]*SPP[10] + dt*(P[0][6] + P[1][6]*SF[9] + P[2][6]*SF[11] + P[3][6]*SF[10] + P[10][6]*SF[14] + P[11][6]*SF[15] + P[12][6]*SPP[10]);
-    nextP[1][9] = P[1][9] + P[0][9]*SF[8] + P[2][9]*SF[7] + P[3][9]*SF[11] - P[12][9]*SF[15] + P[11][9]*SPP[10] - (P[10][9]*q0)/2 + dt*(P[1][6] + P[0][6]*SF[8] + P[2][6]*SF[7] + P[3][6]*SF[11] - P[12][6]*SF[15] + P[11][6]*SPP[10] - (P[10][6]*q0)/2);
-    nextP[2][9] = P[2][9] + P[0][9]*SF[6] + P[1][9]*SF[10] + P[3][9]*SF[8] + P[12][9]*SF[14] - P[10][9]*SPP[10] - (P[11][9]*q0)/2 + dt*(P[2][6] + P[0][6]*SF[6] + P[1][6]*SF[10] + P[3][6]*SF[8] + P[12][6]*SF[14] - P[10][6]*SPP[10] - (P[11][6]*q0)/2);
-    nextP[3][9] = P[3][9] + P[0][9]*SF[7] + P[1][9]*SF[6] + P[2][9]*SF[9] + P[10][9]*SF[15] - P[11][9]*SF[14] - (P[12][9]*q0)/2 + dt*(P[3][6] + P[0][6]*SF[7] + P[1][6]*SF[6] + P[2][6]*SF[9] + P[10][6]*SF[15] - P[11][6]*SF[14] - (P[12][6]*q0)/2);
-    nextP[4][9] = P[4][9] + P[0][9]*SF[5] + P[1][9]*SF[3] - P[3][9]*SF[4] + P[2][9]*SPP[0] + P[13][9]*SPP[3] + P[14][9]*SPP[6] - P[15][9]*SPP[9] + dt*(P[4][6] + P[0][6]*SF[5] + P[1][6]*SF[3] - P[3][6]*SF[4] + P[2][6]*SPP[0] + P[13][6]*SPP[3] + P[14][6]*SPP[6] - P[15][6]*SPP[9]);
-    nextP[5][9] = P[5][9] + P[0][9]*SF[4] + P[2][9]*SF[3] + P[3][9]*SF[5] - P[1][9]*SPP[0] - P[13][9]*SPP[8] + P[14][9]*SPP[2] + P[15][9]*SPP[5] + dt*(P[5][6] + P[0][6]*SF[4] + P[2][6]*SF[3] + P[3][6]*SF[5] - P[1][6]*SPP[0] - P[13][6]*SPP[8] + P[14][6]*SPP[2] + P[15][6]*SPP[5]);
-    nextP[6][9] = P[6][9] + P[1][9]*SF[4] - P[2][9]*SF[5] + P[3][9]*SF[3] + P[0][9]*SPP[0] + P[13][9]*SPP[4] - P[14][9]*SPP[7] - P[15][9]*SPP[1] + dt*(P[6][6] + P[1][6]*SF[4] - P[2][6]*SF[5] + P[3][6]*SF[3] + P[0][6]*SPP[0] + P[13][6]*SPP[4] - P[14][6]*SPP[7] - P[15][6]*SPP[1]);
-    nextP[7][9] = P[7][9] + P[4][9]*dt + dt*(P[7][6] + P[4][6]*dt);
-    nextP[8][9] = P[8][9] + P[5][9]*dt + dt*(P[8][6] + P[5][6]*dt);
-    nextP[9][9] = P[9][9] + P[6][9]*dt + dt*(P[9][6] + P[6][6]*dt);
+    nextP[0][4] = PS23*PS62 + PS26*PS60 - PS44*PS45 - PS46*PS48 - PS52*PS53 + PS54*PS56 + PS57*PS58 + PS63;
+    nextP[1][4] = -PS44*PS93 - PS46*PS95 + PS54*PS97 + PS60*PS82 + PS62*PS92 + PS72*PS80 - PS74*PS89 + PS98;
+    nextP[2][4] = -PS104*PS74 + PS106*PS72 + PS111*PS62 + PS113*PS60 - PS114*PS44 - PS116*PS46 + PS118*PS54 + PS119;
+    nextP[3][4] = PS124*PS62 + PS125*PS72 + PS128*PS60 - PS129*PS74 - PS130*PS44 - PS132*PS46 + PS134*PS54 + PS135;
+    nextP[4][4] = -PS139*PS142 + PS140*PS146 - PS141*PS44 - PS145*PS74 + PS149*PS72 + PS152*PS60 + PS155*PS62 + PS156*powf(PS54, 2) + PS157*powf(PS46, 2) + PS158 + powf(PS44, 2)*dvxVar;
+    nextP[0][5] = -PS23*PS60 + PS26*PS62 + PS48*PS68 + PS52*PS58 + PS53*PS57 - PS55*PS65 - PS66*PS67 + PS69;
+    nextP[1][5] = PS100 - PS60*PS92 + PS62*PS82 - PS65*PS96 - PS66*PS99 + PS68*PS95 + PS72*PS89 + PS74*PS80;
+    nextP[2][5] = PS104*PS72 + PS106*PS74 - PS111*PS60 + PS113*PS62 + PS116*PS68 - PS117*PS65 - PS120*PS66 + PS121;
+    nextP[3][5] = -PS124*PS60 + PS125*PS74 + PS128*PS62 + PS129*PS72 + PS132*PS68 - PS133*PS65 - PS136*PS66 + PS137;
+    nextP[4][5] = -PS140*PS161 + PS142*PS160 + PS145*PS72 - PS146*PS65 + PS149*PS74 + PS152*PS62 - PS155*PS60 - PS157*PS46*PS68 - PS159*PS66 + PS162*PS163 + PS164;
+    nextP[5][5] = PS157*powf(PS68, 2) + PS160*PS173 - PS162*PS170 - PS169*PS65 - PS172*PS60 + PS175*PS72 + PS177*PS74 + PS179*PS62 + PS180*powf(PS66, 2) + PS181 + powf(PS65, 2)*dvyVar;
+    nextP[0][6] = PS23*PS74 - PS26*PS72 - PS47*PS70 + PS53*PS61 - PS56*PS71 + PS58*PS59 + PS67*PS73 + PS75;
+    nextP[1][6] = PS101 + PS60*PS80 + PS62*PS89 - PS70*PS94 - PS71*PS97 - PS72*PS82 + PS73*PS99 + PS74*PS92;
+    nextP[2][6] = PS104*PS62 + PS106*PS60 + PS111*PS74 - PS113*PS72 - PS115*PS70 - PS118*PS71 + PS120*PS73 + PS122;
+    nextP[3][6] = PS124*PS74 + PS125*PS60 - PS128*PS72 + PS129*PS62 - PS131*PS70 - PS134*PS71 + PS136*PS73 + PS138;
+    nextP[4][6] = PS139*PS167 - PS142*PS70 + PS145*PS62 - PS146*PS165 + PS149*PS60 - PS152*PS72 + PS155*PS74 - PS156*PS54*PS71 + PS159*PS73 - PS163*PS166 + PS168;
+    nextP[5][6] = -PS160*PS167 + PS161*PS165 - PS165*PS169 + PS166*PS170 + PS172*PS74 - PS173*PS70 + PS175*PS62 + PS177*PS60 - PS179*PS72 - PS180*PS66*PS73 + PS182;
+    nextP[6][6] = PS156*powf(PS71, 2) - PS165*PS184 + PS166*PS185 + PS180*powf(PS73, 2) - PS183*PS70 + PS186 + PS60*(-PS151 - PS165*P[0][14] + PS166*P[0][13] + PS171 + PS60*P[0][0] + PS62*P[0][3] - PS70*P[0][15] + P[0][6]) + PS62*(PS154 - PS165*P[3][14] + PS166*P[3][13] - PS178 + PS60*P[0][3] + PS62*P[3][3] - PS70*P[3][15] + P[3][6]) + powf(PS70, 2)*dvzVar - PS72*(PS147 - PS165*P[2][14] + PS166*P[2][13] + PS174 - PS70*P[2][15] - PS72*P[2][2] + PS74*P[1][2] + P[2][6]) + PS74*(PS143 - PS165*P[1][14] + PS166*P[1][13] + PS176 - PS70*P[1][15] - PS72*P[1][2] + PS74*P[1][1] + P[1][6]);
+    nextP[0][7] = -PS11*P[1][7] - PS12*P[2][7] - PS13*P[3][7] + PS6*P[7][10] + PS63*dt + PS7*P[7][11] + PS9*P[7][12] + P[0][7];
+    nextP[1][7] = PS11*P[0][7] - PS12*P[3][7] + PS13*P[2][7] - PS34*P[7][10] - PS7*P[7][12] + PS9*P[7][11] + PS98*dt + P[1][7];
+    nextP[2][7] = PS11*P[3][7] + PS119*dt + PS12*P[0][7] - PS13*P[1][7] - PS34*P[7][11] + PS6*P[7][12] - PS9*P[7][10] + P[2][7];
+    nextP[3][7] = -PS11*P[2][7] + PS12*P[1][7] + PS13*P[0][7] + PS135*dt - PS34*P[7][12] - PS6*P[7][11] + PS7*P[7][10] + P[3][7];
+    nextP[4][7] = -PS139*P[7][15] + PS140*P[7][14] + PS158*dt - PS44*P[7][13] + PS60*P[2][7] + PS62*P[1][7] + PS72*P[0][7] - PS74*P[3][7] + P[4][7];
+    nextP[5][7] = PS160*P[7][15] - PS162*P[7][13] - PS60*P[1][7] + PS62*P[2][7] - PS65*P[7][14] + PS72*P[3][7] + PS74*P[0][7] + P[5][7] + dt*(PS160*P[4][15] - PS162*P[4][13] - PS60*P[1][4] + PS62*P[2][4] - PS65*P[4][14] + PS72*P[3][4] + PS74*P[0][4] + P[4][5]);
+    nextP[6][7] = -PS165*P[7][14] + PS166*P[7][13] + PS60*P[0][7] + PS62*P[3][7] - PS70*P[7][15] - PS72*P[2][7] + PS74*P[1][7] + P[6][7] + dt*(-PS165*P[4][14] + PS166*P[4][13] + PS60*P[0][4] + PS62*P[3][4] - PS70*P[4][15] - PS72*P[2][4] + PS74*P[1][4] + P[4][6]);
+    nextP[7][7] = P[4][7]*dt + P[7][7] + dt*(P[4][4]*dt + P[4][7]);
+    nextP[0][8] = -PS11*P[1][8] - PS12*P[2][8] - PS13*P[3][8] + PS6*P[8][10] + PS69*dt + PS7*P[8][11] + PS9*P[8][12] + P[0][8];
+    nextP[1][8] = PS100*dt + PS11*P[0][8] - PS12*P[3][8] + PS13*P[2][8] - PS34*P[8][10] - PS7*P[8][12] + PS9*P[8][11] + P[1][8];
+    nextP[2][8] = PS11*P[3][8] + PS12*P[0][8] + PS121*dt - PS13*P[1][8] - PS34*P[8][11] + PS6*P[8][12] - PS9*P[8][10] + P[2][8];
+    nextP[3][8] = -PS11*P[2][8] + PS12*P[1][8] + PS13*P[0][8] + PS137*dt - PS34*P[8][12] - PS6*P[8][11] + PS7*P[8][10] + P[3][8];
+    nextP[4][8] = -PS139*P[8][15] + PS140*P[8][14] + PS164*dt - PS44*P[8][13] + PS60*P[2][8] + PS62*P[1][8] + PS72*P[0][8] - PS74*P[3][8] + P[4][8];
+    nextP[5][8] = PS160*P[8][15] - PS162*P[8][13] + PS181*dt - PS60*P[1][8] + PS62*P[2][8] - PS65*P[8][14] + PS72*P[3][8] + PS74*P[0][8] + P[5][8];
+    nextP[6][8] = -PS165*P[8][14] + PS166*P[8][13] + PS60*P[0][8] + PS62*P[3][8] - PS70*P[8][15] - PS72*P[2][8] + PS74*P[1][8] + P[6][8] + dt*(-PS165*P[5][14] + PS166*P[5][13] + PS60*P[0][5] + PS62*P[3][5] - PS70*P[5][15] - PS72*P[2][5] + PS74*P[1][5] + P[5][6]);
+    nextP[7][8] = P[4][8]*dt + P[7][8] + dt*(P[4][5]*dt + P[5][7]);
+    nextP[8][8] = P[5][8]*dt + P[8][8] + dt*(P[5][5]*dt + P[5][8]);
+    nextP[0][9] = -PS11*P[1][9] - PS12*P[2][9] - PS13*P[3][9] + PS6*P[9][10] + PS7*P[9][11] + PS75*dt + PS9*P[9][12] + P[0][9];
+    nextP[1][9] = PS101*dt + PS11*P[0][9] - PS12*P[3][9] + PS13*P[2][9] - PS34*P[9][10] - PS7*P[9][12] + PS9*P[9][11] + P[1][9];
+    nextP[2][9] = PS11*P[3][9] + PS12*P[0][9] + PS122*dt - PS13*P[1][9] - PS34*P[9][11] + PS6*P[9][12] - PS9*P[9][10] + P[2][9];
+    nextP[3][9] = -PS11*P[2][9] + PS12*P[1][9] + PS13*P[0][9] + PS138*dt - PS34*P[9][12] - PS6*P[9][11] + PS7*P[9][10] + P[3][9];
+    nextP[4][9] = -PS139*P[9][15] + PS140*P[9][14] + PS168*dt - PS44*P[9][13] + PS60*P[2][9] + PS62*P[1][9] + PS72*P[0][9] - PS74*P[3][9] + P[4][9];
+    nextP[5][9] = PS160*P[9][15] - PS162*P[9][13] + PS182*dt - PS60*P[1][9] + PS62*P[2][9] - PS65*P[9][14] + PS72*P[3][9] + PS74*P[0][9] + P[5][9];
+    nextP[6][9] = -PS165*P[9][14] + PS166*P[9][13] + PS186*dt + PS60*P[0][9] + PS62*P[3][9] - PS70*P[9][15] - PS72*P[2][9] + PS74*P[1][9] + P[6][9];
+    nextP[7][9] = P[4][9]*dt + P[7][9] + dt*(P[4][6]*dt + P[6][7]);
+    nextP[8][9] = P[5][9]*dt + P[8][9] + dt*(P[5][6]*dt + P[6][8]);
+    nextP[9][9] = P[6][9]*dt + P[9][9] + dt*(P[6][6]*dt + P[6][9]);
 
     if (stateIndexLim > 9) {
-        nextP[0][10] = P[0][10] + P[1][10]*SF[9] + P[2][10]*SF[11] + P[3][10]*SF[10] + P[10][10]*SF[14] + P[11][10]*SF[15] + P[12][10]*SPP[10];
-        nextP[1][10] = P[1][10] + P[0][10]*SF[8] + P[2][10]*SF[7] + P[3][10]*SF[11] - P[12][10]*SF[15] + P[11][10]*SPP[10] - (P[10][10]*q0)/2;
-        nextP[2][10] = P[2][10] + P[0][10]*SF[6] + P[1][10]*SF[10] + P[3][10]*SF[8] + P[12][10]*SF[14] - P[10][10]*SPP[10] - (P[11][10]*q0)/2;
-        nextP[3][10] = P[3][10] + P[0][10]*SF[7] + P[1][10]*SF[6] + P[2][10]*SF[9] + P[10][10]*SF[15] - P[11][10]*SF[14] - (P[12][10]*q0)/2;
-        nextP[4][10] = P[4][10] + P[0][10]*SF[5] + P[1][10]*SF[3] - P[3][10]*SF[4] + P[2][10]*SPP[0] + P[13][10]*SPP[3] + P[14][10]*SPP[6] - P[15][10]*SPP[9];
-        nextP[5][10] = P[5][10] + P[0][10]*SF[4] + P[2][10]*SF[3] + P[3][10]*SF[5] - P[1][10]*SPP[0] - P[13][10]*SPP[8] + P[14][10]*SPP[2] + P[15][10]*SPP[5];
-        nextP[6][10] = P[6][10] + P[1][10]*SF[4] - P[2][10]*SF[5] + P[3][10]*SF[3] + P[0][10]*SPP[0] + P[13][10]*SPP[4] - P[14][10]*SPP[7] - P[15][10]*SPP[1];
-        nextP[7][10] = P[7][10] + P[4][10]*dt;
-        nextP[8][10] = P[8][10] + P[5][10]*dt;
-        nextP[9][10] = P[9][10] + P[6][10]*dt;
+        nextP[0][10] = PS14;
+        nextP[1][10] = PS85;
+        nextP[2][10] = PS109;
+        nextP[3][10] = PS123;
+        nextP[4][10] = -PS139*P[10][15] + PS140*P[10][14] - PS44*P[10][13] + PS60*P[2][10] + PS62*P[1][10] + PS72*P[0][10] - PS74*P[3][10] + P[4][10];
+        nextP[5][10] = PS160*P[10][15] - PS162*P[10][13] - PS60*P[1][10] + PS62*P[2][10] - PS65*P[10][14] + PS72*P[3][10] + PS74*P[0][10] + P[5][10];
+        nextP[6][10] = -PS165*P[10][14] + PS166*P[10][13] + PS60*P[0][10] + PS62*P[3][10] - PS70*P[10][15] - PS72*P[2][10] + PS74*P[1][10] + P[6][10];
+        nextP[7][10] = P[4][10]*dt + P[7][10];
+        nextP[8][10] = P[5][10]*dt + P[8][10];
+        nextP[9][10] = P[6][10]*dt + P[9][10];
         nextP[10][10] = P[10][10];
-        nextP[0][11] = P[0][11] + P[1][11]*SF[9] + P[2][11]*SF[11] + P[3][11]*SF[10] + P[10][11]*SF[14] + P[11][11]*SF[15] + P[12][11]*SPP[10];
-        nextP[1][11] = P[1][11] + P[0][11]*SF[8] + P[2][11]*SF[7] + P[3][11]*SF[11] - P[12][11]*SF[15] + P[11][11]*SPP[10] - (P[10][11]*q0)/2;
-        nextP[2][11] = P[2][11] + P[0][11]*SF[6] + P[1][11]*SF[10] + P[3][11]*SF[8] + P[12][11]*SF[14] - P[10][11]*SPP[10] - (P[11][11]*q0)/2;
-        nextP[3][11] = P[3][11] + P[0][11]*SF[7] + P[1][11]*SF[6] + P[2][11]*SF[9] + P[10][11]*SF[15] - P[11][11]*SF[14] - (P[12][11]*q0)/2;
-        nextP[4][11] = P[4][11] + P[0][11]*SF[5] + P[1][11]*SF[3] - P[3][11]*SF[4] + P[2][11]*SPP[0] + P[13][11]*SPP[3] + P[14][11]*SPP[6] - P[15][11]*SPP[9];
-        nextP[5][11] = P[5][11] + P[0][11]*SF[4] + P[2][11]*SF[3] + P[3][11]*SF[5] - P[1][11]*SPP[0] - P[13][11]*SPP[8] + P[14][11]*SPP[2] + P[15][11]*SPP[5];
-        nextP[6][11] = P[6][11] + P[1][11]*SF[4] - P[2][11]*SF[5] + P[3][11]*SF[3] + P[0][11]*SPP[0] + P[13][11]*SPP[4] - P[14][11]*SPP[7] - P[15][11]*SPP[1];
-        nextP[7][11] = P[7][11] + P[4][11]*dt;
-        nextP[8][11] = P[8][11] + P[5][11]*dt;
-        nextP[9][11] = P[9][11] + P[6][11]*dt;
+        nextP[0][11] = PS17;
+        nextP[1][11] = PS77;
+        nextP[2][11] = PS108;
+        nextP[3][11] = PS127;
+        nextP[4][11] = -PS139*P[11][15] + PS140*P[11][14] - PS44*P[11][13] + PS60*P[2][11] + PS62*P[1][11] + PS72*P[0][11] - PS74*P[3][11] + P[4][11];
+        nextP[5][11] = PS160*P[11][15] - PS162*P[11][13] - PS60*P[1][11] + PS62*P[2][11] - PS65*P[11][14] + PS72*P[3][11] + PS74*P[0][11] + P[5][11];
+        nextP[6][11] = -PS165*P[11][14] + PS166*P[11][13] + PS60*P[0][11] + PS62*P[3][11] - PS70*P[11][15] - PS72*P[2][11] + PS74*P[1][11] + P[6][11];
+        nextP[7][11] = P[4][11]*dt + P[7][11];
+        nextP[8][11] = P[5][11]*dt + P[8][11];
+        nextP[9][11] = P[6][11]*dt + P[9][11];
         nextP[10][11] = P[10][11];
         nextP[11][11] = P[11][11];
-        nextP[0][12] = P[0][12] + P[1][12]*SF[9] + P[2][12]*SF[11] + P[3][12]*SF[10] + P[10][12]*SF[14] + P[11][12]*SF[15] + P[12][12]*SPP[10];
-        nextP[1][12] = P[1][12] + P[0][12]*SF[8] + P[2][12]*SF[7] + P[3][12]*SF[11] - P[12][12]*SF[15] + P[11][12]*SPP[10] - (P[10][12]*q0)/2;
-        nextP[2][12] = P[2][12] + P[0][12]*SF[6] + P[1][12]*SF[10] + P[3][12]*SF[8] + P[12][12]*SF[14] - P[10][12]*SPP[10] - (P[11][12]*q0)/2;
-        nextP[3][12] = P[3][12] + P[0][12]*SF[7] + P[1][12]*SF[6] + P[2][12]*SF[9] + P[10][12]*SF[15] - P[11][12]*SF[14] - (P[12][12]*q0)/2;
-        nextP[4][12] = P[4][12] + P[0][12]*SF[5] + P[1][12]*SF[3] - P[3][12]*SF[4] + P[2][12]*SPP[0] + P[13][12]*SPP[3] + P[14][12]*SPP[6] - P[15][12]*SPP[9];
-        nextP[5][12] = P[5][12] + P[0][12]*SF[4] + P[2][12]*SF[3] + P[3][12]*SF[5] - P[1][12]*SPP[0] - P[13][12]*SPP[8] + P[14][12]*SPP[2] + P[15][12]*SPP[5];
-        nextP[6][12] = P[6][12] + P[1][12]*SF[4] - P[2][12]*SF[5] + P[3][12]*SF[3] + P[0][12]*SPP[0] + P[13][12]*SPP[4] - P[14][12]*SPP[7] - P[15][12]*SPP[1];
-        nextP[7][12] = P[7][12] + P[4][12]*dt;
-        nextP[8][12] = P[8][12] + P[5][12]*dt;
-        nextP[9][12] = P[9][12] + P[6][12]*dt;
+        nextP[0][12] = PS20;
+        nextP[1][12] = PS87;
+        nextP[2][12] = PS103;
+        nextP[3][12] = PS126;
+        nextP[4][12] = -PS139*P[12][15] + PS140*P[12][14] - PS44*P[12][13] + PS60*P[2][12] + PS62*P[1][12] + PS72*P[0][12] - PS74*P[3][12] + P[4][12];
+        nextP[5][12] = PS160*P[12][15] - PS162*P[12][13] - PS60*P[1][12] + PS62*P[2][12] - PS65*P[12][14] + PS72*P[3][12] + PS74*P[0][12] + P[5][12];
+        nextP[6][12] = -PS165*P[12][14] + PS166*P[12][13] + PS60*P[0][12] + PS62*P[3][12] - PS70*P[12][15] - PS72*P[2][12] + PS74*P[1][12] + P[6][12];
+        nextP[7][12] = P[4][12]*dt + P[7][12];
+        nextP[8][12] = P[5][12]*dt + P[8][12];
+        nextP[9][12] = P[6][12]*dt + P[9][12];
         nextP[10][12] = P[10][12];
         nextP[11][12] = P[11][12];
         nextP[12][12] = P[12][12];
 
         if (stateIndexLim > 12) {
-            nextP[0][13] = P[0][13] + P[1][13]*SF[9] + P[2][13]*SF[11] + P[3][13]*SF[10] + P[10][13]*SF[14] + P[11][13]*SF[15] + P[12][13]*SPP[10];
-            nextP[1][13] = P[1][13] + P[0][13]*SF[8] + P[2][13]*SF[7] + P[3][13]*SF[11] - P[12][13]*SF[15] + P[11][13]*SPP[10] - (P[10][13]*q0)/2;
-            nextP[2][13] = P[2][13] + P[0][13]*SF[6] + P[1][13]*SF[10] + P[3][13]*SF[8] + P[12][13]*SF[14] - P[10][13]*SPP[10] - (P[11][13]*q0)/2;
-            nextP[3][13] = P[3][13] + P[0][13]*SF[7] + P[1][13]*SF[6] + P[2][13]*SF[9] + P[10][13]*SF[15] - P[11][13]*SF[14] - (P[12][13]*q0)/2;
-            nextP[4][13] = P[4][13] + P[0][13]*SF[5] + P[1][13]*SF[3] - P[3][13]*SF[4] + P[2][13]*SPP[0] + P[13][13]*SPP[3] + P[14][13]*SPP[6] - P[15][13]*SPP[9];
-            nextP[5][13] = P[5][13] + P[0][13]*SF[4] + P[2][13]*SF[3] + P[3][13]*SF[5] - P[1][13]*SPP[0] - P[13][13]*SPP[8] + P[14][13]*SPP[2] + P[15][13]*SPP[5];
-            nextP[6][13] = P[6][13] + P[1][13]*SF[4] - P[2][13]*SF[5] + P[3][13]*SF[3] + P[0][13]*SPP[0] + P[13][13]*SPP[4] - P[14][13]*SPP[7] - P[15][13]*SPP[1];
-            nextP[7][13] = P[7][13] + P[4][13]*dt;
-            nextP[8][13] = P[8][13] + P[5][13]*dt;
-            nextP[9][13] = P[9][13] + P[6][13]*dt;
+            nextP[0][13] = PS45;
+            nextP[1][13] = PS93;
+            nextP[2][13] = PS114;
+            nextP[3][13] = PS130;
+            nextP[4][13] = PS141;
+            nextP[5][13] = PS170;
+            nextP[6][13] = PS185;
+            nextP[7][13] = P[4][13]*dt + P[7][13];
+            nextP[8][13] = P[5][13]*dt + P[8][13];
+            nextP[9][13] = P[6][13]*dt + P[9][13];
             nextP[10][13] = P[10][13];
             nextP[11][13] = P[11][13];
             nextP[12][13] = P[12][13];
             nextP[13][13] = P[13][13];
-            nextP[0][14] = P[0][14] + P[1][14]*SF[9] + P[2][14]*SF[11] + P[3][14]*SF[10] + P[10][14]*SF[14] + P[11][14]*SF[15] + P[12][14]*SPP[10];
-            nextP[1][14] = P[1][14] + P[0][14]*SF[8] + P[2][14]*SF[7] + P[3][14]*SF[11] - P[12][14]*SF[15] + P[11][14]*SPP[10] - (P[10][14]*q0)/2;
-            nextP[2][14] = P[2][14] + P[0][14]*SF[6] + P[1][14]*SF[10] + P[3][14]*SF[8] + P[12][14]*SF[14] - P[10][14]*SPP[10] - (P[11][14]*q0)/2;
-            nextP[3][14] = P[3][14] + P[0][14]*SF[7] + P[1][14]*SF[6] + P[2][14]*SF[9] + P[10][14]*SF[15] - P[11][14]*SF[14] - (P[12][14]*q0)/2;
-            nextP[4][14] = P[4][14] + P[0][14]*SF[5] + P[1][14]*SF[3] - P[3][14]*SF[4] + P[2][14]*SPP[0] + P[13][14]*SPP[3] + P[14][14]*SPP[6] - P[15][14]*SPP[9];
-            nextP[5][14] = P[5][14] + P[0][14]*SF[4] + P[2][14]*SF[3] + P[3][14]*SF[5] - P[1][14]*SPP[0] - P[13][14]*SPP[8] + P[14][14]*SPP[2] + P[15][14]*SPP[5];
-            nextP[6][14] = P[6][14] + P[1][14]*SF[4] - P[2][14]*SF[5] + P[3][14]*SF[3] + P[0][14]*SPP[0] + P[13][14]*SPP[4] - P[14][14]*SPP[7] - P[15][14]*SPP[1];
-            nextP[7][14] = P[7][14] + P[4][14]*dt;
-            nextP[8][14] = P[8][14] + P[5][14]*dt;
-            nextP[9][14] = P[9][14] + P[6][14]*dt;
+            nextP[0][14] = PS55;
+            nextP[1][14] = PS96;
+            nextP[2][14] = PS117;
+            nextP[3][14] = PS133;
+            nextP[4][14] = PS146;
+            nextP[5][14] = PS169;
+            nextP[6][14] = PS184;
+            nextP[7][14] = P[4][14]*dt + P[7][14];
+            nextP[8][14] = P[5][14]*dt + P[8][14];
+            nextP[9][14] = P[6][14]*dt + P[9][14];
             nextP[10][14] = P[10][14];
             nextP[11][14] = P[11][14];
             nextP[12][14] = P[12][14];
             nextP[13][14] = P[13][14];
             nextP[14][14] = P[14][14];
-            nextP[0][15] = P[0][15] + P[1][15]*SF[9] + P[2][15]*SF[11] + P[3][15]*SF[10] + P[10][15]*SF[14] + P[11][15]*SF[15] + P[12][15]*SPP[10];
-            nextP[1][15] = P[1][15] + P[0][15]*SF[8] + P[2][15]*SF[7] + P[3][15]*SF[11] - P[12][15]*SF[15] + P[11][15]*SPP[10] - (P[10][15]*q0)/2;
-            nextP[2][15] = P[2][15] + P[0][15]*SF[6] + P[1][15]*SF[10] + P[3][15]*SF[8] + P[12][15]*SF[14] - P[10][15]*SPP[10] - (P[11][15]*q0)/2;
-            nextP[3][15] = P[3][15] + P[0][15]*SF[7] + P[1][15]*SF[6] + P[2][15]*SF[9] + P[10][15]*SF[15] - P[11][15]*SF[14] - (P[12][15]*q0)/2;
-            nextP[4][15] = P[4][15] + P[0][15]*SF[5] + P[1][15]*SF[3] - P[3][15]*SF[4] + P[2][15]*SPP[0] + P[13][15]*SPP[3] + P[14][15]*SPP[6] - P[15][15]*SPP[9];
-            nextP[5][15] = P[5][15] + P[0][15]*SF[4] + P[2][15]*SF[3] + P[3][15]*SF[5] - P[1][15]*SPP[0] - P[13][15]*SPP[8] + P[14][15]*SPP[2] + P[15][15]*SPP[5];
-            nextP[6][15] = P[6][15] + P[1][15]*SF[4] - P[2][15]*SF[5] + P[3][15]*SF[3] + P[0][15]*SPP[0] + P[13][15]*SPP[4] - P[14][15]*SPP[7] - P[15][15]*SPP[1];
-            nextP[7][15] = P[7][15] + P[4][15]*dt;
-            nextP[8][15] = P[8][15] + P[5][15]*dt;
-            nextP[9][15] = P[9][15] + P[6][15]*dt;
+            nextP[0][15] = PS47;
+            nextP[1][15] = PS94;
+            nextP[2][15] = PS115;
+            nextP[3][15] = PS131;
+            nextP[4][15] = PS142;
+            nextP[5][15] = PS173;
+            nextP[6][15] = PS183;
+            nextP[7][15] = P[4][15]*dt + P[7][15];
+            nextP[8][15] = P[5][15]*dt + P[8][15];
+            nextP[9][15] = P[6][15]*dt + P[9][15];
             nextP[10][15] = P[10][15];
             nextP[11][15] = P[11][15];
             nextP[12][15] = P[12][15];
@@ -1262,16 +1426,16 @@ void NavEKF3_core::CovariancePrediction()
             nextP[15][15] = P[15][15];
 
             if (stateIndexLim > 15) {
-                nextP[0][16] = P[0][16] + P[1][16]*SF[9] + P[2][16]*SF[11] + P[3][16]*SF[10] + P[10][16]*SF[14] + P[11][16]*SF[15] + P[12][16]*SPP[10];
-                nextP[1][16] = P[1][16] + P[0][16]*SF[8] + P[2][16]*SF[7] + P[3][16]*SF[11] - P[12][16]*SF[15] + P[11][16]*SPP[10] - (P[10][16]*q0)/2;
-                nextP[2][16] = P[2][16] + P[0][16]*SF[6] + P[1][16]*SF[10] + P[3][16]*SF[8] + P[12][16]*SF[14] - P[10][16]*SPP[10] - (P[11][16]*q0)/2;
-                nextP[3][16] = P[3][16] + P[0][16]*SF[7] + P[1][16]*SF[6] + P[2][16]*SF[9] + P[10][16]*SF[15] - P[11][16]*SF[14] - (P[12][16]*q0)/2;
-                nextP[4][16] = P[4][16] + P[0][16]*SF[5] + P[1][16]*SF[3] - P[3][16]*SF[4] + P[2][16]*SPP[0] + P[13][16]*SPP[3] + P[14][16]*SPP[6] - P[15][16]*SPP[9];
-                nextP[5][16] = P[5][16] + P[0][16]*SF[4] + P[2][16]*SF[3] + P[3][16]*SF[5] - P[1][16]*SPP[0] - P[13][16]*SPP[8] + P[14][16]*SPP[2] + P[15][16]*SPP[5];
-                nextP[6][16] = P[6][16] + P[1][16]*SF[4] - P[2][16]*SF[5] + P[3][16]*SF[3] + P[0][16]*SPP[0] + P[13][16]*SPP[4] - P[14][16]*SPP[7] - P[15][16]*SPP[1];
-                nextP[7][16] = P[7][16] + P[4][16]*dt;
-                nextP[8][16] = P[8][16] + P[5][16]*dt;
-                nextP[9][16] = P[9][16] + P[6][16]*dt;
+                nextP[0][16] = -PS11*P[1][16] - PS12*P[2][16] - PS13*P[3][16] + PS6*P[10][16] + PS7*P[11][16] + PS9*P[12][16] + P[0][16];
+                nextP[1][16] = PS11*P[0][16] - PS12*P[3][16] + PS13*P[2][16] - PS34*P[10][16] - PS7*P[12][16] + PS9*P[11][16] + P[1][16];
+                nextP[2][16] = PS11*P[3][16] + PS12*P[0][16] - PS13*P[1][16] - PS34*P[11][16] + PS6*P[12][16] - PS9*P[10][16] + P[2][16];
+                nextP[3][16] = -PS11*P[2][16] + PS12*P[1][16] + PS13*P[0][16] - PS34*P[12][16] - PS6*P[11][16] + PS7*P[10][16] + P[3][16];
+                nextP[4][16] = -PS139*P[15][16] + PS140*P[14][16] - PS44*P[13][16] + PS60*P[2][16] + PS62*P[1][16] + PS72*P[0][16] - PS74*P[3][16] + P[4][16];
+                nextP[5][16] = PS160*P[15][16] - PS162*P[13][16] - PS60*P[1][16] + PS62*P[2][16] - PS65*P[14][16] + PS72*P[3][16] + PS74*P[0][16] + P[5][16];
+                nextP[6][16] = -PS165*P[14][16] + PS166*P[13][16] + PS60*P[0][16] + PS62*P[3][16] - PS70*P[15][16] - PS72*P[2][16] + PS74*P[1][16] + P[6][16];
+                nextP[7][16] = P[4][16]*dt + P[7][16];
+                nextP[8][16] = P[5][16]*dt + P[8][16];
+                nextP[9][16] = P[6][16]*dt + P[9][16];
                 nextP[10][16] = P[10][16];
                 nextP[11][16] = P[11][16];
                 nextP[12][16] = P[12][16];
@@ -1279,16 +1443,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[14][16] = P[14][16];
                 nextP[15][16] = P[15][16];
                 nextP[16][16] = P[16][16];
-                nextP[0][17] = P[0][17] + P[1][17]*SF[9] + P[2][17]*SF[11] + P[3][17]*SF[10] + P[10][17]*SF[14] + P[11][17]*SF[15] + P[12][17]*SPP[10];
-                nextP[1][17] = P[1][17] + P[0][17]*SF[8] + P[2][17]*SF[7] + P[3][17]*SF[11] - P[12][17]*SF[15] + P[11][17]*SPP[10] - (P[10][17]*q0)/2;
-                nextP[2][17] = P[2][17] + P[0][17]*SF[6] + P[1][17]*SF[10] + P[3][17]*SF[8] + P[12][17]*SF[14] - P[10][17]*SPP[10] - (P[11][17]*q0)/2;
-                nextP[3][17] = P[3][17] + P[0][17]*SF[7] + P[1][17]*SF[6] + P[2][17]*SF[9] + P[10][17]*SF[15] - P[11][17]*SF[14] - (P[12][17]*q0)/2;
-                nextP[4][17] = P[4][17] + P[0][17]*SF[5] + P[1][17]*SF[3] - P[3][17]*SF[4] + P[2][17]*SPP[0] + P[13][17]*SPP[3] + P[14][17]*SPP[6] - P[15][17]*SPP[9];
-                nextP[5][17] = P[5][17] + P[0][17]*SF[4] + P[2][17]*SF[3] + P[3][17]*SF[5] - P[1][17]*SPP[0] - P[13][17]*SPP[8] + P[14][17]*SPP[2] + P[15][17]*SPP[5];
-                nextP[6][17] = P[6][17] + P[1][17]*SF[4] - P[2][17]*SF[5] + P[3][17]*SF[3] + P[0][17]*SPP[0] + P[13][17]*SPP[4] - P[14][17]*SPP[7] - P[15][17]*SPP[1];
-                nextP[7][17] = P[7][17] + P[4][17]*dt;
-                nextP[8][17] = P[8][17] + P[5][17]*dt;
-                nextP[9][17] = P[9][17] + P[6][17]*dt;
+                nextP[0][17] = -PS11*P[1][17] - PS12*P[2][17] - PS13*P[3][17] + PS6*P[10][17] + PS7*P[11][17] + PS9*P[12][17] + P[0][17];
+                nextP[1][17] = PS11*P[0][17] - PS12*P[3][17] + PS13*P[2][17] - PS34*P[10][17] - PS7*P[12][17] + PS9*P[11][17] + P[1][17];
+                nextP[2][17] = PS11*P[3][17] + PS12*P[0][17] - PS13*P[1][17] - PS34*P[11][17] + PS6*P[12][17] - PS9*P[10][17] + P[2][17];
+                nextP[3][17] = -PS11*P[2][17] + PS12*P[1][17] + PS13*P[0][17] - PS34*P[12][17] - PS6*P[11][17] + PS7*P[10][17] + P[3][17];
+                nextP[4][17] = -PS139*P[15][17] + PS140*P[14][17] - PS44*P[13][17] + PS60*P[2][17] + PS62*P[1][17] + PS72*P[0][17] - PS74*P[3][17] + P[4][17];
+                nextP[5][17] = PS160*P[15][17] - PS162*P[13][17] - PS60*P[1][17] + PS62*P[2][17] - PS65*P[14][17] + PS72*P[3][17] + PS74*P[0][17] + P[5][17];
+                nextP[6][17] = -PS165*P[14][17] + PS166*P[13][17] + PS60*P[0][17] + PS62*P[3][17] - PS70*P[15][17] - PS72*P[2][17] + PS74*P[1][17] + P[6][17];
+                nextP[7][17] = P[4][17]*dt + P[7][17];
+                nextP[8][17] = P[5][17]*dt + P[8][17];
+                nextP[9][17] = P[6][17]*dt + P[9][17];
                 nextP[10][17] = P[10][17];
                 nextP[11][17] = P[11][17];
                 nextP[12][17] = P[12][17];
@@ -1297,16 +1461,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[15][17] = P[15][17];
                 nextP[16][17] = P[16][17];
                 nextP[17][17] = P[17][17];
-                nextP[0][18] = P[0][18] + P[1][18]*SF[9] + P[2][18]*SF[11] + P[3][18]*SF[10] + P[10][18]*SF[14] + P[11][18]*SF[15] + P[12][18]*SPP[10];
-                nextP[1][18] = P[1][18] + P[0][18]*SF[8] + P[2][18]*SF[7] + P[3][18]*SF[11] - P[12][18]*SF[15] + P[11][18]*SPP[10] - (P[10][18]*q0)/2;
-                nextP[2][18] = P[2][18] + P[0][18]*SF[6] + P[1][18]*SF[10] + P[3][18]*SF[8] + P[12][18]*SF[14] - P[10][18]*SPP[10] - (P[11][18]*q0)/2;
-                nextP[3][18] = P[3][18] + P[0][18]*SF[7] + P[1][18]*SF[6] + P[2][18]*SF[9] + P[10][18]*SF[15] - P[11][18]*SF[14] - (P[12][18]*q0)/2;
-                nextP[4][18] = P[4][18] + P[0][18]*SF[5] + P[1][18]*SF[3] - P[3][18]*SF[4] + P[2][18]*SPP[0] + P[13][18]*SPP[3] + P[14][18]*SPP[6] - P[15][18]*SPP[9];
-                nextP[5][18] = P[5][18] + P[0][18]*SF[4] + P[2][18]*SF[3] + P[3][18]*SF[5] - P[1][18]*SPP[0] - P[13][18]*SPP[8] + P[14][18]*SPP[2] + P[15][18]*SPP[5];
-                nextP[6][18] = P[6][18] + P[1][18]*SF[4] - P[2][18]*SF[5] + P[3][18]*SF[3] + P[0][18]*SPP[0] + P[13][18]*SPP[4] - P[14][18]*SPP[7] - P[15][18]*SPP[1];
-                nextP[7][18] = P[7][18] + P[4][18]*dt;
-                nextP[8][18] = P[8][18] + P[5][18]*dt;
-                nextP[9][18] = P[9][18] + P[6][18]*dt;
+                nextP[0][18] = -PS11*P[1][18] - PS12*P[2][18] - PS13*P[3][18] + PS6*P[10][18] + PS7*P[11][18] + PS9*P[12][18] + P[0][18];
+                nextP[1][18] = PS11*P[0][18] - PS12*P[3][18] + PS13*P[2][18] - PS34*P[10][18] - PS7*P[12][18] + PS9*P[11][18] + P[1][18];
+                nextP[2][18] = PS11*P[3][18] + PS12*P[0][18] - PS13*P[1][18] - PS34*P[11][18] + PS6*P[12][18] - PS9*P[10][18] + P[2][18];
+                nextP[3][18] = -PS11*P[2][18] + PS12*P[1][18] + PS13*P[0][18] - PS34*P[12][18] - PS6*P[11][18] + PS7*P[10][18] + P[3][18];
+                nextP[4][18] = -PS139*P[15][18] + PS140*P[14][18] - PS44*P[13][18] + PS60*P[2][18] + PS62*P[1][18] + PS72*P[0][18] - PS74*P[3][18] + P[4][18];
+                nextP[5][18] = PS160*P[15][18] - PS162*P[13][18] - PS60*P[1][18] + PS62*P[2][18] - PS65*P[14][18] + PS72*P[3][18] + PS74*P[0][18] + P[5][18];
+                nextP[6][18] = -PS165*P[14][18] + PS166*P[13][18] + PS60*P[0][18] + PS62*P[3][18] - PS70*P[15][18] - PS72*P[2][18] + PS74*P[1][18] + P[6][18];
+                nextP[7][18] = P[4][18]*dt + P[7][18];
+                nextP[8][18] = P[5][18]*dt + P[8][18];
+                nextP[9][18] = P[6][18]*dt + P[9][18];
                 nextP[10][18] = P[10][18];
                 nextP[11][18] = P[11][18];
                 nextP[12][18] = P[12][18];
@@ -1316,16 +1480,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[16][18] = P[16][18];
                 nextP[17][18] = P[17][18];
                 nextP[18][18] = P[18][18];
-                nextP[0][19] = P[0][19] + P[1][19]*SF[9] + P[2][19]*SF[11] + P[3][19]*SF[10] + P[10][19]*SF[14] + P[11][19]*SF[15] + P[12][19]*SPP[10];
-                nextP[1][19] = P[1][19] + P[0][19]*SF[8] + P[2][19]*SF[7] + P[3][19]*SF[11] - P[12][19]*SF[15] + P[11][19]*SPP[10] - (P[10][19]*q0)/2;
-                nextP[2][19] = P[2][19] + P[0][19]*SF[6] + P[1][19]*SF[10] + P[3][19]*SF[8] + P[12][19]*SF[14] - P[10][19]*SPP[10] - (P[11][19]*q0)/2;
-                nextP[3][19] = P[3][19] + P[0][19]*SF[7] + P[1][19]*SF[6] + P[2][19]*SF[9] + P[10][19]*SF[15] - P[11][19]*SF[14] - (P[12][19]*q0)/2;
-                nextP[4][19] = P[4][19] + P[0][19]*SF[5] + P[1][19]*SF[3] - P[3][19]*SF[4] + P[2][19]*SPP[0] + P[13][19]*SPP[3] + P[14][19]*SPP[6] - P[15][19]*SPP[9];
-                nextP[5][19] = P[5][19] + P[0][19]*SF[4] + P[2][19]*SF[3] + P[3][19]*SF[5] - P[1][19]*SPP[0] - P[13][19]*SPP[8] + P[14][19]*SPP[2] + P[15][19]*SPP[5];
-                nextP[6][19] = P[6][19] + P[1][19]*SF[4] - P[2][19]*SF[5] + P[3][19]*SF[3] + P[0][19]*SPP[0] + P[13][19]*SPP[4] - P[14][19]*SPP[7] - P[15][19]*SPP[1];
-                nextP[7][19] = P[7][19] + P[4][19]*dt;
-                nextP[8][19] = P[8][19] + P[5][19]*dt;
-                nextP[9][19] = P[9][19] + P[6][19]*dt;
+                nextP[0][19] = -PS11*P[1][19] - PS12*P[2][19] - PS13*P[3][19] + PS6*P[10][19] + PS7*P[11][19] + PS9*P[12][19] + P[0][19];
+                nextP[1][19] = PS11*P[0][19] - PS12*P[3][19] + PS13*P[2][19] - PS34*P[10][19] - PS7*P[12][19] + PS9*P[11][19] + P[1][19];
+                nextP[2][19] = PS11*P[3][19] + PS12*P[0][19] - PS13*P[1][19] - PS34*P[11][19] + PS6*P[12][19] - PS9*P[10][19] + P[2][19];
+                nextP[3][19] = -PS11*P[2][19] + PS12*P[1][19] + PS13*P[0][19] - PS34*P[12][19] - PS6*P[11][19] + PS7*P[10][19] + P[3][19];
+                nextP[4][19] = -PS139*P[15][19] + PS140*P[14][19] - PS44*P[13][19] + PS60*P[2][19] + PS62*P[1][19] + PS72*P[0][19] - PS74*P[3][19] + P[4][19];
+                nextP[5][19] = PS160*P[15][19] - PS162*P[13][19] - PS60*P[1][19] + PS62*P[2][19] - PS65*P[14][19] + PS72*P[3][19] + PS74*P[0][19] + P[5][19];
+                nextP[6][19] = -PS165*P[14][19] + PS166*P[13][19] + PS60*P[0][19] + PS62*P[3][19] - PS70*P[15][19] - PS72*P[2][19] + PS74*P[1][19] + P[6][19];
+                nextP[7][19] = P[4][19]*dt + P[7][19];
+                nextP[8][19] = P[5][19]*dt + P[8][19];
+                nextP[9][19] = P[6][19]*dt + P[9][19];
                 nextP[10][19] = P[10][19];
                 nextP[11][19] = P[11][19];
                 nextP[12][19] = P[12][19];
@@ -1336,16 +1500,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[17][19] = P[17][19];
                 nextP[18][19] = P[18][19];
                 nextP[19][19] = P[19][19];
-                nextP[0][20] = P[0][20] + P[1][20]*SF[9] + P[2][20]*SF[11] + P[3][20]*SF[10] + P[10][20]*SF[14] + P[11][20]*SF[15] + P[12][20]*SPP[10];
-                nextP[1][20] = P[1][20] + P[0][20]*SF[8] + P[2][20]*SF[7] + P[3][20]*SF[11] - P[12][20]*SF[15] + P[11][20]*SPP[10] - (P[10][20]*q0)/2;
-                nextP[2][20] = P[2][20] + P[0][20]*SF[6] + P[1][20]*SF[10] + P[3][20]*SF[8] + P[12][20]*SF[14] - P[10][20]*SPP[10] - (P[11][20]*q0)/2;
-                nextP[3][20] = P[3][20] + P[0][20]*SF[7] + P[1][20]*SF[6] + P[2][20]*SF[9] + P[10][20]*SF[15] - P[11][20]*SF[14] - (P[12][20]*q0)/2;
-                nextP[4][20] = P[4][20] + P[0][20]*SF[5] + P[1][20]*SF[3] - P[3][20]*SF[4] + P[2][20]*SPP[0] + P[13][20]*SPP[3] + P[14][20]*SPP[6] - P[15][20]*SPP[9];
-                nextP[5][20] = P[5][20] + P[0][20]*SF[4] + P[2][20]*SF[3] + P[3][20]*SF[5] - P[1][20]*SPP[0] - P[13][20]*SPP[8] + P[14][20]*SPP[2] + P[15][20]*SPP[5];
-                nextP[6][20] = P[6][20] + P[1][20]*SF[4] - P[2][20]*SF[5] + P[3][20]*SF[3] + P[0][20]*SPP[0] + P[13][20]*SPP[4] - P[14][20]*SPP[7] - P[15][20]*SPP[1];
-                nextP[7][20] = P[7][20] + P[4][20]*dt;
-                nextP[8][20] = P[8][20] + P[5][20]*dt;
-                nextP[9][20] = P[9][20] + P[6][20]*dt;
+                nextP[0][20] = -PS11*P[1][20] - PS12*P[2][20] - PS13*P[3][20] + PS6*P[10][20] + PS7*P[11][20] + PS9*P[12][20] + P[0][20];
+                nextP[1][20] = PS11*P[0][20] - PS12*P[3][20] + PS13*P[2][20] - PS34*P[10][20] - PS7*P[12][20] + PS9*P[11][20] + P[1][20];
+                nextP[2][20] = PS11*P[3][20] + PS12*P[0][20] - PS13*P[1][20] - PS34*P[11][20] + PS6*P[12][20] - PS9*P[10][20] + P[2][20];
+                nextP[3][20] = -PS11*P[2][20] + PS12*P[1][20] + PS13*P[0][20] - PS34*P[12][20] - PS6*P[11][20] + PS7*P[10][20] + P[3][20];
+                nextP[4][20] = -PS139*P[15][20] + PS140*P[14][20] - PS44*P[13][20] + PS60*P[2][20] + PS62*P[1][20] + PS72*P[0][20] - PS74*P[3][20] + P[4][20];
+                nextP[5][20] = PS160*P[15][20] - PS162*P[13][20] - PS60*P[1][20] + PS62*P[2][20] - PS65*P[14][20] + PS72*P[3][20] + PS74*P[0][20] + P[5][20];
+                nextP[6][20] = -PS165*P[14][20] + PS166*P[13][20] + PS60*P[0][20] + PS62*P[3][20] - PS70*P[15][20] - PS72*P[2][20] + PS74*P[1][20] + P[6][20];
+                nextP[7][20] = P[4][20]*dt + P[7][20];
+                nextP[8][20] = P[5][20]*dt + P[8][20];
+                nextP[9][20] = P[6][20]*dt + P[9][20];
                 nextP[10][20] = P[10][20];
                 nextP[11][20] = P[11][20];
                 nextP[12][20] = P[12][20];
@@ -1357,16 +1521,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[18][20] = P[18][20];
                 nextP[19][20] = P[19][20];
                 nextP[20][20] = P[20][20];
-                nextP[0][21] = P[0][21] + P[1][21]*SF[9] + P[2][21]*SF[11] + P[3][21]*SF[10] + P[10][21]*SF[14] + P[11][21]*SF[15] + P[12][21]*SPP[10];
-                nextP[1][21] = P[1][21] + P[0][21]*SF[8] + P[2][21]*SF[7] + P[3][21]*SF[11] - P[12][21]*SF[15] + P[11][21]*SPP[10] - (P[10][21]*q0)/2;
-                nextP[2][21] = P[2][21] + P[0][21]*SF[6] + P[1][21]*SF[10] + P[3][21]*SF[8] + P[12][21]*SF[14] - P[10][21]*SPP[10] - (P[11][21]*q0)/2;
-                nextP[3][21] = P[3][21] + P[0][21]*SF[7] + P[1][21]*SF[6] + P[2][21]*SF[9] + P[10][21]*SF[15] - P[11][21]*SF[14] - (P[12][21]*q0)/2;
-                nextP[4][21] = P[4][21] + P[0][21]*SF[5] + P[1][21]*SF[3] - P[3][21]*SF[4] + P[2][21]*SPP[0] + P[13][21]*SPP[3] + P[14][21]*SPP[6] - P[15][21]*SPP[9];
-                nextP[5][21] = P[5][21] + P[0][21]*SF[4] + P[2][21]*SF[3] + P[3][21]*SF[5] - P[1][21]*SPP[0] - P[13][21]*SPP[8] + P[14][21]*SPP[2] + P[15][21]*SPP[5];
-                nextP[6][21] = P[6][21] + P[1][21]*SF[4] - P[2][21]*SF[5] + P[3][21]*SF[3] + P[0][21]*SPP[0] + P[13][21]*SPP[4] - P[14][21]*SPP[7] - P[15][21]*SPP[1];
-                nextP[7][21] = P[7][21] + P[4][21]*dt;
-                nextP[8][21] = P[8][21] + P[5][21]*dt;
-                nextP[9][21] = P[9][21] + P[6][21]*dt;
+                nextP[0][21] = -PS11*P[1][21] - PS12*P[2][21] - PS13*P[3][21] + PS6*P[10][21] + PS7*P[11][21] + PS9*P[12][21] + P[0][21];
+                nextP[1][21] = PS11*P[0][21] - PS12*P[3][21] + PS13*P[2][21] - PS34*P[10][21] - PS7*P[12][21] + PS9*P[11][21] + P[1][21];
+                nextP[2][21] = PS11*P[3][21] + PS12*P[0][21] - PS13*P[1][21] - PS34*P[11][21] + PS6*P[12][21] - PS9*P[10][21] + P[2][21];
+                nextP[3][21] = -PS11*P[2][21] + PS12*P[1][21] + PS13*P[0][21] - PS34*P[12][21] - PS6*P[11][21] + PS7*P[10][21] + P[3][21];
+                nextP[4][21] = -PS139*P[15][21] + PS140*P[14][21] - PS44*P[13][21] + PS60*P[2][21] + PS62*P[1][21] + PS72*P[0][21] - PS74*P[3][21] + P[4][21];
+                nextP[5][21] = PS160*P[15][21] - PS162*P[13][21] - PS60*P[1][21] + PS62*P[2][21] - PS65*P[14][21] + PS72*P[3][21] + PS74*P[0][21] + P[5][21];
+                nextP[6][21] = -PS165*P[14][21] + PS166*P[13][21] + PS60*P[0][21] + PS62*P[3][21] - PS70*P[15][21] - PS72*P[2][21] + PS74*P[1][21] + P[6][21];
+                nextP[7][21] = P[4][21]*dt + P[7][21];
+                nextP[8][21] = P[5][21]*dt + P[8][21];
+                nextP[9][21] = P[6][21]*dt + P[9][21];
                 nextP[10][21] = P[10][21];
                 nextP[11][21] = P[11][21];
                 nextP[12][21] = P[12][21];
@@ -1381,16 +1545,16 @@ void NavEKF3_core::CovariancePrediction()
                 nextP[21][21] = P[21][21];
 
                 if (stateIndexLim > 21) {
-                    nextP[0][22] = P[0][22] + P[1][22]*SF[9] + P[2][22]*SF[11] + P[3][22]*SF[10] + P[10][22]*SF[14] + P[11][22]*SF[15] + P[12][22]*SPP[10];
-                    nextP[1][22] = P[1][22] + P[0][22]*SF[8] + P[2][22]*SF[7] + P[3][22]*SF[11] - P[12][22]*SF[15] + P[11][22]*SPP[10] - (P[10][22]*q0)/2;
-                    nextP[2][22] = P[2][22] + P[0][22]*SF[6] + P[1][22]*SF[10] + P[3][22]*SF[8] + P[12][22]*SF[14] - P[10][22]*SPP[10] - (P[11][22]*q0)/2;
-                    nextP[3][22] = P[3][22] + P[0][22]*SF[7] + P[1][22]*SF[6] + P[2][22]*SF[9] + P[10][22]*SF[15] - P[11][22]*SF[14] - (P[12][22]*q0)/2;
-                    nextP[4][22] = P[4][22] + P[0][22]*SF[5] + P[1][22]*SF[3] - P[3][22]*SF[4] + P[2][22]*SPP[0] + P[13][22]*SPP[3] + P[14][22]*SPP[6] - P[15][22]*SPP[9];
-                    nextP[5][22] = P[5][22] + P[0][22]*SF[4] + P[2][22]*SF[3] + P[3][22]*SF[5] - P[1][22]*SPP[0] - P[13][22]*SPP[8] + P[14][22]*SPP[2] + P[15][22]*SPP[5];
-                    nextP[6][22] = P[6][22] + P[1][22]*SF[4] - P[2][22]*SF[5] + P[3][22]*SF[3] + P[0][22]*SPP[0] + P[13][22]*SPP[4] - P[14][22]*SPP[7] - P[15][22]*SPP[1];
-                    nextP[7][22] = P[7][22] + P[4][22]*dt;
-                    nextP[8][22] = P[8][22] + P[5][22]*dt;
-                    nextP[9][22] = P[9][22] + P[6][22]*dt;
+                    nextP[0][22] = -PS11*P[1][22] - PS12*P[2][22] - PS13*P[3][22] + PS6*P[10][22] + PS7*P[11][22] + PS9*P[12][22] + P[0][22];
+                    nextP[1][22] = PS11*P[0][22] - PS12*P[3][22] + PS13*P[2][22] - PS34*P[10][22] - PS7*P[12][22] + PS9*P[11][22] + P[1][22];
+                    nextP[2][22] = PS11*P[3][22] + PS12*P[0][22] - PS13*P[1][22] - PS34*P[11][22] + PS6*P[12][22] - PS9*P[10][22] + P[2][22];
+                    nextP[3][22] = -PS11*P[2][22] + PS12*P[1][22] + PS13*P[0][22] - PS34*P[12][22] - PS6*P[11][22] + PS7*P[10][22] + P[3][22];
+                    nextP[4][22] = -PS139*P[15][22] + PS140*P[14][22] - PS44*P[13][22] + PS60*P[2][22] + PS62*P[1][22] + PS72*P[0][22] - PS74*P[3][22] + P[4][22];
+                    nextP[5][22] = PS160*P[15][22] - PS162*P[13][22] - PS60*P[1][22] + PS62*P[2][22] - PS65*P[14][22] + PS72*P[3][22] + PS74*P[0][22] + P[5][22];
+                    nextP[6][22] = -PS165*P[14][22] + PS166*P[13][22] + PS60*P[0][22] + PS62*P[3][22] - PS70*P[15][22] - PS72*P[2][22] + PS74*P[1][22] + P[6][22];
+                    nextP[7][22] = P[4][22]*dt + P[7][22];
+                    nextP[8][22] = P[5][22]*dt + P[8][22];
+                    nextP[9][22] = P[6][22]*dt + P[9][22];
                     nextP[10][22] = P[10][22];
                     nextP[11][22] = P[11][22];
                     nextP[12][22] = P[12][22];
@@ -1404,16 +1568,16 @@ void NavEKF3_core::CovariancePrediction()
                     nextP[20][22] = P[20][22];
                     nextP[21][22] = P[21][22];
                     nextP[22][22] = P[22][22];
-                    nextP[0][23] = P[0][23] + P[1][23]*SF[9] + P[2][23]*SF[11] + P[3][23]*SF[10] + P[10][23]*SF[14] + P[11][23]*SF[15] + P[12][23]*SPP[10];
-                    nextP[1][23] = P[1][23] + P[0][23]*SF[8] + P[2][23]*SF[7] + P[3][23]*SF[11] - P[12][23]*SF[15] + P[11][23]*SPP[10] - (P[10][23]*q0)/2;
-                    nextP[2][23] = P[2][23] + P[0][23]*SF[6] + P[1][23]*SF[10] + P[3][23]*SF[8] + P[12][23]*SF[14] - P[10][23]*SPP[10] - (P[11][23]*q0)/2;
-                    nextP[3][23] = P[3][23] + P[0][23]*SF[7] + P[1][23]*SF[6] + P[2][23]*SF[9] + P[10][23]*SF[15] - P[11][23]*SF[14] - (P[12][23]*q0)/2;
-                    nextP[4][23] = P[4][23] + P[0][23]*SF[5] + P[1][23]*SF[3] - P[3][23]*SF[4] + P[2][23]*SPP[0] + P[13][23]*SPP[3] + P[14][23]*SPP[6] - P[15][23]*SPP[9];
-                    nextP[5][23] = P[5][23] + P[0][23]*SF[4] + P[2][23]*SF[3] + P[3][23]*SF[5] - P[1][23]*SPP[0] - P[13][23]*SPP[8] + P[14][23]*SPP[2] + P[15][23]*SPP[5];
-                    nextP[6][23] = P[6][23] + P[1][23]*SF[4] - P[2][23]*SF[5] + P[3][23]*SF[3] + P[0][23]*SPP[0] + P[13][23]*SPP[4] - P[14][23]*SPP[7] - P[15][23]*SPP[1];
-                    nextP[7][23] = P[7][23] + P[4][23]*dt;
-                    nextP[8][23] = P[8][23] + P[5][23]*dt;
-                    nextP[9][23] = P[9][23] + P[6][23]*dt;
+                    nextP[0][23] = -PS11*P[1][23] - PS12*P[2][23] - PS13*P[3][23] + PS6*P[10][23] + PS7*P[11][23] + PS9*P[12][23] + P[0][23];
+                    nextP[1][23] = PS11*P[0][23] - PS12*P[3][23] + PS13*P[2][23] - PS34*P[10][23] - PS7*P[12][23] + PS9*P[11][23] + P[1][23];
+                    nextP[2][23] = PS11*P[3][23] + PS12*P[0][23] - PS13*P[1][23] - PS34*P[11][23] + PS6*P[12][23] - PS9*P[10][23] + P[2][23];
+                    nextP[3][23] = -PS11*P[2][23] + PS12*P[1][23] + PS13*P[0][23] - PS34*P[12][23] - PS6*P[11][23] + PS7*P[10][23] + P[3][23];
+                    nextP[4][23] = -PS139*P[15][23] + PS140*P[14][23] - PS44*P[13][23] + PS60*P[2][23] + PS62*P[1][23] + PS72*P[0][23] - PS74*P[3][23] + P[4][23];
+                    nextP[5][23] = PS160*P[15][23] - PS162*P[13][23] - PS60*P[1][23] + PS62*P[2][23] - PS65*P[14][23] + PS72*P[3][23] + PS74*P[0][23] + P[5][23];
+                    nextP[6][23] = -PS165*P[14][23] + PS166*P[13][23] + PS60*P[0][23] + PS62*P[3][23] - PS70*P[15][23] - PS72*P[2][23] + PS74*P[1][23] + P[6][23];
+                    nextP[7][23] = P[4][23]*dt + P[7][23];
+                    nextP[8][23] = P[5][23]*dt + P[8][23];
+                    nextP[9][23] = P[6][23]*dt + P[9][23];
                     nextP[10][23] = P[10][23];
                     nextP[11][23] = P[11][23];
                     nextP[12][23] = P[12][23];
@@ -1469,7 +1633,11 @@ void NavEKF3_core::CovariancePrediction()
     // constrain values to prevent ill-conditioning
     ConstrainVariances();
 
-    hal.util->perf_end(_perf_CovariancePrediction);
+    calcTiltErrorVariance();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    verifyTiltErrorVariance();
+#endif
 }
 
 // zero specified range of rows in the state covariance matrix
@@ -1528,13 +1696,6 @@ void NavEKF3_core::StoreQuatRotate(const Quaternion &deltaQuat)
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
-}
-
-// calculate nav to body quaternions from body to nav rotation matrix
-void NavEKF3_core::quat2Tbn(Matrix3f &Tbn, const Quaternion &quat) const
-{
-    // Calculate the body to nav cosine matrix
-    quat.rotation_matrix(Tbn);
 }
 
 // force symmetry on the covariance matrix to prevent ill-conditioning
@@ -1685,20 +1846,29 @@ void NavEKF3_core::setYawFromMag()
     // read the magnetometer data
     readMagData();
 
-    // rotate the magnetic field into NED axes
-    Vector3f euler321;
-    stateStruct.quat.to_euler(euler321.x, euler321.y, euler321.z);
-
-    // set the yaw to zero and calculate the zero yaw rotation from body to earth frame
+    // use best of either 312 or 321 rotation sequence when calculating yaw
+    rotationOrder order;
+    bestRotationOrder(order);
+    Vector3f eulerAngles;
     Matrix3f Tbn_zeroYaw;
-    Tbn_zeroYaw.from_euler(euler321.x, euler321.y, 0.0f);
+    if (order == rotationOrder::TAIT_BRYAN_321) {
+        // rolled more than pitched so use 321 rotation order
+        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        Tbn_zeroYaw.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
+    } else if (order == rotationOrder::TAIT_BRYAN_312) {
+        // pitched more than rolled so use 312 rotation order
+        eulerAngles = stateStruct.quat.to_vector312();
+        Tbn_zeroYaw.from_euler312(eulerAngles.x, eulerAngles.y, 0.0f);
+    } else {
+        // rotation order not supported
+        return;
+    }
 
-    //Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     Vector3f magMeasNED = Tbn_zeroYaw * magDataDelayed.mag;
     float yawAngMeasured = wrap_PI(-atan2f(magMeasNED.y, magMeasNED.x) + MagDeclination());
 
     // update quaternion states and covariances
-    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)));
+    resetQuatStateYawOnly(yawAngMeasured, sq(MAX(frontend->_yawNoise, 1.0e-2f)), order);
 }
 
 // update mag field states and associated variances using magnetomer and declination data
@@ -1727,9 +1897,6 @@ void NavEKF3_core::resetMagFieldStates()
     P[20][20] = P[18][18];
     P[21][21] = P[18][18];
 
-    // prevent reset of variances in ConstrainVariances()
-    inhibitMagStates = false;
-
     // record the fact we have initialised the magnetic field states
     recordMagReset();
 }
@@ -1748,161 +1915,107 @@ void NavEKF3_core::zeroAttCovOnly()
     }
 }
 
-// calculate the variances for the rotation vector equivalent
-Vector3f NavEKF3_core::calcRotVecVariances()
+// calculate the tilt error variance
+void NavEKF3_core::calcTiltErrorVariance()
 {
-    Vector3f rotVarVec;
-    float q0 = stateStruct.quat[0];
-    float q1 = stateStruct.quat[1];
-    float q2 = stateStruct.quat[2];
-    float q3 = stateStruct.quat[3];
-    if (q0 < 0) {
-        q0 = -q0;
-        q1 = -q1;
-        q2 = -q2;
-        q3 = -q3;
-    }
-    float t2 = q0*q0;
-    float t3 = acosf(q0);
-    float t4 = -t2+1.0f;
-    float t5 = t2-1.0f;
-    if ((t4 > 1e-9f) && (t5 < -1e-9f)) {
-        float t6 = 1.0f/t5;
-        float t7 = q1*t6*2.0f;
-        float t8 = 1.0f/powf(t4,1.5f);
-        float t9 = q0*q1*t3*t8*2.0f;
-        float t10 = t7+t9;
-        float t11 = 1.0f/sqrtf(t4);
-        float t12 = q2*t6*2.0f;
-        float t13 = q0*q2*t3*t8*2.0f;
-        float t14 = t12+t13;
-        float t15 = q3*t6*2.0f;
-        float t16 = q0*q3*t3*t8*2.0f;
-        float t17 = t15+t16;
-        rotVarVec.x = t10*(P[0][0]*t10+P[1][0]*t3*t11*2.0f)+t3*t11*(P[0][1]*t10+P[1][1]*t3*t11*2.0f)*2.0f;
-        rotVarVec.y = t14*(P[0][0]*t14+P[2][0]*t3*t11*2.0f)+t3*t11*(P[0][2]*t14+P[2][2]*t3*t11*2.0f)*2.0f;
-        rotVarVec.z = t17*(P[0][0]*t17+P[3][0]*t3*t11*2.0f)+t3*t11*(P[0][3]*t17+P[3][3]*t3*t11*2.0f)*2.0f;
-    } else {
-        rotVarVec.x = 4.0f * P[1][1];
-        rotVarVec.y = 4.0f * P[2][2];
-        rotVarVec.z = 4.0f * P[3][3];
-    }
+    const float &q0 = stateStruct.quat[0];
+    const float &q1 = stateStruct.quat[1];
+    const float &q2 = stateStruct.quat[2];
+    const float &q3 = stateStruct.quat[3];
 
-    return rotVarVec;
+    // equations generated by quaternion_error_propagation(): in AP_NavEKF3/derivation/main.py
+    // only diagonals have been used
+    // dq0 ... dq3  terms have been zeroed
+    const float PS1 = q0*q1 + q2*q3;
+    const float PS2 = q1*PS1;
+    const float PS4 = sq(q0) - sq(q1) - sq(q2) + sq(q3);
+    const float PS5 = q0*PS4;
+    const float PS6 = 2*PS2 + PS5;
+    const float PS8 = PS1*q2;
+    const float PS10 = PS4*q3;
+    const float PS11 = PS10 + 2*PS8;
+    const float PS12 = PS1*q3;
+    const float PS13 = PS4*q2;
+    const float PS14 = -2*PS12 + PS13;
+    const float PS15 = PS1*q0;
+    const float PS16 = q1*PS4;
+    const float PS17 = 2*PS15 - PS16;
+    const float PS18 = q0*q2 - q1*q3;
+    const float PS19 = PS18*q2;
+    const float PS20 = 2*PS19 + PS5;
+    const float PS22 = q1*PS18;
+    const float PS23 = -PS10 + 2*PS22;
+    const float PS25 = PS18*q3;
+    const float PS26 = PS16 + 2*PS25;
+    const float PS28 = PS18*q0;
+    const float PS29 = -PS13 + 2*PS28;
+    const float PS32 = PS12 + PS28;
+    const float PS33 = PS19 + PS2;
+    const float PS34 = PS15 - PS25;
+    const float PS35 = PS22 - PS8;
+
+    tiltErrorVariance  = 4*sq(PS11)*P[2][2] + 4*sq(PS14)*P[3][3] + 4*sq(PS17)*P[0][0] + 4*sq(PS6)*P[1][1];
+    tiltErrorVariance += 4*sq(PS20)*P[2][2] + 4*sq(PS23)*P[1][1] + 4*sq(PS26)*P[3][3] + 4*sq(PS29)*P[0][0];
+    tiltErrorVariance += 16*sq(PS32)*P[1][1] + 16*sq(PS33)*P[3][3] + 16*sq(PS34)*P[2][2] + 16*sq(PS35)*P[0][0];
+
+    tiltErrorVariance = constrain_float(tiltErrorVariance, 0.0f, sq(radians(30.0f)));
 }
 
-// initialise the quaternion covariances using rotation vector variances
-void NavEKF3_core::initialiseQuatCovariances(const Vector3f &rotVarVec)
+void NavEKF3_core::bestRotationOrder(rotationOrder &order)
 {
-    // calculate an equivalent rotation vector from the quaternion
-    float q0 = stateStruct.quat[0];
-    float q1 = stateStruct.quat[1];
-    float q2 = stateStruct.quat[2];
-    float q3 = stateStruct.quat[3];
-    if (q0 < 0) {
-        q0 = -q0;
-        q1 = -q1;
-        q2 = -q2;
-        q3 = -q3;
-    }
-    float delta = 2.0f*acosf(q0);
-    float scaler;
-    if (fabsf(delta) > 1e-6f) {
-        scaler = (delta/sinf(delta*0.5f));
+    if (fabsf(prevTnb[2][0]) < fabsf(prevTnb[2][1])) {
+        // rolled more than pitched so use 321 sequence
+        order = rotationOrder::TAIT_BRYAN_321;
     } else {
-        scaler = 2.0f;
-    }
-    float rotX = scaler*q1;
-    float rotY = scaler*q2;
-    float rotZ = scaler*q3;
-
-    // autocode generated using matlab symbolic toolbox
-    float t2 = rotX*rotX;
-    float t4 = rotY*rotY;
-    float t5 = rotZ*rotZ;
-    float t6 = t2+t4+t5;
-    if (t6 > 1e-9f) {
-        float t7 = sqrtf(t6);
-        float t8 = t7*0.5f;
-        float t3 = sinf(t8);
-        float t9 = t3*t3;
-        float t10 = 1.0f/t6;
-        float t11 = 1.0f/sqrtf(t6);
-        float t12 = cosf(t8);
-        float t13 = 1.0f/powf(t6,1.5f);
-        float t14 = t3*t11;
-        float t15 = rotX*rotY*t3*t13;
-        float t16 = rotX*rotZ*t3*t13;
-        float t17 = rotY*rotZ*t3*t13;
-        float t18 = t2*t10*t12*0.5f;
-        float t27 = t2*t3*t13;
-        float t19 = t14+t18-t27;
-        float t23 = rotX*rotY*t10*t12*0.5f;
-        float t28 = t15-t23;
-        float t20 = rotY*rotVarVec.y*t3*t11*t28*0.5f;
-        float t25 = rotX*rotZ*t10*t12*0.5f;
-        float t31 = t16-t25;
-        float t21 = rotZ*rotVarVec.z*t3*t11*t31*0.5f;
-        float t22 = t20+t21-rotX*rotVarVec.x*t3*t11*t19*0.5f;
-        float t24 = t15-t23;
-        float t26 = t16-t25;
-        float t29 = t4*t10*t12*0.5f;
-        float t34 = t3*t4*t13;
-        float t30 = t14+t29-t34;
-        float t32 = t5*t10*t12*0.5f;
-        float t40 = t3*t5*t13;
-        float t33 = t14+t32-t40;
-        float t36 = rotY*rotZ*t10*t12*0.5f;
-        float t39 = t17-t36;
-        float t35 = rotZ*rotVarVec.z*t3*t11*t39*0.5f;
-        float t37 = t15-t23;
-        float t38 = t17-t36;
-        float t41 = rotVarVec.x*(t15-t23)*(t16-t25);
-        float t42 = t41-rotVarVec.y*t30*t39-rotVarVec.z*t33*t39;
-        float t43 = t16-t25;
-        float t44 = t17-t36;
-
-        // zero all the quaternion covariances
-        zeroRows(P,0,3);
-        zeroCols(P,0,3);
-
-        // Update the quaternion internal covariances using auto-code generated using matlab symbolic toolbox
-        P[0][0] = rotVarVec.x*t2*t9*t10*0.25f+rotVarVec.y*t4*t9*t10*0.25f+rotVarVec.z*t5*t9*t10*0.25f;
-        P[0][1] = t22;
-        P[0][2] = t35+rotX*rotVarVec.x*t3*t11*(t15-rotX*rotY*t10*t12*0.5f)*0.5f-rotY*rotVarVec.y*t3*t11*t30*0.5f;
-        P[0][3] = rotX*rotVarVec.x*t3*t11*(t16-rotX*rotZ*t10*t12*0.5f)*0.5f+rotY*rotVarVec.y*t3*t11*(t17-rotY*rotZ*t10*t12*0.5f)*0.5f-rotZ*rotVarVec.z*t3*t11*t33*0.5f;
-        P[1][0] = t22;
-        P[1][1] = rotVarVec.x*(t19*t19)+rotVarVec.y*(t24*t24)+rotVarVec.z*(t26*t26);
-        P[1][2] = rotVarVec.z*(t16-t25)*(t17-rotY*rotZ*t10*t12*0.5f)-rotVarVec.x*t19*t28-rotVarVec.y*t28*t30;
-        P[1][3] = rotVarVec.y*(t15-t23)*(t17-rotY*rotZ*t10*t12*0.5f)-rotVarVec.x*t19*t31-rotVarVec.z*t31*t33;
-        P[2][0] = t35-rotY*rotVarVec.y*t3*t11*t30*0.5f+rotX*rotVarVec.x*t3*t11*(t15-t23)*0.5f;
-        P[2][1] = rotVarVec.z*(t16-t25)*(t17-t36)-rotVarVec.x*t19*t28-rotVarVec.y*t28*t30;
-        P[2][2] = rotVarVec.y*(t30*t30)+rotVarVec.x*(t37*t37)+rotVarVec.z*(t38*t38);
-        P[2][3] = t42;
-        P[3][0] = rotZ*rotVarVec.z*t3*t11*t33*(-0.5f)+rotX*rotVarVec.x*t3*t11*(t16-t25)*0.5f+rotY*rotVarVec.y*t3*t11*(t17-t36)*0.5f;
-        P[3][1] = rotVarVec.y*(t15-t23)*(t17-t36)-rotVarVec.x*t19*t31-rotVarVec.z*t31*t33;
-        P[3][2] = t42;
-        P[3][3] = rotVarVec.z*(t33*t33)+rotVarVec.x*(t43*t43)+rotVarVec.y*(t44*t44);
-
-    } else {
-        // the equations are badly conditioned so use a small angle approximation
-        P[0][0] = 0.0f;
-        P[0][1] = 0.0f;
-        P[0][2] = 0.0f;
-        P[0][3] = 0.0f;
-        P[1][0] = 0.0f;
-        P[1][1] = 0.25f*rotVarVec.x;
-        P[1][2] = 0.0f;
-        P[1][3] = 0.0f;
-        P[2][0] = 0.0f;
-        P[2][1] = 0.0f;
-        P[2][2] = 0.25f*rotVarVec.y;
-        P[2][3] = 0.0f;
-        P[3][0] = 0.0f;
-        P[3][1] = 0.0f;
-        P[3][2] = 0.0f;
-        P[3][3] = 0.25f*rotVarVec.z;
-
+        // pitched more than rolled so use 312 sequence
+        order = rotationOrder::TAIT_BRYAN_312;
     }
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// calculate the tilt error variance using an alternative numerical difference technique
+// and log with value generated by NavEKF3_core::calcTiltErrorVariance()
+void NavEKF3_core::verifyTiltErrorVariance()
+{
+    const Vector3f gravity_ef = Vector3f(0.0f,0.0f,1.0f);
+    Matrix3f Tnb;
+    const float quat_delta = 0.001f;
+    float tiltErrorVarianceAlt = 0.0f;
+    for (uint8_t index = 0; index<4; index++) {
+        Quaternion quat = stateStruct.quat;
+
+        // Add a positive increment to the quaternion element and calculate the tilt error vector
+        quat[index] = stateStruct.quat[index] + quat_delta;
+        quat.inverse().rotation_matrix(Tnb);
+        const Vector3f gravity_bf_plus = Tnb * gravity_ef;
+
+        // Add a negative increment to the quaternion element and calculate the tilt error vector
+        quat[index] = stateStruct.quat[index] - quat_delta;
+        quat.inverse().rotation_matrix(Tnb);
+        const Vector3f gravity_bf_minus = Tnb * gravity_ef;
+
+        // calculate the angular difference between the two vectors using a small angle assumption
+        const Vector3f tilt_diff_vec = gravity_bf_minus % gravity_bf_plus;
+
+        // calculate the partial derivative of angle error wrt the quaternion element
+        const float tilt_error_derivative = tilt_diff_vec.length() / (2.0f * quat_delta);
+
+        // sum the contribution of the quaternion elemnent variance to the tilt angle error variance
+        tiltErrorVarianceAlt += P[index][index] * sq(tilt_error_derivative);
+    }
+
+    tiltErrorVarianceAlt = MIN(tiltErrorVarianceAlt, sq(radians(30.0f)));
+    static uint32_t lastLogTime_ms = 0;
+    if (imuSampleTime_ms - lastLogTime_ms > 500) {
+        lastLogTime_ms = imuSampleTime_ms;
+        const struct log_XKTV msg {
+            LOG_PACKET_HEADER_INIT(LOG_XKTV_MSG),
+            time_us      : dal.micros64(),
+            core         : core_index,
+            tvs          : tiltErrorVariance,
+            tvd          : tiltErrorVarianceAlt,
+        };
+        AP::logger().WriteBlock(&msg, sizeof(msg));
+    }
+}
+#endif

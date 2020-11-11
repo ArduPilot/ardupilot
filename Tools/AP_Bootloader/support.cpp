@@ -9,6 +9,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#include <AP_Math/AP_Math.h>
 #include "support.h"
 #include "mcu_f1.h"
 #include "mcu_f3.h"
@@ -71,7 +72,7 @@ void cout(uint8_t *data, uint32_t len)
 
 static uint32_t flash_base_page;
 static uint8_t num_pages;
-static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + FLASH_BOOTLOADER_LOAD_KB*1024U);
+static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
 
 /*
   initialise flash_base_page and num_pages
@@ -81,9 +82,9 @@ void flash_init(void)
     uint32_t reserved = 0;
     num_pages = stm32_flash_getnumpages();
     /*
-      advance flash_base_page to account for FLASH_BOOTLOADER_LOAD_KB
+      advance flash_base_page to account for (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)
      */
-    while (reserved < FLASH_BOOTLOADER_LOAD_KB * 1024U &&
+    while (reserved < (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB) * 1024U &&
            flash_base_page < num_pages) {
         reserved += stm32_flash_getpagesize(flash_base_page);
         flash_base_page++;
@@ -104,7 +105,7 @@ void flash_set_keep_unlocked(bool set)
 }
 
 /*
-  read a word at offset relative to FLASH_BOOTLOADER_LOAD_KB
+  read a word at offset relative to flash base
  */
 uint32_t flash_func_read_word(uint32_t offset)
 {
@@ -159,6 +160,62 @@ uint32_t flash_func_read_otp(uint32_t idx)
 uint32_t flash_func_read_sn(uint32_t idx)
 {
     return *(uint32_t *)(UDID_START + idx);
+}
+
+/*
+  we use a write buffer for flashing, both for efficiency and to
+  ensure that we only ever do 32 byte aligned writes on STM32H7. If
+  you attempt to do writes on a H7 of less than 32 bytes or not
+  aligned then the flash can end up in a CRC error state, which can
+  generate a hardware fault (a double ECC error) on flash read, even
+  after a power cycle
+ */
+static struct {
+    uint32_t buffer[8];
+    uint32_t address;
+    uint8_t n;
+} fbuf;
+
+/*
+  flush the write buffer
+ */
+bool flash_write_flush(void)
+{
+    if (fbuf.n == 0) {
+        return true;
+    }
+    fbuf.n = 0;
+    return flash_func_write_words(fbuf.address, fbuf.buffer, ARRAY_SIZE(fbuf.buffer));
+}
+
+/*
+  write to flash with buffering to 32 bytes alignment
+ */
+bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords)
+{
+    if (fbuf.n > 0 && address != fbuf.address + fbuf.n*4) {
+        if (!flash_write_flush()) {
+            return false;
+        }
+    }
+    while (nwords > 0) {
+        if (fbuf.n == 0) {
+            fbuf.address = address;
+            memset(fbuf.buffer, 0xff, sizeof(fbuf.buffer));
+        }
+        uint8_t n = MIN(ARRAY_SIZE(fbuf.buffer)-fbuf.n, nwords);
+        memcpy(&fbuf.buffer[fbuf.n], v, n*4);
+        address += n*4;
+        v += n;
+        nwords -= n;
+        fbuf.n += n;
+        if (fbuf.n == ARRAY_SIZE(fbuf.buffer)) {
+            if (!flash_write_flush()) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 uint32_t get_mcu_id(void)

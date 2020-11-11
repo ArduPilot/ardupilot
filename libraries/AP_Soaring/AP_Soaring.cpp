@@ -4,6 +4,7 @@
 #include <stdint.h>
 extern const AP_HAL::HAL& hal;
 
+#if HAL_SOARING_ENABLED
 
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
@@ -470,3 +471,5 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
         return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
     }
 }
+
+#endif // HAL_SOARING_ENABLED

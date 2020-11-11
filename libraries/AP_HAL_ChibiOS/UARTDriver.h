@@ -68,6 +68,7 @@ public:
 
     struct SerialDef {
         BaseSequentialStream* serial;
+        uint8_t instance;
         bool is_usb;
 #ifndef HAL_UART_NODMA
         bool dma_rx;
@@ -127,6 +128,12 @@ private:
     bool rx_dma_enabled;
     bool tx_dma_enabled;
 
+    /*
+      copy of rx_line and tx_line with alternative configs resolved
+     */
+    ioline_t atx_line;
+    ioline_t arx_line;
+    
     // thread used for all UARTs
     static thread_t *uart_thread_ctx;
 
@@ -141,7 +148,7 @@ private:
     uint32_t lock_read_key;
 
     uint32_t _baudrate;
-    uint16_t tx_len;
+    volatile uint16_t tx_len;
 #if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
 #endif
@@ -157,7 +164,7 @@ private:
     // we use in-task ring buffers to reduce the system call cost
     // of ::read() and ::write() in the main loop
 #ifndef HAL_UART_NODMA
-    bool tx_bounce_buf_ready;
+    volatile bool tx_bounce_buf_ready;
     volatile uint8_t rx_bounce_idx;
     uint8_t *rx_bounce_buf[2];
     uint8_t *tx_bounce_buf;

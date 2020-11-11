@@ -307,7 +307,7 @@ void AP_Baro::calibrate(bool save)
     if (num_calibrated) {
         return;
     }
-    AP_BoardConfig::config_error("AP_Baro: all sensors uncalibrated");
+    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
 }
 
 /*
@@ -866,7 +866,7 @@ void AP_Baro::update(void)
 
     // logging
 #ifndef HAL_NO_LOGGING
-    if (should_log() && !AP::ahrs().have_ekf_logging()) {
+    if (should_log()) {
         AP::logger().Write_Baro();
     }
 #endif

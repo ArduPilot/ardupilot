@@ -16,7 +16,11 @@ AP_Logger *AP_Logger::_singleton;
 extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_FILE_BUFSIZE
-#if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+#if HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+#define HAL_LOGGING_FILE_BUFSIZE  200
+#elif HAL_MEM_CLASS >= HAL_MEM_CLASS_500
+#define HAL_LOGGING_FILE_BUFSIZE  80
+#elif HAL_MEM_CLASS >= HAL_MEM_CLASS_300
 #define HAL_LOGGING_FILE_BUFSIZE  50
 #else
 #define HAL_LOGGING_FILE_BUFSIZE  16
@@ -120,6 +124,9 @@ AP_Logger::AP_Logger(const AP_Int32 &log_bitmask)
 
 void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 {
+    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
+    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
+
     if (hal.util->was_watchdog_armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
@@ -361,7 +368,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 #define CHECK_ENTRY(fieldname,fieldname_s,fieldlen)                     \
     do {                                                                \
         if (strnlen(logstructure->fieldname, fieldlen) > fieldlen-1) {  \
-            Debug("  Message " fieldname_s " not NULL-terminated or too long"); \
+            Debug("  Message %s." fieldname_s " not NULL-terminated or too long", logstructure->name); \
             passed = false;                                             \
         }                                                               \
     } while (false)
@@ -383,8 +390,8 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     uint8_t fieldcount = strlen(logstructure->format);
     uint8_t labelcount = count_commas(logstructure->labels)+1;
     if (fieldcount != labelcount) {
-        Debug("  fieldcount=%u does not match labelcount=%u",
-              fieldcount, labelcount);
+        Debug("  %s fieldcount=%u does not match labelcount=%u",
+              logstructure->name, fieldcount, labelcount);
         passed = false;
     }
 
@@ -401,15 +408,15 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
 
     // ensure we have units for each field:
     if (strlen(logstructure->units) != fieldcount) {
-        Debug("  fieldcount=%u does not match unitcount=%u",
-              (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
+        Debug("  %s fieldcount=%u does not match unitcount=%u",
+              logstructure->name, (unsigned)fieldcount, (unsigned)strlen(logstructure->units));
         passed = false;
     }
 
     // ensure we have multipliers for each field
     if (strlen(logstructure->multipliers) != fieldcount) {
-        Debug("  fieldcount=%u does not match multipliercount=%u",
-              (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
+        Debug("  %s fieldcount=%u does not match multipliercount=%u",
+              logstructure->name, (unsigned)fieldcount, (unsigned)strlen(logstructure->multipliers));
         passed = false;
     }
 
@@ -651,6 +658,25 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
+// write a replay block. This differs from other as it returns false if a backend doesn't
+// have space for the msg
+bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) {
+    bool ret = true;
+    if (log_replay()) {
+        uint8_t buf[3+size];
+        buf[0] = HEAD_BYTE1;
+        buf[1] = HEAD_BYTE2;
+        buf[2] = msg_id;
+        memcpy(&buf[3], pBuffer, size);
+        for (uint8_t i=0; i<_next_backend; i++) {
+            if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
+                ret = false;
+            }
+        }
+    }
+    return ret;
+}
+
 void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
@@ -727,7 +753,7 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        FOR_EACH_BACKEND(remote_log_block_status_msg(link.get_chan(), msg));
+        FOR_EACH_BACKEND(remote_log_block_status_msg(link, msg));
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         FALLTHROUGH;
@@ -855,6 +881,8 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
 
 void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
 {
+    // WriteV is not safe in replay as we can re-use IDs
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt);
     if (f == nullptr) {
         // unable to map name to a messagetype; could be out of
@@ -875,8 +903,28 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         backends[i]->Write(f->msg_type, arg_copy, is_critical);
         va_end(arg_copy);
     }
+#endif
 }
 
+/*
+  when we are doing replay logging we want to delay start of the EKF
+  until after the headers are out so that on replay all parameter
+  values are available
+ */
+bool AP_Logger::allow_start_ekf() const
+{
+    if (!log_replay() || !log_while_disarmed()) {
+        return true;
+    }
+
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!backends[i]->allow_start_ekf()) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 void AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,

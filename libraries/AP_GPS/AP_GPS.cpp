@@ -101,8 +101,8 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: AUTO_SWITCH
     // @DisplayName: Automatic Switchover Setting
-    // @Description: Automatic switchover to GPS reporting best lock
-    // @Values: 0:Disabled,1:UseBest,2:Blend,3:UseSecond
+    // @Description: Automatic switchover to GPS reporting best lock, 1:UseBest selects the GPS with highest status, if both are equal the GPS with highest satellite count is used 4:Use primary if 3D fix or better, will revert over 'UseBest' behaviour if 3D fix is lost on primary
+    // @Values: 0:Use primary, 1:UseBest, 2:Blend, 4:Use primary if 3D fix or better
     // @User: Advanced
     AP_GROUPINFO("AUTO_SWITCH", 3, AP_GPS, _auto_switch, (int8_t)GPSAutoSwitch::USE_BEST),
 #endif
@@ -293,11 +293,11 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("BLEND_TC", 21, AP_GPS, _blend_tc, 10.0f),
 #endif
 
-#if GPS_UBLOX_MOVING_BASELINE
+#if GPS_MOVING_BASELINE
     // @Param: DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF
     // @User: Advanced
     AP_GROUPINFO("DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
@@ -320,6 +320,30 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], 1),
+#endif
+
+#if GPS_MOVING_BASELINE
+
+    // @Group: MB1_
+    // @Path: MovingBase.cpp
+    AP_SUBGROUPINFO(mb_params[0], "MB1_", 25, AP_GPS, MovingBase),
+
+#if GPS_MAX_RECEIVERS > 1
+    // @Group: MB2_
+    // @Path: MovingBase.cpp
+    AP_SUBGROUPINFO(mb_params[1], "MB2_", 26, AP_GPS, MovingBase),
+#endif // GPS_MAX_RECEIVERS > 1
+
+#endif // GPS_MOVING_BASELINE
+
+#if GPS_MAX_RECEIVERS > 1
+    // @Param: PRIMARY
+    // @DisplayName: Primary GPS
+    // @Description: This GPS will be used when GPS_AUTO_SWITCH is 0 and used preferentially with GPS_AUTO_SWITCH = 4.
+    // @Increment: 1
+    // @Values: 0:FirstGPS, 1:SecondGPS
+    // @User: Advanced
+    AP_GROUPINFO("PRIMARY", 27, AP_GPS, _primary, 0),
 #endif
 
     AP_GROUPEND
@@ -358,7 +382,11 @@ bool AP_GPS::needs_uart(GPS_Type type) const
 /// Startup initialisation.
 void AP_GPS::init(const AP_SerialManager& serial_manager)
 {
-    primary_instance = 0;
+    // Set new primary param based on old auto_switch use second option
+    if ((_auto_switch.get() == 3) && !_primary.configured()) {
+        _primary.set_and_save(1);
+        _auto_switch.set_and_save(0);
+    }
 
     // search for serial ports with gps protocol
     uint8_t uart_idx = 0;
@@ -665,9 +693,6 @@ found_gps:
         timing[instance].last_message_time_ms = now;
         timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
         new_gps->broadcast_gps_type();
-        if (instance == 1) {
-            has_had_second_instance = true;
-        }
     }
 }
 
@@ -817,8 +842,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
     
 #ifndef HAL_BUILD_AP_PERIPH
-    if (data_should_be_logged &&
-        (should_log() || AP::ahrs().have_ekf_logging())) {
+    if (data_should_be_logged && should_log()) {
         AP::logger().Write_GPS(instance);
     }
 
@@ -892,15 +916,19 @@ void AP_GPS::update_primary(void)
         return;
     }
 
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::NONE) {
-        // AUTO_SWITCH is 0 so no switching of GPSs, always use first instance
-        primary_instance = 0;
-        return;
+    // check the primary param is set to possible GPS
+    int8_t primary_param = _primary.get();
+    if ((primary_param < 0) || (primary_param>=GPS_MAX_RECEIVERS)) {
+        primary_param = 0;
+    }
+    // if primary is not enabled try first instance
+    if (get_type(primary_param) == GPS_TYPE_NONE) {
+        primary_param = 0;
     }
 
-    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_SECOND) {
-        // always select the second GPS instance
-        primary_instance = 1;
+    if ((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::NONE) {
+        // No switching of GPSs, always use the primary instance
+        primary_instance = primary_param;
         return;
     }
 
@@ -955,6 +983,17 @@ void AP_GPS::update_primary(void)
                 primary_instance = i;
                 _last_instance_swap_ms = now;
             }
+        }
+        return;
+    }
+
+
+    // Use primary if 3D fix or better
+    if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
+        // Primary GPS has a least a 3D fix, switch to it if necessary
+        if (primary_instance != primary_param) {
+            primary_instance = primary_param;
+            _last_instance_swap_ms = now;
         }
         return;
     }
@@ -1186,8 +1225,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 #if GPS_MAX_RECEIVERS > 1
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
-    // always send the message once we've ever seen the GPS
-    if (!has_had_second_instance) {
+    // always send the message if 2nd GPS is configured
+    if (_type[1] == GPS_TYPE_NONE) {
         return;
     }
 
@@ -1285,16 +1324,17 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         }
     }
 
-    uint8_t fragment = (flags >> 1U) & 0x03;
-    uint8_t sequence = (flags >> 3U) & 0x1F;
+    const uint8_t fragment = (flags >> 1U) & 0x03;
+    const uint8_t sequence = (flags >> 3U) & 0x1F;
 
     // see if this fragment is consistent with existing fragments
     if (rtcm_buffer->fragments_received &&
         (rtcm_buffer->sequence != sequence ||
-        (rtcm_buffer->fragments_received & (1U<<fragment)))) {
+         (rtcm_buffer->fragments_received & (1U<<fragment)))) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
-        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+        rtcm_buffer->fragment_count = 0;
+        rtcm_buffer->fragments_received = 0;
     }
 
     // add this fragment
@@ -1323,7 +1363,8 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
-        memset(rtcm_buffer, 0, sizeof(*rtcm_buffer));
+        rtcm_buffer->fragment_count = 0;
+        rtcm_buffer->fragments_received = 0;
     }
 }
 
@@ -1766,6 +1807,10 @@ void AP_GPS::calc_blended_state(void)
 bool AP_GPS::is_healthy(uint8_t instance) const
 {
     if (instance >= GPS_MAX_INSTANCES) {
+        return false;
+    }
+
+    if (get_type(_primary.get()) == GPS_TYPE_NONE) {
         return false;
     }
 

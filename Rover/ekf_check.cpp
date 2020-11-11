@@ -94,8 +94,7 @@ bool Rover::ekf_over_threshold()
     // use EKF to get variance
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    Vector2f offset;
-    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
+    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
 
     // return true if two of compass, velocity and position variances are over the threshold
     uint8_t over_thresh_count = 0;
@@ -153,7 +152,6 @@ void Rover::failsafe_ekf_event()
     failsafe.ekf = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV,
                              LogErrorCode::FAILSAFE_OCCURRED);
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe!");
 
     // does this mode require position?
     if (!control_mode->requires_position()) {
@@ -164,12 +162,16 @@ void Rover::failsafe_ekf_event()
     switch ((enum fs_ekf_action)g.fs_ekf_action.get()) {
         case FS_EKF_DISABLE:
             // do nothing
+            return;
+        case FS_EKF_REPORT_ONLY:
             break;
-        case FS_EFK_HOLD:
+        case FS_EKF_HOLD:
         default:
             set_mode(mode_hold, ModeReason::EKF_FAILSAFE);
             break;
     }
+
+    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe");
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared

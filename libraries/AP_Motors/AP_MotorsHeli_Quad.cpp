@@ -48,7 +48,7 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 // init_outputs
 bool AP_MotorsHeli_Quad::init_outputs()
 {
-    if (_flags.initialised_ok) {
+    if (initialised_ok()) {
         return true;
     }
 
@@ -67,7 +67,7 @@ bool AP_MotorsHeli_Quad::init_outputs()
         _main_rotor.set_ext_gov_arot_bail(0);
     }
 
-    _flags.initialised_ok = true;
+    set_initialised_ok(true);
 
     return true;
 }
@@ -123,7 +123,7 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _heliflags.save_rsc_mode = true;
     }
     // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_heliflags.save_rsc_mode && !_flags.armed) {
+    if (_heliflags.save_rsc_mode && !armed()) {
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
@@ -305,7 +305,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
 
 void AP_MotorsHeli_Quad::output_to_motors()
 {
-    if (!_flags.initialised_ok) {
+    if (!initialised_ok()) {
         return;
     }
 

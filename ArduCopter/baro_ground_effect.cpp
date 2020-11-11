@@ -23,7 +23,7 @@ void Copter::update_ground_effect_detector(void)
         xy_des_speed_cms = vel_target.length();
     }
 
-    if (position_ok() || optflow_position_ok()) {
+    if (position_ok() || ekf_has_relative_position()) {
         Vector3f vel = inertial_nav.get_velocity();
         vel.z = 0.0f;
         xy_speed_cms = vel.length();
@@ -52,7 +52,7 @@ void Copter::update_ground_effect_detector(void)
     // landing logic
     Vector3f angle_target_rad = attitude_control->get_att_target_euler_cd() * radians(0.01f);
     bool small_angle_request = cosf(angle_target_rad.x)*cosf(angle_target_rad.y) > cosf(radians(7.5f));
-    bool xy_speed_low = (position_ok() || optflow_position_ok()) && xy_speed_cms <= 125.0f;
+    bool xy_speed_low = (position_ok() || ekf_has_relative_position()) && xy_speed_cms <= 125.0f;
     bool xy_speed_demand_low = pos_control->is_active_xy() && xy_des_speed_cms <= 125.0f;
     bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_xy()) || (control_mode == Mode::Number::ALT_HOLD && small_angle_request);
 
@@ -74,7 +74,7 @@ void Copter::update_ground_effect_detector(void)
 void Copter::update_ekf_terrain_height_stable()
 {
     // set to false if no position estimate
-    if (!position_ok() && !optflow_position_ok()) {
+    if (!position_ok() && !ekf_has_relative_position()) {
         ahrs.set_terrain_hgt_stable(false);
     }
 

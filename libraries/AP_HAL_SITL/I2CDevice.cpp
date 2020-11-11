@@ -17,6 +17,8 @@
 #include "I2CDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+
 #include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -29,6 +31,9 @@ using namespace HALSITL;
 class I2CBus {
     friend class I2CDeviceManager;
 public:
+
+    I2CBus() { bus = i2c_buscount++; }
+
     uint8_t bus;
     Semaphore sem;
     int ioctl(uint8_t ioctl_number, void *data) {
@@ -46,7 +51,12 @@ private:
         uint32_t period_usec;
         uint64_t next_usec;
     } *callbacks;
+
+    static uint8_t i2c_buscount;
+
 };
+
+uint8_t I2CBus::i2c_buscount;
 
 int I2CBus::_ioctl(uint8_t ioctl_number, void *data)
 {
@@ -76,6 +86,7 @@ void I2CBus::_timer_tick()
     const uint64_t now = AP_HAL::micros64();
     for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
         if (ci->next_usec >= now) {
+            WITH_SEMAPHORE(sem);
             ci->cb();
             ci->next_usec += ci->period_usec;
         }
@@ -86,7 +97,7 @@ void I2CBus::_timer_tick()
  * I2CDeviceManager
  */
 
-I2CBus I2CDeviceManager::buses[NUM_SITL_I2C_BUSES];
+I2CBus I2CDeviceManager::buses[NUM_SITL_I2C_BUSES] {};
 
 I2CDeviceManager::I2CDeviceManager()
 {
@@ -108,7 +119,7 @@ I2CDeviceManager::get_device(uint8_t bus,
 
 void I2CDeviceManager::_timer_tick()
 {
-    for (auto bus : buses) {
+    for (auto &bus : buses) {
         bus._timer_tick();
     }
 }
@@ -132,7 +143,8 @@ I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
 bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
-//    kill(0, SIGTRAP);
+    _bus.sem.check_owner();
+
     // combined transfer
     if (!_transfer(send, send_len, recv, recv_len)) {
         return false;
@@ -202,3 +214,4 @@ bool I2CDevice::adjust_periodic_callback(Device::PeriodicHandle h, uint32_t peri
     return false;
 }
 
+#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)

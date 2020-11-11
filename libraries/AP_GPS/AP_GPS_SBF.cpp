@@ -63,6 +63,9 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     // if we ever parse RTK observations it will always be of type NED, so set it once
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
+    if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+        state.gps_yaw_configured = true;
+    }
 }
 
 AP_GPS_SBF::~AP_GPS_SBF (void) {
@@ -420,6 +423,7 @@ AP_GPS_SBF::process_message(void)
 
         // just breakout any consts we need for Do Not Use (DNU) reasons
         constexpr double doubleDNU = -2e-10;
+        constexpr uint16_t uint16DNU = 65535;
 
         check_new_itow(temp.TOW, sbf_msg.length);
 
@@ -436,10 +440,30 @@ AP_GPS_SBF::process_message(void)
 
         state.rtk_age_ms = (temp.info.CorrAge != 65535) ? ((uint32_t)temp.info.CorrAge) * 10 : 0;
 
-        // copy the position as long as the data isn't DNU
-        state.rtk_baseline_y_mm = (temp.info.DeltaEast != doubleDNU) ?  temp.info.DeltaEast * 1e3 : 0;
-        state.rtk_baseline_x_mm = (temp.info.DeltaNorth != doubleDNU) ? temp.info.DeltaNorth * 1e3 : 0;
-        state.rtk_baseline_z_mm = (temp.info.DeltaUp != doubleDNU) ? temp.info.DeltaUp * -1e3 : 0;
+        // copy the position as long as the data isn't DNU, we require NED, and heading before accepting any of it
+        if ((temp.info.DeltaEast != doubleDNU) && (temp.info.DeltaNorth != doubleDNU) && (temp.info.DeltaUp != doubleDNU) &&
+            (temp.info.Azimuth != uint16DNU)) {
+
+            state.rtk_baseline_y_mm = temp.info.DeltaEast * 1e3;
+            state.rtk_baseline_x_mm = temp.info.DeltaNorth * 1e3;
+            state.rtk_baseline_z_mm = temp.info.DeltaUp * -1e3;
+
+#if GPS_MOVING_BASELINE
+            // copy the baseline data as a yaw source
+            if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+                calculate_moving_base_yaw(temp.info.Azimuth * 0.01f + 180.0f,
+                                          Vector3f(temp.info.DeltaNorth, temp.info.DeltaEast, temp.info.DeltaUp).length(),
+                                          -temp.info.DeltaUp);
+            }
+#endif // GPS_MOVING_BASELINE
+
+        } else {
+            state.rtk_baseline_y_mm = 0;
+            state.rtk_baseline_x_mm = 0;
+            state.rtk_baseline_z_mm = 0;
+            state.have_gps_yaw = false;
+        }
+
 #pragma GCC diagnostic pop
         break;
     }

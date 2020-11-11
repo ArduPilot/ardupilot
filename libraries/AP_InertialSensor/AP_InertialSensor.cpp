@@ -62,8 +62,6 @@ extern const AP_HAL::HAL& hal;
 #define MPU_FIFO_FASTSAMPLE_DEFAULT 0
 #endif
 
-#define SAMPLE_UNIT 1
-
 #define GYRO_INIT_MAX_DIFF_DPS 0.1f
 
 // Class level parameters
@@ -127,7 +125,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
+#endif
 
     // @Param: GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
@@ -149,7 +150,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+#endif
 
     // @Param: ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
@@ -218,7 +222,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2SCAL",    14, AP_InertialSensor, _accel_scale[1],   0),
+#endif
 
     // @Param: ACC2OFFS_X
     // @DisplayName: Accelerometer2 offsets of X axis
@@ -243,7 +250,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
+#endif
 
     // @Param: ACC3SCAL_X
     // @DisplayName: Accelerometer3 scaling of X axis
@@ -265,7 +275,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3SCAL",    16, AP_InertialSensor, _accel_scale[2],   0),
+#endif
 
     // @Param: ACC3OFFS_X
     // @DisplayName: Accelerometer3 offsets of X axis
@@ -290,7 +303,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
+#endif
 
     // @Param: GYRO_FILTER
     // @DisplayName: Gyro filter cutoff frequency
@@ -320,14 +336,20 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Use second IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
+#endif
 
     // @Param: USE3
     // @DisplayName: Use third IMU for attitude, velocity and position estimates
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  1),
+#endif
 
     // @Param: STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
@@ -405,7 +427,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos[1], 0.0f),
+#endif
 
     // @Param: POS3_X
     // @DisplayName: IMU accelerometer X position
@@ -429,7 +454,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos[2], 0.0f),
+#endif
 
     // @Param: GYR_ID
     // @DisplayName: Gyro ID
@@ -443,14 +471,20 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Gyro2 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2_ID", 31, AP_InertialSensor, _gyro_id[1], 0),
+#endif
 
     // @Param: GYR3_ID
     // @DisplayName: Gyro3 ID
     // @Description: Gyro3 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_ID", 32, AP_InertialSensor, _gyro_id[2], 0),
+#endif
 
     // @Param: ACC_ID
     // @DisplayName: Accelerometer ID
@@ -464,14 +498,20 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Accelerometer2 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_ID", 34, AP_InertialSensor, _accel_id[1], 0),
+#endif
 
     // @Param: ACC3_ID
     // @DisplayName: Accelerometer3 ID
     // @Description: Accelerometer3 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
+
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_ID", 35, AP_InertialSensor, _accel_id[2], 0),
+#endif
 
     // @Param: FAST_SAMPLE
     // @DisplayName: Fast sampling mask

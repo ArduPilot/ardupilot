@@ -71,6 +71,7 @@ public:
         Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
         Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
+        Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
         Notify_LED_MAX
     };
 

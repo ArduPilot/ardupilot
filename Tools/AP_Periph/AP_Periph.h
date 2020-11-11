@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS.h>
@@ -15,8 +17,11 @@
 #endif
 
 #include "Parameters.h"
-#include "ch.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+void stm32_watchdog_init();
+void stm32_watchdog_pat();
+#endif
 /*
   app descriptor compatible with MissionPlanner
  */

@@ -49,12 +49,11 @@
 class AP_AHRS_NavEKF : public AP_AHRS_DCM {
 public:
     enum Flags {
-        FLAG_NONE = 0,
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
     // Constructor
-    AP_AHRS_NavEKF(uint8_t flags = FLAG_NONE);
+    AP_AHRS_NavEKF(uint8_t flags = 0);
 
     // initialise
     void init(void) override;
@@ -200,7 +199,8 @@ public:
     // is the AHRS subsystem healthy?
     bool healthy() const override;
 
-    bool prearm_healthy() const override;
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
@@ -211,9 +211,6 @@ public:
     // get compass offset estimates
     // true if offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
-
-    // report any reason for why the backend is refusing to initialise
-    const char *prearm_failure_reason(void) const override;
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const override;
@@ -267,7 +264,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // returns the expected NED magnetic field
     bool get_mag_field_NED(Vector3f& ret) const;
@@ -279,12 +276,6 @@ public:
     void setTouchdownExpected(bool val);
 
     bool getGpsGlitchStatus() const;
-
-    // used by Replay to force start at right timestamp
-    void force_ekf_start(void) { _force_ekf = true; }
-
-    // is the EKF backend doing its own sensor logging?
-    bool have_ekf_logging(void) const override;
 
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
@@ -351,8 +342,7 @@ private:
     bool _ekf3_started;
     void update_EKF3(void);
 #endif
-    bool _force_ekf;
-    
+
     // rotation from vehicle body to NED frame
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
@@ -362,7 +352,7 @@ private:
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
     const uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms = 0;
+    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
@@ -371,9 +361,19 @@ private:
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
 
+    // avoid setting current state repeatedly across all cores on all EKFs:
+    enum class TriState {
+        False = 0,
+        True = 1,
+        UNKNOWN = 3,
+    };
+    TriState touchdownExpectedState = TriState::UNKNOWN;
+    TriState takeoffExpectedState = TriState::UNKNOWN;
+    TriState terrainHgtStableState = TriState::UNKNOWN;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
-    uint32_t _last_body_odm_update_ms = 0;
+    uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
 #endif    
 };

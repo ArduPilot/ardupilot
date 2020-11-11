@@ -202,9 +202,11 @@ float Mode::AutoYaw::yaw()
         return copter.initial_armed_bearing;
 
     case AUTO_YAW_CIRCLE:
+#if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
             return copter.circle_nav->get_yaw();
         }
+#endif
         // return the current attitude target
         return wrap_360_cd(copter.attitude_control->get_att_target_euler_cd().z);
 

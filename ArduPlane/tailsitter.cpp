@@ -114,7 +114,7 @@ void QuadPlane::tailsitter_output(void)
     // handle Copter controller
     // the MultiCopter rate controller has already been run in an earlier call
     // to motors_output() from quadplane.update(), unless we are in assisted flight
-    if (assisted_flight && tailsitter_transition_fw_complete()) {
+    if (assisted_flight && is_tailsitter_in_fw_flight()) {
         hold_stabilize(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01f);
         motors_output(true);
 
@@ -262,9 +262,27 @@ void QuadPlane::tailsitter_check_input(void)
 /*
   return true if we are a tailsitter transitioning to VTOL flight
  */
-bool QuadPlane::in_tailsitter_vtol_transition(void) const
+bool QuadPlane::in_tailsitter_vtol_transition(uint32_t now) const
 {
-    return is_tailsitter() && in_vtol_mode() && transition_state == TRANSITION_ANGLE_WAIT_VTOL;
+    if (!is_tailsitter() || !in_vtol_mode()) {
+        return false;
+    }
+    if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
+        return true;
+    }
+    if ((now != 0) && ((now - last_vtol_mode_ms) > 1000)) {
+        // only just come out of forward flight
+        return true;
+    }
+    return false;
+}
+
+/*
+  return true if we are a tailsitter in FW flight
+ */
+bool QuadPlane::is_tailsitter_in_fw_flight(void) const
+{
+    return is_tailsitter() && !in_vtol_mode() && transition_state == TRANSITION_DONE;
 }
 
 /*
@@ -329,6 +347,9 @@ void QuadPlane::tailsitter_speed_scaling(void)
             spd_scaler = constrain_float(hover_throttle / throttle, 1.0f, tailsitter.throttle_scale_max);
         }
     }
+
+    // record for QTUN log
+    log_spd_scaler = spd_scaler;
 
     const SRV_Channel::Aux_servo_function_t functions[] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,

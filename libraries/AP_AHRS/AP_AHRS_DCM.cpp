@@ -69,23 +69,21 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
-    float delta_t;
 
     if (_last_startup_ms == 0) {
         _last_startup_ms = AP_HAL::millis();
         load_watchdog_home();
     }
 
+    AP_InertialSensor &_ins = AP::ins();
+
     if (!skip_ins_update) {
         // tell the IMU to grab some data
-        AP::ins().update();
+        _ins.update();
     }
 
-    const AP_InertialSensor &_ins = AP::ins();
-
     // ask the IMU how much time this sensor reading represents
-    delta_t = _ins.get_delta_time();
+    const float delta_t = _ins.get_delta_time();
 
     // if the update call took more than 0.2 seconds then discard it,
     // otherwise we may move too far. This happens when arming motors
@@ -666,12 +664,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     //update _accel_ef_blended
+#if INS_MAX_INSTANCES > 1
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         const float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
         _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
         _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
-    } else {
+    } else
+#endif
+    {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
     }
 
@@ -1142,3 +1143,12 @@ bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
     return true;
 }
 
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool AP_AHRS_DCM::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+{
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
+        return false;
+    }
+    return true;
+}

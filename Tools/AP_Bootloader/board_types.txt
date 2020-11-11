@@ -99,4 +99,7 @@ AP_HW_MRO_PIXRACER_PRO               1017
 AP_HW_TWD_H7                         1018
 AP_HW_MAMBA405                       1019
 AP_HW_H31_PIXC4                      1020
-
+AP_HW_QioTekZealotF427               1021
+AP_HW_MRO_CTRL_ZERO_CLASSIC          1022
+AP_HW_MRO_CTRL_ZERO_H7               1023
+AP_HW_MRO_CTRL_ZERO_OEM_H7           1024

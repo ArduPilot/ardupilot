@@ -638,7 +638,7 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
                     msg.node_id = resp_node_id;
                 }
             } else {
-                gcs().send_text(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
             }
         } else {
             msg.node_id = resp_node_id;

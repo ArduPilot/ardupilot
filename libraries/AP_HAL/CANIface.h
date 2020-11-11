@@ -94,8 +94,11 @@ public:
     enum OperatingMode {
         PassThroughMode,
         NormalMode,
-        SilentMode
+        SilentMode,
+        FilteredMode
     };
+
+    OperatingMode get_operating_mode() { return mode_; }
 
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
@@ -113,11 +116,11 @@ public:
         uint64_t deadline = 0;
         CANFrame frame;
         uint32_t index = 0;
-        bool loopback = false;
-        bool abort_on_error = false;
-        bool aborted = false;
-        bool pushed = false;
-        bool setup = false;
+        bool loopback:1;
+        bool abort_on_error:1;
+        bool aborted:1;
+        bool pushed:1;
+        bool setup:1;
 
         bool operator<(const CanTxItem& rhs) const
         {
@@ -206,4 +209,7 @@ public:
 
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
+protected:
+    uint32_t bitrate_;
+    OperatingMode mode_;
 };

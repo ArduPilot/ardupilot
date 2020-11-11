@@ -12,10 +12,10 @@ public:
     ~AP_LoggerFileReader();
 
     bool open_log(const char *logfile);
-    bool update(char type[5], uint8_t &core);
+    bool update();
 
     virtual bool handle_log_format_msg(const struct log_Format &f) = 0;
-    virtual bool handle_msg(const struct log_Format &f, uint8_t *msg, uint8_t &core) = 0;
+    virtual bool handle_msg(const struct log_Format &f, uint8_t *msg) = 0;
 
     void format_type(uint16_t type, char dest[5]);
     void get_packet_counts(uint64_t dest[]);

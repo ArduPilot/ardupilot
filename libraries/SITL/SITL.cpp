@@ -46,6 +46,7 @@ const AP_Param::GroupInfo SITL::var_info[] = {
     AP_GROUPINFO("WIND_TURB",     11, SITL,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SITL,  servo_speed,  0.14),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SITL,  batt_voltage,  12.6f),
+    AP_GROUPINFO("BATT_CAP_AH",   20, SITL,  batt_capacity_ah,  0),
     AP_GROUPINFO("ACCEL_FAIL",    21, SITL,  accel_fail,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SITL,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SITL,  sonar_noise, 0),

@@ -49,4 +49,10 @@ public:
 
     // set modification time on a file
     virtual bool set_mtime(const char *filename, const uint32_t mtime_sec) { return false; }
+
+    // retry mount of filesystem if needed
+    virtual bool retry_mount(void) { return true; }
+
+    // unmount filesystem for reboot
+    virtual void unmount(void) {}
 };

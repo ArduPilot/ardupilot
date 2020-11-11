@@ -136,7 +136,7 @@ def _build_summary(bld):
             if not t:
                 continue
             n = t.outputs[0]
-            tg.build_summary['binary'] = n
+            tg.build_summary['binary'] = str(n)
 
         nodes.append(n)
         filtered_taskgens.append(tg)

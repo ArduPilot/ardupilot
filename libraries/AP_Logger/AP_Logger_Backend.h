@@ -72,7 +72,7 @@ public:
 #endif
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const mavlink_channel_t chan,
+    virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
                                              const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 
@@ -121,6 +121,10 @@ public:
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
+
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const;
 
     virtual void vehicle_was_disarmed();
 

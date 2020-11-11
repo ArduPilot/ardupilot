@@ -38,11 +38,11 @@ public:
     }
 
 private:
-    float max_speed;
-    float max_accel;
-    float max_wheel_turn;
-    float turning_circle;
-    float skid_turn_rate;
+    float max_speed = 20.0f;
+    float max_accel = 10.0f;
+    float max_wheel_turn = 35.0f;
+    float turning_circle = 1.8f;
+    float skid_turn_rate = 140.0f;
     bool skid_steering;
 
     float turn_circle(float steering);

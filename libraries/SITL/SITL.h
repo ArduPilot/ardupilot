@@ -55,7 +55,9 @@ struct sitl_fdm {
     double airspeed; // m/s
     double battery_voltage; // Volts
     double battery_current; // Amps
+    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
+    uint8_t vtol_motor_start;
     float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[12];         // RC input 0..1
@@ -199,6 +201,7 @@ public:
     AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
 
     AP_Float batt_voltage; // battery voltage base
+    AP_Float batt_capacity_ah; // battery capacity in Ah
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count

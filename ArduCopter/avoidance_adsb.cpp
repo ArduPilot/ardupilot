@@ -1,7 +1,7 @@
 #include "Copter.h"
 #include <AP_Notify/AP_Notify.h>
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
 void Copter::avoidance_adsb_update(void)
 {
     adsb.update();

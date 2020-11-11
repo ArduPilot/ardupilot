@@ -57,7 +57,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 
 #define MAX_FD_PER_BACKEND 256U
 #define NUM_BACKENDS ARRAY_SIZE(backends)
-#define LOCAL_BACKEND backends[0];
+#define LOCAL_BACKEND backends[0]
 #define BACKEND_IDX(backend) (&(backend) - &backends[0])
 
 /*
@@ -213,6 +213,18 @@ bool AP_Filesystem::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
     const Backend &backend = backend_by_path(filename);
     return backend.fs.set_mtime(filename, mtime_sec);
+}
+
+// if filesystem is not running then try a remount
+bool AP_Filesystem::retry_mount(void)
+{
+    return LOCAL_BACKEND.fs.retry_mount();
+}
+
+// unmount filesystem for reboot
+void AP_Filesystem::unmount(void)
+{
+    return LOCAL_BACKEND.fs.unmount();
 }
 
 namespace AP

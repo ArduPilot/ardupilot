@@ -595,6 +595,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
         for breakpoint in opts.breakpoint:
             gdb_commands_file.write("b %s\n" % (breakpoint,))
+        if opts.disable_breakpoints:
+            gdb_commands_file.write("disable\n")
         if not opts.gdb_stopped:
             gdb_commands_file.write("r\n")
         gdb_commands_file.close()
@@ -625,6 +627,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
+    if opts.sysid is not None:
+        cmd.extend(["--sysid", str(opts.sysid)])
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args.split(" "))
@@ -954,6 +958,10 @@ group_sim.add_option("-B", "--breakpoint",
                      action="append",
                      default=[],
                      help="add a breakpoint at given location in debugger")
+group_sim.add_option("--disable-breakpoints",
+                     default=False,
+                     action='store_true',
+                     help="disable all breakpoints before starting")
 group_sim.add_option("-M", "--mavlink-gimbal",
                      action='store_true',
                      default=False,
@@ -1058,6 +1066,10 @@ group_sim.add_option("", "--start-time",
                      default=None,
                      type='string',
                      help="specify simulation start time in format YYYY-MM-DD-HH:MM in your local time zone")
+group_sim.add_option("", "--sysid",
+                     type='int',
+                     default=None,
+                     help="Set SYSID_THISMAV")
 parser.add_option_group(group_sim)
 
 

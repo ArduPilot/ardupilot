@@ -802,7 +802,8 @@ void UARTDriver::handle_tx_timeout(void *arg)
     chSysLockFromISR();
     if (!uart_drv->tx_bounce_buf_ready) {
         dmaStreamDisable(uart_drv->txdma);
-        uart_drv->tx_len -= dmaStreamGetTransactionSize(uart_drv->txdma);
+        const uint32_t tx_size = dmaStreamGetTransactionSize(uart_drv->txdma);
+        uart_drv->tx_len -= MIN(uart_drv->tx_len, tx_size);
         uart_drv->tx_bounce_buf_ready = true;
         uart_drv->dma_handle->unlock_from_IRQ();
     }
@@ -845,6 +846,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         }
     }
 
+    chSysLock();
     dmaStreamDisable(txdma);
     tx_bounce_buf_ready = false;
     osalDbgAssert(txdma != nullptr, "UART TX DMA allocation failed");
@@ -858,7 +860,8 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(txdma);
     uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
-    chVTSet(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
+    chVTSetI(&tx_timeout, chTimeUS2I(timeout_us), handle_tx_timeout, this);
+    chSysUnlock();
 }
 #endif // HAL_UART_NODMA
 
@@ -1343,17 +1346,17 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 void UARTDriver::set_pushpull(uint16_t options)
 {
 #if HAL_USE_SERIAL == TRUE && !defined(STM32F1)
-    if ((options & OPTION_PULLDOWN_RX) && sdef.rx_line) {
-        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLDOWN);
+    if ((options & OPTION_PULLDOWN_RX) && arx_line) {
+        palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLDOWN);
     }
-    if ((options & OPTION_PULLDOWN_TX) && sdef.tx_line) {
-        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLDOWN);
+    if ((options & OPTION_PULLDOWN_TX) && atx_line) {
+        palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLDOWN);
     }
-    if ((options & OPTION_PULLUP_RX) && sdef.rx_line) {
-        palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLUP);
+    if ((options & OPTION_PULLUP_RX) && arx_line) {
+        palLineSetPushPull(arx_line, PAL_PUSHPULL_PULLUP);
     }
-    if ((options & OPTION_PULLUP_TX) && sdef.tx_line) {
-        palLineSetPushPull(sdef.tx_line, PAL_PUSHPULL_PULLUP);
+    if ((options & OPTION_PULLUP_TX) && atx_line) {
+        palLineSetPushPull(atx_line, PAL_PUSHPULL_PULLUP);
     }
 #endif
 }
@@ -1375,10 +1378,29 @@ bool UARTDriver::set_options(uint16_t options)
     uint32_t cr3 = sd->usart->CR3;
     bool was_enabled = (sd->usart->CR1 & USART_CR1_UE);
 
+#ifdef HAL_PIN_ALT_CONFIG
+    /*
+      allow for RX and TX pins to be remapped via BRD_ALT_CONFIG
+     */
+    arx_line = GPIO::resolve_alt_config(sdef.rx_line, PERIPH_TYPE::UART_RX, sdef.instance);
+    atx_line = GPIO::resolve_alt_config(sdef.tx_line, PERIPH_TYPE::UART_TX, sdef.instance);
+#else
+    arx_line = sdef.rx_line;
+    atx_line = sdef.tx_line;
+#endif
+
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     // F7 has built-in support for inversion in all uarts
-    ioline_t rx_line = (options & OPTION_SWAP)?sdef.tx_line:sdef.rx_line;
-    ioline_t tx_line = (options & OPTION_SWAP)?sdef.rx_line:sdef.tx_line;
+    ioline_t rx_line = (options & OPTION_SWAP)?atx_line:arx_line;
+    ioline_t tx_line = (options & OPTION_SWAP)?arx_line:atx_line;
+
+    // if we are half-duplex then treat either inversion option as
+    // both being enabled. This is easier to understand for users, who
+    // can be confused as to which pin is the one that needs inversion
+    if ((options & OPTION_HDPLEX) && (options & (OPTION_TXINV|OPTION_RXINV)) != 0) {
+        options |= OPTION_TXINV|OPTION_RXINV;
+    }
+
     if (options & OPTION_RXINV) {
         cr2 |= USART_CR2_RXINV;
         _cr2_options |= USART_CR2_RXINV;

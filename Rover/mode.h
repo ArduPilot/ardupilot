@@ -164,8 +164,9 @@ protected:
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
 
-    // calculate steering output given a turn rate and speed
-    void calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed);
+    // calculate steering output given a turn rate
+    // desired turn rate in radians/sec. Positive to the right.
+    void calc_steering_from_turn_rate(float turn_rate);
 
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);

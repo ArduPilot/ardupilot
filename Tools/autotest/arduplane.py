@@ -1755,7 +1755,7 @@ class AutoTestPlane(AutoTest):
 
         # Wait to detect thermal
         self.progress("Waiting for thermal")
-        self.wait_mode('LOITER',timeout=600)
+        self.wait_mode('THERMAL',timeout=600)
 
         # Wait to climb to SOAR_ALT_MAX
         self.progress("Waiting for climb to max altitude")
@@ -1822,7 +1822,7 @@ class AutoTestPlane(AutoTest):
         # Make sure this causes throttle down.
         self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.lt)
 
-        self.progress("Waiting for next WP with no loiter")
+        self.progress("Waiting for next WP with no thermalling")
         self.wait_waypoint(4,4,timeout=1200,max_dist=120)
 
         # Disarm
@@ -2086,6 +2086,10 @@ class AutoTestPlane(AutoTest):
              "Test FrSky PassThrough serial output",
              self.test_frsky_passthrough),
 
+            ("FRSkyMAVlite",
+             "Test FrSky MAVlite serial output",
+             self.test_frsky_mavlite),
+
             ("FRSkyD",
              "Test FrSkyD serial output",
              self.test_frsky_d),
@@ -2134,5 +2138,4 @@ class AutoTestPlane(AutoTest):
 
     def disabled_tests(self):
         return {
-            "Button": "See https://github.com/ArduPilot/ardupilot/issues/15259",
         }

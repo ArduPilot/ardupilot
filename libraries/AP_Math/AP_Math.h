@@ -144,10 +144,14 @@ float wrap_2PI(const T radian);
 template <typename T>
 T constrain_value(const T amt, const T low, const T high);
 
-inline float constrain_float(const float amt, const float low, const float high)
-{
-    return constrain_value(amt, low, high);
-}
+template <typename T>
+T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
+
+#if BOARD_FLASH_SIZE > 1024
+  #define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__LINE__))
+#else
+  #define constrain_float(amt, low, high) constrain_value(float(amt), float(low), float(high))
+#endif
 
 inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
 {
@@ -265,9 +269,6 @@ constexpr float expo_curve(float alpha, float input);
  */
 float throttle_curve(float thr_mid, float alpha, float thr_in);
 
-// Convert any base number to any base number. Example octal(8) to decimal(10)
-uint32_t convertMathBase(const uint8_t baseIn, const uint8_t baseOut, uint32_t inputNumber);
-
 /* simple 16 bit random number generator */
 uint16_t get_random16(void);
 
@@ -288,6 +289,11 @@ bool rotation_equal(enum Rotation r1, enum Rotation r2) WARN_IF_UNUSED;
  * angular_rate is rad/sec
  */
 Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, const Matrix3f &rot_ef_to_bf, const Vector3f &angular_rate);
+
+/*
+  calculate a low pass filter alpha value
+ */
+float calc_lowpass_alpha_dt(float dt, float cutoff_freq);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL

@@ -64,7 +64,7 @@ public:
     // returns number of active CAN Drivers
     uint8_t get_num_drivers(void) const
     {
-        return _num_drivers;
+        return HAL_MAX_CAN_PROTOCOL_DRIVERS;
     }
 
     // return driver for index i

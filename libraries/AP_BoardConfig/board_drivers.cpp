@@ -410,10 +410,31 @@ void AP_BoardConfig::board_autodetect(void)
 void AP_BoardConfig::board_setup_uart()
 {
 #if AP_FEATURE_RTSCTS
-    hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser1_rtscts.get());
-    if (hal.uartD != nullptr) {
-        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser2_rtscts.get());
+#ifdef HAL_HAVE_RTSCTS_SERIAL1
+    if (hal.uartC != nullptr) {
+        hal.uartC->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[1].get());
     }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL2
+    if (hal.uartD != nullptr) {
+        hal.uartD->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[2].get());
+    }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL3
+    if (hal.uartB != nullptr) {
+        hal.uartB->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[3].get());
+    }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL4
+    if (hal.uartE != nullptr) {
+        hal.uartE->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[4].get());
+    }
+#endif
+#ifdef HAL_HAVE_RTSCTS_SERIAL5
+    if (hal.uartF != nullptr) {
+        hal.uartF->set_flow_control((AP_HAL::UARTDriver::flow_control)state.ser_rtscts[5].get());
+    }
+#endif
 #endif
 }
 

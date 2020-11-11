@@ -12,6 +12,11 @@
 class ByteBuffer {
 public:
     ByteBuffer(uint32_t size);
+    ByteBuffer(uint8_t* _buf, uint32_t _size) :
+    buf(_buf),
+    size(_size),
+    external_buf(true)
+    {}
     ~ByteBuffer(void);
 
     // number of bytes available to be read
@@ -92,6 +97,8 @@ private:
 
     std::atomic<uint32_t> head{0}; // where to read data
     std::atomic<uint32_t> tail{0}; // where to write data
+
+    bool external_buf;
 };
 
 /*
@@ -107,9 +114,17 @@ public:
         // multiple of the object size so that we always get aligned
         // elements, which makes the readptr() method possible
         buffer = new ByteBuffer(((_size+1) * sizeof(T)));
+        external_buf = false;
     }
+
+    ObjectBuffer(ByteBuffer *_buffer) :
+    buffer(_buffer),
+    external_buf(true)
+    {}
+
     ~ObjectBuffer(void) {
-        delete buffer;
+        if (!external_buf)
+            delete buffer;
     }
 
     // return size of ringbuffer
@@ -246,6 +261,7 @@ public:
 
 private:
     ByteBuffer *buffer = nullptr;
+    bool external_buf = true;
 };
 
 /*
@@ -267,7 +283,7 @@ public:
     }
 
     // return size of ringbuffer
-    uint32_t get_size(void) const {
+    uint32_t get_size(void) {
         WITH_SEMAPHORE(sem);
         return buffer->get_size() / sizeof(T);
     }

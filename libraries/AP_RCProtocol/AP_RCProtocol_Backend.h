@@ -80,8 +80,7 @@ public:
     }
     
 protected:
-    struct Channels11Bit {
-        // 176 bits of data (11 bits per channel * 16 channels) = 22 bytes.
+    struct Channels11Bit_8Chan {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
 #endif
@@ -93,14 +92,6 @@ protected:
         uint32_t ch5 : 11;
         uint32_t ch6 : 11;
         uint32_t ch7 : 11;
-        uint32_t ch8 : 11;
-        uint32_t ch9 : 11;
-        uint32_t ch10 : 11;
-        uint32_t ch11 : 11;
-        uint32_t ch12 : 11;
-        uint32_t ch13 : 11;
-        uint32_t ch14 : 11;
-        uint32_t ch15 : 11;
     } PACKED;
 
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1);

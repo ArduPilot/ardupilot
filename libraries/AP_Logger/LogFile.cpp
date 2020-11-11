@@ -265,15 +265,16 @@ void AP_Logger::Write_RSSI()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type)
+void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
 {
     AP_Baro &baro = AP::baro();
     float climbrate = baro.get_climb_rate();
     float drift_offset = baro.get_baro_drift_offset();
     float ground_temp = baro.get_ground_temperature();
     const struct log_BARO pkt{
-        LOG_PACKET_HEADER_INIT(type),
+        LOG_PACKET_HEADER_INIT(LOG_BARO_MSG),
         time_us       : time_us,
+        instance      : baro_instance,
         altitude      : baro.get_altitude(baro_instance),
         pressure      : baro.get_pressure(baro_instance),
         temperature   : (int16_t)(baro.get_temperature(baro_instance) * 100 + 0.5f),
@@ -293,23 +294,20 @@ void AP_Logger::Write_Baro(uint64_t time_us)
         time_us = AP_HAL::micros64();
     }
     const AP_Baro &baro = AP::baro();
-    Write_Baro_instance(time_us, 0, LOG_BARO_MSG);
-    if (baro.num_instances() > 1) {
-        Write_Baro_instance(time_us, 1, LOG_BAR2_MSG);
-    }
-    if (baro.num_instances() > 2) {
-        Write_Baro_instance(time_us, 2, LOG_BAR3_MSG);
+    for (uint8_t i=0; i< baro.num_instances(); i++) {
+        Write_Baro_instance(time_us, i);
     }
 }
 
-void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
+void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance)
 {
     const AP_InertialSensor &ins = AP::ins();
     const Vector3f &gyro = ins.get_gyro(imu_instance);
     const Vector3f &accel = ins.get_accel(imu_instance);
     const struct log_IMU pkt{
-        LOG_PACKET_HEADER_INIT(type),
+        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
         time_us : time_us,
+        instance: imu_instance,
         gyro_x  : gyro.x,
         gyro_y  : gyro.y,
         gyro_z  : gyro.z,
@@ -334,86 +332,33 @@ void AP_Logger::Write_IMU()
 
     const AP_InertialSensor &ins = AP::ins();
 
-    Write_IMU_instance(time_us, 0, LOG_IMU_MSG);
-    if (ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) {
-        return;
-    }
-
-    Write_IMU_instance(time_us, 1, LOG_IMU2_MSG);
-
-    if (ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) {
-        return;
-    }
-
-    Write_IMU_instance(time_us, 2, LOG_IMU3_MSG);
-}
-
-// Write an accel/gyro delta time data packet
-void AP_Logger::Write_IMUDT_instance(const uint64_t time_us, const uint8_t imu_instance, const enum LogMessages type)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    float delta_t = ins.get_delta_time();
-    float delta_vel_t = ins.get_delta_velocity_dt(imu_instance);
-    float delta_ang_t = ins.get_delta_angle_dt(imu_instance);
-    Vector3f delta_angle, delta_velocity;
-    ins.get_delta_angle(imu_instance, delta_angle);
-    ins.get_delta_velocity(imu_instance, delta_velocity);
-
-    const struct log_IMUDT pkt{
-        LOG_PACKET_HEADER_INIT(type),
-        time_us : time_us,
-        delta_time   : delta_t,
-        delta_vel_dt : delta_vel_t,
-        delta_ang_dt : delta_ang_t,
-        delta_ang_x  : delta_angle.x,
-        delta_ang_y  : delta_angle.y,
-        delta_ang_z  : delta_angle.z,
-        delta_vel_x  : delta_velocity.x,
-        delta_vel_y  : delta_velocity.y,
-        delta_vel_z  : delta_velocity.z
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-void AP_Logger::Write_IMUDT(uint64_t time_us, uint8_t imu_mask)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    if (imu_mask & 1) {
-        Write_IMUDT_instance(time_us, 0, LOG_IMUDT_MSG);
-    }
-    if ((ins.get_gyro_count() < 2 && ins.get_accel_count() < 2) || !ins.use_gyro(1)) {
-        return;
-    }
-
-    if (imu_mask & 2) {
-        Write_IMUDT_instance(time_us, 1, LOG_IMUDT2_MSG);
-    }
-
-    if ((ins.get_gyro_count() < 3 && ins.get_accel_count() < 3) || !ins.use_gyro(2)) {
-        return;
-    }
-
-    if (imu_mask & 4) {
-        Write_IMUDT_instance(time_us, 2, LOG_IMUDT3_MSG);
+    uint8_t n = MAX(ins.get_accel_count(), ins.get_gyro_count());
+    for (uint8_t i=0; i<n; i++) {
+        Write_IMU_instance(time_us, i);
     }
 }
 
 void AP_Logger::Write_Vibration()
 {
-    uint64_t time_us = AP_HAL::micros64();
     const AP_InertialSensor &ins = AP::ins();
-    const Vector3f vibration = ins.get_vibration_levels();
-    const struct log_Vibe pkt{
-        LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-        time_us     : time_us,
-        vibe_x      : vibration.x,
-        vibe_y      : vibration.y,
-        vibe_z      : vibration.z,
-        clipping_0  : ins.get_accel_clip_count(0),
-        clipping_1  : ins.get_accel_clip_count(1),
-        clipping_2  : ins.get_accel_clip_count(2)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    const uint64_t time_us = AP_HAL::micros64();
+    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        if (!ins.use_accel(i)) {
+            continue;
+        }
+
+        const Vector3f vibration = ins.get_vibration_levels(i);
+        const struct log_Vibe pkt{
+            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
+            time_us     : time_us,
+            imu         : i,
+            vibe_x      : vibration.x,
+            vibe_y      : vibration.y,
+            vibe_z      : vibration.z,
+            clipping  : ins.get_accel_clip_count(i)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
 }
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
@@ -718,16 +663,17 @@ void AP_Logger::Write_Current()
     }
 }
 
-void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance, const enum LogMessages type)
+void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance)
 {
     const Compass &compass = AP::compass();
 
     const Vector3f &mag_field = compass.get_field(mag_instance);
     const Vector3f &mag_offsets = compass.get_offsets(mag_instance);
     const Vector3f &mag_motor_offsets = compass.get_motor_offsets(mag_instance);
-    const struct log_Compass pkt{
-        LOG_PACKET_HEADER_INIT(type),
+    const struct log_MAG pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MAG_MSG),
         time_us         : time_us,
+        instance        : mag_instance,
         mag_x           : (int16_t)mag_field.x,
         mag_y           : (int16_t)mag_field.y,
         mag_z           : (int16_t)mag_field.z,
@@ -750,16 +696,8 @@ void AP_Logger::Write_Compass(uint64_t time_us)
         time_us = AP_HAL::micros64();
     }
     const Compass &compass = AP::compass();
-    if (compass.get_count() > 0) {
-        Write_Compass_instance(time_us, 0, LOG_COMPASS_MSG);
-    }
-
-    if (compass.get_count() > 1) {
-        Write_Compass_instance(time_us, 1, LOG_COMPASS2_MSG);
-    }
-
-    if (compass.get_count() > 2) {
-        Write_Compass_instance(time_us, 2, LOG_COMPASS3_MSG);
+    for (uint8_t i=0; i<compass.get_count(); i++) {
+        Write_Compass_instance(time_us, i);
     }
 }
 
@@ -930,7 +868,7 @@ void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, 
 }
 
 // Write visual position sensor data.  x,y,z are in meters, angles are in degrees
-void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter)
+void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored)
 {
     const struct log_VisualPosition pkt_visualpos {
         LOG_PACKET_HEADER_INIT(LOG_VISUALPOS_MSG),
@@ -945,13 +883,14 @@ void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, 
         yaw             : yaw,
         pos_err         : pos_err,
         ang_err         : ang_err,
-        reset_counter   : reset_counter
+        reset_counter   : reset_counter,
+        ignored         : (uint8_t)ignored
     };
     WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
 }
 
 // Write visual velocity sensor data, velocity in NED meters per second
-void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter)
+void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored)
 {
     const struct log_VisualVelocity pkt_visualvel {
         LOG_PACKET_HEADER_INIT(LOG_VISUALVEL_MSG),
@@ -962,7 +901,8 @@ void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, 
         vel_y           : vel.y,
         vel_z           : vel.z,
         vel_err         : vel_err,
-        reset_counter   : reset_counter
+        reset_counter   : reset_counter,
+        ignored         : (uint8_t)ignored
     };
     WriteBlock(&pkt_visualvel, sizeof(log_VisualVelocity));
 }

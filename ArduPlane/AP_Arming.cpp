@@ -77,6 +77,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    if (plane.quadplane.available() && !plane.quadplane.motors->initialised_ok()) {
+        check_failed(display_failure, "Quadplane: check motor setup");
+        ret = false;
+    }
+
     if (plane.quadplane.enabled() && plane.quadplane.available()) {
         // ensure controllers are OK with us arming:
         char failure_msg[50];
@@ -119,12 +124,9 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     // additional plane specific checks
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
-        if (!AP::ahrs().prearm_healthy()) {
-            const char *reason = AP::ahrs().prearm_failure_reason();
-            if (reason == nullptr) {
-                reason = "AHRS not healthy";
-            }
-            check_failed(ARMING_CHECK_INS, display_failure, "%s", reason);
+        char failure_msg[50] = {};
+        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+            check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
     }

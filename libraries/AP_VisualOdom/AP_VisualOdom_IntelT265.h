@@ -37,6 +37,11 @@ protected:
     // use sensor provided position and attitude to calculate rotation to align sensor with AHRS/EKF attitude
     bool align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude);
 
+    // returns true if sensor data should be consumed, false if it should be ignored
+    // set vision_position_estimate to true if reset_counter is from the VISION_POSITION_ESTIMATE source, false otherwise
+    // only the VISION_POSITION_ESTIMATE message's reset_counter is used to determine if sensor data should be ignored
+    bool should_consume_sensor_data(bool vision_position_estimate, uint8_t reset_counter);
+
     float _yaw_trim;                            // yaw angle trim (in radians) to align camera's yaw to ahrs/EKF's
     Quaternion _yaw_rotation;                   // earth-frame yaw rotation to align heading of sensor with vehicle.  use when _yaw_trim is non-zero
     Quaternion _att_rotation;                   // body-frame rotation corresponding to ORIENT parameter.  use when get_orientation != NONE
@@ -47,6 +52,8 @@ protected:
     bool _align_camera = true;                  // true if camera should be aligned to AHRS/EKF
     bool _error_orientation;                    // true if the orientation is not supported
     Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
+    uint8_t _pos_reset_counter_last;            // last vision-position-estimate reset counter value
+    uint32_t _pos_reset_ignore_start_ms;        // system time we start ignoring sensor information, 0 if sensor data is not being ignored
 };
 
 #endif
