@@ -324,7 +324,23 @@ void AP_PiccoloCAN::update()
 
         WITH_SEMAPHORE(_telem_sem);
 
-        // TODO - Add servo log data here
+        for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_SERVO; ii++) {
+            CBSServo_Info_t &servo = _servo_info[ii];
+
+            if (servo.newTelemetry) {
+
+                logger->Write_ServoStatus(
+                    timestamp,
+                    ii,
+                    (float) servo.statusA.position,         // Servo position (represented in microsecond units)
+                    (float) servo.statusB.current / 100.0f, // Servo force (actually servo current, 0.01A per bit)
+                    (float) servo.statusB.speed,            // Servo speed (degrees per second)
+                    (uint8_t) abs(servo.statusB.dutyCycle)  // Servo duty cycle (absolute value as it can be +/- 100%)
+                );
+
+                servo.newTelemetry = false;
+            }
+        }
 
         for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 

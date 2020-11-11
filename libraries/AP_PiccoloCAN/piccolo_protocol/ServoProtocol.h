@@ -35,9 +35,9 @@ extern "C" {
  * 
  * The protocol API enumeration is incremented anytime the protocol is changed
  * in a way that affects compatibility with earlier versions of the protocol.
- * The protocol enumeration for this version is: 20
+ * The protocol enumeration for this version is: 21
  * 
- * The protocol version is 2.10
+ * The protocol version is 2.11
  */
 
 #include <stdbool.h>
@@ -45,10 +45,10 @@ extern "C" {
 #include <string.h>	// C string manipulation function header
 
 //! \return the protocol API enumeration
-#define getServoApi() 20
+#define getServoApi() 21
 
 //! \return the protocol version string
-#define getServoVersion() "2.10"
+#define getServoVersion() "2.11"
 
 // Translation provided externally. The macro takes a `const char *` and returns a `const char *`
 #ifndef translateServo
