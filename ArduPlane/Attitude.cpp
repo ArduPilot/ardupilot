@@ -123,9 +123,16 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
-                                                                                           speed_scaler, 
-                                                                                           disable_integrator));
+    int32_t pitch_output = pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
+                                                            speed_scaler, 
+                                                            disable_integrator);
+    if (quadplane.in_tailsitter_vtol_transition())
+    {
+        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "scaled pitch output: %d", pitch_output);
+        pitch_output *= 0.5f;
+    }
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_output);
 }
 
 /*

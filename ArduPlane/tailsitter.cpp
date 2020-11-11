@@ -228,7 +228,7 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
   return true when we have completed enough of a transition to switch to VTOL control
  */
 bool QuadPlane::tailsitter_transition_vtol_complete(void) const
-{
+{  
     if (plane.fly_inverted()) {
         // transition immediately
         return true;

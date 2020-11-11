@@ -1025,7 +1025,6 @@ void QuadPlane::init_hover(void)
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
     init_throttle_wait();
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INIT HOVER");
 }
 
 /*
@@ -1762,10 +1761,10 @@ void QuadPlane::update_transition(void)
         uint32_t dt = now - transition_start_ms;
 
         if (dt < (uint32_t)tailsitter.vertical_acceleration_time) {
-            plane.nav_pitch_cd = 0.0f;
+            plane.nav_pitch_cd = -15.0f;
             // Full power!
             attitude_control->set_throttle_out(1.0f, false, 0);
-            // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", inertial_nav.get_velocity_z());
+            // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", plane.barometer.get_climb_rate());
         } else {
             float pitch_cd;
             pitch_cd = constrain_float((-transition_rate * (dt - (uint32_t)tailsitter.vertical_acceleration_time)) * 100, -8500, 0);
@@ -1878,6 +1877,8 @@ void QuadPlane::update(void)
                   setup for the back transition when needed
                 */
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
+                // float alt_cm = inertial_nav.get_altitude();
+                // pos_control->set_alt_target(alt_cm + 200);
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
             }
@@ -1892,6 +1893,7 @@ void QuadPlane::update(void)
             } else if (is_tailsitter()) {
                 /*
                   setup for the transition back to fixed wing for later
+                  This is done on every loop when flying in qmode
                  */
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
