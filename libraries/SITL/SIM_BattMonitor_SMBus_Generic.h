@@ -1,5 +1,7 @@
 #include "SIM_BattMonitor_SMBus.h"
 
+#pragma once
+
 namespace SITL {
 
 class SMBusBattGenericDevReg : public SMBusBattDevReg {
