@@ -197,7 +197,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BARO3_ID", 17, AP_Baro, sensors[2].bus_id, 0),
 #endif
-    
+    // @Param: AVG_TAU
+    // @DisplayName: Average time constant
+    // @Description: Ground Pressure average LPF time constant
+    // @Values: 0.01 100
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("AVG_TAU", 18, AP_Baro, _filter_tau, 5.0f),
+
     AP_GROUPEND
 };
 
@@ -324,7 +331,7 @@ void AP_Baro::update_calibration()
     }
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
-            float corrected_pressure = get_pressure(i) + sensors[i].p_correction;
+            float corrected_pressure = sensors[i].avg_pressure + sensors[i].p_correction;
             sensors[i].ground_pressure.set(corrected_pressure);
         }
 
@@ -670,6 +677,11 @@ void AP_Baro::init(void)
         sensors[i].alt_ok = true;
     }
 #endif
+    const float freq = 1.0f / (M_2PI * MAX(0.01f, _filter_tau)); // frequency = 1/2pi*tau
+    for (auto & sensor_ : sensors) {
+        sensor_.avg_pressure_filter.set_cutoff_frequency(freq);
+        sensor_.avg_pressure_filter.reset(101325.0f);  // default to 1013.25 hPa
+    }
 }
 
 /*
@@ -821,10 +833,10 @@ void AP_Baro::update(void)
             // update altitude calculation
             float ground_pressure = sensors[i].ground_pressure;
             if (!is_positive(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
-                sensors[i].ground_pressure = sensors[i].pressure;
+                sensors[i].ground_pressure = sensors[i].avg_pressure + sensors[i].p_correction;
             }
             float altitude = sensors[i].altitude;
-            float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;
+            const float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;
             if (sensors[i].type == BARO_TYPE_AIR) {
                 altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
             } else if (sensors[i].type == BARO_TYPE_WATER) {
@@ -837,6 +849,10 @@ void AP_Baro::update(void)
             if (sensors[i].alt_ok) {
                 sensors[i].altitude = altitude + _alt_offset_active;
             }
+            const uint32_t tnow = AP_HAL::millis();
+            const auto dt = static_cast<float>(tnow - sensors[i].last_update_filter_ms);
+            sensors[i].avg_pressure = sensors[i].avg_pressure_filter.apply(corrected_pressure, dt * 0.001f);
+            sensors[i].last_update_filter_ms = tnow;
         }
         if (_hil.have_alt) {
             sensors[0].altitude = _hil.altitude;

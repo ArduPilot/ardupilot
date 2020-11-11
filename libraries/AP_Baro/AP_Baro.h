@@ -250,6 +250,9 @@ private:
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
         AP_Int32 bus_id;
+        LowPassFilterFloat avg_pressure_filter;  // LPF to estimate ground pressure while on the ground
+        float avg_pressure = 101325.0f;
+        uint32_t last_update_filter_ms;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -273,7 +276,7 @@ private:
     void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
-
+    AP_Float                           _filter_tau;  // Ground pressure filter tau
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;
 };
