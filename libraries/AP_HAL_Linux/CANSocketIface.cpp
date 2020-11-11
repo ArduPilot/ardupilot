@@ -319,6 +319,9 @@ bool CANIface::_pollRead()
 
 int CANIface::_write(const AP_HAL::CANFrame& frame) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     errno = 0;
 
     const can_frame sockcan_frame = makeSocketCanFrame(frame);
@@ -339,6 +342,9 @@ int CANIface::_write(const AP_HAL::CANFrame& frame) const
 
 int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopback) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     auto iov = iovec();
     auto sockcan_frame = can_frame();
     iov.iov_base = &sockcan_frame;
