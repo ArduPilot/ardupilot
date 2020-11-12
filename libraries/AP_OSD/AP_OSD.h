@@ -190,6 +190,7 @@ private:
     AP_OSD_Setting cell_volt{true, 1, 1};
     AP_OSD_Setting batt_bar{true, 1, 1};
     AP_OSD_Setting arming{true, 1, 1};
+    AP_OSD_Setting callsign{false, 0, 0};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -243,6 +244,12 @@ private:
     void draw_bat2_vlt(uint8_t x, uint8_t y);
     void draw_bat2used(uint8_t x, uint8_t y);
     void draw_clk(uint8_t x, uint8_t y);
+    void draw_callsign(uint8_t x, uint8_t y);
+
+    struct {
+        bool load_attempted;
+        const char *str;
+    } callsign_data;
 };
 #endif // OSD_ENABLED
 
