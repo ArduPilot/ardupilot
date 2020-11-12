@@ -627,6 +627,8 @@ public:
     AP_Int32 guided_options;
 #endif
 
+    AP_Float fs_gcs_timeout;
+
 };
 
 extern const AP_Param::Info        var_info[];
