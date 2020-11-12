@@ -632,11 +632,11 @@ public:
 
         uint16_t rem = remaining();
         if (rem > str_len) {
-            strncpy((char*)&_buf[_idx], str, str_len);
+            strncpy_noterm((char*)&_buf[_idx], str, str_len);
             _idx += str_len;
             _bytes += str_len;
         } else {
-            strncpy((char*)&_buf[_idx], str, rem);
+            strncpy_noterm((char*)&_buf[_idx], str, rem);
             _chunk++;
             _idx += str_len;
             _bytes += rem;
