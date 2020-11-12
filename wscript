@@ -188,6 +188,10 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SFML graphics library")
 
+    g.add_option('--enable-sfml-joystick', action='store_true',
+                 default=False,
+                 help="Enable SFML joystick input library")
+
     g.add_option('--enable-sfml-audio', action='store_true',
                  default=False,
                  help="Enable SFML audio library")
