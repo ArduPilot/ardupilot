@@ -4461,6 +4461,8 @@ Also, ignores heartbeats not from our target system'''
         return ((v, k))
 
     def show_test_timings(self):
+        if len(self.test_timings.keys()) == 0:
+            return
         longest = 0
         for desc in self.test_timings.keys():
             if len(desc) > longest:
