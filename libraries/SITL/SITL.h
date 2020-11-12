@@ -95,6 +95,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info3);
         AP_Param::setup_object_defaults(this, var_gps);
         AP_Param::setup_object_defaults(this, var_mag);
+#ifdef SFML_JOYSTICK
+        AP_Param::setup_object_defaults(this, var_sfml_joystick);
+#endif // SFML_JOYSTICK
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
@@ -143,6 +146,9 @@ public:
     static const struct AP_Param::GroupInfo var_info3[];
     static const struct AP_Param::GroupInfo var_gps[];
     static const struct AP_Param::GroupInfo var_mag[];
+#ifdef SFML_JOYSTICK
+    static const struct AP_Param::GroupInfo var_sfml_joystick[];
+#endif //SFML_JOYSTICK
 
     // Board Orientation (and inverse)
     Matrix3f ahrs_rotation;
@@ -223,6 +229,11 @@ public:
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
+
+#ifdef SFML_JOYSTICK
+    AP_Int8 sfml_joystick_id;
+    AP_Int8 sfml_joystick_axis[8];
+#endif
 
     // EFI type
     enum EFIType {
