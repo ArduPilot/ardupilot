@@ -1,4 +1,5 @@
 #include "SIM_I2CDevice.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
 void SITL::I2CRegisters::add_register(const char *name, uint8_t reg, int8_t mode)
 {

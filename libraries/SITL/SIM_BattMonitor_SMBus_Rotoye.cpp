@@ -1,4 +1,5 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
 SITL::Rotoye::Rotoye() :
     SIM_BattMonitor_SMBus_Generic()
