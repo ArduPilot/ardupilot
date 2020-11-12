@@ -84,6 +84,7 @@ void QuadPlane::tailsitter_output(void)
               integrator to the same throttle level
             */
             throttle = motors->get_throttle_hover() * 100;
+            throttle = MAX(throttle,plane.aparm.throttle_cruise.get());
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
             pos_control->get_accel_z_pid().set_integrator(throttle*10);
 
