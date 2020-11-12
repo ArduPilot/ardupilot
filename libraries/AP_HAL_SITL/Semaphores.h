@@ -20,4 +20,7 @@ protected:
     pthread_mutex_t _lock;
     pthread_t owner;
 
+    // keep track the recursion level to ensure we only disown the
+    // semaphore once we're done with it
+    uint8_t take_count;
 };
