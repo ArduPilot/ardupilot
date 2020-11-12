@@ -24,6 +24,22 @@
 // This is a port of https://github.com/google/open-location-code/blob/master/c/olc.c
 // to avoid double floating point math and use integer math as much as possible.
 
+#define SEPARATOR_CHAR '+'
+#define SEPARATOR_POS 8U
+#define PADDING_CHAR '0'
+
+#define ENCODING_BASE 20U
+#define PAIR_CODE_LEN 10U
+#define CODE_LEN_MAX 15U
+
+#define GRID_COLS 4U
+#define GRID_ROWS (ENCODING_BASE / GRID_COLS)
+
+#define OLC_DEG_MULTIPLIER 10000000U // 1e7
+
+#define LAT_MAX int32_t(90 * OLC_DEG_MULTIPLIER)
+#define LON_MAX int32_t(180 * OLC_DEG_MULTIPLIER)
+
 const int32_t AP_OLC::initial_exponent  = floorf(logf(2 * (LON_MAX / OLC_DEG_MULTIPLIER)) / logf(ENCODING_BASE));
 const int32_t AP_OLC::grid_size = (1 / powf(ENCODING_BASE, PAIR_CODE_LEN / 2 - (initial_exponent + 1))) * OLC_DEG_MULTIPLIER;
 const int32_t AP_OLC::initial_resolution = powf(ENCODING_BASE, initial_exponent) * OLC_DEG_MULTIPLIER;
