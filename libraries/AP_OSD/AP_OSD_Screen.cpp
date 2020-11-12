@@ -40,6 +40,7 @@
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -858,6 +859,25 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
 #endif
+
+#if HAVE_FILESYSTEM_SUPPORT
+    // @Param: CALLSIGN_EN
+    // @DisplayName: CALLSIGN_EN
+    // @Description: Displays callsign from callsign.txt on microSD card
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CALLSIGN_X
+    // @DisplayName: CALLSIGN_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CALLSIGN_Y
+    // @DisplayName: CALLSIGN_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(callsign, "CALLSIGN", 53, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1749,6 +1769,33 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
 }
 #endif
 
+/*
+  support callsign display from a file called callsign.txt
+ */
+void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
+{
+#if HAVE_FILESYSTEM_SUPPORT
+    if (!callsign_data.load_attempted) {
+        callsign_data.load_attempted = true;
+        int fd = AP::FS().open("callsign.txt", O_RDONLY);
+        if (fd != -1) {
+            char s[20] {};
+            int32_t len = AP::FS().read(fd, s, sizeof(s)-1);
+            // trim off whitespace
+            while (len > 0 && isspace(s[len-1])) {
+                s[len-1] = 0;
+                len--;
+            }
+            AP::FS().close(fd);
+            callsign_data.str = strdup(s);
+        }
+    }
+    if (callsign_data.str != nullptr) {
+        backend->write(x, y, false, callsign_data.str);
+    }
+#endif
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1808,6 +1855,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(stat);
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
+    DRAW_SETTING(callsign);
 }
 #endif
 #endif // OSD_ENABLED
