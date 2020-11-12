@@ -36,23 +36,6 @@ public:
     static int olc_encode(int32_t lat, int32_t lon, size_t length, char *buf, size_t bufsize);
 
 private:
-
-    static constexpr uint8_t SEPARATOR_CHAR = '+';
-    static constexpr uint8_t SEPARATOR_POS = 8;
-    static constexpr uint8_t PADDING_CHAR = '0';
-
-    static constexpr uint8_t ENCODING_BASE = 20;
-    static constexpr uint8_t PAIR_CODE_LEN = 10;
-    static constexpr uint8_t CODE_LEN_MAX = 15;
-
-    static constexpr uint8_t GRID_COLS = 4;
-    static constexpr uint8_t GRID_ROWS = ENCODING_BASE / GRID_COLS;
-
-    static constexpr int32_t OLC_DEG_MULTIPLIER = 10000000; // 1e7
-
-    static constexpr int32_t LAT_MAX = 90 * OLC_DEG_MULTIPLIER;
-    static constexpr int32_t LON_MAX = 180 * OLC_DEG_MULTIPLIER;
-
     static const int32_t initial_exponent;
     // Work out the enclosing resolution (in degrees) for the grid algorithm.
     static const int32_t grid_size;
