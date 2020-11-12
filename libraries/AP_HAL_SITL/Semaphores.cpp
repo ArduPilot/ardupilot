@@ -21,10 +21,13 @@ Semaphore::Semaphore()
 
 bool Semaphore::give()
 {
+    take_count--;
     if (pthread_mutex_unlock(&_lock) != 0) {
         AP_HAL::panic("Bad semaphore usage");
     }
-    owner = (pthread_t)-1;
+    if (take_count == 0) {
+        owner = (pthread_t)-1;
+    }
     return true;
 }
 
@@ -41,6 +44,7 @@ bool Semaphore::take(uint32_t timeout_ms)
     if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
         if (pthread_mutex_lock(&_lock) == 0) {
             owner = pthread_self();
+            take_count++;
             return true;
         }
         return false;
@@ -64,7 +68,12 @@ bool Semaphore::take(uint32_t timeout_ms)
 
 bool Semaphore::take_nonblocking()
 {
-    return pthread_mutex_trylock(&_lock) == 0;
+    if (pthread_mutex_trylock(&_lock) == 0) {
+        owner = pthread_self();
+        take_count++;
+        return true;
+    }
+    return false;
 }
 
 #endif  // CONFIG_HAL_BOARD
