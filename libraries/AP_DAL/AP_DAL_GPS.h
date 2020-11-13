@@ -6,8 +6,6 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-static Location tmp_location[GPS_MAX_INSTANCES];
-
 class AP_DAL_GPS {
 public:
 
@@ -30,13 +28,7 @@ public:
     GPS_Status status() const {
         return status(primary_sensor());
     }
-    const Location &location(uint8_t instance) const {
-        Location &loc = tmp_location[instance];
-        loc.lat = _RGPJ[instance].lat;
-        loc.lng = _RGPJ[instance].lng;
-        loc.alt = _RGPJ[instance].alt;
-        return loc;
-    }
+    const Location &location(uint8_t instance) const;
     bool have_vertical_velocity(uint8_t instance) const {
         return _RGPI[instance].have_vertical_velocity;
     }
