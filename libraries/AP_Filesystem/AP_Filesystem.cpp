@@ -228,6 +228,16 @@ void AP_Filesystem::unmount(void)
     return LOCAL_BACKEND.fs.unmount();
 }
 
+/*
+  load a file to memory as a single chunk. Use only for small files
+ */
+FileData *AP_Filesystem::load_file(const char *filename)
+{
+    const Backend &backend = backend_by_path(filename);
+    return backend.fs.load_file(filename);
+}
+
+
 namespace AP
 {
 AP_Filesystem &FS()
