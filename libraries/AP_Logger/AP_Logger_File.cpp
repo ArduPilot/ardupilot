@@ -549,15 +549,10 @@ uint16_t AP_Logger_File::find_last_log()
         return ret;
     }
     EXPECT_DELAY_MS(3000);
-    int fd = AP::FS().open(fname, O_RDONLY);
-    free(fname);
-    if (fd != -1) {
-        char buf[10];
-        memset(buf, 0, sizeof(buf));
-        if (AP::FS().read(fd, buf, sizeof(buf)-1) > 0) {
-            ret = strtol(buf, NULL, 10);
-        }
-        AP::FS().close(fd);
+    FileData *fd = AP::FS().load_file(fname);
+    if (fd != nullptr) {
+        ret = strtol((const char *)fd->data, NULL, 10);
+        delete fd;
     }
     return ret;
 }
