@@ -29,7 +29,12 @@
 #include <hal.h>
 #include <ch.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include "stm32_util.h"
+
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+#pragma GCC optimize("Og")
+#endif
 
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
@@ -49,12 +54,12 @@ static const struct memory_region {
 
 static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 
-#define MIN_ALIGNMENT 8
+#define MIN_ALIGNMENT 8U
 
 #if defined(STM32H7)
-#define DMA_ALIGNMENT 32
+#define DMA_ALIGNMENT 32U
 #else
-#define DMA_ALIGNMENT 8
+#define DMA_ALIGNMENT 8U
 #endif
 
 // size of memory reserved for dma-capable alloc
@@ -93,6 +98,10 @@ void malloc_init(void)
 #endif
 }
 
+/*
+  allocate memory, using flags from MEM_REGION_FLAG_* to determine
+  memory type
+ */
 static void *malloc_flags(size_t size, uint32_t flags)
 {
     if (size == 0) {
@@ -169,6 +178,90 @@ found:
     memset(p, 0, size);
     return p;
 }
+
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+
+#define MALLOC_HEAD_SIZE DMA_ALIGNMENT
+#define MALLOC_GUARD_SIZE DMA_ALIGNMENT
+#define MALLOC_GUARD1_START 73
+#define MALLOC_GUARD2_START 172
+
+/*
+  optional malloc guard regions
+ */
+static void *malloc_flags_guard(size_t size, uint32_t flags)
+{
+    if (flags & (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_SDCARD)) {
+        size = (size + (DMA_ALIGNMENT-1U)) & ~(DMA_ALIGNMENT-1U);
+    } else {
+        size = (size + (MIN_ALIGNMENT-1U)) & ~(MIN_ALIGNMENT-1U);
+    }
+    void *ret = malloc_flags(size+MALLOC_GUARD_SIZE*2+MALLOC_HEAD_SIZE, flags);
+    if (!ret) {
+        return NULL;
+    }
+    uint32_t *bu = (uint32_t *)ret;
+    uint8_t *b1 = ((uint8_t *)bu) + MALLOC_HEAD_SIZE;
+    uint8_t *b2 = b1 + MALLOC_GUARD_SIZE + size;
+    bu[0] = size;
+    bu[1] = ~size;
+    for (uint32_t i=0; i<MALLOC_GUARD_SIZE; i++) {
+        b1[i] = (uint8_t)(MALLOC_GUARD1_START + i);
+        b2[i] = (uint8_t)(MALLOC_GUARD2_START + i);
+    }
+    return (void *)(b1+MALLOC_GUARD_SIZE);
+}
+
+extern void AP_memory_guard_error(uint32_t size);
+
+/*
+  check for errors in malloc memory using guard bytes
+ */
+void malloc_check(const void *p)
+{
+    if (p == NULL) {
+        return;
+    }
+    if (((uintptr_t)p) & 3) {
+        // misaligned memory
+        AP_memory_guard_error(0);
+        return;
+    }
+    const volatile uint32_t *bu = (uint32_t *)(((uint8_t *)p) - (MALLOC_GUARD_SIZE+MALLOC_HEAD_SIZE));
+    if (bu[1] != ~bu[0]) {
+        AP_memory_guard_error(0);
+        return;
+    }
+    const uint32_t size = bu[0];
+    const volatile uint8_t *b1 = ((uint8_t *)bu) + MALLOC_HEAD_SIZE;
+    const volatile uint8_t *b2 = b1 + MALLOC_GUARD_SIZE + size;
+    for (uint32_t i=0; i<MALLOC_GUARD_SIZE; i++) {
+        if (b1[i] != (uint8_t)(MALLOC_GUARD1_START + i) ||
+            b2[i] != (uint8_t)(MALLOC_GUARD2_START + i)) {
+            AP_memory_guard_error(size);
+            return;
+        }
+    }
+}
+
+static void free_guard(void *p)
+{
+    malloc_check(p);
+    chHeapFree((void*)(((uint8_t *)p) - (MALLOC_GUARD_SIZE+MALLOC_HEAD_SIZE)));
+}
+
+#define malloc_flags(size, flags) malloc_flags_guard(size, flags)
+
+#else // HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+
+void malloc_check(const void *p)
+{
+    (void)p;
+}
+#endif // HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+
+
+
 /*
   allocate normal memory
  */
@@ -214,7 +307,11 @@ void *calloc(size_t nmemb, size_t size)
 void free(void *ptr)
 {
     if(ptr != NULL) {
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+        free_guard(ptr);
+#else
         chHeapFree(ptr);
+#endif
     }
 }
 
