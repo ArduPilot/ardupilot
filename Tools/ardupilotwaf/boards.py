@@ -663,6 +663,13 @@ class chibios(Board):
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
 
+        if cfg.env.ENABLE_MALLOC_GUARD:
+            cfg.msg("Enabling malloc guard", "yes")
+            env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
+            env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
+        else:
+            cfg.msg("Enabling malloc guard", "no")
+            
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [
