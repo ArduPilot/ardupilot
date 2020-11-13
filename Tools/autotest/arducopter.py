@@ -5101,6 +5101,8 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("RC9_OPTION", 85)
         self.set_parameter("LOG_DISARMED", 1)
         self.set_parameter("BATT2_MONITOR", 17)
+        self.set_parameter("GEN_TYPE", 3)
+        self.reboot_sitl()
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.customise_SITL_commandline(["--uartF=sim:richenpower"])
         self.mavproxy.expect("requested state is not RUN")
@@ -5158,6 +5160,50 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("LOG_DISARMED", 0)
         if not self.current_onboard_log_contains_message("GEN"):
             raise NotAchievedException("Did not find expected GEN message")
+
+    def test_ie24(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("SERIAL5_PROTOCOL", 30)
+            self.set_parameter("SERIAL5_BAUD", 115200)
+            self.set_parameter("GEN_TYPE", 2)
+            self.set_parameter("BATT2_MONITOR", 17)
+            self.set_parameter("SIM_IE24_ENABLE", 1)
+            self.set_parameter("LOG_DISARMED", 1)
+
+            self.customise_SITL_commandline(["--uartF=sim:ie24"])
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+
+            # Test for pre-arm check fail when state is not running
+            self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+            self.set_parameter("SIM_IE24_STATE", 8)
+            self.wait_statustext("Status not running")
+            self.try_arm(result=False,
+                         expect_msg="Status not running")
+            self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
+
+            # Test that error code does result in failsafe
+            self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+            self.change_mode("STABILIZE")
+            self.set_parameter("DISARM_DELAY", 0)
+            self.arm_vehicle()
+            self.set_parameter("SIM_IE24_ERROR", 30)
+            self.disarm_wait(timeout=1)
+            self.set_parameter("SIM_IE24_ERROR", 0)
+            self.set_parameter("DISARM_DELAY", 10)
+
+        except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
+            ex = e
+
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
 
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
@@ -5723,6 +5769,10 @@ class AutoTestCopter(AutoTest):
             ("RichenPower",
              "Test RichenPower generator",
              self.test_richenpower),
+
+            ("IE24",
+             "Test IntelligentEnergy 2.4kWh generator",
+             self.test_ie24),
 
             ("LogUpload",
              "Log upload",
