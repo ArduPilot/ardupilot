@@ -366,6 +366,10 @@ void Scheduler::_monitor_thread(void *arg)
         if (using_watchdog) {
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
         }
+
+        // if running memory guard then check all allocations
+        malloc_check(nullptr);
+
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
