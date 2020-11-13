@@ -18,6 +18,7 @@
 
 #include <AP_HAL/HAL.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 
 class AP_OSD_Backend
@@ -71,6 +72,9 @@ protected:
     {
         return (_osd.options & option) != 0;
     }
+
+    // load a font from sdcard or ROMFS
+    FileData *load_font_data(uint8_t font_num);
 
     int8_t blink_phase;
 
