@@ -649,9 +649,9 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
 /*
   NMEA checksum
  */
-uint16_t SITL_State::_gps_nmea_checksum(const char *s)
+uint8_t SITL_State::_gps_nmea_checksum(const char *s)
 {
-    uint16_t cs = 0;
+    uint8_t cs = 0;
     const uint8_t *b = (const uint8_t *)s;
     for (uint16_t i=1; s[i]; i++) {
         cs ^= b[i];
@@ -665,7 +665,7 @@ uint16_t SITL_State::_gps_nmea_checksum(const char *s)
 void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 {
     char *s = nullptr;
-    uint16_t csum;
+    uint8_t csum;
     char trailer[6];
 
     va_list ap;
