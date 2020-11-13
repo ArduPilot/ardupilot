@@ -145,6 +145,4 @@ private:
     struct log_RGPH _RGPH;
     struct log_RGPI _RGPI[GPS_MAX_INSTANCES];
     struct log_RGPJ _RGPJ[GPS_MAX_INSTANCES];
-
-    Vector3f antenna_offset[GPS_MAX_INSTANCES];
 };
