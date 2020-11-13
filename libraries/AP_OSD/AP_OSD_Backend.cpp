@@ -71,6 +71,12 @@ FileData *AP_OSD_Backend::load_font_data(uint8_t font_num)
     }
     if (fd == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "OSD: Failed to load font %u", font_num);
+        if (font_num != 0) {
+            // fallback to font0.bin. This allows us to reduce the
+            // number of fonts we include in flash without breaking
+            // user setups
+            return load_font_data(0);
+        }
     }
     return fd;
 }
