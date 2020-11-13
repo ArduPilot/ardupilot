@@ -1,4 +1,4 @@
-g# hw definition file for processing by chibios_pins.py
+# hw definition file for processing by chibios_pins.py
 
 # MCU class and specific type
 MCU STM32F303 STM32F303xC
