@@ -529,6 +529,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::RETRACT_MOUNT,"RetractMount"},
     { AUX_FUNC::RELAY,"Relay1"},
     { AUX_FUNC::LANDING_GEAR,"Landing"},
+    { AUX_FUNC::MOTOR_ESTOP,"MotorEStop"},
     { AUX_FUNC::MOTOR_INTERLOCK,"MotorInterlock"},
     { AUX_FUNC::RELAY2,"Relay2"},
     { AUX_FUNC::RELAY3,"Relay3"},
