@@ -445,7 +445,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
         return false;
     }
 
-    if (frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::OPTFLOW) {
+    if (!frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
         return false;
     }
 
@@ -456,8 +456,8 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
-    if ((frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) &&
-        (frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+    if (!frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
         return false;
     }
 
@@ -664,7 +664,7 @@ void NavEKF3_core::runYawEstimatorPrediction()
 
     // ensure GPS is used for horizontal position and velocity
     if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 
@@ -690,7 +690,7 @@ void NavEKF3_core::runYawEstimatorCorrection()
     }
     // ensure GPS is used for horizontal position and velocity
     if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        frontend->_sources.getVelXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 
