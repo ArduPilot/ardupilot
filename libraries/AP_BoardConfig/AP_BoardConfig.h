@@ -85,8 +85,8 @@ public:
         VRX_BOARD_UBRAIN52 = 35,
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
-        PX4_BOARD_OLDDRIVERS = 100,
         PX4_BOARD_FMUV6    = 39,
+        PX4_BOARD_OLDDRIVERS = 100,
     };
 
     // set default value for BRD_SAFETY_MASK
