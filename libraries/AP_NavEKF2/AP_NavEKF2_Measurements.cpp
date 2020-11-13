@@ -971,6 +971,11 @@ float NavEKF2_core::MagDeclination(void) const
  */
 void NavEKF2_core::learnInactiveBiases(void)
 {
+#if INS_MAX_INSTANCES == 1
+    inactiveBias[0].gyro_bias = stateStruct.gyro_bias;
+    inactiveBias[0].gyro_scale = stateStruct.gyro_scale;
+    inactiveBias[0].accel_zbias = stateStruct.accel_zbias;
+#else
     const auto &ins = dal.ins();
 
     // learn gyro biases
@@ -1029,6 +1034,7 @@ void NavEKF2_core::learnInactiveBiases(void)
             inactiveBias[i].accel_zbias -= error * (1.0e-4f * dtEkfAvg);
         }
     }
+#endif
 }
 
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
