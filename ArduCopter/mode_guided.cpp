@@ -410,7 +410,7 @@ void ModeGuided::pos_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -452,7 +452,7 @@ void ModeGuided::vel_control_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -516,7 +516,7 @@ void ModeGuided::posvel_control_run()
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && ((copter.g2.auto_options & (uint32_t)Options::IgnorePilotYaw) == 0)) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -697,6 +697,12 @@ void ModeGuided::set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, fl
     } else if (use_yaw_rate) {
         auto_yaw.set_rate(yaw_rate_cds);
     }
+}
+
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeGuided::use_pilot_yaw(void) const
+{
+    return (copter.g2.guided_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
 }
 
 // Guided Limit code

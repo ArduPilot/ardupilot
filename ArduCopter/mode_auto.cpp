@@ -385,6 +385,12 @@ void ModeAuto::payload_place_start()
 
 }
 
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeAuto::use_pilot_yaw(void) const
+{
+    return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+}
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -750,7 +756,7 @@ void ModeAuto::wp_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -797,7 +803,7 @@ void ModeAuto::spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -858,7 +864,7 @@ void ModeAuto::circle_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -904,7 +910,7 @@ void ModeAuto::loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
