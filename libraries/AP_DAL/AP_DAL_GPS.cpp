@@ -49,8 +49,5 @@ void AP_DAL_GPS::start_frame()
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
-
-        // also fetch antenna offset for this frame
-        antenna_offset[i] = gps.get_antenna_offset(i);
     }
 }
