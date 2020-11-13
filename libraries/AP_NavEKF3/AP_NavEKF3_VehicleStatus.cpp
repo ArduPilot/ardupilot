@@ -83,7 +83,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend->_sources.getVelZSource() == AP_NavEKF_Source::SourceZ::GPS) && !gps.have_vertical_velocity(preferred_gps)) {
+    } else if (frontend->_sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) && !gps.have_vertical_velocity(preferred_gps)) {
         // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
         gpsVertVelFail = true;
         // if we have a 3D fix with no vertical velocity and
