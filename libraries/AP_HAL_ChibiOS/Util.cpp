@@ -64,7 +64,7 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
     if (ptr != NULL) {
-        chHeapFree(ptr);
+        free(ptr);
     }
 }
 
