@@ -1188,6 +1188,10 @@ void NavEKF3_core::getTimingStatistics(struct ekf_timing &_timing)
  */
 void NavEKF3_core::learnInactiveBiases(void)
 {
+#if INS_MAX_INSTANCES == 1
+    inactiveBias[0].gyro_bias = stateStruct.gyro_bias;
+    inactiveBias[0].accel_bias = stateStruct.accel_bias;
+#else
     const auto &ins = dal.ins();
 
     // learn gyro biases
@@ -1248,6 +1252,7 @@ void NavEKF3_core::learnInactiveBiases(void)
             inactiveBias[i].accel_bias -= error * (1.0e-4f * dtEkfAvg);
         }
     }
+#endif
 }
 
 /*
