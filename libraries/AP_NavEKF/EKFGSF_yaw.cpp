@@ -166,17 +166,26 @@ void EKFGSF_yaw::fuseVelData(const Vector2f &vel, const float velAcc)
 
             if (!state_update_failed) {
                 // Calculate weighting for each model assuming a normal error distribution
+                const float min_weight = 1e-5f;
+                uint8_t n_clips = 0;
                 for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
-                    newWeight[mdl_idx]= fmaxf(gaussianDensity(mdl_idx) * GSF.weights[mdl_idx], 0.0f);
+                    newWeight[mdl_idx] = gaussianDensity(mdl_idx) * GSF.weights[mdl_idx];
+                    if (newWeight[mdl_idx] < min_weight) {
+                        n_clips++;
+                        newWeight[mdl_idx] = min_weight;
+                    }
                     total_w += newWeight[mdl_idx];
                 }
 
                 // Normalise the sum of weights to unity
-                if (vel_fuse_running && is_positive(total_w)) {
+                // Reset the filters if all weights have underflowed due to excessive innovation variances
+                if (vel_fuse_running && n_clips < N_MODELS_EKFGSF) {
                     float total_w_inv = 1.0f / total_w;
                     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
                         GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
                     }
+                } else {
+                    resetEKFGSF();
                 }
             }
         }
