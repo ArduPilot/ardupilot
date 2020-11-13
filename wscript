@@ -96,6 +96,11 @@ def options(opt):
         default=False,
         help='enable OS level asserts.')
 
+    g.add_option('--enable-malloc-guard',
+        action='store_true',
+        default=False,
+        help='enable malloc guard regions.')
+    
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -277,6 +282,7 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
+    cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
