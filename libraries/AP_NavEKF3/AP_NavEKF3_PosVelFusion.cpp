@@ -245,7 +245,7 @@ void NavEKF3_core::ResetHeight(void)
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
-    if (inFlight && !gpsNotAvailable && (frontend->_sources.getVelZSource() == AP_NavEKF_Source::SourceZ::GPS) && !frontend->inhibitGpsVertVelUse) {
+    if (inFlight && !gpsNotAvailable && frontend->_sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) && !frontend->inhibitGpsVertVelUse) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {
         stateStruct.velocity.z = extNavVelDelayed.vel.z;
@@ -462,7 +462,7 @@ void NavEKF3_core::SelectVelPosFusion()
     if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
 
         // Don't fuse velocity data if GPS doesn't support it
-        fuseVelData = frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::GPS;
+        fuseVelData = frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS);
         fusePosData = true;
         extNavUsedForPos = false;
 
@@ -485,7 +485,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // fuse external navigation velocity data if available
     // extNavVelDelayed is already corrected for sensor position
-    if (extNavVelToFuse && (frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV)) {
+    if (extNavVelToFuse && frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV)) {
         fuseVelData = true;
         velPosObs[0] = extNavVelDelayed.vel.x;
         velPosObs[1] = extNavVelDelayed.vel.y;
@@ -720,7 +720,7 @@ void NavEKF3_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if ((frontend->_sources.getVelZSource() == AP_NavEKF_Source::SourceZ::NONE || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse) && !useExtNavVel) {
+            if ((!frontend->_sources.haveVelZSource() || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse) && !useExtNavVel) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
@@ -1807,7 +1807,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
 
     // Check for body odometry data (aka visual position delta) at the fusion time horizon
     const bool bodyOdomDataToFuse = storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms);
-    if (bodyOdomDataToFuse && (frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV)) {
+    if (bodyOdomDataToFuse && frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV)) {
 
         // Fuse data into the main filter
         FuseBodyVel();
@@ -1815,7 +1815,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
 
     // Check for wheel encoder data at the fusion time horizon
     const bool wheelOdomDataToFuse = storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms);
-    if (wheelOdomDataToFuse && (frontend->_sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+    if (wheelOdomDataToFuse && frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
 
         // check if the delta time is too small to calculate a velocity
         if (wheelOdmDataDelayed.delTime > EKF_TARGET_DT) {
