@@ -637,6 +637,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 "CubeOrange-periph",
+                "CubeBlack-periph",
                 ]
 
     def build_arducopter(self, tag):
