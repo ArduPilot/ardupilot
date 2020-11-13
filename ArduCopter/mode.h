@@ -386,7 +386,10 @@ private:
     enum class Options : int32_t {
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
+        IgnorePilotYaw                     = (1 << 2U),
     };
+
+    bool use_pilot_yaw(void) const;
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -809,6 +812,8 @@ private:
     // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
         AllowArmingFromTX = (1U << 0),
+        // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
+        IgnorePilotYaw    = (1U << 2),
     };
 
     void pos_control_start();
@@ -820,6 +825,7 @@ private:
     void posvel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
     GuidedMode guided_mode = Guided_TakeOff;
@@ -1073,6 +1079,15 @@ private:
     uint32_t _loiter_start_time;
 
     bool terrain_following_allowed;
+
+    // enum for RTL_OPTIONS parameter
+    enum class Options : int32_t {
+        // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
+        IgnorePilotYaw    = (1U << 2),
+    };
+
+    bool use_pilot_yaw(void) const;
+
 };
 
 

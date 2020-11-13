@@ -632,6 +632,10 @@ public:
     AP_Int32 guided_options;
 #endif
 
+#if MODE_RTL_ENABLED == ENABLED
+    AP_Int32 rtl_options;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];
