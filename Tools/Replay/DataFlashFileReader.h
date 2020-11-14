@@ -12,7 +12,7 @@ public:
     ~AP_LoggerFileReader();
 
     bool open_log(const char *logfile);
-    bool update(char type[5]);
+    bool update();
 
     virtual bool handle_log_format_msg(const struct log_Format &f) = 0;
     virtual bool handle_msg(const struct log_Format &f, uint8_t *msg) = 0;

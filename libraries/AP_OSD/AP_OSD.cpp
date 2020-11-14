@@ -19,12 +19,13 @@
 
 #include "AP_OSD.h"
 
-#if OSD_ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
 
 #include "AP_OSD_MAX7456.h"
 #ifdef WITH_SITL_OSD
 #include "AP_OSD_SITL.h"
 #endif
+#include "AP_OSD_MSP.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
@@ -37,12 +38,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
     // @Param: _TYPE
     // @DisplayName: OSD type
-    // @Description: OSD type
-    // @Values: 0:None,1:MAX7456
+    // @Description: OSD type. TXONLY makes the OSD parameter selection available to other modules even if there is no native OSD support on the board, for instance CRSF.
+    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
 
+#if OSD_ENABLED
     // @Param: _CHAN
     // @DisplayName: Screen switch transmitter channel
     // @Description: This sets the channel used to switch different OSD screens.
@@ -69,9 +71,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _SW_METHOD
     // @DisplayName: Screen switch method
     // @Description: This sets the method used to switch different OSD screens.
-    // @Values: 0: switch to next screen if channel value was changed,
-    //          1: select screen based on pwm ranges specified for each screen,
-    //          2: switch to next screen after low to high transition and every 1s while channel value is high
+    // @Values: 0: switch to next screen if channel value was changed, 1: select screen based on pwm ranges specified for each screen, 2: switch to next screen after low to high transition and every 1s while channel value is high
     // @User: Standard
     AP_GROUPINFO("_SW_METHOD", 7, AP_OSD, sw_method, AP_OSD::TOGGLE),
 
@@ -161,6 +161,25 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FS_SCR", 19, AP_OSD, failsafe_scr, 0),
 
+#if OSD_PARAM_ENABLED
+    // @Param: _BTN_DELAY
+    // @DisplayName: Button delay
+    // @Description: Debounce time in ms for stick commanded parameter navigation.
+    // @Range: 0 3000
+    // @User: Advanced
+    AP_GROUPINFO("_BTN_DELAY", 20, AP_OSD, button_delay_ms, 300),
+#endif
+
+#endif
+#if OSD_PARAM_ENABLED
+    // @Group: 5_
+    // @Path: AP_OSD_ParamScreen.cpp
+    AP_SUBGROUPINFO(param_screen[0], "5_", 21, AP_OSD, AP_OSD_ParamScreen),
+
+    // @Group: 6_
+    // @Path: AP_OSD_ParamScreen.cpp
+    AP_SUBGROUPINFO(param_screen[1], "6_", 22, AP_OSD, AP_OSD_ParamScreen),
+#endif
     AP_GROUPEND
 };
 
@@ -175,16 +194,18 @@ AP_OSD::AP_OSD()
         AP_HAL::panic("AP_OSD must be singleton");
     }
     AP_Param::setup_object_defaults(this, var_info);
+#if OSD_ENABLED
     // default first screen enabled
     screen[0].enabled = 1;
+    previous_pwm_screen = -1;
+#endif
 #ifdef WITH_SITL_OSD
-    osd_type.set_default(2);
+    osd_type.set_default(OSD_SITL);
 #endif
 
 #ifdef HAL_OSD_TYPE_DEFAULT
     osd_type.set_default(HAL_OSD_TYPE_DEFAULT);
 #endif
-    previous_pwm_screen = -1;
     _singleton = this;
 }
 
@@ -192,10 +213,12 @@ void AP_OSD::init()
 {
     switch ((enum osd_types)osd_type.get()) {
     case OSD_NONE:
+    case OSD_TXONLY:
     default:
         break;
 
     case OSD_MAX7456: {
+#ifdef HAL_WITH_SPI_OSD
         AP_HAL::OwnPtr<AP_HAL::Device> spi_dev = std::move(hal.spi->get_device("osd"));
         if (!spi_dev) {
             break;
@@ -205,6 +228,7 @@ void AP_OSD::init()
             break;
         }
         hal.console->printf("Started MAX7456 OSD\n");
+#endif
         break;
     }
 
@@ -218,13 +242,24 @@ void AP_OSD::init()
         break;
     }
 #endif
+    case OSD_MSP: {
+        backend = AP_OSD_MSP::probe(*this);
+        if (backend == nullptr) {
+            break;
+        }
+        hal.console->printf("Started MSP OSD\n");
+        break;
     }
-    if (backend != nullptr) {
-        // create thread as higher priority than IO
+    }
+#if OSD_ENABLED
+    if (backend != nullptr && (enum osd_types)osd_type.get() != OSD_MSP) {
+        // create thread as higher priority than IO for all backends but MSP which has its own
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_OSD::osd_thread, void), "OSD", 1024, AP_HAL::Scheduler::PRIORITY_IO, 1);
     }
+#endif
 }
 
+#if OSD_ENABLED
 void AP_OSD::osd_thread()
 {
     while (true) {
@@ -241,8 +276,8 @@ void AP_OSD::update_osd()
         stats();
         update_current_screen();
 
-        screen[current_screen].set_backend(backend);
-        screen[current_screen].draw();
+        get_screen(current_screen).set_backend(backend);
+        get_screen(current_screen).draw();
     }
 
     backend->flush();
@@ -300,12 +335,12 @@ void AP_OSD::update_current_screen()
 {
     // Switch on ARM/DISARM event
     if (AP_Notify::flags.armed) {
-        if (!was_armed && arm_scr > 0 && arm_scr <= AP_OSD_NUM_SCREENS && screen[arm_scr-1].enabled) {
+        if (!was_armed && arm_scr > 0 && arm_scr <= AP_OSD_NUM_DISPLAY_SCREENS && get_screen(arm_scr-1).enabled) {
             current_screen = arm_scr-1;
         }
         was_armed = true;
     } else if (was_armed) {
-        if (disarm_scr > 0 && disarm_scr <= AP_OSD_NUM_SCREENS && screen[disarm_scr-1].enabled) {
+        if (disarm_scr > 0 && disarm_scr <= AP_OSD_NUM_DISPLAY_SCREENS && get_screen(disarm_scr-1).enabled) {
             current_screen = disarm_scr-1;
         }
         was_armed = false;
@@ -313,13 +348,13 @@ void AP_OSD::update_current_screen()
 
     // Switch on failsafe event
     if (AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_battery) {
-        if (!was_failsafe && failsafe_scr > 0 && failsafe_scr <= AP_OSD_NUM_SCREENS && screen[failsafe_scr-1].enabled) {
+        if (!was_failsafe && failsafe_scr > 0 && failsafe_scr <= AP_OSD_NUM_DISPLAY_SCREENS && get_screen(failsafe_scr-1).enabled) {
             pre_fs_screen = current_screen;
             current_screen = failsafe_scr-1;
         }
         was_failsafe = true;
     } else if (was_failsafe) {
-        if (screen[pre_fs_screen].enabled) {
+        if (get_screen(pre_fs_screen).enabled) {
             current_screen = pre_fs_screen;
         }
         was_failsafe = false;
@@ -356,7 +391,7 @@ void AP_OSD::update_current_screen()
     //select screen based on pwm ranges specified
     case PWM_RANGE:
         for (int i=0; i<AP_OSD_NUM_SCREENS; i++) {
-            if (screen[i].enabled && screen[i].channel_min <= channel_value && screen[i].channel_max > channel_value && previous_pwm_screen != i) {
+            if (get_screen(i).enabled && get_screen(i).channel_min <= channel_value && get_screen(i).channel_max > channel_value && previous_pwm_screen != i) {
                 current_screen = previous_pwm_screen = i;
                 break;
             }
@@ -389,7 +424,7 @@ void AP_OSD::next_screen()
     uint8_t t = current_screen;
     do {
         t = (t + 1)%AP_OSD_NUM_SCREENS;
-    } while (t != current_screen && !screen[t].enabled);
+    } while (t != current_screen && !get_screen(t).enabled);
     current_screen = t;
 }
 
@@ -399,9 +434,56 @@ void AP_OSD::set_nav_info(NavInfo &navinfo)
     // do this without a lock for now
     nav_info = navinfo;
 }
+#endif // OSD_ENABLED
+
+// handle OSD parameter configuration
+void AP_OSD::handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link)
+{
+    bool found = false;
+
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_OSD_PARAM_CONFIG: {
+        mavlink_osd_param_config_t packet;
+        mavlink_msg_osd_param_config_decode(&msg, &packet);
+#if OSD_PARAM_ENABLED
+        for (uint8_t i = 0; i < AP_OSD_NUM_PARAM_SCREENS; i++) {
+            if (packet.osd_screen == i + AP_OSD_NUM_DISPLAY_SCREENS + 1) {
+                param_screen[i].handle_write_msg(packet, link);
+                found = true;
+            }
+        }
+#endif
+        // send back an error
+        if (!found) {
+            mavlink_msg_osd_param_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_INVALID_SCREEN);
+        }
+    }
+        break;
+    case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG: {
+        mavlink_osd_param_show_config_t packet;
+        mavlink_msg_osd_param_show_config_decode(&msg, &packet);
+#if OSD_PARAM_ENABLED
+        for (uint8_t i = 0; i < AP_OSD_NUM_PARAM_SCREENS; i++) {
+            if (packet.osd_screen == i + AP_OSD_NUM_DISPLAY_SCREENS + 1) {
+                param_screen[i].handle_read_msg(packet, link);
+                found = true;
+            }
+        }
+#endif
+        // send back an error
+        if (!found) {
+            mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_INVALID_SCREEN,
+                nullptr, OSD_PARAM_NONE, 0, 0, 0);
+        }
+    }
+        break;
+    default:
+        break;
+    }
+}
 
 AP_OSD *AP::osd() {
     return AP_OSD::get_singleton();
 }
 
-#endif // OSD_ENABLED
+#endif // OSD_ENABLED || OSD_PARAM_ENABLED

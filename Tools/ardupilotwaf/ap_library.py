@@ -152,6 +152,7 @@ class ap_library_check_headers(Task.Task):
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Camera/AP_RunCam.h',
+        'libraries/AP_Common/AP_FWVersionDefine.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -205,11 +206,33 @@ class ap_library_check_headers(Task.Task):
     def keyword(self):
         return 'Checking included headers'
 
+def double_precision_check(tasks):
+    '''check for tasks marked as double precision'''
+
+    for t in tasks:
+        if len(t.inputs) == 1:
+            # get a list of tasks we need to change to be double precision
+            double_tasks = []
+            for library in t.env.DOUBLE_PRECISION_SOURCES.keys():
+                for s in t.env.DOUBLE_PRECISION_SOURCES[library]:
+                    double_tasks.append([library, s])
+
+            src = str(t.inputs[0]).split('/')[-2:]
+            if src in double_tasks:
+                single_precision_option='-fsingle-precision-constant'
+                t.env.CXXFLAGS = t.env.CXXFLAGS[:]
+                if single_precision_option in t.env.CXXFLAGS:
+                    t.env.CXXFLAGS.remove(single_precision_option)
+                t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+
+    
 @feature('ap_library_object')
 @after_method('process_source')
 def ap_library_register_for_check(self):
     if not hasattr(self, 'compiled_tasks'):
         return
+
+    double_precision_check(self.compiled_tasks)
 
     if not self.env.ENABLE_HEADER_CHECKS:
         return
@@ -221,3 +244,4 @@ def ap_library_register_for_check(self):
 def configure(cfg):
     cfg.env.AP_LIBRARIES_OBJECTS_KW = dict()
     cfg.env.AP_LIB_EXTRA_SOURCES = dict()
+    cfg.env.DOUBLE_PRECISION_SOURCES = dict()

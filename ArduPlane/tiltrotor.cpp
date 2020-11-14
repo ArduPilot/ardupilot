@@ -374,7 +374,24 @@ void QuadPlane::tiltrotor_vectored_yaw(void)
 
     // calculate the basic tilt amount from current_tilt
     float base_output = zero_out + (tilt.current_tilt * (1 - zero_out));
-    
+
+    // for testing when disarmed, apply vectored yaw in proportion to rudder stick
+    // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
+    constexpr uint32_t TILT_DELAY_MS = 3000;
+    uint32_t now = AP_HAL::millis();
+    if (!hal.util->get_soft_armed() && (plane.quadplane.options & OPTION_DISARMED_TILT)) {
+        // this test is subject to wrapping at ~49 days, but the consequences are insignificant
+        if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
+            float yaw_out = plane.channel_rudder->get_control_in();
+            yaw_out /= plane.channel_rudder->get_range();
+            float yaw_range = zero_out;
+
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * (base_output + yaw_out * yaw_range));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * (base_output - yaw_out * yaw_range));
+        }
+        return;
+    }
+
     float tilt_threshold = (tilt.max_angle_deg/90.0f);
     bool no_yaw = (tilt.current_tilt > tilt_threshold);
     if (no_yaw) {

@@ -7,7 +7,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -36,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 // state of GPS emulation
 static struct gps_state {
     /* pipe emulating UBLOX GPS serial stream */
-    int gps_fd, client_fd;
+    int gps_fd, client_fd, ext_fifo_fd;
     uint32_t last_update; // milliseconds
 
     uint8_t next_index;
@@ -65,6 +66,7 @@ ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 /*
   setup GPS input pipe
  */
+const char * gps_fifo[2] = {"/tmp/ap_gps0", "/tmp/ap_gps1"}; 
 int SITL_State::gps_pipe(uint8_t idx)
 {
     int fd[2];
@@ -72,6 +74,10 @@ int SITL_State::gps_pipe(uint8_t idx)
         return gps_state[idx].client_fd;
     }
     pipe(fd);
+    if (mkfifo(gps_fifo[idx], 0666) < 0) {
+        printf("MKFIFO failed with %s\n", strerror(errno));
+    }
+    
     gps_state[idx].gps_fd    = fd[1];
     gps_state[idx].client_fd = fd[0];
     gps_state[idx].last_update = AP_HAL::millis();
@@ -89,6 +95,12 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
 {
     if (instance == 1 && _sitl->gps_disable[instance]) {
         return;
+    }
+    // also write to external fifo
+    int fd = open(gps_fifo[instance], O_WRONLY | O_NONBLOCK);
+    if (fd >= 0) {
+        write(fd, p, size);
+        close(fd);
     }
     while (size--) {
         if (_sitl->gps_byteloss[instance] > 0.0f) {
@@ -116,7 +128,7 @@ static void simulation_timeval(struct timeval *tv)
     static struct timeval first_tv;
     if (first_usec == 0) {
         first_usec = now;
-        gettimeofday(&first_tv, nullptr);
+        first_tv.tv_sec = AP::sitl()->start_time_UTC;
     }
     *tv = first_tv;
     tv->tv_sec += now / 1000000ULL;
@@ -330,8 +342,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
     pos.altitude_msl = d->altitude * 1000.0f;
-    pos.horizontal_accuracy = 1500;
-    pos.vertical_accuracy = 2000;
+    pos.horizontal_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
 
     status.time = time_week_ms;
     status.fix_type = d->have_lock?3:0;
@@ -388,8 +400,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
     pvt.h_msl = d->altitude * 1000.0f;
-    pvt.h_acc = 200;
-    pvt.v_acc = 200; 
+    pvt.h_acc = _sitl->gps_accuracy[instance] * 1000;
+    pvt.v_acc = _sitl->gps_accuracy[instance] * 1000;
     pvt.velN = 1000.0f * d->speedN;
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
@@ -838,8 +850,8 @@ void SITL_State::_update_gps_sbp(const struct gps_data *d, uint8_t instance)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = 5e3;
-    pos.v_accuracy = 10e3;
+    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
@@ -955,8 +967,8 @@ void SITL_State::_update_gps_sbp2(const struct gps_data *d, uint8_t instance)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = 5e3;
-    pos.v_accuracy = 10e3;
+    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
@@ -1249,10 +1261,11 @@ void SITL_State::_update_gps(double latitude, double longitude, float altitude,
         // add an altitude error controlled by a slow sine wave
         d.altitude = altitude + _sitl->gps_noise[idx] * sinf(AP_HAL::millis() * 0.0005f) + _sitl->gps_alt_offset[idx];
 
-        // Add offet to c.g. velocity to get velocity at antenna
-        d.speedN = speedN;
-        d.speedE = speedE;
-        d.speedD = speedD;
+        // Add offet to c.g. velocity to get velocity at antenna and add simulated error
+        Vector3f velErrorNED = _sitl->gps_vel_err[idx];
+        d.speedN = speedN + (velErrorNED.x * rand_float());
+        d.speedE = speedE + (velErrorNED.y * rand_float()); 
+        d.speedD = speedD + (velErrorNED.z * rand_float());
         d.have_lock = have_lock;
 
         if (_sitl->gps_drift_alt[idx] > 0) {

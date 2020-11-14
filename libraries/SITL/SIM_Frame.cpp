@@ -19,8 +19,11 @@
 #include "SIM_Frame.h"
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <stdio.h>
+#include <sys/stat.h>
+#include "picojson.h"
 
 using namespace SITL;
 
@@ -278,16 +281,173 @@ static Frame supported_frames[] =
     Frame("firefly",   6, firefly_motors)
 };
 
-void Frame::init(float _mass, float _hover_throttle, float _terminal_velocity, float _terminal_rotation_rate)
+// get air density in kg/m^3
+float Frame::get_air_density(float alt_amsl) const
 {
-    /*
-       scaling from total motor power to Newtons. Allows the copter
-       to hover against gravity when each motor is at hover_throttle
-    */
-    thrust_scale = (_mass * GRAVITY_MSS) / (num_motors * _hover_throttle);
+    float sigma, delta, theta;
 
-    terminal_velocity = _terminal_velocity;
-    terminal_rotation_rate = _terminal_rotation_rate;
+    AP_Baro::SimpleAtmosphere(alt_amsl * 0.001f, sigma, delta, theta);
+
+    const float air_pressure = SSL_AIR_PRESSURE * delta;
+    return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN + model.refTempC));
+}
+
+/*
+  load frame specific parameters from a json file if available
+ */
+void Frame::load_frame_params(const char *model_json)
+{
+    char *fname = nullptr;
+    struct stat st;
+    if (AP::FS().stat(model_json, &st) == 0) {
+        fname = strdup(model_json);
+    } else {
+        IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
+    }
+    if (fname == nullptr) {
+        AP_HAL::panic("%s failed to load\n", model_json);
+    }
+    ::printf("Loading model %s\n", fname);
+    int fd = AP::FS().open(model_json, O_RDONLY);
+    if (fd == -1) {
+        AP_HAL::panic("%s failed to load\n", model_json);
+    }
+    char buf[st.st_size];
+    if (AP::FS().read(fd, buf, st.st_size) != st.st_size) {
+        AP_HAL::panic("%s failed to load\n", model_json);
+    }
+    AP::FS().close(fd);
+
+    char *start = strchr(buf, '{');
+    if (!start) {
+        AP_HAL::panic("Invalid json %s", model_json);
+    }
+    free(fname);
+
+    /*
+      remove comments, as not allowed by the parser
+     */
+    for (char *p = strchr(start,'#'); p; p=strchr(p+1, '#')) {
+        // clear to end of line
+        do {
+            *p++ = ' ';
+        } while (*p != '\n' && *p != '\r' && *p);
+    }
+
+    picojson::value obj;
+    std::string err = picojson::parse(obj, start);
+    if (!err.empty()) {
+        AP_HAL::panic("Failed to load %s: %s", model_json, err.c_str());
+        exit(1);
+    }
+
+    struct {
+        const char *label;
+        float &v;
+    } vars[] = {
+#define FRAME_VAR(s) { #s, model.s }
+        FRAME_VAR(mass),
+        FRAME_VAR(diagonal_size),
+        FRAME_VAR(refSpd),
+        FRAME_VAR(refAngle),
+        FRAME_VAR(refVoltage),
+        FRAME_VAR(refCurrent),
+        FRAME_VAR(refAlt),
+        FRAME_VAR(refTempC),
+        FRAME_VAR(maxVoltage),
+        FRAME_VAR(battCapacityAh),
+        FRAME_VAR(refBatRes),
+        FRAME_VAR(propExpo),
+        FRAME_VAR(refRotRate),
+        FRAME_VAR(hoverThrOut),
+        FRAME_VAR(pwmMin),
+        FRAME_VAR(pwmMax),
+        FRAME_VAR(spin_min),
+        FRAME_VAR(spin_max),
+        FRAME_VAR(slew_max),
+    };
+    static_assert(sizeof(model) == sizeof(float)*ARRAY_SIZE(vars), "incorrect model vars");
+
+    for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
+        auto v = obj.get(vars[i].label);
+        if (v.is<picojson::null>()) {
+            // use default value
+            continue;
+        }
+        if (!v.is<double>()) {
+            AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+        }
+        vars[i].v = v.get<double>();
+    }
+
+    ::printf("Loaded model params from %s\n", model_json);
+}
+
+/*
+  initialise the frame
+ */
+void Frame::init(const char *frame_str, Battery *_battery)
+{
+    model = default_model;
+    battery = _battery;
+
+    const char *colon = strchr(frame_str, ':');
+    size_t slen = strlen(frame_str);
+    if (colon != nullptr && slen > 5 && strcmp(&frame_str[slen-5], ".json") == 0) {
+        load_frame_params(colon+1);
+    }
+    mass = model.mass;
+
+    const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));
+
+    float ref_air_density = get_air_density(model.refAlt);
+
+    areaCd = drag_force / (0.5 * ref_air_density * sq(model.refSpd));
+
+    terminal_rotation_rate = model.refRotRate;
+
+    float hover_thrust = mass * GRAVITY_MSS;
+    float hover_power = model.refCurrent * model.refVoltage;
+    float hover_velocity_out = 2 * hover_power / hover_thrust;
+    float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
+    velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
+    thrust_max = 0.5 * ref_air_density * effective_disc_area * sq(velocity_max);
+    effective_prop_area = effective_disc_area / num_motors;
+
+    // power_factor is ratio of power consumed per newton of thrust
+    float power_factor = hover_power / hover_thrust;
+
+    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
+
+    for (uint8_t i=0; i<num_motors; i++) {
+        motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
+                               model.mass, model.diagonal_size, power_factor, model.maxVoltage);
+    }
+
+
+#if 0
+    // useful debug code for thrust curve
+    {
+        motors[0].set_slew_max(0);
+        struct sitl_input input {};
+        for (uint16_t pwm = 1000; pwm < 2000; pwm += 50) {
+            input.servos[0] = pwm;
+
+            Vector3f rot_accel {}, thrust {};
+            Vector3f vel_air_bf {};
+            motors[0].calculate_forces(input, motor_offset, rot_accel, thrust, vel_air_bf,
+                                       ref_air_density, velocity_max, effective_prop_area, battery->get_voltage());
+            ::printf("pwm[%u] cmd=%.3f thrust=%.3f hovthst=%.3f\n",
+                     pwm, motors[0].pwm_to_command(pwm), -thrust.z*num_motors, hover_thrust);
+        }
+        motors[0].set_slew_max(model.slew_max);
+    }
+#endif
+
+    // setup reasonable defaults for battery
+    AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
+    AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
+    AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
 }
 
 /*
@@ -300,8 +460,6 @@ Frame *Frame::find_frame(const char *name)
         if (strncasecmp(name, supported_frames[i].name, strlen(supported_frames[i].name)) == 0) {
             return &supported_frames[i];
         }
-
-
     }
     return nullptr;
 }
@@ -311,21 +469,26 @@ void Frame::calculate_forces(const Aircraft &aircraft,
                              const struct sitl_input &input,
                              Vector3f &rot_accel,
                              Vector3f &body_accel,
-                             float* rpm)
+                             float* rpm,
+                             bool use_drag)
 {
     Vector3f thrust; // newtons
 
-    // scale thrust for altitude
-    float scaling = thrust_scale * AP::baro().get_air_density_ratio();
+    const float air_density = get_air_density(aircraft.get_location().alt*0.01);
 
+    Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_air_ef();
+
+    float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mraccel, mthrust;
-        motors[i].calculate_forces(input, scaling, motor_offset, mraccel, mthrust);
+        motors[i].calculate_forces(input, motor_offset, mraccel, mthrust, vel_air_bf, air_density, velocity_max,
+                                   effective_prop_area, battery->get_voltage());
+        current += motors[i].get_current();
         rot_accel += mraccel;
         thrust += mthrust;
         // simulate motor rpm
         if (!is_zero(AP::sitl()->vibe_motor)) {
-            rpm[i] = sqrtf(mthrust.length() / scaling) * AP::sitl()->vibe_motor * 60.0f;
+            rpm[i] = motors[i].get_command() * AP::sitl()->vibe_motor * 60.0f;
         }
     }
 
@@ -339,16 +502,22 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
     }
 
-    if (terminal_velocity > 0) {
-        // air resistance
-        Vector3f air_resistance = -aircraft.get_velocity_air_ef() * (GRAVITY_MSS/terminal_velocity);
-        body_accel += aircraft.get_dcm().transposed() * air_resistance;
+    if (use_drag) {
+        // use the model params to calculate drag
+        const Vector3f vel_air_ef = aircraft.get_velocity_air_ef();
+        const float speed = vel_air_ef.length();
+        float drag_force = areaCd * 0.5 * air_density * sq(speed);
+        Vector3f drag_ef;
+        if (is_positive(speed)) {
+            drag_ef = -(vel_air_ef / speed) * drag_force;
+        }
+        body_accel += aircraft.get_dcm().transposed() * drag_ef / mass;
     }
 
     // add some noise
     const float gyro_noise = radians(0.1);
     const float accel_noise = 0.3;
-    const float noise_scale = thrust.length() / (thrust_scale * num_motors);
+    const float noise_scale = thrust.length() / thrust_max;
     rot_accel += Vector3f(aircraft.rand_normal(0, 1),
                           aircraft.rand_normal(0, 1),
                           aircraft.rand_normal(0, 1)) * gyro_noise * noise_scale;
@@ -359,16 +528,16 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
 
 // calculate current and voltage
-void Frame::current_and_voltage(const struct sitl_input &input, float &voltage, float &current)
+void Frame::current_and_voltage(float &voltage, float &current)
 {
-    voltage = 0;
+    float param_voltage = AP::sitl()->batt_voltage;
+    if (!is_equal(last_param_voltage,param_voltage)) {
+        battery->init_voltage(param_voltage);
+        last_param_voltage = param_voltage;
+    }
+    voltage = battery->get_voltage();
     current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
-        float c, v;
-        motors[i].current_and_voltage(input, v, c, motor_offset);
-        current += c;
-        voltage += v;
+        current += motors[i].get_current();
     }
-    // use average for voltage, total for current
-    voltage /= num_motors;
 }

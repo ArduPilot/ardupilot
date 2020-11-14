@@ -42,6 +42,7 @@ public:
         AP_BeaconType_None   = 0,
         AP_BeaconType_Pozyx  = 1,
         AP_BeaconType_Marvelmind = 2,
+        AP_BeaconType_Nooploop  = 3,
         AP_BeaconType_SITL   = 10
     };
 
@@ -58,10 +59,10 @@ public:
     void init(void);
 
     // return true if beacon feature is enabled
-    bool enabled(void);
+    bool enabled(void) const;
 
     // return true if sensor is basically healthy (we are receiving data)
-    bool healthy(void);
+    bool healthy(void) const;
 
     // update state of all beacons
     void update(void);

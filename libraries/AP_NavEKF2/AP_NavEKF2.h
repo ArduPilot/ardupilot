@@ -22,16 +22,13 @@
  */
 #pragma once
 
+#include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Logger/LogStructure.h>
 
 class NavEKF2_core;
-class AP_AHRS;
 
 class NavEKF2 {
     friend class NavEKF2_core;
@@ -56,13 +53,11 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
-    // check if we should write log messages
-    void check_log_write(void);
-    
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
-    // Ensure that all started cores are considered healthy
-    bool all_cores_healthy(void) const;
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -129,7 +124,7 @@ public:
 
     // Set the argument to true to prevent the EKF using the GPS vertical velocity
     // This can be used for situations where GPS velocity errors are causing problems with height accuracy
-    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+    void setInhibitGpsVertVelUse(const bool varIn);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
@@ -313,17 +308,11 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosDownReset(float &posDelta);
 
-    // report any reason for why the backend is refusing to initialise
-    const char *prearm_failure_reason(void) const;
-
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
-
-    // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
 
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
@@ -385,7 +374,6 @@ private:
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
     bool core_malloc_failed;
-    const AP_AHRS *_ahrs;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -427,7 +415,6 @@ private:
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
-    AP_Int8 _logging_mask;          // mask of IMUs to log
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
@@ -484,18 +471,14 @@ private:
     struct Location common_EKF_origin;
     bool common_origin_valid;
 
-    struct {
-        bool enabled:1;
-        bool log_compass:1;
-        bool log_baro:1;
-        bool log_imu:1;
-    } logging;
-
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
     
     struct {
-        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of yaw change between cores when a change happened
@@ -557,13 +540,18 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
+    // return true if a new core has a better score than an existing core, including
+    // checks for alignment
+    bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
+    
     // logging functions shared by cores:
     void Log_Write_NKF1(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF2(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_NKF5(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us) const;
+    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
+    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 };

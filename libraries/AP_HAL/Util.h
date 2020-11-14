@@ -37,6 +37,9 @@ public:
         return HAL_PARAM_DEFAULTS_PATH;
     }
 
+    // set command line parameters to the eeprom on start
+    virtual void set_cmdline_parameters() {};
+
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
     // commands
@@ -175,11 +178,6 @@ public:
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
-
-    /*
-      initialise (or re-initialise) filesystem storage
-     */
-    virtual bool fs_init(void) { return false; }
 
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }

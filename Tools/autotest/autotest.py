@@ -262,7 +262,16 @@ def should_run_step(step):
 __bin_names = {
     "Copter": "arducopter",
     "CopterTests1": "arducopter",
+    "CopterTests1a": "arducopter",
+    "CopterTests1b": "arducopter",
+    "CopterTests1c": "arducopter",
+    "CopterTests1d": "arducopter",
+    "CopterTests1e": "arducopter",
+
     "CopterTests2": "arducopter",
+    "CopterTests2a": "arducopter",
+    "CopterTests2b": "arducopter",
+
     "Plane": "arduplane",
     "Rover": "ardurover",
     "Tracker": "antennatracker",
@@ -270,6 +279,8 @@ __bin_names = {
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
     "BalanceBot": "ardurover",
+    "SITLPeriphGPS" : "sitl_periph_gp.AP_Periph",
+    "CAN" : "arducopter",
 }
 
 
@@ -280,13 +291,18 @@ def binary_path(step, debug=False):
         return None
 
     if vehicle in __bin_names:
-        binary_name = __bin_names[vehicle]
+        if len(__bin_names[vehicle].split(".")) == 2:
+            config_name = __bin_names[vehicle].split(".")[0]
+            binary_name = __bin_names[vehicle].split(".")[1]
+        else:
+            config_name = 'sitl'
+            binary_name = __bin_names[vehicle]
     else:
         # cope with builds that don't have a specific binary
         return None
 
     binary = util.reltopdir(os.path.join('build',
-                                         'sitl',
+                                         config_name,
                                          'bin',
                                          binary_name))
     if not os.path.exists(binary):
@@ -313,8 +329,15 @@ def find_specific_test_to_run(step):
 
 tester_class_map = {
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1": arducopter.AutoTestCopterTests1,
-    "test.CopterTests2": arducopter.AutoTestCopterTests2,
+    "test.CopterTests1": arducopter.AutoTestCopterTests1,               #travis-ci
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s 
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s 
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
+    "test.CopterTests2": arducopter.AutoTestCopterTests2,               #travis-ci
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
@@ -322,6 +345,11 @@ tester_class_map = {
     "test.Helicopter": arducopter.AutoTestHeli,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
+    "test.CAN": arducopter.AutoTestCAN,
+}
+
+suplementary_test_binary_map = {
+    "test.CAN": "sitl_periph_gps.AP_Periph",
 }
 
 def run_specific_test(step, *args, **kwargs):
@@ -359,6 +387,9 @@ def run_step(step):
         "extra_configure_args": opts.waf_configure_args,
     }
 
+    if opts.Werror:
+        build_opts['extra_configure_args'].append("--Werror")
+
     vehicle_binary = None
     if step == 'build.Plane':
         vehicle_binary = 'bin/arduplane'
@@ -377,9 +408,18 @@ def run_step(step):
 
     if step == 'build.Sub':
         vehicle_binary = 'bin/ardusub'
+    
+    if step == 'build.SITLPeriphGPS':
+        vehicle_binary = 'sitl_periph_gps.bin/AP_Periph'
 
+    if step == 'build.Replay':
+        return util.build_SITL('tools/Replay', clean=False, configure=False)
+        
     if vehicle_binary is not None:
-        return util.build_SITL(vehicle_binary, **build_opts)
+        if len(vehicle_binary.split(".")) == 1:
+            return util.build_SITL(vehicle_binary, **build_opts)
+        else:
+            return util.build_SITL(vehicle_binary.split(".")[1], board = vehicle_binary.split(".")[0], **build_opts)
 
     binary = binary_path(step, debug=opts.debug)
 
@@ -387,6 +427,18 @@ def run_step(step):
         vehicle = step[9:]
         return get_default_params(vehicle, binary)
 
+    if step in suplementary_test_binary_map:
+        config_name = suplementary_test_binary_map[step].split('.')[0]
+        binary_name = suplementary_test_binary_map[step].split('.')[1]
+        supplementary_binary =  util.reltopdir(os.path.join('build',
+                                                            config_name,
+                                                            'bin',
+                                                            binary_name))
+        # we are running in conjunction with a supplementary app
+        # can't have speedup
+        opts.speedup = 1.0
+    else:
+        supplementary_binary = None
     fly_opts = {
         "viewerip": opts.viewerip,
         "use_map": opts.map,
@@ -400,6 +452,7 @@ def run_step(step):
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
         "logs_dir": buildlogs_dirpath(),
+        "sup_binary": supplementary_binary,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -465,6 +518,8 @@ class TestResults(object):
         self.githash = util.run_cmd('git rev-parse HEAD',
                                     output=True,
                                     directory=util.reltopdir('.')).strip()
+        if sys.version_info.major >= 3:
+            self.githash = self.githash.decode('utf-8')
         self.tests = []
         self.files = []
         self.images = []
@@ -540,10 +595,7 @@ def write_fullresults():
     results.addglob("GPX track", '*.gpx')
 
     # results common to all vehicles:
-    vehicle_files = [('{vehicle} build log', '{vehicle}.txt'),
-                     ('{vehicle} code size', '{vehicle}.sizes.txt'),
-                     ('{vehicle} stack sizes', '{vehicle}.framesizes.txt'),
-                     ('{vehicle} defaults', '{vehicle}-defaults.parm'),
+    vehicle_files = [('{vehicle} defaults', '{vehicle}-defaults.parm'),
                      ('{vehicle} core', '{vehicle}.core'),
                      ('{vehicle} ELF', '{vehicle}.elf'), ]
     vehicle_globs = [('{vehicle} log', '{vehicle}-*.BIN'), ]
@@ -719,6 +771,10 @@ if __name__ == "__main__":
                       action="store_true",
                       default=False,
                       help="validate vehicle parameter files")
+    parser.add_option("--Werror",
+                      action='store_true',
+                      default=False,
+                      help='configure with --Werror')
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("--no-configure",
@@ -808,6 +864,8 @@ if __name__ == "__main__":
         'build.All',
         'build.Parameters',
 
+        'build.Replay',
+
         'build.unit_tests',
         'run.unit_tests',
         'build.examples',
@@ -838,12 +896,24 @@ if __name__ == "__main__":
         'defaults.Sub',
         'test.Sub',
 
+        'build.SITLPeriphGPS',
+        'test.CAN',
+
         'convertgpx',
     ]
 
     moresteps = [
         'test.CopterTests1',
+        'test.CopterTests1a',
+        'test.CopterTests1b',
+        'test.CopterTests1c',
+        'test.CopterTests1d',
+        'test.CopterTests1e',
+
         'test.CopterTests2',
+        'test.CopterTests2a',
+        'test.CopterTests2b',
+
         'clang-scan-build',
     ]
 
@@ -872,7 +942,16 @@ if __name__ == "__main__":
         "defaults.APMrover2": "defaults.Rover",
         "defaults.AntennaTracker": "defaults.Tracker",
         "fly.ArduCopterTests1": "test.CopterTests1",
+        "fly.ArduCopterTests1a": "test.CopterTests1a",
+        "fly.ArduCopterTests1b": "test.CopterTests1b",
+        "fly.ArduCopterTests1c": "test.CopterTests1c",
+        "fly.ArduCopterTests1d": "test.CopterTests1d",
+        "fly.ArduCopterTests1e": "test.CopterTests1e",
+
         "fly.ArduCopterTests2": "test.CopterTests2",
+        "fly.ArduCopterTests2a": "test.CopterTests2a",
+        "fly.ArduCopterTests2b": "test.CopterTests2b",
+
     }
 
     # form up a list of bits NOT to run, mapping from old step names

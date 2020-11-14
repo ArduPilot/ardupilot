@@ -61,7 +61,8 @@ public:
     enum class DeviceType {
         Disabled = 0,
         SplitMicro = 1, // video support only
-        Split = 2 // camera and video support
+        Split = 2, // camera and video support
+        Split4k = 3 // video support only + 5key OSD
     };
 
     // operation of camera button simulation
@@ -121,6 +122,11 @@ private:
         RCDEVICE_PROTOCOL_FEATURE_STOP_RECORDING = (1 << 7),
         FEATURES_OVERRIDE = (1 << 14)
     };
+
+    const uint16_t RCDEVICE_PROTOCOL_FEATURE_2_KEY_OSD =
+        uint16_t(Feature::RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE)
+        | uint16_t(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON)
+        | uint16_t(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON);
 
     // camera control commands
     enum class Command {
@@ -211,7 +217,7 @@ private:
     static const uint8_t  RUNCAM_NUM_EXPECTED_RESPONSES = 4;
     static const uint8_t  RUNCAM_MAX_MENUS =              1;
     static const uint8_t  RUNCAM_MAX_MENU_LENGTH =        6;
-    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       2;
+    static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       3;
 
     // supported features, usually probed from the device
     AP_Int16 _features;
@@ -375,10 +381,15 @@ private:
     void handle_5_key_simulation_process(Event ev);
     // handle a response
     void handle_5_key_simulation_response(const Request& request);
+    // commands to start and stop recording
+    ControlOperation start_recording_command() const;
+    ControlOperation stop_recording_command() const;
     // process a response from the serial port
     void receive();
     // empty the receive side of the serial port
     void drain();
+    // start the uart with appropriate settings
+    void start_uart();
 
     // get the RunCam device information
     void get_device_info();
@@ -399,14 +410,21 @@ private:
         uint16_t maxRetryTimes, parse_func_t parseFunc);
     // send a packet to the serial port
     void send_packet(Command command, uint8_t param);
-    // crc functions
-    static uint8_t crc8_high_first(uint8_t *ptr, uint8_t len);
     // handle a device info response
     void parse_device_info(const Request& request);
     // wait for the RunCam device to be fully ready
     bool camera_ready() const;
     // whether or not the requested feature is supported
     bool has_feature(const Feature feature) const { return _features.get() & uint16_t(feature); }
+    // input mode
+    bool has_2_key_OSD() const {
+        return (_features.get() & RCDEVICE_PROTOCOL_FEATURE_2_KEY_OSD) == RCDEVICE_PROTOCOL_FEATURE_2_KEY_OSD;
+    }
+    bool has_5_key_OSD() const {
+        // RunCam Hybrid lies about supporting both 5-key and 2-key
+        return !has_2_key_OSD() && has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE);
+    }
+
     // whether or not we can arm
     bool is_arming_prevented() const { return _in_menu > _menu_enter_level; }
     // error handler for OSD simulation

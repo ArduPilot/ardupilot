@@ -84,7 +84,7 @@ float AutoTune::get_pilot_desired_climb_rate_cms(void) const
     float target_climb_rate = copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in());
 
     // get avoidance adjusted climb rate
-    target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
+    target_climb_rate = copter.mode_autotune.get_avoidance_adjusted_climbrate(target_climb_rate);
 
     return target_climb_rate;
 }

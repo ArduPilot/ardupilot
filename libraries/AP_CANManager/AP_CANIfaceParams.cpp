@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BITRATE", 2, AP_CANManager::CANIface_Params, _bitrate, 1000000),
 
-    // Index 3 occupied by @Param: DEBUG
+    // Index 3 occupied by Param: DEBUG
     AP_GROUPEND
 };
 

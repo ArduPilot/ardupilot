@@ -220,7 +220,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
 {
     mavlink_message_t msg;
     mavlink_param_value_t param_value;
-    strncpy(param_value.param_id, p->name, sizeof(param_value.param_id));
+    strncpy_noterm(param_value.param_id, p->name, sizeof(param_value.param_id));
     param_value.param_value = p->value;
     param_value.param_count = 0;
     param_value.param_index = 0;

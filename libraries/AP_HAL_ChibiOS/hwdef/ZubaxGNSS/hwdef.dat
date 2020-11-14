@@ -78,8 +78,8 @@ define HAL_WATCHDOG_ENABLED_DEFAULT true
 # enable CAN support
 PA11 CAN_RX CAN
 PB9 CAN_TX CAN
-define HAL_USE_CAN TRUE
-define STM32_CAN_USE_CAN1 TRUE
+
+
 
 # no I2C buses
 # I2C_ORDER
@@ -162,3 +162,6 @@ define HAL_NO_MONITOR_THREAD
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
+
+# reduce the number of CAN RX Buffer
+define HAL_CAN_RX_QUEUE_SIZE 32

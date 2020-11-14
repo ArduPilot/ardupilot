@@ -185,66 +185,19 @@ float AP_RSSI::read_channel_rssi()
     return channel_rssi;    
 }
 
-void AP_RSSI::check_pwm_pin_rssi()
-{
-    if (rssi_analog_pin == pwm_state.last_rssi_analog_pin) {
-        return;
-    }
-
-    // detach last one
-    if (pwm_state.last_rssi_analog_pin) {
-        if (!hal.gpio->detach_interrupt(pwm_state.last_rssi_analog_pin)) {
-            gcs().send_text(MAV_SEVERITY_WARNING,
-                            "RSSI: Failed to detach from pin %u",
-                            pwm_state.last_rssi_analog_pin);
-            // ignore this failure or the user may be stuck
-        }
-    }
-
-    pwm_state.last_rssi_analog_pin = rssi_analog_pin;
-
-    if (!rssi_analog_pin) {
-        // don't need to install handler
-        return;
-    }
-
-    // install interrupt handler on rising and falling edge
-    hal.gpio->pinMode(rssi_analog_pin, HAL_GPIO_INPUT);
-    if (!hal.gpio->attach_interrupt(
-            rssi_analog_pin,
-            FUNCTOR_BIND_MEMBER(&AP_RSSI::irq_handler,
-                                void,
-                                uint8_t,
-                                bool,
-                                uint32_t),
-            AP_HAL::GPIO::INTERRUPT_BOTH)) {
-        // failed to attach interrupt
-        gcs().send_text(MAV_SEVERITY_WARNING,
-                        "RSSI: Failed to attach to pin %u",
-                        (unsigned int)rssi_analog_pin);
-        return;
-    }
-}
-
 // read the PWM value from a pin
 float AP_RSSI::read_pwm_pin_rssi()
 {
     // check if pin has changed and configure interrupt handlers if required:
-    check_pwm_pin_rssi();
-
-    if (!pwm_state.last_rssi_analog_pin) {
+    if (!pwm_state.pwm_source.set_pin(rssi_analog_pin, "RSSI")) {
         // disabled (either by configuration or failure to attach interrupt)
         return 0.0f;
     }
 
-    // disable interrupts and grab state
-    void *irqstate = hal.scheduler->disable_interrupts_save();
-    const uint32_t irq_value_us = pwm_state.irq_value_us;
-    pwm_state.irq_value_us = 0;
-    hal.scheduler->restore_interrupts(irqstate);
+    uint16_t pwm_us = pwm_state.pwm_source.get_pwm_us();
 
     const uint32_t now = AP_HAL::millis();
-    if (irq_value_us == 0) {
+    if (pwm_us == 0) {
         // no reading; check for timeout:
         if (now - pwm_state.last_reading_ms > 1000) {
             // no reading for a second - something is broken
@@ -252,7 +205,7 @@ float AP_RSSI::read_pwm_pin_rssi()
         }
     } else {
         // a new reading - convert pwm value to rssi value
-        pwm_state.rssi_value = scale_and_constrain_float_rssi(irq_value_us, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
+        pwm_state.rssi_value = scale_and_constrain_float_rssi(pwm_us, rssi_channel_low_pwm_value, rssi_channel_high_pwm_value);
         pwm_state.last_reading_ms = now;
     }
 
@@ -292,19 +245,6 @@ float AP_RSSI::scale_and_constrain_float_rssi(float current_rssi_value, float lo
     // Make absolutely sure the value is clipped to the 0.0 - 1.0 range. This should handle things if the
     // value retrieved falls outside the user-supplied range.
     return constrain_float(rssi_value_scaled, 0.0f, 1.0f);
-}
-
-// interrupt handler for reading pwm value
-void AP_RSSI::irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us)
-{
-    if (pin_high) {
-        pwm_state.pulse_start_us = timestamp_us;
-    } else {
-        if (pwm_state.pulse_start_us != 0) {
-            pwm_state.irq_value_us = timestamp_us - pwm_state.pulse_start_us;
-            pwm_state.pulse_start_us = 0;
-        }
-    }
 }
 
 AP_RSSI *AP_RSSI::_singleton = nullptr;

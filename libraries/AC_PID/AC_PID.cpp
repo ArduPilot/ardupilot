@@ -56,11 +56,20 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("FLTD", 11, AC_PID, _filt_D_hz, AC_PID_DFILT_HZ_DEFAULT),
 
+    // @Param: SMAX
+    // @DisplayName: Slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("SMAX", 12, AC_PID, _slew_rate_max, 0),
+
     AP_GROUPEND
 };
 
 // Constructor
-AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt) :
+AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
+               float dt, float initial_srmax, float initial_srtau):
     _dt(dt),
     _integrator(0.0f),
     _error(0.0f),
@@ -77,6 +86,8 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     filt_T_hz(initial_filt_T_hz);
     filt_E_hz(initial_filt_E_hz);
     filt_D_hz(initial_filt_D_hz);
+    _slew_rate_max.set(initial_srmax);
+    _slew_rate_tau.set(initial_srtau);
 
     // reset input filter to first value received
     _flags._reset_filter = true;
@@ -144,6 +155,12 @@ float AC_PID::update_all(float target, float measurement, bool limit)
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
 
+    // calculate slew limit modifier for P+D
+    _pid_info.Dmod = _slew_limiter.modifier(_pid_info.P + _pid_info.D, _dt);
+
+    P_out *= _pid_info.Dmod;
+    D_out *= _pid_info.Dmod;
+
     _pid_info.target = _target;
     _pid_info.actual = measurement;
     _pid_info.error = _error;
@@ -190,6 +207,12 @@ float AC_PID::update_error(float error, bool limit)
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
 
+    // calculate slew limit modifier for P+D
+    _pid_info.Dmod = _slew_limiter.modifier(_pid_info.P + _pid_info.D, _dt);
+
+    P_out *= _pid_info.Dmod;
+    D_out *= _pid_info.Dmod;
+    
     _pid_info.target = 0.0f;
     _pid_info.actual = 0.0f;
     _pid_info.error = _error;
@@ -234,14 +257,6 @@ float AC_PID::get_ff()
 {
     _pid_info.FF = _target * _kff;
     return _target * _kff;
-}
-
-// todo: remove function when it is no longer used.
-float AC_PID::get_ff(float target)
-{
-    float FF_out = (target * _kff);
-    _pid_info.FF = FF_out;
-    return FF_out;
 }
 
 void AC_PID::reset_I()
@@ -310,13 +325,7 @@ float AC_PID::get_filt_D_alpha() const
 // get_filt_alpha - calculate a filter alpha
 float AC_PID::get_filt_alpha(float filt_hz) const
 {
-    if (is_zero(filt_hz)) {
-        return 1.0f;
-    }
-
-    // calculate alpha
-    float rc = 1 / (M_2PI * filt_hz);
-    return _dt / (_dt + rc);
+    return calc_lowpass_alpha_dt(_dt, filt_hz);
 }
 
 void AC_PID::set_integrator(float target, float measurement, float i)

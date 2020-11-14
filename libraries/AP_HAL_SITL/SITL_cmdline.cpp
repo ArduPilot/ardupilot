@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_Logger/AP_Logger_SITL.h>
+#include <AP_Param/AP_Param.h>
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
@@ -37,6 +38,8 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -94,6 +97,8 @@ void SITL_State::_usage(void)
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
+           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
 
@@ -197,6 +202,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     uint16_t simulator_port_in = SIM_IN_PORT;
     uint16_t simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
+    struct AP_Param::defaults_table_struct temp_cmdline_param{};
+
+    // Set default start time to the real system time.
+    // This will be overwritten if argument provided.
+    static struct timeval first_tv;
+    gettimeofday(&first_tv, nullptr);
+    time_t start_time_UTC = first_tv.tv_sec;
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -218,6 +230,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SIM_PORT_IN,
         CMDLINE_SIM_PORT_OUT,
         CMDLINE_IRLOCK_PORT,
+        CMDLINE_START_TIME,
+        CMDLINE_SYSID,
     };
 
     const struct GetOptLong::option options[] = {
@@ -253,8 +267,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"sim-port-in",     true,   0, CMDLINE_SIM_PORT_IN},
         {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
+        {"start-time",      true,   0, CMDLINE_START_TIME},
+        {"sysid",           true,   0, CMDLINE_SYSID},
         {0, false, 0, 0}
     };
+
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    model_str = "quad";
+    HALSITL::UARTDriver::_console = true;
+#endif
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
@@ -266,7 +287,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
-
     while ((opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
@@ -278,9 +298,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
-            char speedup_string[18];
-            snprintf(speedup_string, sizeof(speedup_string), "SIM_SPEEDUP=%s", gopt.optarg);
-            _set_param_default(speedup_string);
+            temp_cmdline_param = {"SIM_SPEEDUP", speedup};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             _framerate = (unsigned)atoi(gopt.optarg);
@@ -371,6 +391,20 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_IRLOCK_PORT:
             _irlock_port = atoi(gopt.optarg);
             break;
+        case CMDLINE_START_TIME:
+            start_time_UTC = atoi(gopt.optarg);
+            break;
+        case CMDLINE_SYSID: {
+            const int32_t sysid = atoi(gopt.optarg);
+            if (sysid < 1 || sysid > 255) {
+                fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
+                exit(1);
+            }
+            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            break;
+        }
         default:
             _usage();
             exit(1);
@@ -413,6 +447,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     if (sitl_model == nullptr) {
         printf("Vehicle model (%s) not found\n", model_str);
         exit(1);
+    }
+
+    if (AP::sitl()) {
+        // Set SITL start time.
+        AP::sitl()->start_time_UTC = start_time_UTC;
     }
 
     fprintf(stdout, "Starting sketch '%s'\n", SKETCH);

@@ -28,7 +28,11 @@ extern const AP_HAL::HAL &hal;
 #include "include/mavlink/v2.0/protocol.h"
 #include "include/mavlink/v2.0/mavlink_types.h"
 #include "include/mavlink/v2.0/ardupilotmega/mavlink.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
 #include "include/mavlink/v2.0/mavlink_helpers.h"
+#pragma GCC diagnostic pop
+
 
 /*
   init ADSB support

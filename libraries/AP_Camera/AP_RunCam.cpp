@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
     // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
-    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split
+    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
@@ -103,7 +103,7 @@ AP_RunCam::Request::Length AP_RunCam::Request::_expected_responses_length[RUNCAM
 // the protocol for Runcam Device definition
 static const uint8_t RUNCAM_HEADER = 0xCC;
 static const uint8_t RUNCAM_OSD_MENU_DEPTH = 2;
-static const uint32_t RUNCAM_INIT_INTERVAL_MS = 500;
+static const uint32_t RUNCAM_INIT_INTERVAL_MS = 1000;
 static const uint32_t RUNCAM_OSD_UPDATE_INTERVAL_MS = 100; // 10Hz
 
 // menu structures of runcam devices
@@ -112,6 +112,7 @@ AP_RunCam::Menu AP_RunCam::_menus[RUNCAM_MAX_DEVICE_TYPES] = {
     // Video, Image, TV-OUT, Micro SD Card, General
     { 6, { 5, 8, 3, 3, 7 }}, // SplitMicro
     { 0, { 0 }}, // Split
+    { 6, { 4, 10, 3, 3, 7 }}, // Split4 4K
 };
 
 AP_RunCam::AP_RunCam()
@@ -156,7 +157,7 @@ void AP_RunCam::init()
         _in_menu = -1;
     }
 
-    uart->begin(115200);
+    start_uart();
 
     // first transition is from initialized to ready
     _transition_start_ms = AP_HAL::millis();
@@ -257,8 +258,18 @@ bool AP_RunCam::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) 
 // OSD update loop
 void AP_RunCam::update_osd()
 {
+    bool use_armed_state_machine = hal.util->get_soft_armed();
+#if OSD_ENABLED
+    // prevent runcam stick gestures interferring with osd stick gestures
+    if (!use_armed_state_machine) {
+        const AP_OSD* osd = AP::osd();
+        if (osd != nullptr) {
+            use_armed_state_machine = !osd->is_readonly_screen();
+        }
+    }
+#endif
     // run a reduced state simulation process when armed
-    if (AP::arming().is_armed()) {
+    if (use_armed_state_machine) {
         update_state_machine_armed();
         return;
     }
@@ -351,12 +362,12 @@ void AP_RunCam::handle_initialized(Event ev)
     // a recording change needs significantly extra time to process
     if (_video_recording == VideoOption::RECORDING && has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_START_RECORDING)) {
         if (!(_cam_control_option & uint8_t(ControlOption::VIDEO_RECORDING_AT_BOOT))) {
-            simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING, _mode_delay_ms * 2);
+            simulate_camera_button(start_recording_command(), _mode_delay_ms * 2);
         }
         _state = State::VIDEO_RECORDING;
     } else if (_video_recording == VideoOption::NOT_RECORDING && has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_START_RECORDING)) {
         if (_cam_control_option & uint8_t(ControlOption::VIDEO_RECORDING_AT_BOOT)) {
-            simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING, _mode_delay_ms * 2);
+            simulate_camera_button(stop_recording_command(), _mode_delay_ms * 2);
         }
         _state = State::READY;
     } else {
@@ -379,7 +390,7 @@ void AP_RunCam::handle_ready(Event ev)
         }
         break;
     case Event::START_RECORDING:
-        simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING, _mode_delay_ms);
+        simulate_camera_button(start_recording_command(), _mode_delay_ms);
         _state = State::VIDEO_RECORDING;
         break;
     case Event::NONE:
@@ -401,14 +412,14 @@ void AP_RunCam::handle_recording(Event ev)
     case Event::IN_MENU_ENTER:
     case Event::IN_MENU_RIGHT:
         if (ev == Event::ENTER_MENU || _cam_control_option & uint8_t(ControlOption::STICK_ROLL_RIGHT)) {
-            simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING, _mode_delay_ms);
+            simulate_camera_button(stop_recording_command(), _mode_delay_ms);
             _top_menu_pos = -1;
             _sub_menu_pos = 0;
             _state = State::ENTERING_MENU;
         }
         break;
     case Event::STOP_RECORDING:
-        simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING, _mode_delay_ms);
+        simulate_camera_button(stop_recording_command(), _mode_delay_ms);
         _state = State::READY;
         break;
     case Event::NONE:
@@ -425,11 +436,9 @@ void AP_RunCam::handle_recording(Event ev)
 // handle the in_menu state
 void AP_RunCam::handle_in_menu(Event ev)
 {
-    if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
+    if (has_5_key_OSD()) {
         handle_5_key_simulation_process(ev);
-    } else if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE) &&
-        has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON) &&
-        has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON)) {
+    } else if (has_2_key_OSD()) {
         // otherwise the simpler 2 key OSD simulation, requires firmware 2.4.4 on the split micro
         handle_2_key_simulation_process(ev);
     }
@@ -464,7 +473,7 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
     } else if (roll == RC_Channel::AuxSwitchPos::LOW) {
         result = Event::IN_MENU_EXIT;
     } else if (yaw == RC_Channel::AuxSwitchPos::MIDDLE && pitch == RC_Channel::AuxSwitchPos::MIDDLE && roll == RC_Channel::AuxSwitchPos::HIGH) {
-        if (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE)) {
+        if (has_5_key_OSD()) {
             result = Event::IN_MENU_RIGHT;
         } else {
             result = Event::IN_MENU_ENTER;
@@ -598,7 +607,7 @@ void AP_RunCam::exit_2_key_osd_menu()
     enable_osd();
 
     if (_video_recording == VideoOption::RECORDING && has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_START_RECORDING)) {
-        simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING, _mode_delay_ms);
+        simulate_camera_button(start_recording_command(), _mode_delay_ms);
         _state = State::VIDEO_RECORDING;
     } else {
         _state = State::READY;
@@ -695,6 +704,24 @@ void AP_RunCam::handle_5_key_simulation_response(const Request& request)
     _waiting_device_response = false;
 }
 
+// command to stop recording
+AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
+    if (DeviceType(_cam_type.get()) == DeviceType::Split4k) {
+        return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
+    } else {
+        return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING;
+    }
+}
+
+// command to stop recording
+AP_RunCam::ControlOperation AP_RunCam::stop_recording_command() const {
+    if (DeviceType(_cam_type.get()) == DeviceType::Split4k) {
+        return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
+    } else {
+        return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING;
+    }
+}
+
 // process a response from the serial port
 void AP_RunCam::receive()
 {
@@ -752,11 +779,24 @@ void AP_RunCam::drain()
     uart->discard_input();
 }
 
+// start the uart if we have one
+void AP_RunCam::start_uart()
+{
+    // 8N1 communication
+    uart->configure_parity(0);
+    uart->set_stop_bits(1);
+    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    uart->set_blocking_writes(false);   // updates run in the main thread
+    uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
+    uart->begin(115200, 10, 10);
+    uart->discard_input();
+}
+
 // get the device info (firmware version, protocol version and features)
 void AP_RunCam::get_device_info()
 {
-    send_request_and_waiting_response(Command::RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, 0, RUNCAM_INIT_INTERVAL_MS,
-        _boot_delay_ms / RUNCAM_INIT_INTERVAL_MS, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
+    send_request_and_waiting_response(Command::RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, 0, RUNCAM_INIT_INTERVAL_MS * 4,
+        -1, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
 }
 
 // map a Event to a SimulationOperation
@@ -901,22 +941,6 @@ void AP_RunCam::send_packet(Command command, uint8_t param)
     uart->flush();
 }
 
-uint8_t AP_RunCam::crc8_high_first(uint8_t *ptr, uint8_t len)
-{
-    uint8_t crc = 0x00;
-    while (len--) {
-        crc ^= *ptr++;
-        for (uint8_t i = 8; i > 0; --i) {
-            if (crc & 0x80) {
-                crc = (crc << 1) ^ 0x31;
-            } else {
-                crc = (crc << 1);
-            }
-        }
-    }
-    return (crc);
-}
-
 // handle a device info response
 void AP_RunCam::parse_device_info(const Request& request)
 {
@@ -930,10 +954,7 @@ void AP_RunCam::parse_device_info(const Request& request)
     if (_features > 0) {
         _state = State::INITIALIZED;
         gcs().send_text(MAV_SEVERITY_INFO, "RunCam initialized, features 0x%04X, %d-key OSD\n", _features.get(),
-            has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_5_KEY_OSD_CABLE) ? 5 :
-            (has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_CHANGE_MODE) &&
-            has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_WIFI_BUTTON) &&
-            has_feature(Feature::RCDEVICE_PROTOCOL_FEATURE_SIMULATE_POWER_BUTTON)) ? 2 : 0);
+            has_5_key_OSD() ? 5 : has_2_key_OSD() ? 2 : 0);
     } else {
         // nothing as as nothing does
         gcs().send_text(MAV_SEVERITY_WARNING, "RunCam device not found\n");
@@ -977,6 +998,7 @@ bool AP_RunCam::request_pending(uint32_t now)
     if (_pending_request._max_retry_times > 0) {
         // request timed out, so resend
         debug("retrying[%d] command 0x%X, op 0x%X\n", int(_pending_request._max_retry_times), int(_pending_request._command), int(_pending_request._param));
+        start_uart();
         _pending_request._device->send_packet(_pending_request._command, _pending_request._param);
         _pending_request._recv_response_length = 0;
         _pending_request._request_timestamp_ms = now;

@@ -4,6 +4,8 @@
 
 class LoggerMessageWriter_DFLogStart;
 
+#define MAX_LOG_FILES 500
+
 class AP_Logger_Backend
 {
 
@@ -20,7 +22,6 @@ public:
     // erase handling
     virtual void EraseAll() = 0;
 
-    virtual bool NeedPrep() = 0;
     virtual void Prep() = 0;
 
     /* Write a block of data at current offset */
@@ -34,22 +35,23 @@ public:
 
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
-    // high level interface
+    // high level interface, indexed by the position in the list of logs
     virtual uint16_t find_last_log() = 0;
-    virtual void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) = 0;
-    virtual void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) = 0;
-    virtual int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
+    virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
+    virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
+    virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs() = 0;
+    virtual uint16_t find_oldest_log();
 
     virtual bool logging_started(void) const = 0;
 
-    virtual void Init() { }
+    virtual void Init() = 0;
 
     virtual uint32_t bufferspace_available() = 0;
 
-    virtual void PrepForArming() { }
+    virtual void PrepForArming();
 
-    virtual void start_new_log() { };
+    virtual void start_new_log() { }
 
     /* stop logging - close output files etc etc.
      *
@@ -58,6 +60,8 @@ public:
      * packet from a client.
      */
     virtual void stop_logging(void) = 0;
+    // asynchronously stop logging, status can be determined through logging_started()
+    virtual void stop_logging_async(void) { stop_logging(); }
 
     void Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
@@ -68,7 +72,7 @@ public:
 #endif
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const mavlink_channel_t chan,
+    virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
                                              const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 
@@ -115,15 +119,18 @@ public:
     bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
 
     // these methods are used when reporting system status over mavlink
-    virtual bool logging_enabled() const = 0;
+    virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
-    virtual void vehicle_was_disarmed() { };
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const;
+
+    virtual void vehicle_was_disarmed();
 
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
-
 
 protected:
 
@@ -147,20 +154,62 @@ protected:
     LoggerMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
 
+    uint16_t _cached_oldest_log;
+
     uint32_t _dropped;
+    uint32_t _log_file_size_bytes;
+    // should we rotate when we next stop logging
+    bool _rotate_pending;
 
     // must be called when a new log is being started:
     virtual void start_new_log_reset_variables();
+    // convert between log numbering in storage and normalized numbering
+    uint16_t log_num_from_list_entry(const uint16_t list_entry);
+
+    uint32_t critical_message_reserved_space(uint32_t bufsize) const {
+        // possibly make this a proportional to buffer size?
+        uint32_t ret = 1024;
+        if (ret > bufsize) {
+            // in this case you will only get critical messages
+            ret = bufsize;
+        }
+        return ret;
+    };
+    uint32_t non_messagewriter_message_reserved_space(uint32_t bufsize) const {
+        // possibly make this a proportional to buffer size?
+        uint32_t ret = 1024;
+        if (ret >= bufsize) {
+            // need to allow messages out from the messagewriters.  In
+            // this case while you have a messagewriter you won't get
+            // any other messages.  This should be a corner case!
+            ret = 0;
+        }
+        return ret;
+    };
 
     virtual bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) = 0;
 
     bool _initialised;
 
+    void df_stats_gather(uint16_t bytes_written, uint32_t space_remaining);
+    void df_stats_log();
+    void df_stats_clear();
+
 private:
+    // statistics support
+    struct df_stats {
+        uint16_t blocks;
+        uint32_t bytes;
+        uint32_t buf_space_min;
+        uint32_t buf_space_max;
+        uint32_t buf_space_sigma;
+    };
+    struct df_stats stats;
 
     uint32_t _last_periodic_1Hz;
     uint32_t _last_periodic_10Hz;
     bool have_logged_armed;
 
+    void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
 };

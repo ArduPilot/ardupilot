@@ -1,0 +1,70 @@
+name: test chibios
+
+on: [push, pull_request]
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    container: khancyr/ardupilot-dev-chibios:latest
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        gcc: [9]
+        config: [
+            stm32f7,
+            stm32h7,
+            fmuv2-plane,
+            periph-build,
+        ]
+
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{matrix.config}}-${{matrix.gcc}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: test ${{matrix.config}} gcc-${{matrix.gcc}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
+
+      - name: Archive buildlog artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: buildlogs-for-${{matrix.config}}
+           path: /tmp/buildlogs
+           retention-days: 14
+
+      - name: Archive .bin artifacts
+        uses: actions/upload-artifact@v2
+        with:
+           name: BIN-files-for-${{matrix.config}}
+           path: /__w/ardupilot/ardupilot/logs
+           retention-days: 7

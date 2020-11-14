@@ -136,7 +136,10 @@ uint16_t JSON::parse_sensors(const char *json)
         const char *p = strstr(json, key.section);
         if (!p) {
             // we don't have this sensor
-            printf("Failed to find %s\n", key.section);
+            if (key.required) {
+                printf("Failed to find %s\n", key.section);
+                return 0;
+            }
             continue;
         }
         p += strlen(key.section)+1;
@@ -147,9 +150,8 @@ uint16_t JSON::parse_sensors(const char *json)
             if (key.required) {
                 printf("Failed to find key %s/%s\n", key.section, key.key);
                 return 0;
-            } else {
-                continue;
             }
+            continue;
         }
 
         // record the keys that are found
@@ -255,7 +257,11 @@ void JSON::recv_fdm(const struct sitl_input &input)
             if ((received_bitmask &  1U << i) == 0) {
                 continue;
             }
-            printf("\t%s\n",key.key);
+            if (strcmp(key.section, "") == 0) {
+                printf("\t%s\n",key.key);
+            } else {
+                printf("\t%s: %s\n",key.section,key.key);
+            }
         }
         printf("\n");
     }
@@ -295,6 +301,14 @@ void JSON::recv_fdm(const struct sitl_input &input)
             continue;
         }
         rangefinder_m[i-7] = state.rng[i-7];
+    }
+
+    // update wind vane
+    if ((received_bitmask & WIND_DIR) != 0) {
+        wind_vane_apparent.direction = state.wind_vane_apparent.direction;
+    }
+    if ((received_bitmask & WIND_SPD) != 0) {
+        wind_vane_apparent.speed = state.wind_vane_apparent.speed;
     }
 
     double deltat;

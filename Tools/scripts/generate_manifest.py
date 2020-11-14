@@ -55,6 +55,7 @@ brand_map = {
     'omnibusf4v6' : ('Omnibus F4 V6', 'Airbot'),
     'OmnibusNanoV6' : ('Omnibus Nano V6', 'Airbot'),
     'speedybeef4' : ('SpeedyBee F4', 'SpeedyBee'),
+    'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
 }
 
 class Firmware():

@@ -36,8 +36,9 @@ void Plane::loiter_angle_update(void)
 
     const int32_t target_bearing_cd = nav_controller->target_bearing_cd();
     int32_t loiter_delta_cd;
+    const bool reached_target = reached_loiter_target();
 
-    if (loiter.sum_cd == 0 && !reached_loiter_target()) {
+    if (loiter.sum_cd == 0 && !reached_target) {
         // we don't start summing until we are doing the real loiter
         loiter_delta_cd = 0;
     } else if (loiter.sum_cd == 0) {
@@ -53,7 +54,35 @@ void Plane::loiter_angle_update(void)
     loiter_delta_cd = wrap_180_cd(loiter_delta_cd);
     loiter.sum_cd += loiter_delta_cd * loiter.direction;
 
-    if (labs(current_loc.alt - next_WP_loc.alt) < 500) {
+    bool reached_target_alt = false;
+
+    if (reached_target) {
+        // once we reach the position target we start checking the
+        // altitude target
+        bool terrain_status_ok = false;
+#if AP_TERRAIN_AVAILABLE
+        /*
+          if doing terrain following then we check against terrain
+          target, fetch the terrain information
+        */
+        float altitude_agl = 0;
+        if (target_altitude.terrain_following) {
+            if (terrain.status() == AP_Terrain::TerrainStatusOK &&
+                terrain.height_above_terrain(altitude_agl, true)) {
+                terrain_status_ok = true;
+            }
+        }
+        if (terrain_status_ok &&
+            fabsf(altitude_agl - target_altitude.terrain_alt_cm*0.01) < 5) {
+            reached_target_alt = true;
+        } else
+#endif
+        if (!terrain_status_ok && labs(current_loc.alt - target_altitude.amsl_cm) < 500) {
+            reached_target_alt = true;
+        }
+    }
+
+    if (reached_target_alt) {
         loiter.reached_target_alt = true;
         loiter.unable_to_acheive_target_alt = false;
         loiter.next_sum_lap_cd = loiter.sum_cd + lap_check_interval_cd;
@@ -267,7 +296,7 @@ void Plane::update_loiter(uint16_t radius)
             auto_state.wp_proportion > 1) {
             // we've reached the target, start the timer
             loiter.start_time_ms = millis();
-            if (control_mode == &mode_guided || control_mode == &mode_avoidADSB) {
+            if (control_mode->is_guided_mode()) {
                 // starting a loiter in GUIDED means we just reached the target point
                 gcs().send_mission_item_reached_message(0);
             }
@@ -309,10 +338,16 @@ void Plane::update_fbwb_speed_height(void)
             set_target_altitude_current();
         }
 
-#if SOARING_ENABLED == ENABLED
-        if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
-            // we're in soaring mode with throttle suppressed
-            set_target_altitude_current();;
+#if HAL_SOARING_ENABLED
+        if (g2.soaring_controller.is_active()) {
+            if (g2.soaring_controller.get_throttle_suppressed()) {
+                // we're in soaring mode with throttle suppressed
+                set_target_altitude_current();
+            } else {
+                // we're in soaring mode climbing back to altitude. Set target to SOAR_ALT_CUTOFF plus 10m to ensure we positively climb
+                // through SOAR_ALT_CUTOFF, thus triggering throttle suppression and return to glide.
+                target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt;
+            }
         }
 #endif
         

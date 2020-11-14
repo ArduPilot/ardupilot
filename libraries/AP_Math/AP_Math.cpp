@@ -260,14 +260,40 @@ template float wrap_2PI<float>(const float radian);
 template float wrap_2PI<double>(const double radian);
 
 template <typename T>
-T constrain_value(const T amt, const T low, const T high)
+T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
 {
     // the check for NaN as a float prevents propagation of floating point
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
     if (isnan(amt)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
+        AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
         return (low + high) / 2;
+    }
+
+    if (amt < low) {
+        return low;
+    }
+
+    if (amt > high) {
+        return high;
+    }
+
+    return amt;
+}
+
+template float constrain_value_line<float>(const float amt, const float low, const float high, uint32_t line);
+
+template <typename T>
+T constrain_value(const T amt, const T low, const T high)
+{
+    // the check for NaN as a float prevents propagation of floating point
+    // errors through any function that uses constrain_value(). The normal
+    // float semantics already handle -Inf and +Inf
+    if (std::is_floating_point<T>::value) {
+        if (isnan(amt)) {
+            INTERNAL_ERROR(AP_InternalError::error_t::constraining_nan);
+            return (low + high) / 2;
+        }
     }
 
     if (amt < low) {
@@ -356,12 +382,25 @@ Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, 
     return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
 }
 
+/*
+  calculate a low pass filter alpha value
+ */
+float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
+{
+    if (dt <= 0.0f || cutoff_freq <= 0.0f) {
+        return 1.0;
+    }
+    float rc = 1.0f/(M_2PI*cutoff_freq);
+    return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+}
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
+    const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
-        *f++ = std::numeric_limits<float>::signaling_NaN();
+        *f++ = n;
     }
 }
 #endif

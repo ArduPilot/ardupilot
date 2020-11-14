@@ -42,6 +42,8 @@
 #include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_RCTelemetry/AP_VideoTX.h>
+#include <AP_MSP/AP_MSP.h>
+#include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -192,6 +194,7 @@ public:
         Lateral = 5,
         MainSail = 6,
         WingSail = 7,
+        Walking_Height = 8,
         Last_ControlOutput  // place new values before this
     };
 
@@ -203,7 +206,18 @@ public:
     void write_notch_log_messages() const;
     // update the harmonic notch
     virtual void update_dynamic_notch() {};
-    
+
+    // zeroing the RC outputs can prevent unwanted motor movement:
+    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
+
+    // reboot the vehicle in an orderly manner, doing various cleanups
+    // and flashing LEDs as appropriate
+    void reboot(bool hold_in_bootloader);
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    AP_Frsky_Parameters frsky_parameters;
+#endif
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -268,6 +282,10 @@ protected:
 #endif
 
     AP_ESC_Telem esc_telem;
+
+#if HAL_MSP_ENABLED
+    AP_MSP msp;
+#endif
 
 #if GENERATOR_ENABLED
     AP_Generator_RichenPower generator;

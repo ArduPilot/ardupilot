@@ -166,7 +166,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
 uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
 {
     if (AP_Notify::flags.initialising) {
-        return DEFINE_COLOUR_SEQUENCE(RED,GREEN,BLUE,RED,GREEN,BLUE,RED,GREEN,BLUE,OFF);
+        return DEFINE_COLOUR_SEQUENCE(RED,GREEN,BLUE,RED,GREEN,BLUE,RED,GREEN,BLUE,BLACK);
     }
 
     if (AP_Notify::flags.armed) {
@@ -175,14 +175,14 @@ uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
 
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         if (!AP_Notify::flags.pre_arm_check) {
-            return DEFINE_COLOUR_SEQUENCE_ALTERNATE(YELLOW, OFF);
+            return DEFINE_COLOUR_SEQUENCE_ALTERNATE(YELLOW, BLACK);
         } else {
             return DEFINE_COLOUR_SEQUENCE_SLOW(YELLOW);
         }
     }
 
     if (!AP_Notify::flags.pre_arm_check) {
-        return DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN, OFF);
+        return DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN, BLACK);
     }
     return DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
 }
@@ -220,11 +220,11 @@ void RGBLed::update()
 
     const uint8_t colour = (current_colour_sequence >> (step*3)) & 7;
 
-    _red_des = (colour & RED) ? brightness : _led_off;
-    _green_des = (colour & GREEN) ? brightness : _led_off;
-    _blue_des = (colour & BLUE) ? brightness : _led_off;
+    uint8_t red_des = (colour & RED) ? brightness : _led_off;
+    uint8_t green_des = (colour & GREEN) ? brightness : _led_off;
+    uint8_t blue_des = (colour & BLUE) ? brightness : _led_off;
 
-    set_rgb(_red_des, _green_des, _blue_des);
+    set_rgb(red_des, green_des, blue_des);
 }
 
 /*

@@ -558,6 +558,15 @@ bool AP_IOMCU_FW::handle_code_write()
             }
             break;
 
+        case PAGE_REG_SETUP_RC_PROTOCOLS: {
+            if (rx_io_packet.count == 2) {
+                uint32_t v;
+                memcpy(&v, &rx_io_packet.regs[0], 4);
+                AP::RC().set_rc_protocols(v);
+            }
+            break;
+        }
+
         default:
             break;
         }

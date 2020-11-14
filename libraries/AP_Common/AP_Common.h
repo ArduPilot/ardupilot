@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <type_traits>
 
 // used to pack structures
 #define PACKED __attribute__((__packed__))
@@ -84,7 +85,8 @@
 
 #define ARRAY_SIZE(_arr) (sizeof(_arr) / sizeof(_arr[0]))
 
-#define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>((hbyte<<8)|lbyte))
+#define UINT16_VALUE(hbyte, lbyte) (static_cast<uint16_t>(((hbyte)<<8)|(lbyte)))
+#define UINT32_VALUE(b3, b2, b1, b0) (static_cast<uint32_t>(((b3)<<23)|((b2)<<16)|((b1)<<8)|(b0)))
 
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
@@ -143,3 +145,17 @@ bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an asc
   strncpy without the warning for not leaving room for nul termination
  */
 void strncpy_noterm(char *dest, const char *src, size_t n);
+
+/*
+  Bit manipulation
+ */
+//#define BIT_SET(value, bitnumber) ((value) |= (((typeof(value))1U) << (bitnumber)))
+template <typename T> void BIT_SET (T& value, uint8_t bitnumber) noexcept {
+     static_assert(std::is_integral<T>::value, "Integral required.");
+     ((value) |= ((T)(1U) << (bitnumber)));
+ }
+//#define BIT_CLEAR(value, bitnumber) ((value) &= ~(((typeof(value))1U) << (bitnumber)))
+template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
+     static_assert(std::is_integral<T>::value, "Integral required.");
+     ((value) &= ~((T)(1U) << (bitnumber)));
+ }

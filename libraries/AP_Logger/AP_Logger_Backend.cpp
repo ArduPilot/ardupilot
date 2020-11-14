@@ -51,11 +51,20 @@ AP_Logger_Backend::vehicle_startup_message_Writer AP_Logger_Backend::vehicle_mes
 void AP_Logger_Backend::periodic_10Hz(const uint32_t now)
 {
 }
+
 void AP_Logger_Backend::periodic_1Hz()
 {
+    if (_rotate_pending && !logging_enabled()) {
+        _rotate_pending = false;
+        // handle log rotation once we stop logging
+        stop_logging_async();
+    }
+    df_stats_log();
 }
+
 void AP_Logger_Backend::periodic_fullrate()
 {
+    push_log_blocks();
 }
 
 void AP_Logger_Backend::periodic_tasks()
@@ -74,8 +83,25 @@ void AP_Logger_Backend::periodic_tasks()
 
 void AP_Logger_Backend::start_new_log_reset_variables()
 {
+    _dropped = 0;
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
+    _log_file_size_bytes = 0;
+}
+
+// We may need to make sure data is loggable before starting the
+// EKF; when allow_start_ekf we should be able to log that data
+bool AP_Logger_Backend::allow_start_ekf() const
+{
+    if (!_startup_messagewriter->fmt_done()) {
+        return false;
+    }
+    // we need to push all startup messages out, or the code in
+    // WriteBlockCheckStartupMessages bites us.
+    if (!_startup_messagewriter->finished()) {
+        return false;
+    }
+    return true;
 }
 
 // this method can be overridden to do extra things with your buffer.
@@ -91,6 +117,7 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     return true;
 #endif
+
     if (_startup_messagewriter->fmt_done()) {
         return true;
     }
@@ -122,6 +149,9 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 // source more messages from the startup message writer:
 void AP_Logger_Backend::WriteMoreStartupMessages()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    return;
+#endif
 
     if (_startup_messagewriter->finished()) {
         return;
@@ -139,6 +169,11 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
 
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // sure, sure we did....
+    return true;
+#endif
+
     // get log structure from front end:
     char ls_name[LS_NAME_SIZE] = {};
     char ls_format[LS_FORMAT_SIZE] = {};
@@ -362,7 +397,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 
 bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
     validate_WritePrioritisedBlock(pBuffer, size);
 #endif
     if (!ShouldLog(is_critical)) {
@@ -410,6 +445,18 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
     return true;
 }
 
+void AP_Logger_Backend::PrepForArming()
+{
+    if (_rotate_pending) {
+        _rotate_pending = false;
+        stop_logging();
+    }
+    if (logging_started()) {
+        return;
+    }
+    start_new_log();
+}
+
 bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
 {
     char msg[65] {}; // sizeof(log_Message.msg) + null-termination
@@ -444,4 +491,102 @@ bool AP_Logger_Backend::Write_Rally()
 {
     // kick off asynchronous write:
     return _startup_messagewriter->writeallrallypoints();
+}
+
+/*
+  convert a list entry number back into a log number (which can then
+  be converted into a filename).  A "list entry number" is a sequence
+  where the oldest log has a number of 1, the second-from-oldest 2,
+  and so on.  Thus the highest list entry number is equal to the
+  number of logs.
+*/
+uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
+{
+    uint16_t oldest_log = find_oldest_log();
+    if (oldest_log == 0) {
+        return 0;
+    }
+
+    uint32_t log_num = oldest_log + list_entry - 1;
+    if (log_num > MAX_LOG_FILES) {
+        log_num -= MAX_LOG_FILES;
+    }
+    return (uint16_t)log_num;
+}
+
+// find_oldest_log - find oldest log
+// returns 0 if no log was found
+uint16_t AP_Logger_Backend::find_oldest_log()
+{
+    if (_cached_oldest_log != 0) {
+        return _cached_oldest_log;
+    }
+
+    uint16_t last_log_num = find_last_log();
+    if (last_log_num == 0) {
+        return 0;
+    }
+
+    _cached_oldest_log = last_log_num - get_num_logs() + 1;
+
+    return _cached_oldest_log;
+}
+
+void AP_Logger_Backend::vehicle_was_disarmed()
+{
+    if (_front._params.file_disarm_rot) {
+        // rotate our log.  Closing the current one and letting the
+        // logging restart naturally based on log_disarmed should do
+        // the trick:
+        _rotate_pending = true;
+    }
+}
+
+// this sensor is enabled if we should be logging at the moment
+bool AP_Logger_Backend::logging_enabled() const
+{
+    if (hal.util->get_soft_armed() ||
+        _front.log_while_disarmed()) {
+        return true;
+    }
+    return false;
+}
+
+void AP_Logger_Backend::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
+{
+    const struct log_DSF pkt {
+        LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
+        time_us         : AP_HAL::micros64(),
+        dropped         : _dropped,
+        blocks          : _stats.blocks,
+        bytes           : _stats.bytes,
+        buf_space_min   : _stats.buf_space_min,
+        buf_space_max   : _stats.buf_space_max,
+        buf_space_avg   : (_stats.blocks) ? (_stats.buf_space_sigma / _stats.blocks) : 0,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t space_remaining)
+{
+    if (space_remaining < stats.buf_space_min) {
+        stats.buf_space_min = space_remaining;
+    }
+    if (space_remaining > stats.buf_space_max) {
+        stats.buf_space_max = space_remaining;
+    }
+    stats.buf_space_sigma += space_remaining;
+    stats.bytes += bytes_written;
+    _log_file_size_bytes += bytes_written;
+    stats.blocks++;
+}
+
+void AP_Logger_Backend::df_stats_clear() {
+    memset(&stats, '\0', sizeof(stats));
+    stats.buf_space_min = -1;
+}
+
+void AP_Logger_Backend::df_stats_log() {
+    Write_AP_Logger_Stats_File(stats);
+    df_stats_clear();
 }

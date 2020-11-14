@@ -213,7 +213,7 @@ void CANIface::_poll(bool read, bool write)
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
                               const std::uint16_t num_configs)
 {
-    if (filter_configs == nullptr) {
+    if (filter_configs == nullptr || mode_ != FilteredMode) {
         return false;
     }
     _hw_filters_container.clear();
@@ -319,6 +319,9 @@ bool CANIface::_pollRead()
 
 int CANIface::_write(const AP_HAL::CANFrame& frame) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     errno = 0;
 
     const can_frame sockcan_frame = makeSocketCanFrame(frame);
@@ -339,6 +342,9 @@ int CANIface::_write(const AP_HAL::CANFrame& frame) const
 
 int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopback) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     auto iov = iovec();
     auto sockcan_frame = can_frame();
     iov.iov_base = &sockcan_frame;
@@ -447,7 +453,8 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     if (_initialized) {
         return _initialized;
     }
-
+    bitrate_ = bitrate;
+    mode_ = mode;
     // TODO: Add possibility change bitrate
     _fd = _openSocket(iface_name);
     Debug("Socket opened iface_name: %s fd: %d", iface_name, _fd);

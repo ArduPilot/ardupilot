@@ -24,48 +24,16 @@ AP_BattMonitor_FuelLevel_PWM::AP_BattMonitor_FuelLevel_PWM(AP_BattMonitor &mon, 
 }
 
 /*
-  handle interrupt on an instance
- */
-void AP_BattMonitor_FuelLevel_PWM::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
-{
-    if (pin_state == 1) {
-        irq_state.last_pulse_us = timestamp;
-    } else if (irq_state.last_pulse_us != 0) {
-        irq_state.pulse_width_us = timestamp - irq_state.last_pulse_us;
-        irq_state.pulse_count1 ++;
-    }
-}
-
-/*
   read - read the "voltage" and "current"
 */
 void AP_BattMonitor_FuelLevel_PWM::read()
 {
-    int8_t pin = _params._curr_pin;
-    if (last_pin != pin) {
-        // detach from last pin
-        if (last_pin != -1) {
-            hal.gpio->detach_interrupt(last_pin);
-        }
-        // attach to new pin
-        last_pin = pin;
-        if (last_pin > 0) {
-            hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
-            if (!hal.gpio->attach_interrupt(
-                    last_pin,
-                    FUNCTOR_BIND_MEMBER(&AP_BattMonitor_FuelLevel_PWM::irq_handler, void, uint8_t, bool, uint32_t),
-                    AP_HAL::GPIO::INTERRUPT_BOTH)) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "FuelLevelPWM: Failed to attach to pin %u", unsigned(last_pin));
-            }
-        }
-    }
-    uint32_t now_us = AP_HAL::micros();
-    if (pulse_count2 == irq_state.pulse_count1) {
-        _state.healthy = (now_us - _state.last_time_micros) < 250000U;
+    if (!pwm_source.set_pin(_params._curr_pin, "FuelLevelPWM")) {
+        _state.healthy = false;
         return;
     }
-    uint32_t pulse_width = irq_state.pulse_width_us;
-    pulse_count2 = irq_state.pulse_count1;
+
+    uint16_t pulse_width = pwm_source.get_pwm_us();
 
     /*
       this driver assumes that CAPACITY is set to tank volume in millilitres.
@@ -74,9 +42,11 @@ void AP_BattMonitor_FuelLevel_PWM::read()
     const uint16_t pwm_full = 1900;
     const uint16_t pwm_buffer = 20;
 
+    uint32_t now_us = AP_HAL::micros();
 
     // check for invalid pulse
     if (pulse_width <= (pwm_empty - pwm_buffer)|| pulse_width >= (pwm_full + pwm_buffer)) {
+        _state.healthy = (now_us - _state.last_time_micros) < 250000U;
         return;
     }
     pulse_width = constrain_int16(pulse_width, pwm_empty, pwm_full);

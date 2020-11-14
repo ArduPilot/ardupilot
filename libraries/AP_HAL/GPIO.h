@@ -16,6 +16,31 @@ public:
     virtual void    toggle() = 0;
 };
 
+class AP_HAL::PWMSource {
+public:
+
+    bool set_pin(int16_t new_pin, const char *subsystem);
+    int16_t pin() const { return _pin; }  // returns pin this is attached to
+
+    uint16_t get_pwm_us();            // return last measured PWM input
+    uint16_t get_pwm_avg_us();        // return average PWM since last call to get_pwm_avg_us
+
+private:
+    uint16_t _irq_value_us;         // last calculated pwm value (irq copy)
+    uint32_t _pulse_start_us;       // system time of start of pulse
+    int16_t _pin = -1;
+
+    uint32_t _irq_value_us_sum;     // for get_pwm_avg_us
+    uint32_t _irq_value_us_count;   // for get_pwm_avg_us
+
+    bool interrupt_attached;
+
+    // PWM input handling
+    void irq_handler(uint8_t pin,
+                     bool pin_state,
+                     uint32_t timestamp);
+};
+
 class AP_HAL::GPIO {
 public:
     GPIO() {}
@@ -73,4 +98,7 @@ public:
 
     /* return true if USB cable is connected */
     virtual bool    usb_connected(void) = 0;
+
+    // optional timer tick
+    virtual void timer_tick(void) {};
 };

@@ -4,7 +4,7 @@
   Provides a layer between the thermal centring algorithm and the main
   code for managing navigation targets, data logging, tuning parameters,
   algorithm inputs and eventually other soaring strategies such as
-  speed-to-fly. AP_TECS libary used for reference.
+  speed-to-fly. AP_TECS library used for reference.
 */
 
 #pragma once
@@ -15,6 +15,12 @@
 #include "ExtendedKalmanFilter.h"
 #include "Variometer.h"
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+
+#ifndef HAL_SOARING_ENABLED
+ #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_SOARING_ENABLED
 
 #define INITIAL_THERMAL_STRENGTH 2.0
 #define INITIAL_THERMAL_RADIUS 80.0
@@ -49,7 +55,6 @@ class SoaringController {
     float McCready(float alt);
 
     float _thermalability;
-    float _expected_sink;
 
     LowPassFilter<float> _position_x_filter;
     LowPassFilter<float> _position_y_filter;
@@ -81,7 +86,8 @@ public:
         THERMAL_WEAK,
         ALT_LOST,
         DRIFT_EXCEEDED,
-        GOOD_TO_KEEP_LOITERING
+        GOOD_TO_KEEP_LOITERING,
+        EXIT_COMMANDED,
     };
 
     enum class ActiveStatus {
@@ -124,6 +130,10 @@ public:
 
     void set_pilot_desired_state(ActiveStatus pilot_desired_state) {_pilot_desired_state = pilot_desired_state;};
 
+    float get_alt_cutoff() const {return alt_cutoff;}
+
+    float get_circling_time() const {return _vario.tau;}
+
 private:
     // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
     LoiterStatus _cruise_criteria_msg_last;
@@ -133,4 +143,8 @@ private:
     ActiveStatus _pilot_desired_state = ActiveStatus::AUTO_MODE_CHANGE;
 
     ActiveStatus active_state() const;
+
+    bool _exit_commanded;
 };
+
+#endif // HAL_SOARING_ENABLED

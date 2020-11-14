@@ -75,10 +75,21 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
             return;
         }
         break;
-    case SERIAL_CONTROL_SERIAL0 ... SERIAL_CONTROL_SERIAL9:
+    case SERIAL_CONTROL_SERIAL0 ... SERIAL_CONTROL_SERIAL9: {
         // direct access to a SERIALn port
         stream = port = AP::serialmanager().get_serial_by_id(packet.device - SERIAL_CONTROL_SERIAL0);
+
+        // see if we need to lock mavlink
+        for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+            GCS_MAVLINK *link = gcs().chan(i);
+            if (link == nullptr || link->get_uart() != port) {
+                continue;
+            }
+            link->lock(exclusive);
+            break;
+        }
         break;
+    }
 
     default:
         // not supported yet

@@ -185,6 +185,15 @@ bool Rover::set_steering_and_throttle(float steering, float throttle)
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
 {
     switch (control_output) {
+    case AP_Vehicle::ControlOutput::Roll:
+        control_value = constrain_float(g2.motors.get_roll(), -1.0f, 1.0f);
+        return true;
+    case AP_Vehicle::ControlOutput::Pitch:
+        control_value = constrain_float(g2.motors.get_pitch(), -1.0f, 1.0f);
+        return true;
+    case AP_Vehicle::ControlOutput::Walking_Height:
+        control_value = constrain_float(g2.motors.get_walking_height(), -1.0f, 1.0f);
+        return true;    
     case AP_Vehicle::ControlOutput::Throttle:
         control_value = constrain_float(g2.motors.get_throttle() / 100.0f, -1.0f, 1.0f);
         return true;

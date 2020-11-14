@@ -156,11 +156,15 @@ public:
         TYPE_I2C_DLVR_20IN=10,
         TYPE_I2C_DLVR_30IN=11,
         TYPE_I2C_DLVR_60IN=12,
+        TYPE_NMEA_WATER=13,
     };
 
     // get current primary sensor
     uint8_t get_primary(void) const { return primary; }
 
+    // get number of sensors
+    uint8_t get_num_sensors(void) const { return num_sensors; }
+    
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
@@ -176,7 +180,9 @@ private:
 
     AP_Int8 primary_sensor;
     AP_Int32 _options;    // bitmask options for airspeed
-    
+    AP_Float _wind_max;
+    AP_Float _wind_warn;
+
     struct {
         AP_Float offset;
         AP_Float ratio;
@@ -220,13 +226,14 @@ private:
             uint32_t last_check_ms;
             float health_probability;
             int8_t param_use_backup;
-            bool has_warned;
+            uint32_t last_warn_ms;
         } failures;
     } state[AIRSPEED_MAX_SENSORS];
 
     // current primary sensor
     uint8_t primary;
-    
+    uint8_t num_sensors;
+
     void read(uint8_t i);
     // return the differential pressure in Pascal for the last airspeed reading for the requested instance
     // returns 0 if the sensor is not enabled

@@ -26,6 +26,7 @@ class BuildBinariesHistory():
         c.execute("create table build (hash text, tag text, vehicle text, board text, "
                   "frame text, text integer, data integer, bss integer, start_time real, duration real)")
         c.execute("create table run (hash text, tag text, start_time real, duration real)")
+        c.commit()
 
     def sizes_for_file(self, filepath):
         cmd = "size %s" % (filepath,)
@@ -35,9 +36,10 @@ class BuildBinariesHistory():
         text = int(sizes[0])
         data = int(sizes[1])
         bss = int(sizes[2])
-        print("text=%u" % text)
-        print("data=%u" % data)
-        print("bss=%u" % bss)
+        self.progress("Binary size of %s:" % filepath)
+        self.progress("text=%u" % text)
+        self.progress("data=%u" % data)
+        self.progress("bss=%u" % bss)
         return (text, data, bss)
 
     def assure_db_present(self):

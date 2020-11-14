@@ -335,6 +335,9 @@ public:
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
 
+    // Airspeed
+    AP_Airspeed airspeed;
+
 };
 
 extern const AP_Param::Info        var_info[];

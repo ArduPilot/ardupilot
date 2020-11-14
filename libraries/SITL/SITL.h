@@ -55,7 +55,9 @@ struct sitl_fdm {
     double airspeed; // m/s
     double battery_voltage; // Volts
     double battery_current; // Amps
+    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
+    uint8_t vtol_motor_start;
     float rpm[12];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[12];         // RC input 0..1
@@ -70,6 +72,11 @@ struct sitl_fdm {
     } scanner;
 
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+
+    struct {
+        float speed;
+        float direction;
+    } wind_vane_apparent;
 };
 
 // number of rc output channels
@@ -88,6 +95,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info3);
         AP_Param::setup_object_defaults(this, var_gps);
         AP_Param::setup_object_defaults(this, var_mag);
+#ifdef SFML_JOYSTICK
+        AP_Param::setup_object_defaults(this, var_sfml_joystick);
+#endif // SFML_JOYSTICK
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
@@ -136,6 +146,9 @@ public:
     static const struct AP_Param::GroupInfo var_info3[];
     static const struct AP_Param::GroupInfo var_gps[];
     static const struct AP_Param::GroupInfo var_mag[];
+#ifdef SFML_JOYSTICK
+    static const struct AP_Param::GroupInfo var_sfml_joystick[];
+#endif //SFML_JOYSTICK
 
     // Board Orientation (and inverse)
     Matrix3f ahrs_rotation;
@@ -145,19 +158,19 @@ public:
     AP_Float baro_noise[BARO_MAX_INSTANCES];  // in metres
     AP_Float baro_drift[BARO_MAX_INSTANCES];  // in metres per second
     AP_Float baro_glitch[BARO_MAX_INSTANCES]; // glitch in meters
+    AP_Int8  baro_freeze[BARO_MAX_INSTANCES]; // freeze baro to last recorded altitude
     AP_Float gyro_noise;  // in degrees/second
     AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
     AP_Float accel2_noise; // in m/s/s
     AP_Vector3f accel_bias; // in m/s/s
     AP_Vector3f accel2_bias; // in m/s/s
-    AP_Float arspd_noise;  // in m/s
-    AP_Float arspd_fail;   // 1st pitot tube failure
-    AP_Float arspd2_fail;   // 2nd pitot tube failure
-    AP_Float arspd_fail_pressure; // 1st pitot tube failure pressure
-    AP_Float arspd_fail_pitot_pressure; // 1st pitot tube failure pressure
-    AP_Float arspd2_fail_pressure; // 2nd pitot tube failure pressure
-    AP_Float arspd2_fail_pitot_pressure; // 2nd pitot tube failure pressure
+
+    AP_Float arspd_noise[2];  // pressure noise
+    AP_Float arspd_fail[2];   // airspeed value in m/s to fail to
+    AP_Float arspd_fail_pressure[2]; // pitot tube failure pressure in Pa
+    AP_Float arspd_fail_pitot_pressure[2]; // pitot tube failure pressure in Pa
+    AP_Float arspd_offset[2]; // airspeed sensor offset in m/s
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
@@ -165,6 +178,7 @@ public:
     AP_Vector3f mag_diag[HAL_COMPASS_MAX_SENSORS];  // diagonal corrections
     AP_Vector3f mag_offdiag[HAL_COMPASS_MAX_SENSORS];  // off-diagonal corrections
     AP_Int8 mag_orient[HAL_COMPASS_MAX_SENSORS];   // external compass orientation
+    AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Float servo_speed; // servo speed in seconds
 
     AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
@@ -187,10 +201,13 @@ public:
     AP_Vector3f gps_glitch[2];  // glitch offsets in lat, lon and altitude
     AP_Int8  gps_hertz[2];   // GPS update rate in Hz
     AP_Int8 gps_hdg_enabled[2]; // enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED
-    AP_Float gps_drift_alt[2];
+    AP_Float gps_drift_alt[2]; // altitude drift error
     AP_Vector3f gps_pos_offset[2];  // XYZ position of the GPS antenna phase centre relative to the body frame origin (m)
+    AP_Float gps_accuracy[2];
+    AP_Vector3f gps_vel_err[2]; // Velocity error offsets in NED (x = N, y = E, z = D)
 
     AP_Float batt_voltage; // battery voltage base
+    AP_Float batt_capacity_ah; // battery capacity in Ah
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
@@ -206,11 +223,17 @@ public:
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
+    AP_Int8  imu_count; // number of simulated IMUs to create
     AP_Int32 loop_delay; // extra delay to add to every loop
-    AP_Float mag_scaling; // scaling factor on first compasses
+    AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
+
+#ifdef SFML_JOYSTICK
+    AP_Int8 sfml_joystick_id;
+    AP_Int8 sfml_joystick_axis[8];
+#endif
 
     // EFI type
     enum EFIType {
@@ -342,6 +365,8 @@ public:
 
     uint16_t irlock_port;
 
+    time_t start_time_UTC;
+
     void simstate_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE();
@@ -397,6 +422,9 @@ public:
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
 
+    // get the apparent wind speed and direction as set by external physics backend
+    float get_apparent_wind_dir(){return state.wind_vane_apparent.direction;}
+    float get_apparent_wind_spd(){return state.wind_vane_apparent.speed;}
 };
 
 } // namespace SITL

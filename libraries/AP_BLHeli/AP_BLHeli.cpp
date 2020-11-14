@@ -448,8 +448,8 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 
-    case MSP_SET_4WAY_IF: {
-        debug("MSP_SET_4WAY_IF");
+    case MSP_SET_PASSTHROUGH: {
+        debug("MSP_SET_PASSTHROUGH");
         if (msp.dataSize == 0) {
             msp.escMode = PROTOCOL_4WAY;
         } else if (msp.dataSize == 2) {
@@ -1417,6 +1417,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     last_telem[last_telem_esc] = td;
     last_telem[last_telem_esc].count++;
+    received_telem_data = true;
 
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger && logger->logging_enabled()

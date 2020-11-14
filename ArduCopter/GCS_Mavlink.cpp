@@ -279,7 +279,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_ADSB_VEHICLE: {
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         copter.adsb.send_adsb_vehicle(chan);
 #endif
@@ -501,7 +501,7 @@ void GCS_MAVLINK_Copter::handle_change_alt_request(AP_Mission::Mission_Command &
 void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
                                         const mavlink_message_t &msg)
 {
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
         // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
         copter.avoidance_adsb.handle_msg(msg);
@@ -697,11 +697,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
     }
 
+#if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_DO_LAND_START:
         if (copter.mode_auto.mission.jump_to_landing_sequence() && copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+#endif
 
     case MAV_CMD_NAV_LOITER_UNLIM:
         if (!copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
@@ -1101,16 +1103,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 pos_vector += copter.inertial_nav.get_position();
-            } else {
-                // convert from alt-above-home to alt-above-ekf-origin
-                if (!AP::ahrs().home_is_set()) {
-                    break;
-                }
-                Location origin;
-                pos_vector.z += AP::ahrs().get_home().alt;
-                if (copter.ahrs.get_origin(origin)) {
-                    pos_vector.z -= origin.alt;
-                }
             }
         }
 
@@ -1311,7 +1303,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
     case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
         copter.adsb.handle_message(chan, msg);
 #endif
         break;

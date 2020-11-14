@@ -17,6 +17,7 @@
 #include "AP_Beacon_Backend.h"
 #include "AP_Beacon_Pozyx.h"
 #include "AP_Beacon_Marvelmind.h"
+#include "AP_Beacon_Nooploop.h"
 #include "AP_Beacon_SITL.h"
 
 #include <AP_Common/Location.h>
@@ -29,7 +30,7 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Beacon based position estimation device type
     // @Description: What type of beacon based position estimation device is connected
-    // @Values: 0:None,1:Pozyx,2:Marvelmind,10:SITL
+    // @Values: 0:None,1:Pozyx,2:Marvelmind,3:Nooploop,10:SITL
     // @User: Advanced
     AP_GROUPINFO("_TYPE",    0, AP_Beacon, _type, 0),
 
@@ -97,6 +98,8 @@ void AP_Beacon::init(void)
         _driver = new AP_Beacon_Pozyx(*this, serial_manager);
     } else if (_type == AP_BeaconType_Marvelmind) {
         _driver = new AP_Beacon_Marvelmind(*this, serial_manager);
+    } else if (_type == AP_BeaconType_Nooploop) {
+        _driver = new AP_Beacon_Nooploop(*this, serial_manager);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_type == AP_BeaconType_SITL) {
@@ -106,13 +109,13 @@ void AP_Beacon::init(void)
 }
 
 // return true if beacon feature is enabled
-bool AP_Beacon::enabled(void)
+bool AP_Beacon::enabled(void) const
 {
     return (_type != AP_BeaconType_None);
 }
 
 // return true if sensor is basically healthy (we are receiving data)
-bool AP_Beacon::healthy(void)
+bool AP_Beacon::healthy(void) const
 {
     if (!device_ready()) {
         return false;

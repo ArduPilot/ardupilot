@@ -144,10 +144,18 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: _ACCZ_SMAX
+    // @DisplayName: Accel (vertical) slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
-    // @DisplayName: Position (horizonal) controller P gain
+    // @DisplayName: Position (horizontal) controller P gain
     // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard
@@ -891,47 +899,11 @@ float AC_PosControl::time_since_last_xy_update() const
 // write log to dataflash
 void AC_PosControl::write_log()
 {
-    const Vector3f &pos_target = get_pos_target();
-    const Vector3f &vel_target = get_vel_target();
-    const Vector3f &accel_target = get_accel_target();
-    const Vector3f &position = _inav.get_position();
-    const Vector3f &velocity = _inav.get_velocity();
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-// @LoggerMessage: PSC
-// @Description: Position Control data
-// @Field: TimeUS: Time since system startup
-// @Field: TPX: Target position relative to origin, X-axis
-// @Field: TPY: Target position relative to origin, Y-axis
-// @Field: PX: Position relative to origin, X-axis
-// @Field: PY: Position relative to origin, Y-axis
-// @Field: TVX: Target velocity, X-axis
-// @Field: TVY: Target velocity, Y-axis
-// @Field: VX: Velocity, X-axis
-// @Field: VY: Velocity, Y-axis
-// @Field: TAX: Target acceleration, X-axis
-// @Field: TAY: Target acceleration, Y-axis
-// @Field: AX: Acceleration, X-axis
-// @Field: AY: Acceleration, Y-axis
-    AP::logger().Write("PSC",
-                       "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY",
-                       "smmmmnnnnoooo",
-                       "F000000000000",
-                       "Qffffffffffff",
-                       AP_HAL::micros64(),
-                       double(pos_target.x * 0.01f),
-                       double(pos_target.y * 0.01f),
-                       double(position.x * 0.01f),
-                       double(position.y * 0.01f),
-                       double(vel_target.x * 0.01f),
-                       double(vel_target.y * 0.01f),
-                       double(velocity.x * 0.01f),
-                       double(velocity.y * 0.01f),
-                       double(accel_target.x * 0.01f),
-                       double(accel_target.y * 0.01f),
-                       double(accel_x * 0.01f),
-                       double(accel_y * 0.01f));
+   AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
+
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller

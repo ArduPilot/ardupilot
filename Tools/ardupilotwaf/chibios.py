@@ -154,6 +154,8 @@ class generate_apj(Task.Task):
             "summary": self.env.BOARD,
             "version": "0.1",
             "image_size": len(img),
+            "flash_total": int(self.env.FLASH_TOTAL),
+            "flash_free": int(self.env.FLASH_TOTAL) - len(img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
             "board_revision": 0,
             "USBID": self.env.USBID
@@ -235,9 +237,9 @@ def chibios_firmware(self):
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
 
-def setup_can_build(cfg):
-    '''enable CAN build. By doing this here we can auto-enable CAN in
-    the build based on the presence of CAN pins in hwdef.dat'''
+def setup_canmgr_build(cfg):
+    '''enable CANManager build. By doing this here we can auto-enable CAN in
+    the build based on the presence of CAN pins in hwdef.dat except for AP_Periph builds'''
     env = cfg.env
     env.AP_LIBRARIES += [
         'AP_UAVCAN',
@@ -356,8 +358,8 @@ def configure(cfg):
     if ret != 0:
         cfg.fatal("Failed to process hwdef.dat ret=%d" % ret)
     load_env_vars(cfg.env)
-    if env.HAL_NUM_CAN_IFACES:
-        setup_can_build(cfg)
+    if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
+        setup_canmgr_build(cfg)
     setup_optimization(cfg.env)
 
 def generate_hwdef_h(env):

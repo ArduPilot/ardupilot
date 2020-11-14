@@ -219,8 +219,13 @@ void ADSB::send_report(void)
                 ADSB_FLAGS_VALID_HEADING |
                 ADSB_FLAGS_VALID_VELOCITY |
                 ADSB_FLAGS_VALID_CALLSIGN |
-                ADSB_FLAGS_SIMULATED;
-            adsb_vehicle.squawk = 0; // NOTE: ADSB_FLAGS_VALID_SQUAWK bit is not set
+                ADSB_FLAGS_VALID_SQUAWK |
+                ADSB_FLAGS_SIMULATED |
+                ADSB_FLAGS_VERTICAL_VELOCITY_VALID |
+                ADSB_FLAGS_BARO_VALID;
+            // all flags set except ADSB_FLAGS_SOURCE_UAT
+
+            adsb_vehicle.squawk = 1200;
 
             mavlink_status_t *chan0_status = mavlink_get_channel_status(MAVLINK_COMM_0);
             uint8_t saved_seq = chan0_status->current_tx_seq;

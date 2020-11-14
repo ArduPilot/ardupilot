@@ -8,6 +8,9 @@ Mode::Mode() :
     channel_steer(rover.channel_steer),
     channel_throttle(rover.channel_throttle),
     channel_lateral(rover.channel_lateral),
+    channel_roll(rover.channel_roll),
+    channel_pitch(rover.channel_pitch),
+    channel_walking_height(rover.channel_walking_height),
     attitude_control(rover.g2.attitude_control)
 { }
 
@@ -169,6 +172,33 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     // calculate throttle using magnitude of input stick vector
     const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
     speed_out = throttle * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+}
+
+// decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
+// outputs are in the range -1 to +1
+void Mode::get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out)
+{
+    if (channel_roll != nullptr) {
+        roll_out = channel_roll->norm_input();
+    } else {
+        roll_out = 0.0f;
+    }
+    if (channel_pitch != nullptr) {
+        pitch_out = channel_pitch->norm_input();
+    } else {
+        pitch_out = 0.0f;
+    }
+}
+
+// decode pilot walking_height inputs and return in walking_height_out arguments
+// outputs are in the range -1 to +1
+void Mode::get_pilot_desired_walking_height(float &walking_height_out)
+{
+    if (channel_walking_height != nullptr) {
+        walking_height_out = channel_walking_height->norm_input();
+    } else {
+        walking_height_out = 0.0f;
+    }
 }
 
 // return heading (in degrees) to target destination (aka waypoint)
@@ -390,7 +420,7 @@ void Mode::navigate_to_waypoint()
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
     // pass speed to throttle controller after applying nudge from pilot
-    float desired_speed = g2.wp_nav.get_speed();
+    float desired_speed =  g2.wp_nav.get_desired_speed();
     desired_speed = calc_speed_nudge(desired_speed, g2.wp_nav.get_reversed());
     calc_throttle(desired_speed, true);
 
@@ -403,12 +433,13 @@ void Mode::navigate_to_waypoint()
         calc_steering_to_heading(desired_heading_cd, turn_rate);
     } else {
         // call turn rate steering controller
-        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads(), desired_speed, g2.wp_nav.get_reversed());
+        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads());
     }
 }
 
-// calculate steering output given a turn rate and speed
-void Mode::calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed)
+// calculate steering output given a turn rate
+// desired turn rate in radians/sec. Positive to the right.
+void Mode::calc_steering_from_turn_rate(float turn_rate)
 {
     // calculate and send final steering command to motor library
     const float steering_out = attitude_control.get_steering_out_rate(turn_rate,

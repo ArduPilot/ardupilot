@@ -40,5 +40,6 @@ private:
     Matrix3f _eliptical_corr;
     Vector3f _last_dia;
     Vector3f _last_odi;
+    Vector3f _last_data[MAX_SITL_COMPASSES];
 };
 #endif // CONFIG_HAL_BOARD

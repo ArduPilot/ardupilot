@@ -26,6 +26,17 @@
 #define HAL_GPIO_LED_OFF 1
 #endif
 
+/*
+  pin types for alternative configuration
+ */
+enum class PERIPH_TYPE : uint8_t {
+    UART_RX,
+    UART_TX,
+    I2C_SDA,
+    I2C_SCL,
+    OTHER,
+};
+
 class ChibiOS::GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
@@ -61,7 +72,17 @@ public:
       forever. Return true on pin change, false on timeout
      */
     bool wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us) override;
-    
+
+#ifndef IOMCU_FW
+    // timer tick
+    void timer_tick(void) override;
+#endif
+
+    /*
+      resolve an ioline to take account of alternative configurations
+     */
+    static ioline_t resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance);
+
 private:
     bool _usb_connected;
     bool _ext_started;
@@ -70,6 +91,7 @@ private:
     bool _attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
 #ifdef HAL_PIN_ALT_CONFIG
     void setup_alt_config(void);
+    static uint8_t alt_config;
 #endif
 };
 

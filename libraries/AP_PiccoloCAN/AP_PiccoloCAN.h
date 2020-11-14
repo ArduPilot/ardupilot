@@ -21,7 +21,10 @@
 #include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
 
+#include <AP_Param/AP_Param.h>
+
 #include "piccolo_protocol/ESCPackets.h"
+#include "piccolo_protocol/LegacyESCPackets.h"
 
 // maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 12
@@ -32,6 +35,10 @@
 #endif
 
 #if HAL_PICCOLO_CAN_ENABLE
+
+#define PICCOLO_MSG_RATE_HZ_MIN 1
+#define PICCOLO_MSG_RATE_HZ_MAX 500
+#define PICCOLO_MSG_RATE_HZ_DEFAULT 50
 
 class AP_PiccoloCAN : public AP_CANDriver
 {
@@ -60,6 +67,8 @@ public:
     AP_PiccoloCAN(const AP_PiccoloCAN &other) = delete;
     AP_PiccoloCAN &operator=(const AP_PiccoloCAN&) = delete;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
     // Return PiccoloCAN from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_PiccoloCAN *get_pcan(uint8_t driver_index);
 
@@ -72,6 +81,9 @@ public:
 
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
+
+    // return true if a particular ESC is 'active' on the Piccolo interface
+    bool is_esc_channel_active(uint8_t chan);
 
     // return true if a particular ESC has been detected
     bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
@@ -108,9 +120,28 @@ private:
 
     struct PiccoloESC_Info_t {
 
-        // ESC telemetry information
-        ESC_StatusA_t statusA;          //! Telemetry data
-        ESC_StatusB_t statusB;          //! Telemetry data
+        /* Telemetry data provided in the PKT_ESC_STATUS_A packet */
+        uint8_t mode;                   //! ESC operational mode
+        ESC_StatusBits_t status;        //! ESC status information
+        uint16_t setpoint;              //!< ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM
+        uint16_t rpm;                   //!< Motor speed
+
+        /* Telemetry data provided in the PKT_ESC_STATUS_B packet */
+        uint16_t voltage;          //!< ESC Rail Voltage
+        int16_t  current;          //!< ESC Current. Current IN to the ESC is positive. Current OUT of the ESC is negative
+        uint16_t dutyCycle;        //!< ESC Motor Duty Cycle
+        int8_t   escTemperature;   //!< ESC Logic Board Temperature
+        uint8_t  motorTemperature; //!< ESC Motor Temperature
+
+        /* Telemetry data provided in the PKT_ESC_STATUS_C packet */
+        float    fetTemperature; //!< ESC Phase Board Temperature
+        uint16_t pwmFrequency;   //!< Current motor PWM frequency (10 Hz per bit)
+        uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
+        
+        /* ESC status information provided in the PKT_ESC_WARNINGS_ERRORS packet */
+        ESC_WarningBits_t warnings;     //! ESC warning information
+        ESC_ErrorBits_t errors;         //! ESC error information
+
         ESC_Firmware_t firmware;        //! Firmware / checksum information
         ESC_Address_t address;          //! Serial number
         ESC_EEPROMSettings_t eeprom;    //! Non-volatile settings info
@@ -124,6 +155,10 @@ private:
         uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
 
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
+
+    // Piccolo CAN parameters
+    AP_Int32 _esc_bm;       //! ESC selection bitmask
+    AP_Int16 _esc_hz;       //! ESC update rate (Hz)
 
 };
 

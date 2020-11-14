@@ -112,7 +112,7 @@ PA3  TIM5_CH4 TIM5 PWM(6) GPIO(55)
 #PD12  TIM4_CH1 TIM4 PWM(7) GPIO(56) # led pin
 #PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57) # buzzer pin (need to comment out buzzer)
 
-DMA_PRIORITY S*
+DMA_PRIORITY TIM1* TIM3* SPI4* SPI1*
 
 define HAL_STORAGE_SIZE 16384
 define STORAGE_FLASH_PAGE 1
@@ -142,8 +142,20 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # setup for OSD
 define OSD_ENABLED 1
+define OSD_PARAM_ENABLED 0
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 6
 define STM32_PWM_USE_ADVANCED TRUE
+
+# disable SMBUS and fuel battery monitors to save flash
+define HAL_BATTMON_SMBUS_ENABLE 0
+define HAL_BATTMON_FUEL_ENABLE 0
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
+# reduce max size of embedded params for apj_tool.py
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024

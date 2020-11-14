@@ -1,6 +1,8 @@
 
 #include "GPIO.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+
 using namespace HALSITL;
 
 extern const AP_HAL::HAL& hal;
@@ -11,7 +13,16 @@ void GPIO::init()
 {}
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
-{}
+{
+    if (pin > 7) {
+        return;
+    }
+    if (output) {
+        pin_mode_is_write |= (1U<<pin);
+    } else {
+        pin_mode_is_write &= ~(1U<<pin);
+    }
+}
 
 uint8_t GPIO::read(uint8_t pin)
 {
@@ -32,6 +43,13 @@ void GPIO::write(uint8_t pin, uint8_t value)
 {
     if (!_sitlState->_sitl) {
         return;
+    }
+
+    if (pin < 8) {
+        if (!(pin_mode_is_write & (1U<<pin))) {
+            // ignore setting of pull-up resistors
+            return;
+        }
     }
     uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
     uint16_t new_mask = mask;
@@ -92,3 +110,4 @@ void DigitalSource::toggle()
 {
     return hal.gpio->write(_pin, !hal.gpio->read(_pin));
 }
+#endif

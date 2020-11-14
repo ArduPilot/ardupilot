@@ -19,6 +19,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -247,6 +248,8 @@ void AP_IOMCU::thread_main(void)
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
+
+        send_rc_protocols();
     }
     done_shutdown = true;
 }
@@ -287,6 +290,9 @@ void AP_IOMCU::read_rc_input()
     uint16_t *r = (uint16_t *)&rc_input;
     if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
+    }
+    if (rc_input.flags_failsafe && rc().ignore_rc_failsafe()) {
+        rc_input.flags_failsafe = false;
     }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_last_input_ms = AP_HAL::millis();
@@ -769,6 +775,18 @@ void AP_IOMCU::update_safety_options(void)
     }
 }
 
+// update enabled RC protocols mask
+void AP_IOMCU::send_rc_protocols()
+{
+    const uint32_t v = rc().enabled_protocols();
+    if (last_rc_protocols == v) {
+        return;
+    }
+    if (write_registers(PAGE_SETUP, PAGE_REG_SETUP_RC_PROTOCOLS, 2, (uint16_t *)&v)) {
+        last_rc_protocols = v;
+    }
+}
+
 /*
   check ROMFS firmware against CRC on IOMCU, and if incorrect then upload new firmware
  */
@@ -1023,6 +1041,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    last_rc_protocols = 0;
 }
 
 

@@ -2,7 +2,8 @@ The JSON SITL backend allows software to easily interface with ArduPilot using a
 
 To launch the JSON backend run SITL with ```-f json:127.0.0.1``` where 127.0.0.1 is replaced with the IP the physics backend is running at.
 
-Connection to SITL is made via a UDP link on port 9002.
+Connection to SITL is made via a UDP link. The physics backend should listen for incoming messages on port 9002 it should then reply to the IP and port the messages were received from. This removes the need to configure the a target
+IP and port for SITL in the physics backend. SITL will send a output message every 10 seconds allowing the physics backend to auto detect.
 
 SITL output
 Data is output from SITL in a binary format:
@@ -56,6 +57,14 @@ rangefinder distances corresponding to driver instances:
     rng_5 (m)
     rng_6 (m)
 ```
+
+Apparent wind:
+```
+    windvane:
+        direction (radians) clockwise relative to the front, i.e. 0 = head to wind
+        speed (m/s)
+```
+for example:```"windvane":{"direction":0,"speed":0}```
 
 When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
 

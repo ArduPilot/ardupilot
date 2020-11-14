@@ -349,11 +349,11 @@ void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Performance() {}
 void Sub::Log_Write_Attitude(void) {}
 void Sub::Log_Write_MotBatt() {}
-void Sub::Log_Write_Data(uint8_t id, int32_t value) {}
-void Sub::Log_Write_Data(uint8_t id, uint32_t value) {}
-void Sub::Log_Write_Data(uint8_t id, int16_t value) {}
-void Sub::Log_Write_Data(uint8_t id, uint16_t value) {}
-void Sub::Log_Write_Data(uint8_t id, float value) {}
+void Sub::Log_Write_Data(LogDataID id, int32_t value) {}
+void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
+void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
+void Sub::Log_Write_Data(LogDataID id, uint16_t value) {}
+void Sub::Log_Write_Data(LogDataID id, float value) {}
 void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Sub::Log_Write_Vehicle_Startup_Messages() {}

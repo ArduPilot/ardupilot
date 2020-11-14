@@ -54,7 +54,7 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
     SRV_Channels::set_angle(SRV_Channel::k_tiltMotorLeft, SERVO_OUTPUT_RANGE);
 
     // record successful initialisation if what we setup was the desired frame_class
-    _flags.initialised_ok = (frame_class == MOTOR_FRAME_TAILSITTER);
+    set_initialised_ok(frame_class == MOTOR_FRAME_TAILSITTER);
 }
 
 
@@ -78,7 +78,7 @@ void AP_MotorsTailsitter::set_update_rate(uint16_t speed_hz)
 
 void AP_MotorsTailsitter::output_to_motors()
 {
-    if (!_flags.initialised_ok) {
+    if (!initialised_ok()) {
         return;
     }
 

@@ -7,6 +7,7 @@
 #include "AP_OpticalFlow_CXOF.h"
 #include "AP_OpticalFlow_MAV.h"
 #include "AP_OpticalFlow_HereFlow.h"
+#include "AP_OpticalFlow_MSP.h"
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -25,7 +26,7 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Optical flow sensor type
     // @Description: Optical flow sensor type
-    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:UAVCAN
+    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:UAVCAN, 7:MSP
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("_TYPE", 0,  OpticalFlow,    _type,   (int8_t)OPTICAL_FLOW_TYPE_DEFAULT),
@@ -135,6 +136,11 @@ void OpticalFlow::init(uint32_t log_bit)
         backend = new AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
+    case OpticalFlowType::MSP:
+#if HAL_MSP_OPTICALFLOW_ENABLED
+        backend = AP_OpticalFlow_MSP::detect(*this);
+#endif
+        break;
     case OpticalFlowType::SITL:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         backend = new AP_OpticalFlow_SITL(*this);
@@ -172,6 +178,20 @@ void OpticalFlow::handle_msg(const mavlink_message_t &msg)
         backend->handle_msg(msg);
     }
 }
+
+#if HAL_MSP_OPTICALFLOW_ENABLED
+void OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
+{
+    // exit immediately if not enabled
+    if (!enabled()) {
+        return;
+    }
+
+    if (backend != nullptr) {
+        backend->handle_msp(pkt);
+    }
+}
+#endif //HAL_MSP_OPTICALFLOW_ENABLED
 
 void OpticalFlow::update_state(const OpticalFlow_state &state)
 {

@@ -21,21 +21,40 @@ public:
 
     // run background task to find best path and update avoidance_results
     // returns true and populates origin_new and destination_new if OA is required.  returns false if OA is not required
-    bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new);
+    bool update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, bool proximity_only);
+
+    enum class OABendyType {
+        OA_BENDY_DISABLED   = 0,
+        OA_BENDY_HORIZONTAL = 1,
+        OA_BENDY_VERTICAL   = 2,
+    };
+
+    // return type of BendyRuler in use
+    OABendyType get_type() const;
+
+    // search for path in XY direction
+    bool search_xy_path(const Location& current_loc, const Location& destination, float ground_course_deg, Location &destination_new, float lookahead_step_1_dist, float lookahead_step_2_dist, float bearing_to_dest, float distance_to_dest, bool proximity_only);
+
+    // search for path in the Vertical directions
+    bool search_vertical_path(const Location& current_loc, const Location& destination,Location &destination_new, const float &lookahead_step1_dist, const float &lookahead_step2_dist, const float &bearing_to_dest, const float &distance_to_dest, bool proximity_only); 
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
     // calculate minimum distance between a path and any obstacle
-    float calc_avoidance_margin(const Location &start, const Location &end) const;
+    float calc_avoidance_margin(const Location &start, const Location &end, bool proximity_only) const;
 
     // determine if BendyRuler should accept the new bearing or try and resist it. Returns true if bearing is not changed  
-    bool resist_bearing_change(const Location &destination, const Location &current_loc, bool active, float bearing_test, float lookahead_step1_dist, float margin, Location &prev_dest, float &prev_bearing, float &final_bearing, float &final_margin) const;    
+    bool resist_bearing_change(const Location &destination, const Location &current_loc, bool active, float bearing_test, float lookahead_step1_dist, float margin, Location &prev_dest, float &prev_bearing, float &final_bearing, float &final_margin, bool proximity_only) const;    
 
     // calculate minimum distance between a path and the circular fence (centered on home)
     // on success returns true and updates margin
     bool calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin) const;
+
+    // calculate minimum distance between a path and the altitude fence
+    // on success returns true and updates margin
+    bool calc_margin_from_alt_fence(const Location &start, const Location &end, float &margin) const;
 
     // calculate minimum distance between a path and all inclusion and exclusion polygons
     // on success returns true and updates margin
@@ -56,7 +75,8 @@ private:
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
     AP_Float _bendy_ratio;          // object avoidance will avoid major directional change if change in margin ratio is less than this param
     AP_Int16 _bendy_angle;          // object avoidance will try avoding change in direction over this much angle
-
+    AP_Int8  _bendy_type;           // Type of BendyRuler to run
+    
     // internal variables used by background thread
     float _current_lookahead;       // distance (in meters) ahead of the vehicle we are looking for obstacles
     float _bearing_prev;            // stored bearing in degrees 

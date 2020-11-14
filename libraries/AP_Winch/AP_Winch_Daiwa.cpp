@@ -60,7 +60,7 @@ void AP_Winch_Daiwa::send_status(const GCS_MAVLINK &channel)
     }
 
     // convert speed percentage to absolute speed
-    const float speed_ms = fabsf(config.rate_max) * (float)latest.speed_pct;
+    const float speed_ms = fabsf(config.rate_max) * (float)latest.speed_pct * 0.01f;
 
     // send status
     mavlink_msg_winch_status_send(

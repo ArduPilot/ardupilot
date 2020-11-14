@@ -101,6 +101,14 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("USER4", 8, AP_Scripting, _user[3], 0.0),
 
+    // @Param: DIR_DISABLE
+    // @DisplayName: Directory disable
+    // @Description: This will stop scripts being loaded from the given locations
+    // @Bitmask: 0:ROMFS, 1:APM/scripts
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("DIR_DISABLE", 9, AP_Scripting, _dir_disable, 0),
+
     AP_GROUPEND
 };
 

@@ -30,6 +30,9 @@ uint32_t flash_func_read_sn(uint32_t idx);
 void flash_set_keep_unlocked(bool);
 void lock_bl_port(void);
 
+bool flash_write_flush(void);
+bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords);
+
 uint32_t get_mcu_id(void);
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf);
 bool check_limit_flash_1M(void);

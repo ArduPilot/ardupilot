@@ -148,6 +148,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_throttle:
     case k_throttleLeft:
     case k_throttleRight:
+    case k_airbrake:
         // fixed wing throttle
         set_range(100);
         break;
@@ -628,17 +629,6 @@ void SRV_Channels::set_output_to_trim(SRV_Channel::Aux_servo_function_t function
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         if (channels[i].function == function) {
             channels[i].set_output_pwm(channels[i].servo_trim);
-        }
-    }
-}
-
-// set output pwm to for first matching channel
-void SRV_Channels::set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t pwm)
-{
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        if (channels[i].function == function) {
-            channels[i].set_output_pwm(pwm);
-            break;
         }
     }
 }

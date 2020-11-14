@@ -35,7 +35,13 @@ AP_Compass_SITL::AP_Compass_SITL()
                 _compass.set_offsets(i, _sitl->mag_ofs[i]);
             }
         }
-        
+
+        // we want to simulate a calibrated compass by default, so set
+        // scale to 1
+        AP_Param::set_default_by_name("COMPASS_SCALE", 1);
+        AP_Param::set_default_by_name("COMPASS_SCALE2", 1);
+        AP_Param::set_default_by_name("COMPASS_SCALE3", 1);
+
         // make first compass external
         set_external(_compass_instance[0], true);
 
@@ -128,12 +134,22 @@ void AP_Compass_SITL::_timer()
         } else {
             f.rotate(get_board_orientation());
         }
-        if (i == 0) {
-            // scale the first compass to simulate sensor scale factor errors
-            f *= _sitl->mag_scaling;
+        // scale the compass to simulate sensor scale factor errors
+        f *= _sitl->mag_scaling[i];
+
+        switch (_sitl->mag_fail[i]) {
+        case 0:
+            accumulate_sample(f, _compass_instance[i], 10);
+            _last_data[i] = f;
+            break;
+        case 1:
+            // no data
+            break;
+        case 2:
+            // frozen compass
+            accumulate_sample(_last_data[i], _compass_instance[i], 10);
+            break;
         }
-        
-        accumulate_sample(f, _compass_instance[i], 10);
     }
 }
 

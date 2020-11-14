@@ -128,6 +128,10 @@ public:
 
     Sub(void);
 
+protected:
+
+    bool should_zero_rc_outputs_on_reboot() const override { return true; }
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -422,7 +426,6 @@ private:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
-    void send_heartbeat(mavlink_channel_t chan);
 #if RPM_ENABLED == ENABLED
     void rpm_update();
 #endif
@@ -607,6 +610,7 @@ private:
     void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
     void log_init(void);
     void accel_cal_update(void);
+    void read_airspeed();
 
     void failsafe_leak_check();
     void failsafe_internal_pressure_check();

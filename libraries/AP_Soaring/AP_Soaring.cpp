@@ -4,6 +4,7 @@
 #include <stdint.h>
 extern const AP_HAL::HAL& hal;
 
+#if HAL_SOARING_ENABLED
 
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
@@ -66,7 +67,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: s
     // @Range: 0 600
     // @User: Advanced
-    AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 30),
+    AP_GROUPINFO("MIN_CRSE_S", 8, SoaringController, min_cruise_s, 10),
 
     // @Param: POLAR_CD0
     // @DisplayName: Zero lift drag coef.
@@ -198,7 +199,9 @@ SoaringController::LoiterStatus SoaringController::check_cruise_criteria(Vector2
     LoiterStatus result = LoiterStatus::GOOD_TO_KEEP_LOITERING;
     const float alt = _vario.alt;
 
-    if (alt > alt_max) {
+    if (_exit_commanded) {
+        result = LoiterStatus::EXIT_COMMANDED;
+    } else if (alt > alt_max) {
         result = LoiterStatus::ALT_TOO_HIGH;
         if (result != _cruise_criteria_msg_last) {
             gcs().send_text(MAV_SEVERITY_ALERT, "Reached upper alt = %dm", (int16_t)alt);
@@ -279,6 +282,8 @@ void SoaringController::init_thermalling()
 
     _position_x_filter.reset(_ekf.X[2]);
     _position_y_filter.reset(_ekf.X[3]);
+
+    _exit_commanded = false;
 }
 
 void SoaringController::init_cruising()
@@ -393,10 +398,18 @@ void SoaringController::update_active_state()
                 // It's enabled, but wasn't on the last loop.
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, manual mode changes.");
                 set_throttle_suppressed(true);
+
+                // We changed mode - if we're in LOITER this means we should exit gracefully.
+                // This has no effect if we're cruising as it is reset on thermal entry.
+                _exit_commanded = true;
                 break;
             case ActiveStatus::AUTO_MODE_CHANGE:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, automatic mode changes.");
                 set_throttle_suppressed(true);
+
+                // We changed mode - if we're in LOITER this means we should exit gracefully.
+                // This has no effect if we're cruising as it is reset on thermal entry.
+                _exit_commanded = true;
                 break;
         }
     }
@@ -458,3 +471,5 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
         return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
     }
 }
+
+#endif // HAL_SOARING_ENABLED

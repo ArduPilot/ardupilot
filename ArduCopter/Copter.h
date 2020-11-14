@@ -65,6 +65,7 @@
 #include <AC_AutoTune/AC_AutoTune.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_ADSB/AP_ADSB.h>
 
 // Configuration
 #include "defines.h"
@@ -112,9 +113,6 @@
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AP_IRLock/AP_IRLock.h>
 #endif
-#if ADSB_ENABLED == ENABLED
- # include <AP_ADSB/AP_ADSB.h>
-#endif
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
@@ -143,7 +141,7 @@
  # include <AP_Button/AP_Button.h>
 #endif
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
  #include <AP_OSD/AP_OSD.h>
 #endif
 
@@ -169,7 +167,7 @@
 #include "UserParameters.h"
 #endif
 #include "Parameters.h"
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
 
@@ -444,7 +442,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Copter::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
 
@@ -535,7 +533,7 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
@@ -607,6 +605,7 @@ private:
         RC_CONTINUE_IF_GUIDED           = (1<<2),   // 4
         CONTINUE_IF_LANDING             = (1<<3),   // 8
         GCS_CONTINUE_IF_PILOT_CONTROL   = (1<<4),   // 16
+        RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
@@ -662,12 +661,11 @@ private:
     void update_throttle_hover();
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle();
-    float get_avoidance_adjusted_climbrate(float target_rate);
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn();
 
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
 #endif
@@ -861,8 +859,8 @@ private:
     void startup_INS_ground();
     void update_dynamic_notch() override;
     bool position_ok() const;
-    bool ekf_position_ok() const;
-    bool optflow_position_ok() const;
+    bool ekf_has_absolute_position() const;
+    bool ekf_has_relative_position() const;
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
@@ -948,7 +946,7 @@ private:
 #if MODE_SYSTEMID_ENABLED == ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if ADSB_ENABLED == ENABLED
+#if HAL_ADSB_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
 #endif
 #if MODE_THROW_ENABLED == ENABLED

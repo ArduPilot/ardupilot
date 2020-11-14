@@ -21,8 +21,33 @@
 #include "AP_Filesystem_Sys.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
+
+struct SysFileList {
+    const char* name;
+    uint32_t filesize; 
+};
+
+static const SysFileList sysfs_file_list[] = {
+    {"threads.txt", 1024},
+    {"tasks.txt", 6500},
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    {"can_log.txt", 1024},
+    {"can0_stats.txt", 1024},
+    {"can1_stats.txt", 1024},
+#endif
+};
+
+int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
+    for (uint8_t i = 0; i <  ARRAY_SIZE(sysfs_file_list); i++) {
+        if (strcmp(fname, sysfs_file_list[i].name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 int AP_Filesystem_Sys::open(const char *fname, int flags)
 {
@@ -46,17 +71,36 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         errno = ENOMEM;
         return -1;
     }
+
+    // This ensure that whenever new sys file is added its also added to list above
+    int8_t pos = file_in_sysfs(fname);
+    uint32_t max_size = 0;
+    if (pos >= 0) {
+        max_size = sysfs_file_list[pos].filesize;
+    } else {
+        errno = ENOENT;
+        return -1;
+    }
+
     if (strcmp(fname, "threads.txt") == 0) {
-        const uint32_t max_size = 1024;
         r.data->data = (char *)malloc(max_size);
         if (r.data->data) {
             r.data->length = hal.util->thread_info(r.data->data, max_size);
         }
     }
+    if (strcmp(fname, "tasks.txt") == 0) {
+        r.data->data = (char *)malloc(max_size);
+        if (r.data->data) {
+            r.data->length = AP::scheduler().task_info(r.data->data, max_size);
+            if (r.data->length == 0) { // the feature may be disabled
+                free(r.data->data);
+                r.data->data = nullptr;
+            }
+        }
+    }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can_log.txt") == 0) {
-        const uint32_t max_size = 1024;
         r.data->data = (char *)malloc(max_size);
         if (r.data->data) {
             r.data->length = AP::can().log_retrieve(r.data->data, max_size);
@@ -68,7 +112,6 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     }
     if (can_stats_num != -1 && can_stats_num < HAL_NUM_CAN_IFACES) {
         if (hal.can[can_stats_num] != nullptr) {
-            const uint32_t max_size = 1024;
             r.data->data = (char *)malloc(max_size);
             if (r.data->data) {
                 r.data->length = hal.can[can_stats_num]->get_stats(r.data->data, max_size);
@@ -133,10 +176,65 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
     return r.file_ofs;
 }
 
-int AP_Filesystem_Sys::stat(const char *name, struct stat *stbuf)
+void *AP_Filesystem_Sys::opendir(const char *pathname)
 {
+    if (strlen(pathname) > 0) {
+        // no sub directories
+        errno = ENOENT;
+        return nullptr;
+    }
+    DirReadTracker *dtracker = new DirReadTracker;
+    if (dtracker == nullptr) {
+        errno = ENOMEM;
+        return nullptr;
+    }
+    return dtracker;
+}
+
+struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
+{
+    DirReadTracker* dtracker = ((DirReadTracker*)dirp);
+    if (dtracker->file_offset >= ARRAY_SIZE(sysfs_file_list)) {
+        // we have reached end of list
+        return nullptr;
+    }
+    dtracker->curr_file.d_type = DT_REG;
+    size_t max_length = ARRAY_SIZE(dtracker->curr_file.d_name);
+    strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
+    dtracker->file_offset++;
+    return &dtracker->curr_file;
+}
+
+int AP_Filesystem_Sys::closedir(void *dirp)
+{
+    if (dirp == nullptr) {
+        errno = EINVAL;
+        return -1;
+    }
+    delete (DirReadTracker*)dirp;
+    return 0;
+}
+
+int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
+{
+    if (pathname == nullptr || stbuf == nullptr || (strlen(pathname) == 0)) {
+        errno = EINVAL;
+        return -1;
+    }
     memset(stbuf, 0, sizeof(*stbuf));
-    // give fixed size, EOF on read gives real size
-    stbuf->st_size = 1024*1024;
+    if (strlen(pathname) == 1 && pathname[0] == '/') {
+        stbuf->st_size = 0; // just a placeholder value
+        return 0;
+    }
+    const char *pathname_noslash = pathname;
+    if (pathname[0] == '/') {
+        pathname_noslash = &pathname[1];
+    }
+    int8_t pos = file_in_sysfs(pathname_noslash);
+    if (pos < 0) {
+        errno = ENOENT;
+        return -1;
+    }
+    stbuf->st_size = sysfs_file_list[pos].filesize;
     return 0;
 }

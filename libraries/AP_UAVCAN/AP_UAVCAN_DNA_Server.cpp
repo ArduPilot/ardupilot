@@ -552,7 +552,7 @@ void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol:
     uavcan::copy(resp.getResponse().hardware_version.unique_id.begin(),
                  resp.getResponse().hardware_version.unique_id.end(),
                  unique_id);
-    strncpy(name, resp.getResponse().name.c_str(), sizeof(name)-1);
+    strncpy_noterm(name, resp.getResponse().name.c_str(), sizeof(name)-1);
     AP::uavcan_dna_server().handleNodeInfo(node_id, unique_id, name);
 }
 
@@ -638,7 +638,7 @@ void AP_UAVCAN_DNA_Server::handleAllocation(uint8_t driver_index, uint8_t node_i
                     msg.node_id = resp_node_id;
                 }
             } else {
-                gcs().send_text(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
             }
         } else {
             msg.node_id = resp_node_id;

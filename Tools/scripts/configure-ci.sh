@@ -12,6 +12,9 @@ ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
 RPI_ROOT="master"
 RPI_TARBALL="$RPI_ROOT.tar.gz"
 
+MUSL_ROOT="arm-linux-musleabihf-cross"
+MUSL_TBZ="$MUSL_ROOT.tgz"
+
 CCACHE_ROOT="ccache-3.4.2"
 CCACHE_TARBALL="$CCACHE_ROOT.tar.bz2"
 
@@ -30,6 +33,13 @@ dir="tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64"
 if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-linux-gnueabihf-g++" ]; then
   wget https://firmware.ardupilot.org/Tools/Travis/NavIO/$RPI_TARBALL
   tar -xf $RPI_TARBALL -C opt $dir
+fi
+
+# musl toolchain
+dir=$MUSL_ROOT
+if [ ! -d "$HOME/opt/$dir" -o ! -x "$HOME/opt/$dir/bin/arm-linux-musleabihf-g++" ]; then
+  wget https://musl.cc/$MUSL_TBZ
+  tar -xf $MUSL_TBZ -C opt
 fi
 
 # ccache
@@ -65,6 +75,8 @@ ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-g++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-none-eabi-gcc
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-g++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-gnueabihf-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-musleabihf-gcc
+ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/arm-linux-musleabihf-g++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang++
 ln -s ~/opt/$CCACHE_ROOT/ccache ~/ccache/clang
 
@@ -73,6 +85,7 @@ exportline="${exportline}:$HOME/bin"
 exportline="${exportline}:$HOME/.local/bin"
 exportline="${exportline}:$HOME/opt/gcc-arm-none-eabi-6-2017-q2-update/bin"
 exportline="${exportline}:$HOME/opt/tools-master/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
+exportline="${exportline}:$HOME/opt/arm-linux-musleabihf-cross/bin"
 exportline="${exportline}:$HOME/opt/$CCACHE_ROOT"
 exportline="${exportline}:\$PATH"
 
@@ -84,8 +97,8 @@ fi
 
 . ~/.profile
 
-pip install --user -U argparse empy pyserial pexpect future lxml
-pip install --user -U intelhex
-pip install --user -U numpy
-pip install --user -U edn_format
+python -m pip install --user -U argparse pyserial pexpect future lxml
+python -m pip install --user -U intelhex
+python -m pip install --user -U numpy
+python -m pip install --user -U edn_format
 

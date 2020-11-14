@@ -24,23 +24,17 @@
 using namespace SITL;
 
 MultiCopter::MultiCopter(const char *frame_str) :
-    Aircraft(frame_str),
-    frame(nullptr)
+    Aircraft(frame_str)
 {
-    mass = 1.5f;
-
     frame = Frame::find_frame(frame_str);
     if (frame == nullptr) {
         printf("Frame '%s' not found", frame_str);
         exit(1);
     }
-    // initial mass is passed through to Frame for it to calculate a
-    // hover thrust requirement.
-    if (strstr(frame_str, "-fast")) {
-        frame->init(gross_mass(), 0.5, 85, 4*radians(360));
-    } else {
-        frame->init(gross_mass(), 0.51, 15, 4*radians(360));
-    }
+
+    frame->init(frame_str, &battery);
+
+    mass = frame->get_mass();
     frame_height = 0.1;
     num_motors = frame->num_motors;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
@@ -68,7 +62,9 @@ void MultiCopter::update(const struct sitl_input &input)
     calculate_forces(input, rot_accel, accel_body);
 
     // estimate voltage and current
-    frame->current_and_voltage(input, battery_voltage, battery_current);
+    frame->current_and_voltage(battery_voltage, battery_current);
+
+    battery.set_current(battery_current);
 
     update_dynamics(rot_accel);
     update_external_payload(input);

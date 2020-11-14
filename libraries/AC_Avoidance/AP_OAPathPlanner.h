@@ -51,7 +51,8 @@ public:
     enum OAPathPlanTypes {
         OA_PATHPLAN_DISABLED = 0,
         OA_PATHPLAN_BENDYRULER = 1,
-        OA_PATHPLAN_DIJKSTRA = 2
+        OA_PATHPLAN_DIJKSTRA = 2,
+        OA_PATHPLAN_DJIKSTRA_BENDYRULER = 3,
     };
 
     // enumeration for _OPTION parameter
@@ -61,6 +62,9 @@ public:
     };
 
     uint16_t get_options() const { return _options;}
+
+    // helper function to return type of BendyRuler in use. This is used by AC_WPNav_OA
+    AP_OABendyRuler::OABendyType get_bendy_type() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -101,6 +105,7 @@ private:
     AP_OADatabase _oadatabase;      // Database of dynamic objects to avoid
     uint32_t avoidance_latest_ms;   // last time Dijkstra's or BendyRuler algorithms ran
 
+    bool proximity_only = true;
     static AP_OAPathPlanner *_singleton;
 };
 

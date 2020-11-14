@@ -40,6 +40,10 @@ void Plane::set_control_channels(void)
         SRV_Channels::set_angle(SRV_Channel::k_throttleRight, 100);
     }
 
+    // update flap and airbrake channel assignment
+    channel_flap     = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FLAP);
+    channel_airbrake = rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRBRAKE);
+
     // update manual forward throttle channel assignment
     quadplane.rc_fwd_thr_ch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
 
@@ -182,8 +186,6 @@ void Plane::read_radio()
 {
     if (!rc().read_input()) {
         control_failsafe();
-        airspeed_nudge_cm = 0;
-        throttle_nudge = 0;
         return;
     }
 
@@ -264,6 +266,9 @@ void Plane::control_failsafe()
         channel_roll->set_control_in(0);
         channel_pitch->set_control_in(0);
         channel_rudder->set_control_in(0);
+
+        airspeed_nudge_cm = 0;
+        throttle_nudge = 0;
 
         switch (control_mode->mode_number()) {
             case Mode::Number::QSTABILIZE:

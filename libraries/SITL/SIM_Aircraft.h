@@ -31,6 +31,7 @@
 #include "SIM_RichenPower.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
+#include "SIM_Battery.h"
 #include <Filter/Filter.h>
 
 namespace SITL {
@@ -164,15 +165,20 @@ protected:
     Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
     Vector3f position;                   // meters, NED from origin
     float mass;                          // kg
-    float external_payload_mass = 0.0f;  // kg
-    Vector3f accel_body;                 // m/s/s NED, body frame
+    float external_payload_mass;         // kg
+    Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
     float airspeed;                      // m/s, apparent airspeed
     float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
-    float battery_current = 0.0f;
+    float battery_current;
+
+    // battery model
+    Battery battery;
+
     uint8_t num_motors = 1;
+    uint8_t vtol_motor_start;
     float rpm[12];
-    uint8_t rcin_chan_count = 0;
+    uint8_t rcin_chan_count;
     float rcin[12];
     float range = -1.0f;                 // externally supplied rangefinder value, assumed to have been corrected for vehicle attitude
 
@@ -185,18 +191,24 @@ protected:
     // Rangefinder
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
 
+    // Windvane apparent wind
+    struct {
+        float speed;
+        float direction;
+    } wind_vane_apparent;
+
     // Wind Turbulence simulated Data
-    float turbulence_azimuth = 0.0f;
-    float turbulence_horizontal_speed = 0.0f;  // m/s
-    float turbulence_vertical_speed = 0.0f;    // m/s
+    float turbulence_azimuth;
+    float turbulence_horizontal_speed;  // m/s
+    float turbulence_vertical_speed;    // m/s
 
     Vector3f mag_bf;  // local earth magnetic field vector in Gauss, earth frame
 
     uint64_t time_now_us;
 
-    const float gyro_noise;
-    const float accel_noise;
-    float rate_hz;
+    const float gyro_noise = radians(0.1f);
+    const float accel_noise = 0.3f;
+    float rate_hz = 1200.0f;
     float target_speedup;
     uint64_t frame_time_us;
     uint64_t last_wall_time_us;
@@ -283,10 +295,14 @@ protected:
     float get_local_updraft(Vector3f currentPos);
 
 private:
-    uint64_t last_time_us = 0;
-    uint32_t frame_counter = 0;
+    uint64_t last_time_us;
+    uint32_t frame_counter;
     uint32_t last_ground_contact_ms;
-    const uint32_t min_sleep_time;
+#if defined(__CYGWIN__) || defined(__CYGWIN64__)
+    const uint32_t min_sleep_time{20000};
+#else
+    const uint32_t min_sleep_time{5000};
+#endif
 
     struct {
         Vector3f accel_body;

@@ -25,9 +25,7 @@ extern const AP_HAL::HAL &hal;
 
 // parameter defaults
 const float OA_MARGIN_MAX_DEFAULT = 5;
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-    const int16_t OA_OPTIONS_DEFAULT = 1;
-#endif
+const int16_t OA_OPTIONS_DEFAULT = 1;
 
 const int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
 const int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
@@ -37,7 +35,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Object Avoidance Path Planning algorithm to use
     // @Description: Enabled/disable path planning around obstacles
-    // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra
+    // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra,3:Dijkstra with BendyRuler
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
 
@@ -57,16 +55,14 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Path: AP_OADatabase.cpp
     AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
 
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-    // @Param: OPTIONS
+    // @Param{Rover}: OPTIONS
     // @DisplayName: Options while recovering from Object Avoidance
     // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
     // @Values: 0:Vehicle will return to its original waypoint trajectory, 1:Reset the origin of the waypoint to the present location
     // @Bitmask: 0: Reset the origin of the waypoint to the present location
     // @User: Standard
-    AP_GROUPINFO("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT),
-#endif
-    
+    AP_GROUPINFO_FRAME("OPTIONS", 5, AP_OAPathPlanner, _options, OA_OPTIONS_DEFAULT, AP_PARAM_FRAME_ROVER),
+
     // @Group: BR_
     // @Path: AP_OABendyRuler.cpp
     AP_SUBGROUPPTR(_oabendyruler, "BR_", 6, AP_OAPathPlanner, AP_OABendyRuler),
@@ -101,10 +97,28 @@ void AP_OAPathPlanner::init()
             _oadijkstra = new AP_OADijkstra();
         }
         break;
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if (_oadijkstra == nullptr) {
+            _oadijkstra = new AP_OADijkstra();
+        }
+        if (_oabendyruler == nullptr) {
+            _oabendyruler = new AP_OABendyRuler();
+            AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
+        }
+        break;
     }
 
     _oadatabase.init();
     start_thread();
+}
+
+// return type of BendyRuler in use
+AP_OABendyRuler:: OABendyType AP_OAPathPlanner::get_bendy_type() const
+{
+    if (_oabendyruler == nullptr) {
+        return AP_OABendyRuler::OABendyType::OA_BENDY_DISABLED; 
+    }     
+    return _oabendyruler->get_type();
 }
 
 // pre-arm checks that algorithms have been initialised successfully
@@ -124,6 +138,12 @@ bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
     case OA_PATHPLAN_DIJKSTRA:
         if (_oadijkstra == nullptr) {
             hal.util->snprintf(failure_msg, failure_msg_len, "Dijkstra OA requires reboot");
+            return false;
+        }
+        break;
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if(_oadijkstra == nullptr || _oabendyruler == nullptr) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "OA requires reboot");
             return false;
         }
         break;
@@ -258,12 +278,12 @@ void AP_OAPathPlanner::avoidance_thread()
                 continue;
             }
             _oabendyruler->set_config(_margin_max);
-            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new)) {
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, false)) {
                 res = OA_SUCCESS;
             }
             break;
 
-        case OA_PATHPLAN_DIJKSTRA:
+        case OA_PATHPLAN_DIJKSTRA: {
             if (_oadijkstra == nullptr) {
                 continue;
             }
@@ -281,6 +301,42 @@ void AP_OAPathPlanner::avoidance_thread()
                 break;
             }
             break;
+        }
+
+        case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
+            if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
+                continue;
+            } 
+            _oabendyruler->set_config(_margin_max);
+            if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, proximity_only)) {
+                // detected a obstacle by vehicle's proximity sensor. Switch avoidance to BendyRuler till obstacle is out of the way
+                proximity_only = false;
+                res = OA_SUCCESS;
+                break;
+            } else {
+                // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
+                if (proximity_only == false) {
+                    _oadijkstra->recalculate_path();
+                }
+                // only use proximity avoidance now for BendyRuler
+                proximity_only = true;
+            }
+            _oadijkstra->set_fence_margin(_margin_max);
+            const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
+            switch (dijkstra_state) {
+            case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
+                res = OA_NOT_REQUIRED;
+                break;
+            case AP_OADijkstra::DIJKSTRA_STATE_ERROR:
+                res = OA_ERROR;
+                break;
+            case AP_OADijkstra::DIJKSTRA_STATE_SUCCESS:
+                res = OA_SUCCESS;
+                break;
+            }
+            break;
+        }
+
         }
 
         {

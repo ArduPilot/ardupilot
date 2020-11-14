@@ -21,10 +21,15 @@ uint16_t crc_crc4(uint16_t *data);
 uint8_t crc_crc8(const uint8_t *p, uint8_t len);
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a);
 uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed);
+uint8_t crc8_dvb_s2_update(uint8_t crc, const void *data, uint32_t length);
 uint16_t crc_xmodem_update(uint16_t crc, uint8_t data);
 uint16_t crc_xmodem(const uint8_t *data, uint16_t len);
 uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
+uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
+
+// checksum used by SPORT/FPort
+uint8_t crc_sum8(const uint8_t *p, uint8_t len);
 
 // Copyright (C) 2010 Swift Navigation Inc.
 // Contact: Fergus Noble <fergus@swift-nav.com>

@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -95,6 +95,7 @@ void SITL_State::_sitl_setup(const char *home_str)
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
         sitl_model->set_parachute(&_sitl->parachute_sim);
         sitl_model->set_precland(&_sitl->precland_sim);
+        _sitl->i2c_sim.init();
         sitl_model->set_i2c(&_sitl->i2c_sim);
 
         if (_use_fg_view) {

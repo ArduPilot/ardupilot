@@ -38,6 +38,11 @@ public:
     // handle optical flow mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
+#if HAL_MSP_OPTICALFLOW_ENABLED
+    // handle optical flow msp messages
+    virtual void handle_msp(const MSP::msp_opflow_data_message_t &pkt) {}
+#endif
+
 protected:
     // access to frontend
     OpticalFlow &frontend;

@@ -22,14 +22,6 @@ public:
     void init(void) override {}
 
 private:
-    void irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp);
 
-    struct IrqState {
-        uint32_t last_pulse_us;
-        uint32_t pulse_width_us;
-        uint32_t pulse_count1;
-    } irq_state;
-
-    int8_t last_pin = -1;
-    uint32_t pulse_count2;
+    AP_HAL::PWMSource pwm_source;
 };

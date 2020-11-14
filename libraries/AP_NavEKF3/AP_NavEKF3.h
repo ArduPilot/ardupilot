@@ -19,16 +19,13 @@
  */
 #pragma once
 
+#include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Logger/LogStructure.h>
 
 class NavEKF3_core;
-class AP_AHRS;
 
 class NavEKF3 {
     friend class NavEKF3_core;
@@ -53,13 +50,11 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
-    // check if we should write log messages
-    void check_log_write(void);
-    
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
-    // Check that all cores are started and healthy
-    bool all_cores_healthy(void) const;
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -102,7 +97,7 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
-    // return tilt error convergence metric for the specified instance
+    // return estimated 1-sigma tilt error for the specified instance in radians
     // An out of range instance (eg -1) returns data for the primary instance
     void getTiltError(int8_t instance, float &ang) const;
 
@@ -142,9 +137,12 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
 
-    // return the magnetometer in use for the specified instance
+    // return the sensor in use for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     uint8_t getActiveMag(int8_t instance) const;
+    uint8_t getActiveBaro(int8_t instance) const;
+    uint8_t getActiveGPS(int8_t instance) const;
+    uint8_t getActiveAirspeed(int8_t instance) const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
@@ -385,17 +383,11 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosDownReset(float &posDelta);
 
-    // report any reason for why the backend is refusing to initialise
-    const char *prearm_failure_reason(void) const;
-
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
-
-    // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
 
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
@@ -431,7 +423,6 @@ private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
-    const AP_AHRS *_ahrs;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -472,7 +463,6 @@ private:
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
-    AP_Int8 _logging_mask;          // mask of IMUs to log
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
@@ -495,6 +485,8 @@ private:
     AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
+    AP_Int32 _affinity;             // bitmask of sensor affinity options
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -533,21 +525,17 @@ private:
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
     const uint8_t extNavIntervalMin_ms = 20;       // The minimum allowed time between measurements from external navigation sensors (msec)
 
-    struct {
-        bool enabled:1;
-        bool log_compass:1;
-        bool log_baro:1;
-        bool log_imu:1;
-    } logging;
-
     // time at start of current filter update
     uint64_t imuSampleTime_us;
 
     // time of last lane switch
     uint32_t lastLaneSwitch_ms;
 
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
+
     struct {
-        uint32_t last_function_call;  // last time getLastYawYawResetAngle was called
+        uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of yaw change between cores when a change happened
@@ -567,9 +555,16 @@ private:
         float core_delta;             // the amount of D position change between cores when a change happened
     } pos_down_reset_data;
 
-    bool runCoreSelection; // true when the primary core has stabilised and the core selection logic can be started
-    bool coreSetupRequired[7]; // true when this core index needs to be setup
-    uint8_t coreImuIndex[7];   // IMU index used by this core
+#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
+#define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core
+#define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
+    
+    bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
+    bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
+    uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
+    float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
+    float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
+    uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
 
     bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
@@ -592,16 +587,31 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
+    // Update instance error scores for all available cores 
+    float updateCoreErrorScores(void);
+
+    // Update relative error scores for all alternate available cores
+    void updateCoreRelativeErrors(void);
+
+    // Reset error scores for all available cores
+    void resetCoreErrors(void);
+
+    // return true if a new core has a better score than an existing core, including
+    // checks for alignment
+    bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
+
     // logging functions shared by cores:
     void Log_Write_XKF1(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF2(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF5(uint64_t time_us) const;
+    void Log_Write_XKF5(uint8_t core, uint64_t time_us) const;
+    void Log_Write_XKFS(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us) const;
-    void Log_Write_BodyOdom(uint64_t time_us) const;
-    void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
+    void Log_Write_BodyOdom(uint8_t core, uint64_t time_us) const;
+    void Log_Write_State_Variances(uint8_t core, uint64_t time_us) const;
+    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 
 };

@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import time
+import string
 import subprocess
 import sys
 import gzip
@@ -84,7 +85,9 @@ class build_binaries(object):
                 time.sleep(0.1)
                 continue
             if running_python3:
-                x = x.decode('ascii')
+                x = bytearray(x)
+                x = filter(lambda x : chr(x) in string.printable, x)
+                x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
             if show_output:
@@ -614,6 +617,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeOrange",
                 "CubeYellow",
                 "R9Pilot",
+                "QioTekZealotF427",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -628,8 +632,12 @@ is bob we will attempt to checkout bob-AVR'''
                 "f303-Universal",
                 "f303-M10025",
                 "f303-M10070",
+                "f303-MatekGPS",
+                "f103-Airspeed",
                 "CUAV_GPS",
                 "ZubaxGNSS",
+                "CubeOrange-periph",
+                "CubeBlack-periph",
                 ]
 
     def build_arducopter(self, tag):

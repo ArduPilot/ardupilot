@@ -26,6 +26,9 @@ import binascii
 from pymavlink import mavextra
 from pysim import vehicleinfo
 
+import time
+import datetime
+
 # List of open terminal windows for macosx
 windowID = []
 
@@ -295,6 +298,9 @@ def do_build_waf(opts, frame_options):
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-osd")
 
+    if opts.OSDMSP:
+        cmd_configure.append("--osd")
+        
     if opts.rgbled:
         cmd_configure.append("--enable-sfml")
         cmd_configure.append("--sitl-rgbled")
@@ -589,6 +595,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
         for breakpoint in opts.breakpoint:
             gdb_commands_file.write("b %s\n" % (breakpoint,))
+        if opts.disable_breakpoints:
+            gdb_commands_file.write("disable\n")
         if not opts.gdb_stopped:
             gdb_commands_file.write("r\n")
         gdb_commands_file.close()
@@ -619,6 +627,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
     cmd.extend(["--speedup", str(opts.speedup)])
+    if opts.sysid is not None:
+        cmd.extend(["--sysid", str(opts.sysid)])
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args.split(" "))
@@ -643,10 +653,25 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             sys.exit(1)
         path += "," + str(opts.add_param_file)
         progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+    if opts.OSDMSP:
+        path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
+        path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
+        subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
+
     if path is not None:
         cmd.extend(["--defaults", path])
     if opts.mcast:
         cmd.extend(["--uartA mcast:"])
+
+    if cmd_opts.start_time is not None:
+        # Parse start_time into a double precision number specifying seconds since 1900.
+        try:
+            start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
+        except:
+            print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
+            sys.exit(1)
+
+        cmd.append("--start-time=%d" % start_time_UTC)
 
     old_dir = os.getcwd()
     for i, i_dir in zip(instances, instance_dir):
@@ -933,6 +958,10 @@ group_sim.add_option("-B", "--breakpoint",
                      action="append",
                      default=[],
                      help="add a breakpoint at given location in debugger")
+group_sim.add_option("--disable-breakpoints",
+                     default=False,
+                     action='store_true',
+                     help="disable all breakpoints before starting")
 group_sim.add_option("-M", "--mavlink-gimbal",
                      action='store_true',
                      default=False,
@@ -996,6 +1025,11 @@ group_sim.add_option("", "--osd",
                      dest='OSD',
                      default=False,
                      help="Enable SITL OSD")
+group_sim.add_option("", "--osdmsp",
+                     action='store_true',
+                     dest='OSDMSP',
+                     default=False,
+                     help="Enable SITL OSD using MSP")
 group_sim.add_option("", "--tonealarm",
                      action='store_true',
                      dest='tonealarm',
@@ -1028,6 +1062,14 @@ group_sim.add_option("--disable-ekf2",
 group_sim.add_option("--disable-ekf3",
                      action='store_true',
                      help="disable EKF3 in build")
+group_sim.add_option("", "--start-time",
+                     default=None,
+                     type='string',
+                     help="specify simulation start time in format YYYY-MM-DD-HH:MM in your local time zone")
+group_sim.add_option("", "--sysid",
+                     type='int',
+                     default=None,
+                     help="Set SYSID_THISMAV")
 parser.add_option_group(group_sim)
 
 

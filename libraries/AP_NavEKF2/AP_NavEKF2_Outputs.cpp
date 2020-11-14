@@ -1,9 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
+#include <AP_DAL/AP_DAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -100,7 +99,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow only navigation
     if (frontend->_fusionModeGPS == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        const RangeFinder *_rng = AP::rangefinder();
+        const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
@@ -121,7 +120,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
 void NavEKF2_core::getEulerAngles(Vector3f &euler) const
 {
     outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - _ahrs->get_trim();
+    euler = euler - dal.get_trim();
 }
 
 // return body axis gyro bias estimates in rad/sec
@@ -156,7 +155,7 @@ void NavEKF2_core::getTiltError(float &ang) const
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
     outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
+    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
@@ -252,9 +251,9 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            if ((AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
+            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const struct Location &gpsloc = AP::gps().location();
+                const struct Location &gpsloc = dal.gps().location();
                 const Vector2f tempPosNE = EKF_origin.get_distance_NE(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
@@ -316,7 +315,7 @@ bool NavEKF2_core::getHAGL(float &HAGL) const
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF2_core::getLLH(struct Location &loc) const
 {
-    const AP_GPS &gps = AP::gps();
+    const auto &gps = dal.gps();
     Location origin;
     float posD;
 
@@ -336,7 +335,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
                 const struct Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
@@ -358,7 +357,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
-        if ((gps.status() >= AP_GPS::GPS_OK_FIX_3D)) {
+        if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location();
             loc = gpsloc;
             loc.relative_alt = 0;
@@ -414,7 +413,7 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    if (!_ahrs->get_compass()) {
+    if (!dal.get_compass()) {
         return false;
     }
 
@@ -425,12 +424,12 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     if ((mag_idx == magSelectIndex) &&
             finalInflightMagInit &&
             !inhibitMagStates &&
-            _ahrs->get_compass()->healthy(magSelectIndex) &&
+            dal.get_compass()->healthy(magSelectIndex) &&
             variancesConverged) {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex);
         return false;
     }
 }

@@ -143,6 +143,9 @@ private:
     RC_Channel *channel_steer;
     RC_Channel *channel_throttle;
     RC_Channel *channel_lateral;
+    RC_Channel *channel_roll;
+    RC_Channel *channel_pitch;
+    RC_Channel *channel_walking_height;
 
     AP_Logger logger;
 
@@ -162,7 +165,7 @@ private:
     OpticalFlow optflow;
 #endif
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
 
@@ -387,7 +390,7 @@ private:
     bool should_log(uint32_t mask);
     bool is_boat() const;
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     void publish_osd_info();
 #endif
 

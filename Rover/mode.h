@@ -153,11 +153,20 @@ protected:
     // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)
     void get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out);
 
+    // decode pilot roll and pitch inputs and return in roll_out and pitch_out arguments
+    // outputs are in the range -1 to +1
+    void get_pilot_desired_roll_and_pitch(float &roll_out, float &pitch_out);
+
+    // decode pilot height inputs and return in height_out arguments
+    // outputs are in the range -1 to +1
+    void get_pilot_desired_walking_height(float &walking_height_out);
+
     // high level call to navigate to waypoint
     void navigate_to_waypoint();
 
-    // calculate steering output given a turn rate and speed
-    void calc_steering_from_turn_rate(float turn_rate, float speed, bool reversed);
+    // calculate steering output given a turn rate
+    // desired turn rate in radians/sec. Positive to the right.
+    void calc_steering_from_turn_rate(float turn_rate);
 
     // calculate steering angle given a desired lateral acceleration
     void calc_steering_from_lateral_acceleration(float lat_accel, bool reversed = false);
@@ -197,6 +206,9 @@ protected:
     class RC_Channel *&channel_steer;
     class RC_Channel *&channel_throttle;
     class RC_Channel *&channel_lateral;
+    class RC_Channel *&channel_roll;
+    class RC_Channel *&channel_pitch;
+    class RC_Channel *&channel_walking_height;
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation

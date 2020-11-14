@@ -34,10 +34,16 @@ using namespace HALSITL;
 static Storage sitlStorage;
 static SITL_State sitlState;
 static Scheduler sitlScheduler(&sitlState);
+#if !defined(HAL_BUILD_AP_PERIPH)
 static RCInput  sitlRCInput(&sitlState);
 static RCOutput sitlRCOutput(&sitlState);
-static AnalogIn sitlAnalogIn(&sitlState);
 static GPIO sitlGPIO(&sitlState);
+#else
+static Empty::RCInput  sitlRCInput;
+static Empty::RCOutput sitlRCOutput;
+static Empty::GPIO sitlGPIO;
+#endif
+static AnalogIn sitlAnalogIn(&sitlState);
 static DSP dspDriver;
 
 
@@ -55,8 +61,11 @@ static UARTDriver sitlUart5Driver(5, &sitlState);
 static UARTDriver sitlUart6Driver(6, &sitlState);
 static UARTDriver sitlUart7Driver(7, &sitlState);
 
+#if defined(HAL_BUILD_AP_PERIPH)
+static Empty::I2CDeviceManager i2c_mgr_instance;
+#else
 static I2CDeviceManager i2c_mgr_instance;
-
+#endif
 static Util utilInstance(&sitlState);
 
 
@@ -167,6 +176,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
+    utilInstance.init(argc, argv);
     _sitl_state->init(argc, argv);
 
     scheduler->init();
@@ -201,6 +211,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     callbacks->setup();
     scheduler->system_initialized();
 
+#ifndef HAL_NO_LOGGING
     if (getenv("SITL_WATCHDOG_RESET")) {
         const AP_HAL::Util::PersistentData &pd = util->persistent_data;
         AP::logger().WriteCritical("WDOG", "TimeUS,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine", "QbIHHHHH",
@@ -213,6 +224,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
                                    pd.last_mavlink_cmd,
                                    pd.semaphore_line);
     }
+#endif
 
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
     if (using_watchdog) {
@@ -222,13 +234,18 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     setup_signal_handlers();
 
     uint32_t last_watchdog_save = AP_HAL::millis();
+    uint8_t fill_count = 0;
 
     while (!HALSITL::Scheduler::_should_reboot) {
         if (HALSITL::Scheduler::_should_exit) {
             ::fprintf(stderr, "Exitting\n");
             exit(0);
         }
-        fill_stack_nan();
+        if (fill_count++ % 10 == 0) {
+            // only fill every 10 loops. This still gives us a lot of
+            // protection, but saves a lot of CPU
+            fill_stack_nan();
+        }
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
 

@@ -143,6 +143,7 @@ public:
         k_scripting14           = 107,
         k_scripting15           = 108,
         k_scripting16           = 109,
+        k_airbrake              = 110,
         k_LED_neopixel1         = 120,
         k_LED_neopixel2         = 121,
         k_LED_neopixel3         = 122,
@@ -320,9 +321,6 @@ public:
 
     // set output value for a function channel as a pwm value
     static void set_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t value);
-
-    // set output value for a function channel as a pwm value on the first matching channel
-    static void set_output_pwm_first(SRV_Channel::Aux_servo_function_t function, uint16_t value);
 
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
@@ -505,6 +503,8 @@ public:
     static SRV_Channels *get_singleton(void) {
         return _singleton;
     }
+
+    static void zero_rc_outputs();
 
 private:
 

@@ -42,6 +42,9 @@ void RC_Channel_Rover::init_aux_function(const aux_func_t ch_option, const AuxSw
     case AUX_FUNC::LOITER:
     case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::MANUAL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAILBOAT_TACK:
     case AUX_FUNC::SAVE_TRIM:
@@ -227,10 +230,6 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
         do_aux_function_sailboat_motor_3pos(ch_flag);
         break;
 
-    // mainsail input, nothing to do
-    case AUX_FUNC::MAINSAIL:
-        break;
-
     // save steering trim
     case AUX_FUNC::SAVE_TRIM:
         if (!rover.g2.motors.have_skid_steering() && rover.arming.is_armed() &&
@@ -239,6 +238,13 @@ void RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
             SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_steering);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Steering trim saved!");
         }
+        break;
+
+    // manual input, nothing to do
+    case AUX_FUNC::MAINSAIL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_HEIGHT:
         break;
 
     default:

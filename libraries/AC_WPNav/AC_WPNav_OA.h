@@ -2,6 +2,7 @@
 
 #include <AC_WPNav/AC_WPNav.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
+#include <AC_Avoidance/AP_OABendyRuler.h>
 
 class AC_WPNav_OA : public AC_WPNav
 {

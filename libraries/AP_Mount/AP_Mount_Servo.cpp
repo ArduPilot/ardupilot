@@ -1,6 +1,5 @@
 #include "AP_Mount_Servo.h"
 #if HAL_MOUNT_ENABLED
-#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 

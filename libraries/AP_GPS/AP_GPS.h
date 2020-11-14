@@ -21,6 +21,7 @@
 #include <AP_Param/AP_Param.h>
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_MSP/msp.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -42,9 +43,17 @@
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
-#ifndef GPS_UBLOX_MOVING_BASELINE
-#define GPS_UBLOX_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#ifndef GPS_MOVING_BASELINE
+#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
 #endif
+
+#ifndef HAL_MSP_GPS_ENABLED
+#define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
+
+#if GPS_MOVING_BASELINE
+#include "MovingBase.h"
+#endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
 
@@ -55,6 +64,7 @@ class AP_GPS
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
+    friend class AP_GPS_MSP;
     friend class AP_GPS_MTK;
     friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
@@ -103,6 +113,7 @@ public:
         GPS_TYPE_HEMI = 16, // hemisphere NMEA
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
+        GPS_TYPE_MSP = 19,
     };
 
     /// GPS status codes
@@ -173,6 +184,7 @@ public:
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
+        uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
 
         // all the following fields must only all be filled by RTK capable backend drivers
         uint32_t rtk_time_week_ms;         ///< GPS Time of Week of last baseline in milliseconds
@@ -197,6 +209,9 @@ public:
 
     // Pass mavlink data to message handlers (for MAV type)
     void handle_msg(const mavlink_message_t &msg);
+#if HAL_MSP_GPS_ENABLED
+    void handle_msp(const MSP::msp_gps_data_message_t &pkt);
+#endif
 
     // Accessor functions
 
@@ -481,6 +496,9 @@ public:
         return instance>=GPS_MAX_RECEIVERS? GPS_Type::GPS_TYPE_NONE : GPS_Type(_type[instance].get());
     }
 
+    // get iTOW, if supported, zero otherwie
+    uint32_t get_itow(uint8_t instance) const;
+
 protected:
 
     // configuration parameters
@@ -504,6 +522,11 @@ protected:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
+    AP_Int8 _primary;
+
+#if GPS_MOVING_BASELINE
+    MovingBase mb_params[GPS_MAX_RECEIVERS];
+#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 
@@ -637,7 +660,8 @@ private:
         NONE        = 0,
         USE_BEST    = 1,
         BLEND       = 2,
-        USE_SECOND  = 3,
+        //USE_SECOND  = 3, deprecated for new primary param
+        USE_PRIMARY_IF_3D_FIX = 4,
     };
 
     // used for flight testing with GPS loss
@@ -645,9 +669,6 @@ private:
 
     // used for flight testing with GPS yaw loss
     bool _force_disable_gps_yaw;
-
-    // used to ensure we continue sending status messages if we ever detected the second GPS
-    bool has_had_second_instance;
 };
 
 namespace AP {

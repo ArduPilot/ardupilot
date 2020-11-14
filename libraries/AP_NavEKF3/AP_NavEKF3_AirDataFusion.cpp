@@ -2,9 +2,7 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AP_DAL/AP_DAL.h>
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -21,16 +19,13 @@ extern const AP_HAL::HAL& hal;
 */
 void NavEKF3_core::FuseAirspeed()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseAirspeed);
-
     // declarations
     float vn;
     float ve;
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = _ahrs->get_EAS2TAS();
+    float EAS2TAS = dal.get_EAS2TAS();
     const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     float SH_TAS[3];
     float SK_TAS[2];
@@ -188,9 +183,6 @@ void NavEKF3_core::FuseAirspeed()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop performance timer
-    hal.util->perf_end(_perf_FuseAirspeed);
 }
 
 // select fusion of true airspeed measurements
@@ -257,9 +249,6 @@ void NavEKF3_core::SelectBetaFusion()
 */
 void NavEKF3_core::FuseSideslip()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseSideslip);
-
     // declarations
     float q0;
     float q1;
@@ -456,9 +445,6 @@ void NavEKF3_core::FuseSideslip()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop the performance timer
-    hal.util->perf_end(_perf_FuseSideslip);
 }
 
 /********************************************************

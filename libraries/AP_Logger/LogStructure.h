@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_Common/AP_Common.h>
+
 // if you add any new types, units or multipliers, please update README.md
 
 /*
@@ -114,6 +116,10 @@ const struct MultiplierStructure log_Multipliers[] = {
 // this header
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
+
+#include <AP_DAL/LogStructure.h>
+#include <AP_NavEKF2/LogStructure.h>
+#include <AP_NavEKF3/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -238,6 +244,7 @@ struct PACKED log_Message {
 struct PACKED log_IMU {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float gyro_x, gyro_y, gyro_z;
     float accel_x, accel_y, accel_z;
     uint32_t gyro_error, accel_error;
@@ -281,8 +288,9 @@ static_assert(sizeof(log_ISBD) < 256, "log_ISBD is over-size");
 struct PACKED log_Vibe {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t imu;
     float vibe_x, vibe_y, vibe_z;
-    uint32_t clipping_0, clipping_1, clipping_2;
+    uint32_t clipping;
 };
 
 struct PACKED log_RCIN {
@@ -302,6 +310,13 @@ struct PACKED log_RCIN {
     uint16_t chan12;
     uint16_t chan13;
     uint16_t chan14;
+};
+
+struct PACKED log_RCIN2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t chan15;
+    uint16_t chan16;
 };
 
 struct PACKED log_RCOUT {
@@ -344,6 +359,7 @@ struct PACKED log_RSSI {
 struct PACKED log_BARO {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float   altitude;
     float   pressure;
     int16_t temperature;
@@ -467,7 +483,6 @@ struct PACKED log_XKF2 {
     int16_t magX;
     int16_t magY;
     int16_t magZ;
-    uint8_t index;
 };
 
 struct PACKED log_EKF3 {
@@ -501,6 +516,8 @@ struct PACKED log_NKF3 {
     int16_t innovMZ;
     int16_t innovYaw;
     int16_t innovVT;
+    float rerr;
+    float errorScore;
 };
 
 struct PACKED log_EKF4 {
@@ -544,6 +561,7 @@ struct PACKED log_NKF4 {
 struct PACKED log_EKF5 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     uint8_t normInnov;
     int16_t FIX;
     int16_t FIY;
@@ -558,6 +576,7 @@ struct PACKED log_EKF5 {
 struct PACKED log_NKF5 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     uint8_t normInnov;
     int16_t FIX;
     int16_t FIY;
@@ -570,6 +589,17 @@ struct PACKED log_NKF5 {
     float angErr;
     float velErr;
     float posErr;
+};
+
+// common sensor selection log message
+struct PACKED log_EKFS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint8_t mag_index;
+    uint8_t baro_index;
+    uint8_t gps_index;
+    uint8_t airspeed_index;
 };
 
 struct PACKED log_Quaternion {
@@ -585,6 +615,7 @@ struct PACKED log_Quaternion {
 struct PACKED log_RngBcnDebug {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     uint8_t ID;             // beacon identifier
     int16_t rng;            // beacon range (cm)
     int16_t innov;          // beacon range innovation (cm)
@@ -629,6 +660,7 @@ struct PACKED log_VisualPosition {
     float pos_err;  // meters
     float ang_err;  // radians
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_VisualVelocity {
@@ -641,11 +673,13 @@ struct PACKED log_VisualVelocity {
     float vel_z;
     float vel_err;
     uint8_t reset_counter;
+    uint8_t ignored;
 };
 
 struct PACKED log_ekfBodyOdomDebug {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     float velInnovX;
     float velInnovY;
     float velInnovZ;
@@ -657,6 +691,7 @@ struct PACKED log_ekfBodyOdomDebug {
 struct PACKED log_ekfStateVar {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t core;
     float v00;
     float v01;
     float v02;
@@ -803,9 +838,10 @@ struct PACKED log_Current_Cells {
     uint16_t cell_voltages[12];
 };
 
-struct PACKED log_Compass {
+struct PACKED log_MAG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     int16_t  mag_x;
     int16_t  mag_y;
     int16_t  mag_z;
@@ -969,16 +1005,18 @@ struct PACKED log_AIRSPEED {
     uint8_t primary;
 };
 
-struct PACKED log_ACCEL {
+struct PACKED log_ACC {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     uint64_t sample_us;
     float AccX, AccY, AccZ;
 };
 
-struct PACKED log_GYRO {
+struct PACKED log_GYR {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     uint64_t sample_us;
     float GyrX, GyrY, GyrZ;
 };
@@ -1147,6 +1185,7 @@ struct PACKED log_Performance {
     uint32_t max_time;
     uint32_t mem_avail;
     uint16_t load;
+    uint16_t internal_error_last_line;
     uint32_t internal_errors;
     uint32_t internal_error_count;
     uint32_t spi_count;
@@ -1170,15 +1209,19 @@ struct PACKED log_SRTL {
 struct PACKED log_OABendyRuler {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t type;
     uint8_t active;
     uint16_t target_yaw;
     uint16_t yaw;
+    uint16_t target_pitch;
     bool resist_chg;
     float margin;
     int32_t final_lat;
     int32_t final_lng;
+    int32_t final_alt;
     int32_t oa_lat;
     int32_t oa_lng;
+    int32_t oa_alt;
 };
 
 struct PACKED log_OADijkstra {
@@ -1248,20 +1291,26 @@ struct PACKED log_Winch {
     int8_t temp;
 };
 
+struct PACKED log_PSC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float pos_target_x;
+    float pos_target_Y;
+    float position_x;
+    float position_y;
+    float vel_target_x;
+    float vel_target_y;
+    float velocity_x;
+    float velocity_y;
+    float accel_target_x;
+    float accel_target_y;
+    float accel_x;
+    float accel_y;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
-
-#define ACC_LABELS "TimeUS,SampleUS,AccX,AccY,AccZ"
-#define ACC_FMT   "QQfff"
-#define ACC_UNITS "ssnnn"
-#define ACC_MULTS "FF000"
-
-// see "struct sensor" in AP_Baro.h and "Write_Baro":
-#define BARO_LABELS "TimeUS,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health"
-#define BARO_FMT   "QffcfIffB"
-#define BARO_UNITS "smPOnsmO-"
-#define BARO_MULTS "F00B0C?0-"
 
 #define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
 #define GPA_FMT   "QCCCCfBIH"
@@ -1273,11 +1322,6 @@ struct PACKED log_Winch {
 #define GPS_FMT   "QBIHBcLLeffffB"
 #define GPS_UNITS "s---SmDUmnhnh-"
 #define GPS_MULTS "F---0BGGB000--"
-
-#define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
-#define GYR_FMT    "QQfff"
-#define GYR_UNITS  "ssEEE"
-#define GYR_MULTS  "FF000"
 
 #define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
 #define IMT_FMT    "Qfffffffff"
@@ -1294,16 +1338,6 @@ struct PACKED log_Winch {
 #define ISBD_UNITS  "s--ooo"
 #define ISBD_MULTS  "F--???"
 
-#define IMU_LABELS "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz"
-#define IMU_FMT   "QffffffIIfBBHH"
-#define IMU_UNITS "sEEEooo--O--zz"
-#define IMU_MULTS "F000000-----00"
-
-#define MAG_LABELS "TimeUS,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOfsX,MOfsY,MOfsZ,Health,S"
-#define MAG_FMT   "QhhhhhhhhhBI"
-#define MAG_UNITS "sGGGGGGGGG-s"
-#define MAG_MULTS "FCCCCCCCCC-F"
-
 #define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod"
 #define PID_FMT    "Qffffffff"
 #define PID_UNITS  "s--------"
@@ -1319,9 +1353,10 @@ struct PACKED log_Winch {
 #define ARSP_UNITS "snPOPP----"
 #define ARSP_MULTS "F00B00----"
 
-// @LoggerMessage: ACC1,ACC2,ACC3
+// @LoggerMessage: ACC
 // @Description: IMU accelerometer data
 // @Field: TimeUS: Time since system startup
+// @Field: I: accelerometer sensor instance number
 // @Field: SampleUS: time since system startup this sample was taken
 // @Field: AccX: acceleration along X axis
 // @Field: AccY: acceleration along Y axis
@@ -1386,9 +1421,10 @@ struct PACKED log_Winch {
 // @Field: ErrRP: lowest estimated gyro drift error
 // @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
 
-// @LoggerMessage: BARO,BAR2,BAR3
+// @LoggerMessage: BARO
 // @Description: Gathered Barometer data
 // @Field: TimeUS: Time since system startup
+// @Field: I: barometer sensor instance number
 // @Field: Alt: calculated altitude
 // @Field: Press: measured atmospheric pressure
 // @Field: Temp: measured atmospheric temperature
@@ -1408,7 +1444,7 @@ struct PACKED log_Winch {
 // @Field: CurrTot: current * time
 // @Field: EnrgTot: energy this battery has produced
 // @Field: Temp: measured temperature
-// @Field: Res: estimated temperature resistance
+// @Field: Res: estimated battery resistance
 
 // @LoggerMessage: BCL
 // @Description: Battery cell voltage information
@@ -1673,9 +1709,10 @@ struct PACKED log_Winch {
 // @Field: doD: estimated Doppler measurement standard deviation
 // @Field: trk: tracking status bitfield
 
-// @LoggerMessage: GYR1,GYR2,GYR3
+// @LoggerMessage: GYR
 // @Description: IMU gyroscope data
 // @Field: TimeUS: Time since system startup
+// @Field: I: gyroscope sensor instance number
 // @Field: SampleUS: time since system startup this sample was taken
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
@@ -1694,9 +1731,10 @@ struct PACKED log_Winch {
 // @Field: DelVY: Accumulated delta velocity Y
 // @Field: DelVZ: Accumulated delta velocity Z
 
-// @LoggerMessage: IMU,IMU2,IMU3
+// @LoggerMessage: IMU
 // @Description: Inertial Measurement Unit data
 // @Field: TimeUS: Time since system startup
+// @Field: I: IMU sensor instance number
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
 // @Field: GyrZ: measured rotation rate about Z axis
@@ -1717,18 +1755,19 @@ struct PACKED log_Winch {
 // @Field: LandingGear: Current landing gear state
 // @Field: WeightOnWheels: True if there is weight on wheels
 
-// @LoggerMessage: MAG,MAG2,MAG3
+// @LoggerMessage: MAG
 // @Description: Information received from compasses
 // @Field: TimeUS: Time since system startup
+// @Field: I: magnetometer sensor instance number
 // @Field: MagX: magnetic field strength in body frame
 // @Field: MagY: magnetic field strength in body frame
 // @Field: MagZ: magnetic field strength in body frame
 // @Field: OfsX: magnetic field offset in body frame
 // @Field: OfsY: magnetic field offset in body frame
 // @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOfsX: motor interference magnetic field offset in body frame
-// @Field: MOfsY: motor interference magnetic field offset in body frame
-// @Field: MOfsZ: motor interference magnetic field offset in body frame
+// @Field: MOX: motor interference magnetic field offset in body frame
+// @Field: MOY: motor interference magnetic field offset in body frame
+// @Field: MOZ: motor interference magnetic field offset in body frame
 // @Field: Health: true if the compass is considered healthy
 // @Field: S: time measurement was taken
 
@@ -1797,6 +1836,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: NKF0
 // @Description: EKF2 beacon sensor diagnostics
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
 // @Field: ID: Beacon sensor ID
 // @Field: rng: Beacon range
 // @Field: innov: Beacon range innovation
@@ -1863,6 +1903,8 @@ struct PACKED log_Winch {
 // @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
 // @Field: IYAW: Innovation in vehicle yaw
 // @Field: IVT: Innovation in true-airspeed
+// @Field: RErr: Accumulated relative error of this core with respect to active primary core
+// @Field: ErSc: A consolidated error score where higher numbers are less healthy
 
 // @LoggerMessage: NKF4
 // @Description: EKF2 variances
@@ -1885,6 +1927,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: NKF5
 // @Description: EKF2 Sensor innovations (primary core) and general dumping ground
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF2 core this data is for
 // @Field: NI: Normalised flow variance
 // @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
 // @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
@@ -1910,15 +1953,19 @@ struct PACKED log_Winch {
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
 // @Field: TimeUS: Time since system startup
-// @Field: Active: True if Bendy Ruler avoidance is being used
-// @Field: DesYaw: Best yaw chosen to avoid obstacle
+// @Field: Type: Type of BendyRuler currently active
+// @Field: Act: True if Bendy Ruler avoidance is being used
+// @Field: DYaw: Best yaw chosen to avoid obstacle
 // @Field: Yaw: Current vehicle yaw
-// @Field: ResChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
+// @Field: DP: Desired pitch chosen to avoid obstacle
+// @Field: RChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
-// @Field: DLat: Destination latitude
-// @Field: DLng: Destination longitude
-// @Field: OALat: Intermediate location chosen for avoidance
-// @Field: OALng: Intermediate location chosen for avoidance
+// @Field: DLt: Destination latitude
+// @Field: DLg: Destination longitude
+// @Field: DAlt: Desired alt
+// @Field: OLt: Intermediate location chosen for avoidance
+// @Field: OLg: Intermediate location chosen for avoidance
+// @Field: OAlt: Intermediate alt chosen for avoidance
 
 // @LoggerMessage: OADJ
 // @Description: Object avoidance (Dijkstra) diagnostics
@@ -1976,11 +2023,12 @@ struct PACKED log_Winch {
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
 // @Field: IntE: Internal error mask; which internal errors have been detected
-// @Field: IntEC: Internal error count; how many internal errors have been detected
+// @Field: ErrL: Internal error line number; last line number on which a internal error was detected
+// @Field: ErrC: Internal error count; how many internal errors have been detected
 // @Field: SPIC: Number of SPI transactions processed
 // @Field: I2CC: Number of i2c transactions processed
 // @Field: I2CI: Number of i2c interrupts serviced
-// @Field: ExUS: number of microseconds being added to each loop to address scheduler overruns
+// @Field: Ex: number of microseconds being added to each loop to address scheduler overruns
 
 // @LoggerMessage: POS
 // @Description: Canonical vehicle position
@@ -2190,12 +2238,11 @@ struct PACKED log_Winch {
 // @LoggerMessage: VIBE
 // @Description: Processed (acceleration) vibration information
 // @Field: TimeUS: Time since system startup
+// @Field: IMU: Vibration instance number
 // @Field: VibeX: Primary accelerometer filtered vibration, x-axis
 // @Field: VibeY: Primary accelerometer filtered vibration, y-axis
 // @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
-// @Field: Clip0: Number of clipping events on 1st accelerometer
-// @Field: Clip1: Number of clipping events on 2nd accelerometer
-// @Field: Clip2: Number of clipping events on 3rd accelerometer
+// @Field: Clip: Number of clipping events on 1st accelerometer
 
 // @LoggerMessage: VISO
 // @Description: Visual Odometry
@@ -2222,7 +2269,8 @@ struct PACKED log_Winch {
 // @Field: Yaw: Yaw angle
 // @Field: PErr: Position estimate error
 // @Field: AErr: Attitude estimate error
-// @Field: RstCnt: Position reset counter
+// @Field: Rst: Position reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: VISV
 // @Description: Vision Velocity
@@ -2233,7 +2281,8 @@ struct PACKED log_Winch {
 // @Field: VY: Velocity Y-axis (East-West)
 // @Field: VZ: Velocity Z-axis (Down-Up)
 // @Field: VErr: Velocity estimate error
-// @Field: RstCnt: Velocity reset counter
+// @Field: Rst: Velocity reset counter
+// @Field: Ign: Ignored
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -2246,6 +2295,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: ID: Beacon sensor ID
 // @Field: rng: Beacon range
 // @Field: innov: Beacon range innovation
@@ -2294,7 +2344,6 @@ struct PACKED log_Winch {
 // @Field: MX: Magnetic field strength (body X-axis)
 // @Field: MY: Magnetic field strength (body Y-axis)
 // @Field: MZ: Magnetic field strength (body Z-axis)
-// @Field: MI: Magnetometer used for data
 
 // @LoggerMessage: XKF3
 // @Description: EKF3 innovations
@@ -2311,6 +2360,8 @@ struct PACKED log_Winch {
 // @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
 // @Field: IYAW: Innovation in vehicle yaw
 // @Field: IVT: Innovation in true-airspeed
+// @Field: RErr: Accumulated relative error of this core with respect to active primary core
+// @Field: ErSc: A consolidated error score where higher numbers are less healthy
 
 // @LoggerMessage: XKF4
 // @Description: EKF3 variances
@@ -2333,6 +2384,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: XKF5
 // @Description: EKF3 Sensor innovations (primary core) and general dumping ground
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: NI: Normalised flow variance
 // @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
 // @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
@@ -2346,9 +2398,19 @@ struct PACKED log_Winch {
 // @Field: eVel: Magnitude of velocity error
 // @Field: ePos: Magnitude of position error
 
+// @LoggerMessage: XKFS
+// @Description: EKF3 sensor selection
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: MI: compass selection index
+// @Field: BI: barometer selection index
+// @Field: GI: GPS selection index
+// @Field: AI: airspeed selection index
+
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: IX: Innovation in velocity (X-axis)
 // @Field: IY: Innovation in velocity (Y-axis)
 // @Field: IZ: Innovation in velocity (Z-axis)
@@ -2368,6 +2430,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: XKV1
 // @Description: EKF3 State variances (primary core)
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: V00: Variance for state 0
 // @Field: V01: Variance for state 1
 // @Field: V02: Variance for state 2
@@ -2384,6 +2447,7 @@ struct PACKED log_Winch {
 // @LoggerMessage: XKV2
 // @Description: more EKF3 State Variances (primary core)
 // @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
 // @Field: V12: Variance for state 12
 // @Field: V13: Variance for state 13
 // @Field: V14: Variance for state 14
@@ -2412,6 +2476,22 @@ struct PACKED log_Winch {
 // @Field: Vcc: Voltage to Motor
 // @Field: Temp: Motor temperature
 
+// @LoggerMessage: PSC
+// @Description: Position Control data
+// @Field: TimeUS: Time since system startup
+// @Field: TPX: Target position relative to origin, X-axis
+// @Field: TPY: Target position relative to origin, Y-axis
+// @Field: PX: Position relative to origin, X-axis
+// @Field: PY: Position relative to origin, Y-axis
+// @Field: TVX: Target velocity, X-axis
+// @Field: TVY: Target velocity, Y-axis
+// @Field: VX: Velocity, X-axis
+// @Field: VY: Velocity, Y-axis
+// @Field: TAX: Target acceleration, X-axis
+// @Field: TAY: Target acceleration, Y-axis
+// @Field: AX: Acceleration, X-axis
+// @Field: AY: Acceleration, Y-axis
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -2437,17 +2517,19 @@ struct PACKED log_Winch {
     { LOG_GPAB_MSG, sizeof(log_GPA), \
       "GPAB", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
+      "IMU",  "QBffffffIIfBBHH",     "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------" }, \
+    { LOG_RCIN2_MSG, sizeof(log_RCIN2), \
+      "RCI2",  "QHH",     "TimeUS,C15,C16", "sYY", "F--" }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------"  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qf",     "TimeUS,RXRSSI", "s-", "F-"  }, \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
+      "BARO",  "QBffcfIffB", "TimeUS,I,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health", "s#mPOnsmO-", "F-00B0C?0-" }, \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---" },  \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
@@ -2468,8 +2550,8 @@ struct PACKED log_Winch {
       "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
       "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
-    { LOG_COMPASS_MSG, sizeof(log_Compass), \
-      "MAG", MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
+    { LOG_MAG_MSG, sizeof(log_MAG), \
+      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
     { LOG_RFND_MSG, sizeof(log_RFND), \
@@ -2481,19 +2563,15 @@ struct PACKED log_Winch {
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-00000000000" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIIHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,IntE,IntEC,SPIC,I2CC,I2CI,ExUS", "s---b%-----s", "F---0A-----F" }, \
+      "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBHHBfLLLL","TimeUS,Active,DesYaw,Yaw,ResChg,Mar,DLat,DLng,OALat,OALng", "sbdd-mDUDU", "F-----GGGG" }, \
+      "OABR","QBBHHHBfLLfLLf","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
       "SA",  "QBffffB","TimeUS,State,DVelX,DVelY,MVelX,MVelY,Back", "sbnnnnb", "F------"}, \
-    { LOG_IMU2_MSG, sizeof(log_IMU), \
-      "IMU2",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
-    { LOG_IMU3_MSG, sizeof(log_IMU), \
-      "IMU3",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
       "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
@@ -2505,33 +2583,35 @@ struct PACKED log_Winch {
     { LOG_NKF2_MSG, sizeof(log_NKF2), \
       "NKF2","QBbccccchhhhhhB","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#----nnGGGGGG-", "F-----BBCCCCCC-" }, \
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
-      "NKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
+      "NKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
       "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
-      "NKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
+      "NKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
-      "NKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
+      "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
     { LOG_NKQ_MSG, sizeof(log_Quaternion), "NKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKF1_MSG, sizeof(log_EKF1), \
       "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_XKF2_MSG, sizeof(log_XKF2), \
-      "XKF2","QBccccchhhhhhB","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#---nnGGGGGG-", "F----BBCCCCCC-" }, \
+      "XKF2","QBccccchhhhhh","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ", "s#---nnGGGGGG", "F----BBCCCCCC" }, \
     { LOG_XKF3_MSG, sizeof(log_NKF3), \
-      "XKF3","QBcccccchhhcc","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT", "s#nnnmmmGGG??", "F-BBBBBBCCCBB" }, \
+      "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_XKF4_MSG, sizeof(log_NKF4), \
       "XKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
     { LOG_XKF5_MSG, sizeof(log_NKF5), \
-      "XKF5","QBhhhcccCCfff","TimeUS,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s----m???mrnm", "F----BBBBB000" }, \
+      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
     { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
-      "XKF0","QBccCCcccccccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s-m---mmmmmmmm", "F-B---BBBBBBBB" }, \
+      "XKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
+    { LOG_XKFS_MSG, sizeof(log_EKFS), \
+      "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
     { LOG_XKQ_MSG, sizeof(log_Quaternion), "XKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
     { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
-      "XKFD","Qffffff","TimeUS,IX,IY,IZ,IVX,IVY,IVZ", "s------", "F------" }, \
+      "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" }, \
     { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
-      "XKV1","Qffffffffffff","TimeUS,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s------------", "F------------" }, \
+      "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" }, \
     { LOG_XKV2_MSG, sizeof(log_ekfStateVar), \
-      "XKV2","Qffffffffffff","TimeUS,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s------------", "F------------" }, \
+      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -2550,22 +2630,10 @@ struct PACKED log_Winch {
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
       "CESC","QBIfffiB","TimeUS,Id,ECnt,Voltage,Curr,Temp,RPM,Pow", "s#-vAOq%", "F-000000" }, \
-    { LOG_COMPASS2_MSG, sizeof(log_Compass), \
-      "MAG2",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
-    { LOG_COMPASS3_MSG, sizeof(log_Compass), \
-      "MAG3",MAG_FMT,    MAG_LABELS, MAG_UNITS, MAG_MULTS }, \
-    { LOG_ACC1_MSG, sizeof(log_ACCEL), \
-      "ACC1", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_ACC2_MSG, sizeof(log_ACCEL), \
-      "ACC2", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_ACC3_MSG, sizeof(log_ACCEL), \
-      "ACC3", ACC_FMT,        ACC_LABELS, ACC_UNITS, ACC_MULTS }, \
-    { LOG_GYR1_MSG, sizeof(log_GYRO), \
-      "GYR1", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
-    { LOG_GYR2_MSG, sizeof(log_GYRO), \
-      "GYR2", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
-    { LOG_GYR3_MSG, sizeof(log_GYRO), \
-      "GYR3", GYR_FMT,        GYR_LABELS, GYR_UNITS, GYR_MULTS }, \
+    { LOG_ACC_MSG, sizeof(log_ACC), \
+      "ACC", "QBQfff",        "TimeUS,I,SampleUS,AccX,AccY,AccZ", "s#sooo", "F-F000" }, \
+    { LOG_GYR_MSG, sizeof(log_GYR), \
+      "GYR", "QBQfff",        "TimeUS,I,SampleUS,GyrX,GyrY,GyrZ", "s#sEEE", "F-F000" }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDP_MSG, sizeof(log_PID), \
@@ -2578,12 +2646,8 @@ struct PACKED log_Winch {
       "PIDS", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
       "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
-    { LOG_BAR2_MSG, sizeof(log_BARO), \
-      "BAR2",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
-    { LOG_BAR3_MSG, sizeof(log_BARO), \
-      "BAR3",  BARO_FMT, BARO_LABELS, BARO_UNITS, BARO_MULTS }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QfffIII",     "TimeUS,VibeX,VibeY,VibeZ,Clip0,Clip1,Clip2", "s------", "F------" }, \
+      "VIBE", "QBfffI",     "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
     { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
       "IMT",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
     { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
@@ -2596,6 +2660,9 @@ struct PACKED log_Winch {
       "ISBD",ISBD_FMT,ISBD_LABELS, ISBD_UNITS, ISBD_MULTS }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
       "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s-DUm", "F-GGB" },   \
+LOG_STRUCTURE_FROM_DAL \
+LOG_STRUCTURE_FROM_NAVEKF2 \
+LOG_STRUCTURE_FROM_NAVEKF3 \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
@@ -2609,9 +2676,9 @@ struct PACKED log_Winch {
     { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
       "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
     { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,RstCnt", "sssmmmddhmd-", "FFC00000000-" }, \
+      "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
     { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,RstCnt", "sssnnnn-", "FFC0000-" }, \
+      "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" }, \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
@@ -2625,7 +2692,9 @@ struct PACKED log_Winch {
     { LOG_ERROR_MSG, sizeof(log_Error), \
       "ERR",   "QBB",         "TimeUS,Subsys,ECode", "s--", "F--" }, \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
-      "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }
+      "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
+    { LOG_PSC_MSG, sizeof(log_PSC), \
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -2674,6 +2743,7 @@ enum LogMessages : uint8_t {
     LOG_XKF4_MSG,
     LOG_XKF5_MSG,
     LOG_XKF10_MSG,
+    LOG_XKFS_MSG,
     LOG_XKQ_MSG,
     LOG_XKFD_MSG,
     LOG_XKV1_MSG,
@@ -2685,9 +2755,9 @@ enum LogMessages : uint8_t {
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
+    LOG_RCIN2_MSG,
     LOG_RCOUT_MSG,
     LOG_RSSI_MSG,
-    LOG_IMU2_MSG,
     LOG_BARO_MSG,
     LOG_POWR_MSG,
     LOG_AHR2_MSG,
@@ -2697,21 +2767,17 @@ enum LogMessages : uint8_t {
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
     LOG_CAMERA_MSG,
-    LOG_IMU3_MSG,
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
     LOG_ESC_MSG,
     LOG_CSRV_MSG,
     LOG_CESC_MSG,
-    LOG_BAR2_MSG,
     LOG_ARSP_MSG,
     LOG_ATTITUDE_MSG,
     LOG_CURRENT_MSG,
     LOG_CURRENT_CELLS_MSG,
-    LOG_COMPASS_MSG,
-    LOG_COMPASS2_MSG,
-    LOG_COMPASS3_MSG,
+    LOG_MAG_MSG,
     LOG_MODE_MSG,
     LOG_GPS_RAW_MSG,
 
@@ -2720,13 +2786,13 @@ enum LogMessages : uint8_t {
 
     LOG_FORMAT_MSG = 128, // this must remain #128
 
+    LOG_IDS_FROM_DAL,
+    LOG_IDS_FROM_NAVEKF2,
+    LOG_IDS_FROM_NAVEKF3,
+
     LOG_GPS_RAWS_MSG,
-    LOG_ACC1_MSG,
-    LOG_ACC2_MSG,
-    LOG_ACC3_MSG,
-    LOG_GYR1_MSG,
-    LOG_GYR2_MSG,
-    LOG_GYR3_MSG,
+    LOG_ACC_MSG,
+    LOG_GYR_MSG,
     LOG_POS_MSG,
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,
@@ -2744,7 +2810,6 @@ enum LogMessages : uint8_t {
     LOG_GPA2_MSG,
     LOG_GPAB_MSG,
     LOG_RFND_MSG,
-    LOG_BAR3_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
@@ -2785,6 +2850,7 @@ enum LogMessages : uint8_t {
     LOG_VISUALVEL_MSG,
     LOG_SIMPLE_AVOID_MSG,
     LOG_WINCH_MSG,
+    LOG_PSC_MSG,
 
     _LOG_LAST_MSG_
 };

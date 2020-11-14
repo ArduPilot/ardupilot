@@ -66,6 +66,9 @@ private:
     // channel for pilot to command engine start, 0 for none
     AP_Int8 start_chan;
 
+    // min pwm on start channel for engine stop
+    AP_Int16 start_chan_min_pwm;
+    
     // which RPM instance to use
     AP_Int8 rpm_instance;
     
@@ -121,6 +124,10 @@ private:
         DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
     };
     AP_Int16 options;
+
+    // start_chan debounce
+    uint16_t start_chan_last_value = 1500;
+    uint32_t start_chan_last_ms;
 };
 
 

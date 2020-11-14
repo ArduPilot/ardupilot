@@ -41,6 +41,7 @@ private:
     uint32_t _last_sample_time;
     float _recent_temp;
     float _recent_press;
+    float _last_altitude;
 
 };
 #endif  // CONFIG_HAL_BOARD

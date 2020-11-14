@@ -24,20 +24,16 @@ protected:
 
 private:
 
-    void check_pins();
-    void check_echo_pin();
+    bool check_pins();
+    bool check_echo_pin();
     void check_trigger_pin();
-    void irq_handler(uint8_t pin, bool pin_high, uint32_t timestamp_us);
 
-    int8_t echo_pin;
     int8_t trigger_pin;
     uint32_t last_reading_ms;      // system time of last read (used for health reporting)
     uint32_t last_distance_cm;     // last distance reported (used to prevent glitches in measurement)
     uint8_t glitch_count;           // glitch counter
 
-    // follow are modified by the IRQ handler:
-    uint32_t pulse_start_us;      // system time of start of timing pulse
-    uint32_t irq_value_us;         // last calculated pwm value (irq copy)
+    AP_HAL::PWMSource pwm_source;
 
     uint32_t last_ping_ms;
 };

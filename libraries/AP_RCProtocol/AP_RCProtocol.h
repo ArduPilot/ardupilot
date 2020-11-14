@@ -41,6 +41,7 @@ public:
         CRSF,
         ST24,
         FPORT,
+        FPORT2,
         NONE    //last enum always is None
     };
     void init();
@@ -59,7 +60,7 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT);
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
     }
 
     uint8_t num_channels();
@@ -83,8 +84,18 @@ public:
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
 
+#ifdef IOMCU_FW
+    // set allowed RC protocols
+    void set_rc_protocols(uint32_t mask) {
+        rc_protocols_mask = mask;
+    }
+#endif
+
 private:
     void check_added_uart(void);
+
+    // return true if a specific protocol is enabled
+    bool protocol_enabled(enum rcprotocol_t protocol) const;
 
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
@@ -93,7 +104,6 @@ private:
     bool _new_input;
     uint32_t _last_input_ms;
     bool _valid_serial_prot;
-    uint8_t _good_frames[NONE];
 
     enum config_phase {
         CONFIG_115200_8N1 = 0,
@@ -110,6 +120,9 @@ private:
         uint32_t last_baud_change_ms;
         enum config_phase phase;
     } added;
+
+    // allowed RC protocols mask (first bit means "all")
+    uint32_t rc_protocols_mask;
 };
 
 namespace AP {

@@ -157,7 +157,6 @@ bool AP_Logger_DataFlash::getSectorCount(void)
     df_NumPages = blocks * df_PagePerBlock;
     erase_cmd = JEDEC_BLOCK64_ERASE;
 
-    hal.scheduler->delay(2000);
     printf("SPI Flash 0x%08x found pages=%u erase=%uk\n",
            id, df_NumPages, (df_PagePerBlock * (uint32_t)df_PageSize)/1024);
     return true;
@@ -302,6 +301,9 @@ void AP_Logger_DataFlash::WriteEnable(void)
 
 void AP_Logger_DataFlash::flash_test()
 {
+    // wait for the chip to be ready, this has been moved from Init()
+    hal.scheduler->delay(2000);
+
     for (uint8_t i=1; i<=20; i++) {
         printf("Flash fill %u\n", i);
         if (i % df_PagePerBlock == 0) {

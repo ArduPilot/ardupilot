@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include "AP_BoardLED2.h"
 #include "ProfiLED.h"
+#include "ScriptingLED.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -146,7 +147,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED
+    // @Bitmask: 0:Build in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
@@ -286,6 +287,12 @@ void AP_Notify::add_backends(void)
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
                 ADD_BACKEND(new UAVCAN_RGB_LED(0));
 #endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+                break;
+
+            case Notify_LED_Scripting:
+#ifdef ENABLE_SCRIPTING
+                ADD_BACKEND(new ScriptingLED());
+#endif
                 break;
 
         }

@@ -47,6 +47,50 @@ bool ModeGuided::init(bool ignore_checks)
     return true;
 }
 
+// guided_run - runs the guided controller
+// should be called at 100hz or more
+void ModeGuided::run()
+{
+    // call the correct auto controller
+    switch (guided_mode) {
+
+    case Guided_TakeOff:
+        // run takeoff controller
+        takeoff_run();
+        break;
+
+    case Guided_WP:
+        // run position controller
+        pos_control_run();
+        break;
+
+    case Guided_Velocity:
+        // run velocity controller
+        vel_control_run();
+        break;
+
+    case Guided_PosVel:
+        // run position-velocity controller
+        posvel_control_run();
+        break;
+
+    case Guided_Angle:
+        // run angle controller
+        angle_control_run();
+        break;
+    }
+ }
+
+bool ModeGuided::allows_arming(bool from_gcs) const
+{
+    // always allow arming from the ground station
+    if (from_gcs) {
+        return true;
+    }
+
+    // optionally allow arming from the transmitter
+    return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
+};
 
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
@@ -190,11 +234,6 @@ void ModeGuided::angle_control_start()
 // else return false if the waypoint is outside the fence
 bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
 {
-    // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
-        pos_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination);
@@ -204,6 +243,11 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         return false;
     }
 #endif
+
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        pos_control_start();
+    }
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
@@ -229,11 +273,6 @@ bool ModeGuided::get_wp(Location& destination)
 // or if the fence is enabled and guided waypoint is outside the fence
 bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
-    // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
-        pos_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
@@ -243,6 +282,11 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         return false;
     }
 #endif
+
+    // ensure we are in position control mode
+    if (guided_mode != Guided_WP) {
+        pos_control_start();
+    }
 
     if (!wp_nav->set_wp_destination(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
@@ -283,11 +327,6 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 // set guided mode posvel target
 bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
-    // check we are in velocity control mode
-    if (guided_mode != Guided_PosVel) {
-        posvel_control_start();
-    }
-
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination);
@@ -297,6 +336,11 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
         return false;
     }
 #endif
+
+    // check we are in velocity control mode
+    if (guided_mode != Guided_PosVel) {
+        posvel_control_start();
+    }
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
@@ -339,50 +383,11 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
 
     guided_angle_state.update_time_ms = millis();
 
-    // interpret positive climb rate or thrust as triggering take-off
-    if (motors->armed() && !copter.ap.auto_armed && is_positive(climb_rate_cms_or_thrust)) {
-        copter.set_auto_armed(true);
-    }
-
     // log target
     copter.Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
                            Vector3f(0.0f, 0.0f, climb_rate_cms_or_thrust));
 }
-
-// guided_run - runs the guided controller
-// should be called at 100hz or more
-void ModeGuided::run()
-{
-    // call the correct auto controller
-    switch (guided_mode) {
-
-    case Guided_TakeOff:
-        // run takeoff controller
-        takeoff_run();
-        break;
-
-    case Guided_WP:
-        // run position controller
-        pos_control_run();
-        break;
-
-    case Guided_Velocity:
-        // run velocity controller
-        vel_control_run();
-        break;
-
-    case Guided_PosVel:
-        // run position-velocity controller
-        posvel_control_run();
-        break;
-
-    case Guided_Angle:
-        // run angle controller
-        angle_control_run();
-        break;
-    }
- }
 
 // guided_takeoff_run - takeoff in guided mode
 //      called by guided_run at 100hz or more
@@ -453,6 +458,17 @@ void ModeGuided::vel_control_run()
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
+    }
+
+    // landed with positive desired climb rate, initiate takeoff
+    if (motors->armed() && copter.ap.auto_armed && copter.ap.land_complete && is_positive(guided_vel_target_cms.z)) {
+        zero_throttle_and_relax_ac();
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            set_land_complete(false);
+            set_throttle_takeoff();
+        }
+        return;
     }
 
     // if not armed set throttle to zero and exit immediately
@@ -596,8 +612,14 @@ void ModeGuided::angle_control_run()
         guided_angle_state.use_thrust = false;
     }
 
+    // interpret positive climb rate or thrust as triggering take-off
+    const bool positive_thrust_or_climbrate = is_positive(guided_angle_state.use_thrust ? guided_angle_state.thrust : climb_rate_cms);
+    if (motors->armed() && positive_thrust_or_climbrate) {
+        copter.set_auto_armed(true);
+    }
+
     // if not armed set throttle to zero and exit immediately
-    if (!motors->armed() || !copter.ap.auto_armed || (copter.ap.land_complete && (guided_angle_state.climb_rate_cms <= 0.0f))) {
+    if (!motors->armed() || !copter.ap.auto_armed || (copter.ap.land_complete && !positive_thrust_or_climbrate)) {
         make_safe_spool_down();
         return;
     }

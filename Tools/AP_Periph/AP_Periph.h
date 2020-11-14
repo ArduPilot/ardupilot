@@ -1,3 +1,5 @@
+#pragma once
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS.h>
@@ -5,6 +7,8 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_MSP/AP_MSP.h>
+#include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 
@@ -13,8 +17,11 @@
 #endif
 
 #include "Parameters.h"
-#include "ch.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+void stm32_watchdog_init();
+void stm32_watchdog_pat();
+#endif
 /*
   app descriptor compatible with MissionPlanner
  */
@@ -51,6 +58,22 @@ public:
     AP_Baro baro;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_MSP
+    struct {
+        AP_MSP msp;
+        MSP::msp_port_t port;
+        uint32_t last_gps_ms;
+        uint32_t last_baro_ms;
+        uint32_t last_mag_ms;
+    } msp;
+    void msp_init(AP_HAL::UARTDriver *_uart);
+    void msp_sensor_update(void);
+    void send_msp_packet(uint16_t cmd, void *p, uint16_t size);
+    void send_msp_GPS(void);
+    void send_msp_compass(void);
+    void send_msp_baro(void);
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_ADSB
     void adsb_init();
     void adsb_update();

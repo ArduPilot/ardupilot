@@ -33,6 +33,9 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <stdio.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    #include <SITL/SITL.h>
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -909,6 +912,26 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token
     return ap;    
 }
 
+// by-name equivalent of find_by_index()
+AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, ParamToken *token)
+{
+    AP_Param *ap;
+    uint16_t count = 0;
+    for (ap = AP_Param::first(token, ptype);
+         ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
+         ap = AP_Param::next_scalar(token, ptype)) {
+        int32_t ret = strncasecmp(name, _var_info[token->key].name, AP_MAX_NAME_SIZE);
+        if (ret >= 0) {
+            char buf[AP_MAX_NAME_SIZE];
+            ap->copy_name_token(*token, buf, AP_MAX_NAME_SIZE);
+            if (strncasecmp(name, buf, AP_MAX_NAME_SIZE) == 0) {
+                break;
+            }
+        }
+        count++;
+    }
+    return ap;
+}
 
 /*
   Find a variable by pointer, returning key. This is used for loading pointer variables
@@ -1466,6 +1489,9 @@ void AP_Param::reload_defaults_file(bool last_pass)
         }
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    hal.util->set_cmdline_parameters();
+#endif
 }
 
 
@@ -1979,6 +2005,16 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
     if (strlen(pname) > AP_MAX_NAME_SIZE) {
         return false;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Workaround to prevent FORMAT_VERSION in param file resulting in invalid
+    // EEPROM. For details, see: https://github.com/ArduPilot/ardupilot/issues/15579
+    if (strcmp(pname, "FORMAT_VERSION") == 0) {
+        ::printf("Warning: Ignoring FORMAT_VERSION in param file\n");
+        return false;
+    }
+#endif
+
     const char *value_s = strtok_r(nullptr, ", =\t\r\n", &saveptr);
     if (value_s == nullptr) {
         return false;
