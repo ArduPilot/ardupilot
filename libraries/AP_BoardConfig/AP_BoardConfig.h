@@ -63,7 +63,7 @@ public:
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
-        BOARD_TYPE_UNKNOWN = -1,
+        PX4_BOARD_UNKNOWN = -1,
         PX4_BOARD_AUTO     = 0,
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
@@ -96,7 +96,7 @@ public:
 #if AP_FEATURE_BOARD_DETECT
         return px4_configured_board;
 #else
-        return BOARD_TYPE_UNKNOWN;
+        return PX4_BOARD_UNKNOWN;
 #endif
     }
 
