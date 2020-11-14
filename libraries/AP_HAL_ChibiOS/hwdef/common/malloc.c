@@ -84,6 +84,15 @@ void malloc_init(void)
     chMtxObjectInit(&mem_mutex);
 #endif
 
+#if defined(STM32H7)
+    // zero first 1k of ITCM. We leave 1k free to avoid addresses
+    // close to nullptr being valid. Zeroing it here means we can
+    // check for changes which indicate a write to an uninitialised
+    // object.  We start at address 0x1 as writing the first byte
+    // causes a fault
+    memset((void*)0x00000001, 0, 1023);
+#endif
+
     uint8_t i;
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
         chHeapObjectInit(&heaps[i], memory_regions[i].address, memory_regions[i].size);

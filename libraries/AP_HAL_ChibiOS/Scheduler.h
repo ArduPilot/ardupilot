@@ -172,5 +172,9 @@ private:
     void _run_timers();
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);
+
+#if defined STM32H7
+    void check_low_memory_is_zero();
+#endif
 };
 #endif
