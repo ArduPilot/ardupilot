@@ -164,7 +164,13 @@ public:
 
     enum board_options {
         BOARD_OPTION_WATCHDOG = (1 << 0),
+        DISABLE_FTP = (1<<1),
     };
+
+    // return true if ftp is disabled
+    static bool ftp_disabled(void) {
+        return _singleton?(_singleton->_options & DISABLE_FTP)!=0:1;
+    }
 
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
