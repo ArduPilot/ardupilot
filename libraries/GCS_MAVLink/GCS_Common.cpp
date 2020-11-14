@@ -5065,8 +5065,10 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
-    ret |= MAV_PROTOCOL_CAPABILITY_FTP;
-
+    if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
+        ret |= MAV_PROTOCOL_CAPABILITY_FTP;
+    }
+ 
     return ret;
 }
 
