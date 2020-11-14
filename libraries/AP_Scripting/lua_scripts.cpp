@@ -176,6 +176,7 @@ void lua_scripts::run_next_script(lua_State *L) {
         return;
     }
 
+    uint64_t start_time_ms = AP_HAL::millis64();
     // strip the selected script out of the list
     script_info *script = scripts;
     scripts = script->next;
@@ -225,7 +226,7 @@ void lua_scripts::run_next_script(lua_State *L) {
                    }
 
                    // types match the expectations, go ahead and reschedule
-                   script->next_run_ms = AP_HAL::millis64() + (uint64_t)luaL_checknumber(L, -1);
+                   script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                    lua_pop(L, 1);
                    int old_ref = script->lua_ref;
                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
