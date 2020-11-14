@@ -28,7 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
-#include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
+#include <AP_NavEKF/EKF_Buffer.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_DAL/AP_DAL.h>
 
@@ -462,57 +462,49 @@ private:
         uint8_t     accel_index;
     };
 
-    struct gps_elements {
-        Vector2f    pos;         // 0..1
-        float       hgt;         // 2
-        Vector3f    vel;         // 3..5
-        uint32_t    time_ms;     // 6
-        uint8_t     sensor_idx;  // 7..9
+    struct gps_elements : EKF_obs_element_t {
+        Vector2f    pos;
+        float       hgt;
+        Vector3f    vel;
+        uint8_t     sensor_idx;
     };
 
-    struct mag_elements {
-        Vector3f    mag;         // 0..2
-        uint32_t    time_ms;     // 3
+    struct mag_elements : EKF_obs_element_t {
+        Vector3f    mag;
     };
 
-    struct baro_elements {
-        float       hgt;         // 0
-        uint32_t    time_ms;     // 1
+    struct baro_elements : EKF_obs_element_t {
+        float       hgt;
     };
 
-    struct range_elements {
-        float       rng;         // 0
-        uint32_t    time_ms;     // 1
-        uint8_t     sensor_idx;  // 2
+    struct range_elements : EKF_obs_element_t {
+        float       rng;
+        uint8_t     sensor_idx;
     };
 
-    struct rng_bcn_elements {
+    struct rng_bcn_elements : EKF_obs_element_t {
         float       rng;                // range measurement to each beacon (m)
         Vector3f    beacon_posNED;      // NED position of the beacon (m)
         float       rngErr;             // range measurement error 1-std (m)
         uint8_t     beacon_ID;          // beacon identification number
-        uint32_t    time_ms;            // measurement timestamp (msec)
     };
 
-    struct tas_elements {
-        float       tas;         // 0
-        uint32_t    time_ms;     // 1
+    struct tas_elements : EKF_obs_element_t {
+        float       tas;
     };
 
-    struct of_elements {
+    struct of_elements : EKF_obs_element_t {
         Vector2f    flowRadXY;
         Vector2f    flowRadXYcomp;
-        uint32_t    time_ms;
         Vector3f    bodyRadXYZ;
         Vector3f    body_offset;
     };
 
-    struct ext_nav_elements {
+    struct ext_nav_elements : EKF_obs_element_t {
         Vector3f        pos;        // XYZ position measured in a RH navigation frame (m)
         Quaternion      quat;       // quaternion describing the rotation from navigation to body frame
         float           posErr;     // spherical poition measurement error 1-std (m)
         float           angErr;     // spherical angular measurement error 1-std (rad)
-        uint32_t        time_ms;    // measurement timestamp (msec)
         bool            posReset;   // true when the position measurement has been reset
     };
 
@@ -524,10 +516,9 @@ private:
         float accel_zbias;
     } inactiveBias[INS_MAX_INSTANCES];
 
-    struct ext_nav_vel_elements {
+    struct ext_nav_vel_elements : EKF_obs_element_t {
         Vector3f vel;               // velocity in NED (m)
         float err;                  // velocity measurement error (m/s)
-        uint32_t time_ms;           // measurement timestamp (msec)
     };
 
     // update the navigation filter status
@@ -841,13 +832,13 @@ private:
 
     float gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Matrix24 P;                     // covariance matrix
-    imu_ring_buffer_t<imu_elements> storedIMU;      // IMU data buffer
-    obs_ring_buffer_t<gps_elements> storedGPS;      // GPS data buffer
-    obs_ring_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
-    obs_ring_buffer_t<baro_elements> storedBaro;    // Baro data buffer
-    obs_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
-    obs_ring_buffer_t<range_elements> storedRange;  // Range finder data buffer
-    imu_ring_buffer_t<output_elements> storedOutput;// output state buffer
+    EKF_IMU_buffer_t<imu_elements> storedIMU;      // IMU data buffer
+    EKF_obs_buffer_t<gps_elements> storedGPS;      // GPS data buffer
+    EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
+    EKF_obs_buffer_t<baro_elements> storedBaro;    // Baro data buffer
+    EKF_obs_buffer_t<tas_elements> storedTAS;      // TAS data buffer
+    EKF_obs_buffer_t<range_elements> storedRange;  // Range finder data buffer
+    EKF_IMU_buffer_t<output_elements> storedOutput;// output state buffer
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
     ftype accNavMagHoriz;           // magnitude of navigation accel in horizontal plane (m/s^2)
@@ -1015,7 +1006,7 @@ private:
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
 
     // variables added for optical flow fusion
-    obs_ring_buffer_t<of_elements> storedOF;    // OF data buffer
+    EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
     of_elements ofDataNew;          // OF data at the current time horizon
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
     bool flowDataToFuse;            // true when optical flow data is ready for fusion
@@ -1069,7 +1060,7 @@ private:
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
 
     // Range Beacon Sensor Fusion
-    obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
+    EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
     rng_bcn_elements rngBcnDataNew;     // Range beacon data at the current time horizon
     rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
     uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innvovation consistency checks (msec)
@@ -1143,7 +1134,7 @@ private:
     uint8_t magYawAnomallyCount;    // Number of times the yaw has been reset due to a magnetic anomaly during initial ascent
 
     // external navigation fusion
-    obs_ring_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
+    EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
     ext_nav_elements extNavDataNew;     // External nav data at the current time horizon
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
@@ -1154,7 +1145,7 @@ private:
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     bool extNavYawResetRequest;         // true when a reset of vehicle yaw using the external nav data is requested
 
-    obs_ring_buffer_t<ext_nav_vel_elements> storedExtNavVel; // external navigation velocity data buffer
+    EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel; // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelNew;                       // external navigation velocity data at the current time horizon
     ext_nav_vel_elements extNavVelDelayed;                   // external navigation velocity data at the fusion time horizon
     uint32_t extNavVelMeasTime_ms;                           // time external navigation velocity measurements were accepted for input to the data buffer (msec)
