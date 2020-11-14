@@ -174,11 +174,12 @@ void AP_DAL::log_SetOriginLLH2(const Location &loc)
 #endif
 }
 
-void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed)
+void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_RWA2 pkt{
         airspeed:      aspeed,
+        uncertainty:   uncertainty,
     };
     WRITE_REPLAY_BLOCK(RWA2, pkt);
 #endif
@@ -207,11 +208,12 @@ void AP_DAL::log_SetOriginLLH3(const Location &loc)
 #endif
 }
 
-void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed)
+void AP_DAL::log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     struct log_RWA3 pkt{
         airspeed:      aspeed,
+        uncertainty:   uncertainty
     };
     WRITE_REPLAY_BLOCK(RWA3, pkt);
 #endif
