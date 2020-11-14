@@ -497,7 +497,7 @@ void NavEKF3_core::readIMUData()
         runUpdates = true;
 
         // extract the oldest available data from the FIFO buffer
-        imuDataDelayed = storedIMU.pop_oldest_element();
+        imuDataDelayed = storedIMU.get_oldest_element();
 
         // protect against delta time going to zero
         float minDT = 0.1f * dtEkfAvg;
@@ -1040,12 +1040,13 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     timeStamp_ms -= localFilterTimeStep_ms/2;
     // Prevent time delay exceeding age of oldest IMU data in the buffer
     timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
-    const ext_nav_vel_elements extNavVelNew {
-        vel,
-        err,
-        timeStamp_ms,
-        false
-    };
+
+    ext_nav_vel_elements extNavVelNew;
+    extNavVelNew.time_ms = timeStamp_ms;
+    extNavVelNew.vel = vel;
+    extNavVelNew.err = err;
+    extNavVelNew.corrected = false;
+
     storedExtNavVel.push(extNavVelNew);
 }
 
