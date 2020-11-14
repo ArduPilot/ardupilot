@@ -704,6 +704,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     }
 }
 
+#if HAL_WITH_OSD_BITMAP
 void AP_OSD_ParamScreen::draw(void)
 {
     if (!enabled || !backend) {
@@ -726,6 +727,7 @@ void AP_OSD_ParamScreen::draw(void)
     // the save button
     draw_parameter(SAVE_PARAM, save_x, save_y);
 }
+#endif
 
 // pre_arm_check - returns true if all pre-takeoff checks have completed successfully
 bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
