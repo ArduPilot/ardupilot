@@ -20,6 +20,8 @@
 
 #include "string.h"
 
+#include "driver/mcpwm.h"
+
 
 //HINTS: see more about MCPWM peripheral here: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/mcpwm.html
 // and example code here: https://github.com/espressif/esp-idf/blob/e7f85f1987aa9479c2dbab638ca83bcaef99be00/examples/peripherals/mcpwm/mcpwm_basic_config/main/mcpwm_basic_config_example.c
