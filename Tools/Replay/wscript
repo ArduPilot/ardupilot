@@ -22,6 +22,6 @@ def build(bld):
     )
 
     bld.ap_program(
-        program_groups='tools',
+        program_groups=['tools','replay'],
         use=vehicle + '_libs',
     )
