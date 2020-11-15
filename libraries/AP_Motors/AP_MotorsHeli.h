@@ -19,6 +19,10 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
 #define AP_MOTORS_HELI_COLLECTIVE_MAX           1750
 #define AP_MOTORS_HELI_COLLECTIVE_MID           1500
+#define AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT 0.5f  // the estimated hover throttle, 0 ~ 1
+#define AP_MOTORS_HELI_COLLECTIVE_HOVER_TC      10.0f // time constant used to update estimated hover throttle, 0 ~ 1
+#define AP_MOTORS_HELI_COLLECTIVE_HOVER_MIN     0.3f  // minimum possible hover throttle
+#define AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX     0.8f // maximum possible hover throttle
 
 // flybar types
 #define AP_MOTORS_HELI_NOFLYBAR                 0
@@ -119,7 +123,11 @@ public:
     // supports_yaw_passthrough
     virtual bool supports_yaw_passthrough() const { return false; }
 
-    float get_throttle_hover() const override { return 0.5f; }
+    // update estimated throttle required to hover
+    void update_throttle_hover(float dt);
+    float get_throttle_hover() const override { return _collective_hover; }
+
+    bool get_takeoff_collective() const { return _heliflags.takeoff_collective; }
 
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
@@ -132,6 +140,9 @@ public:
 
     // return true if the servo test is still running/pending
     bool servo_test_running() const { return _heliflags.servo_test_running; }
+
+    // set land complete flag
+    void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
     
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -193,6 +204,16 @@ protected:
     // write to a swash servo. output value is pwm
     void rc_write_swash(uint8_t chan, float swash_in);
 
+    // save parameters as part of disarming
+    void save_params_on_disarm() override;
+
+    // enum values for HOVER_LEARN parameter
+    enum HoverLearn {
+        HOVER_LEARN_DISABLED = 0,
+        HOVER_LEARN_ONLY = 1,
+        HOVER_LEARN_AND_SAVE = 2
+    };
+
     // flags bitmask
     struct heliflags_type {
         uint8_t landing_collective      : 1;    // true if collective is setup for landing which has much higher minimum
@@ -203,6 +224,8 @@ protected:
         uint8_t in_autorotation         : 1;    // true if aircraft is in autorotation
         uint8_t enable_bailout          : 1;    // true if allowing RSC to quickly ramp up engine
         uint8_t servo_test_running      : 1;    // true if servo_test is running
+        uint8_t land_complete           : 1;    // true if aircraft is landed
+        uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
     } _heliflags;
 
     // parameters
@@ -212,6 +235,8 @@ protected:
     AP_Int16        _collective_mid;            // Swash servo position corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
     AP_Int8         _servo_mode;                // Pass radio inputs directly to servos during set-up through mission planner
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
+    AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
+    AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
 
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
