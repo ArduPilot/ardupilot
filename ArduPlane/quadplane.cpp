@@ -910,10 +910,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        if (!is_tailsitter()) {
-            // always stabilize with tailsitters so we can do belly takeoffs
-            attitude_control->relax_attitude_controllers();
-        }
+        relax_attitude_control();
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         bool should_boost = true;
@@ -1113,8 +1110,10 @@ void QuadPlane::control_qacro(void)
 
 void QuadPlane::relax_attitude_control()
 {
+    // disable some or all axis controllers to prevent windup
     if (is_vectored_tailsitter()) {
-        // disable roll and yaw control for vectored tailsitters
+        // always stabilize pitch for vectored tailsitters so we can do belly takeoffs
+        // but disable roll and yaw control
         attitude_control->relax_roll_and_yaw_controllers();
     } else {
         // if not a vectored tailsitter completely disable attitude control
