@@ -557,7 +557,7 @@ void NavEKF2_core::runYawEstimatorPrediction()
 
 void NavEKF2_core::runYawEstimatorCorrection()
 {
-    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1) {
+    if (yawEstimator != nullptr && frontend->_fusionModeGPS <= 1 && EKFGSF_run_filterbank) {
         if (gpsDataToFuse) {
             Vector2f gpsVelNE = Vector2f(gpsDataDelayed.vel.x, gpsDataDelayed.vel.y);
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
