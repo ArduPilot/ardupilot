@@ -29,19 +29,6 @@ LogReader::LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf2, NavEKF3
     ekf3(_ekf3)
 {
 }
-// these names we emit from the code as normal, but are emitted using
-// Log_Write.  Thus they are not present in LOG_COMMON_STRUCTURES.  A
-// format will be written for this by the code itself the first time
-// the message is emitted to the log.  However, we must not write the
-// messages from the old log to the new log, so we need to keep a map
-// of IDs to prune out...
-static const char *log_write_names[] = {
-    nullptr
-};
-
-static const char *generated_names[] = {
-    NULL
-};
 
 /*
   see if a type is in a list of types
@@ -59,50 +46,6 @@ bool LogReader::in_list(const char *type, const char *list[])
     return false;
 }
 
-/*
-  map from an incoming format type to an outgoing format type
- */
-uint8_t LogReader::map_fmt_type(const char *name, uint8_t intype)
-{
-    if (intype == 128) {
-        // everybody's favourite FMT message...
-        return 128;
-    }
-    if (mapped_msgid[intype] != 0) {
-        // already mapped
-        return mapped_msgid[intype];
-    }
-    for (uint8_t n=next_msgid; n<255; n++) {
-        bool already_mapped = false;
-        for (uint16_t i=0; i<sizeof(mapped_msgid); i++) {
-            if (mapped_msgid[i] == n) {
-                // already mapped - must be one of our generated names
-                already_mapped = true;
-                break;
-            }
-        }
-        if (already_mapped) {
-            continue;
-        }
-        if (AP::logger().msg_type_in_use(n)) {
-            continue;
-        }
-        mapped_msgid[intype] = n;
-        next_msgid = n+1;
-        if (next_msgid == 128) {
-            // don't.  Just... don't...
-            next_msgid += 1;
-        }
-        break;
-    }
-    if (mapped_msgid[intype] == 0) {
-        ::printf("mapping failed\n");
-        abort();
-    }
-
-    return mapped_msgid[intype];    
-}
-
 bool LogReader::handle_log_format_msg(const struct log_Format &f)
 {
     // emit the output as we receive it:
@@ -111,33 +54,6 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	char name[5];
 	memset(name, '\0', 5);
 	memcpy(name, f.name, 4);
-	// debug("Defining log format for type (%d) (%s)\n", f.type, name);
-
-    struct LogStructure s = _log_structure[_log_structure_count++];
-    // logger.set_num_types(_log_structure_count);
-
-    if (in_list(name, log_write_names)) {
-        // debug("%s is a Log_Write-written message\n", name);
-    } else {
-        if (!in_list(name, generated_names)) {
-            s.msg_type = map_fmt_type(name, f.type);
-            s.msg_len = f.length;
-            s.name = f.name;
-            s.format = f.format;
-            s.labels = f.labels;
-        }
-
-        // emit the FMT to AP_Logger:
-        struct log_Format pkt {};
-        pkt.head1 = HEAD_BYTE1;
-        pkt.head2 = HEAD_BYTE2;
-        pkt.msgid = LOG_FORMAT_MSG;
-        pkt.type = s.msg_type;
-        pkt.length = s.msg_len;
-        memcpy(pkt.name, s.name, sizeof(pkt.name));
-        memcpy(pkt.format, s.format, sizeof(pkt.format));
-        memcpy(pkt.labels, s.labels, sizeof(pkt.labels));
-    }
 
     if (msgparser[f.type] != NULL) {
         return true;
