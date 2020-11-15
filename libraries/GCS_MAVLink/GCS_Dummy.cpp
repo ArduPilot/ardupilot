@@ -5,7 +5,7 @@
 #include <AP_Common/AP_FWVersionDefine.h>
 #undef FORCE_VERSION_H_INCLUDE
 
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
+//const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] {};
 
 /*
   send_text implementation for dummy GCS

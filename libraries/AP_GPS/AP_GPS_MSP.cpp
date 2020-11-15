@@ -78,7 +78,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     state.speed_accuracy = pkt.horizontal_vel_accuracy * 0.01;
 
     if (pkt.true_yaw != 65535) {
-        state.gps_yaw = wrap_360(pkt.true_yaw*0.01);
+        state.gps_yaw = wrap_360(pkt.true_yaw*0.01f);
         state.have_gps_yaw = true;
     }
 
