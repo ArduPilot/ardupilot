@@ -31,17 +31,6 @@ private:
     uint8_t _log_structure_count;
 
     class LR_MsgHandler *msgparser[LOGREADER_MAX_FORMATS] {};
-
-    // mapping from original msgid to output msgid
-    uint8_t mapped_msgid[256] {};
-
-    // next available msgid for mapping
-    uint8_t next_msgid = 1;
-
-    void initialise_fmt_map();
-    uint8_t map_fmt_type(const char *name, uint8_t intype);
-
-    bool save_message_type(const char *name);
 };
 
 // some vars are difficult to get through the layers
