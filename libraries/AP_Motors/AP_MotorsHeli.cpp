@@ -101,6 +101,20 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Path: AP_MotorsHeli_RSC.cpp
     AP_SUBGROUPINFO(_main_rotor, "RSC_", 25, AP_MotorsHeli, AP_MotorsHeli_RSC),
 
+    // @Param: COLL_HOVER
+    // @DisplayName: Collective Hover Value
+    // @Description: Collective needed to hover expressed as a number from 0 to 1 where 0 is H_COL_MIN and 1 is H_COL_MAX
+    // @Range: 0.3 0.8
+    // @User: Advanced
+    AP_GROUPINFO("COLL_HOVER", 26, AP_MotorsHeli, _collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT),
+
+    // @Param: HOVER_LEARN
+    // @DisplayName: Hover Value Learning
+    // @Description: Enable/Disable automatic learning of hover collective
+    // @Values: 0:Disabled, 1:Learn, 2:Learn and Save
+    // @User: Advanced
+    AP_GROUPINFO("HOVER_LEARN", 27, AP_MotorsHeli, _collective_hover_learn, HOVER_LEARN_AND_SAVE),
+
     AP_GROUPEND
 };
 
@@ -307,6 +321,11 @@ void AP_MotorsHeli::output_logic()
             // Motors should be stationary.
             // Servos set to their trim values or in a test condition.
 
+            // set limits flags
+            limit.roll = true;
+            limit.pitch = true;
+            limit.yaw = true;
+
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
                 _spool_state = SpoolState::GROUND_IDLE;
@@ -317,6 +336,17 @@ void AP_MotorsHeli::output_logic()
 
         case SpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
+            // set limits flags
+            if (_heliflags.land_complete) {
+                limit.roll = true;
+                limit.pitch = true;
+                limit.yaw = true;
+            } else {
+                limit.roll = false;
+                limit.pitch = false;
+                limit.yaw = false;
+            }
+
             // Servos should be moving to correct the current attitude.
             if (_spool_desired == DesiredSpoolState::SHUT_DOWN){
                 _spool_state = SpoolState::SHUT_DOWN;
@@ -331,6 +361,17 @@ void AP_MotorsHeli::output_logic()
         case SpoolState::SPOOLING_UP:
             // Maximum throttle should move from minimum to maximum.
             // Servos should exhibit normal flight behavior.
+
+            // set limits flags
+            if (_heliflags.land_complete) {
+                limit.roll = true;
+                limit.pitch = true;
+                limit.yaw = true;
+            } else {
+                limit.roll = false;
+                limit.pitch = false;
+                limit.yaw = false;
+            }
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED ){
@@ -347,6 +388,17 @@ void AP_MotorsHeli::output_logic()
             // Throttle should exhibit normal flight behavior.
             // Servos should exhibit normal flight behavior.
 
+            // set limits flags
+            if (_heliflags.land_complete) {
+                limit.roll = true;
+                limit.pitch = true;
+                limit.yaw = true;
+            } else {
+                limit.roll = false;
+                limit.pitch = false;
+                limit.yaw = false;
+            }
+
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
                 _spool_state = SpoolState::SPOOLING_DOWN;
@@ -359,6 +411,17 @@ void AP_MotorsHeli::output_logic()
         case SpoolState::SPOOLING_DOWN:
             // Maximum throttle should move from maximum to minimum.
             // Servos should exhibit normal flight behavior.
+
+            // set limits flags
+            if (_heliflags.land_complete) {
+                limit.roll = true;
+                limit.pitch = true;
+                limit.yaw = true;
+            } else {
+                limit.roll = false;
+                limit.pitch = false;
+                limit.yaw = false;
+            }
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
@@ -462,3 +525,27 @@ void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
 
+// update the collective input filter.  should be called at 100hz
+void AP_MotorsHeli::update_throttle_hover(float dt)
+{
+    if (_collective_hover_learn != HOVER_LEARN_DISABLED) {
+
+        // Don't let _collective_hover go below H_COLL_MID
+        float curr_collective = get_throttle();
+        if (curr_collective < _collective_mid_pct) {
+            curr_collective = _collective_mid_pct;
+        }
+
+        // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
+        _collective_hover = constrain_float(_collective_hover + (dt / (dt + AP_MOTORS_HELI_COLLECTIVE_HOVER_TC)) * (curr_collective - _collective_hover), AP_MOTORS_HELI_COLLECTIVE_HOVER_MIN, AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX);
+    }
+}
+
+// save parameters as part of disarming
+void AP_MotorsHeli::save_params_on_disarm()
+{
+    // save hover throttle
+    if (_collective_hover_learn == HOVER_LEARN_AND_SAVE) {
+        _collective_hover.save();
+    }
+}
