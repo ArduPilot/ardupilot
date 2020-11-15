@@ -381,9 +381,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     float yaw_offset = 0.0f;
 
     // initialize limits flag
-    limit.roll = false;
-    limit.pitch = false;
-    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -420,6 +417,12 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     if (_heliflags.landing_collective && collective_out < _collective_mid_pct && !_heliflags.in_autorotation) {
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
+    }
+
+    if (collective_out > _collective_mid_pct + 0.5f * (_collective_hover - _collective_mid_pct)) {
+        _heliflags.takeoff_collective = true;
+    } else {
+        _heliflags.takeoff_collective = false;
     }
 
     // if servo output not in manual mode and heli is not in autorotation, process pre-compensation factors
