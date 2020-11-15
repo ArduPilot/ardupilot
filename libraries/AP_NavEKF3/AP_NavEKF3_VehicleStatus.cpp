@@ -402,11 +402,11 @@ void NavEKF3_core::detectFlight()
     updateTouchdownExpected();
 
     // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
-    if (!prevOnGround && onGround) {
-        // landed so disable filter bank
+    if ((!prevOnGround && onGround) || !gpsAccuracyGood) {
+        // disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (yawEstimator && !EKFGSF_run_filterbank && ((!prevInFlight && inFlight) || expectTakeoff)) {
-        // started flying so reset counters and enable filter bank
+    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && (inFlight || expectTakeoff) && gpsAccuracyGood) {
+        // flying or about to fly so reset counters and enable filter bank when GPS is good
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
         EKFGSF_yaw_reset_count = 0;
