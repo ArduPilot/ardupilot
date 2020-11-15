@@ -24,8 +24,28 @@ or
 
 Do NOT use "./waf build", it's broken right now.
 
-
 ```
+tips:  if you get compile error/s to do with CONFIG... such as 
+in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
+warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
+
+this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of date or out of sync with your IDF.  
+So double check you are using the correct IDF version ( buzz's branch uses v3.3 , sh83's probably does not.. and then if you are sure:
+cd libraries/AP_HAL_ESP32/targets/plane/
+make menuconfig
+navigate to [save]  (tab,tab,tab,enter)
+press [tab] then [ok] to update the sdkconfig file
+'config written' press [enter] to exit this dialog 
+press [tab] then enter on the [exit]  box to exit the app
+done.    the 'sdkconfig' file in this folder should have been updated
+cd ../../../..
+
+OR locate the 'libraries/AP_HAL_ESP32/targets/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
+
+'cd libraries/AP_HAL_ESP32/targets/plane ; make defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
+
+... try ./waf plane" 
+
 5. To flash binary use espressif flash tool via `make flash` inside `libraries/AP_HAL_ESP32/targets/plane/` directory. Also other make targets are avaliable (`make monitor` , `make size` and so on) 
 
 ## Test hardware
