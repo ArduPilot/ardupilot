@@ -391,11 +391,11 @@ void NavEKF2_core::detectFlight()
     }
 
     // handle reset of counters used to control how many times we will try to reset the yaw to the EKF-GSF value per flight
-    if (!prevOnGround && onGround) {
-        // landed so disable filter bank
+    if ((!prevOnGround && onGround) || !gpsAccuracyGood) {
+        // disable filter bank
         EKFGSF_run_filterbank = false;
-    } else if (yawEstimator != nullptr && !prevInFlight && inFlight) {
-        // started flying so reset counters and enable filter bank
+    } else if (yawEstimator != nullptr && !EKFGSF_run_filterbank && inFlight && gpsAccuracyGood) {
+        // flying so reset counters and enable filter bank when GPS is good
         EKFGSF_yaw_reset_ms = 0;
         EKFGSF_yaw_reset_request_ms = 0;
         EKFGSF_yaw_reset_count = 0;
