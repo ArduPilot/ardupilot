@@ -4937,7 +4937,8 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
 
-    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s);
+    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
+                                                    _passthru.baud1, _passthru.baud2);
     if (enabled && !_passthru.enabled) {
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
@@ -4983,6 +4984,8 @@ void GCS::passthru_timer(void)
             return;
         }
         _passthru.start_ms = 0;
+        _passthru.port1->begin(_passthru.baud1);
+        _passthru.port2->begin(_passthru.baud2);
     }
 
     // while pass-thru is enabled lock both ports. They remain
