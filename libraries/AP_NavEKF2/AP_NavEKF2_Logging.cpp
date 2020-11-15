@@ -384,7 +384,7 @@ void NavEKF2::Log_Write_GSF(uint8_t _core, uint64_t time_us) const
                         "F-0000000000",
                         "QBffffffffff",
                         time_us,
-                        _core,
+                        DAL_CORE(_core),
                         ivn[0],
                         ivn[1],
                         ivn[2],
