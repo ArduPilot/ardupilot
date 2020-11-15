@@ -490,6 +490,9 @@ private:
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
 
+    // remember formats for replay
+    void save_format_Replay(const void *pBuffer);
+
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {
