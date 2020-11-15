@@ -12,7 +12,7 @@
 Please use lastest stable version of the esp-idf (https://github.com/espressif/esp-idf/tree/release/v3.3)
 2. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_wip
 3. Use script Tools/scripts/install-prereqs-* to install ardupilot requirements
-4. edit the "source_this_file.sh" to point to the checked-out ardupilot/modules/esp_idf folder.
+4. review the file in the root of the repo called "source_this_file.sh" which points to the checked-out ardupilot/modules/esp_idf/ folder.
 5. Configure and run build:
 ```bash
 cd ardupilot
@@ -22,9 +22,12 @@ source source_this_file.sh
 or
 ./waf copter
 
-Do NOT use "./waf build", it's broken right now.
+```
 
 ```
+Do NOT use "./waf build", it's broken right now.
+```
+
 tips:  if you get compile error/s to do with CONFIG... such as 
 in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
