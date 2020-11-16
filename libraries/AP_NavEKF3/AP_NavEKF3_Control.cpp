@@ -445,7 +445,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
         return false;
     }
 
-    if (!frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
         return false;
     }
 
@@ -456,8 +456,8 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
-    if (!frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
-        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
         return false;
     }
 
@@ -477,7 +477,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
         return false;
     }
 
@@ -487,7 +487,7 @@ bool NavEKF3_core::readyToUseGPS(void) const
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
-    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
         return false;
     }
 
@@ -497,7 +497,7 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 // return true if the filter is ready to use external nav data
 bool NavEKF3_core::readyToUseExtNav(void) const
 {
-    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) {
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) {
         return false;
     }
 
@@ -508,7 +508,7 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 bool NavEKF3_core::use_compass(void) const
 {
     const auto *compass  = dal.get_compass();
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
         // not using compass as a yaw source
@@ -523,7 +523,7 @@ bool NavEKF3_core::use_compass(void) const
 // are we using a yaw source other than the magnetomer?
 bool NavEKF3_core::using_external_yaw(void) const
 {
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
     }
@@ -544,7 +544,7 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // set the LLH location of the filters NED origin
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
-    if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
+    if ((PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
         // reject attempt to set origin if GPS is being used
         return false;
     }
@@ -590,7 +590,7 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL) && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
@@ -633,7 +633,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->_sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
+    bool hgtNotAccurate = (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
 
     // set individual flags
     filterStatus.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -650,7 +650,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.takeoff = expectTakeoff; // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     filterStatus.flags.touchdown = expectGndEffectTouchdown; // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
+    filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
 }
@@ -663,8 +663,8 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 
@@ -689,8 +689,8 @@ void NavEKF3_core::runYawEstimatorCorrection()
         return;
     }
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->_sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->_sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 

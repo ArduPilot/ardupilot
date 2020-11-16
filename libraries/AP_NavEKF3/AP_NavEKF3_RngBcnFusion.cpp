@@ -14,7 +14,7 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if ((frontend->_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcnAlignmentCompleted) {
+            if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcnAlignmentCompleted) {
                 if (!bcnOriginEstInit) {
                     bcnOriginEstInit = true;
                     bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
