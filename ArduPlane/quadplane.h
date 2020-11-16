@@ -163,6 +163,7 @@ public:
         float    throttle_mix;
         float    speed_scaler;
         uint8_t  transition_state;
+        uint8_t  assist;
     };
 
     MAV_TYPE get_mav_type(void) const;
