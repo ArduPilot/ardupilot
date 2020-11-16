@@ -1491,8 +1491,8 @@ private:
     uint8_t selected_airspeed;
 
     // source reset handling
-    AP_NavEKF_Source::SourceXY pos_source_last;   // position source on previous iteration (used to detect a changes)
-    bool pos_source_reset;                  // true when the position source has changed but the position has not yet been reset
+    AP_NavEKF_Source::SourceXY pos_source_last;     // position source on previous iteration (used to detect a changes)
+    bool pos_source_reset;                          // true when the position source has changed but the position has not yet been reset
     AP_NavEKF_Source::SourceYaw yaw_source_last;    // yaw source on previous iteration (used to detect a change)
     bool yaw_source_reset;                          // true when the yaw source has changed but the yaw has not yet been reset
 };
