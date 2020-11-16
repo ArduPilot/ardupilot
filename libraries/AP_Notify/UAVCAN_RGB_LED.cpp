@@ -17,12 +17,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "UAVCAN_RGB_LED.h"
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 
 #define LED_OFF 0
 #define LED_FULL_BRIGHT 255

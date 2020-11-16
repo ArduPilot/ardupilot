@@ -68,6 +68,10 @@ void AP_Logger_DataFlash::Init()
         return;
     }
 
+    if (use_32bit_address) {
+        Enter4ByteAddressMode();
+    }
+
     flash_died = false;
 
     AP_Logger_Block::Init();
@@ -107,35 +111,40 @@ bool AP_Logger_DataFlash::getSectorCount(void)
 
     uint32_t id = buffer[0] << 16 | buffer[1] << 8 | buffer[2];
 
-    uint32_t sectors = 0;
+    uint32_t blocks = 0;
 
     switch (id) {
     case JEDEC_ID_WINBOND_W25Q16:
     case JEDEC_ID_MICRON_M25P16:
-        sectors = 32;
-        df_PagePerSector = 256;
+        blocks = 32;
+        df_PagePerBlock = 256;
+        df_PagePerSector = 16;
         break;
     case JEDEC_ID_WINBOND_W25Q32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
-        sectors = 64;
-        df_PagePerSector = 256;
+        blocks = 64;
+        df_PagePerBlock = 256;
+        df_PagePerSector = 16;
         break;
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
-        sectors = 128;
-        df_PagePerSector = 256;
+        blocks = 128;
+        df_PagePerBlock = 256;
+        df_PagePerSector = 16;
         break;
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_CYPRESS_S25FL128L:
-        sectors = 256;
-        df_PagePerSector = 256;
+        blocks = 256;
+        df_PagePerBlock = 256;
+        df_PagePerSector = 16;
         break;
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
-        sectors = 512;
-        df_PagePerSector = 256;
+        blocks = 512;
+        df_PagePerBlock = 256;
+        df_PagePerSector = 16;
         use_32bit_address = true;
         break;
     default:
@@ -145,12 +154,11 @@ bool AP_Logger_DataFlash::getSectorCount(void)
     }
 
     df_PageSize = 256;
-    df_NumPages = sectors * df_PagePerSector;
+    df_NumPages = blocks * df_PagePerBlock;
     erase_cmd = JEDEC_BLOCK64_ERASE;
 
-    hal.scheduler->delay(2000);
     printf("SPI Flash 0x%08x found pages=%u erase=%uk\n",
-           id, df_NumPages, (df_PagePerSector * (uint32_t)df_PageSize)/1024);
+           id, df_NumPages, (df_PagePerBlock * (uint32_t)df_PageSize)/1024);
     return true;
 
 }
@@ -167,13 +175,16 @@ uint8_t AP_Logger_DataFlash::ReadStatusReg()
 
 bool AP_Logger_DataFlash::Busy()
 {
-    int32_t status = ReadStatusReg();
-    if (status < 0) {
-        return true;
-    }
-    return (status & JEDEC_STATUS_BUSY) != 0;
+    return (ReadStatusReg() & (JEDEC_STATUS_BUSY | JEDEC_STATUS_SRP0)) != 0;
 }
 
+void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
+{
+    WITH_SEMAPHORE(dev_sem);
+
+    const uint8_t cmd = 0xB7;
+    dev->transfer(&cmd, 1, NULL, 0);
+}
 
 /*
   send a command with an address
@@ -236,16 +247,27 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
 /*
   erase one sector (sizes varies with hw)
 */
-void AP_Logger_DataFlash::SectorErase(uint32_t sectorNum)
+void AP_Logger_DataFlash::SectorErase(uint32_t blockNum)
 {
     WriteEnable();
 
     WITH_SEMAPHORE(dev_sem);
 
-    uint32_t PageAdr = sectorNum * df_PageSize * df_PagePerSector;
+    uint32_t PageAdr = blockNum * df_PageSize * df_PagePerBlock;
     send_command_addr(erase_cmd, PageAdr);
 }
 
+/*
+  erase one 4k sector
+*/
+void AP_Logger_DataFlash::Sector4kErase(uint32_t sectorNum)
+{
+    WriteEnable();
+
+    WITH_SEMAPHORE(dev_sem);
+    uint32_t SectorAddr = sectorNum * df_PageSize * df_PagePerSector;
+    send_command_addr(JEDEC_SECTOR4_ERASE, SectorAddr);
+}
 
 void AP_Logger_DataFlash::StartErase()
 {
@@ -269,7 +291,6 @@ bool AP_Logger_DataFlash::InErase()
     return erase_start_ms != 0;
 }
 
-
 void AP_Logger_DataFlash::WriteEnable(void)
 {
     WaitReady();
@@ -280,10 +301,13 @@ void AP_Logger_DataFlash::WriteEnable(void)
 
 void AP_Logger_DataFlash::flash_test()
 {
+    // wait for the chip to be ready, this has been moved from Init()
+    hal.scheduler->delay(2000);
+
     for (uint8_t i=1; i<=20; i++) {
         printf("Flash fill %u\n", i);
-        if (i % df_PagePerSector == 0) {
-            SectorErase(i / df_PagePerSector);
+        if (i % df_PagePerBlock == 0) {
+            SectorErase(i / df_PagePerBlock);
         }
         memset(buffer, i, df_PageSize);
         BufferToPage(i);

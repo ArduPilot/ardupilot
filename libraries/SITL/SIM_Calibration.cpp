@@ -24,8 +24,8 @@
 
 #include <stdio.h>
 
-SITL::Calibration::Calibration(const char *home_str, const char *frame_str)
-    : Aircraft(home_str, frame_str)
+SITL::Calibration::Calibration(const char *frame_str)
+    : Aircraft(frame_str)
 {
     mass = 1.5f;
 }
@@ -45,7 +45,7 @@ void SITL::Calibration::update(const struct sitl_input &input)
         _angular_velocity_control(input, rot_accel);
     }
 
-    accel_body(0, 0, 0);
+    accel_body.zero();
     update_dynamics(rot_accel);
     update_position();
     time_advance();
@@ -172,6 +172,6 @@ void SITL::Calibration::_calibration_poses(Vector3f& rot_accel)
     r2.from_axis_angle(axis, rot_angle);
     dcm = r2 * dcm;
 
-    accel_body(0, 0, -GRAVITY_MSS);
+    accel_body = {0, 0, -GRAVITY_MSS};
     accel_body = dcm.transposed() * accel_body;
 }

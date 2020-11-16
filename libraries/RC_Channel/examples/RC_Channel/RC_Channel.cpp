@@ -29,7 +29,7 @@ public:
     RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
 
     RC_Channel_Example *channel(const uint8_t chan) override {
-        if (chan > NUM_RC_CHANNELS) {
+        if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
         }
         return &obj_channels[chan];
@@ -94,7 +94,7 @@ void loop()
 
     if (count++ == 0) {
         for (int i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
-            hal.console->printf("Ch %02d ", (unsigned)i+1);
+            hal.console->printf("Ch %02u ", (unsigned)i+1);
         }
         hal.console->printf("\n");
     }

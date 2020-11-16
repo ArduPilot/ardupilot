@@ -1,4 +1,5 @@
 #include "AP_Mount_SToRM32.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -58,8 +59,13 @@ void AP_Mount_SToRM32::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+                resend_now = true;
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
                 resend_now = true;
             }
             break;
@@ -151,3 +157,4 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     // store time of send
     _last_send = AP_HAL::millis();
 }
+#endif // HAL_MOUNT_ENABLED

@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <AP_HAL/AP_HAL.h>
@@ -19,13 +19,15 @@
 #include "AP_HAL_ChibiOS.h"
 #include "Scheduler.h"
 #include "Util.h"
+#include "GPIO.h"
 
 #include <AP_HAL_ChibiOS/UARTDriver.h>
 #include <AP_HAL_ChibiOS/AnalogIn.h>
 #include <AP_HAL_ChibiOS/Storage.h>
 #include <AP_HAL_ChibiOS/RCOutput.h>
 #include <AP_HAL_ChibiOS/RCInput.h>
-#include <AP_HAL_ChibiOS/CAN.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -34,8 +36,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
+#include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
-#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -57,6 +59,10 @@ THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
 #ifndef HAL_USE_EMPTY_STORAGE
 THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
+#ifndef HAL_NO_MONITOR_THREAD
+THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
+#endif
+
 Scheduler::Scheduler()
 {
 }
@@ -65,6 +71,15 @@ void Scheduler::init()
 {
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
+
+#ifndef HAL_NO_MONITOR_THREAD
+    // setup the monitor thread - this is used to detect software lockups
+    _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
+                     sizeof(_monitor_thread_wa),
+                     APM_MONITOR_PRIORITY,        /* Initial priority.    */
+                     _monitor_thread,             /* Thread function.     */
+                     this);                     /* Thread parameter.    */
+#endif
 
 #ifndef HAL_NO_TIMER_THREAD
     // setup the timer thread - this will call tasks at 1kHz
@@ -149,12 +164,12 @@ void Scheduler::boost_end(void)
  */
 void Scheduler::delay_microseconds_boost(uint16_t usec)
 {
-    if (in_main_thread()) {
+    if (!_priority_boosted && in_main_thread()) {
         set_high_priority();
         _priority_boosted = true;
+        _called_boost = true;
     }
     delay_microseconds(usec); //Suspends Thread for desired microseconds
-    _called_boost = true;
 }
 
 /*
@@ -211,7 +226,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
             return;
         }
     }
-    
+
     if (_num_io_procs < CHIBIOS_SCHEDULER_MAX_TIMER_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
@@ -237,24 +252,24 @@ void Scheduler::reboot(bool hold_in_bootloader)
     }
 #endif
 
-#ifndef NO_LOGGING
+#ifndef HAL_NO_LOGGING
     //stop logging
     if (AP_Logger::get_singleton()) {
         AP::logger().StopLogging();
     }
 
-    // stop sdcard driver, if active
-    sdcard_stop();
+    // unmount filesystem, if active
+    AP::FS().unmount();
 #endif
 
-#if defined(HAL_USE_RTC) && HAL_USE_RTC
+#if !defined(NO_FASTBOOT)
     // setup RTC for fast reboot
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
 
     // disable all interrupt sources
     port_disable();
-    
+
     // reboot
     NVIC_SystemReset();
 }
@@ -293,7 +308,7 @@ void Scheduler::_run_timers()
 void Scheduler::_timer_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_timer");
+    chRegSetThreadName("timer");
 
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
@@ -307,24 +322,117 @@ void Scheduler::_timer_thread(void *arg)
         // process any pending RC output requests
         hal.rcout->timer_tick();
 
-        if (sched->expect_delay_start != 0) {
-            uint32_t now = AP_HAL::millis();
-            if (now - sched->expect_delay_start <= sched->expect_delay_length) {
-                stm32_watchdog_pat();
-            }
+        if (sched->in_expected_delay()) {
+            sched->watchdog_pat();
         }
     }
 }
 
+/*
+  return true if we are in a period of expected delay. This can be
+  used to suppress error messages
+*/
+bool Scheduler::in_expected_delay(void) const
+{
+    if (!_initialized) {
+        // until setup() is complete we expect delays
+        return true;
+    }
+    if (expect_delay_start != 0) {
+        uint32_t now = AP_HAL::millis();
+        if (now - expect_delay_start <= expect_delay_length) {
+            return true;
+        }
+    }
+    return false;
+}
+
+#ifndef HAL_NO_MONITOR_THREAD
+void Scheduler::_monitor_thread(void *arg)
+{
+    Scheduler *sched = (Scheduler *)arg;
+    chRegSetThreadName("monitor");
+
+    while (!sched->_initialized) {
+        sched->delay(100);
+    }
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+#ifndef HAL_NO_LOGGING
+    uint8_t log_wd_counter = 0;
+#endif
+
+    while (true) {
+        sched->delay(100);
+        if (using_watchdog) {
+            stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+        }
+        uint32_t now = AP_HAL::millis();
+        uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
+        if (loop_delay >= 200) {
+            // the main loop has been stuck for at least
+            // 200ms. Starting logging the main loop state
+            const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+            if (AP_Logger::get_singleton()) {
+                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
+                                   AP_HAL::micros64(),
+                                   loop_delay,
+                                   pd.scheduler_task,
+                                   pd.internal_errors,
+                                   pd.internal_error_count,
+                                   pd.internal_error_last_line,
+                                   pd.last_mavlink_msgid,
+                                   pd.last_mavlink_cmd,
+                                   pd.semaphore_line,
+                                   pd.spi_count,
+                                   pd.i2c_count);
+                }
+        }
+        if (loop_delay >= 500) {
+            // at 500ms we declare an internal error
+            INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
+        }
+
+#ifndef HAL_NO_LOGGING
+    if (log_wd_counter++ == 10 && hal.util->was_watchdog_reset()) {
+        log_wd_counter = 0;
+        // log watchdog message once a second
+        const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
+        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIHHHHHHHIBIIn",
+                                   AP_HAL::micros64(),
+                                   pd.scheduler_task,
+                                   pd.internal_errors,
+                                   pd.internal_error_count,
+                                   pd.internal_error_last_line,
+                                   pd.last_mavlink_msgid,
+                                   pd.last_mavlink_cmd,
+                                   pd.semaphore_line,
+                                   pd.fault_line,
+                                   pd.fault_type,
+                                   pd.fault_addr,
+                                   pd.fault_thd_prio,
+                                   pd.fault_icsr,
+                                   pd.fault_lr,
+                                   pd.thread_name4);
+    }
+#endif // HAL_NO_LOGGING
+
+#ifndef IOMCU_FW
+    // setup GPIO interrupt quotas
+    hal.gpio->timer_tick();
+#endif
+    }
+}
+#endif // HAL_NO_MONITOR_THREAD
+
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_rcin");
+    chRegSetThreadName("rcin");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
     while (true) {
-        sched->delay_microseconds(2500);
+        sched->delay_microseconds(1000);
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
@@ -353,33 +461,37 @@ void Scheduler::_run_io(void)
 void Scheduler::_io_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_io");
+    chRegSetThreadName("io");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+#ifndef HAL_NO_LOGGING
     uint32_t last_sd_start_ms = AP_HAL::millis();
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#ifndef HAL_NO_LOGGING
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
-                sdcard_retry();
+                AP::FS().retry_mount();
             }
         }
+#endif
     }
 }
 
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
-    chRegSetThreadName("apm_storage");
+    chRegSetThreadName("storage");
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
@@ -389,11 +501,6 @@ void Scheduler::_storage_thread(void* arg)
         // process any pending storage writes
         hal.storage->_timer_tick();
     }
-}
-
-bool Scheduler::in_main_thread() const
-{
-    return get_main_thread() == chThdGetSelfX();
 }
 
 void Scheduler::system_initialized()
@@ -486,18 +593,60 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
   be used to prevent watchdog reset during expected long delays
   A value of zero cancels the previous expected delay
 */
+void Scheduler::_expect_delay_ms(uint32_t ms)
+{
+    if (!in_main_thread()) {
+        // only for main thread
+        return;
+    }
+
+    // pat once immediately
+    watchdog_pat();
+
+    WITH_SEMAPHORE(expect_delay_sem);
+
+    if (ms == 0) {
+        if (expect_delay_nesting > 0) {
+            expect_delay_nesting--;
+        }
+        if (expect_delay_nesting == 0) {
+            expect_delay_start = 0;
+        }
+    } else {
+        uint32_t now = AP_HAL::millis();
+        if (expect_delay_start != 0) {
+            // we already have a delay running, possibly extend it
+            uint32_t done = now - expect_delay_start;
+            if (expect_delay_length > done) {
+                ms = MAX(ms, expect_delay_length - done);
+            }
+        }
+        expect_delay_start = now;
+        expect_delay_length = ms;
+        expect_delay_nesting++;
+
+        // also put our priority below timer thread if we are boosted
+        boost_end();
+    }
+}
+
+/*
+  this is _expect_delay_ms() with check that we are in the main thread
+ */
 void Scheduler::expect_delay_ms(uint32_t ms)
 {
     if (!in_main_thread()) {
         // only for main thread
         return;
     }
-    if (ms == 0) {
-        expect_delay_start = 0;
-    } else {
-        expect_delay_start = AP_HAL::millis();
-        expect_delay_length = ms;
-    }
+    _expect_delay_ms(ms);
+}
+
+// pat the watchdog
+void Scheduler::watchdog_pat(void)
+{
+    stm32_watchdog_pat();
+    last_watchdog_pat_ms = AP_HAL::millis();
 }
 
 #endif // CH_CFG_USE_DYNAMIC

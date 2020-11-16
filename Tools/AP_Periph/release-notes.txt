@@ -1,0 +1,23 @@
+Release 1.1.0 14th May 2020
+---------------------------
+
+This is a major release with several significant bug fixes:
+
+ - fixed initial GPS timestamp which could cause ArduPilot to get bad
+   time sync
+
+ - fixed airspeed pressure wrap
+
+ - fixed rangefinder to send the RNGFND1_ADDR as sensor_id
+
+ - added distinctive LED blink pattern when waiting for UAVCAN node ID
+   allocation
+
+ - added HWESC build targets for HobbyWing ESC telemetry
+
+ - fixed RM3100 compass scaling bug
+
+Release 1.0.0 9th November 2019
+-------------------------------
+
+Initial stable release

@@ -223,11 +223,11 @@ void AP_Airspeed_MS4525::_timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-
-    WITH_SEMAPHORE(sem);
 
     if (_press_count > 0) {
         _pressure = _press_sum / _press_count;
@@ -242,11 +242,11 @@ bool AP_Airspeed_MS4525::get_differential_pressure(float &pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_MS4525::get_temperature(float &temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - _last_sample_time_ms) > 100) {
         return false;
     }
-
-    WITH_SEMAPHORE(sem);
 
     if (_temp_count > 0) {
         _temperature = _temp_sum / _temp_count;

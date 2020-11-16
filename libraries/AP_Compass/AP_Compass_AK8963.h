@@ -19,15 +19,15 @@ class AP_Compass_AK8963 : public AP_Compass_Backend
 public:
     /* Probe for AK8963 standalone on I2C bus */
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                     enum Rotation rotation = ROTATION_NONE);
+                                     enum Rotation rotation);
 
     /* Probe for AK8963 on auxiliary bus of MPU9250, connected through I2C */
     static AP_Compass_Backend *probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                             enum Rotation rotation = ROTATION_NONE);
+                                             enum Rotation rotation);
 
     /* Probe for AK8963 on auxiliary bus of MPU9250, connected through SPI */
     static AP_Compass_Backend *probe_mpu9250(uint8_t mpu9250_instance,
-                                             enum Rotation rotation = ROTATION_NONE);
+                                             enum Rotation rotation);
 
     static constexpr const char *name = "AK8963";
 
@@ -37,7 +37,7 @@ public:
 
 private:
     AP_Compass_AK8963(AP_AK8963_BusDriver *bus,
-                      enum Rotation rotation = ROTATION_NONE);
+                      enum Rotation rotation);
 
     bool init();
     void _make_factory_sensitivity_adjustment(Vector3f &field) const;

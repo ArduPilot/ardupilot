@@ -16,20 +16,29 @@
 #include <AP_HAL_ESP32/UARTDriver.h>
 #include <AP_Math/AP_Math.h>
 
-using namespace ESP32;
+#include "esp_log.h"
+
+extern const AP_HAL::HAL& hal;
+
+namespace ESP32 {
 
 UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
 
-UARTDriver::UARTDriver(uint8_t serial_num)
+void UARTDriver::vprintf(const char *fmt, va_list ap)
 {
-    _initialized = false;
-    uart_num = serial_num;
+
+	uart_port_t p = uart_desc[uart_num].port;
+	if (p == 0)
+		esp_log_writev(ESP_LOG_INFO, "", fmt, ap);
+	else
+		AP_HAL::UARTDriver::vprintf(fmt, ap);
 }
 
 void UARTDriver::begin(uint32_t b)
 {
     begin(b, 0, 0);
 }
+
 
 void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
@@ -49,12 +58,16 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                          uart_desc[uart_num].tx,
                          uart_desc[uart_num].rx,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+            //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
             uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
+
             _initialized = true;
         } else {
+			flush();
             uart_set_baudrate(p, b);
+
         }
     }
 }
@@ -71,6 +84,8 @@ void UARTDriver::end()
 
 void UARTDriver::flush()
 {
+	uart_port_t p = uart_desc[uart_num].port;
+	uart_flush(p);
 }
 
 bool UARTDriver::is_initialized()
@@ -87,6 +102,7 @@ bool UARTDriver::tx_pending()
 {
     return (_writebuf.available() > 0);
 }
+
 
 uint32_t UARTDriver::available()
 {
@@ -107,7 +123,7 @@ uint32_t UARTDriver::txspace()
 
 }
 
-int16_t UARTDriver::read()
+int16_t IRAM_ATTR UARTDriver::read()
 {
     if (!_initialized) {
         return -1;
@@ -119,7 +135,7 @@ int16_t UARTDriver::read()
     return byte;
 }
 
-void UARTDriver::_timer_tick(void)
+void IRAM_ATTR UARTDriver::_timer_tick(void)
 {
     if (!_initialized) {
         return;
@@ -128,7 +144,7 @@ void UARTDriver::_timer_tick(void)
     write_data();
 }
 
-void UARTDriver::read_data()
+void IRAM_ATTR UARTDriver::read_data()
 {
     uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
@@ -140,7 +156,7 @@ void UARTDriver::read_data()
     } while (count > 0);
 }
 
-void UARTDriver::write_data()
+void IRAM_ATTR UARTDriver::write_data()
 {
     uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
@@ -155,21 +171,29 @@ void UARTDriver::write_data()
     _write_mutex.give();
 }
 
-size_t UARTDriver::write(uint8_t c)
+size_t IRAM_ATTR UARTDriver::write(uint8_t c)
 {
     return write(&c,1);
 }
 
-size_t UARTDriver::write(const uint8_t *buffer, size_t size)
+size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
 {
     if (!_initialized) {
         return 0;
     }
-    if (!_write_mutex.take_nonblocking()) {
-        return 0;
-    }
+
+    _write_mutex.take_blocking();
+
+
     size_t ret = _writebuf.write(buffer, size);
     _write_mutex.give();
     return ret;
 }
 
+bool UARTDriver::discard_input()
+{
+    uart_port_t p = uart_desc[uart_num].port;
+	return uart_flush_input(p) == ESP_OK;
+}
+
+}

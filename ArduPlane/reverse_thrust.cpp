@@ -61,6 +61,10 @@ bool Plane::allow_reverse_thrust(void) const
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_WAYPOINT) &&
                     (nav_cmd == MAV_CMD_NAV_WAYPOINT ||
                      nav_cmd == MAV_CMD_NAV_SPLINE_WAYPOINT);
+
+        // we are on a landing pattern
+        allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_AUTO_LANDING_PATTERN) &&
+                mission.get_in_landing_sequence_flag();
         }
         break;
 
@@ -83,6 +87,9 @@ bool Plane::allow_reverse_thrust(void) const
     case Mode::Number::GUIDED:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_GUIDED);
         break;
+    case Mode::Number::TAKEOFF:
+        allow = false;
+        break;
     default:
         // all other control_modes are auto_throttle_mode=false.
         // If we are not controlling throttle, don't limit it.
@@ -90,7 +97,8 @@ bool Plane::allow_reverse_thrust(void) const
         break;
     }
 
-    return allow;
+    // cope with bitwise ops above
+    return allow != false;
 }
 
 /*

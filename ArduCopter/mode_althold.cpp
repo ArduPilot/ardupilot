@@ -6,7 +6,7 @@
  */
 
 // althold_init - initialise althold controller
-bool Copter::ModeAltHold::init(bool ignore_checks)
+bool ModeAltHold::init(bool ignore_checks)
 {
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -19,7 +19,7 @@ bool Copter::ModeAltHold::init(bool ignore_checks)
 
 // althold_run - runs the althold controller
 // should be called at 100hz or more
-void Copter::ModeAltHold::run()
+void ModeAltHold::run()
 {
     float takeoff_climb_rate = 0.0f;
 
@@ -48,32 +48,24 @@ void Copter::ModeAltHold::run()
     switch (althold_state) {
 
     case AltHold_MotorStopped:
-
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case AltHold_Landed_Ground_Idle:
-
-        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-        // FALLTHROUGH
+        FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
-
+        attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 
     case AltHold_Takeoff:
-
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i terms
-            set_throttle_takeoff();
         }
 
         // get take-off adjusted pilot and takeoff climb rates
@@ -96,7 +88,7 @@ void Copter::ModeAltHold::run()
 #endif
 
         // adjust climb rate using rangefinder
-        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);

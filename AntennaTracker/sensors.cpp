@@ -9,21 +9,6 @@ void Tracker::update_ahrs()
 }
 
 /*
-  initialise compass's location used for declination
- */
-void Tracker::init_compass_location(void)
-{
-    // update initial location used for declination
-    if (!compass_init_location) {
-        Location loc;
-        if (ahrs.get_position(loc)) {
-            compass.set_initial_location(loc.lat, loc.lng);
-            compass_init_location = true;
-        }
-    }
-}
-
-/*
   read and update compass
  */
 void Tracker::update_compass(void)
@@ -84,11 +69,6 @@ void Tracker::update_GPS(void)
                 current_loc = gps.location();
                 if (!set_home(current_loc)) {
                     // silently ignored
-                }
-
-                if (AP::compass().enabled()) {
-                    // Set compass declination automatically
-                    compass.set_initial_location(gps.location().lat, gps.location().lng);
                 }
                 ground_start_count = 0;
             }

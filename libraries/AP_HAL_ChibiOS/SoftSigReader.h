@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -36,6 +36,7 @@ class ChibiOS::SoftSigReader {
     friend class ChibiOS::RCInput;
 public:
     bool attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel);
+    void disable(void);
 
 private:
     uint32_t *signal;
@@ -48,7 +49,7 @@ private:
     uint32_t dmamode;
     ICUConfig icucfg;
     ICUDriver* _icu_drv = nullptr;
-    typedef struct PACKED {
+    typedef struct {
         uint32_t w0;
         uint32_t w1;
     } pulse_t;
@@ -57,4 +58,3 @@ private:
 };
 
 #endif // HAL_USE_ICU
-

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 
 // Data timeout
 #define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500
@@ -20,7 +20,7 @@ public:
     void update(void) override;
 
     // Get update from mavlink
-    void handle_msg(mavlink_message_t *msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
 protected:
 

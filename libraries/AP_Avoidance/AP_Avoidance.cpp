@@ -1,8 +1,11 @@
 #include "AP_Avoidance.h"
 
+#if HAL_ADSB_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 #include <limits>
+#include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define AVOIDANCE_DEBUGGING 0
@@ -14,7 +17,7 @@ extern const AP_HAL::HAL& hal;
     #define AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT        300
     #define AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT       300
     #define AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT        100
-    #define AP_AVOIDANCE_RECOVERY_DEFAULT               AP_AVOIDANCE_RECOVERY_RESUME_IF_AUTO_ELSE_LOITER
+    #define AP_AVOIDANCE_RECOVERY_DEFAULT               RecoveryAction::RESUME_IF_AUTO_ELSE_LOITER
     #define AP_AVOIDANCE_FAIL_ACTION_DEFAULT            MAV_COLLISION_ACTION_REPORT
 #else // APM_BUILD_TYPE(APM_BUILD_ArduCopter), Rover, Boat
     #define AP_AVOIDANCE_WARN_TIME_DEFAULT              30
@@ -23,7 +26,7 @@ extern const AP_HAL::HAL& hal;
     #define AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT        300
     #define AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT       100
     #define AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT        100
-    #define AP_AVOIDANCE_RECOVERY_DEFAULT               AP_AVOIDANCE_RECOVERY_RTL
+    #define AP_AVOIDANCE_RECOVERY_DEFAULT               RecoveryAction::RTL
     #define AP_AVOIDANCE_FAIL_ACTION_DEFAULT            MAV_COLLISION_ACTION_REPORT
 #endif
 
@@ -47,7 +50,6 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Param: F_ACTION
     // @DisplayName: Collision Avoidance Behavior
     // @Description: Specifies aircraft behaviour when a collision is imminent
-    // The following values should come from the mavlink COLLISION_ACTION enum
     // @Values: 0:None,1:Report,2:Climb Or Descend,3:Move Horizontally,4:Move Perpendicularly in 3D,5:RTL,6:Hover
     // @User: Advanced
     AP_GROUPINFO("F_ACTION",    2, AP_Avoidance, _fail_action, AP_AVOIDANCE_FAIL_ACTION_DEFAULT),
@@ -55,7 +57,6 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Param: W_ACTION
     // @DisplayName: Collision Avoidance Behavior - Warn
     // @Description: Specifies aircraft behaviour when a collision may occur
-    // The following values should come from the mavlink COLLISION_ACTION enum
     // @Values: 0:None,1:Report
     // @User: Advanced
     AP_GROUPINFO("W_ACTION",    3, AP_Avoidance, _warn_action, MAV_COLLISION_ACTION_REPORT),
@@ -65,7 +66,7 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Description: Determines what the aircraft will do after a fail event is resolved
     // @Values: 0:Remain in AVOID_ADSB,1:Resume previous flight mode,2:RTL,3:Resume if AUTO else Loiter
     // @User: Advanced
-    AP_GROUPINFO("F_RCVRY",     4, AP_Avoidance, _fail_recovery, AP_AVOIDANCE_RECOVERY_DEFAULT),
+    AP_GROUPINFO("F_RCVRY",     4, AP_Avoidance, _fail_recovery, uint8_t(AP_AVOIDANCE_RECOVERY_DEFAULT)),
 
     // @Param: OBS_MAX
     // @DisplayName: Maximum number of obstacles to track
@@ -125,11 +126,14 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Avoidance::AP_Avoidance(AP_AHRS &ahrs, AP_ADSB &adsb) :
-    _ahrs(ahrs),
+AP_Avoidance::AP_Avoidance(AP_ADSB &adsb) :
     _adsb(adsb)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Avoidance must be singleton");
+    }
+    _singleton = this;
 }
 
 /*
@@ -166,7 +170,7 @@ void AP_Avoidance::deinit(void)
         delete [] _obstacles;
         _obstacles = nullptr;
         _obstacles_allocated = 0;
-        handle_recovery(AP_AVOIDANCE_RECOVERY_RTL);
+        handle_recovery(RecoveryAction::RTL);
     }
     _obstacle_count = 0;
 }
@@ -252,7 +256,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
     return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel);
 }
 
-uint32_t AP_Avoidance::src_id_for_adsb_vehicle(AP_ADSB::adsb_vehicle_t vehicle) const
+uint32_t AP_Avoidance::src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const
 {
     // TODO: need to include squawk code and callsign
     return vehicle.info.ICAO_address;
@@ -391,6 +395,20 @@ MAV_COLLISION_THREAT_LEVEL AP_Avoidance::current_threat_level() const {
     return _obstacles[_current_most_serious_threat].threat_level;
 }
 
+void AP_Avoidance::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour) const
+{
+    const mavlink_collision_t packet{
+        id: threat.src_id,
+        time_to_minimum_delta: threat.time_to_closest_approach,
+        altitude_minimum_delta: threat.closest_approach_z,
+        horizontal_minimum_delta: threat.closest_approach_xy,
+        src: MAV_COLLISION_SRC_ADSB,
+        action: (uint8_t)behaviour,
+        threat_level: (uint8_t)threat.threat_level,
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_COLLISION, (const char *)&packet);
+}
+
 void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
 {
     if (threat == nullptr) {
@@ -410,7 +428,7 @@ void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
         _gcs_cleared_messages_first_sent = 0;
     }
     if (now - threat->last_gcs_report_time > _gcs_notify_interval * 1000) {
-        GCS_MAVLINK::send_collision_all(*threat, mav_avoidance_action());
+        send_collision_all(*threat, mav_avoidance_action());
         threat->last_gcs_report_time = now;
     }
 
@@ -436,6 +454,8 @@ bool AP_Avoidance::obstacle_is_more_serious_threat(const AP_Avoidance::Obstacle 
 
 void AP_Avoidance::check_for_threats()
 {
+    const AP_AHRS &_ahrs = AP::ahrs();
+
     Location my_loc;
     if (!_ahrs.get_position(my_loc)) {
         // if we don't know our own location we can't determine any threat level
@@ -504,11 +524,11 @@ void AP_Avoidance::update()
 
     check_for_threats();
 
-    // notify GCS of most serious thread
-    handle_threat_gcs_notify(most_serious_threat());
-
     // avoid object (if necessary)
     handle_avoidance_local(most_serious_threat());
+
+    // notify GCS of most serious thread
+    handle_threat_gcs_notify(most_serious_threat());
 }
 
 void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
@@ -522,7 +542,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
             action = (MAV_COLLISION_ACTION)_fail_action.get();
             Location my_loc;
             if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
-             _ahrs.get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+                AP::ahrs().get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
 			}
@@ -536,7 +556,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
         if (((now - _last_state_change_ms) > AP_AVOIDANCE_STATE_RECOVERY_TIME_MS) || (new_threat_level > _threat_level)) {
             // handle recovery from high threat level
             if (_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
-                handle_recovery(_fail_recovery);
+                handle_recovery(RecoveryAction(_fail_recovery.get()));
                 _latest_action = MAV_COLLISION_ACTION_NONE;
             }
 
@@ -597,7 +617,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     }
 
     Location my_abs_pos;
-    if (!_ahrs.get_position(my_abs_pos)) {
+    if (!AP::ahrs().get_position(my_abs_pos)) {
         // we should not get to here!  If we don't know our position
         // we can't know if there are any threats, for starters!
         return false;
@@ -649,3 +669,18 @@ Vector2f AP_Avoidance::perpendicular_xy(const Location &p1, const Vector3f &v1, 
     Vector2f ret_xy = Vector2f::perpendicular(delta_p_n, v1n);
     return ret_xy;
 }
+
+
+// singleton instance
+AP_Avoidance *AP_Avoidance::_singleton;
+
+namespace AP {
+
+AP_Avoidance *ap_avoidance()
+{
+    return AP_Avoidance::get_singleton();
+}
+
+}
+
+#endif // HAL_ADSB_ENABLED

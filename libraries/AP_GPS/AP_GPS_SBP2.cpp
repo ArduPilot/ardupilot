@@ -51,7 +51,7 @@ do {                                            \
 #if SBP_INFOREPORTING
  # define Info(fmt, args ...)                                               \
 do {                                                                        \
-    gcs().send_text(MAV_SEVERITY_INFO, fmt "\n", ## args); \
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt "\n", ## args); \
 } while(0) 
 #else
  # define Info(fmt, args ...)

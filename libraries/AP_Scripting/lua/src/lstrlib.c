@@ -24,6 +24,13 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wunused-function"
+#if defined(__GNUC__) &&  __GNUC__ >= 7 || defined(__clang_major__) && __clang_major__ >= 11
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+#endif
+
 
 /*
 ** maximum number of captures that a pattern can do during
@@ -1542,7 +1549,7 @@ static int str_unpack (lua_State *L) {
 static const luaL_Reg strlib[] = {
   {"byte", str_byte},
   {"char", str_char},
-  {"dump", str_dump},
+//  {"dump", str_dump},
   {"find", str_find},
   {"format", str_format},
   {"gmatch", gmatch},

@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_Motors.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
-
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -45,7 +39,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _throttle_filter.reset(0.0f);
 
     // init limit flags
-    limit.roll_pitch = true;
+    limit.roll = true;
+    limit.pitch = true;
     limit.yaw = true;
     limit.throttle_lower = true;
     limit.throttle_upper = true;
@@ -55,8 +50,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
 
 void AP_Motors::armed(bool arm)
 {
-    if (_flags.armed != arm) {
-        _flags.armed = arm;
+    if (_armed != arm) {
+        _armed = arm;
         AP_Notify::flags.armed = arm;
         if (!arm) {
             save_params_on_disarm();
@@ -66,7 +61,7 @@ void AP_Motors::armed(bool arm)
 
 void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
 {
-    if (_flags.armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
+    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
         _spool_desired = spool;
     }
 };
@@ -150,8 +145,8 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
 uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 {
     uint32_t mask2 = 0;
-    for (uint8_t i=0; i<32; i++) {
-        uint32_t bit = 1UL<<i;
+    for (uint8_t i = 0; i < 32; i++) {
+        uint32_t bit = 1UL << i;
         if (mask & bit) {
             SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
             mask2 |= SRV_Channels::get_output_channel_mask(function);
@@ -166,12 +161,19 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
 void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
-    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
         uint8_t chan;
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
         }
+    }
+}
+
+namespace AP {
+    AP_Motors *motors()
+    {
+        return AP_Motors::get_singleton();
     }
 }

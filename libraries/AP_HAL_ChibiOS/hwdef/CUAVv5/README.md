@@ -12,7 +12,7 @@ The full schematics of the board are available here:
  - Three IMUs: ICM20689, MPU6000 and BMI055
  - internal vibration isolation for IMUs
  - MS5611 SPI barometer
- - builtin SPI IST8310 magnetometer
+ - builtin I2C IST8310 magnetometer
  - microSD card slot
  - 6 UARTs plus USB
  - 14 PWM outputs

@@ -82,9 +82,7 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // high retries for init
     _dev->set_retries(10);
@@ -135,6 +133,9 @@ bool AP_Baro_MS56XX::_init()
     memset(&_accum, 0, sizeof(_accum));
 
     _instance = _frontend.register_sensor();
+
+    _dev->set_device_type(DEVTYPE_BARO_MS5611);
+    set_bus_id(_instance, _dev->get_bus_id());
 
     if (_ms56xx_type == BARO_MS5837) {
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
@@ -264,9 +265,10 @@ void AP_Baro_MS56XX::_timer(void)
     }
 
     /* if we had a failed read we are all done */
-    if (adc_val == 0) {
+    if (adc_val == 0 || adc_val == 0xFFFFFF) {
         // a failed read can mean the next returned value will be
-        // corrupt, we must discard it
+        // corrupt, we must discard it. This copes with MISO being
+        // pulled either high or low
         _discard_next = true;
         return;
     }

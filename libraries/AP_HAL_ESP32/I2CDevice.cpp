@@ -16,14 +16,13 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL_ESP32/Semaphores.h>
 #include "Scheduler.h"
 
 using namespace ESP32;
 
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
-
-extern const AP_HAL::HAL& hal;
 
 I2CBusDesc i2c_bus_desc[] = { HAL_ESP32_I2C_BUSES };
 
@@ -50,7 +49,7 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
-    _retries(3),
+    _retries(10),
     _address(address),
     bus(I2CDeviceManager::businfo[busnum])
 {
@@ -69,9 +68,10 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
         return false;
     }
+
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     if (send_len != 0 && send != nullptr) {
         //tx with optional rx (after tx)
@@ -87,7 +87,8 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
     }
     i2c_master_stop(cmd);
-    bool result = false;
+
+	bool result = false;
     TickType_t timeout = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock / portTICK_PERIOD_MS;
     for (int i = 0; !result && i < _retries; i++) {
         result = (i2c_master_cmd_begin(bus.port, cmd, timeout) == ESP_OK);
@@ -96,7 +97,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
             i2c_reset_rx_fifo(bus.port);
         }
     }
+
     i2c_cmd_link_delete(cmd);
+
     return result;
 }
 

@@ -40,7 +40,7 @@ class I2CBus : public  DeviceBus {
 public:
     I2CBus():DeviceBus(Scheduler::I2C_PRIORITY) {};
     i2c_port_t port;
-    uint32_t bus_clock;
+	uint32_t bus_clock;
 };
 
 class I2CDevice : public AP_HAL::I2CDevice {
@@ -99,6 +99,7 @@ private:
     uint8_t _retries;
     uint8_t _address;
     char *pname;
+
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {
@@ -136,4 +137,3 @@ public:
     uint32_t get_bus_mask_internal(void) const override;
 };
 }
-

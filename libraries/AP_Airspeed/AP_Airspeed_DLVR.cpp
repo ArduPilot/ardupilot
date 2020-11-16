@@ -12,6 +12,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+/*
+  driver for DLVR differential airspeed sensor
+  https://www.allsensors.com/products/DLVR-L01D
+ */
 
 #include "AP_Airspeed_DLVR.h"
 #include <AP_Math/AP_Math.h>
@@ -27,8 +31,9 @@ extern const AP_HAL::HAL &hal;
 #endif
 
 
-AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
+AP_Airspeed_DLVR::AP_Airspeed_DLVR(AP_Airspeed &_frontend, uint8_t _instance, const float _range_inH2O) :
+    AP_Airspeed_Backend(_frontend, _instance),
+    range_inH2O(_range_inH2O)
 {}
 
 // probe and initialise the sensor
@@ -53,7 +58,6 @@ bool AP_Airspeed_DLVR::init()
 #define PRESSURE_SHIFT 16
 #define PRESSURE_MASK ((1 << 14) - 1)
 
-#define DLVR_FSS       5.0f // assumes 5 inch H2O sensor
 #define DLVR_OFFSET 8192.0f
 #define DLVR_SCALE 16384.0f
 
@@ -79,7 +83,7 @@ void AP_Airspeed_DLVR::timer()
     uint32_t pres_raw = (data >> PRESSURE_SHIFT)    & PRESSURE_MASK;
     uint32_t temp_raw = (data >> TEMPERATURE_SHIFT) & TEMPERATURE_MASK;
 
-    float press_h2o = 1.25f * 2.0f * DLVR_FSS * ((pres_raw - DLVR_OFFSET) / DLVR_SCALE);
+    float press_h2o = 1.25f * 2.0f * range_inH2O * ((pres_raw - DLVR_OFFSET) / DLVR_SCALE);
     float temp = temp_raw * (200.0f / 2047.0f) - 50.0f;
 
     WITH_SEMAPHORE(sem);
@@ -94,17 +98,16 @@ void AP_Airspeed_DLVR::timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_DLVR::get_differential_pressure(float &_pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
 
-    {
-        WITH_SEMAPHORE(sem);
-        if (press_count > 0) {
-            pressure = pressure_sum / press_count;
-            press_count = 0;
-            pressure_sum = 0;
-        }
+    if (press_count > 0) {
+        pressure = pressure_sum / press_count;
+        press_count = 0;
+        pressure_sum = 0;
     }
 
     _pressure = pressure;
@@ -114,11 +117,11 @@ bool AP_Airspeed_DLVR::get_differential_pressure(float &_pressure)
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_DLVR::get_temperature(float &_temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-
-    WITH_SEMAPHORE(sem);
 
     if (temp_count > 0) {
         temperature = temperature_sum / temp_count;

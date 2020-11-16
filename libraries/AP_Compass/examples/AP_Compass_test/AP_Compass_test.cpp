@@ -21,6 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -30,11 +31,13 @@ static AP_BoardConfig board_config;
 class DummyVehicle {
 public:
     AP_AHRS_DCM ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
+    AP_Baro baro; // Compass tries to set magnetic model based on location.
 };
 
 static DummyVehicle vehicle;
 // create compass object
 static Compass compass;
+static AP_SerialManager serial_manager;
 
 uint32_t timer;
 

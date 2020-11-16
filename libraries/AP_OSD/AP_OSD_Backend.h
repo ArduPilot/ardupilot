@@ -20,7 +20,8 @@
 #include <AP_OSD/AP_OSD.h>
 
 
-class AP_OSD_Backend {
+class AP_OSD_Backend
+{
 
 public:
     //constructor
@@ -40,6 +41,9 @@ public:
 
     //update screen
     virtual void flush() = 0;
+
+    // return a correction factor used to display angles correctly
+    virtual float get_aspect_ratio_correction() const {return 1;}
 
     //clear screen
     //should match hw blink
@@ -69,6 +73,12 @@ protected:
     }
 
     int8_t blink_phase;
+
+    enum vid_format {
+        FORMAT_UNKNOWN = 0,
+        FORMAT_NTSC = 1,
+        FORMAT_PAL = 2,
+    } _format;
 };
 
 

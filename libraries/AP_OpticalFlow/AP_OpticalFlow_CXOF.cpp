@@ -19,10 +19,10 @@
    CXOF serial packet description
    byte0: header (0xFE)
    byte1: reserved
-   byte2: x-motion high byte;
-   byte3: x-motion low byte;
-   byte4: y-motion high byte;
-   byte5: y-motion low byte;
+   byte2: x-motion low byte;
+   byte3: x-motion high byte;
+   byte4: y-motion low byte;
+   byte5: y-motion high byte;
    byte6: t-motion
    byte7: surface quality
    byte8: footer (0xAA)
@@ -32,7 +32,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_OpticalFlow_CXOF.h"
-#include <AP_Math/edc.h>
+#include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <utility>

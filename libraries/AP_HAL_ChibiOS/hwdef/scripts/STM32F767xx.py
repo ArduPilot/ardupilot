@@ -38,7 +38,13 @@ mcu = {
         # split DTCM in two to allow for fast checking of IS_DMA_SAFE in bouncebuffer code
         (0x20000000,  64, 1), # DTCM, DMA safe
         (0x20010000,  64, 2), # DTCM, 2nd half, used as fast memory. This lowers memory contention in the EKF code
-    ]
+    ],
+
+    'EXPECTED_CLOCK' : 216000000,
+
+    # this MCU has M7 instructions and hardware double precision
+    'CORTEX'    : 'cortex-m7',
+    'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 }
 
 DMA_Map = {
@@ -287,7 +293,6 @@ AltFunction_map = {
 	"PB0:EVENTOUT"      	:	15,
 	"PB0:LCD_R3"        	:	9,
 	"PB0:OTG_HS_ULPI_D1"	:	10,
-	"PB0:TIM1_CH2N"     	:	1,
 	"PB0:TIM3_CH3"      	:	2,
 	"PB0:TIM8_CH2N"     	:	3,
 	"PB0:DFSDM1_CKOUT"     	:	6,
@@ -365,7 +370,6 @@ AltFunction_map = {
 	"PB1:EVENTOUT"      	:	15,
 	"PB1:LCD_R6"        	:	9,
 	"PB1:OTG_HS_ULPI_D2"	:	10,
-	"PB1:TIM1_CH3N"     	:	1,
 	"PB1:TIM3_CH4"      	:	2,
 	"PB1:TIM8_CH3N"     	:	3,
 	"PB1:DFSDM1_DATIN1"    	:	6,
@@ -544,7 +548,7 @@ AltFunction_map = {
 	"PC6:USART6_TX"     	:	8,
 	"PC6:DFSDM1_CKIN3"     	:	7,
 	"PC6:FMC_NWAIT"      	:	9,
-	"PC6:SDMMC_D6"     	:	10,
+    "PC6:SDMMC2_D6"     	:	10,
 	"PC7:DCMI_D1"       	:	13,
 	"PC7:EVENTOUT"      	:	15,
 	"PC7:I2S3_MCK"      	:	6,

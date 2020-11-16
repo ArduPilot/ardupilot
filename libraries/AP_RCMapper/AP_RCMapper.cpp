@@ -45,7 +45,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    // @Values{Sub}: 1-8
+    // @Values{Sub}: 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8
     AP_GROUPINFO_FRAME("FORWARD",    4, RCMapper, _ch_forward, 6, AP_PARAM_FRAME_SUB),
 
     // @Param: LATERAL
@@ -55,14 +55,25 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    // @Values{Sub}: 1-8
+    // @Values{Sub}: 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8
     AP_GROUPINFO_FRAME("LATERAL",    5, RCMapper, _ch_lateral, 7, AP_PARAM_FRAME_SUB),
 
     AP_GROUPEND
 };
 
+// singleton instance
+RCMapper *RCMapper::_singleton;
+
 // object constructor.
 RCMapper::RCMapper(void)
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("RCMapper must be singleton");
+    }
     AP_Param::setup_object_defaults(this, var_info);
+    _singleton = this;
+}
+
+RCMapper *AP::rcmap() {
+    return RCMapper::get_singleton();
 }

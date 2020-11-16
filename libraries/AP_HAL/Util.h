@@ -11,30 +11,23 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    virtual void set_soft_armed(const bool b) { soft_armed = b; }
+    void set_soft_armed(const bool b);
     bool get_soft_armed() const { return soft_armed; }
+
+    // return the time that the armed state last changed
+    uint32_t get_last_armed_change() const { return last_armed_change_ms; };
 
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
 
     // return true if safety was off and this was a watchdog reset
-    virtual bool was_watchdog_safety_off() const { return false; }
+    bool was_watchdog_safety_off() const {
+        return was_watchdog_reset() && persistent_data.safety_state == SAFETY_ARMED;
+    }
 
     // return true if this is a watchdog reset boot and we were armed
-    virtual bool was_watchdog_armed() const { return false; }
+    bool was_watchdog_armed() const { return was_watchdog_reset() && persistent_data.armed; }
 
-    // backup home state for restore on watchdog reset
-    virtual void set_backup_home_state(int32_t lat, int32_t lon, int32_t alt_cm) const {}
-
-    // backup home state for restore on watchdog reset
-    virtual bool get_backup_home_state(int32_t &lat, int32_t &lon, int32_t &alt_cm) const { return false; }
-
-    // backup atttude for restore on watchdog reset
-    virtual void set_backup_attitude(int32_t roll_cd, int32_t pitch_cd, int32_t yaw_cd) const {}
-
-    // get watchdog reset attitude
-    virtual bool get_backup_attitude(int32_t &roll_cd, int32_t &pitch_cd, int32_t &yaw_cd) const { return false; }
-    
     virtual const char* get_custom_log_directory() const { return nullptr; }
     virtual const char* get_custom_terrain_directory() const { return nullptr;  }
     virtual const char *get_custom_storage_directory() const { return nullptr;  }
@@ -44,14 +37,51 @@ public:
         return HAL_PARAM_DEFAULTS_PATH;
     }
 
+    // set command line parameters to the eeprom on start
+    virtual void set_cmdline_parameters() {};
+
     // run a debug shall on the given stream if possible. This is used
     // to support dropping into a debug shell to run firmware upgrade
     // commands
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
-    enum safety_state {
+    enum safety_state : uint8_t {
         SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
     };
+
+    /*
+      persistent data structure. This data is restored on boot if
+      there has been a watchdog reset.  The data in this structure
+      should only be read if was_watchdog_reset() is true
+      Note that on STM32 this structure is limited to 76 bytes
+     */
+    struct PersistentData {
+        float roll_rad, pitch_rad, yaw_rad; // attitude
+        int32_t home_lat, home_lon, home_alt_cm; // home position
+        uint32_t fault_addr;
+        uint32_t fault_icsr;
+        uint32_t fault_lr;
+        uint32_t internal_errors;
+        uint16_t internal_error_count;
+        uint16_t internal_error_last_line;
+        uint32_t spi_count;
+        uint32_t i2c_count;
+        uint32_t i2c_isr_count;
+        uint16_t waypoint_num;
+        uint16_t last_mavlink_msgid;
+        uint16_t last_mavlink_cmd;
+        uint16_t semaphore_line;
+        uint16_t fault_line;
+        uint8_t fault_type;
+        uint8_t fault_thd_prio;
+        char thread_name4[4];
+        int8_t scheduler_task;
+        bool armed; // true if vehicle was armed
+        enum safety_state safety_state;
+    };
+    struct PersistentData persistent_data;
+    // last_persistent_data is only filled in if we've suffered a watchdog reset
+    struct PersistentData last_persistent_data;
 
     /*
       return state of safety switch, if applicable
@@ -68,8 +98,15 @@ public:
      */
     virtual uint64_t get_hw_rtc() const;
 
+    enum class FlashBootloader {
+        OK=0,
+        NO_CHANGE=1,
+        FAIL=2,
+        NOT_AVAILABLE=3,
+    };
+
     // overwrite bootloader (probably with one from ROMFS)
-    virtual bool flash_bootloader() { return false; }
+    virtual FlashBootloader flash_bootloader() { return FlashBootloader::NOT_AVAILABLE; }
 
     /*
       get system identifier (eg. serial number)
@@ -129,20 +166,28 @@ public:
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) = 0;
     virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+#if USE_LIBC_REALLOC
+    virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
+#else
+    virtual void *std_realloc(void *ptr, size_t new_size) = 0;
+#endif // USE_LIBC_REALLOC
 #endif // ENABLE_HEAP
+
 
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
     virtual uint32_t available_memory(void) { return 4096; }
 
-    /*
-      initialise (or re-initialise) filesystem storage
-     */
-    virtual bool fs_init(void) { return false; }
+    // attempt to trap the processor, presumably to enter an attached debugger
+    virtual bool trap() const { return false; }
+
+    // request information on running threads
+    virtual size_t thread_info(char *buf, size_t bufsize) { return 0; }
 
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
     bool soft_armed = false;
+    uint32_t last_armed_change_ms;
 };

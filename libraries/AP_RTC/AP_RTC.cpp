@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,11 +29,20 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TYPES",  1, AP_RTC, allowed_types, 1),
 
+    // @Param: _TZ_MIN
+    // @DisplayName: Timezone offset from UTC
+    // @Description: Adds offset in +- minutes from UTC to calculate local time
+    // @Range: -720 +840
+    // @User: Advanced
+    AP_GROUPINFO("_TZ_MIN",  2, AP_RTC, tz_min, 0),
+    
     AP_GROUPEND
 };
 
 void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
+    const uint64_t oldest_acceptable_date = 1546300800000; // 2019-01-01 0:00
+
     if (type >= rtc_source_type) {
         // e.g. system-time message when we've been set by the GPS
         return;
@@ -43,12 +53,18 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         return;
     }
 
+    // don't allow old times
+    if (time_utc_usec < oldest_acceptable_date) {
+        return;
+    }
+
     const uint64_t now = AP_HAL::micros64();
     const int64_t tmp = int64_t(time_utc_usec) - int64_t(now);
     if (tmp < rtc_shift) {
         // can't allow time to go backwards, ever
         return;
     }
+    WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
 
@@ -59,8 +75,10 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 
     rtc_source_type = type;
 
+#ifndef HAL_NO_GCS
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
+#endif
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const
@@ -72,7 +90,7 @@ bool AP_RTC::get_utc_usec(uint64_t &usec) const
     return true;
 }
 
-bool AP_RTC::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int32_t &ms)
+bool AP_RTC::get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
 {
      // get time of day in ms
     uint64_t time_ms = 0;
@@ -95,8 +113,37 @@ bool AP_RTC::get_system_clock_utc(int32_t &hour, int32_t &min, int32_t &sec, int
     return true;
 }
 
-// get milliseconds from now to a target time of day expressed as hour, min, sec, ms
-// match starts from first value that is not -1. I.e. specifying hour=-1, minutes=10 will ignore the hour and return time until 10 minutes past 12am (utc)
+bool AP_RTC::get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms)
+{
+     // get local time of day in ms
+    uint64_t time_ms = 0;
+    uint64_t ms_local = 0;
+    if (!get_utc_usec(time_ms)) {
+        return false;
+    }
+    time_ms /= 1000U;
+    ms_local = time_ms + (tz_min * 60000);
+
+    // separate time into ms, sec, min, hour and days but all expressed in milliseconds
+    ms = ms_local % 1000;
+    uint32_t sec_ms = (ms_local % (60 * 1000)) - ms;
+    uint32_t min_ms = (ms_local % (60 * 60 * 1000)) - sec_ms - ms;
+    uint32_t hour_ms = (ms_local % (24 * 60 * 60 * 1000)) - min_ms - sec_ms - ms;
+
+    // convert times as milliseconds into appropriate units
+    sec = sec_ms / 1000;
+    min = min_ms / (60 * 1000);
+    hour = hour_ms / (60 * 60 * 1000);
+
+    return true;
+}
+
+// get milliseconds from now to a target time of day expressed as
+// hour, min, sec, ms.  Match starts from first value that is not
+// -1. I.e. specifying hour=-1, minutes=10 will ignore the hour and
+// return time until 10 minutes past 12am (utc) NOTE: if this time has
+// just past then you can expect a return value of roughly 86340000 -
+// the number of milliseconds in a day.
 uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms)
 {
     // determine highest value specified (0=none, 1=ms, 2=sec, 3=min, 4=hour)
@@ -115,7 +162,8 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
     }
 
     // get start_time_ms as h, m, s, ms
-    int32_t curr_hour, curr_min, curr_sec, curr_ms;
+    uint8_t curr_hour, curr_min, curr_sec;
+    uint16_t curr_ms;
     if (!get_system_clock_utc(curr_hour, curr_min, curr_sec, curr_ms)) {
         return 0;
     }
@@ -157,6 +205,48 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
     return static_cast<uint32_t>(total_delay_ms);
 }
 
+
+/*
+  mktime replacement from Samba
+ */
+time_t AP_RTC::mktime(const struct tm *t)
+{
+    time_t epoch = 0;
+    int n;
+    int mon [] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }, y, m, i;
+    const unsigned MINUTE = 60;
+    const unsigned HOUR = 60*MINUTE;
+    const unsigned DAY = 24*HOUR;
+    const unsigned YEAR = 365*DAY;
+
+    if (t->tm_year < 70) {
+        return (time_t)-1;
+    }
+
+    n = t->tm_year + 1900 - 1;
+    epoch = (t->tm_year - 70) * YEAR +
+            ((n / 4 - n / 100 + n / 400) - (1969 / 4 - 1969 / 100 + 1969 / 400)) * DAY;
+
+    y = t->tm_year + 1900;
+    m = 0;
+
+    for (i = 0; i < t->tm_mon; i++) {
+        epoch += mon [m] * DAY;
+        if (m == 1 && y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) {
+            epoch += DAY;
+        }
+
+        if (++m > 11) {
+            m = 0;
+            y++;
+        }
+    }
+
+    epoch += (t->tm_mday - 1) * DAY;
+    epoch += t->tm_hour * HOUR + t->tm_min * MINUTE + t->tm_sec;
+
+    return epoch;
+}
 
 // singleton instance
 AP_RTC *AP_RTC::_singleton;

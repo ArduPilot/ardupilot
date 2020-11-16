@@ -6,6 +6,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
@@ -134,13 +135,9 @@ public:
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
-    // Command euler yaw rate and pitch angle with roll angle specified in body frame with multicopter style controls
+    // Command euler yaw rate and pitch angle with roll angle specified in body frame
     // (used only by tailsitter quadplanes)
-    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll_m(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
-
-    // Command euler yaw rate and pitch angle with roll angle specified in body frame with plane style controls
-    // (used only by tailsitter quadplanes)
-    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll_p(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
@@ -192,6 +189,24 @@ public:
     // Set z-axis angular velocity in centidegrees/s
     void rate_bf_yaw_target(float rate_cds) { _rate_target_ang_vel.z = radians(rate_cds * 0.01f); }
 
+    // Set x-axis system identification angular velocity in degrees/s
+    void rate_bf_roll_sysid(float rate) { _rate_sysid_ang_vel.x = rate; }
+
+    // Set y-axis system identification angular velocity in degrees/s
+    void rate_bf_pitch_sysid(float rate) { _rate_sysid_ang_vel.y = rate; }
+
+    // Set z-axis system identification angular velocity in degrees/s
+    void rate_bf_yaw_sysid(float rate) { _rate_sysid_ang_vel.z = rate; }
+
+    // Set x-axis system identification actuator
+    void actuator_roll_sysid(float command) { _actuator_sysid.x = command; }
+
+    // Set y-axis system identification actuator
+    void actuator_pitch_sysid(float command) { _actuator_sysid.y = command; }
+
+    // Set z-axis system identification actuator
+    void actuator_yaw_sysid(float command) { _actuator_sysid.z = command; }
+
     // Return roll rate step size in radians/s that results in maximum output after 4 time steps
     float max_rate_step_bf_roll();
 
@@ -211,7 +226,7 @@ public:
     float max_angle_step_bf_yaw() { return max_rate_step_bf_yaw() / _p_angle_yaw.kP(); }
 
     // Return angular velocity in radians used in the angular velocity controller
-    Vector3f rate_bf_targets() const { return _rate_target_ang_vel; }
+    Vector3f rate_bf_targets() const { return _rate_target_ang_vel + _rate_sysid_ang_vel; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled = enable_or_disable; }
@@ -242,6 +257,9 @@ public:
 
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max() const { return _aparm.angle_max; }
+
+    // Return tilt angle in degrees
+    float lean_angle() const { return degrees(_thrust_angle); }
 
     // Proportional controller with piecewise sqrt sections to constrain second derivative
     static float sqrt_controller(float error, float p, float second_ord_lim, float dt);
@@ -282,7 +300,7 @@ public:
     // control rpy throttle mix
     virtual void set_throttle_mix_min() {}
     virtual void set_throttle_mix_man() {}
-    virtual void set_throttle_mix_max() {}
+    virtual void set_throttle_mix_max(float ratio) {}
     virtual void set_throttle_mix_value(float value) {}
     virtual float get_throttle_mix(void) const { return 0; }
 
@@ -313,15 +331,6 @@ protected:
 
     // Update rate_target_ang_vel using attitude_error_rot_vec_rad
     Vector3f update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad);
-
-    // Run the roll angular velocity PID controller and return the output
-    float rate_target_to_motor_roll(float rate_actual_rads, float rate_target_rads);
-
-    // Run the pitch angular velocity PID controller and return the output
-    float rate_target_to_motor_pitch(float rate_actual_rads, float rate_target_rads);
-
-    // Run the yaw angular velocity PID controller and return the output
-    virtual float rate_target_to_motor_yaw(float rate_actual_rads, float rate_target_rads);
 
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
@@ -389,8 +398,20 @@ protected:
     // velocity controller.
     Vector3f            _rate_target_ang_vel;
 
+    // This is the the angular velocity in radians per second in the body frame, added to the output angular
+    // attitude controller by the System Identification Mode.
+    // It is reset to zero immediately after it is used.
+    Vector3f            _rate_sysid_ang_vel;
+
+    // This is the the unitless value added to the output of the PID by the System Identification Mode.
+    // It is reset to zero immediately after it is used.
+    Vector3f            _actuator_sysid;
+
     // This represents a quaternion attitude error in the body frame, used for inertial frame reset handling.
     Quaternion          _attitude_ang_error;
+
+    // The angle between the target thrust vector and the current thrust vector.
+    float               _thrust_angle;
 
     // The angle between the target thrust vector and the current thrust vector.
     float               _thrust_error_angle;
@@ -414,6 +435,9 @@ protected:
 
     // mix between throttle and hover throttle for 0 to 1 and ratio above hover throttle for >1
     float               _throttle_rpy_mix;
+
+    // Yaw feed forward percent to allow zero yaw actuator output during extreme roll and pitch corrections
+    float               _feedforward_scalar = 1.0f;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
@@ -452,6 +476,3 @@ public:
     float control_monitor_rms_output_pitch(void) const;
     float control_monitor_rms_output_yaw(void) const;
 };
-
-#define AC_ATTITUDE_CONTROL_LOG_FORMAT(msg) { msg, sizeof(AC_AttitudeControl::log_Attitude),	\
-                            "ATT", "cccccCC",      "RollIn,Roll,PitchIn,Pitch,YawIn,Yaw,NavYaw" }

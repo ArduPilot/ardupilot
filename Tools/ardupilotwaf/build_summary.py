@@ -136,7 +136,7 @@ def _build_summary(bld):
             if not t:
                 continue
             n = t.outputs[0]
-            tg.build_summary['binary'] = n
+            tg.build_summary['binary'] = str(n)
 
         nodes.append(n)
         filtered_taskgens.append(tg)
@@ -210,7 +210,8 @@ def size_summary(bld, nodes):
 
 @conf
 def build_summary_post_fun(bld):
-    bld.add_post_fun(_build_summary)
+    if not bld.env.AP_PROGRAM_AS_STLIB:
+        bld.add_post_fun(_build_summary)
 
 @feature('cprogram', 'cxxprogram')
 @before_method('process_rule')

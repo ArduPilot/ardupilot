@@ -40,15 +40,10 @@ extern const AP_HAL::HAL& hal;
 // i2c address
 #define LL40LS_ADDR   0x62
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
                                                              RangeFinder::RangeFinder_State &_state,
                                                              AP_RangeFinder_Params &_params,
-                                                             RangeFinder::RangeFinder_Type _rftype)
+                                                                 RangeFinder::Type _rftype)
     : AP_RangeFinder_Backend(_state, _params)
     , _dev(hal.i2c_mgr->get_device(bus, LL40LS_ADDR))
     , rftype(_rftype)
@@ -62,7 +57,7 @@ AP_RangeFinder_PulsedLightLRF::AP_RangeFinder_PulsedLightLRF(uint8_t bus,
 AP_RangeFinder_Backend *AP_RangeFinder_PulsedLightLRF::detect(uint8_t bus,
                                                               RangeFinder::RangeFinder_State &_state,
 															  AP_RangeFinder_Params &_params,
-                                                              RangeFinder::RangeFinder_Type rftype)
+                                                                  RangeFinder::Type rftype)
 {
     AP_RangeFinder_PulsedLightLRF *sensor
         = new AP_RangeFinder_PulsedLightLRF(bus, _state, _params, rftype);
@@ -102,7 +97,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             }
             last_distance_cm = _distance_cm;
         } else {
-            set_status(RangeFinder::RangeFinder_NoData);
+            set_status(RangeFinder::Status::NoData);
         }
         if (!v2_hardware) {
             // for v2 hw we use continuous mode
@@ -159,17 +154,18 @@ static const struct settings_table settings_v3hp[] = {
  */
 bool AP_RangeFinder_PulsedLightLRF::init(void)
 {
-    if (!_dev || !_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!_dev) {
         return false;
     }
+    _dev->get_semaphore()->take_blocking();
     _dev->set_retries(3);
 
     // LidarLite needs split transfers
     _dev->set_split_transfers(true);
 
-    if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3) {
+    if (rftype == RangeFinder::Type::PLI2CV3) {
         v2_hardware = true;
-    } else if (rftype == RangeFinder::RangeFinder_TYPE_PLI2CV3HP) {
+    } else if (rftype == RangeFinder::Type::PLI2CV3HP) {
         v3hp_hardware = true;
     } else {
         // auto-detect v1 vs v2

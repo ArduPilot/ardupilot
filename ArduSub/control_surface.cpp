@@ -35,7 +35,7 @@ void Sub::surface_run()
 
     // Already at surface, hold depth at surface
     if (ap.at_surface) {
-        set_mode(ALT_HOLD, MODE_REASON_SURFACE_COMPLETE);
+        set_mode(ALT_HOLD, ModeReason::SURFACE_COMPLETE);
     }
 
     // convert pilot input to lean angles
@@ -49,7 +49,7 @@ void Sub::surface_run()
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // set target climb rate
-    float cmb_rate = constrain_float(abs(wp_nav.get_default_speed_up()), 1, pos_control.get_max_speed_up());
+    float cmb_rate = constrain_float(fabsf(wp_nav.get_default_speed_up()), 1, pos_control.get_max_speed_up());
 
     // record desired climb rate for logging
     desired_climb_rate = cmb_rate;

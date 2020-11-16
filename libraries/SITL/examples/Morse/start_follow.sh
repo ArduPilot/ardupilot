@@ -9,7 +9,7 @@ GCS_IP=192.168.2.48
 BASE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/rover.parm,$ROOTDIR/Tools/autotest/default_params/rover-skid.parm"
 
 # start up main rover in the current directory
-$ROVER --model morse-rover --uartA udpclient:$GCS_IP --uartC mcast: --defaults $BASE_DEFAULTS &
+$ROVER --model morse-skid --uartA udpclient:$GCS_IP --uartC mcast: --defaults $BASE_DEFAULTS &
 
 # now start 2 rovers to follow the first, using
 # a separate directory for each to keep the eeprom.bin
@@ -37,7 +37,7 @@ FOLL_SYSID $FOLL_SYSID
 FOLL_DIST_MAX 1000
 EOF
     pushd rov$i
-    $ROVER --model "morse-rover:127.0.0.1:$port1:$port2" --uartA tcp:0 --uartC mcast: --instance $i --defaults $BASE_DEFAULTS,follow.parm &
+    $ROVER --model "morse-skid:127.0.0.1:$port1:$port2" --uartA tcp:0 --uartC mcast: --instance $i --defaults $BASE_DEFAULTS,follow.parm &
     popd
 done
 wait

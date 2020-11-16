@@ -18,8 +18,17 @@ def build(bld):
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
         ]
     )
+
     bld.ap_program(
-        program_name='iofirmware',
+        program_name='iofirmware_lowpolh',
         use='iofirmware_libs',
         program_groups=['bin','iofirmware'],
+        defines=['IOMCU_IMU_HEATER_POLARITY=0']
+    )
+
+    bld.ap_program(
+        program_name='iofirmware_highpolh',
+        use='iofirmware_libs',
+        program_groups=['bin','iofirmware'],
+        defines=['IOMCU_IMU_HEATER_POLARITY=1']
     )

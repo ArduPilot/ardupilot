@@ -13,7 +13,7 @@ body {
 #logo {
 	background-image:url(../images/logo.png);
 	background-repeat:no-repeat;
-	height: 120px;
+    height: 140px;
 	width: 420px;
 	-moz-box-shadow: 2px 2px 5px #888;
 	-webkit-box-shadow: 2px 2px 5px #888;

@@ -63,7 +63,7 @@ void Sub::circle_run()
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // run circle controller
-    circle_nav.update();
+    failsafe_terrain_set_status(circle_nav.update());
 
     ///////////////////////
     // update xy outputs //
@@ -82,11 +82,6 @@ void Sub::circle_run()
         attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), circle_nav.get_yaw(), true);
     }
 
-    // adjust climb rate using rangefinder
-    if (rangefinder_alt_ok()) {
-        // if rangefinder is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-    }
     // update altitude target and call position controller
     pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
     pos_control.update_z_controller();

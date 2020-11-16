@@ -22,17 +22,23 @@
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Util.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
-#define AP_SCHEDULER_NAME_INITIALIZER(_name) .name = #_name,
+#if HAL_MINIMIZE_FEATURES
+#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
+#endif
+#define LOOP_RATE 0
 
 /*
   useful macro for creating scheduler task table
  */
 #define SCHED_TASK_CLASS(classname, classptr, func, _rate_hz, _max_time_micros) { \
     .function = FUNCTOR_BIND(classptr, &classname::func, void),\
-    AP_SCHEDULER_NAME_INITIALIZER(func)\
+    AP_SCHEDULER_NAME_INITIALIZER(classname, func)\
     .rate_hz = _rate_hz,\
     .max_time_micros = _max_time_micros\
 }
@@ -48,7 +54,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_Scheduler
 {
@@ -72,6 +77,10 @@ public:
         const char *name;
         float rate_hz;
         uint16_t max_time_micros;
+    };
+
+    enum class Options : uint8_t {
+        RECORD_TASK_INFO = 1 << 0
     };
 
     // initialise scheduler
@@ -139,11 +148,17 @@ public:
     float get_last_loop_time_s(void) const {
         return _last_loop_time_s;
     }
-    
-    static const struct AP_Param::GroupInfo var_info[];
 
-    // current running task, or -1 if none. Used to debug stuck tasks
-    static int8_t current_task;
+    // get the amount of extra time being added on each loop
+    uint32_t get_extra_loop_us(void) const {
+        return extra_loop_us;
+    }
+
+    HAL_Semaphore &get_semaphore(void) { return _rsem; }
+
+    size_t task_info(char *buf, size_t bufsize);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     // loop performance monitoring:
     AP::PerfInfo perf_info;
@@ -160,6 +175,9 @@ private:
 
     // loop rate in Hz as set at startup
     AP_Int16 _active_loop_rate_hz;
+
+    // scheduler options
+    AP_Int8 _options;
     
     // calculated loop period in usec
     uint16_t _loop_period_us;
@@ -170,8 +188,14 @@ private:
     // progmem list of tasks to run
     const struct Task *_tasks;
 
-    // number of tasks in _tasks list
+    // progmem list of common tasks to run
+    const struct Task *_common_tasks;
+
+    // total number of tasks in _tasks and _common_tasks list
     uint8_t _num_tasks;
+
+    // number of tasks in _tasks list
+    uint8_t _num_unshared_tasks;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
@@ -203,6 +227,23 @@ private:
 
     // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
+
+    // maximum task slowdown compared to desired task rate before we
+    // start giving extra time per loop
+    const uint8_t max_task_slowdown = 4;
+
+    // counters to handle dynamically adjusting extra loop time to
+    // cope with low CPU conditions
+    uint32_t task_not_achieved;
+    uint32_t task_all_achieved;
+    
+    // extra time available for each loop - used to dynamically adjust
+    // the loop rate in case we are well over budget
+    uint32_t extra_loop_us;
+
+
+    // semaphore that is held while not waiting for ins samples
+    HAL_Semaphore _rsem;
 };
 
 namespace AP {

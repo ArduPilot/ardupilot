@@ -1,3 +1,4 @@
+#pragma once
 
 /*
   return the number of bytes to send for a packetised connection

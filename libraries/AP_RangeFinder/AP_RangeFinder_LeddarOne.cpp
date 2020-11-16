@@ -13,38 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_LeddarOne.h"
-#include <AP_SerialManager/AP_SerialManager.h>
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
-
-/*
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_LeddarOne::AP_RangeFinder_LeddarOne(RangeFinder::RangeFinder_State &_state,
-                                                   AP_RangeFinder_Params &_params,
-                                                   AP_SerialManager &serial_manager,
-                                                   uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-/*
-   detect if a LeddarOne rangefinder is connected. We'll detect by
-   trying to take a reading on Serial. If we get a result the sensor is
-   there.
-*/
-bool AP_RangeFinder_LeddarOne::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
-{
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
 
 // read - return last value measured by sensor
 bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
@@ -58,16 +32,8 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 
     switch (modbus_status) {
     case LEDDARONE_MODBUS_STATE_INIT: {
-        uint8_t index = 0;
-        // clear read buffer
-        uint32_t nbytes = uart->available();
-        while (nbytes-- > 0) {
-            uart->read();
-            if (++index > LEDDARONE_SERIAL_PORT_MAX) {
-                // LEDDARONE_STATE_ERR_SERIAL_PORT
-                return false;
-            }
-        }
+        uart->discard_input();
+
         // clear buffer and buffer_len
         memset(read_buffer, 0, sizeof(read_buffer));
         read_len = 0;
@@ -123,37 +89,12 @@ bool AP_RangeFinder_LeddarOne::get_reading(uint16_t &reading_cm)
 }
 
 /*
-   update the state of the sensor
-*/
-void AP_RangeFinder_LeddarOne::update(void)
-{
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        state.last_reading_ms = AP_HAL::millis();
-        update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
-    }
-}
-
-/*
    CRC16
    CRC-16-IBM(x16+x15+x2+1)
 */
 bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCheck)
 {
-    uint16_t crc = 0xFFFF;
-
-    for (uint32_t i=0; i<aLength; i++) {
-        crc ^= aBuffer[i];
-        for (uint32_t j=0; j<8; j++) {
-            if (crc & 1) {
-                crc = (crc >> 1) ^ 0xA001;
-            } else {
-                crc >>= 1;
-            }
-        }
-    }
+    uint16_t crc = calc_crc_modbus(aBuffer, aLength);
 
     uint8_t lCRCLo = LOWBYTE(crc);
     uint8_t lCRCHi = HIGHBYTE(crc);
@@ -174,11 +115,10 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
     -----------------------------------------------
       0: slave address (LEDDARONE_DEFAULT_ADDRESS)
       1: functions code
-      2: ?
-3-4-5-6: timestamp
+      2: byte count
+5-6-3-4: timestamp
     7-8: internal temperature
-      9: ?
-     10: number of detections
+   9-10: number of detections
   11-12: first distance
   13-14: first amplitude
   15-16: second distance
@@ -212,7 +152,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         }
     }
 
-    // lead_len is not 25 byte or function code is not 0x04
+    // read_len is not 25 byte or function code is not 0x04
     if (read_len != LEDDARONE_READ_BUFFER_SIZE || read_buffer[1] != LEDDARONE_MODOBUS_FUNCTION_CODE) {
         return LEDDARONE_STATE_ERR_BAD_RESPONSE;
     }

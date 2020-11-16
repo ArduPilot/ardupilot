@@ -15,7 +15,15 @@ bool ModeAuto::_enter()
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
 
-#if SOARING_ENABLED == ENABLED
+    if (hal.util->was_watchdog_armed()) {
+        if (hal.util->persistent_data.waypoint_num != 0) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Watchdog: resume WP %u", hal.util->persistent_data.waypoint_num);
+            plane.mission.set_current_cmd(hal.util->persistent_data.waypoint_num);
+            hal.util->persistent_data.waypoint_num = 0;
+        }
+    }
+
+#if HAL_SOARING_ENABLED
     plane.g2.soaring_controller.init_cruising();
 #endif
 
@@ -41,7 +49,7 @@ void ModeAuto::update()
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
-        plane.set_mode(plane.mode_rtl, MODE_REASON_MISSION_END);
+        plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -49,7 +57,7 @@ void ModeAuto::update()
     uint16_t nav_cmd_id = plane.mission.get_current_nav_cmd().id;
 
     if (plane.quadplane.in_vtol_auto()) {
-        plane.quadplane.control_auto(plane.next_WP_loc);
+        plane.quadplane.control_auto();
     } else if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
         (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
         plane.takeoff_calc_roll();
@@ -77,6 +85,13 @@ void ModeAuto::update()
         plane.calc_nav_roll();
         plane.calc_nav_pitch();
         plane.calc_throttle();
+    }
+}
+
+void ModeAuto::navigate()
+{
+    if (AP::ahrs().home_is_set()) {
+        plane.mission.update();
     }
 }
 

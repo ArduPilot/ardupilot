@@ -27,14 +27,11 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-Gazebo::Gazebo(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+Gazebo::Gazebo(const char *frame_str) :
+    Aircraft(frame_str),
     last_timestamp(0),
     socket_sitl{true}
 {
-    // try to bind to a specific port so that if we restart ArduPilot
-    // Gazebo keeps sending us packets. Not strictly necessary but
-    // useful for debugging
     fprintf(stdout, "Starting SITL Gazebo\n");
 }
 
@@ -43,9 +40,12 @@ Gazebo::Gazebo(const char *home_str, const char *frame_str) :
 */
 void Gazebo::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
+    // try to bind to a specific port so that if we restart ArduPilot
+    // Gazebo keeps sending us packets. Not strictly necessary but
+    // useful for debugging
     if (!socket_sitl.bind("0.0.0.0", port_in)) {
         fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
-        fprintf(stderr, "Abording launch...\n");
+        fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
     printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
@@ -93,7 +93,7 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     }
 
     const double deltat = pkt.timestamp - last_timestamp;  // in seconds
-    if (deltat < 0) {  // don't use old paquet
+    if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }

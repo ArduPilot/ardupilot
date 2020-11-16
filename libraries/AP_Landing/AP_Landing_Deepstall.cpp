@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Common/Location.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
@@ -48,7 +49,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
 
     // @Param: APP_EXT
     // @DisplayName: Deepstall approach extension
-    // @Description: The forward velocity of the aircraft while stalled
+    // @Description: The horizontal distance from which the aircraft will approach before the stall
     // @Range: 10 200
     // @Units: m
     // @User: Advanced
@@ -98,7 +99,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall L1 period
     // @Description: Deepstall L1 navigational controller period
     // @Range: 5 50
-    // @Units: m
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("L1", 10, AP_Landing_Deepstall, L1_period, 30.0),
 
@@ -113,7 +114,7 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall yaw rate limit
     // @Description: The yaw rate limit while navigating in deepstall
     // @Range: 0 90
-    // @Units degrees per second
+    // @Units: deg/s
     // @User: Advanced
     AP_GROUPINFO("YAW_LIM", 12, AP_Landing_Deepstall, yaw_rate_limit, 10),
 
@@ -121,19 +122,36 @@ const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
     // @DisplayName: Deepstall L1 time constant
     // @Description: Time constant for deepstall L1 control
     // @Range: 0 1
-    // @Units seconds
+    // @Units: s
     // @User: Advanced
     AP_GROUPINFO("L1_TCON", 13, AP_Landing_Deepstall, time_constant, 0.4),
 
-    // @Group: DS_
-    // @Path: ../PID/PID.cpp
+    // @Param: P
+    // @DisplayName: P gain
+    // @Description: P gain
+    // @User: Standard
+
+    // @Param: I
+    // @DisplayName: I gain
+    // @Description: I gain
+    // @User: Standard
+
+    // @Param: D
+    // @DisplayName: D gain
+    // @Description: D gain
+    // @User: Standard
+
+    // @Param: IMAX
+    // @DisplayName: IMax
+    // @Description: Maximum integrator value
+    // @User: Standard
     AP_SUBGROUPINFO(ds_PID, "", 14, AP_Landing_Deepstall, PID),
 
     // @Param: ABORTALT
     // @DisplayName: Deepstall minimum abort altitude
     // @Description: The minimum altitude which the aircraft must be above to abort a deepstall landing
     // @Range: 0 50
-    // @Units meters
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("ABORTALT", 15, AP_Landing_Deepstall, min_abort_alt, 0.0f),
 
@@ -338,7 +356,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
-    if (!landing.ahrs.airspeed_estimate(&airspeed)) {
+    if (!landing.ahrs.airspeed_estimate(airspeed)) {
         airspeed = 0; // safely forces control to the deepstall steering since we don't have an estimate
     }
 
@@ -448,7 +466,7 @@ void AP_Landing_Deepstall::Log(void) const {
                              constrain_float(predicted_travel_distance * 1e2f, (float)INT16_MIN, (float)INT16_MAX) : 0),
         l1_i             : stage >= DEEPSTALL_STAGE_LAND ? L1_xtrack_i : 0.0f,
         loiter_sum_cd    : stage >= DEEPSTALL_STAGE_ESTIMATE_WIND ? loiter_sum_cd : 0,
-        desired          : pid_info.desired,
+        desired          : pid_info.target,
         P                : pid_info.P,
         I                : pid_info.I,
         D                : pid_info.D,

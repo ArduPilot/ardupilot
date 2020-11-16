@@ -32,6 +32,11 @@ static uint32_t timer;
 static uint8_t counter;
 static AP_BoardConfig board_config;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SITL sitl;
+#endif
+
 void setup();
 void loop();
 
@@ -95,7 +100,7 @@ void loop()
     }
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK::var_info[] = {
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPEND
 };
 GCS_Dummy _gcs;

@@ -65,25 +65,31 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Kalman Filter Accelerometer Noise
     // @Description: Kalman Filter Accelerometer Noise, higher values weight the input from the camera more, accels less
     // @Range: 0.5 5
-    // @User: Advanceds
+    // @User: Advanced
     AP_GROUPINFO("ACC_P_NSE", 6, AC_PrecLand, _accel_noise, 2.5f),
 
     // @Param: CAM_POS_X
     // @DisplayName: Camera X position offset
     // @Description: X position of the camera in body frame. Positive X is forward of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: CAM_POS_Y
     // @DisplayName: Camera Y position offset
     // @Description: Y position of the camera in body frame. Positive Y is to the right of the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
 
     // @Param: CAM_POS_Z
     // @DisplayName: Camera Z position offset
     // @Description: Z position of the camera in body frame. Positive Z is down from the origin.
     // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("CAM_POS", 7, AC_PrecLand, _cam_offset, 0.0f),
 
@@ -251,7 +257,7 @@ bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 }
 
 // handle_msg - Process a LANDING_TARGET mavlink message
-void AC_PrecLand::handle_msg(mavlink_message_t* msg)
+void AC_PrecLand::handle_msg(const mavlink_message_t &msg)
 {
     // run backend update
     if (_backend != nullptr) {

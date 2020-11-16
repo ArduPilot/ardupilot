@@ -7,6 +7,10 @@
 #define lvm_c
 #define LUA_CORE
 
+#if defined(ARDUPILOT_BUILD)
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+
 #include "lprefix.h"
 
 #include <float.h>
@@ -1319,4 +1323,5 @@ void luaV_execute (lua_State *L) {
 }
 
 /* }================================================================== */
+
 

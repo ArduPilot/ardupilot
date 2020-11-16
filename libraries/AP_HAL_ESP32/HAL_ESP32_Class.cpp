@@ -20,37 +20,43 @@
 #include "Scheduler.h"
 #include "I2CDevice.h"
 #include "SPIDevice.h"
-#include "UARTDriver.h"
+#include "I2CDevice.h"
+#include <AP_HAL_ESP32/UARTDriver.h>
 #include "WiFiDriver.h"
 #include "RCInput.h"
 #include "RCOutput.h"
 #include "Storage.h"
+#include "RCOutput.h"
+#include "Storage.h"
+#include "RCOutput.h"
+#include "AnalogIn.h"
 #include "Util.h"
 
-#ifdef HAL_ESP32_NO_MAVLINK_0
+
+
 static Empty::UARTDriver uartADriver;
 static ESP32::UARTDriver cons(0);
-#else
-static ESP32::UARTDriver uartADriver(0);
-#define cons uartADriver
-#endif
-static ESP32::UARTDriver uartBDriver(1);
+static ESP32::UARTDriver uartBDriver(2);
 #ifdef HAL_ESP32_WIFI
 static ESP32::WiFiDriver uartCDriver;
 #else
 static Empty::UARTDriver uartCDriver;
 #endif
-static ESP32::UARTDriver uartDDriver(2);
+static ESP32::UARTDriver uartDDriver(1);
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
+static Empty::UARTDriver uartHDriver;
+
+static Empty::DSP dspDriver;
+
 static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
-static Empty::AnalogIn analogIn;
+static ESP32::AnalogIn analogIn;
 static ESP32::Storage storageDriver;
 static Empty::GPIO gpioDriver;
-static ESP32::RCInput rcinDriver;
 static ESP32::RCOutput rcoutDriver;
+static ESP32::RCInput rcinDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
@@ -60,13 +66,14 @@ extern const AP_HAL::HAL& hal;
 
 HAL_ESP32::HAL_ESP32() :
     AP_HAL::HAL(
-        &uartADriver,
-        &uartBDriver,
-        &uartCDriver,
-        &uartDDriver,
-        &uartEDriver,
-        &uartFDriver,
-        &uartGDriver,
+        &cons, //Console/mavlink
+        &uartBDriver, //GPS 1
+        &uartCDriver, //Telem 1
+        &uartDDriver, //Telem 2
+        &uartEDriver, //GPS 2
+        &uartFDriver, //Extra 1
+        &uartGDriver, //Extra 2
+        &uartHDriver, //Extra 3
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,
@@ -79,6 +86,7 @@ HAL_ESP32::HAL_ESP32() :
         &utilInstance,
         &opticalFlowDriver,
         &flashDriver,
+        &dspDriver,
         nullptr
     )
 {}

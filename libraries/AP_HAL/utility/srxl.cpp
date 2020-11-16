@@ -20,13 +20,13 @@
    - 2016.10.23: SRXL variant V1 sucessfully (Testbench and Pixhawk/MissionPlanner) tested with RX-9-DR M-LINK (SW v1.26)
  */
 
+#include "srxl.h"
+
+#include <AP_Math/crc.h>
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <AP_Math/crc.h>
-#include "srxl.h"
-
-
 
 /* SRXL datastream characteristics for all variants */
 #define SRXL_MIN_FRAMESPACE_US 8000U    /* Minumum space between srxl frames in us (applies to all variants)  */

@@ -28,17 +28,33 @@ namespace SITL {
  */
 class Morse : public Aircraft {
 public:
-    Morse(const char *home_str, const char *frame_str);
+    Morse(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new Morse(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new Morse(frame_str);
     }
 
 private:
+
+    // loopback to convert inbound Morse lidar data into inbound mavlink msgs
+    const char *mavlink_loopback_address = "127.0.0.1";
+    const uint16_t mavlink_loopback_port = 5762;
+    SocketAPM mav_socket { false };
+    struct {
+        // socket to telem2 on aircraft
+        bool connected;
+        mavlink_message_t rxmsg;
+        mavlink_status_t status;
+        uint8_t seq;
+    } mavlink {};
+
+    void send_report(void);
+    uint32_t send_report_last_ms;
+
     const char *morse_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 60000
@@ -48,15 +64,17 @@ private:
     uint16_t morse_control_port = 60001;
 
     enum {
-        OUTPUT_ROVER=1,
-        OUTPUT_QUAD=2,
-        OUTPUT_PWM=3
+        OUTPUT_ROVER_REGULAR=1,
+        OUTPUT_ROVER_SKID=2,
+        OUTPUT_QUAD=3,
+        OUTPUT_PWM=4
     } output_type;
 
     bool connect_sockets(void);
     bool parse_sensors(const char *json);
     bool sensors_receive(void);
-    void output_rover(const struct sitl_input &input);
+    void output_rover_regular(const struct sitl_input &input);
+    void output_rover_skid(const struct sitl_input &input);
     void output_quad(const struct sitl_input &input);
     void output_pwm(const struct sitl_input &input);
     void report_FPS();

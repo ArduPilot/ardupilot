@@ -1,8 +1,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 class AP_AutoTune {
 public:

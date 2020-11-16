@@ -3,6 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if defined(HAL_BUILD_AP_PERIPH)
+#include "SITL_Periph_State.h"
+#else
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -14,6 +17,7 @@
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include <vector>
 
 #include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -24,6 +28,29 @@
 #include <SITL/SIM_Gimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_Vicon.h>
+#include <SITL/SIM_RF_Benewake_TF02.h>
+#include <SITL/SIM_RF_Benewake_TF03.h>
+#include <SITL/SIM_RF_Benewake_TFmini.h>
+#include <SITL/SIM_RF_LightWareSerial.h>
+#include <SITL/SIM_RF_LightWareSerialBinary.h>
+#include <SITL/SIM_RF_Lanbao.h>
+#include <SITL/SIM_RF_BLping.h>
+#include <SITL/SIM_RF_LeddarOne.h>
+#include <SITL/SIM_RF_uLanding_v0.h>
+#include <SITL/SIM_RF_uLanding_v1.h>
+#include <SITL/SIM_RF_MaxsonarSerialLV.h>
+#include <SITL/SIM_RF_Wasp.h>
+#include <SITL/SIM_RF_NMEA.h>
+#include <SITL/SIM_RF_MAVLink.h>
+#include <SITL/SIM_RF_GYUS42v2.h>
+
+#include <SITL/SIM_Frsky_D.h>
+#include <SITL/SIM_CRSF.h>
+// #include <SITL/SIM_Frsky_SPort.h>
+// #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_RPLidarA2.h>
+
+#include <SITL/SIM_RichenPower.h>
 #include <AP_HAL/utility/Socket.h>
 
 class HAL_SITL;
@@ -37,13 +64,12 @@ public:
 
     enum vehicle_type {
         ArduCopter,
-        APMrover2,
+        Rover,
         ArduPlane,
         ArduSub
     };
 
-    int gps_pipe(void);
-    int gps2_pipe(void);
+    int gps_pipe(uint8_t index);
     ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
@@ -54,9 +80,11 @@ public:
         return _base_port;
     }
 
-    // create a file desciptor attached to a virtual device; type of
+    // create a file descriptor attached to a virtual device; type of
     // device is given by name parameter
     int sim_fd(const char *name, const char *arg);
+    // returns a write file descriptor for a created virtual device
+    int sim_fd_write(const char *name);
 
     bool use_rtscts(void) const {
         return _use_rtscts;
@@ -81,7 +109,13 @@ public:
         "tcp:5",
         "tcp:6",
     };
-    
+    std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
+
+    /* parse a home location string */
+    static bool parse_home(const char *home_str,
+                           Location &loc,
+                           float &yaw_degrees);
+
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -102,11 +136,12 @@ private:
         double speedN;
         double speedE;
         double speedD;
+        double yaw;
         bool have_lock;
     };
 
 #define MAX_GPS_DELAY 100
-    gps_data _gps_data[MAX_GPS_DELAY];
+    gps_data _gps_data[2][MAX_GPS_DELAY];
 
     bool _gps_has_basestation_position;
     gps_data _gps_basestation_data;
@@ -129,7 +164,8 @@ private:
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 
     void _update_gps(double latitude, double longitude, float altitude,
-                     double speedN, double speedE, double speedD, bool have_lock);
+                     double speedN, double speedE, double speedD,
+                     double yaw, bool have_lock);
     void _update_airspeed(float airspeed);
     void _update_gps_instance(SITL::SITL::GPSType gps_type, const struct gps_data *d, uint8_t instance);
     void _check_rc_input(void);
@@ -156,9 +192,6 @@ private:
     AP_InertialSensor *_ins;
     Scheduler *_scheduler;
     Compass *_compass;
-#if AP_TERRAIN_AVAILABLE
-    AP_Terrain *_terrain;
-#endif
 
     SocketAPM _sitl_rc_in{true};
     SITL::SITL *_sitl;
@@ -215,6 +248,48 @@ private:
     // simulated vicon system:
     SITL::Vicon *vicon;
 
+    // simulated Benewake tf02 rangefinder:
+    SITL::RF_Benewake_TF02 *benewake_tf02;
+    // simulated Benewake tf03 rangefinder:
+    SITL::RF_Benewake_TF03 *benewake_tf03;
+    // simulated Benewake tfmini rangefinder:
+    SITL::RF_Benewake_TFmini *benewake_tfmini;
+
+    // simulated LightWareSerial rangefinder - legacy protocol::
+    SITL::RF_LightWareSerial *lightwareserial;
+    // simulated LightWareSerial rangefinder - binary protocol:
+    SITL::RF_LightWareSerialBinary *lightwareserial_binary;
+    // simulated Lanbao rangefinder:
+    SITL::RF_Lanbao *lanbao;
+    // simulated BLping rangefinder:
+    SITL::RF_BLping *blping;
+    // simulated LeddarOne rangefinder:
+    SITL::RF_LeddarOne *leddarone;
+    // simulated uLanding v0 rangefinder:
+    SITL::RF_uLanding_v0 *ulanding_v0;
+    // simulated uLanding v1 rangefinder:
+    SITL::RF_uLanding_v1 *ulanding_v1;
+    // simulated MaxsonarSerialLV rangefinder:
+    SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
+    // simulated Wasp rangefinder:
+    SITL::RF_Wasp *wasp;
+    // simulated NMEA rangefinder:
+    SITL::RF_NMEA *nmea;
+    // simulated MAVLink rangefinder:
+    SITL::RF_MAVLink *rf_mavlink;
+    // simulated GYUS42v2 rangefinder:
+    SITL::RF_GYUS42v2 *gyus42v2;
+
+    // simulated Frsky devices
+    SITL::Frsky_D *frsky_d;
+    // SITL::Frsky_SPort *frsky_sport;
+    // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
+    // simulated NMEA rangefinder:
+    SITL::PS_RPLidarA2 *rplidara2;
+
+    // simulated CRSF devices
+    SITL::CRSF *crsf;
+
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     
@@ -223,4 +298,5 @@ private:
     const char *_home_str;
 };
 
+#endif // defined(HAL_BUILD_AP_PERIPH)
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

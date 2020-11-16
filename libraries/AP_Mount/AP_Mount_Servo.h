@@ -5,11 +5,11 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include "AP_Mount_Backend.h"
+#if HAL_MOUNT_ENABLED
 
 class AP_Mount_Servo : public AP_Mount_Backend
 {
@@ -25,19 +25,19 @@ public:
     }
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager) override;
+    void init() override;
 
     // update mount position - should be called periodically
-    virtual void update() override;
+    void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    virtual bool has_pan_control() const override { return _flags.pan_control; }
+    bool has_pan_control() const override { return _flags.pan_control; }
 
     // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) override;
+    void set_mode(enum MAV_MOUNT_MODE mode) override;
 
     // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    virtual void send_mount_status(mavlink_channel_t chan) override;
+    void send_mount_status(mavlink_channel_t chan) override;
 
 private:
 
@@ -71,3 +71,4 @@ private:
 
     uint32_t _last_check_servo_map_ms;  // system time of latest call to check_servo_map function
 };
+#endif // HAL_MOUNT_ENABLED

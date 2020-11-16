@@ -13,11 +13,11 @@
 //#define PROXIMITY_ENABLED     DISABLED            // disable proximity sensors
 //#define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
 //#define AC_AVOID_ENABLED      DISABLED            // disable stop-at-fence library
+//#define AC_OAPATHPLANNER_ENABLED DISABLED         // disable path planning around obstacles
 //#define AC_TERRAIN            DISABLED            // disable terrain library
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
-//#define VISUAL_ODOMETRY_ENABLED DISABLED          // disable visual odometry to save 2K of flash space
 //#define FRSKY_TELEM_ENABLED   DISABLED            // disable FRSky telemetry
 //#define ADSB_ENABLED          DISABLED            // disable ADSB support
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
@@ -26,7 +26,6 @@
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define GRIPPER_ENABLED       DISABLED            // disable gripper support
 //#define RPM_ENABLED           DISABLED            // disable rotations per minute sensor support
-//#define MAGNETOMETER          DISABLED            // disable magnetometer support
 //#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
@@ -42,11 +41,11 @@
 //#define MODE_RTL_ENABLED      DISABLED            // disable rtl mode support
 //#define MODE_SMARTRTL_ENABLED DISABLED            // disable smartrtl mode support
 //#define MODE_SPORT_ENABLED    DISABLED            // disable sport mode support
+//#define MODE_SYSTEMID_ENABLED DISABLED            // disable system ID mode support
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
-//#define DEVO_TELEM_ENABLED    DISABLED            // disable DEVO telemetry, if you don't use Walkera RX-707 (or newer) receivers
 //#define OSD_ENABLED           DISABLED            // disable on-screen-display support
-
+//#define BUTTON_ENABLED        DISABLED            // disable button support
 
 // features below are disabled by default on all boards
 //#define CAL_ALWAYS_REBOOT                         // flight controller will reboot after compass or accelerometer calibration completes

@@ -18,6 +18,7 @@
 
 #include "AP_TempCalibration.h"
 #include <stdio.h>
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 

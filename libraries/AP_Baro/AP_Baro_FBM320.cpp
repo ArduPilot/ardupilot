@@ -100,9 +100,10 @@ bool AP_Baro_FBM320::read_calibration(void)
 
 bool AP_Baro_FBM320::init()
 {
-    if (!dev || !dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev) {
         return false;
     }
+    dev->get_semaphore()->take_blocking();
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
@@ -124,6 +125,9 @@ bool AP_Baro_FBM320::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_FBM320);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     // request 50Hz update

@@ -2,11 +2,7 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL& hal;
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -19,12 +15,6 @@ extern const AP_HAL::HAL& hal;
 // select fusion of optical flow measurements
 void NavEKF3_core::SelectFlowFusion()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseOptFlow);
-
-    // Check for data at the fusion time horizon
-    flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
-
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
@@ -34,6 +24,9 @@ void NavEKF3_core::SelectFlowFusion()
     } else {
         optFlowFusionDelayed = false;
     }
+
+    // Check for data at the fusion time horizon
+    const bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
 
     // Perform Data Checks
     // Check if the optical flow data is still valid
@@ -65,12 +58,7 @@ void NavEKF3_core::SelectFlowFusion()
             // Fuse the optical flow X and Y axis data into the main filter sequentially
             FuseOptFlow();
         }
-        // reset flag to indicate that no new flow data is available for fusion
-        flowDataToFuse = false;
     }
-
-    // stop the performance timer
-    hal.util->perf_end(_perf_FuseOptFlow);
 }
 
 /*
@@ -80,9 +68,6 @@ Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scri
 */
 void NavEKF3_core::EstimateTerrainOffset()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_TerrainOffset);
-
     // horizontal velocity squared
     float velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
 
@@ -271,9 +256,6 @@ void NavEKF3_core::EstimateTerrainOffset()
             }
         }
     }
-
-    // stop the performance timer
-    hal.util->perf_end(_perf_TerrainOffset);
 }
 
 /*
@@ -327,7 +309,7 @@ void NavEKF3_core::FuseOptFlow()
         // correct range for flow sensor offset body frame position offset
         // the corrected value is the predicted range from the sensor focal point to the
         // centre of the image on the ground assuming flat terrain
-        Vector3f posOffsetBody = (*ofDataDelayed.body_offset) - accelPosOffset;
+        Vector3f posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
         if (!posOffsetBody.is_zero()) {
             Vector3f posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             range -= posOffsetEarth.z / prevTnb.c.z;
@@ -694,7 +676,7 @@ void NavEKF3_core::FuseOptFlow()
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
             }
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the

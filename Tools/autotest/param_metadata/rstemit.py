@@ -3,7 +3,7 @@ from __future__ import print_function
 import re
 from param import known_param_fields, known_units
 from emit import Emit
-import cgi
+import html
 
 
 # Emit docs in a RST format
@@ -241,7 +241,7 @@ Complete Parameter List
 
             headings = []
             row = []
-            for field in param.__dict__.keys():
+            for field in sorted(param.__dict__.keys()):
                 if field not in ['name', 'DisplayName', 'Description', 'User'] and field in known_param_fields:
                     headings.append(field)
                     if field in field_table_info and Emit.prog_values_field.match(param.__dict__[field]):
@@ -256,9 +256,9 @@ Complete Parameter List
                             # convert the abreviated unit into a full
                             # textual one:
                             units = known_units[abreviated_units]
-                            row.append(cgi.escape(units))
+                            row.append(html.escape(units))
                     else:
-                        row.append(cgi.escape(param.__dict__[field]))
+                        row.append(html.escape(param.__dict__[field]))
             if len(row):
                 ret += "\n\n" + self.tablify([row], headings=headings) + "\n\n"
         self.t += ret + "\n"

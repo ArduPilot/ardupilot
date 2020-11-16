@@ -18,29 +18,50 @@
 
 #include "SIM_Submarine.h"
 #include <AP_Motors/AP_Motors.h>
-#include "Frame_Vectored.h"
 
 #include <stdio.h>
 
 using namespace SITL;
 
 static Thruster vectored_thrusters[] =
-{
-       Thruster(0, MOT_1_ROLL_FACTOR, MOT_1_PITCH_FACTOR, MOT_1_YAW_FACTOR, MOT_1_THROTTLE_FACTOR, MOT_1_FORWARD_FACTOR, MOT_1_STRAFE_FACTOR),
-       Thruster(1, MOT_2_ROLL_FACTOR, MOT_2_PITCH_FACTOR, MOT_2_YAW_FACTOR, MOT_2_THROTTLE_FACTOR, MOT_2_FORWARD_FACTOR, MOT_2_STRAFE_FACTOR),
-       Thruster(2, MOT_3_ROLL_FACTOR, MOT_3_PITCH_FACTOR, MOT_3_YAW_FACTOR, MOT_3_THROTTLE_FACTOR, MOT_3_FORWARD_FACTOR, MOT_3_STRAFE_FACTOR),
-       Thruster(3, MOT_4_ROLL_FACTOR, MOT_4_PITCH_FACTOR, MOT_4_YAW_FACTOR, MOT_4_THROTTLE_FACTOR, MOT_4_FORWARD_FACTOR, MOT_4_STRAFE_FACTOR),
-       Thruster(4, MOT_5_ROLL_FACTOR, MOT_5_PITCH_FACTOR, MOT_5_YAW_FACTOR, MOT_5_THROTTLE_FACTOR, MOT_5_FORWARD_FACTOR, MOT_5_STRAFE_FACTOR),
-       Thruster(5, MOT_6_ROLL_FACTOR, MOT_6_PITCH_FACTOR, MOT_6_YAW_FACTOR, MOT_6_THROTTLE_FACTOR, MOT_6_FORWARD_FACTOR, MOT_6_STRAFE_FACTOR)
-
+{      //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
+       Thruster(0,          0,              0,              1.0f,           0,                  -1.0f,              1.0f),
+       Thruster(1,          0,              0,              -1.0f,          0,                  -1.0f,              -1.0f),
+       Thruster(2,          0,              0,              -1.0f,          0,                  1.0f,               1.0f),
+       Thruster(3,          0,              0,              1.0f,           0,                  1.0f,               -1.0f),
+       Thruster(4,          1.0f,           0,              0,              -1.0f,              0,                  0),
+       Thruster(5,          -1.0f,          0,              0,              -1.0f,              0,                  0)
 };
 
-Submarine::Submarine(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
+
+static Thruster vectored_6dof_thrusters[] =
+{
+       //       Motor #     Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor
+       Thruster(0,          0,              0,              1.0f,           0,                  -1.0f,              1.0f),
+       Thruster(1,          0,              0,              -1.0f,          0,                  -1.0f,              -1.0f),
+       Thruster(2,          0,              0,              -1.0f,          0,                  1.0f,               1.0f),
+       Thruster(3,          0,              0,              1.0f,           0,                  1.0f,               -1.0f),
+       Thruster(4,          1.0f,           -1.0f,          0,              -1.0f,              0,                  0),
+       Thruster(5,          -1.0f,          -1.0f,          0,              -1.0f,              0,                  0),
+       Thruster(6,          1.0f,           1.0f,           0,              -1.0f,              0,                  0),
+       Thruster(7,          -1.0f,          1.0f,           0,              -1.0f,              0,                  0)
+};
+
+Submarine::Submarine(const char *frame_str) :
+    Aircraft(frame_str),
     frame(NULL)
 {
     frame_height = 0.0;
     ground_behavior = GROUND_BEHAVIOR_NONE;
+
+    // default to vectored frame
+    thrusters = vectored_thrusters;
+    n_thrusters = 6;
+
+    if (strstr(frame_str, "vectored_6dof")) {
+        thrusters = vectored_6dof_thrusters;
+        n_thrusters = 8;
+    }
 }
 
 // calculate rotational and linear accelerations
@@ -49,24 +70,27 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     rot_accel = Vector3f(0,0,0);
 
     // slight positive buoyancy
-    body_accel = Vector3f(0, 0, -calculate_buoyancy_acceleration());
+    body_accel = dcm.transposed() *  Vector3f(0, 0, -calculate_buoyancy_acceleration());
 
-    for (int i = 0; i < 6; i++) {
-        Thruster t = vectored_thrusters[i];
+    for (int i = 0; i < n_thrusters; i++) {
+        Thruster t = thrusters[i];
         int16_t pwm = input.servos[t.servo];
         float output = 0;
-        if (pwm < 2000 && pwm > 1000) {
-         output = (pwm - 1500) / 400.0; // range -1~1
+        // if valid pwm and not in the esc deadzone
+        // TODO: extract deadzone from parameters/vehicle code
+        if (pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
+            output = (pwm - 1500) / 400.0; // range -1~1
         }
 
-        // 2.5 scalar for approximate real-life performance of T200 thruster
-        body_accel += t.linear * output * 2.5;
-
-        rot_accel += t.rotational * output;
+        float thrust = output * fabs(output) * frame_property.thrust; // approximate pwm to thrust function using a quadratic curve
+        body_accel += t.linear * thrust / frame_property.weight;
+        rot_accel += t.rotational * thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
     }
 
+    float floor_depth = calculate_sea_floor_depth(position);
+    range = floor_depth - position.z;
     // Limit movement at the sea floor
-    if (position.z > 100 && body_accel.z > -GRAVITY_MSS) {
+    if (position.z > floor_depth && body_accel.z > -GRAVITY_MSS) {
     	body_accel.z = -GRAVITY_MSS;
     }
 
@@ -77,10 +101,45 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     body_accel -= linear_drag_forces / frame_property.weight;
 
     // Calculate angular drag forces
-    Vector3f angular_drag_forces;
-    calculate_drag_force(gyro, frame_property.angular_drag_coefficient, angular_drag_forces);
+    // TODO: This results in the wrong units. Fix the math.
+    Vector3f angular_drag_torque;
+    calculate_angular_drag_torque(gyro, frame_property.angular_drag_coefficient, angular_drag_torque);
+
+    // Calculate torque induced by buoyancy foams on the frame
+    Vector3f buoyancy_torque;
+    calculate_buoyancy_torque(buoyancy_torque);
     // Add forces in body frame accel
-    rot_accel -= angular_drag_forces / frame_property.weight;
+    rot_accel -= angular_drag_torque / frame_property.moment_of_inertia;
+    rot_accel += buoyancy_torque / frame_property.moment_of_inertia;
+    add_shove_forces(rot_accel, body_accel);
+}
+
+
+/**
+ * @brief Calculate the torque induced by buoyancy foam
+ *
+ * @param torque Output torques
+ */
+void Submarine::calculate_buoyancy_torque(Vector3f &torque)
+{
+    // Let's assume 2 Liters water displacement at the top, and ~ 2kg of weight at the bottom.
+    const Vector3f force_up(0,0,-40); // 40 N upwards
+    const Vector3f force_position = dcm.transposed() * Vector3f(0, 0, 0.15); // offset in meters
+    torque = force_position % force_up;
+}
+
+
+/**
+ * @brief Calculate sea floor depth from submarine position
+ *          This creates a non planar floor for rangefinder sensor test
+ *          TODO: Create a better sea floor with procedural generatation
+ *
+ * @param position
+ * @return float
+ */
+float Submarine::calculate_sea_floor_depth(const Vector3f &/*position*/)
+{
+    return 50;
 }
 
 /**
@@ -110,6 +169,37 @@ void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &d
 }
 
 /**
+ * @brief Calculate angular drag torque using the equivalente sphere area and assuming a laminar external flow.
+ *
+ *  $F_D = C_D*A*\rho*V^2/2$
+ * where:
+ *      $F_D$ is the drag force
+ *      $C_D$ is the drag coefficient
+ *      $A$ is the surface area in contact with the fluid
+ *      $/rho$ is the fluid density (1000kg/m³ for water)
+ *      $V$ is the fluid velocity velocity relative to the surface
+ *
+ * @param angular_velocity Body frame velocity of fluid
+ * @param drag_coefficient Rotational drag coefficient of body
+ */
+void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque)
+{
+     /**
+     * @brief It's necessary to keep the velocity orientation from the body frame.
+     *     To do so, a mathematical artifice is used to do velocity square but without loosing the direction.
+     *  $(|V|/V)*V^2$ = $|V|*V$
+     */
+    Vector3f v_2(
+        fabsf(angular_velocity.x) * angular_velocity.x,
+        fabsf(angular_velocity.y) * angular_velocity.y,
+        fabsf(angular_velocity.z) * angular_velocity.z
+    );
+    Vector3f f_d = v_2 *= drag_coefficient * frame_property.equivalent_sphere_area * 1000 / 2;
+    torque = f_d * frame_property.equivalent_sphere_radius;
+}
+
+
+/**
 * @brief Calculate buoyancy force of the frame
 *
 * @return float
@@ -125,11 +215,11 @@ float Submarine::calculate_buoyancy_acceleration()
 
     // Completely below water level
     if (below_water_level > frame_property.height/2) {
-        return frame_property.buoyancy_acceleration;
+        return GRAVITY_MSS + sitl->buoyancy / frame_property.mass;
     }
 
     // bouyant force is proportional to fraction of height in water
-    return frame_property.buoyancy_acceleration * below_water_level/frame_property.height;
+    return GRAVITY_MSS + (sitl->buoyancy * below_water_level/frame_property.height) / frame_property.mass;
 };
 
 /*

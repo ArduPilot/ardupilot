@@ -27,6 +27,9 @@
 #include "ltable.h"
 #include "ltm.h"
 
+// lua code does lots of casting, these warnings are not helpful
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 
 #if !defined(LUAI_GCPAUSE)
 #define LUAI_GCPAUSE	200  /* 200% */

@@ -152,10 +152,11 @@ bool AP_Compass_HMC5843::init()
 {
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
-    if (!bus_sem || !bus_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!bus_sem) {
         hal.console->printf("HMC5843: Unable to get bus semaphore\n");
         return false;
     }
+    bus_sem->take_blocking();
 
     // high retries for init
     _bus->set_retries(10);
@@ -193,13 +194,15 @@ bool AP_Compass_HMC5843::init()
     // perform an initial read
     read();
 
-    _compass_instance = register_compass();
+    //register compass instance
+    _bus->set_device_type(DEVTYPE_HMC5883);
+    if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
+        return false;
+    }
+    set_dev_id(_compass_instance, _bus->get_bus_id());
 
     set_rotation(_compass_instance, _rotation);
     
-    _bus->set_device_type(DEVTYPE_HMC5883);
-    set_dev_id(_compass_instance, _bus->get_bus_id());
-
     if (_force_external) {
         set_external(_compass_instance, true);
     }

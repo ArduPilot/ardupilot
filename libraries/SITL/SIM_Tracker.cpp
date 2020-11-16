@@ -22,11 +22,6 @@
 
 namespace SITL {
 
-Tracker::Tracker(const char *home_str, const char *frame_str) :
-Aircraft(home_str, frame_str)
-{}
-
-
 /*
   update function for position (normal) servos.
 */

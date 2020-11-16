@@ -20,17 +20,17 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "GCS.h"
-#include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 extern const AP_HAL::HAL& hal;
 
 /**
    handle a SERIAL_CONTROL message
  */
-void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
 {
     mavlink_serial_control_t packet;
-    mavlink_msg_serial_control_decode(msg, &packet);
+    mavlink_msg_serial_control_decode(&msg, &packet);
 
     AP_HAL::UARTDriver *port = nullptr;
     AP_HAL::BetterStream *stream = nullptr;
@@ -43,14 +43,24 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
     bool exclusive = (packet.flags & SERIAL_CONTROL_FLAG_EXCLUSIVE) != 0;
 
     switch (packet.device) {
-    case SERIAL_CONTROL_DEV_TELEM1:
-        stream = port = hal.uartC;
-        lock_channel(MAVLINK_COMM_1, exclusive);
+    case SERIAL_CONTROL_DEV_TELEM1: {
+        GCS_MAVLINK *link = gcs().chan(1);
+        if (link == nullptr) {
+            break;
+        }
+        stream = port = link->get_uart();
+        link->lock(exclusive);
         break;
-    case SERIAL_CONTROL_DEV_TELEM2:
-        stream = port = hal.uartD;
-        lock_channel(MAVLINK_COMM_2, exclusive);
+    }
+    case SERIAL_CONTROL_DEV_TELEM2: {
+        GCS_MAVLINK *link = gcs().chan(2);
+        if (link == nullptr) {
+            break;
+        }
+        stream = port = link->get_uart();
+        link->lock(exclusive);
         break;
+    }
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.uartB;
         AP::gps().lock_port(0, exclusive);
@@ -65,6 +75,22 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
             return;
         }
         break;
+    case SERIAL_CONTROL_SERIAL0 ... SERIAL_CONTROL_SERIAL9: {
+        // direct access to a SERIALn port
+        stream = port = AP::serialmanager().get_serial_by_id(packet.device - SERIAL_CONTROL_SERIAL0);
+
+        // see if we need to lock mavlink
+        for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+            GCS_MAVLINK *link = gcs().chan(i);
+            if (link == nullptr || link->get_uart() != port) {
+                continue;
+            }
+            link->lock(exclusive);
+            break;
+        }
+        break;
+    }
+
     default:
         // not supported yet
         return;

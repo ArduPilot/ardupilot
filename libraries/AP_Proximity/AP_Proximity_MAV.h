@@ -8,7 +8,7 @@ class AP_Proximity_MAV : public AP_Proximity_Backend
 
 public:
     // constructor
-    AP_Proximity_MAV(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+    using AP_Proximity_Backend::AP_Proximity_Backend;
 
     // update state
     void update(void) override;
@@ -21,13 +21,9 @@ public:
     bool get_upward_distance(float &distance) const override;
 
     // handle mavlink DISTANCE_SENSOR messages
-    void handle_msg(mavlink_message_t *msg) override;
+    void handle_msg(const mavlink_message_t &msg) override;
 
 private:
-
-    // initialise sensor (returns true if sensor is succesfully initialised)
-    bool initialise();
-
     // horizontal distance support
     uint32_t _last_update_ms;   // system time of last DISTANCE_SENSOR message received
     float _distance_max;        // max range of sensor in meters

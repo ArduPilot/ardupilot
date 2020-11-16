@@ -59,7 +59,7 @@ static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 
 // size of memory reserved for dma-capable alloc
 #ifndef DMA_RESERVE_SIZE
-#define DMA_RESERVE_SIZE 4096
+#define DMA_RESERVE_SIZE 6144
 #endif
 
 #if DMA_RESERVE_SIZE != 0
@@ -81,9 +81,15 @@ void malloc_init(void)
       create a DMA reserve heap, to ensure we keep some memory for DMA
       safe memory allocations
      */
-    void *dma_reserve = malloc_dma(DMA_RESERVE_SIZE);
-    osalDbgAssert(dma_reserve != NULL, "DMA reserve");
-    chHeapObjectInit(&dma_reserve_heap, dma_reserve, DMA_RESERVE_SIZE);
+    uint32_t reserve_size = DMA_RESERVE_SIZE;
+    while (reserve_size > 0) {
+        void *dma_reserve = malloc_dma(reserve_size);
+        if (dma_reserve != NULL) {
+            chHeapObjectInit(&dma_reserve_heap, dma_reserve, reserve_size);
+            break;
+        }
+        reserve_size = (reserve_size * 7) / 8;
+    }
 #endif
 }
 
@@ -278,6 +284,21 @@ void memory_flush_all(void)
 {
     uint8_t i;
     for (i=0; i<NUM_MEMORY_REGIONS; i++) {
-        cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
+        stm32_cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
     }
+}
+
+/*
+  replacement for strdup
+ */
+char *strdup(const char *str)
+{
+    const size_t len = strlen(str);
+    char *ret = malloc(len+1);
+    if (!ret) {
+        return NULL;
+    }
+    memcpy(ret, str, len);
+    ret[len] = 0;
+    return ret;
 }

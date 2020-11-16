@@ -104,7 +104,7 @@ Menu::_run_command(bool prompt_on_enter)
         if (_argv[argc].str == nullptr || '\0' == _argv[argc].str[0])
             break;
         _argv[argc].i = atol(_argv[argc].str);
-        _argv[argc].f = atof(_argv[argc].str);      // calls strtod, > 700B !
+        _argv[argc].f = strtof(_argv[argc].str, NULL);
         argc++;
     }
     

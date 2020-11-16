@@ -14,26 +14,83 @@
  */
 #pragma once
 
-#define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
-#define HAL_INS_MPU9250_NAME "MPU9250"
+// make sensor selection clearer
+#define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
+#define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
+#define PROBE_IMU_SPI2(driver, devname1, devname2, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname1),hal.spi->get_device(devname2),##args))
 
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
-#define HAL_BARO_BMP280_NAME "BMP280"
+#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
+#define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
 
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_AK8963_MPU9250
+#define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
+#define PROBE_MAG_SPI(driver, devname, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(hal.spi->get_device(devname),##args))
+#define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
+#define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
+//------------------------------------
+
+#define HAL_INS_DEFAULT HAL_INS_ICM20XXX_I2C
+#define HAL_INS_ICM20XXX_I2C_BUS 0
+#define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
+
+//#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
+//GPIO 34
+//#define HAL_BARO_ANALOG_PIN (6)
+
+#define HAL_COMPASS_ICM20948_I2C_ADDR (0x68)
+#define HAL_COMPASS_AK09916_I2C_BUS 0
+#define HAL_COMPASS_AK09916_I2C_ADDR (0x0C)
+#define HAL_COMPASS_MAX_SENSORS 3
+
+#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensensev2, 0, 0x68, ROTATION_YAW_270)
+
+#define HAL_MAG_PROBE_LIST ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948_I2C(0, ROTATION_NONE));
+
+#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x77)
 
 #define HAL_ESP32_WIFI 1
 
-#define HAL_ESP32_RCOUT {GPIO_NUM_27, GPIO_NUM_13, GPIO_NUM_22, GPIO_NUM_21}
+//TODO RCOUT config
+#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
 
-#define HAL_ESP32_SPI_BUSES \
-    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+#define HAL_ESP32_SPI_BUSES {}
 
-#define HAL_ESP32_SPI_DEVICES \
-    {.name="MPU9250", .bus=0, .device=1, .cs=GPIO_NUM_5,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ},\
-    {.name= "BMP280", .bus=0, .device=2, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}
+#define HAL_ESP32_SPI_DEVICES {}
 
-#define HAL_ESP32_I2C_BUSES {}
-    
+#define HAL_ESP32_I2C_BUSES \
+	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true},\
+	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true}
+
+// GPIO36
+#define HAL_BATT_VOLT_PIN (0)
+#define HAL_BATT_VOLT_SCALE (18.1)
+//GPIO 32
+#define HAL_BATT_CURR_PIN (4)
+#define HAL_BATT_CURR_SCALE (36)
+
+#define HAL_ESP32_RCIN GPIO_NUM_17
+
 #define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_3 , .tx=GPIO_NUM_1 }
+    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
+	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
+	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+
+#define HAVE_FILESYSTEM_SUPPORT 1
+#define HAL_ESP32_SDCARD 1
+#define LOGGER_MAVLINK_SUPPORT 1
+#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
+#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
+#define HAL_OS_POSIX_IO 1
+
+#define HAL_LOGGING_BACKENDS_DEFAULT 2
+
+
+#define HAL_ESP32_SDSPI \
+   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+
+
+
+
+
+
+

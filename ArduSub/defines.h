@@ -30,7 +30,7 @@ enum autopilot_yaw_mode {
 };
 
 // Auto Pilot Modes enumeration
-enum control_mode_t {
+enum control_mode_t : uint8_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
     ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
@@ -39,25 +39,8 @@ enum control_mode_t {
     CIRCLE =        7,  // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    MANUAL =       19   // Pass-through input with no stabilization
-};
-
-enum mode_reason_t {
-    MODE_REASON_UNKNOWN=0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_RADIO_FAILSAFE,
-    MODE_REASON_BATTERY_FAILSAFE,
-    MODE_REASON_GCS_FAILSAFE,
-    MODE_REASON_EKF_FAILSAFE,
-    MODE_REASON_GPS_GLITCH,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_THROTTLE_SURFACE_ESCAPE,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_TERRAIN_FAILSAFE,
-    MODE_REASON_SURFACE_COMPLETE,
-    MODE_REASON_LEAK_FAILSAFE,
-    MODE_REASON_BAD_DEPTH
+    MANUAL =       19,  // Pass-through input with no stabilization
+    MOTOR_DETECT = 20   // Automatically detect motors orientation
 };
 
 // Acro Trainer types
@@ -102,8 +85,6 @@ enum RTLState {
 
 //  Logging parameters
 enum LoggingParameters {
-    TYPE_AIRSTART_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_CONTROL_TUNING_MSG,
     LOG_DATA_INT16_MSG,
     LOG_DATA_UINT16_MSG,
@@ -111,7 +92,6 @@ enum LoggingParameters {
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
     LOG_MOTBATT_MSG,
-    LOG_PARAMTUNE_MSG,
     LOG_GUIDEDTARGET_MSG
 };
 

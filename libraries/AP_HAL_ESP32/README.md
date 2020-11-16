@@ -4,16 +4,11 @@
 # Ardupilot port to the esp32 series mcu
 
 
-
 ## Building instructions
-0. Build currently tested on linux
-1. Install toolchain from espressif https://docs.espressif.com/projects/esp-idf/en/latest/get-started/
-1.5 No need to get esp-idf, as it's a submodule under "buzzs" ardupilot repo. 
-Please use lastest stable version of the esp-idf (https://github.com/espressif/esp-idf/tree/release/v3.3)
+1. Build currently tested on linux
 2. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_wip
 3. Use script Tools/scripts/install-prereqs-* to install ardupilot requirements
-4. review the file in the root of the repo called "source_this_file.sh" which points to the checked-out ardupilot/modules/esp_idf/ folder.
-5. Configure and run build:
+4. Configure and run build:
 ```bash
 cd ardupilot
 source source_this_file.sh
@@ -21,14 +16,19 @@ source source_this_file.sh
 ./waf plane
 or
 ./waf copter
-
 ```
 
 ```
 Do NOT use "./waf build", it's broken right now.
 ```
 
-tips:  if you get compile error/s to do with CONFIG... such as 
+TIPS:
+ -  we use toolchain and esp-idf from espressif , as a submodule, so no need to preinstall etc. 
+https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -  
+ (https://github.com/espressif/esp-idf/tree/release/v3.3)
+
+
+ -   if you get compile error/s to do with CONFIG... such as 
 in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 

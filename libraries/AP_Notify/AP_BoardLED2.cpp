@@ -171,7 +171,7 @@ void AP_BoardLED2::update(void)
                 if ((counter2 & 0x7) == 0) {
                     hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
                 }
-            }else if(AP_Notify::flags.failsafe_radio){//   blink fast (around 4Hz)
+            }else if(AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_gcs){//   blink fast (around 4Hz)
                 if ((counter2 & 0x3) == 0) {
                     hal.gpio->toggle(HAL_GPIO_A_LED_PIN);
                 }

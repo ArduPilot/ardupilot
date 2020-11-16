@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # encoding: utf-8
 
 """
@@ -17,9 +17,8 @@ import subprocess
 
 def parse_inc_dir(lines):
     for line in lines.splitlines():
-        if line.startswith(b'INCLUDES: '):
-            print(str(line.replace(b'INCLUDES: ', b'')).split())
-            return str(line.replace(b'INCLUDES: ', b'')).split()
+        if line.startswith('INCLUDES: '):
+            return line.replace('INCLUDES: ', '').split()
 
 def configure(cfg):
     def srcpath(path):
@@ -28,6 +27,8 @@ def configure(cfg):
     env = cfg.env
     env.AP_HAL_PLANE = srcpath('libraries/AP_HAL_ESP32/targets/plane')
     env.AP_HAL_COPTER = srcpath('libraries/AP_HAL_ESP32/targets/copter')
+    env.AP_HAL_ROVER = srcpath('libraries/AP_HAL_ESP32/targets/rover')
+    env.AP_HAL_SUB = srcpath('libraries/AP_HAL_ESP32/targets/sub')
     env.AP_PROGRAM_FEATURES += ['esp32_ap_program']
 
     try:
@@ -39,10 +40,10 @@ def configure(cfg):
     cmd = "export IDF_PATH=\"{3}\"; cd {0}&&echo '{2}' > ../board.txt&&{1} defconfig BATCH_BUILD=1&&{1} showinc BATCH_BUILD=1".format(env.AP_HAL_PLANE, env.MAKE[0], env.BOARD, env.IDF)
     print(cmd)
     result = subprocess.check_output(cmd, shell=True)
-    #env.INCLUDES += parse_inc_dir(result)
     if not isinstance(result, str):
         result = result.decode()
-    env.INCLUDES += parse_inc_dir(result)
+    #env.INCLUDES = parse_inc_dir(result) + env.INCLUDES
+    cfg.env.prepend_value('INCLUDES', parse_inc_dir(result))
 
 class build_esp32_image_plane(Task.Task):
     '''build an esp32 image'''
@@ -50,7 +51,7 @@ class build_esp32_image_plane(Task.Task):
     run_str="export IDF_PATH=\"${IDF}\"; cd ${AP_HAL_PLANE}&&'${MAKE}' BATCH_BUILD=1"
     always_run = True
     def keyword(self):
-        return "Confabulating..."
+        return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
@@ -60,7 +61,27 @@ class build_esp32_image_copter(Task.Task):
     run_str="export IDF_PATH=\"${IDF}\"; cd ${AP_HAL_COPTER}&&'${MAKE}' BATCH_BUILD=1"
     always_run = True
     def keyword(self):
-        return "Specularising..."
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_esp32_image_rover(Task.Task):
+    '''build an esp32 image'''
+    color='CYAN'
+    run_str="export IDF_PATH=\"${IDF}\"; cd ${AP_HAL_ROVER}&&'${MAKE}' V=1"
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_esp32_image_sub(Task.Task):
+    '''build an esp32 image'''
+    color='CYAN'
+    run_str="export IDF_PATH=\"${IDF}\"; cd ${AP_HAL_SUB}&&'${MAKE}' V=1"
+    always_run = True
+    def keyword(self):
+        return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
@@ -72,7 +93,7 @@ def esp32_firmware(self):
         src_in = [self.bld.bldnode.find_or_declare('lib/libArduPlane_libs.a'),
                   self.bld.bldnode.find_or_declare('lib/bin/libarduplane.a')]
         img_out = self.bld.bldnode.find_or_declare('idf-plane/arduplane.elf')
-        generate_bin_task = self.create_task('build_esp32_image_plane', src=src_in, tgt=img_out)        
+        generate_bin_task = self.create_task('build_esp32_image_plane', src=src_in, tgt=img_out)
         generate_bin_task.set_run_after(self.link_task)
 
     if str(self.link_task.outputs[0]).endswith('libarducopter.a'):
@@ -82,10 +103,19 @@ def esp32_firmware(self):
         img_out = self.bld.bldnode.find_or_declare('idf-copter/arducopter.elf')
         generate_bin_task = self.create_task('build_esp32_image_copter', src=src_in, tgt=img_out)
         generate_bin_task.set_run_after(self.link_task)
-        
-        #add generated include files
-        #cmd = "cd {0}&&{1} showinc".format(self.env.AP_HAL_COPTER, self.env.MAKE[0])
-        #result = subprocess.check_output(cmd, shell=True)
-        #self.env.INCLUDES += parse_inc_dir(result)
-        
-        
+
+    if str(self.link_task.outputs[0]).endswith('libardurover.a'):
+        #build final image
+        src_in = [self.bld.bldnode.find_or_declare('lib/libRover_libs.a'),
+                  self.bld.bldnode.find_or_declare('lib/bin/libardurover.a')]
+        img_out = self.bld.bldnode.find_or_declare('idf-rover/ardurover.elf')
+        generate_bin_task = self.create_task('build_esp32_image_rover', src=src_in, tgt=img_out)
+        generate_bin_task.set_run_after(self.link_task)
+
+    if str(self.link_task.outputs[0]).endswith('libardusub.a'):
+        #build final image
+        src_in = [self.bld.bldnode.find_or_declare('lib/libArduSub_libs.a'),
+                  self.bld.bldnode.find_or_declare('lib/bin/libardusub.a')]
+        img_out = self.bld.bldnode.find_or_declare('idf-sub/ardusub.elf')
+        generate_bin_task = self.create_task('build_esp32_image_sub', src=src_in, tgt=img_out)
+        generate_bin_task.set_run_after(self.link_task)

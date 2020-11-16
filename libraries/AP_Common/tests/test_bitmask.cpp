@@ -75,3 +75,5 @@ TEST(Bitmask, Assignment)
 }
 
 AP_GTEST_MAIN()
+
+int hal = 0; // bizarrely, this fixes an undefined-symbol error but doesn't raise a type exception.  Yay.

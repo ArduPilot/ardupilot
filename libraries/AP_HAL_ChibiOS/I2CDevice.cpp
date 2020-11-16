@@ -17,17 +17,20 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "Util.h"
+#include "GPIO.h"
 
-#if HAL_USE_I2C == TRUE
+#if HAL_USE_I2C == TRUE && defined(HAL_I2C_DEVICE_LIST)
 
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "ch.h"
 #include "hal.h"
 
 static const struct I2CInfo {
     struct I2CDriver *i2c;
+    uint8_t instance;
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
     ioline_t scl_line;
@@ -53,6 +56,9 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #define HAL_I2C_F7_100_TIMINGR 0x20404768
 #define HAL_I2C_F7_400_TIMINGR 0x6000030D
 
+#define HAL_I2C_H7_100_TIMINGR 0x00707CBB
+#define HAL_I2C_H7_400_TIMINGR 0x00300F38
+
 /*
   enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low
  */
@@ -64,9 +70,9 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 void I2CBus::dma_init(void)
 {
     chMtxObjectInit(&dma_lock);
-    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx, 
+    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
-                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));    
+                                FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));
 }
 
 // Clear Bus to avoid bus lockup
@@ -84,28 +90,40 @@ void I2CBus::clear_all()
  */
 void I2CBus::clear_bus(uint8_t busidx)
 {
+#if HAL_I2C_CLEAR_ON_TIMEOUT
     const struct I2CInfo &info = I2CD[busidx];
-    const iomode_t mode_saved = palReadLineMode(info.scl_line);
-    palSetLineMode(info.scl_line, PAL_MODE_OUTPUT_PUSHPULL);
+    const ioline_t scl_line = GPIO::resolve_alt_config(info.scl_line, PERIPH_TYPE::I2C_SCL, info.instance);
+    if (scl_line == 0) {
+        return;
+    }
+    const iomode_t mode_saved = palReadLineMode(scl_line);
+    palSetLineMode(scl_line, PAL_MODE_OUTPUT_PUSHPULL);
     for(uint8_t j = 0; j < 20; j++) {
-        palToggleLine(info.scl_line);
+        palToggleLine(scl_line);
         hal.scheduler->delay_microseconds(10);
     }
-    palSetLineMode(info.scl_line, mode_saved);
+    palSetLineMode(scl_line, mode_saved);
+#endif
 }
 
+#if HAL_I2C_CLEAR_ON_TIMEOUT
 /*
   read SDA on a bus, to check if it may be stuck
  */
 uint8_t I2CBus::read_sda(uint8_t busidx)
 {
     const struct I2CInfo &info = I2CD[busidx];
-    const iomode_t mode_saved = palReadLineMode(info.sda_line);
-    palSetLineMode(info.sda_line, PAL_MODE_INPUT);
-    uint8_t ret = palReadLine(info.sda_line);
-    palSetLineMode(info.sda_line, mode_saved);
+    const ioline_t sda_line = GPIO::resolve_alt_config(info.sda_line, PERIPH_TYPE::I2C_SDA, info.instance);
+    if (sda_line == 0) {
+        return 0;
+    }
+    const iomode_t mode_saved = palReadLineMode(sda_line);
+    palSetLineMode(sda_line, PAL_MODE_INPUT);
+    uint8_t ret = palReadLine(sda_line);
+    palSetLineMode(sda_line, mode_saved);
     return ret;
 }
+#endif
 
 // setup I2C buses
 I2CDeviceManager::I2CDeviceManager(void)
@@ -118,7 +136,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32F3)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -126,7 +144,15 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
-#else
+#elif defined(STM32H7)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_H7_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_H7_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#else // F1 or F4
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
         businfo[i].i2ccfg.clock_speed = businfo[i].busclock;
         if (businfo[i].i2ccfg.clock_speed <= 100000) {
@@ -150,7 +176,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -169,7 +195,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
 I2CDevice::~I2CDevice()
 {
 #if 0
-    printf("I2C device bus %u address 0x%02x closed\n", 
+    printf("I2C device bus %u address 0x%02x closed\n",
            (unsigned)bus.busnum, (unsigned)_address);
 #endif
     free(pname);
@@ -193,11 +219,11 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("I2C: not owner of 0x%x\n", (unsigned)get_bus_id());
+        hal.console->printf("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
         return false;
     }
-    
-#if defined(STM32F7) || defined(STM32H7)
+
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {
@@ -242,12 +268,15 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 {
     i2cAcquireBus(I2CD[bus.busnum].i2c);
 
-    bus.bouncebuffer_setup(send, send_len, recv, recv_len);
-    
+    if (!bus.bouncebuffer_setup(send, send_len, recv, recv_len)) {
+        i2cReleaseBus(I2CD[bus.busnum].i2c);
+        return false;
+    }
+
     for(uint8_t i=0 ; i <= _retries; i++) {
         int ret;
         // calculate a timeout as twice the expected transfer time, and set as min of 4ms
-        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*MAX(send_len, recv_len))/1000);
+        uint32_t timeout_ms = 1+2*(((8*1000000UL/bus.busclock)*(send_len+recv_len))/1000);
         timeout_ms = MAX(timeout_ms, _timeout_ms);
 
         // we get the lock and start the bus inside the retry loop to
@@ -257,7 +286,11 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 
         i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
-        
+
+        osalSysLock();
+        hal.util->persistent_data.i2c_count++;
+        osalSysUnlock();
+
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, chTimeMS2I(timeout_ms));
         } else {
@@ -265,11 +298,21 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                                            recv, recv_len, chTimeMS2I(timeout_ms));
         }
 
-        i2cStop(I2CD[bus.busnum].i2c);
+        i2cSoftStop(I2CD[bus.busnum].i2c);
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
-        
+
         bus.dma_handle->unlock();
-        
+
+        if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
+            INTERNAL_ERROR(AP_InternalError::error_t::i2c_isr);
+            break;
+        }
+
+#ifdef STM32_I2C_ISR_LIMIT
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        pd.i2c_isr_count += I2CD[bus.busnum].i2c->isr_count;
+#endif
+
         if (ret == MSG_OK) {
             bus.bouncebuffer_finish(send, recv, recv_len);
             i2cReleaseBus(I2CD[bus.busnum].i2c);
@@ -292,7 +335,7 @@ bool I2CDevice::read_registers_multiple(uint8_t first_reg, uint8_t *recv,
     return false;
 }
 
-    
+
 /*
   register a periodic callback
 */
@@ -300,7 +343,7 @@ AP_HAL::Device::PeriodicHandle I2CDevice::register_periodic_callback(uint32_t pe
 {
     return bus.register_periodic_callback(period_usec, cb, this);
 }
-    
+
 
 /*
   adjust a periodic callback

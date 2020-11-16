@@ -1,0 +1,68 @@
+# Network-synchronized timestamp, 0 if not available. Note: not necessarily a UTC time.
+uavcan.Timestamp timestamp
+
+# icao address
+uint32 icao_address
+
+# Time since last communication in seconds
+uint16 tslc
+
+# Traffic position in lat-lon-alt. Check alt_type for altitude datum
+int32 latitude_deg_1e7
+int32 longitude_deg_1e7
+float32 alt_m
+
+# Traffic heading in radians.
+# Course over ground if heading is unavailable. 0 if neither are available.
+float16 heading
+
+# Traffic velocity in m/s
+float16[3] velocity
+
+# Traffic squawk code
+uint16 squawk
+
+# Traffic callsign
+uint8[9] callsign
+
+# Traffic source
+uint3 SOURCE_ADSB = 0
+uint3 SOURCE_ADSB_UAT = 1
+uint3 SOURCE_FLARM = 2
+uint3 source
+
+# Traffic type
+uint5 TRAFFIC_TYPE_UNKNOWN = 0
+uint5 TRAFFIC_TYPE_LIGHT = 1
+uint5 TRAFFIC_TYPE_SMALL = 2
+uint5 TRAFFIC_TYPE_LARGE = 3
+uint5 TRAFFIC_TYPE_HIGH_VORTEX_LARGE = 4
+uint5 TRAFFIC_TYPE_HEAVY = 5
+uint5 TRAFFIC_TYPE_HIGHLY_MANUV = 6
+uint5 TRAFFIC_TYPE_ROTOCRAFT = 7
+uint5 TRAFFIC_TYPE_GLIDER = 9
+uint5 TRAFFIC_TYPE_LIGHTER_THAN_AIR = 10
+uint5 TRAFFIC_TYPE_PARACHUTE = 11
+uint5 TRAFFIC_TYPE_ULTRA_LIGHT = 12
+uint5 TRAFFIC_TYPE_UAV = 14
+uint5 TRAFFIC_TYPE_SPACE = 15
+uint5 TRAFFIC_TYPE_EMERGENCY_SURFACE = 17
+uint5 TRAFFIC_TYPE_SERVICE_SURFACE = 18
+uint5 TRAFFIC_TYPE_POINT_OBSTACLE = 19
+uint5 traffic_type
+
+# Altitude type
+uint7 ALT_TYPE_ALT_UNKNOWN = 0
+uint7 ALT_TYPE_PRESSURE_AMSL = 1
+uint7 ALT_TYPE_WGS84 = 2
+uint7 alt_type
+
+# Validity flags
+bool lat_lon_valid
+bool heading_valid
+bool velocity_valid
+bool callsign_valid
+bool ident_valid
+bool simulated_report
+bool vertical_velocity_valid
+bool baro_valid

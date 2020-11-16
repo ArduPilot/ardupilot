@@ -8,6 +8,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define SQRT_2 1.4142135623730951f
 
 TEST(VectorTest, Rotations)
@@ -67,6 +69,7 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_68_YAW_293, -0.4066309f, -1.5839677f, -0.5706992f);
     TEST_ROTATION(ROTATION_PITCH_315, 0, 1, SQRT_2);
     TEST_ROTATION(ROTATION_ROLL_90_PITCH_315, 0, -1, SQRT_2);
+    TEST_ROTATION(ROTATION_PITCH_7, 1.1144155f, 1, 0.87067682f);
 
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 }
@@ -235,6 +238,17 @@ TEST(MathWrapTest, Angle180)
     EXPECT_EQ(9000.f,  wrap_180_cd(-27000.f));
     EXPECT_EQ(0.f,     wrap_180_cd(-36000.f));
     EXPECT_EQ(0.f,     wrap_180_cd(-72000.f));
+
+    EXPECT_EQ(45,   wrap_180(int16_t(45)));
+    EXPECT_EQ(90,   wrap_180(int16_t(90)));
+    EXPECT_EQ(180,  wrap_180(int16_t(180)));
+    EXPECT_EQ(-179, wrap_180(int16_t(181)));
+    EXPECT_EQ(-90,  wrap_180(int16_t(270)));
+    EXPECT_EQ(0,      wrap_180(int16_t(360)));
+    EXPECT_EQ(0,      wrap_180(int16_t(720)));
+    EXPECT_EQ(0,      wrap_180(int16_t(3600)));
+    EXPECT_EQ(0,      wrap_180((int16_t(7200))));
+    EXPECT_EQ(0,      wrap_180((int16_t)-3600));
 }
 
 TEST(MathWrapTest, Angle360)
@@ -274,6 +288,17 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(0.f,     wrap_360_cd(-36000.f));
     EXPECT_EQ(35995.0f,wrap_360_cd(-36005.f));
     EXPECT_EQ(0.f,     wrap_360_cd(-72000.f));
+
+
+    EXPECT_EQ(45,  wrap_360((int16_t)45));
+    EXPECT_EQ(90,  wrap_360((int16_t)90));
+    EXPECT_EQ(180, wrap_360((int16_t)180));
+    EXPECT_EQ(270, wrap_360((int16_t)270));
+    EXPECT_EQ(0,     wrap_360((int16_t)360));
+    EXPECT_EQ(1,     wrap_360((int16_t)361));
+    EXPECT_EQ(0,     wrap_360((int16_t)720));
+    EXPECT_EQ(0,     wrap_360((int16_t)3600));
+    EXPECT_EQ(0,     wrap_360((int16_t)7200));
 }
 
 TEST(MathWrapTest, AnglePI)

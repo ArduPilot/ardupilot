@@ -60,52 +60,16 @@
 #define SBUS_FRAMELOST_BIT	2
 
 /* define range mapping here, -+100% -> 1000..2000 */
-#define SBUS_RANGE_MIN 200.0f
-#define SBUS_RANGE_MAX 1800.0f
+#define SBUS_RANGE_MIN 200
+#define SBUS_RANGE_MAX 1800
+#define SBUS_RANGE_RANGE (SBUS_RANGE_MAX - SBUS_RANGE_MIN)
 
-#define SBUS_TARGET_MIN 1000.0f
-#define SBUS_TARGET_MAX 2000.0f
+#define SBUS_TARGET_MIN 1000
+#define SBUS_TARGET_MAX 2000
+#define SBUS_TARGET_RANGE (SBUS_TARGET_MAX - SBUS_TARGET_MIN)
 
-/* pre-calculate the floating point stuff as far as possible at compile time */
-#define SBUS_SCALE_FACTOR ((SBUS_TARGET_MAX - SBUS_TARGET_MIN) / (SBUS_RANGE_MAX - SBUS_RANGE_MIN))
-#define SBUS_SCALE_OFFSET (int)(SBUS_TARGET_MIN - (SBUS_SCALE_FACTOR * SBUS_RANGE_MIN + 0.5f))
-
-/*
- * S.bus decoder matrix.
- *
- * Each channel value can come from up to 3 input bytes. Each row in the
- * matrix describes up to three bytes, and each entry gives:
- *
- * - byte offset in the data portion of the frame
- * - right shift applied to the data byte
- * - mask for the data byte
- * - left shift applied to the result into the channel value
- */
-struct sbus_bit_pick {
-    uint8_t byte;
-    uint8_t rshift;
-    uint8_t mask;
-    uint8_t lshift;
-};
-static const struct sbus_bit_pick sbus_decoder[SBUS_INPUT_CHANNELS][3] = {
-    /*  0 */ { { 0, 0, 0xff, 0}, { 1, 0, 0x07, 8}, { 0, 0, 0x00,  0} },
-    /*  1 */ { { 1, 3, 0x1f, 0}, { 2, 0, 0x3f, 5}, { 0, 0, 0x00,  0} },
-    /*  2 */ { { 2, 6, 0x03, 0}, { 3, 0, 0xff, 2}, { 4, 0, 0x01, 10} },
-    /*  3 */ { { 4, 1, 0x7f, 0}, { 5, 0, 0x0f, 7}, { 0, 0, 0x00,  0} },
-    /*  4 */ { { 5, 4, 0x0f, 0}, { 6, 0, 0x7f, 4}, { 0, 0, 0x00,  0} },
-    /*  5 */ { { 6, 7, 0x01, 0}, { 7, 0, 0xff, 1}, { 8, 0, 0x03,  9} },
-    /*  6 */ { { 8, 2, 0x3f, 0}, { 9, 0, 0x1f, 6}, { 0, 0, 0x00,  0} },
-    /*  7 */ { { 9, 5, 0x07, 0}, {10, 0, 0xff, 3}, { 0, 0, 0x00,  0} },
-    /*  8 */ { {11, 0, 0xff, 0}, {12, 0, 0x07, 8}, { 0, 0, 0x00,  0} },
-    /*  9 */ { {12, 3, 0x1f, 0}, {13, 0, 0x3f, 5}, { 0, 0, 0x00,  0} },
-    /* 10 */ { {13, 6, 0x03, 0}, {14, 0, 0xff, 2}, {15, 0, 0x01, 10} },
-    /* 11 */ { {15, 1, 0x7f, 0}, {16, 0, 0x0f, 7}, { 0, 0, 0x00,  0} },
-    /* 12 */ { {16, 4, 0x0f, 0}, {17, 0, 0x7f, 4}, { 0, 0, 0x00,  0} },
-    /* 13 */ { {17, 7, 0x01, 0}, {18, 0, 0xff, 1}, {19, 0, 0x03,  9} },
-    /* 14 */ { {19, 2, 0x3f, 0}, {20, 0, 0x1f, 6}, { 0, 0, 0x00,  0} },
-    /* 15 */ { {20, 5, 0x07, 0}, {21, 0, 0xff, 3}, { 0, 0, 0x00,  0} }
-};
-
+// this is 875
+#define SBUS_SCALE_OFFSET (SBUS_TARGET_MIN - ((SBUS_TARGET_RANGE * SBUS_RANGE_MIN / SBUS_RANGE_RANGE)))
 
 // constructor
 AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted) :
@@ -144,33 +108,13 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
         break;
     }
 
-    unsigned chancount = (max_values > SBUS_INPUT_CHANNELS) ?
-                         SBUS_INPUT_CHANNELS : max_values;
+    uint16_t chancount = SBUS_INPUT_CHANNELS;
 
-    /* use the decoder matrix to extract channel data */
-    for (unsigned channel = 0; channel < chancount; channel++) {
-        unsigned value = 0;
-
-        for (unsigned pick = 0; pick < 3; pick++) {
-            const struct sbus_bit_pick *decode = &sbus_decoder[channel][pick];
-
-            if (decode->mask != 0) {
-                unsigned piece = frame[1 + decode->byte];
-                piece >>= decode->rshift;
-                piece &= decode->mask;
-                piece <<= decode->lshift;
-
-                value |= piece;
-            }
-        }
-
-
-        /* convert 0-2048 values to 1000-2000 ppm encoding in a not too sloppy fashion */
-        values[channel] = (uint16_t)(value * SBUS_SCALE_FACTOR +.5f) + SBUS_SCALE_OFFSET;
-    }
+    decode_11bit_channels((const uint8_t*)(&frame[1]), SBUS_INPUT_CHANNELS, values,
+        SBUS_TARGET_RANGE, SBUS_RANGE_RANGE, SBUS_SCALE_OFFSET);
 
     /* decode switch channels if data fields are wide enough */
-    if (max_values > 17 && chancount > 15) {
+    if (max_values > 17 && SBUS_INPUT_CHANNELS > 15) {
         chancount = 18;
 
         /* channel 17 (index 16) */
@@ -246,6 +190,7 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
     byte_input.buf[byte_input.ofs++] = b;
 
     if (byte_input.ofs == sizeof(byte_input.buf)) {
+        log_data(AP_RCProtocol::SBUS, timestamp_us, byte_input.buf, byte_input.ofs);
         uint16_t values[SBUS_INPUT_CHANNELS];
         uint16_t num_values=0;
         bool sbus_failsafe = false;

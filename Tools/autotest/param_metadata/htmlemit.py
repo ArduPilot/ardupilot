@@ -5,7 +5,7 @@ Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 
 from param import known_param_fields, known_units
 from emit import Emit
-import cgi
+import html
 
 
 class HtmlEmit(Emit):
@@ -59,7 +59,7 @@ DO NOT EDIT
             t += '\n\n<h2>%s</h2>' % tag
             if d.get('User', None) == 'Advanced':
                 t += '<em>Note: This parameter is for advanced users</em><br>'
-            t += "\n\n<p>%s</p>\n" % cgi.escape(param.Description)
+            t += "\n\n<p>%s</p>\n" % html.escape(param.Description)
             t += "<ul>\n"
 
             for field in param.__dict__.keys():
@@ -77,8 +77,8 @@ DO NOT EDIT
                         abreviated_units = param.__dict__[field]
                         if abreviated_units != '':
                             units = known_units[abreviated_units]   # use the known_units dictionary to convert the abreviated unit into a full textual one
-                            t += "<li>%s: %s</li>\n" % (field, cgi.escape(units))
+                            t += "<li>%s: %s</li>\n" % (field, html.escape(units))
                     else:
-                        t += "<li>%s: %s</li>\n" % (field, cgi.escape(param.__dict__[field]))
+                        t += "<li>%s: %s</li>\n" % (field, html.escape(param.__dict__[field]))
             t += "</ul>\n"
         self.t += t

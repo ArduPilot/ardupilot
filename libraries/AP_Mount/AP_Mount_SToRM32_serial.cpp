@@ -1,8 +1,9 @@
 #include "AP_Mount_SToRM32_serial.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
-#include <AP_HAL/utility/RingBuffer.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -12,8 +13,10 @@ AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount::m
 {}
 
 // init - performs any required initialisation for this instance
-void AP_Mount_SToRM32_serial::init(const AP_SerialManager& serial_manager)
+void AP_Mount_SToRM32_serial::init()
 {
+    const AP_SerialManager& serial_manager = AP::serialmanager();
+
     _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0);
     if (_port) {
         _initialised = true;
@@ -72,8 +75,15 @@ void AP_Mount_SToRM32_serial::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+                resend_now = true;
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
+                                           true,
+                                           true)) {
                 resend_now = true;
             }
             break;
@@ -274,3 +284,4 @@ void AP_Mount_SToRM32_serial::parse_reply() {
             break;
     }
 }
+#endif // HAL_MOUNT_ENABLED

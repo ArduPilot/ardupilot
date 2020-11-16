@@ -11,4 +11,4 @@ set pth=%pth:\=/%
 set drv=%CD:~0,1%
 set "fullpath=/cygdrive/%drv%%pth%"
 
-%CYGWIN_LOCATION%\bin\bash.exe --login -i -c "cd ""%fullpath%"" && cd ../../../APMrover2 && ../Tools/autotest/sim_vehicle.py"
+%CYGWIN_LOCATION%\bin\bash.exe --login -i -c "cd ""%fullpath%"" && cd ../../../Rover && ../Tools/autotest/sim_vehicle.py"

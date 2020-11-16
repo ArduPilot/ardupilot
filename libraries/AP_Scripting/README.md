@@ -2,13 +2,15 @@
 
 ## Enabling Scripting Support in Builds
 
-To enable scripting the `--enable-scripting` flag must be passed to waf.
-The following example enables scripting and builds the ArduPlane firmware for the Cube.
+Scripting is automatically enabled on all boards with at least 1MB of flash space.
+The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
 ```
-$ waf configure --enable-scripting --board=CubeBlack
+$ waf configure --board=CubeBlack
 
 $ waf plane
+
+$ waf plane --upload
 ```
 
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
@@ -16,8 +18,10 @@ and launching of the simulation into one command for you.
 
 
 ```
-$ Tools/autotest/sim_vehicle.py --waf-configure-arg --enable-scripting -v ArduPlane
+$ Tools/autotest/sim_vehicle.py -v ArduPlane
 ```
+
+Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
 
 ## Adding Scripts
 
@@ -28,14 +32,23 @@ An example script is given below:
 
 ```lua
 function update () -- periodic function that will be called
-  current_pos = Location()
-  ahrs:get_position(current_pos)
-  distance = current_pos:get_distance(ahrs:get_home()) -- calculate the distance from home
-  if distance > 1000 then -- if more then 1000 meters away
-    distance = 1000;      -- clamp the distance to 1000 meters
+  current_pos = ahrs:get_position()
+  home = ahrs:get_home()
+  if current_pos and home then
+    distance = current_pos:get_distance(ahrs:get_home()) -- calculate the distance from home
+    if distance > 1000 then -- if more then 1000 meters away
+      distance = 1000;      -- clamp the distance to 1000 meters
+    end
+    SRV_Channels:set_output_pwm(96, 1000 + distance) -- set the servo assigned function 96 (scripting3) to a proportional value
   end
-  servo.set_output_pwm(96, 1000 + distance) -- set the servo assigned function 96 (scripting3) to a proportional value
 
   return update, 1000 -- request to be rerun again 1000 milliseconds (1 second) from now
 end
+
+return update, 1000 -- request to be rerun again 1000 milliseconds (1 second) from now
 ```
+
+## Working with bindings
+
+Edit bindings.desc and rebuild. The waf build will automatically
+re-run the code generator.

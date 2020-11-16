@@ -20,7 +20,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 class AP_TempCalibration

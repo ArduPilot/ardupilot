@@ -28,3 +28,9 @@ void ModeGuided::update()
     }
 }
 
+void ModeGuided::navigate()
+{
+    // Zero indicates to use WP_LOITER_RAD
+    plane.update_loiter(0);
+}
+

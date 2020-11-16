@@ -46,21 +46,6 @@ void QAutoTune::init_z_limits()
 }
 
 
-// Wrote an event packet
-void QAutoTune::Log_Write_Event(enum at_event id)
-{
-    // offset of 30 aligned with ArduCopter autotune events
-    uint8_t ev_id = 30 + (uint8_t)id;
-    AP::logger().Write(
-        "EVT",
-        "TimeUS,Id",
-        "s-",
-        "F-",
-        "QB",
-        AP_HAL::micros64(),
-        ev_id);
-}
-
 // log VTOL PIDs for during twitch
 void QAutoTune::log_pids(void)
 {

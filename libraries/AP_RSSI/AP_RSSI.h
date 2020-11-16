@@ -26,7 +26,8 @@ public:
         ANALOG_PIN         = 1,
         RC_CHANNEL_VALUE   = 2,
         RECEIVER           = 3,
-        PWM_PIN            = 4
+        PWM_PIN            = 4,
+        TELEMETRY_RADIO_RSSI = 5,
     };
 
     AP_RSSI();
@@ -76,19 +77,15 @@ private:
 
     // PWM input
     struct PWMState {
-        int8_t last_rssi_analog_pin; // last pin used for reading pwm (used to recognise change in pin assignment)
+        int8_t last_warn_pin; // last pin used for reading pwm (used to recognise change failure in pin assignment)
         uint32_t last_reading_ms;      // system time of last read (used for health reporting)
         float rssi_value;              // last calculated RSSI value
         // the following two members are updated by the interrupt handler
-        uint32_t irq_value_us;         // last calculated pwm value (irq copy)
-        uint32_t pulse_start_us;       // system time of start of pulse
+        AP_HAL::PWMSource pwm_source;
     } pwm_state;
 
     // read the RSSI value from an analog pin - returns float in range 0.0 to 1.0
     float read_pin_rssi();
-
-    // check if pin has changed and configure interrupt handlers if required
-    void check_pwm_pin_rssi();
 
     // read the RSSI value from a PWM value on a RC channel
     float read_channel_rssi();
@@ -96,13 +93,11 @@ private:
     // read the PWM value from a pin
     float read_pwm_pin_rssi();
 
+    // read the (RC) RSSI value from telemtry radio RSSI (e.g. rfd900x pass-through)
+    float read_telemetry_radio_rssi();
+
     // Scale and constrain a float rssi value to 0.0 to 1.0 range
     float scale_and_constrain_float_rssi(float current_rssi_value, float low_rssi_range, float high_rssi_range);
-
-    // PWM input handling
-    void irq_handler(uint8_t pin,
-                     bool pin_state,
-                     uint32_t timestamp);
 };
 
 namespace AP {

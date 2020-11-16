@@ -266,12 +266,13 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
     _initialised = true;
 
     /* register the compass instance in the frontend */
-    _compass_instance = register_compass();
+    _dev->set_device_type(DEVTYPE_LSM303D);
+    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+        return false;
+    }
+    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     set_rotation(_compass_instance, rotation);
-
-    _dev->set_device_type(DEVTYPE_LSM303D);
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     // read at 91Hz. We don't run at 100Hz as fetching data too fast can cause some very
     // odd periodic changes in the output data
@@ -282,9 +283,7 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
 
 bool AP_Compass_LSM303D::_hardware_init()
 {
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("LSM303D: Unable to get semaphore");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -292,7 +291,6 @@ bool AP_Compass_LSM303D::_hardware_init()
     // Test WHOAMI
     uint8_t whoami = _register_read(ADDR_WHO_AM_I);
     if (whoami != WHO_I_AM) {
-        hal.console->printf("LSM303D: unexpected WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 

@@ -2,6 +2,11 @@
 
 #include "Sub.h"
 
+uint8_t GCS_Sub::sysid_this_mav() const
+{
+    return sub.g.sysid_this_mav;
+}
+
 void GCS_Sub::update_vehicle_sensor_status_flags()
 {
     control_sensors_present |=
@@ -23,11 +28,6 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     if (sub.ap.depth_sensor_present) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
-    }
-    const AP_GPS &gps = AP::gps();
-    if (gps.status() > AP_GPS::NO_GPS) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
     const OpticalFlow *optflow = AP::opticalflow();
@@ -61,9 +61,6 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     if (sub.sensor_health.depth) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
-    if (gps.is_healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
-    }
 #if OPTFLOW == ENABLED
     if (optflow && optflow->healthy()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
@@ -71,7 +68,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
 #endif
 
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
-    switch (terrain.status()) {
+    switch (sub.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
     case AP_Terrain::TerrainStatusUnhealthy:
@@ -99,5 +96,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
 #endif
 }
 
+// avoid building/linking LTM:
+void AP_LTM_Telem::init() {};
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};

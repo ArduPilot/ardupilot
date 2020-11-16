@@ -105,11 +105,6 @@ public:
     virtual void     force_safety_off(void) {}
 
     /*
-      If we support async sends (px4), this will force it to be serviced immediately
-     */
-    virtual void     force_safety_no_wait(void) {}
-
-    /*
       setup scaling of ESC output for ESCs that can output a
       percentage of power (such as UAVCAN ESCs). The values are in
       microseconds, and represent minimum and maximum PWM values which
@@ -183,8 +178,15 @@ public:
         MODE_PWM_DSHOT300,
         MODE_PWM_DSHOT600,
         MODE_PWM_DSHOT1200,
+        MODE_NEOPIXEL,  // same as MODE_PWM_DSHOT at 800kHz but it's an LED
+        MODE_PROFILED,  // same as MODE_PWM_DSHOT using separate clock and data
     };
     virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
+
+    /*
+     * get output mode banner to inform user of how outputs are configured
+     */
+    virtual bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const { return false; }
 
     /*
       set default update rate
@@ -196,4 +198,27 @@ public:
       with DShot to get telemetry feedback
      */
     virtual void set_telem_request_mask(uint16_t mask) {}
+
+    /*
+      setup serial led output for a given channel number, with
+      the given max number of LEDs in the chain.
+     */
+    virtual bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint16_t clock_mask = 0) { return false; }
+
+    /*
+      setup serial led output data for a given output channel
+      and led number. A led number of -1 means all LEDs. LED 0 is the first LED
+     */
+    virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
+    
+    /*
+      trigger send of serial led
+     */
+    virtual void serial_led_send(const uint16_t chan) {}
+
+protected:
+
+    // helper functions for implementation of get_output_mode_banner
+    void append_to_banner(char banner_msg[], uint8_t banner_msg_len, output_mode out_mode, uint8_t low_ch, uint8_t high_ch) const;
+    const char* get_output_mode_string(enum output_mode out_mode) const;
 };

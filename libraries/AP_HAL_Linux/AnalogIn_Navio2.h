@@ -13,8 +13,6 @@ public:
     float read_average() override;
     float read_latest() override;
     void set_pin(uint8_t p) override;
-    void set_stop_pin(uint8_t p) override{}
-    void set_settle_time(uint16_t settle_time_ms) override{}
     float voltage_average() override;
     float voltage_latest() override;
     float voltage_average_ratiometric() override;

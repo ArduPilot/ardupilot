@@ -10,18 +10,20 @@
 #include "AP_MotorsHeli_Swash.h"
 
 // rsc and extgyro function output channels. 
-#define AP_MOTORS_HELI_SINGLE_RSC                              CH_8
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
 
 // tail types
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                   0
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO           1
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH    2
-#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH  3
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO                      0
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO              1
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH       2
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW  3
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW 4
+#define AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV 5
+
 
 // direct-drive variable pitch defaults
-#define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               500
+#define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
 
 // default external gyro gain
 #define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350
@@ -39,7 +41,6 @@ public:
     AP_MotorsHeli_Single(uint16_t       loop_rate,
                          uint16_t       speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
         AP_MotorsHeli(loop_rate, speed_hz),
-        _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_SINGLE_RSC),
         _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
         _swashplate()
     {
@@ -60,7 +61,10 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
 
-    // get_main_rotor_speed - gets estimated or measured main rotor speed
+    // set_rpm - for rotor speed governor
+    void set_rpm(float rotor_rpm) override;
+
+    // get_main_rotor_speed - estimated rotor speed when no speed sensor or governor is used
     float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
@@ -68,6 +72,12 @@ public:
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
+    
+    // get_governor_output
+    float get_governor_output() const override { return _main_rotor.get_governor_output(); }
+    
+    // get_control_output
+    float get_control_output() const override{ return _main_rotor.get_control_output(); }
 
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
@@ -114,7 +124,6 @@ protected:
     void servo_test() override;
 
     // external objects we depend upon
-    AP_MotorsHeli_RSC   _main_rotor;            // main rotor
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
     AP_MotorsHeli_Swash _swashplate;            // swashplate
 

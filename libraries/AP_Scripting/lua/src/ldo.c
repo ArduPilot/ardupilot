@@ -33,7 +33,8 @@
 #include "lvm.h"
 #include "lzio.h"
 
-
+// lua code does lots of casting, these warnings are not helpful
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 #define errorstatus(s)	((s) > LUA_YIELD)
 

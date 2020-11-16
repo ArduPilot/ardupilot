@@ -17,6 +17,7 @@
 #include "Display.h"
 #include "Display_SH1106_I2C.h"
 #include "Display_SSD1306_I2C.h"
+#include "Display_SITL.h"
 
 #include "AP_Notify.h"
 
@@ -315,6 +316,12 @@ static const uint8_t _font[] = {
 #endif
 };
 
+#ifdef AP_NOTIFY_DISPLAY_USE_EMOJI
+static_assert(ARRAY_SIZE(_font) == 1280, "_font is correct size");
+#else
+static_assert(ARRAY_SIZE(_font) == 475, "_font is correct size");
+#endif
+
 bool Display::init(void)
 {
     // exit immediately if already initialised
@@ -331,6 +338,14 @@ bool Display::init(void)
         }
         case DISPLAY_SH1106: {
             _driver = Display_SH1106_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
+            break;
+        }
+        case DISPLAY_SITL: {
+#ifdef WITH_SITL_OSD
+            _driver = Display_SITL::probe(); // never fails
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            ::fprintf(stderr, "SITL Display ineffective without --osd\n");
+#endif
             break;
         }
         case DISPLAY_OFF:
@@ -509,7 +524,9 @@ void Display::update_ekf(uint8_t r)
 void Display::update_battery(uint8_t r)
 {
     char msg [DISPLAY_MESSAGE_SIZE];
-    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT1: %4.2fV", (double)AP::battery().voltage()) ;
+    AP_BattMonitor &battery = AP::battery();
+    uint8_t pct = battery.capacity_remaining_pct();
+    snprintf(msg, DISPLAY_MESSAGE_SIZE, "BAT:%4.2fV %2d%% ", (double)battery.voltage(), pct) ;
     draw_text(COLUMN(0), ROW(r), msg);
  }
 

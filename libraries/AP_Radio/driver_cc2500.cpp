@@ -7,7 +7,7 @@
 #include "driver_cc2500.h"
 #include <utility>
 
-// #pragma GCC optimize("O0")
+#pragma GCC optimize("O0")
 
 extern const AP_HAL::HAL& hal;
 
@@ -61,7 +61,7 @@ void Radio_CC2500::WriteReg(uint8_t address, uint8_t data)
 void Radio_CC2500::SetPower(uint8_t power)
 {
     const uint8_t patable[8] = {
-        0xC5, // -12dbm
+        0xC6, // -12dbm
         0x97, // -10dbm
         0x6E, // -8dbm
         0x7F, // -6dbm
@@ -73,7 +73,10 @@ void Radio_CC2500::SetPower(uint8_t power)
     if (power > 7) {
         power = 7;
     }
-    WriteReg(CC2500_3E_PATABLE, patable[power]);
+    if (power != last_power) {
+        WriteReg(CC2500_3E_PATABLE, patable[power]);
+        last_power = power;
+    }
 }
 
 bool Radio_CC2500::Reset(void)
@@ -95,6 +98,8 @@ void Radio_CC2500::WriteRegCheck(uint8_t address, uint8_t data)
     while (--tries) {
         dev->write_register(address, data);
         uint8_t v = ReadReg(address);
-        if (v == data) break;
+        if (v == data) {
+            break;
+        }
     }
 }

@@ -1,0 +1,74 @@
+# Program generated flight.
+
+aircraftId	 = asw27
+terrainId	 = D:/Silent Wings/data/Scenery/UK
+
+pilot_name = Unknown Pilot
+
+speed		 = 27.77777778
+altitude	 = 1000
+altitudeRef	 = QFE
+yaw		 = 20
+latitude	 = 57.33317424
+longitude	 = -5.674033603
+
+date = 01072005
+time = 120000
+
+competition_mode    = true
+regatta_start       = false
+start_gate_altitude = 1000
+start_gate_altitude_ref = AGL
+start_gate_open_time = -1
+
+airport {
+   name	 = Plockton
+   lat	 = 57.335609
+   lon	 = -5.672395
+   elev	 = 0
+   runway	 = 02
+}
+
+multiplayer = false
+mp_port     = 1209
+
+weather {
+   simple {
+      wind_str = 38
+      wind_dir = 334
+   }
+   max_num_thermals = 5927
+   max_num_sink     = 1481
+   thermal_strength = 6.3
+   thermal_radius   = 385
+   thermal_ceiling  = 2500
+   cumulus_prob     = 0.5
+   cumulus_base     = 2000
+   visibility       = 50000
+   turbulence_strength = 1
+   wind_layer {
+      altitude  = 0
+      direction = 334
+      strength  = 1.9
+   }
+
+   wind_layer {
+      altitude  = 150
+      direction = 334
+      strength  = 3.8
+   }
+
+   wind_layer {
+      altitude  = 300
+      direction = 334
+      strength  = 4.94
+   }
+
+   wind_layer {
+      altitude  = 1500
+      direction = 19
+      strength  = 5.7
+   }
+
+}
+

@@ -13,48 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include "AP_RangeFinder_LightWareSerial.h"
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <ctype.h>
 #include "AP_RangeFinder_NMEA.h"
 
+#include <AP_HAL/AP_HAL.h>
+#include <ctype.h>
+
 extern const AP_HAL::HAL& hal;
-
-// constructor initialises the rangefinder
-// Note this is called after detect() returns true, so we
-// already know that we should setup the rangefinder
-AP_RangeFinder_NMEA::AP_RangeFinder_NMEA(RangeFinder::RangeFinder_State &_state,
-                                         AP_RangeFinder_Params &_params,
-                                         AP_SerialManager &serial_manager,
-                                         uint8_t serial_instance) :
-    AP_RangeFinder_Backend(_state, _params),
-    _distance_m(-1.0f)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance));
-    }
-}
-
-// detect if a NMEA rangefinder by looking to see if the user has configured it
-bool AP_RangeFinder_NMEA::detect(AP_SerialManager &serial_manager, uint8_t serial_instance)
-{
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance) != nullptr;
-}
-
-// update the state of the sensor
-void AP_RangeFinder_NMEA::update(void)
-{
-    uint32_t now = AP_HAL::millis();
-    if (get_reading(state.distance_cm)) {
-        // update range_valid state based on distance measured
-        state.last_reading_ms = now;
-        update_status();
-    } else if ((now - state.last_reading_ms) > 3000) {
-        set_status(RangeFinder::RangeFinder_NoData);
-    }
-}
 
 // return last value measured by sensor
 bool AP_RangeFinder_NMEA::get_reading(uint16_t &reading_cm)
@@ -98,6 +62,10 @@ bool AP_RangeFinder_NMEA::decode(char c)
     case '\n':
     case '*':
     {
+        if (_sentence_done) {
+            return false;
+        }
+
         // null terminate and decode latest term
         _term[_term_offset] = 0;
         bool valid_sentence = decode_latest_term();
@@ -116,14 +84,17 @@ bool AP_RangeFinder_NMEA::decode(char c)
         _checksum = 0;
         _term_is_checksum = false;
         _distance_m = -1.0f;
+        _sentence_done = false;
         return false;
     }
 
     // ordinary characters are added to term
-    if (_term_offset < sizeof(_term) - 1)
+    if (_term_offset < sizeof(_term) - 1) {
         _term[_term_offset++] = c;
-    if (!_term_is_checksum)
+    }
+    if (!_term_is_checksum) {
         _checksum ^= c;
+    }
 
     return false;
 }
@@ -134,7 +105,13 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 {
     // handle the last term in a message
     if (_term_is_checksum) {
-        uint8_t checksum = 16 * char_to_hex(_term[0]) + char_to_hex(_term[1]);
+        _sentence_done = true;
+        uint8_t nibble_high = 0;
+        uint8_t nibble_low  = 0;
+        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+            return false;
+        }
+        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         return ((checksum == _checksum) &&
                 !is_negative(_distance_m) &&
                 (_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT));
@@ -163,25 +140,14 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     if (_sentence_type == SONAR_DBT) {
         // parse DBT messages
         if (_term_number == 3) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
         }
     } else if (_sentence_type == SONAR_DPT) {
         // parse DPT messages
         if (_term_number == 1) {
-            _distance_m = atof(_term);
+            _distance_m = strtof(_term, NULL);
         }
     }
 
     return false;
-}
-
-// return the numeric value of an ascii hex character
-int16_t AP_RangeFinder_NMEA::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
 }

@@ -20,10 +20,7 @@ static AP_SerialManager serial_manager;
 
 class DummyVehicle {
 public:
-    RangeFinder rangefinder{serial_manager};
-    NavEKF2 EKF2{&ahrs, rangefinder};
-    NavEKF3 EKF3{&ahrs, rangefinder};
-    AP_AHRS_NavEKF ahrs{EKF2, EKF3, AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS_NavEKF ahrs{AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF};
 };
 
 static DummyVehicle vehicle;
@@ -131,5 +128,8 @@ void check_path(const std::vector<Vector3f>& correct_path, const char* test_name
         }
     }
 }
+
+// gcc9 produces a large frame
+#pragma GCC diagnostic ignored "-Wframe-larger-than="
 
 AP_HAL_MAIN();

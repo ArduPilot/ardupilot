@@ -263,3 +263,8 @@ void WiFiDriver::_wifi_thread(void *arg)
         }
     }
 }
+
+bool WiFiDriver::discard_input()
+{
+	return false;
+}

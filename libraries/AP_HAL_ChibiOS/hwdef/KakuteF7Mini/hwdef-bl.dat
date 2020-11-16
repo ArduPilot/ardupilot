@@ -1,0 +1,7 @@
+# hw definition file for processing by chibios_pins.py
+# for Holybro KakuteF7 Mini bootloader
+
+include ../KakuteF7/hwdef-bl.dat
+undef APJ_BOARD_ID
+
+APJ_BOARD_ID 145

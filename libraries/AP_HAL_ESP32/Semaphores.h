@@ -15,19 +15,24 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
 #include <stdint.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/AP_HAL_Macros.h>
 #include <AP_HAL/Semaphores.h>
 #include "HAL_ESP32_Namespace.h"
 
+//#undef HAL_SEMAPHORE_BLOCK_FOREVER
+//#define HAL_SEMAPHORE_BLOCK_FOREVER 0xFFFF
+
+
 class ESP32::Semaphore : public AP_HAL::Semaphore {
 public:
     Semaphore();
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
-    void take_blocking();
+    bool give() override;
+    bool take(uint32_t timeout_ms) override;
+    bool take_nonblocking() override;
+    void take_blocking() override;
+
     bool check_owner();
 protected:
     void*  handle;
@@ -37,8 +42,8 @@ protected:
 class ESP32::Semaphore_Recursive : public ESP32::Semaphore {
 public:
     Semaphore_Recursive();
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
-    void take_blocking();
+    bool give() override;
+    bool take(uint32_t timeout_ms) override;
+    bool take_nonblocking() override;
+    void take_blocking() override;
 };

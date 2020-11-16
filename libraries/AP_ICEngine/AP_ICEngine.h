@@ -16,6 +16,7 @@
 /*
   control of internal combustion engines (starter, ignition and choke)
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RPM/AP_RPM.h>
@@ -46,7 +47,10 @@ public:
 
     // handle DO_ENGINE_CONTROL messages via MAVLink or mission
     bool engine_control(float start_control, float cold_start, float height_delay);
-    
+
+    // update min throttle for idle governor
+    void update_idle_governor(int8_t &min_throttle);
+
     static AP_ICEngine *get_singleton() { return _singleton; }
 
 private:
@@ -62,6 +66,9 @@ private:
     // channel for pilot to command engine start, 0 for none
     AP_Int8 start_chan;
 
+    // min pwm on start channel for engine stop
+    AP_Int16 start_chan_min_pwm;
+    
     // which RPM instance to use
     AP_Int8 rpm_instance;
     
@@ -79,7 +86,7 @@ private:
     
     // RPM above which engine is considered to be running
     AP_Int32 rpm_threshold;
-    
+
     // time when we started the starter
     uint32_t starter_start_time_ms;
 
@@ -92,6 +99,15 @@ private:
     // throttle percentage for engine idle
     AP_Int8 idle_percent;
 
+    // Idle Controller RPM setpoint
+    AP_Int16 idle_rpm;
+
+    // Idle Controller RPM deadband
+    AP_Int16 idle_db;
+
+    // Idle Controller Slew Rate
+    AP_Float idle_slew;
+    
     // height when we enter ICE_START_HEIGHT_DELAY
     float initial_height;
 
@@ -100,6 +116,18 @@ private:
 
     // we are waiting for valid height data
     bool height_pending:1;
+
+    // idle governor
+    float idle_governor_integrator;
+
+    enum class Options : uint16_t {
+        DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
+    };
+    AP_Int16 options;
+
+    // start_chan debounce
+    uint16_t start_chan_last_value = 1500;
+    uint32_t start_chan_last_ms;
 };
 
 

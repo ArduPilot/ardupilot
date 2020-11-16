@@ -1,6 +1,7 @@
 #include "BetterStream.h"
 
 #include "print_vprintf.h"
+#include "esp_log.h"
 
 void AP_HAL::BetterStream::printf(const char *fmt, ...)
 {
@@ -12,20 +13,23 @@ void AP_HAL::BetterStream::printf(const char *fmt, ...)
 
 void AP_HAL::BetterStream::vprintf(const char *fmt, va_list ap)
 {
-    print_vprintf(this, fmt, ap);
-}
-
-size_t AP_HAL::BetterStream::write(const uint8_t *buffer, size_t size)
-{
-    for (size_t i=0; i<size;i++) {
-        if (write(buffer[i] == 0)) {
-            return i;
-        }
-    };
-    return size;
+//	esp_log_writev(ESP_LOG_INFO, "", fmt, ap);
+    //print_vprintf(this, fmt, ap);
 }
 
 size_t AP_HAL::BetterStream::write(const char *str)
 {
     return write((const uint8_t *)str, strlen(str));
+}
+
+ssize_t AP_HAL::BetterStream::read(uint8_t *buffer, uint16_t count) {
+    uint16_t offset = 0;
+    while (count--) {
+        const int16_t x = read();
+        if (x == -1) {
+            return offset;
+        }
+        buffer[offset++] = (uint8_t)x;
+    }
+    return offset;
 }

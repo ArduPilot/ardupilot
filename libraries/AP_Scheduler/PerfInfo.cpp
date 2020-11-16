@@ -2,6 +2,8 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
+#include "AP_Scheduler.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -20,12 +22,59 @@ void AP::PerfInfo::reset()
     long_running = 0;
     sigma_time = 0;
     sigmasquared_time = 0;
+    if (_task_info != nullptr) {
+        memset(_task_info, 0, (_num_tasks + 1) * sizeof(TaskInfo));
+    }
 }
 
 // ignore_loop - ignore this loop from performance measurements (used to reduce false positive when arming)
 void AP::PerfInfo::ignore_this_loop()
 {
     ignore_loop = true;
+}
+
+// allocate the array of task statistics for use by @SYS/tasks.txt
+void AP::PerfInfo::allocate_task_info(uint8_t num_tasks)
+{
+    _task_info = new TaskInfo[num_tasks + 1];   // add an extra slot for the fast_loop
+    if (_task_info == nullptr) {
+        hal.console->printf("Unable to allocate scheduler TaskInfo\n");
+        _num_tasks = 0;
+        return;
+    }
+    _num_tasks = num_tasks;
+}
+
+void AP::PerfInfo::free_task_info()
+{
+    delete[] _task_info;
+    _task_info = nullptr;
+    _num_tasks = 0;
+}
+
+// called after each run of a task to update its statistics based on measurements taken by the scheduler
+void AP::PerfInfo::update_task_info(uint8_t task_index, uint16_t task_time_us, bool overrun)
+{
+    if (_task_info == nullptr) {
+        return;
+    }
+
+    if (task_index > _num_tasks) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
+    TaskInfo& ti = _task_info[task_index];
+    ti.max_time_us = MAX(ti.max_time_us, task_time_us);
+    if (ti.min_time_us == 0) {
+        ti.min_time_us = task_time_us;
+    } else {
+        ti.min_time_us = MIN(ti.min_time_us, task_time_us);
+    }
+    ti.elapsed_time_us += task_time_us;
+    ti.tick_count++;
+    if (overrun) {
+        ti.overrun_count++;
+    }
 }
 
 // check_loop_time - check latest loop time vs min, max and overtime threshold
@@ -114,13 +163,14 @@ float AP::PerfInfo::get_filtered_time() const
 void AP::PerfInfo::update_logging()
 {
     gcs().send_text(MAV_SEVERITY_WARNING,
-                    "PERF: %u/%u max=%lu min=%lu F=%u sd=%lu",
+                    "PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",
                     (unsigned)get_num_long_running(),
                     (unsigned)get_num_loops(),
                     (unsigned long)get_max_time(),
                     (unsigned long)get_min_time(),
-                    (unsigned)(get_filtered_time()*1.0e6),
-                    (unsigned long)get_stddev_time());
+                    (unsigned)(0.5+(1.0f/get_filtered_time())),
+                    (unsigned long)get_stddev_time(),
+                    (unsigned long)AP::scheduler().get_extra_loop_us());
 }
 
 void AP::PerfInfo::set_loop_rate(uint16_t rate_hz)

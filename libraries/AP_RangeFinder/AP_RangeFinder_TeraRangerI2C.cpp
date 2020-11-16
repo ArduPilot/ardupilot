@@ -20,7 +20,6 @@
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
-#include <AP_Common/Semaphore.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -29,11 +28,6 @@ extern const AP_HAL::HAL& hal;
 #define TR_WHOAMI  0x01
 #define TR_WHOAMI_VALUE 0xA1
 
-/*
-   The constructor also initializes the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
 AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
                                                            AP_RangeFinder_Params &_params,
                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
@@ -73,9 +67,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeF
  */
 bool AP_RangeFinder_TeraRangerI2C::init(void)
 {
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
 
@@ -146,8 +138,7 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
       return false;
   } else if (raw_distance == 0x0000) {
       // Too close
-      output_distance_cm =  params.min_distance_cm;
-      return true;
+      return false;
   } else if (raw_distance == 0x0001) {
       // Unable to measure
       return false;
@@ -192,6 +183,6 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
         accum.count = 0;
         update_status();        
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
-        set_status(RangeFinder::RangeFinder_NoData);
+        set_status(RangeFinder::Status::NoData);
     }
 }

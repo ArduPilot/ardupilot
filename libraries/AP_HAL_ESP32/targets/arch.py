@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # encoding: utf-8
 import subprocess
 import sys

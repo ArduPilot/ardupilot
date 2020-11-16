@@ -89,10 +89,6 @@ void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap)
                         break;
                     }
                 }
-                /* emit cr before lf to make most terminals happy */
-                if (c == '\n') {
-                    s->write('\r');
-                }
                 s->write(c);
             }
 

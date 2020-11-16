@@ -18,9 +18,4 @@ protected:
     pthread_mutex_t _lock;
 };
 
-class Semaphore_Recursive : public Semaphore {
-public:
-    Semaphore_Recursive();
-};
-    
 }

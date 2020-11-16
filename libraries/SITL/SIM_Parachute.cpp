@@ -27,8 +27,8 @@ using namespace SITL;
 const AP_Param::GroupInfo Parachute::var_info[] = {
 
     // @Param: ENABLE
-    // @DisplayName: Gripper servo Sim enable/disable
-    // @Description: Allows you to enable (1) or disable (0) the gripper servo simulation
+    // @DisplayName: Parachute Sim enable/disable
+    // @Description: Allows you to enable (1) or disable (0) the Parachute simulation
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ENABLE", 0, Parachute, parachute_enable, 0),
@@ -54,7 +54,7 @@ void Parachute::update(const struct sitl_input &input)
     if (pwm >= 1250) {
         if (!deployed_ms) {
             deployed_ms = AP_HAL::millis();
-            gcs().send_text(MAV_SEVERITY_WARNING, "BANG!  Parachute deployed");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "BANG!  Parachute deployed");
         }
     }
     last_update_us = now;
@@ -68,4 +68,3 @@ bool Parachute::should_report()
 
     return false;
 }
-

@@ -20,8 +20,6 @@ public:
     float voltage_average_ratiometric() override {
         return voltage_average();
     }
-    void set_stop_pin(uint8_t pin) override {}
-    void set_settle_time(uint16_t settle_time_ms) override {}
 
 private:
     SITL_State *_sitlState;

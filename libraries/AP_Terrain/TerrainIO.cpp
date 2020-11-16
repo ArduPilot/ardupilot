@@ -21,19 +21,12 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <stdio.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
 
-#include <assert.h>
-#include <stdio.h>
-#if HAL_OS_POSIX_IO
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#endif
-#include <sys/types.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -171,16 +164,27 @@ void AP_Terrain::open_file(void)
         io_failure = true;
         return;        
     }
+    // our fancy templatified MIN macro get gcc 9.3.0 all confused; it
+    // thinks there are more digits than there can be so says there's
+    // a buffer overflow in the snprintf.  Constrain it long-form:
+    uint32_t lat_tmp = abs((int32_t)block.lat_degrees);
+    if (lat_tmp > 99U) {
+        lat_tmp = 99U;
+    }
+    uint32_t lon_tmp = abs((int32_t)block.lon_degrees);
+    if (lon_tmp > 999U) {
+        lon_tmp = 999;
+    }
     snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
-             (unsigned)MIN(abs((int32_t)block.lat_degrees), 99),
+             (unsigned)lat_tmp,
              block.lon_degrees<0?'W':'E',
-             (unsigned)MIN(abs((int32_t)block.lon_degrees), 999));
+             (unsigned)lon_tmp);
 
     // create directory if need be
     if (!directory_created) {
         *p = 0;
-        directory_created = !mkdir(file_path, 0755);
+        directory_created = !AP::FS().mkdir(file_path);
         *p = '/';
 
         if (!directory_created) {
@@ -196,13 +200,9 @@ void AP_Terrain::open_file(void)
     }
 
     if (fd != -1) {
-        ::close(fd);
+        AP::FS().close(fd);
     }
-#if HAL_OS_POSIX_IO
-    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC, 0644);
-#else
-    fd = ::open(file_path, O_RDWR|O_CREAT|O_CLOEXEC);
-#endif
+    fd = AP::FS().open(file_path, O_RDWR|O_CREAT);
     if (fd == -1) {
 #if TERRAIN_DEBUG
         hal.console->printf("Open %s failed - %s\n",
@@ -217,12 +217,10 @@ void AP_Terrain::open_file(void)
 }
 
 /*
-  seek to the right offset for disk_block
+  work out how many blocks needed in a stride for a given location
  */
-void AP_Terrain::seek_offset(void)
+uint32_t AP_Terrain::east_blocks(struct grid_block &block) const
 {
-    struct grid_block &block = disk_block.block;
-    // work out how many longitude blocks there are at this latitude
     Location loc1, loc2;
     loc1.lat = block.lat_degrees*10*1000*1000L;
     loc1.lng = block.lon_degrees*10*1000*1000L;
@@ -232,16 +230,24 @@ void AP_Terrain::seek_offset(void)
     // shift another two blocks east to ensure room is available
     loc2.offset(0, 2*grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
     const Vector2f offset = loc1.get_distance_NE(loc2);
-    uint16_t east_blocks = offset.y / (grid_spacing*TERRAIN_GRID_BLOCK_SIZE_Y);
+    return offset.y / (grid_spacing*TERRAIN_GRID_BLOCK_SPACING_Y);
+}
 
-    uint32_t file_offset = (east_blocks * block.grid_idx_x + 
-                            block.grid_idx_y) * sizeof(union grid_io_block);
-    if (::lseek(fd, file_offset, SEEK_SET) != (off_t)file_offset) {
+/*
+  seek to the right offset for disk_block
+ */
+void AP_Terrain::seek_offset(void)
+{
+    struct grid_block &block = disk_block.block;
+    // work out how many longitude blocks there are at this latitude
+    uint32_t blocknum = east_blocks(block) * block.grid_idx_x + block.grid_idx_y;
+    uint32_t file_offset = blocknum * sizeof(union grid_io_block);
+    if (AP::FS().lseek(fd, file_offset, SEEK_SET) != (off_t)file_offset) {
 #if TERRAIN_DEBUG
         hal.console->printf("Seek %lu failed - %s\n",
                             (unsigned long)file_offset, strerror(errno));
 #endif
-        ::close(fd);
+        AP::FS().close(fd);
         fd = -1;
         io_failure = true;
     }
@@ -259,16 +265,16 @@ void AP_Terrain::write_block(void)
 
     disk_block.block.crc = get_block_crc(disk_block.block);
 
-    ssize_t ret = ::write(fd, &disk_block, sizeof(disk_block));
+    ssize_t ret = AP::FS().write(fd, &disk_block, sizeof(disk_block));
     if (ret  != sizeof(disk_block)) {
 #if TERRAIN_DEBUG
         hal.console->printf("write failed - %s\n", strerror(errno));
 #endif
-        ::close(fd);
+        AP::FS().close(fd);
         fd = -1;
         io_failure = true;
     } else {
-        ::fsync(fd);
+        AP::FS().fsync(fd);
 #if TERRAIN_DEBUG
         printf("wrote block at %ld %ld ret=%d mask=%07llx\n",
                (long)disk_block.block.lat,
@@ -292,19 +298,25 @@ void AP_Terrain::read_block(void)
     int32_t lat = disk_block.block.lat;
     int32_t lon = disk_block.block.lon;
 
-    ssize_t ret = ::read(fd, &disk_block, sizeof(disk_block));
+    ssize_t ret = AP::FS().read(fd, &disk_block, sizeof(disk_block));
     if (ret != sizeof(disk_block) || 
-        disk_block.block.lat != lat || 
-        disk_block.block.lon != lon ||
+        !TERRAIN_LATLON_EQUAL(disk_block.block.lat,lat) ||
+        !TERRAIN_LATLON_EQUAL(disk_block.block.lon,lon) ||
         disk_block.block.bitmap == 0 ||
         disk_block.block.spacing != grid_spacing ||
         disk_block.block.version != TERRAIN_GRID_FORMAT_VERSION ||
         disk_block.block.crc != get_block_crc(disk_block.block)) {
 #if TERRAIN_DEBUG
-        printf("read empty block at %ld %ld ret=%d\n",
+        printf("read empty block at %ld %ld ret=%d (%ld %ld %u 0x%08lx) 0x%04x:0x%04x\n",
                (long)lat,
                (long)lon,
-               (int)ret);
+               (int)ret,
+               (long)disk_block.block.lat,
+               (long)disk_block.block.lon,
+               (unsigned)disk_block.block.spacing,
+               (unsigned long)disk_block.block.bitmap,
+               (unsigned)disk_block.block.crc,
+               (unsigned)get_block_crc(disk_block.block));
 #endif
         // a short read or bad data is not an IO failure, just a
         // missing block on disk
@@ -330,8 +342,12 @@ void AP_Terrain::read_block(void)
 void AP_Terrain::io_timer(void)
 {
     if (io_failure) {
-        // don't keep trying io, so we don't thrash the filesystem
-        // code while flying
+        // retry the IO every 5s to allow for remount of sdcard
+        uint32_t now = AP_HAL::millis();
+        if (now - last_retry_ms > 5000) {
+            io_failure = false;
+            last_retry_ms = now;
+        }
         return;
     }
 

@@ -27,22 +27,22 @@ namespace SITL {
  */
 class SimRover : public Aircraft {
 public:
-    SimRover(const char *home_str, const char *frame_str);
+    SimRover(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new SimRover(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new SimRover(frame_str);
     }
 
 private:
-    float max_speed;
-    float max_accel;
-    float max_wheel_turn;
-    float turning_circle;
-    float skid_turn_rate;
+    float max_speed = 20.0f;
+    float max_accel = 10.0f;
+    float max_wheel_turn = 35.0f;
+    float turning_circle = 1.8f;
+    float skid_turn_rate = 140.0f;
     bool skid_steering;
 
     float turn_circle(float steering);

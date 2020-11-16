@@ -2,3 +2,34 @@
 # for pixhawk1, based on fmuv3
 
 include ../fmuv3/hwdef.dat
+
+# define the IMU types to probe. You can list more IMUs than you
+# actually have. The syntax for IMU declarations is:
+#  IMU DriverName DeviceDeclarations Arguments
+# the DriverName is the C++ name of the driver in AP_InertialSensor
+# the DeviceDeclarations are either SPI or I2C
+# for SPI the format is SPI:devicename where devicename comes from the
+# SPIDEV table above
+# for I2C the format is I2C:BusNum:BusAddr7bit, for example I2C:0:0x1e
+#
+# for fmuv3 we normally have two IMUs, one is a mpu6000 with a single SPI CS
+# line. The other is a LSM303D/L3GD20 which uses the LSM9DS0 driver,
+# and two SPIDEV endpoints, one for gyro, one for accel/mag
+
+IMU Invensense SPI:mpu6000 ROTATION_ROLL_180
+IMU LSM9DS0 SPI:lsm9ds0_g SPI:lsm9ds0_am ROTATION_ROLL_180 ROTATION_ROLL_180_YAW_270 ROTATION_PITCH_180
+
+# define the barometers to probe with BARO lines. These follow the
+# same format as IMU lines
+BARO MS56XX SPI:ms5611
+
+# probe for two mags.
+# note that the number of arguments and meanings for compass driver
+# declarations is driver dependent. The HMC5843 driver takes two
+# arguments, the first for whether the compass is external and the
+# second the orientation. The LSM303D driver doesn't take any arguments
+COMPASS HMC5843 SPI:hmc5843 false ROTATION_PITCH_180
+COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES

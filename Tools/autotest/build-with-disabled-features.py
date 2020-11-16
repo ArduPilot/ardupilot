@@ -8,7 +8,7 @@ Build ArduPilot with various build-time options enabled or disabled
 Usage is straight forward; invoke this script from the root directory
 of an ArduPilot checkout:
 
-pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ ./Tools/autotest/build-with-disabled-features.py 
+pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ ./Tools/autotest/build-with-disabled-features.py
 
 BWFD: Building
 Running: ("/home/pbarker/rc/ardupilot/Tools/autotest/autotest.py" "build.ArduCopter") in (.)
@@ -23,24 +23,40 @@ BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDE
 BWFD: Failures: ['LOGGING_ENABLED']
 pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ q
 
-'''
+''' # noqa
 
 import re
 import shutil
 import subprocess
+import sys
 
 from pysim import util
 
 
 class Builder():
 
-    def __init__(self, spec):
+    def __init__(self, spec, autotest=False, board=None):
         self.config = spec["config"]
-        self.autotest_build = spec["builddir"]
+        self.autotest_build = spec["autotest_target"]
+        self.target_binary = spec["target_binary"]
+        if "blacklist_options" in spec:
+            self.blacklist_options = spec["blacklist_options"]
+        else:
+            self.blacklist_options = []
 
         # list other features that have to be disabled when a feature
         # is disabled (recursion not done; be exhaustive):
         self.reverse_deps = spec["reverse-deps"]
+        self.autotest = autotest
+        self.board = board
+
+    def description(self):
+        if self.autotest:
+            return self.autotest_build
+        if self.target_binary:
+            return "%s:%s" % (self.board, self.target_binary)
+        print("Bad config")
+        sys.exit(1)
 
     def reverse_deps_for_var(self, var):
         return self.reverse_deps.get(var, [])
@@ -60,7 +76,10 @@ class Builder():
                 if match.group(1) in ("ENABLE", "DISABLE",
                                       "!HAL_MINIMIZE_FEATURES"):
                     continue
-                ret.append( (match.group(1), match.group(2) ))
+                if match.group(1) in self.blacklist_options:
+                    print("Skipping (%s)" % match.group(1))
+                    continue
+                ret.append((match.group(1), match.group(2)))
         return set(ret)
 
     def disable_option_in_config(self, var):
@@ -79,7 +98,7 @@ class Builder():
                         else:
                             fnoo = "ENABLED"
                             did_enable = True
-        
+
                         line = "#define %s %s\n" % (var[0], fnoo)
                     out_fd.write(line)
             # turn dependencies on or off:
@@ -97,7 +116,7 @@ class Builder():
                                 fnoo = "ENABLED"
                             else:
                                 fnoo = "DISABLED"
-        
+
                             line = "#define %s %s\n" % (thing, fnoo)
                     out_fd.write(line)
 
@@ -112,6 +131,26 @@ class Builder():
 
     def build_works(self):
         self.progress("Building")
+
+        if self.autotest:
+            return self.build_works_autotest()
+
+        try:
+            ret = util.run_cmd(["./waf", "configure", "--board", self.board])
+        except subprocess.CalledProcessError:
+            return False
+        if ret != 0:
+            return False
+        try:
+            ret = util.run_cmd(["./waf", "build", "--target", self.target_binary])
+        except subprocess.CalledProcessError:
+            return False
+        if ret != 0:
+            return False
+
+        return True
+
+    def build_works_autotest(self):
         autotest = util.reltopdir("Tools/autotest/autotest.py")
         try:
             ret = util.run_cmd([autotest, self.autotest_build])
@@ -141,6 +180,7 @@ class Builder():
         self.progress("Successes: %s" % str(successes))
         self.progress("Failures: %s" % str(failures))
 
+
 class BuilderCopter(Builder):
     def get_config_variables(self):
         ret = []
@@ -160,31 +200,63 @@ class BuilderCopter(Builder):
 specs = [
     {
         "config": 'ArduCopter/config.h',
-        "builddir": "build.ArduCopter",
+        "autotest_target": "build.Copter",
+        "target_binary": "bin/arducopter",
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED" ],
+            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "AC_RALLY": ["AC_TERRAIN"],
-            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"],
-            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
-            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
+                                    "AC_TERRAIN",
+                                    "ADSB_ENABLED",
+                                    "MODE_FOLLOW_ENABLED",
+                                    "MODE_GUIDED_NOGPS_ENABLED"],
             "AC_AVOID_ENABLED": ["MODE_FOLLOW_ENABLED"],
         },
-    }, {
+    },
+    {
+        "config": 'ArduCopter/config.h',
+        "autotest_target": "build.Helicopter",
+        "target_binary": "bin/arducopter-heli",
+        "blacklist_options": ["TOY_MODE_ENABLED",
+                              "MODE_ACRO_ENABLED",
+                              "AUTOTUNE_ENABLED"],
+        "reverse-deps": {
+            "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
+            "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
+            "AC_RALLY": ["AC_TERRAIN"],
+            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
+            "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
+            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
+                                    "AC_TERRAIN",
+                                    "ADSB_ENABLED",
+                                    "MODE_FOLLOW_ENABLED",
+                                    "MODE_GUIDED_NOGPS_ENABLED"],
+            "AC_AVOID_ENABLED": ["MODE_FOLLOW_ENABLED"],
+        },
+    },
+    {
         "config": 'ArduPlane/config.h',
-        "builddir": "build.ArduPlane",
+        "autotest_target": "build.Plane",
+        "target_binary": "bin/arduplane",
         "reverse-deps": {
         },
     }, {
-        "config": 'APMrover2/config.h',
-        "builddir": "build.APMrover2",
+        "config": 'Rover/config.h',
+        "autotest_target": "build.Rover",
+        "target_binary": "bin/ardurover",
         "reverse-deps": {
         },
     }, {
         "config": 'ArduSub/config.h',
-        "builddir": "build.ArduSub",
+        "autotest_target": "build.Sub",
+        "target_binary": "bin/ardusub",
         "reverse-deps": {
             "AC_FENCE": ["AVOIDANCE_ENABLED"],
             "PROXIMITY_ENABLED": ["AVOIDANCE_ENABLED"],
@@ -192,20 +264,32 @@ specs = [
         },
     }, {
         "config": 'AntennaTracker/config.h',
-        "builddir": "build.AntennaTracker",
+        "autotest_target": "build.Tracker",
+        "target_binary": "bin/antennatracker",
         "reverse-deps": {
         },
     },
 ]
 
+
 builders = []
+
+# append autotest builders:
 for spec in specs:
-    builder = Builder(spec)
+    builder = Builder(spec, autotest=True)
     builder.run()
     builders.append(builder)
 
+# append directly-build-by-waf targets
+for spec in specs:
+    for board in ["CubeOrange"]:
+        builder = Builder(spec, board=board)
+        builder.run()
+        builders.append(builder)
+
+
 print("")
 for builder in builders:
-    print("Builder: %s" % builder.autotest_build)
-    print("  Successes: %s" % builder.successes)
+    print("Builder: %s" % builder.description())
+#    print("  Successes: %s" % builder.successes)
     print("   Failures: %s" % builder.failures)

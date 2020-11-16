@@ -46,6 +46,9 @@ public:
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
+    // return true if cycle count can be provided and fills in cycles argument
+    virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
+
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
     float voltage_resting_estimate() const;
@@ -58,6 +61,9 @@ public:
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool arming_checks(char * buffer, size_t buflen) const;
+
+    // reset remaining percentage to given value
+    virtual bool reset_remaining(float percentage);
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

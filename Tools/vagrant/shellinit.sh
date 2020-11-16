@@ -7,6 +7,14 @@ export PATH=$PATH:$HOME/jsbsim/build/src
 export BUILDLOGS=/tmp/buildlogs
 
 export APMROOT=/vagrant
+new=$HOME/.local/bin
+case ":${PATH:=$new}:" in
+    *:"$new":*)  ;;
+    *) if [ -d "$HOME/.local/bin" ] ; then
+          export PATH="$new:$PATH"
+       fi ;;
+esac
+
 export PATH=$APMROOT/Tools/autotest:$PATH
 export PATH=/usr/lib/ccache:$PATH
 

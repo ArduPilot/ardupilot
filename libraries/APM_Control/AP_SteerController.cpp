@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: The proportional gain for steering. This should be approximately equal to the diameter of the turning circle of the vehicle at low speed and maximum steering angle
 	// @Range: 0.1 10.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("P",      1, AP_SteerController, _K_P,        1.8f),
 
 	// @Param: I
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This is the gain from the integral of steering angle. Increasing this gain causes the controller to trim out steady offsets due to an out of trim vehicle.
 	// @Range: 0 1.0
 	// @Increment: 0.05
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("I",        3, AP_SteerController, _K_I,        0.2f),
 
 	// @Param: D
@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: This adjusts the damping of the steering control loop. This gain helps to reduce steering jitter with vibration. It should be increased in 0.01 increments as too high a value can lead to a high frequency steering oscillation that could overstress the vehicle.
 	// @Range: 0 0.1
 	// @Increment: 0.01
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("D",        4, AP_SteerController, _K_D,        0.005f),
 
 	// @Param: IMAX
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Range: 0 5
 	// @Increment: 0.1
 	// @Units: m/s
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("MINSPD",   6, AP_SteerController, _minspeed,    1.0f),
 
 
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @Description: The feed forward gain for steering this is the ratio of the achieved turn rate to applied steering. A value of 1 means that the vehicle would yaw at a rate of 45 degrees per second with full steering deflection at 1m/s ground speed.
 	// @Range: 0.0 10.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("FF",      7, AP_SteerController, _K_FF,        0),
 
 
@@ -139,7 +139,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
     // equation for a ground vehicle. It returns steering as an angle from -45 to 45
     float scaler = 1.0f / speed;
 
-    _pid_info.desired = desired_rate;
+    _pid_info.target = desired_rate;
 
 	// Calculate the steering rate error (deg/sec) and apply gain scaler
     // We do this in earth frame to allow for rover leaning over in hard corners

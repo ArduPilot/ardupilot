@@ -13,17 +13,18 @@ static const uint8_t TSYS01_CMD_READ_PROM   = 0xA0;
 static const uint8_t TSYS01_CMD_CONVERT     = 0x40;
 static const uint8_t TSYS01_CMD_READ_ADC    = 0x00;
 
-bool TSYS01::init()
+bool TSYS01::init(uint8_t bus)
 {
-    _dev = std::move(hal.i2c_mgr->get_device(1, TSYS01_ADDR));
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    return false;
+#endif
+    _dev = std::move(hal.i2c_mgr->get_device(bus, TSYS01_ADDR));
     if (!_dev) {
         printf("TSYS01 device is null!");
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: TSYS01: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     _dev->set_retries(10);
 

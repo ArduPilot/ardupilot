@@ -54,7 +54,7 @@ public:
 
     // set PWM of channels when in FMU failsafe
     void set_failsafe_pwm(uint16_t chmask, uint16_t period_us);
-    
+
     /*
       enable sbus output
     */
@@ -71,6 +71,11 @@ public:
     // get the name of the RC protocol
     const char *get_rc_protocol(void);
 
+    // get receiver RSSI
+    int16_t get_RSSI(void) const {
+        return rc_input.rssi;
+    }
+    
     /*
       get servo rail voltage
      */
@@ -92,7 +97,7 @@ public:
 
     // set to brushed mode
     void set_brushed_mode(void);
-    
+
     // check if IO is healthy
     bool healthy(void);
 
@@ -102,7 +107,14 @@ public:
     // setup for FMU failsafe mixing
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
-    
+
+    // channel group masks
+    const uint8_t ch_masks[3] = { 0x03,0x0C,0xF0 };
+
+    static AP_IOMCU *get_singleton(void) {
+        return singleton;
+    }
+
 private:
     AP_HAL::UARTDriver &uart;
 
@@ -118,7 +130,7 @@ private:
     bool write_register(uint8_t page, uint8_t offset, uint16_t v) {
         return write_registers(page, offset, 1, &v);
     }
-    
+
     // modify a single register
     bool modify_register(uint8_t page, uint8_t offset, uint16_t clearbits, uint16_t setbits);
 
@@ -134,7 +146,6 @@ private:
     uint32_t last_status_read_ms;
     uint32_t last_rc_read_ms;
     uint32_t last_servo_read_ms;
-    uint32_t last_debug_ms;
     uint32_t last_safety_option_check_ms;
 
     // last value of safety options
@@ -147,23 +158,25 @@ private:
     void read_rc_input(void);
     void read_servo(void);
     void read_status(void);
-    void print_debug(void);
     void discard_input(void);
     void event_failed(uint8_t event);
     void update_safety_options(void);
+    void send_rc_protocols(void);
 
     // CONFIG page
     struct page_config config;
 
     // PAGE_STATUS values
     struct page_reg_status reg_status;
+    uint32_t last_log_ms;
 
     // PAGE_RAW_RCIN values
     struct page_rc_input rc_input;
+    uint32_t rc_last_input_ms;
 
     // MIXER values
     struct page_mixing mixing;
-    
+
     // output pwm values
     struct {
         uint8_t num_channels;
@@ -206,13 +219,19 @@ private:
 
     uint32_t protocol_fail_count;
     uint32_t protocol_count;
+    uint32_t total_errors;
+    uint32_t num_delayed;
     uint32_t last_iocmu_timestamp_ms;
+    uint32_t read_status_errors;
+    uint32_t read_status_ok;
+    uint32_t last_rc_protocols;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";
-    uint8_t *fw;
+    const uint8_t *fw;
     uint32_t fw_size;
 
+    size_t write_wait(const uint8_t *pkt, uint8_t len);
     bool upload_fw(void);
     bool recv_byte_with_timeout(uint8_t *c, uint32_t timeout_ms);
     bool recv_bytes(uint8_t *p, uint32_t count);
@@ -231,6 +250,8 @@ private:
     bool check_crc(void);
     void handle_repeated_failures();
     void check_iomcu_reset();
+
+    static AP_IOMCU *singleton;
 
     enum {
         PROTO_NOP               = 0x00,
@@ -262,6 +283,10 @@ private:
 
         PROG_MULTI_MAX    = 248,      /**< protocol max is 255, must be multiple of 4 */
     };
+};
+
+namespace AP {
+    AP_IOMCU *iomcu(void);
 };
 
 #endif // HAL_WITH_IO_MCU

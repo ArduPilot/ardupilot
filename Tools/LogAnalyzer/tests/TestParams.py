@@ -36,7 +36,7 @@ class TestParams(Test):
         self.result.status = TestResult.StatusType.GOOD  # GOOD by default, tests below will override it if they fail
 
         # check all params for NaN
-        for name,value in logdata.parameters.iteritems():
+        for name,value in logdata.parameters.items():
             if math.isnan(value):
                 self.result.status = TestResult.StatusType.FAIL
                 self.result.statusMessage = self.result.statusMessage + name + " is NaN\n"

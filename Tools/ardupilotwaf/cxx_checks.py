@@ -140,7 +140,7 @@ def ap_common_checks(cfg):
         msg="Checking for HAVE_MEMRCHR",
         mandatory=False,
     )
-    
+
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
@@ -170,6 +170,22 @@ def check_librt(cfg, env):
     return ret
 
 @conf
+def check_feenableexcept(cfg):
+
+    cfg.check(
+        compiler='cxx',
+        fragment='''
+        #include <fenv.h>
+
+        int main() {
+            return feenableexcept(FE_OVERFLOW | FE_DIVBYZERO);
+        }''',
+        msg="Checking for feenableexcept",
+        define_name="HAVE_FEENABLEEXCEPT",
+        mandatory=False,
+    )
+
+@conf
 def check_package(cfg, env, libname):
     '''use pkg-config to look for an installed library that has a LIBNAME.pc file'''
     capsname = libname.upper()
@@ -186,7 +202,6 @@ def check_package(cfg, env, libname):
             fragment='''int main() { return 0; }''',
             msg='Checking link with %s' % libname,
             mandatory=False,
-            lib=libname,
             use=capsname):
         cfg.env.revert()
         return False
@@ -248,7 +263,7 @@ def check_SFML(cfg, env):
                          global_define=True):
             cfg.fatal("Missing SFML libraries - please install libsfml-dev")
             return False
-    
+
     # see if we need Graphics.hpp or Graphics.h
     if not cfg.check(compiler='cxx',
                      fragment='''#include <SFML/Graphics.hpp>\nint main() {}''', define_name="HAVE_SFML_GRAPHICS_HPP",

@@ -27,17 +27,17 @@
 class AP_AdvancedFailsafe_Copter : public AP_AdvancedFailsafe
 {
 public:
-    AP_AdvancedFailsafe_Copter(AP_Mission &_mission, const AP_GPS &_gps);
+    AP_AdvancedFailsafe_Copter(AP_Mission &_mission);
 
     // called to set all outputs to termination state
-    void terminate_vehicle(void);
+    void terminate_vehicle(void) override;
     
 protected:
     // setup failsafe values for if FMU firmware stops running
-    void setup_IO_failsafe(void);
+    void setup_IO_failsafe(void) override;
 
     // return the AFS mapped control mode
-    enum control_mode afs_mode(void);
+    enum control_mode afs_mode(void) override;
 };
 
 #endif // ADVANCED_FAILSAFE

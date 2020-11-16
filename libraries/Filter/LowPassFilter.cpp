@@ -38,12 +38,10 @@ T DigitalLPF<T>::apply(const T &sample) {
 
 template <class T>
 void DigitalLPF<T>::compute_alpha(float sample_freq, float cutoff_freq) {
-    if (cutoff_freq <= 0.0f || sample_freq <= 0.0f) {
-        alpha = 1.0;
+    if (sample_freq <= 0) {
+        alpha = 1;
     } else {
-        float dt = 1.0/sample_freq;
-        float rc = 1.0f/(M_2PI*cutoff_freq);
-        alpha = constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+        alpha = calc_lowpass_alpha_dt(1.0/sample_freq, cutoff_freq);
     }
 }
 

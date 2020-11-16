@@ -1,3 +1,4 @@
+#if 0
 /*
 ** $Id: lua.c,v 1.230.1.1 2017/04/19 17:29:57 roberto Exp $
 ** Lua stand-alone interpreter
@@ -610,3 +611,4 @@ int main (int argc, char **argv) {
   return (result && status == LUA_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+#endif

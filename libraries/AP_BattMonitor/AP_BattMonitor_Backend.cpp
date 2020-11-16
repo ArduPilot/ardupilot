@@ -35,7 +35,7 @@ uint8_t AP_BattMonitor_Backend::capacity_remaining_pct() const
 {
     float mah_remaining = _params._pack_capacity - _state.consumed_mah;
     if ( _params._pack_capacity > 10 ) { // a very very small battery
-        return (100 * (mah_remaining) / _params._pack_capacity);
+        return MIN(MAX((100 * (mah_remaining) / _params._pack_capacity), 0), UINT8_MAX);
     } else {
         return 0;
     }
@@ -161,13 +161,21 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
                                 (_state.voltage < _params._arming_minimum_voltage);
     bool below_arming_capacity = (_params._arming_minimum_capacity > 0) &&
                                  ((_params._pack_capacity - _state.consumed_mah) < _params._arming_minimum_capacity);
+    bool fs_capacity_inversion = is_positive(_params._critical_capacity) &&
+                                 is_positive(_params._low_capacity) &&
+                                 (_params._low_capacity < _params._critical_capacity);
+    bool fs_voltage_inversion = is_positive(_params._critical_voltage) &&
+                                is_positive(_params._low_voltage) &&
+                                (_params._low_voltage < _params._critical_voltage);
 
-    bool result = update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
+    bool result =      update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
+    result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+    result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
     result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
     result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
-    result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
-    result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
+    result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical > low");
+    result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical > low");
 
     return result;
 }
@@ -214,4 +222,26 @@ void AP_BattMonitor_Backend::check_failsafe_types(bool &low_voltage, bool &low_c
     } else {
         low_capacity = false;
     }
+}
+
+/*
+  default implementation for reset_remaining(). This sets consumed_wh
+  and consumed_mah based on the given percentage. Use percentage=100
+  for a full battery
+*/
+bool AP_BattMonitor_Backend::reset_remaining(float percentage)
+{
+    percentage = constrain_float(percentage, 0, 100);
+    const float used_proportion = (100 - percentage) * 0.01;
+    _state.consumed_mah = used_proportion * _params._pack_capacity;
+    // without knowing the history we can't do consumed_wh
+    // accurately. Best estimate is based on current voltage. This
+    // will be good when resetting the battery to a value close to
+    // full charge
+    _state.consumed_wh = _state.consumed_mah * 1000 * _state.voltage;
+
+    // reset failsafe state for this backend
+    _state.failsafe = update_failsafes();
+
+    return true;
 }

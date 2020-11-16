@@ -26,7 +26,7 @@
 ** maximum number of upvalues in a closure (both C and Lua). (Value
 ** must fit in a VM register.)
 */
-#define MAXUPVAL	255
+#define MAXUPVAL	127
 
 
 /*

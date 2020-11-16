@@ -118,7 +118,7 @@
  */
 #define SERIAL_4WAY_VER_MAIN 20
 #define SERIAL_4WAY_VER_SUB_1 (uint8_t) 0
-#define SERIAL_4WAY_VER_SUB_2 (uint8_t) 02
+#define SERIAL_4WAY_VER_SUB_2 (uint8_t) 03
 
 #define SERIAL_4WAY_PROTOCOL_VER 107
 // *** end

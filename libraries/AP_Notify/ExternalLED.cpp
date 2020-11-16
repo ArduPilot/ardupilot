@@ -185,7 +185,7 @@ void ExternalLED::update(void)
                 break;
         }
     }else{
-        if (AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_radio) {
+        if (AP_Notify::flags.failsafe_battery || AP_Notify::flags.failsafe_radio || AP_Notify::flags.failsafe_gcs) {
             // radio or battery failsafe indicated by fast flashing
             set_pattern(FAST_FLASH);
         } else {

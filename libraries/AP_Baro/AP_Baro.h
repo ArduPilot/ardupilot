@@ -4,6 +4,11 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
+#include <AP_MSP/msp.h>
+
+#ifndef HAL_MSP_BARO_ENABLED
+#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
 
 // maximum number of sensor instances
 #define BARO_MAX_INSTANCES 3
@@ -54,6 +59,9 @@ public:
 
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
+
+    // get primary sensor
+    uint8_t get_primary(void) const { return _primary; }
 
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
@@ -181,6 +189,15 @@ public:
     void set_log_baro_bit(uint32_t bit) { _log_baro_bit = bit; }
     bool should_log() const;
 
+    // allow threads to lock against baro update
+    HAL_Semaphore &get_semaphore(void) {
+        return _rsem;
+    }
+
+#if HAL_MSP_BARO_ENABLED
+    void handle_msp(const MSP::msp_baro_data_message_t &pkt);
+#endif
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -197,6 +214,12 @@ private:
 
     uint32_t _log_baro_bit = -1;
 
+    bool init_done;
+
+#if HAL_MSP_BARO_ENABLED
+    uint8_t msp_instance_mask;
+#endif
+
     // bitmask values for GND_PROBE_EXT
     enum {
         PROBE_BMP085=(1<<0),
@@ -209,20 +232,24 @@ private:
         PROBE_LPS25H=(1<<7),
         PROBE_KELLER=(1<<8),
         PROBE_MS5837=(1<<9),
+        PROBE_BMP388=(1<<10),
+        PROBE_SPL06 =(1<<11),
+        PROBE_MSP   =(1<<12),
     };
     
     struct sensor {
-        baro_type_t type;                   // 0 for air pressure (default), 1 for water pressure
         uint32_t last_update_ms;        // last update time in ms
         uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
-        bool healthy:1;                 // true if sensor is healthy
-        bool alt_ok:1;                  // true if calculated altitude is ok
-        bool calibrated:1;              // true if calculated calibrated successfully
         float pressure;                 // pressure in Pascal
         float temperature;              // temperature in degrees C
         float altitude;                 // calculated altitude
         AP_Float ground_pressure;
         float p_correction;
+        baro_type_t type;               // 0 for air pressure (default), 1 for water pressure
+        bool healthy;                   // true if sensor is healthy
+        bool alt_ok;                    // true if calculated altitude is ok
+        bool calibrated;                // true if calculated calibrated successfully
+        AP_Int32 bus_id;
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -246,6 +273,9 @@ private:
     void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
+
+    // semaphore for API access from threads
+    HAL_Semaphore                      _rsem;
 };
 
 namespace AP {

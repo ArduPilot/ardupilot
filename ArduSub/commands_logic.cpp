@@ -216,7 +216,7 @@ void Sub::exit_mission()
 
     // Try to enter loiter, if that fails, go to depth hold
     if (!auto_loiter_start()) {
-        set_mode(ALT_HOLD, MODE_REASON_MISSION_END);
+        set_mode(ALT_HOLD, ModeReason::MISSION_END);
     }
 }
 
@@ -473,16 +473,16 @@ void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    nav_delay_time_start = AP_HAL::millis();
+    nav_delay_time_start_ms = AP_HAL::millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
-        nav_delay_time_max = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+        nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
     } else {
         // absolute delay to utc time
-        nav_delay_time_max = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+        nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec",(unsigned int)(nav_delay_time_max/1000));
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
 #if NAV_GUIDED == ENABLED
@@ -657,8 +657,8 @@ bool Sub::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Sub::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (AP_HAL::millis() - nav_delay_time_start > (uint32_t)MAX(nav_delay_time_max, 0)) {
-        nav_delay_time_max = 0;
+    if (AP_HAL::millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+        nav_delay_time_max_ms = 0;
         return true;
     }
     return false;
@@ -720,7 +720,7 @@ bool Sub::verify_yaw()
     }
 
     // check if we are within 2 degrees of the target heading
-    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
+    return (abs(wrap_180_cd(ahrs.yaw_sensor-yaw_look_at_heading)) <= 200);
 }
 
 /********************************************************************************/
@@ -789,7 +789,7 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 // point the camera to a specified angle
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
     camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }

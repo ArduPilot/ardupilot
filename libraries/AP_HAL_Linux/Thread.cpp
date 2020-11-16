@@ -85,7 +85,9 @@ void Thread::_poison_stack()
     void *stackp;
     uint32_t *p, *curr, *begin, *end;
 
-    if (pthread_getattr_np(_ctx, &attr) != 0 ||
+    // `pthread_self` should be used here since _ctx could be not initialized
+    // in a race condition.
+    if (pthread_getattr_np(pthread_self(), &attr) != 0 ||
         pthread_attr_getstack(&attr, &stackp, &stack_size) != 0 ||
         pthread_attr_getguardsize(&attr, &guard_size) != 0) {
         return;

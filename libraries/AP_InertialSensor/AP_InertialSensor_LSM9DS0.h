@@ -18,9 +18,9 @@ public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
                                             AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                                            enum Rotation rotation_a = ROTATION_NONE,
-                                            enum Rotation rotation_g = ROTATION_NONE,
-                                            enum Rotation rotation_gH = ROTATION_NONE);
+                                            enum Rotation rotation_a,
+                                            enum Rotation rotation_g,
+                                            enum Rotation rotation_gH);
 
 private:
     AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,

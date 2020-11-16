@@ -1,5 +1,5 @@
-/// @file	AP_Parachute.h
-/// @brief	Parachute release library
+/// @file   AP_Parachute.h
+/// @brief  Parachute release library
 #pragma once
 
 #include <AP_Param/AP_Param.h>
@@ -22,8 +22,15 @@
 
 #define AP_PARACHUTE_CRITICAL_SINK_DEFAULT      0    // default critical sink speed in m/s to trigger emergency parachute
 
-/// @class	AP_Parachute
-/// @brief	Class managing the release of a parachute
+#ifndef HAL_PARACHUTE_ENABLED
+// default to parachute enabled to match previous configs
+#define HAL_PARACHUTE_ENABLED 1
+#endif
+
+#if HAL_PARACHUTE_ENABLED
+
+/// @class  AP_Parachute
+/// @brief  Class managing the release of a parachute
 class AP_Parachute {
 
 public:
@@ -34,7 +41,7 @@ public:
         // setup parameter defaults
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         if (_singleton != nullptr) {
-            AP_HAL::panic("Rally must be singleton");
+            AP_HAL::panic("Parachute must be singleton");
         }
 #endif
         _singleton = this;
@@ -56,18 +63,15 @@ public:
 
     /// released - true if the parachute has been released (or release is in progress)
     bool released() const { return _released; }
-    
+
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
     bool release_initiated() const { return _release_initiated; }
 
     /// release_in_progress - true if the parachute release sequence is in progress
     bool release_in_progress() const { return _release_in_progress; }
-    
+
     /// update - shuts off the trigger should be called at about 10hz
     void update();
-    
-    /// critical_sink - returns the configured maximum sink rate to trigger emergency release
-    float critical_sink() const { return _critical_sink; }
 
     /// alt_min - returns the min altitude above home the vehicle should have before parachute is released
     ///   0 = altitude check disabled
@@ -77,7 +81,10 @@ public:
     void set_is_flying(const bool is_flying) { _is_flying = is_flying; }
 
     // set_sink_rate - set vehicle sink rate
-    void set_sink_rate(float sink_rate) { _sink_rate = sink_rate; }
+    void set_sink_rate(float sink_rate);
+
+    // trigger parachute release if sink_rate is below critical_sink_rate for 1sec
+    void check_sink_rate();
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -102,10 +109,11 @@ private:
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;             // true if the parachute has been released
     bool        _is_flying:1;            // true if the vehicle is flying
-    float       _sink_rate;              // vehicle sink rate in m/s
-    uint32_t    _sink_time;              // time that the vehicle exceeded critical sink rate
+    uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
 };
 
 namespace AP {
     AP_Parachute *parachute();
 };
+
+#endif // HAL_PARACHUTE_ENABLED

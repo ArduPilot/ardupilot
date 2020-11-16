@@ -1,8 +1,6 @@
 void jump_to_app(void);
 void bootloader(unsigned timeout);
 
-#define BL_WAIT_MAGIC	0x19710317		/* magic number in PWR regs to wait in bootloader */
-
 /*****************************************************************************
  * Chip/board functions.
  */

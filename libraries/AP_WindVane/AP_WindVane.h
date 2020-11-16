@@ -14,25 +14,30 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_Airspeed/AP_Airspeed.h>
-#include <AP_RPM/AP_RPM.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+
+#define WINDVANE_DEFAULT_PIN 15                     // default wind vane sensor analog pin
+#define WINDSPEED_DEFAULT_SPEED_PIN 14              // default pin for reading speed from ModernDevice rev p wind sensor
+#define WINDSPEED_DEFAULT_TEMP_PIN 13               // default pin for reading temperature from ModernDevice rev p wind sensor
+#define WINDSPEED_DEFAULT_VOLT_OFFSET 1.346f        // default voltage offset between speed and temp pins from ModernDevice rev p wind sensor
+#define TACK_FILT_CUTOFF 0.1f                       // cutoff frequency in Hz used in low pass filter to determine the current tack
+
+class AP_WindVane_Backend;
 
 class AP_WindVane
 {
+    friend class AP_WindVane_Backend;
+    friend class AP_WindVane_Home;
+    friend class AP_WindVane_Analog;
+    friend class AP_WindVane_SITL;
+    friend class AP_WindVane_ModernDevice;
+    friend class AP_WindVane_Airspeed;
+    friend class AP_WindVane_RPM;
+    friend class AP_WindVane_NMEA;
 
 public:
-
-    enum WindVaneType {
-        WINDVANE_NONE       = 0,
-        WINDVANE_HOME_HEADING = 1,
-        WINDVANE_PWM_PIN    = 2,
-        WINDVANE_ANALOG_PIN = 3,
-        WINDVANE_SITL       = 10
-    };
-
     AP_WindVane();
 
     /* Do not allow copies */
@@ -44,17 +49,22 @@ public:
     // return true if wind vane is enabled
     bool enabled() const;
 
+    // return true if wind speed is enabled
+    bool wind_speed_enabled() const;
+
     // Initialize the Wind Vane object and prepare it for use
-    void init();
+    void init(const AP_SerialManager& serial_manager);
 
     // update wind vane
     void update();
 
     // get the apparent wind direction in body-frame in radians, 0 = head to wind
-    float get_apparent_wind_direction_rad() const;
+    float get_apparent_wind_direction_rad() const {
+        return wrap_PI(_direction_apparent_ef - AP::ahrs().yaw);
+    }
 
-    // get the absolute wind direction in radians, 0 = wind coming from north
-    float get_absolute_wind_direction_rad() const { return _direction_absolute; }
+    // get the true wind direction in radians, 0 = wind coming from north
+    float get_true_wind_direction_rad() const { return _direction_true; }
 
     // Return apparent wind speed
     float get_apparent_wind_speed() const { return _speed_apparent; }
@@ -62,11 +72,21 @@ public:
     // Return true wind speed
     float get_true_wind_speed() const { return _speed_true; }
 
-    // record home heading
-    void record_home_heading();
+    // enum defining current tack
+    enum Sailboat_Tack {
+        TACK_PORT,
+        TACK_STARBOARD
+    };
+
+    // return the current tack
+    Sailboat_Tack get_current_tack() const { return _current_tack; }
+
+    // record home heading for use as wind direction if no sensor is fitted
+    void record_home_heading() { _home_heading = AP::ahrs().yaw; }
 
     // start calibration routine
-    bool start_calibration();
+    bool start_direction_calibration();
+    bool start_speed_calibration();
 
     // send mavlink wind message
     void send_wind(mavlink_channel_t chan);
@@ -76,37 +96,8 @@ public:
 
 private:
 
-    // read an analog port and calculate the wind direction in earth-frame in radians
-    float read_analog_direction_ef();
-
-    // read rc input of apparent wind direction in earth-frame in radians
-    float read_PWM_direction_ef();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // read SITL's apparent wind direction in earth-frame in radians
-    float read_SITL_direction_ef();
-
-    // read the apparent wind speed in m/s from SITL
-    float read_wind_speed_SITL();
-#endif
-
-    // read wind speed from ModernDevice wind speed sensor rev p
-    float read_wind_speed_ModernDevice();
-
-    // update wind speed sensor
-    void update_apparent_wind_speed();
-
-    // update apparent wind direction
-    void update_apparent_wind_direction();
-
-    // calculate true wind speed and direction from apparent wind
-    void update_true_wind_speed_and_direction();
-
-    // calibrate
-    void calibrate();
-
     // parameters
-    AP_Int8 _type;                                  // type of windvane being used
+    AP_Int8 _direction_type;                        // type of windvane being used
     AP_Int8 _rc_in_no;                              // RC input channel to use
     AP_Int8 _dir_analog_pin;                        // analog pin connected to wind vane direction sensor
     AP_Float _dir_analog_volt_min;                  // minimum voltage read by windvane
@@ -122,40 +113,53 @@ private:
     AP_Float _speed_sensor_voltage_offset;          // analog speed zero wind voltage offset
     AP_Float _speed_filt_hz;                        // speed sensor low pass filter frequency
 
-    static AP_WindVane *_singleton;
+    AP_WindVane_Backend *_direction_driver;
+    AP_WindVane_Backend *_speed_driver;
+
+    // update wind speed sensor
+    void update_apparent_wind_speed();
+
+    // update apparent wind direction
+    void update_apparent_wind_direction();
+
+    // calculate true wind speed and direction from apparent wind
+    void update_true_wind_speed_and_direction();
 
     // wind direction variables
-    float _home_heading;                            // heading in radians recorded when vehicle was armed
-    float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle)
-    float _direction_absolute;                      // wind's absolute direction in radians (0 = North)
-    float _current_analog_voltage;                  // wind direction's latest analog voltage reading
+    float _direction_apparent_ef;                   // wind's apparent direction in radians (0 = ahead of vehicle) in earth frame
+    float _direction_true;                          // wind's true direction in radians (0 = North)
 
     // wind speed variables
     float _speed_apparent;                          // wind's apparent speed in m/s
     float _speed_true;                              // wind's true estimated speed in m/s
 
-    // calibration variables
-    uint32_t _cal_start_ms = 0;                     // calibration start time in milliseconds after boot
-    float _cal_volt_max;                            // maximum observed voltage during calibration
-    float _cal_volt_min;                            // minimum observed voltage during calibration
+    // current tack
+    Sailboat_Tack _current_tack;
+
+    // heading in radians recorded when vehicle was armed
+    float _home_heading;
+
+    enum WindVaneType {
+        WINDVANE_NONE           = 0,
+        WINDVANE_HOME_HEADING   = 1,
+        WINDVANE_PWM_PIN        = 2,
+        WINDVANE_ANALOG_PIN     = 3,
+        WINDVANE_NMEA           = 4,
+        WINDVANE_SITL_TRUE      = 10,
+        WINDVANE_SITL_APPARENT  = 11,
+    };
 
     enum Speed_type {
         WINDSPEED_NONE               = 0,
         WINDSPEED_AIRSPEED           = 1,
         WINDVANE_WIND_SENSOR_REV_P   = 2,
         WINDSPEED_RPM                = 3,
-        WINDSPEED_SITL               = 10
+        WINDSPEED_NMEA               = 4,
+        WINDSPEED_SITL_TRUE          = 10,
+        WINDSPEED_SITL_APPARENT      = 11,
     };
 
-    // pin for reading analog voltage
-    AP_HAL::AnalogSource *dir_analog_source;
-    AP_HAL::AnalogSource *speed_analog_source;
-    AP_HAL::AnalogSource *speed_temp_analog_source;
-
-    // low pass filters of direction and speed
-    LowPassFilterFloat _dir_sin_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _dir_cos_filt = LowPassFilterFloat(2.0f);
-    LowPassFilterFloat _speed_filt = LowPassFilterFloat(2.0f);
+    static AP_WindVane *_singleton;
 };
 
 namespace AP {

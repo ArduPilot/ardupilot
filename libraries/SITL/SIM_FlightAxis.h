@@ -29,18 +29,18 @@ namespace SITL {
  */
 class FlightAxis : public Aircraft {
 public:
-    FlightAxis(const char *home_str, const char *frame_str);
+    FlightAxis(const char *frame_str);
 
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
     /* static object creator */
-    static Aircraft *create(const char *home_str, const char *frame_str) {
-        return new FlightAxis(home_str, frame_str);
+    static Aircraft *create(const char *frame_str) {
+        return new FlightAxis(frame_str);
     }
 
     struct state {
-        double rcin[8];
+        double rcin[12];
         double m_airspeed_MPS;
         double m_altitudeASL_MTR;
         double m_altitudeAGL_MTR;
@@ -103,6 +103,10 @@ public:
         { "item", state.rcin[5] },
         { "item", state.rcin[6] },
         { "item", state.rcin[7] },
+        { "item", state.rcin[8] },
+        { "item", state.rcin[9] },
+        { "item", state.rcin[10] },
+        { "item", state.rcin[11] },
         { "m-airspeed-MPS", state.m_airspeed_MPS },
         { "m-altitudeASL-MTR", state.m_altitudeASL_MTR },
         { "m-altitudeAGL-MTR", state.m_altitudeAGL_MTR },

@@ -7,7 +7,7 @@
  */
 
 // loiter_init - initialise loiter controller
-bool Copter::ModeLoiter::init(bool ignore_checks)
+bool ModeLoiter::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
@@ -35,12 +35,12 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
 }
 
 #if PRECISION_LANDING == ENABLED
-bool Copter::ModeLoiter::do_precision_loiter()
+bool ModeLoiter::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
         return false;
     }
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         return false;        // don't move on the ground
     }
     // if the pilot *really* wants to move the vehicle, let them....
@@ -53,7 +53,7 @@ bool Copter::ModeLoiter::do_precision_loiter()
     return true;
 }
 
-void Copter::ModeLoiter::precision_loiter_xy()
+void ModeLoiter::precision_loiter_xy()
 {
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel_rel;
@@ -72,7 +72,7 @@ void Copter::ModeLoiter::precision_loiter_xy()
 
 // loiter_run - runs the loiter controller
 // should be called at 100hz or more
-void Copter::ModeLoiter::run()
+void ModeLoiter::run()
 {
     float target_roll, target_pitch;
     float target_yaw_rate = 0.0f;
@@ -106,7 +106,7 @@ void Copter::ModeLoiter::run()
     }
 
     // relax loiter target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
@@ -117,7 +117,6 @@ void Copter::ModeLoiter::run()
     switch (loiter_state) {
 
     case AltHold_MotorStopped:
-
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -127,14 +126,9 @@ void Copter::ModeLoiter::run()
         break;
 
     case AltHold_Takeoff:
-
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            set_land_complete(false);
-            // clear i term when we're taking off
-            set_throttle_takeoff();
         }
 
         // get takeoff adjusted pilot and takeoff climb rates
@@ -156,13 +150,11 @@ void Copter::ModeLoiter::run()
         break;
 
     case AltHold_Landed_Ground_Idle:
-
-        attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
-        // FALLTHROUGH
+        FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
-
+        attitude_control->reset_rate_controller_I_terms();
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -170,7 +162,6 @@ void Copter::ModeLoiter::run()
         break;
 
     case AltHold_Flying:
-
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -187,7 +178,7 @@ void Copter::ModeLoiter::run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
 
         // adjust climb rate using rangefinder
-        target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate);
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
@@ -198,12 +189,12 @@ void Copter::ModeLoiter::run()
     }
 }
 
-uint32_t Copter::ModeLoiter::wp_distance() const
+uint32_t ModeLoiter::wp_distance() const
 {
     return loiter_nav->get_distance_to_target();
 }
 
-int32_t Copter::ModeLoiter::wp_bearing() const
+int32_t ModeLoiter::wp_bearing() const
 {
     return loiter_nav->get_bearing_to_target();
 }

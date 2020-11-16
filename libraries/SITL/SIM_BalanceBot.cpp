@@ -23,9 +23,9 @@ extern const AP_HAL::HAL& hal;
 
 namespace SITL {
 
-BalanceBot::BalanceBot(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    skid_turn_rate(140) // degrees/sec
+BalanceBot::BalanceBot(const char *frame_str) :
+    Aircraft(frame_str),
+    skid_turn_rate(0.15708) // meters/sec
 {
     dcm.from_euler(0,0,0); // initial yaw, pitch and roll in radians
     printf("Balance Bot Simulation Started\n");
@@ -36,7 +36,8 @@ BalanceBot::BalanceBot(const char *home_str, const char *frame_str) :
 */
 float BalanceBot::calc_yaw_rate(float steering)
 {
-    return steering * skid_turn_rate;
+    float wheel_base_length = 0.15f;
+    return steering * degrees( skid_turn_rate/wheel_base_length );
 }
 
 
@@ -52,22 +53,23 @@ float BalanceBot::calc_yaw_rate(float steering)
 void BalanceBot::update(const struct sitl_input &input)
 {
     // pendulum/chassis constants
-    const float m_p = 3.060f; //pendulum mass(kg)
-    const float width = 0.0650f; //width(m)
-    const float height = 0.240f; //height(m)
-    const float l = 0.120f; //height of center of mass from base(m)
-    const float i_p = (1/12.0f)*m_p*(width*width + height*height); //Moment of inertia about pitch axis(SI units)
+    const float m_p = 3.0f; //pendulum mass(kg)
+    // const float width = 0.0650f; //width(m)
+    // const float height = 0.240f; //height(m)
+    const float l = 0.10f; //height of center of mass from base(m)
+    const float i_p = 0.01250f; //Moment of inertia about pitch axis(SI units)
 
     // wheel constants
-    const float r_w = 0.10f; //wheel radius(m)
-    const float m_w = 0.120f; //wheel mass(kg)
-    const float i_w = 0.5f*m_w*r_w*r_w; // moment of inertia of wheel(SI units)
+    const float r_w = 0.05f; //wheel radius(m)
+    const float m_w = 0.1130f; //wheel mass(kg)
+    const float i_w = 0.00015480f; // moment of inertia of wheel(SI units)
 
     // motor constants
-    const float R = 1.0f; //Winding resistance(ohm)
-    const float k_e = 0.13f; //back-emf constant(SI units)
-    const float k_t = 0.242f; //torque constant(SI units)
+    const float R = 3.0f; //Winding resistance(ohm)
+    const float k_e = 0.240f; //back-emf constant(SI units)
+    const float k_t = 0.240f; //torque constant(SI units)
     const float v_max = 12.0f; //max input voltage(V)
+    const float gear_ratio = 50.0f;
 
     // balance bot uses skid steering
     const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
@@ -92,23 +94,23 @@ void BalanceBot::update(const struct sitl_input &input)
     float ang_vel = gyro.y; //radians/s
     
     // t1,t2,t3 are terms in the equation to find vehicle frame x acceleration
-    const float t1 = ((2.0f*k_t*v/(R*r_w)) - (2.0f*k_t*k_e*velocity_vf_x/(R*r_w*r_w)) - (m_p*l*ang_vel*ang_vel*sin(theta))) * (i_p + m_p*l*l);
-    const float t2 = -m_p*l*cos(theta)*((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + (m_p*GRAVITY_MSS*l*sin(theta)));
+    const float t1 = ((2.0f*gear_ratio*k_t*v/(R*r_w)) - (2.0f*gear_ratio*k_t*k_e*velocity_vf_x/(R*r_w*r_w)) - (m_p*l*ang_vel*ang_vel*sin(theta))) * (i_p + m_p*l*l);
+    const float t2 = -m_p*l*cos(theta)*((2.0f*gear_ratio*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*gear_ratio*k_t*v/(R)) + (m_p*GRAVITY_MSS*l*sin(theta)));
     const float t3 = ( ((2.0f*m_w + 2.0f*i_w/(r_w*r_w) + m_p) * (i_p + m_p*l*l)) - (m_p*m_p*l*l*cos(theta)*cos(theta)) );
 
     //vehicle frame x acceleration
     const float accel_vf_x = (t1-t2)/t3;
 
-    const float angular_accel_bf_y = ((2.0f*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*k_t*v/(R)) + m_p*l*accel_vf_x*cos(theta) + m_p*GRAVITY_MSS*l*sin(theta))
+    const float angular_accel_bf_y = ((2.0f*gear_ratio*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*gear_ratio*k_t*v/(R)) + m_p*l*accel_vf_x*cos(theta) + m_p*GRAVITY_MSS*l*sin(theta))
                                      / (i_p + m_p*l*l);
+
+    // accel in body frame due to motor
+    accel_body = Vector3f(accel_vf_x*cos(theta), 0, -accel_vf_x*sin(theta));
 
     // update theta and angular velocity
     ang_vel += angular_accel_bf_y * delta_time;
     theta += ang_vel * delta_time;
     theta = fmod(theta, radians(360));
-
-    // update x velocity in vehicle frame
-    velocity_vf_x += accel_vf_x * delta_time;
 
     gyro = Vector3f(0, ang_vel, radians(yaw_rate));
 
@@ -116,11 +118,11 @@ void BalanceBot::update(const struct sitl_input &input)
     dcm.rotate(gyro * delta_time);
     dcm.normalize();
 
-    // accel in body frame due to motor
-    accel_body = Vector3f(accel_vf_x*cos(theta), 0, -accel_vf_x*sin(theta));
-
     // add in accel due to direction change
     accel_body.y += radians(yaw_rate) * velocity_vf_x;
+
+    // update x velocity in vehicle frame
+    velocity_vf_x += accel_vf_x * delta_time;
 
     // now in earth frame
     Vector3f accel_earth = dcm * accel_body;
@@ -136,8 +138,6 @@ void BalanceBot::update(const struct sitl_input &input)
         dcm.identity();
         gyro.zero();
         velocity_vf_x =0;
-        theta = radians(0);
-        ang_vel = 0;
     }
     
     // work out acceleration as seen by the accelerometers. It sees the kinematic

@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
-#include <AP_Common/Semaphore.h>
 #include "hwdef/common/flash.h"
 
 class ChibiOS::Flash : public AP_HAL::Flash {

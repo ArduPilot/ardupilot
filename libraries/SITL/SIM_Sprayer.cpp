@@ -28,8 +28,8 @@ using namespace SITL;
 const AP_Param::GroupInfo Sprayer::var_info[] = {
 
     // @Param: ENABLE
-    // @DisplayName: Gripper servo Sim enable/disable
-    // @Description: Allows you to enable (1) or disable (0) the gripper servo simulation
+    // @DisplayName: Sprayer Sim enable/disable
+    // @Description: Allows you to enable (1) or disable (0) the Sprayer simulation
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ENABLE", 0, Sprayer, sprayer_enable, 0),
@@ -122,4 +122,3 @@ bool Sprayer::should_report()
 
     return false;
 }
-

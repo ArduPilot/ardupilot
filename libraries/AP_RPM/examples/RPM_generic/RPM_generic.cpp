@@ -56,9 +56,11 @@ void loop(void)
             sensor_state = '-';
         }
 
+        float rpm = -1;
+        RPM.get_rpm(ii, rpm);
         hal.console->printf("%u - (%c) RPM: %8.2f  Quality: %.2f  ",
                             ii, sensor_state,
-                            (double)RPM.get_rpm(ii),
+                            (double)rpm,
                             (double)RPM.get_signal_quality(ii));
 
         if (ii+1 < RPM.num_sensors()) {

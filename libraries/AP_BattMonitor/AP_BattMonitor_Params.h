@@ -12,27 +12,12 @@ public:
     AP_BattMonitor_Params(const AP_BattMonitor_Params &other) = delete;
     AP_BattMonitor_Params &operator=(const AP_BattMonitor_Params&) = delete;
 
-    // Battery monitor driver types
-    enum BattMonitor_Type {
-        BattMonitor_TYPE_NONE                       = 0,
-        BattMonitor_TYPE_ANALOG_VOLTAGE_ONLY        = 3,
-        BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT = 4,
-        BattMonitor_TYPE_SOLO                       = 5,
-        BattMonitor_TYPE_BEBOP                      = 6,
-        BattMonitor_TYPE_MAXELL                     = 7,
-        BattMonitor_TYPE_UAVCAN_BatteryInfo         = 8,
-        BattMonitor_TYPE_BLHeliESC                  = 9,
-        BattMonitor_TYPE_Sum                        = 10,
-        BattMonitor_TYPE_FuelFlow                   = 11,
-    };
-
     // low voltage sources (used for BATT_LOW_TYPE parameter)
     enum BattMonitor_LowVoltage_Source {
         BattMonitor_LowVoltageSource_Raw            = 0,
         BattMonitor_LowVoltageSource_SagCompensated = 1
     };
 
-    BattMonitor_Type type(void) const { return (enum BattMonitor_Type)_type.get(); }
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
 
     AP_Int8  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
@@ -54,5 +39,5 @@ public:
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
     AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
-
+    AP_Int8  _i2c_bus;                  /// I2C bus number
 };

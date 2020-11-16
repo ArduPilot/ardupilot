@@ -58,24 +58,24 @@ void print_profile()
     static int64_t last_run = 0;
     static int counter = 0;
     if (AP_HAL::millis64() - last_run > 60000) {
-        char fname[50];
-        snprintf(fname, sizeof(fname), "/SDCARD/APM/PROF%03d.TXT", counter);
+        //char fname[50];
+        //snprintf(fname, sizeof(fname), "/SDCARD/APM/PROF%03d.TXT", counter);
         ++counter;
-        FILE *f = fopen(fname, "w");
-        if (f != nullptr) {
+        //FILE *f = fopen(fname, "w");
+       // if (f != nullptr) {
             for (size_t i=0; i < ARRAY_SIZE(ht); i++) {
                 for (FI *current = ht[i]; current != nullptr; current = current->next) {
                     if (current->count != 0) {
-                        fprintf(f, "0x%016x 0x%x\n", current->address , current->count);
+                        printf("0x%016x 0x%x\n", current->address , current->count);
                         current->count = 0;
                     }
                 }
             }
-            fclose(f);
-            printf("profile dumped %s\n", fname);
-        } else {
-            printf("profile open error %s %d\n", fname, errno);
-        }
+         //   fclose(f);
+            printf("------- profile dumped %d\n", counter);
+        /*} else {
+            printf("profile open error %d %d\n", counter, errno);
+        }*/
         last_run = AP_HAL::millis64();
     }
 }

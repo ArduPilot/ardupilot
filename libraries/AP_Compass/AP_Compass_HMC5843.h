@@ -17,10 +17,10 @@ class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                     bool force_external = false,
-                                     enum Rotation rotation = ROTATION_NONE);
+                                     bool force_external,
+                                     enum Rotation rotation);
 
-    static AP_Compass_Backend *probe_mpu6000(enum Rotation rotation = ROTATION_NONE);
+    static AP_Compass_Backend *probe_mpu6000(enum Rotation rotation);
 
     static constexpr const char *name = "HMC5843";
 

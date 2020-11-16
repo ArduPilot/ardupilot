@@ -18,18 +18,69 @@
 #include <AP_HAL/AP_HAL.h>
 #include "HAL_ESP32_Namespace.h"
 
+#include <esp_timer.h>
+#include <multi_heap.h>
+
 //see components/heap/include/esp_heas_cap.h
 
 class ESP32::Util : public AP_HAL::Util {
 public:
-    bool run_debug_shell(AP_HAL::BetterStream *stream) override
-    {
-        return false;
-    }
+    bool run_debug_shell(AP_HAL::BetterStream *stream) override { return false; }
 
-    //returns the amount of malloc capable memory
-    virtual uint32_t available_memory(void)
-    {
-        return heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
-    }
+    /**
+       how much free memory do we have in bytes.  on esp32 this returns the
+       largest free block of memory able to be allocated with the given capabilities.
+       , which in this case is "Memory must be able to run executable code"
+     */
+     virtual uint32_t available_memory(void) override {
+    	 return heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+     }
+
+    uint64_t get_hw_rtc() const override
+	{
+		return esp_timer_get_time();
+	}
+
+#ifdef ENABLE_HEAP
+    // heap functions, if all block of the heap are freed the heap area can be
+	// used normally
+    void *allocate_heap_memory(size_t size) override {
+		void *buf = malloc(size);
+		if (buf == nullptr) {
+			return nullptr;
+		}
+
+		multi_heap_handle_t *heap = (multi_heap_handle_t *)malloc(sizeof(multi_heap_handle_t));
+		if (heap != nullptr) {
+			auto hp = multi_heap_register(buf, size);
+			memcpy(heap, &hp, sizeof(multi_heap_handle_t));
+		}
+
+		return heap;
+	}
+    void *heap_realloc(void *heap, void *ptr, size_t new_size) override
+	{
+		if (heap == nullptr) {
+			return nullptr;
+		}
+
+		return multi_heap_realloc(*(multi_heap_handle_t *)heap, ptr, new_size);
+	}
+#endif // ENABLE_HEAP
+
+	/*
+	   get safety switch state
+	   */
+	   /*
+	Util::safety_state safety_switch_state(void) override
+	{
+#if HAL_USE_PWM == TRUE
+		return ((RCOutput *)hal.rcout)->_safety_switch_state();
+#else
+		return SAFETY_NONE;
+#endif
+	}
+	*/
+
+
 };

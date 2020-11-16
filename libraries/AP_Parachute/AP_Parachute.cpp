@@ -1,4 +1,7 @@
 #include "AP_Parachute.h"
+
+#if HAL_PARACHUTE_ENABLED
+
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -83,7 +86,7 @@ void AP_Parachute::enabled(bool on_off)
     // clear release_time
     _release_time = 0;
 
-    AP::logger().Write_Event(_enabled ? DATA_PARACHUTE_ENABLED : DATA_PARACHUTE_DISABLED);
+    AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -95,7 +98,7 @@ void AP_Parachute::release()
     }
 
     gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Released");
-    AP::logger().Write_Event(DATA_PARACHUTE_RELEASED);
+    AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
@@ -115,41 +118,29 @@ void AP_Parachute::update()
     if (_enabled <= 0) {
         return;
     }
-    // check if the plane is sinking too fast for more than a second and release parachute
-    uint32_t time = AP_HAL::millis();
-    if((_critical_sink > 0) && (_sink_rate > _critical_sink) && !_release_initiated && _is_flying) {
-        if(_sink_time == 0) {
-            _sink_time = AP_HAL::millis();
-        }
-        if((time - _sink_time) >= 1000) {
-            release();
-        }
-    } else {
-        _sink_time = 0;
-    }
-    
+
     // calc time since release
     uint32_t time_diff = AP_HAL::millis() - _release_time;
     uint32_t delay_ms = _delay_ms<=0 ? 0: (uint32_t)_delay_ms;
-    
+
     // check if we should release parachute
     if ((_release_time != 0) && !_release_in_progress) {
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
                 SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
-            }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+            } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
                 _relay.on(_release_type);
             }
             _release_in_progress = true;
             _released = true;
         }
-    }else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
+    } else if ((_release_time == 0) || time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             // move servo back to off position
             SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
-        }else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
+        } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
             _relay.off(_release_type);
         }
@@ -158,6 +149,41 @@ void AP_Parachute::update()
         _release_time = 0;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
+    }
+}
+
+// set_sink_rate - set vehicle sink rate
+void AP_Parachute::set_sink_rate(float sink_rate)
+{
+    // reset sink time if critical sink rate check is disabled or vehicle is not flying
+    if ((_critical_sink <= 0) || !_is_flying) {
+        _sink_time_ms = 0;
+        return;
+    }
+
+    // reset sink_time if vehicle is not sinking too fast
+    if (sink_rate <= _critical_sink) {
+        _sink_time_ms = 0;
+        return;
+    }
+
+    // start time when sinking too fast
+    if (_sink_time_ms == 0) {
+        _sink_time_ms = AP_HAL::millis();
+    }
+}
+
+// trigger parachute release if sink_rate is below critical_sink_rate for 1sec
+void AP_Parachute::check_sink_rate()
+{
+    // return immediately if parachute is being released or vehicle is not flying
+    if (_release_initiated || !_is_flying) {
+        return;
+    }
+
+    // if vehicle is sinking too fast for more than a second release parachute
+    if ((_sink_time_ms > 0) && ((AP_HAL::millis() - _sink_time_ms) > 1000)) {
+        release();
     }
 }
 
@@ -172,3 +198,4 @@ AP_Parachute *parachute()
 }
 
 }
+#endif // HAL_PARACHUTE_ENABLED

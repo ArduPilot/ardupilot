@@ -46,7 +46,7 @@ public:
         k_param_avoidance_adsb,
         k_param_landing,
         k_param_NavEKF3,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
         k_param_osd,
 
         // Misc
@@ -88,7 +88,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_takeoff_throttle_delay,
-        k_param_skip_gyro_cal, // unused
+        k_param_mode_takeoff, // was skip_gyro_cal
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
         k_param_ground_steer_alt,        
@@ -99,7 +99,7 @@ public:
         k_param_log_bitmask,
         k_param_BoardConfig,
         k_param_rssi_range,     // unused, replaced by rssi_ library parameters
-        k_param_flapin_channel,
+        k_param_flapin_channel_old,  // unused, moved to RC_OPTION
         k_param_flaperon_output, // unused
         k_param_gps,
         k_param_autotune_level,
@@ -345,6 +345,8 @@ public:
         k_param_logger = 253, // Logging Group
 
         // 254,255: reserved
+
+        k_param_vehicle = 257, // vehicle common block of parameters
     };
 
     AP_Int16 format_version;
@@ -476,7 +478,6 @@ public:
     AP_Int8 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
-    AP_Int8 flapin_channel;
 #if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
     AP_Int16 terrain_lookahead;
@@ -505,7 +506,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // button reporting library
-    AP_Button button;
+    AP_Button *button_ptr;
 
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
@@ -524,7 +525,7 @@ public:
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
 
-#if SOARING_ENABLED == ENABLED
+#if HAL_SOARING_ENABLED
     // ArduSoar parameters
     SoaringController soaring_controller;
 #endif
@@ -564,6 +565,27 @@ public:
     AP_Int8 crow_flap_weight_inner;
     AP_Int8 crow_flap_options;
     AP_Int8 crow_flap_aileron_matching;
+
+    // Forward throttle battery voltage compenstaion
+    AP_Float fwd_thr_batt_voltage_max;
+    AP_Float fwd_thr_batt_voltage_min;
+    AP_Int8  fwd_thr_batt_idx;
+
+#if EFI_ENABLED
+    // EFI Engine Monitor
+    AP_EFI efi;
+#endif
+
+#if OFFBOARD_GUIDED == ENABLED
+    // guided yaw heading PID
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+#endif
+
+
+    AP_Float        fs_ekf_thresh;
+
+    // min initial climb in RTL
+    AP_Int16        rtl_climb_min;
 };
 
 extern const AP_Param::Info var_info[];

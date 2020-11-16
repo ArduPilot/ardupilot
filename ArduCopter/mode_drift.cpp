@@ -29,14 +29,14 @@
 #endif
 
 // drift_init - initialise drift controller
-bool Copter::ModeDrift::init(bool ignore_checks)
+bool ModeDrift::init(bool ignore_checks)
 {
     return true;
 }
 
 // drift_run - runs the drift controller
 // should be called at 100hz or more
-void Copter::ModeDrift::run()
+void ModeDrift::run()
 {
     static float braker = 0.0f;
     static float roll_input = 0.0f;
@@ -81,7 +81,7 @@ void Copter::ModeDrift::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (ap.throttle_zero) {
+    } else if (copter.ap.throttle_zero) {
         // Attempting to Land
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
@@ -94,17 +94,20 @@ void Copter::ModeDrift::run()
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
         break;
+
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->set_yaw_target_to_current_heading();
         attitude_control->reset_rate_controller_I_terms();
         break;
+
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
         // clear landing flag above zero throttle
         if (!motors->limit.throttle_lower) {
             set_land_complete(false);
         }
         break;
+
     case AP_Motors::SpoolState::SPOOLING_UP:
     case AP_Motors::SpoolState::SPOOLING_DOWN:
         // do nothing
@@ -120,7 +123,7 @@ void Copter::ModeDrift::run()
 }
 
 // get_throttle_assist - return throttle output (range 0 ~ 1) based on pilot input and z-axis velocity
-float Copter::ModeDrift::get_throttle_assist(float velz, float pilot_throttle_scaled)
+float ModeDrift::get_throttle_assist(float velz, float pilot_throttle_scaled)
 {
     // throttle assist - adjusts throttle to slow the vehicle's vertical velocity
     //      Only active when pilot's throttle is between 213 ~ 787

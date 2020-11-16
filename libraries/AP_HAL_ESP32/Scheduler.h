@@ -41,13 +41,13 @@ public:
     void     reboot(bool hold_in_bootloader) override;
     bool     in_main_thread() const override;
     void     system_initialized() override;
-    static void     thread_create_trampoline(void *ctx);
-    virtual bool thread_create(AP_HAL::MemberProc proc, const char *name,
-                               uint32_t stack_size, priority_base base, int8_t priority);
+
+	static void thread_create_trampoline(void *ctx);
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
 
     static const int SPI_PRIORITY = 21;
     static const int MAIN_PRIO = 20;
-    static const int I2C_PRIORITY = 19;
+    static const int I2C_PRIORITY = 25;
     static const int TIMER_PRIO = 15;
     static const int RCIN_PRIO = 10;
     static const int WIFI_PRIO = 7;
@@ -76,11 +76,14 @@ private:
 
     static bool _initialized;
 
+
+
     void *_main_task_handle;
     void *_timer_task_handle;
     void *_rcin_task_handle;
     void *_uart_task_handle;
     void *_io_task_handle;
+    void *test_task_handle;
     void *_storage_task_handle;
 
     static void _main_thread(void *arg);
@@ -89,6 +92,13 @@ private:
     static void _uart_thread(void *arg);
     static void _io_thread(void *arg);
     static void _storage_thread(void *arg);
+
+	static void set_position(void* arg);
+
+
+    static void _print_profile(void* arg);
+
+    static void test_esc(void* arg);
 
     bool _in_timer_proc;
     void _run_timers();

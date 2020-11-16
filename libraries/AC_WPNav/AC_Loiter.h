@@ -16,9 +16,6 @@ public:
     /// Constructor
     AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    /// provide pointer to avoidance library
-    void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
-
     /// init_target to a position in cm from ekf origin
     void init_target(const Vector3f& position);
 
@@ -73,7 +70,6 @@ protected:
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AC_Avoid                *_avoid = nullptr;
 
     // parameters
     AP_Float    _angle_max;             // maximum pilot commanded angle in degrees. Set to zero for 2/3 Angle Max
