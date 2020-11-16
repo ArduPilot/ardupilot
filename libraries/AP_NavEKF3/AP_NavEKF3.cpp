@@ -642,7 +642,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Group: SRC_
     // @Path: ../AP_NavEKF/AP_NavEKF_Source.cpp
-    AP_SUBGROUPINFO(_sources, "SRC", 63, NavEKF3, AP_NavEKF_Source),
+    AP_SUBGROUPINFO(sources, "SRC", 63, NavEKF3, AP_NavEKF_Source),
 
     AP_GROUPEND
 };
@@ -672,7 +672,7 @@ bool NavEKF3::InitialiseFilter(void)
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
     // initialise sources
-    _sources.init();
+    sources.init();
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
@@ -899,7 +899,7 @@ void NavEKF3::UpdateFilter(void)
     }
 
     // align position of inactive sources to ahrs
-    _sources.align_inactive_sources();
+    sources.align_inactive_sources();
 }
 
 /*
@@ -996,7 +996,7 @@ void NavEKF3::resetCoreErrors(void)
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void NavEKF3::setPosVelYawSource(uint8_t source_set_idx)
 {
-    _sources.setPosVelYawSource(source_set_idx);
+    sources.setPosVelYawSource(source_set_idx);
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -1012,7 +1012,7 @@ bool NavEKF3::healthy(void) const
 bool NavEKF3::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     // check source configuration
-    if (!_sources.pre_arm_check(failure_msg, failure_msg_len)) {
+    if (!sources.pre_arm_check(failure_msg, failure_msg_len)) {
         return false;
     }
 
@@ -1319,7 +1319,7 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (_sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) {
+    if (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) {
         // we don't allow setting of the EKF origin if using GPS to prevent
         // accidental setting of EKF origin with invalid position or height
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 refusing set origin");
@@ -1601,7 +1601,7 @@ bool NavEKF3::getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_co
 void NavEKF3::convert_parameters()
 {
     // exit immediately if param conversion has been done before
-    if (_sources.any_params_configured_in_storage()) {
+    if (sources.any_params_configured_in_storage()) {
         return;
     }
 
