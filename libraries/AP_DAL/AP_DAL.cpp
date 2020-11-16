@@ -97,7 +97,7 @@ void AP_DAL::end_frame(void)
     }
 }
 
-void AP_DAL::log_event2(AP_DAL::Event2 event)
+void AP_DAL::log_event2(AP_DAL::Event event)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
@@ -130,7 +130,7 @@ void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed)
 #endif
 }
 
-void AP_DAL::log_event3(AP_DAL::Event3 event)
+void AP_DAL::log_event3(AP_DAL::Event event)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
