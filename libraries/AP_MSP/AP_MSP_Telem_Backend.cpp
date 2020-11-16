@@ -26,6 +26,7 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_Backend.h"
@@ -102,6 +103,16 @@ void AP_MSP_Telem_Backend::process_outgoing_data()
 bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
 {
     switch (idx) {
+    case ANALOG:            // Rssi, Battery, mAh, Current
+        {
+            // need to wait for vehicle initialization to be complete
+            // before accessing rssi info from analog pins
+            AP_Vehicle* vehicle = AP::vehicle();
+            if (vehicle == nullptr) {
+                return false;
+            }
+            return vehicle->setup_done();
+        }
     case EMPTY_SLOT:        // empty slot
     case NAME:              // used for status_text messages
     case STATUS:            // flightmode
@@ -110,7 +121,6 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
     case COMP_GPS:          // home dir,dist
     case ATTITUDE:          // Attitude
     case ALTITUDE:          // Altitude and Vario
-    case ANALOG:            // Rssi, Battery, mAh, Current
     case BATTERY_STATE:     // voltage, capacity, current, mAh
 #ifdef HAVE_AP_BLHELI_SUPPORT
     case ESC_SENSOR_DATA:   // esc temp + rpm
