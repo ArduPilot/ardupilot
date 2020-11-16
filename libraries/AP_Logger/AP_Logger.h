@@ -472,7 +472,7 @@ private:
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
-    void assert_same_fmt_for_name(const log_write_fmt *f,
+    bool assert_same_fmt_for_name(const log_write_fmt *f,
                                   const char *name,
                                   const char *labels,
                                   const char *units,
