@@ -952,6 +952,10 @@ void QuadPlane::run_z_controller(void)
         } else {
             // tailsitters gain lots of vertical speed in transisison, set target to the stopping point
             pos_control->set_target_to_stopping_point_z();
+            // make sure stopping point is above current alt
+            if (pos_control->get_alt_target() < inertial_nav.get_altitude()) {
+                set_alt_target_current();
+            }
         }
         gcs().send_text(MAV_SEVERITY_INFO, "Reset alt target to %.1f", (double)pos_control->get_alt_target() * 0.01f);
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
