@@ -69,19 +69,19 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
     } else if (streq(name, "RFRN")) {
         msgparser[f.type] = new LR_MsgHandler_RFRN(formats[f.type]);
     } else if (streq(name, "REV2")) {
-	    msgparser[f.type] = new LR_MsgHandler_REV2(formats[f.type], ekf2);
+        msgparser[f.type] = new LR_MsgHandler_REV2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RSO2")) {
-	    msgparser[f.type] = new LR_MsgHandler_RSO2(formats[f.type], ekf2);
+        msgparser[f.type] = new LR_MsgHandler_RSO2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RWA2")) {
-	    msgparser[f.type] = new LR_MsgHandler_RWA2(formats[f.type], ekf2);
+        msgparser[f.type] = new LR_MsgHandler_RWA2(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "REV3")) {
-	    msgparser[f.type] = new LR_MsgHandler_REV3(formats[f.type], ekf3);
+        msgparser[f.type] = new LR_MsgHandler_REV3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RSO3")) {
-	    msgparser[f.type] = new LR_MsgHandler_RSO3(formats[f.type], ekf3);
+        msgparser[f.type] = new LR_MsgHandler_RSO3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RWA3")) {
-	    msgparser[f.type] = new LR_MsgHandler_RWA3(formats[f.type], ekf3);
+        msgparser[f.type] = new LR_MsgHandler_RWA3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "REY3")) {
-	    msgparser[f.type] = new LR_MsgHandler_REY3(formats[f.type], ekf3);
+        msgparser[f.type] = new LR_MsgHandler_REY3(formats[f.type], ekf2, ekf3);
 	} else if (streq(name, "RISH")) {
 	    msgparser[f.type] = new LR_MsgHandler_RISH(formats[f.type]);
 	} else if (streq(name, "RISI")) {

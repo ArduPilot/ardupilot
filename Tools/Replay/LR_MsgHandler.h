@@ -39,30 +39,6 @@ protected:
     NavEKF3 &ekf3;
 };
 
-class LR_MsgHandler_EKF2 : public LR_MsgHandler
-{
-public:
-    LR_MsgHandler_EKF2(struct log_Format &_f, NavEKF2 &_ekf2) :
-        LR_MsgHandler(_f),
-        ekf2(_ekf2) {}
-    using LR_MsgHandler::LR_MsgHandler;
-    virtual void process_message(uint8_t *msg) override = 0;
-protected:
-    NavEKF2 &ekf2;
-};
-
-class LR_MsgHandler_EKF3 : public LR_MsgHandler
-{
-public:
-    LR_MsgHandler_EKF3(struct log_Format &_f, NavEKF3 &_ekf3) :
-        LR_MsgHandler(_f),
-        ekf3(_ekf3) {}
-    using LR_MsgHandler::LR_MsgHandler;
-    virtual void process_message(uint8_t *msg) override = 0;
-protected:
-    NavEKF3 &ekf3;
-};
-
 class LR_MsgHandler_RFRF : public LR_MsgHandler_EKF
 {
     using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
@@ -106,52 +82,53 @@ public:
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_REV2 : public LR_MsgHandler_EKF2
+class LR_MsgHandler_REV2 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF2::LR_MsgHandler_EKF2;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_RSO2 : public LR_MsgHandler_EKF2
+class LR_MsgHandler_RSO2 : public LR_MsgHandler_EKF
 {
-    using LR_MsgHandler_EKF2::LR_MsgHandler_EKF2;
+public:
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_RWA2 : public LR_MsgHandler_EKF2
+class LR_MsgHandler_RWA2 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF2::LR_MsgHandler_EKF2;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
 
-class LR_MsgHandler_REV3 : public LR_MsgHandler_EKF3
+class LR_MsgHandler_REV3 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF3::LR_MsgHandler_EKF3;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_RSO3 : public LR_MsgHandler_EKF3
+class LR_MsgHandler_RSO3 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF3::LR_MsgHandler_EKF3;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_RWA3 : public LR_MsgHandler_EKF3
+class LR_MsgHandler_RWA3 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF3::LR_MsgHandler_EKF3;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 
-class LR_MsgHandler_REY3 : public LR_MsgHandler_EKF3
+class LR_MsgHandler_REY3 : public LR_MsgHandler_EKF
 {
 public:
-    using LR_MsgHandler_EKF3::LR_MsgHandler_EKF3;
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
     void process_message(uint8_t *msg) override;
 };
 

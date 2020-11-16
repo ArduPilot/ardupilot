@@ -180,15 +180,6 @@ void MsgHandler::string_for_labels(char *buffer, uint32_t bufferlen)
     }
 }
 
-MsgHandler::~MsgHandler()
-{
-    for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
-        if (field_info[k].label != NULL) {
-            free(field_info[k].label);
-        }
-    }
-}
-
 void MsgHandler::location_from_msg(uint8_t *msg,
                                   Location &loc,
                                   const char *label_lat,
