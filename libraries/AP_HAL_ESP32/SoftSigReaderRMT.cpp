@@ -56,6 +56,9 @@ void SoftSigReaderRMT::init()
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
         .gpio_num = (gpio_num_t)4,
 #endif
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_BUZZ
+        .gpio_num = (gpio_num_t)4,
+#endif
         .mem_block_num = 1
     };
     config.rx_config.filter_en = true;

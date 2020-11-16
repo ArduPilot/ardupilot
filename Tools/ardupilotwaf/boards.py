@@ -641,6 +641,13 @@ class esp32(Board):
         super(esp32, self).build(bld)
         bld.load('esp32')
 
+class esp32buzz(esp32):
+    def configure_env(self, cfg, env):
+        super(esp32buzz, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_BUZZ'
+        )
+
 class esp32diy(esp32):
     def configure_env(self, cfg, env):
         super(esp32diy, self).configure_env(cfg, env)
