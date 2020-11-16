@@ -781,10 +781,11 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler321.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance;
+                float gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
-                    gsfYawVariance < sq(radians(15.0f))) {
+                    gsfYawVariance < sq(radians(15.0f)) &&
+                    (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
                         measured_yaw = gsfYaw;
                         R_YAW = gsfYawVariance;
                 } else {
@@ -841,10 +842,11 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler312.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance;
+                float gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
-                    gsfYawVariance < sq(radians(15.0f))) {
+                    gsfYawVariance < sq(radians(15.0f)) &&
+                    (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
                         measured_yaw = gsfYaw;
                         R_YAW = gsfYawVariance;
                 } else {
@@ -1166,8 +1168,11 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         return false;
     };
 
-    float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+        is_positive(yawVarianceEKFGSF) &&
+        yawVarianceEKFGSF < sq(radians(15.0f)) &&
+        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
