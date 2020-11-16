@@ -36,6 +36,8 @@ static ReplayVehicle replayvehicle;
 
 // list of user parameters
 user_parameter *user_parameters;
+bool replay_force_ekf2;
+bool replay_force_ekf3;
 
 #define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
@@ -129,7 +131,14 @@ void Replay::usage(void)
     ::printf("Options:\n");
     ::printf("\t--parm NAME=VALUE  set parameter NAME to VALUE\n");
     ::printf("\t--param-file FILENAME  load parameters from a file\n");
+    ::printf("\t--force-ekf2 force enable EKF2\n");
+    ::printf("\t--force-ekf3 force enable EKF3\n");
 }
+
+enum param_key : uint8_t {
+    FORCE_EKF2 = 1,
+    FORCE_EKF3,
+};
 
 void Replay::_parse_command_line(uint8_t argc, char * const argv[])
 {
@@ -138,6 +147,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         {"parm",            true,   0, 'p'},
         {"param",           true,   0, 'p'},
         {"param-file",      true,   0, 'F'},
+        {"force-ekf2",      false,  0, param_key::FORCE_EKF2},
+        {"force-ekf3",      false,  0, param_key::FORCE_EKF3},
         {"help",            false,  0, 'h'},
         {0, false, 0, 0}
     };
@@ -165,6 +176,14 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             load_param_file(gopt.optarg);
             break;
 
+        case param_key::FORCE_EKF2:
+            replay_force_ekf2 = true;
+            break;
+
+        case param_key::FORCE_EKF3:
+            replay_force_ekf3 = true;
+            break;
+
         case 'h':
         default:
             usage();
@@ -172,8 +191,8 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
         }
     }
 
-	argv += gopt.optind;
-	argc -= gopt.optind;
+    argv += gopt.optind;
+    argc -= gopt.optind;
 
     if (argc > 0) {
         filename = argv[0];
@@ -196,6 +215,18 @@ void Replay::setup()
     _vehicle.setup();
 
     set_user_parameters();
+
+    if (replay_force_ekf2) {
+        reader.set_parameter("EK2_ENABLE", 1, true);
+    }
+    if (replay_force_ekf3) {
+        reader.set_parameter("EK3_ENABLE", 1, true);
+    }
+
+    if (replay_force_ekf2 && replay_force_ekf3) {
+        ::printf("Cannot force both EKF types\n");
+        exit(1);
+    }
 
     if (filename == nullptr) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

@@ -73,7 +73,6 @@ private:
 
 protected:
     struct log_Format f; // the format we are a parser for
-    ~MsgHandler();
 
     void location_from_msg(uint8_t *msg, Location &loc, const char *label_lat,
 			   const char *label_long, const char *label_alt);
