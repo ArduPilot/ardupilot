@@ -38,6 +38,10 @@ public:
     // return false if yaw estimation is inactive
     bool getYawData(float &yaw, float &yawVariance);
 
+    // get the length of the weighted average velocity innovation vector
+    // return false if not available
+    bool getVelInnovLength(float &velInnovLength);
+
 private:
 
     typedef float ftype;
