@@ -646,8 +646,11 @@ void NavEKF3_core::runYawEstimatorCorrection()
 
             // after velocity data has been fused the yaw variance esitmate will have been refreshed and
             // is used maintain a history of validity
-            float yawEKFGSF, yawVarianceEKFGSF;
-            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+            float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
+            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+                                is_positive(yawVarianceEKFGSF) &&
+                                yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
+                                (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
             if (canUseEKFGSF) {
                 if (EKFGSF_yaw_valid_count <  GSF_YAW_VALID_HISTORY_THRESHOLD) {
                     EKFGSF_yaw_valid_count++;
