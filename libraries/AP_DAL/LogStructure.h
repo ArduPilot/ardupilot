@@ -118,28 +118,10 @@ struct log_RWA2 {
     uint8_t _end;
 };
 
-// @LoggerMessage: REV3
-// @Description: Replay Event
-struct log_REV3 {
-    uint8_t event;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RSO3
-// @Description: Replay Set Origin event
-struct log_RSO3 {
-    int32_t lat;
-    int32_t lng;
-    int32_t alt;
-    uint8_t _end;
-};
-
-// @LoggerMessage: RWA3
-// @Description: Replay set-default-airspeed event
-struct log_RWA3 {
-    float airspeed;
-    uint8_t _end;
-};
+// same structures for EKF3
+#define log_REV3 log_REV2
+#define log_RSO3 log_RSO2
+#define log_RWA3 log_RWA2
 
 // @LoggerMessage: REY3
 // @Description: Replay Euler Yaw event

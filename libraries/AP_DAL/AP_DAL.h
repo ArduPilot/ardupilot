@@ -32,23 +32,7 @@ public:
         LogWriteEKF3 = 1<<5,
     };
 
-    enum class Event2 : uint8_t {
-        resetGyroBias             =  0,
-        resetHeightDatum          =  1,
-        setInhibitGPS             =  2,
-        setTakeoffExpected        =  3,
-        unsetTakeoffExpected      =  4,
-        setTouchdownExpected      =  5,
-        unsetTouchdownExpected    =  6,
-        setInhibitGpsVertVelUse   =  7,
-        unsetInhibitGpsVertVelUse =  8,
-        setTerrainHgtStable       =  9,
-        unsetTerrainHgtStable     = 10,
-        requestYawReset           = 11,
-        checkLaneSwitch           = 12,
-    };
-
-    enum class Event3 : uint8_t {
+    enum class Event : uint8_t {
         resetGyroBias             =  0,
         resetHeightDatum          =  1,
         setInhibitGPS             =  2,
@@ -88,11 +72,11 @@ public:
     uint32_t micros() const { return _micros; }
     uint32_t millis() const { return _millis; }
 
-    void log_event2(Event2 event);
+    void log_event2(Event event);
     void log_SetOriginLLH2(const Location &loc);
     void log_writeDefaultAirSpeed2(float aspeed);
 
-    void log_event3(Event3 event);
+    void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
     void log_writeDefaultAirSpeed3(float aspeed);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
