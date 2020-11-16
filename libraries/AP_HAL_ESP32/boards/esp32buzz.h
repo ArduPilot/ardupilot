@@ -99,15 +99,14 @@
 //HARDWARE UARTS
     
 #define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 }//,\
-//	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
+    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 }//,
+//	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },
 //	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
 
 
 
 // SD config, its also SPI, but gets it s own - also not configured here right now...
-//#define HAL_ESP32_SDSPI \
-//   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+//#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
 
 
 
