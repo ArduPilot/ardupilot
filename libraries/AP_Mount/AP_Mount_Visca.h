@@ -10,22 +10,19 @@ public:
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init(const AP_SerialManager& serial_manager);
+    void init() override;
 
     // update camera control comands - should be called periodically
-    virtual void update();
+    void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan. Intended just for gimballed mounts
-    virtual bool has_pan_control() const;
+    bool has_pan_control() const override;
 
     // This should never be called from the front end AP_Mount. Just in case
-    virtual void set_mode(enum MAV_MOUNT_MODE mode);
+    void set_mode(enum MAV_MOUNT_MODE mode) override;
 
     // To be implemented
-    virtual void status_msg(mavlink_channel_t chan);
-
-    // To be implemented
-    virtual void send_mount_status(mavlink_channel_t chan) override;
+    void send_mount_status(mavlink_channel_t chan) override;
 
 
 private:

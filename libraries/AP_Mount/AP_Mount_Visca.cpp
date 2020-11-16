@@ -1,9 +1,12 @@
 #include "AP_Mount_Visca.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
-void AP_Mount_Visca::init(const AP_SerialManager& serial_manager)
+void AP_Mount_Visca::init()
 {
+    const AP_SerialManager& serial_manager = AP::serialmanager();
+
     // check for Visca protocol 
     if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Visca, 0))) {
         _initialised = true;
@@ -61,12 +64,6 @@ bool AP_Mount_Visca::has_pan_control() const
 
 // This should never be called from the front end AP_Mount. Just in case
 void AP_Mount_Visca::set_mode(MAV_MOUNT_MODE mode)
-{
-    return;
-}
-
-// To be implemented, receive info about zoom level, aperture, night/day mode and so
-void AP_Mount_Visca::status_msg(mavlink_channel_t)
 {
     return;
 }
