@@ -221,10 +221,12 @@ void NavEKF3_core::SelectMagFusion()
                 yawAngDataDelayed.type = 1;
             }
 
-            float yawEKFGSF, yawVarianceEKFGSF;
+            float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
             bool canUseEKFGSF = yawEstimator != nullptr &&
                                 yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
-                                is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+                                is_positive(yawVarianceEKFGSF) &&
+                                yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
+                                (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
             if (yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip()) {
                 // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
                 // for non fixed wing platform types
@@ -864,12 +866,12 @@ void NavEKF3_core::fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor)
 
     // external yaw available check
     bool canUseGsfYaw = false;
-    float gsfYaw = 0.0f;
-    float gsfYawVariance = 0.0f;
+    float gsfYaw, gsfYawVariance, velInnovLength;
     if (usePredictedYaw && yawEstimator != nullptr) {
-        canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance)
-                        && is_positive(gsfYawVariance)
-                        && gsfYawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG));
+        canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
+                       is_positive(gsfYawVariance) &&
+                       gsfYawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
+                       (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
     }
 
     // yaw measurement error variance (rad^2)
@@ -1461,8 +1463,11 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         return false;
     };
 
-    float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG))) {
+    float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+        is_positive(yawVarianceEKFGSF) &&
+        yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
+        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
 
         // keep roll and pitch and reset yaw
         rotationOrder order;
