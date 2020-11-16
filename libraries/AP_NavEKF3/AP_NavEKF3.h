@@ -625,5 +625,5 @@ private:
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 
     // position, velocity and yaw source control
-    AP_NavEKF_Source _sources;
+    AP_NavEKF_Source sources;
 };

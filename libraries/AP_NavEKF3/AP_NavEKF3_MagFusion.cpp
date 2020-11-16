@@ -200,7 +200,7 @@ void NavEKF3_core::SelectMagFusion()
     magFusePerformed = false;
 
     // get default yaw source
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if (yaw_source != yaw_source_last) {
         yaw_source_last = yaw_source;
         yaw_source_reset = true;

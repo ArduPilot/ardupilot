@@ -616,7 +616,7 @@ void NavEKF3_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity(selected_gps) && frontend->_sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity(selected_gps) && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) && !frontend->inhibitGpsVertVelUse) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -1279,7 +1279,7 @@ float NavEKF3_core::MagDeclination(void) const
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->_sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass());
     if (!runCheck)
     {
