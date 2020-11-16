@@ -17,6 +17,7 @@
  */
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
@@ -34,7 +35,7 @@ extern const AP_HAL::HAL& hal;
  */
 static const char *map_filename(const char *fname)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
     // on SITL only allow paths under subdirectory. Users can still
     // escape with .. if they want to
     if (strcmp(fname, "/") == 0) {
