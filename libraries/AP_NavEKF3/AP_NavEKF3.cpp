@@ -910,7 +910,7 @@ void NavEKF3::UpdateFilter(void)
 */
 void NavEKF3::checkLaneSwitch(void)
 {
-    AP::dal().log_event3(AP_DAL::Event3::checkLaneSwitch);
+    AP::dal().log_event3(AP_DAL::Event::checkLaneSwitch);
 
     uint32_t now = AP::dal().millis();
     if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
@@ -947,7 +947,7 @@ void NavEKF3::checkLaneSwitch(void)
 
 void NavEKF3::requestYawReset(void)
 {
-    AP::dal().log_event3(AP_DAL::Event3::requestYawReset);
+    AP::dal().log_event3(AP_DAL::Event::requestYawReset);
 
     for (uint8_t i = 0; i < num_cores; i++) {
         core[i].EKFGSF_requestYawReset();
@@ -1125,7 +1125,7 @@ void NavEKF3::getTiltError(int8_t instance, float &ang) const
 // reset body axis gyro bias estimates
 void NavEKF3::resetGyroBias(void)
 {
-    AP::dal().log_event3(AP_DAL::Event3::resetGyroBias);
+    AP::dal().log_event3(AP_DAL::Event::resetGyroBias);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
@@ -1141,7 +1141,7 @@ void NavEKF3::resetGyroBias(void)
 // If using a range finder for height no reset is performed and it returns false
 bool NavEKF3::resetHeightDatum(void)
 {
-    AP::dal().log_event3(AP_DAL::Event3::resetHeightDatum);
+    AP::dal().log_event3(AP_DAL::Event::resetHeightDatum);
 
     bool status = true;
     if (core) {
@@ -1162,7 +1162,7 @@ bool NavEKF3::resetHeightDatum(void)
 // Returns 1 if command accepted
 uint8_t NavEKF3::setInhibitGPS(void)
 {
-    AP::dal().log_event3(AP_DAL::Event3::setInhibitGPS);
+    AP::dal().log_event3(AP_DAL::Event::setInhibitGPS);
 
     if (!core) {
         return 0;
@@ -1592,9 +1592,9 @@ bool NavEKF3::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, floa
 void NavEKF3::setTakeoffExpected(bool val)
 {
     if (val) {
-        AP::dal().log_event3(AP_DAL::Event3::setTakeoffExpected);
+        AP::dal().log_event3(AP_DAL::Event::setTakeoffExpected);
     } else {
-        AP::dal().log_event3(AP_DAL::Event3::unsetTakeoffExpected);
+        AP::dal().log_event3(AP_DAL::Event::unsetTakeoffExpected);
     }
 
     if (core) {
@@ -1609,9 +1609,9 @@ void NavEKF3::setTakeoffExpected(bool val)
 void NavEKF3::setTouchdownExpected(bool val)
 {
     if (val) {
-        AP::dal().log_event3(AP_DAL::Event3::setTouchdownExpected);
+        AP::dal().log_event3(AP_DAL::Event::setTouchdownExpected);
     } else {
-        AP::dal().log_event3(AP_DAL::Event3::unsetTouchdownExpected);
+        AP::dal().log_event3(AP_DAL::Event::unsetTouchdownExpected);
     }
 
     if (core) {
@@ -1628,9 +1628,9 @@ void NavEKF3::setTouchdownExpected(bool val)
 void NavEKF3::setTerrainHgtStable(bool val)
 {
     if (val) {
-        AP::dal().log_event3(AP_DAL::Event3::setTerrainHgtStable);
+        AP::dal().log_event3(AP_DAL::Event::setTerrainHgtStable);
     } else {
-        AP::dal().log_event3(AP_DAL::Event3::unsetTerrainHgtStable);
+        AP::dal().log_event3(AP_DAL::Event::unsetTerrainHgtStable);
     }
 
     if (core) {
