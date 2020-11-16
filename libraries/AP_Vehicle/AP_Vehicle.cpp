@@ -132,6 +132,8 @@ void AP_Vehicle::setup()
 #endif
 
     send_watchdog_reset_statustext();
+    
+    _setup_done = true;
 }
 
 void AP_Vehicle::loop()

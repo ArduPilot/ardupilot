@@ -209,7 +209,10 @@ public:
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
-
+    
+    // true if the vehicle has gone thru the entire setup sequence
+    bool setup_done() const { return _setup_done; };
+    
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
@@ -307,6 +310,7 @@ private:
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 
     static AP_Vehicle *_singleton;
+    bool _setup_done;
 };
 
 namespace AP {
