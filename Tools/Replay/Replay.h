@@ -24,6 +24,8 @@ struct user_parameter {
 };
 
 extern user_parameter *user_parameters;
+extern bool replay_force_ekf2;
+extern bool replay_force_ekf3;
 
 class ReplayVehicle : public AP_Vehicle {
 public:

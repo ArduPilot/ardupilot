@@ -23,6 +23,21 @@ void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RFRF, msgbytes);
+#define MAP_FLAG(flag1, flag2) if (msg.frame_types & uint8_t(flag1)) msg.frame_types |= uint8_t(flag2)
+    /*
+      when we force an EKF we map the trigger flags over
+     */
+    if (replay_force_ekf2) {
+        MAP_FLAG(AP_DAL::FrameType::InitialiseFilterEKF3, AP_DAL::FrameType::InitialiseFilterEKF2);
+        MAP_FLAG(AP_DAL::FrameType::UpdateFilterEKF3, AP_DAL::FrameType::UpdateFilterEKF2);
+        MAP_FLAG(AP_DAL::FrameType::LogWriteEKF3, AP_DAL::FrameType::LogWriteEKF2);
+    }
+    if (replay_force_ekf3) {
+        MAP_FLAG(AP_DAL::FrameType::InitialiseFilterEKF2, AP_DAL::FrameType::InitialiseFilterEKF3);
+        MAP_FLAG(AP_DAL::FrameType::UpdateFilterEKF2, AP_DAL::FrameType::UpdateFilterEKF3);
+        MAP_FLAG(AP_DAL::FrameType::LogWriteEKF2, AP_DAL::FrameType::LogWriteEKF3);
+    }
+#undef MAP_FLAG
     AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
@@ -36,47 +51,51 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(REV2, msgbytes);
 
-    switch ((AP_DAL::Event2)msg.event) {
+    switch ((AP_DAL::Event)msg.event) {
 
-    case AP_DAL::Event2::resetGyroBias:
+    case AP_DAL::Event::resetGyroBias:
         ekf2.resetGyroBias();
         break;
-    case AP_DAL::Event2::resetHeightDatum:
+    case AP_DAL::Event::resetHeightDatum:
         ekf2.resetHeightDatum();
         break;
-    case AP_DAL::Event2::setInhibitGPS:
+    case AP_DAL::Event::setInhibitGPS:
         ekf2.setInhibitGPS();
         break;
-    case AP_DAL::Event2::setTakeoffExpected:
+    case AP_DAL::Event::setTakeoffExpected:
         ekf2.setTakeoffExpected(true);
         break;
-    case AP_DAL::Event2::unsetTakeoffExpected:
+    case AP_DAL::Event::unsetTakeoffExpected:
         ekf2.setTakeoffExpected(false);
         break;
-    case AP_DAL::Event2::setTouchdownExpected:
+    case AP_DAL::Event::setTouchdownExpected:
         ekf2.setTouchdownExpected(true);
         break;
-    case AP_DAL::Event2::unsetTouchdownExpected:
+    case AP_DAL::Event::unsetTouchdownExpected:
         ekf2.setTouchdownExpected(false);
         break;
-    case AP_DAL::Event2::setInhibitGpsVertVelUse:
+    case AP_DAL::Event::setInhibitGpsVertVelUse:
         ekf2.setInhibitGpsVertVelUse(true);
         break;
-    case AP_DAL::Event2::unsetInhibitGpsVertVelUse:
+    case AP_DAL::Event::unsetInhibitGpsVertVelUse:
         ekf2.setInhibitGpsVertVelUse(false);
         break;
-    case AP_DAL::Event2::setTerrainHgtStable:
+    case AP_DAL::Event::setTerrainHgtStable:
         ekf2.setTerrainHgtStable(true);
         break;
-    case AP_DAL::Event2::unsetTerrainHgtStable:
+    case AP_DAL::Event::unsetTerrainHgtStable:
         ekf2.setTerrainHgtStable(false);
         break;
-    case AP_DAL::Event2::requestYawReset:
+    case AP_DAL::Event::requestYawReset:
         ekf2.requestYawReset();
         break;
-    case AP_DAL::Event2::checkLaneSwitch:
+    case AP_DAL::Event::checkLaneSwitch:
         ekf2.checkLaneSwitch();
         break;
+    }
+    if (replay_force_ekf3) {
+        LR_MsgHandler_REV3 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
 }
 
@@ -88,12 +107,21 @@ void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
     loc.lng = msg.lng;
     loc.alt = msg.alt;
     ekf2.setOriginLLH(loc);
+
+    if (replay_force_ekf3) {
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
+    }
 }
 
 void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RWA2, msgbytes);
     ekf2.writeDefaultAirSpeed(msg.airspeed);
+    if (replay_force_ekf3) {
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
+    }
 }
 
 
@@ -101,47 +129,52 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(REV3, msgbytes);
 
-    switch ((AP_DAL::Event3)msg.event) {
+    switch ((AP_DAL::Event)msg.event) {
 
-    case AP_DAL::Event3::resetGyroBias:
+    case AP_DAL::Event::resetGyroBias:
         ekf3.resetGyroBias();
         break;
-    case AP_DAL::Event3::resetHeightDatum:
+    case AP_DAL::Event::resetHeightDatum:
         ekf3.resetHeightDatum();
         break;
-    case AP_DAL::Event3::setInhibitGPS:
+    case AP_DAL::Event::setInhibitGPS:
         ekf3.setInhibitGPS();
         break;
-    case AP_DAL::Event3::setTakeoffExpected:
+    case AP_DAL::Event::setTakeoffExpected:
         ekf3.setTakeoffExpected(true);
         break;
-    case AP_DAL::Event3::unsetTakeoffExpected:
+    case AP_DAL::Event::unsetTakeoffExpected:
         ekf3.setTakeoffExpected(false);
         break;
-    case AP_DAL::Event3::setTouchdownExpected:
+    case AP_DAL::Event::setTouchdownExpected:
         ekf3.setTouchdownExpected(true);
         break;
-    case AP_DAL::Event3::unsetTouchdownExpected:
+    case AP_DAL::Event::unsetTouchdownExpected:
         ekf3.setTouchdownExpected(false);
         break;
-    case AP_DAL::Event3::setInhibitGpsVertVelUse:
+    case AP_DAL::Event::setInhibitGpsVertVelUse:
         ekf3.setInhibitGpsVertVelUse(true);
         break;
-    case AP_DAL::Event3::unsetInhibitGpsVertVelUse:
+    case AP_DAL::Event::unsetInhibitGpsVertVelUse:
         ekf3.setInhibitGpsVertVelUse(false);
         break;
-    case AP_DAL::Event3::setTerrainHgtStable:
+    case AP_DAL::Event::setTerrainHgtStable:
         ekf3.setTerrainHgtStable(true);
         break;
-    case AP_DAL::Event3::unsetTerrainHgtStable:
+    case AP_DAL::Event::unsetTerrainHgtStable:
         ekf3.setTerrainHgtStable(false);
         break;
-    case AP_DAL::Event3::requestYawReset:
+    case AP_DAL::Event::requestYawReset:
         ekf3.requestYawReset();
         break;
-    case AP_DAL::Event3::checkLaneSwitch:
+    case AP_DAL::Event::checkLaneSwitch:
         ekf3.checkLaneSwitch();
         break;
+    }
+
+    if (replay_force_ekf2) {
+        LR_MsgHandler_REV2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
 }
 
@@ -153,12 +186,20 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.lng = msg.lng;
     loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
+    if (replay_force_ekf2) {
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
+    }
 }
 
 void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RWA3, msgbytes);
     ekf3.writeDefaultAirSpeed(msg.airspeed);
+    if (replay_force_ekf2) {
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
+    }
 }
 
 void LR_MsgHandler_REY3::process_message(uint8_t *msgbytes)
