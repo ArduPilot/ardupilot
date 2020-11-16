@@ -371,9 +371,10 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: CRt: climb rate
 // @Field: TMix: transition throttle mix value
 // @Field: Sscl: speed scalar for tailsitter control surfaces
-// @Field: Trans: Transistion state
+// @Field: Trn: Transistion state
+// @Field: Ast: Q assist active state
     { LOG_QTUN_MSG, sizeof(QuadPlane::log_QControl_Tuning),
-      "QTUN", "QffffffeccffB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trans", "s----mmmnn---", "F----00000-0-" },
+      "QTUN", "QffffffeccffBB", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DCRt,CRt,TMix,Sscl,Trn,Ast", "s----mmmnn----", "F----00000-0--" },
 
 // @LoggerMessage: AOA
 // @Description: Angle of attack and Side Slip Angle values
