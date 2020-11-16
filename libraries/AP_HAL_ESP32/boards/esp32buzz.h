@@ -84,7 +84,7 @@
 // todo properly setup the Analog and RCIN here as well...
 
 
-/* buzz old hardcoded setup:
+// buzz old hardcoded setup:
 // GPIO36
 #define HAL_BATT_VOLT_PIN (0)
 #define HAL_BATT_VOLT_SCALE (18.1)
@@ -93,20 +93,31 @@
 #define HAL_BATT_CURR_SCALE (36)
 // rcin on what pin?
 #define HAL_ESP32_RCIN GPIO_NUM_17
-*/
+//
 
 
 //HARDWARE UARTS
     
 #define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 }//,
-//	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },
-//	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
+	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
+	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+
+#define HAVE_FILESYSTEM_SUPPORT 1
+#define HAL_ESP32_SDCARD 1
+#define LOGGER_MAVLINK_SUPPORT 1
+#define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
+#define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
+#define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
+#define HAL_OS_POSIX_IO 1
+
+#define HAL_LOGGING_BACKENDS_DEFAULT 2
 
 
 
 // SD config, its also SPI, but gets it s own - also not configured here right now...
-//#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+// this is used by libraries/AP_HAL_ESP32/SdCard.cpp
+#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
 
 
 

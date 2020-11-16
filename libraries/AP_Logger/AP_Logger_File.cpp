@@ -12,6 +12,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+//#include <AP_Vehicle/AP_Vehicle.h>
 
 #if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Logger_File.h"
@@ -56,9 +57,6 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
     _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
     _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
 {
-#ifdef DBG_CONSOLEMSGS
-	printf("AP_Logger_File::constructed.\n");
-#endif
     df_stats_clear();
 }
 
@@ -74,9 +72,7 @@ void AP_Logger_File::ensure_log_directory_exists()
         ret = AP::FS().mkdir(_log_directory);
     }
     if (ret == -1 && errno != EEXIST) {
-#ifdef DBG_CONSOLEMSGS
         printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
-#endif
     }
 }
 
@@ -97,20 +93,13 @@ void AP_Logger_File::Init()
     }
 
     if (!_writebuf.get_size()) {
-#ifdef DBG_CONSOLEMSGS
-    	printf("Out of memory for logging\n");
-#endif
+        hal.console->printf("Out of memory for logging\n");
         return;
     }
 
-#ifdef DBG_CONSOLEMSGS
-    printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
-#endif
+    hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
-#ifdef DBG_CONSOLEMSGS
-	printf("AP_Logger_File::REGESTERING _io_timer ---------------\n");
-#endif
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 
     const char* custom_dir = hal.util->get_custom_log_directory();
@@ -158,11 +147,9 @@ void AP_Logger_File::periodic_1Hz()
     }
 
     if (!io_thread_alive()) {
-   	//printf("%s -> IO THREAD DEAD\n",__PRETTY_FUNCTION__);
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true
             // we register the IO timer callback
-        	//printf("%s -> STUCK IO THREAD\n",__PRETTY_FUNCTION__);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "AP_Logger: stuck thread (%s)", last_io_operation);
         }
         if (io_thread_warning_decimation_counter++ > 57) {
@@ -332,7 +319,6 @@ void AP_Logger_File::Prep_MinSpace()
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
-#endif
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -446,9 +432,6 @@ char *AP_Logger_File::_lastlog_file_name(void) const
 // remove all log files
 void AP_Logger_File::EraseAll()
 {
-#ifdef DBG_CONSOLEMSGS
-	printf("%s\n",__PRETTY_FUNCTION__);
-#endif
     if (hal.util->get_soft_armed()) {
         // do not want to do any filesystem operations while we are e.g. flying
         return;
@@ -685,10 +668,9 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             _open_error_ms = AP_HAL::millis();
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
-                                fname, strerror(saved_errno));
+                     fname, strerror(saved_errno));
             hal.console->printf("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
-#endif
             free(fname);
             return -1;            
         }
@@ -762,9 +744,6 @@ uint16_t AP_Logger_File::get_num_logs()
  */
 void AP_Logger_File::stop_logging(void)
 {
-#ifdef DBG_CONSOLEMSGS
-	printf("%s\n",__PRETTY_FUNCTION__);
-#endif
     // best-case effort to avoid annoying the IO thread
     const bool have_sem = write_fd_semaphore.take(hal.util->get_soft_armed()?1:20);
     if (_write_fd != -1) {
@@ -805,9 +784,6 @@ void AP_Logger_File::start_new_log(void)
     if (_read_fd != -1) {
         AP::FS().close(_read_fd);
         _read_fd = -1;
-#ifdef DBG_CONSOLEMSGS
-    	printf("%s -> read fd -1\n",__PRETTY_FUNCTION__);
-#endif
     }
 
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
@@ -851,7 +827,6 @@ void AP_Logger_File::start_new_log(void)
 
     if (_write_fd == -1) {
         write_fd_semaphore.give();
-#ifdef DBG_CONSOLEMSGS
         int saved_errno = errno;
         if (open_error_ms_was_zero) {
             ::printf("Log open fail for %s - %s\n",
@@ -888,9 +863,6 @@ void AP_Logger_File::start_new_log(void)
         _open_error_ms = AP_HAL::millis();
         return;
     }
-#ifdef DBG_CONSOLEMSGS
-	printf("%s -> returned OK\n",__PRETTY_FUNCTION__);
-#endif
 
     return;
 }
@@ -997,7 +969,6 @@ void AP_Logger_File::_io_timer(void)
             last_io_operation = "";
             _write_fd = -1;
             printf("Failed to write to File: %s\n", strerror(errno));
-#endif
         }
         _last_write_failed = true;
     } else {

@@ -576,6 +576,7 @@ class esp32(Board):
                          '-fno-rtti',
                          '-nostdlib',
                          '-fstrict-volatile-bitfields',
+                         '-Wno-sign-compare',
                          '-DCYGWIN_BUILD']
         #env.CXXFLAGS.remove('-Wundef')
         env.CXXFLAGS.remove('-Werror=shadow')

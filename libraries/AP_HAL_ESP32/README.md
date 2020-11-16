@@ -5,14 +5,38 @@
 
 
 ## Building instructions
-1. Build currently tested on linux
-2. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_wip
-3. Use script Tools/scripts/install-prereqs-* to install ardupilot requirements
+0. Build currently tested on linux
+1. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_wip
+2. Use this to install ardupilot requirements:
+```
+Tools/environment_install/install-prereqs-ubuntu.sh
+```
+
+3. install esp-idf python deps, best to do it for both python 2 and 3: 
+
+```
+# from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
+sudo apt-get install git wget flex bison gperf python python-pip python-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+sudo apt-get install python3 python3-pip python3-setuptools
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+
+
+cd ardupilot
+/usr/bin/python2 -m pip install --user -r modules/esp_idf/requirements.txt
+/usr/bin/python3 -m pip install --user -r modules/esp_idf/requirements.txt
+cd modules/esp_idf
+./install.sh
+unset IDF_PATH
+source ./export.sh
+cd ../../..
+
+```
+
 4. Configure and run build:
 ```bash
 cd ardupilot
-source source_this_file.sh
-./waf configure --board=esp32diy --debug
+./waf configure --board=esp32buzz --debug
+[ or ./waf configure --board=esp32diy --debug ]
 ./waf plane
 or
 ./waf copter

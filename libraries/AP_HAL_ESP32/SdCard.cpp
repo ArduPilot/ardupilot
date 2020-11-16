@@ -78,9 +78,18 @@ ESP32::SPIBusDesc bus_ = HAL_ESP32_SDSPI;
 void mount_sdcard()
 {
 	printf("Mounting sd \n");
+    // todo the dedicated SDMMC host peripheral on the esp32 is about twice as fast as SD card SPI interface in '1-line' mode and somewht faster again in '4-line' mode.     either of those would probably be better that what we have now. (SPI)
+//https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/sdmmc_host.html
 	//sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     //sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
 
+    //  however In SPI mode, pins can be customized...
+
+    // and 'SPI bus sharing with SDSPI has been added in 067f3d2 — please see the new sdspi_host_init_device, sdspi_host_remove_device functions'. https://github.com/espressif/esp-idf/issues/1597 buzz..: thats in idf circa 4.3-dev tho.
+
+    // readme shows esp32 pinouts and pullups needed for different modes and 1 vs 4 line gotchass... 
+    //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/README.md
+    //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/main/sd_card_example_main.c
 	sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_miso = bus_.miso;

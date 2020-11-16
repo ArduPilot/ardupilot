@@ -18,6 +18,7 @@ def parseFunctions(functions_lst):
     mapping = dict()
     for func in funcs.splitlines():
         place = func.split(':')[0]
+        # if u get an error here, please remove the blank lines from functions.list
         symbol = func.split(':')[1]
         if not place in mapping:
             mapping[place] = list()
