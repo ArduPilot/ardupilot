@@ -23,6 +23,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "soc/rtc_wdt.h"
+#include "esp_int_wdt.h"
+#include "esp_task_wdt.h"
+
+#include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 
 //#define SCHEDULERDEBUG 1
@@ -36,6 +41,19 @@ bool Scheduler::_initialized = true;
 Scheduler::Scheduler()
 {
     _initialized = false;
+}
+
+void disableCore0WDT(){
+    TaskHandle_t idle_0 = xTaskGetIdleTaskHandleForCPU(0);
+    if(idle_0 == NULL || esp_task_wdt_delete(idle_0) != ESP_OK){
+        //print("Failed to remove Core 0 IDLE task from WDT");
+    }
+}
+void disableCore1WDT(){
+    TaskHandle_t idle_1 = xTaskGetIdleTaskHandleForCPU(1);
+    if(idle_1 == NULL || esp_task_wdt_delete(idle_1) != ESP_OK){
+        //print("Failed to remove Core 1 IDLE task from WDT");
+    }
 }
 
 void Scheduler::init()
@@ -53,6 +71,9 @@ printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
     xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
  //   xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
+  //disableCore0WDT();
+  //disableCore1WDT();
+
 }
 
 template <typename T>
