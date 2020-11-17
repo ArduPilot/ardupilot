@@ -493,10 +493,12 @@ void Mode::zero_throttle_and_hold_attitude()
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
-void Mode::make_safe_spool_down()
+void Mode::make_safe_ground_handling(bool spool_down)
 {
-    // command aircraft to initiate the shutdown process
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    if (spool_down) {
+        // command aircraft to initiate the shutdown process
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    }
     switch (motors->get_spool_state()) {
 
     case AP_Motors::SpoolState::SHUT_DOWN:
