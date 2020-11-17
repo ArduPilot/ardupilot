@@ -77,7 +77,7 @@
 //RCOUT which pins are used?
 //#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
 // or
-//#define HAL_ESP32_RCOUT {GPIO_NUM_27, GPIO_NUM_25, GPIO_NUM_22, GPIO_NUM_21} // 33,32,21,22,25,27
+#define HAL_ESP32_RCOUT {GPIO_NUM_27, GPIO_NUM_25, GPIO_NUM_22, GPIO_NUM_21} // 33,32,21,22,25,27
 
 // SPI BUS setup, including gpio, dma, 
 #define HAL_ESP32_SPI_BUSES \
@@ -105,8 +105,9 @@
 //GPIO 32
 //#define HAL_BATT_CURR_PIN (4)
 //#define HAL_BATT_CURR_SCALE (36)
+
 // rcin on what pin?
-//#define HAL_ESP32_RCIN GPIO_NUM_17
+#define HAL_ESP32_RCIN GPIO_NUM_4
 //
 
 
