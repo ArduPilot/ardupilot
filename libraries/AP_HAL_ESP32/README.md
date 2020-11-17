@@ -81,22 +81,33 @@ Currently esp32 dev board with connected gy-91 10dof sensor board is supported. 
 ### Uart connecion
 Internally connected on most devboards, just for reference.
 
-After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages. 
+After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.  
 
 | ESP32 | CP2102 |
-| --- | --- |
-| GPIO3 | UART_TX |  AKA UART0_RX
-| GPIO1 | UART_RX |  AKA UART0_TX
+| ---   | ---    |
+| GPIO3 | UART_TX |  AKA UART0_RX |
+| GPIO1 | UART_RX |  AKA UART0_TX |
 
+
+### RC reciever connection
+
+|ESP32| RCRECIEVER |
+| --- |    ---     |
+| D4  |  CPPM-out  |
+| GND |       GND  |
+| 5v  |       Pwr  |
+
+
+### RC Servo connection/s
 
 |ESP32|  RCOUT   |TYPICAL |
 | --- |   ---    | ---    | 
-|PIN33|SERVO-OUT1|AILERON |
-|PIN32|SERVO-OUT2|ELEVATOR|
-|PIN21|SERVO-OUT3|THROTTLE|
-|PIN22|SERVO-OUT4|RUDDER  |
-|PIN25|SERVO-OUT5|  ?     |
-|PIN27|SERVO-OUT6|  ?     |
+|PIN27|SERVO-OUT1|AILERON |
+|PIN25|SERVO-OUT2|ELEVATOR|
+|PIN22|SERVO-OUT3|THROTTLE|
+|PIN21|SERVO-OUT4|RUDDER  |
+|TBA  |SERVO-OUT5|  ?     |
+|TBA  |SERVO-OUT6|  ?     |
 
 
 ### GY-91 connection
@@ -125,6 +136,8 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 |3.3v | -- ( powered via usb, not programmer, or PIN1)|
 |GND  | GND(any of PIN4,PIN6,or PIN8 , all GND)|
 |EN   | TRST(PIN3)|
+
+## SDCARD connection
 
 |ESP32|  SDCARD  | 
 | --- |     ---  |
