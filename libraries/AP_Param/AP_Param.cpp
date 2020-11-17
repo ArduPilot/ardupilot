@@ -116,6 +116,9 @@ uint16_t AP_Param::_frame_type_flags;
 // write to EEPROM
 void AP_Param::eeprom_write_check(const void *ptr, uint16_t ofs, uint8_t size)
 {
+#ifdef STORAGEDEBUG 
+    printf("AP_Param write_block %d %d\n",(int)ofs, (int)size);
+#endif
     _storage.write_block(ofs, ptr, size);
 }
 
@@ -327,13 +330,17 @@ bool AP_Param::setup(void)
 
     // check the header
     _storage.read_block(&hdr, 0, sizeof(hdr));
+#ifdef STORAGEDEBUG 
+    printf("param check hdr  %d.%d.%d\n",hdr.magic[0],hdr.magic[1],hdr.revision);
+    printf("param check hdr2 %d.%d.%d\n",k_EEPROM_magic0,k_EEPROM_magic1,k_EEPROM_revision);
+#endif
     if (hdr.magic[0] != k_EEPROM_magic0 ||
         hdr.magic[1] != k_EEPROM_magic1 ||
         hdr.revision != k_EEPROM_revision) {
         // header doesn't match. We can't recover any variables. Wipe
         // the header and setup the sentinal directly after the header
         Debug("bad header in setup - erasing");
-        erase_all();
+        erase_all(); // actually force-writes a new header
     }
 
     return true;

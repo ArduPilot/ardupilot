@@ -17,6 +17,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "Storage.h"
 
+//#define STORAGEDEBUG 1
+
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -26,6 +28,9 @@ void Storage::_storage_open(void)
     if (_initialised) {
         return;
     }
+#ifdef STORAGEDEBUG 
+printf("%s:%d _storage_open \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     _dirty_mask.clearall();
     p = esp_partition_find_first((esp_partition_type_t)0x45, ESP_PARTITION_SUBTYPE_ANY, nullptr);
     // load from storage backend
@@ -42,6 +47,9 @@ void Storage::_storage_open(void)
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     uint16_t end = loc + length;
     for (uint16_t line=loc>>STORAGE_LINE_SHIFT;
          line <= end>>STORAGE_LINE_SHIFT;
@@ -53,6 +61,9 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
+#ifdef STORAGEDEBUG 
+printf("%s:%d read_block failed \n", __PRETTY_FUNCTION__, __LINE__); 
+#endif 
         return;
     }
     _storage_open();
@@ -62,6 +73,9 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
 void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
+#ifdef STORAGEDEBUG 
+printf("%s:%d write_block failed \n", __PRETTY_FUNCTION__, __LINE__); 
+#endif 
         return;
     }
     if (memcmp(src, &_buffer[loc], n) != 0) {
@@ -103,6 +117,9 @@ void Storage::_timer_tick(void)
  */
 void Storage::_flash_load(void)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     if (!_flash.init()) {
         AP_HAL::panic("unable to init flash storage");
     }
@@ -113,6 +130,9 @@ void Storage::_flash_load(void)
 */
 void Storage::_flash_write(uint16_t line)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     if (_flash.write(line*STORAGE_LINE_SIZE, STORAGE_LINE_SIZE)) {
         // mark the line clean
         _dirty_mask.clear(line);
@@ -124,6 +144,9 @@ void Storage::_flash_write(uint16_t line)
  */
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     size_t address = sector * STORAGE_SECTOR_SIZE + offset;
     bool ret = esp_partition_write(p, address, data, length) == ESP_OK;
     if (!ret && _flash_erase_ok()) {
@@ -135,6 +158,10 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
             bool ok = _flash.re_initialise();
             hal.console->printf("Storage: failed at %u:%u for %u - re-init %u\n",
                                 (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
+            #ifdef STORAGEDEBUG 
+            printf("Storage: failed at %u:%u for %u - re-init %u\n",
+                                (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
+            #endif 
         }
     }
     return ret;
@@ -146,6 +173,9 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
     size_t address = sector * STORAGE_SECTOR_SIZE + offset;
+#ifdef STORAGEDEBUG 
+printf("%s:%d  -> sec:%u off:%d len:%d addr:%d\n", __PRETTY_FUNCTION__, __LINE__,sector,offset,length,address);
+#endif 
     esp_partition_read(p, address, data, length);
     return true;
 }
@@ -155,6 +185,9 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
  */
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     size_t address = sector * STORAGE_SECTOR_SIZE;
     return esp_partition_erase_range(p, address, STORAGE_SECTOR_SIZE) == ESP_OK;
 }
@@ -164,6 +197,9 @@ bool Storage::_flash_erase_sector(uint8_t sector)
  */
 bool Storage::_flash_erase_ok(void)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     // only allow erase while disarmed
     return !hal.util->get_soft_armed();
 }
@@ -174,5 +210,8 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
+#ifdef STORAGEDEBUG 
+printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
+#endif 
     return _initialised && AP_HAL::millis() - _last_empty_ms < 2000;
 }

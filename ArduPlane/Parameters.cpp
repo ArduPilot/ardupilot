@@ -1373,8 +1373,12 @@ void Plane::load_parameters(void)
         hal.console->printf("Bad parameter table\n");
         AP_HAL::panic("Bad parameter table");
     }
-    if (!g.format_version.load() ||
+    if (!g.format_version.load() ||  
         g.format_version != Parameters::k_format_version) {
+
+        #ifdef STORAGEDEBUG 
+        printf("eeprom checks %d %d\n",(int)g.format_version,(int)Parameters::k_format_version);
+        #endif
 
         // erase all parameters
         hal.console->printf("Firmware change: erasing EEPROM...\n");
@@ -1383,7 +1387,7 @@ void Plane::load_parameters(void)
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
+        hal.console->printf("format_version.set_and_save done.\n");
     }
 
     uint32_t before = micros();
