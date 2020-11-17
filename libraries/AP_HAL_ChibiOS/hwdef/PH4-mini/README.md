@@ -1,6 +1,6 @@
 # Pixhawk4-Mini Flight Controller
 
-The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/product/64)
+The Pixhawk4-Mini flight controller is sold by [Holybro](https://shop.holybro.com/pixhawk4-mini_p1120.html)
 
 ## Features
 
@@ -32,7 +32,7 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](http://www.holybro.com/
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 The RCIN port can be used as RX or TX as a general UART using the
-SERIAL5_OPTIONS bits to swap pins. It is not used for RC input (the
+SERIAL4_OPTIONS bits to swap pins. It is not used for RC input (the
 PPM pin is used for RC input)
 
 The UART7 connector is inside the case and labelled as debug, but is
