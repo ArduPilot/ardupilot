@@ -281,6 +281,12 @@ uint32_t RGBLed::get_colour_sequence(void)// const
       }
 
 
+    if(AP_Notify::flags.critical_battery_voltage){
+      	return sequence_critical_battery_voltage;
+      }
+
+
+
     // solid green or blue if armed
     if (AP_Notify::flags.armed) {
         // solid green if armed with GPS 3d lock

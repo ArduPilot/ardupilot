@@ -149,7 +149,7 @@ private:
     const uint32_t sequence_flight_mode_change = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, GREEN);
     const uint32_t sequence_flight_mode_change_fail = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, YELLOW);
     const uint32_t sequence_low_servo_voltage = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, RED);
-
+	const uint32_t sequence_critical_battery_voltage = DEFINE_COLOUR_SEQUENCE_ALTERNATE_SLOW(OFF, RED);
 
     uint8_t last_step;
     enum rgb_source_t {

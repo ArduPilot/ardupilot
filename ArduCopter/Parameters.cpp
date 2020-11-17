@@ -510,6 +510,14 @@ const AP_Param::Info Copter::var_info[] = {
     // @User:
     GSCALAR(payload_weight,  "SPIRIT_PAYLD_WT",    0),
 
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(top_cam,  "SPIRIT_TOP_CAM",    0),
+
 
 
 

@@ -107,6 +107,7 @@ public:
         bool gimbal_active;
         bool low_servo_voltage;
         bool no_RC_in;
+        bool critical_battery_voltage;
 
     };
 

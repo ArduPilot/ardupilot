@@ -10,10 +10,8 @@ void Copter::userhook_init()
 	//Servo Voltage Watcher
 	AP_Notify::flags.low_servo_voltage = false;
 
-
 	//Killswitch Variables
 	killswitch_counter = 0;
-
 
 	//Herelink Gimbal Control Variables
 	ap.gimbal_control_active = false;
@@ -46,7 +44,7 @@ void Copter::userhook_init()
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
 	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1000);
+	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1500);
 
 
 	// startup spirit state
@@ -55,15 +53,18 @@ void Copter::userhook_init()
 
 	//GPIOs for on/off to payload and critical systems
 
-	hal.gpio->pinMode(52, 1);  // Payload, FLASE to turn on
-	hal.gpio->pinMode(53, 1);  // ESCs/Servos, TRUE to turn on
+	hal.gpio->pinMode(52, 1);  //Configure as output
+	hal.gpio->pinMode(53, 1);  //Configure as output
 
-	hal.gpio->write(52, false);	// Payload Power off at startup
+	hal.gpio->write(52, false);	// Payload Power on at startup
 	hal.gpio->write(53, true);  //Turn ESC/Servos on at startup
 
 	//Spool up support
 	timer_trigger = false;
 
+
+
+	//Set starting RPM if the number of vehicle batteries is set
 	float _RPM_hover;
 
 	if(g.battery_number > 0){
@@ -75,7 +76,6 @@ void Copter::userhook_init()
 		g.rpm_hover = _RPM_hover;
 
 	}
-
 
 	//RPM compensation support
 	start_rpm_comp_time = 0;
@@ -100,7 +100,6 @@ void Copter::userhook_FastLoop()
 {
     // put your 100Hz code here
 
-
 }
 
 
@@ -117,17 +116,6 @@ void Copter::userhook_50Hz()
 
 	update_rpm_hover();
 
-
-
-	if(spirit_state < 4){  //if state is disarmed, spoolup or takeoff, don't use comp and set timer
-		motors->enable_rpm_comp(false);
-		start_rpm_comp_time = AP_HAL::millis16();
-	}else if(AP_HAL::millis16() - start_rpm_comp_time > 3000){
-		motors->enable_rpm_comp(true);
-	}
-
-
-
 	motors->set_aft_rotor_RPM((float)rpm_sensor.get_rpm(1));
 
 	float pitch_offset = motors->get_pitch_rpm_offset();
@@ -138,8 +126,9 @@ void Copter::userhook_50Hz()
 
 
 	//Call topple sense
-
+if(motors->armed()){
 	topple_sense();
+}
 
 
 	// State Machine
@@ -161,18 +150,18 @@ void Copter::userhook_50Hz()
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
 
 		spirit_state = takeoff;
-		gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
+		//gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
 
 	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle()) ){
 
 		spirit_state = hover;
-		gcs().send_text(MAV_SEVERITY_INFO,"hover");
+		//gcs().send_text(MAV_SEVERITY_INFO,"hover");
 
 
 	}else if((spirit_state == hover or spirit_state == landing) and ap.land_complete){
 
 		spirit_state = land;
-		gcs().send_text(MAV_SEVERITY_INFO,"land");
+		//gcs().send_text(MAV_SEVERITY_INFO,"land");
 
 	}
 
@@ -297,10 +286,12 @@ void Copter::userhook_MediumLoop()
 	Killswitch();
 
 
-	if(!motors->armed()){
-		return;
+	if(spirit_state < 4){  //if state is disarmed, spoolup or takeoff, don't use comp and set timer
+		motors->enable_rpm_comp(false);
+		start_rpm_comp_time = AP_HAL::millis16();
+	}else if(AP_HAL::millis16() - start_rpm_comp_time > 3000){
+		motors->enable_rpm_comp(true);
 	}
-
 
 }
 #endif
@@ -335,6 +326,14 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
+
+	if(!motors->armed() and (copter.battery.voltage() < 40.0) and !hal.gpio->usb_connected()){
+		AP_Notify::flags.critical_battery_voltage = true;
+		hal.gpio->write(52, true);
+	}else{
+		AP_Notify::flags.critical_battery_voltage = false;
+		hal.gpio->write(52, false);
+	}
 
 }
 #endif
@@ -430,8 +429,20 @@ int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 		gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
 		gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+		if(g.top_cam){
+
+			gimbal_tilt = (RC_Channels::rc_channel(CH_2)->get_radio_max() - gimbal_tilt) + RC_Channels::rc_channel(CH_2)->get_radio_min();
+			gimbal_pan = (RC_Channels::rc_channel(CH_1)->get_radio_max() - gimbal_pan) + RC_Channels::rc_channel(CH_1)->get_radio_min();
+
+			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
+			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+
+		}else{
+
+			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
+			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+		}
+
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
 		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
 }
@@ -566,18 +577,18 @@ void Copter::Decode_Buttons(){
 
 	if(RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
 
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 2000);
+		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1900);
 
 	}
 
 
 	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
 
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1000);
+		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1100);
 
 	}
+*/
 
-	*/
 
 
 	if(RC_Channels::rc_channel(CH_7)->get_radio_in() >= 1700){

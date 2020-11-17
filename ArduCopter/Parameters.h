@@ -378,6 +378,7 @@ public:
 		k_param_rpm_hover,
 		k_param_battery_number,
 		k_param_payload_weight,
+		k_param_top_cam,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -478,6 +479,7 @@ public:
 
     AP_Int8					battery_number;
     AP_Float				payload_weight;
+    AP_Int8					top_cam;
 
 
     // Note: keep initializers here in the same order as they are declared

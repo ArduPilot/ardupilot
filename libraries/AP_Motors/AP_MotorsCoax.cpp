@@ -99,6 +99,9 @@ void AP_MotorsCoax::output_to_motors()
                 rc_write_angle(AP_MOTORS_MOT_2, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
         	}
 
+        	_actuator[2] = 0;
+			_actuator[3] = 0;
+
         	 // sends minimum values out to the motors
             rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
             rc_write(AP_MOTORS_MOT_4, output_to_pwm(0));
@@ -130,9 +133,14 @@ void AP_MotorsCoax::output_to_motors()
 
 			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
 			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+
+        	_actuator[2] = _aft_rotor_start;
+
 			rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
 
 		}else{
+
+			_actuator[2] = 0;
 
 			rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
 			 _aft_rotor_start = 0;
@@ -170,9 +178,14 @@ void AP_MotorsCoax::output_to_motors()
 
 			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
 			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+
+			_actuator[2] = _aft_rotor_start;
+
 			rc_write(AP_MOTORS_MOT_3,  (int16_t)((float)get_pwm_output_min() + _aft_rotor_start * (float)(get_pwm_output_max()-get_pwm_output_min())) );
 
 		}else{
+
+			_actuator[2] = 0;
 
 			rc_write(AP_MOTORS_MOT_3, output_to_pwm(0));
 			 _aft_rotor_start = 0;
