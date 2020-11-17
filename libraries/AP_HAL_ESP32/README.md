@@ -163,6 +163,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [X] OTA update of the fw
 - [X] SdCard
 - [ ] Buzzer
+- [x] parameter storage in a esp32 flash partition area
 
 - [x] Custom boards build
 - [x] Perfomance optimization
