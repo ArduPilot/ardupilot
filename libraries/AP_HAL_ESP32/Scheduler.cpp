@@ -70,7 +70,8 @@ printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     xTaskCreate(_io_thread, "APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle);
   //  xTaskCreate(test_esc, "APM_TEST", IO_SS, this, IO_PRIO, nullptr);
   //  xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
-  //  xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
+    xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle); //no actual flash writes without this, storage kinda appears to work, but does an erase on every boot and params don't persist over reset etc.
+
  //   xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
 
   //disableCore0WDT();
