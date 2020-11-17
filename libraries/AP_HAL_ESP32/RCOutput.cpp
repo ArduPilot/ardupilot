@@ -24,7 +24,14 @@
 
 using namespace ESP32;
 
+#ifdef HAL_ESP32_RCOUT
+
 gpio_num_t outputs_pins[] = HAL_ESP32_RCOUT;
+
+#else
+gpio_num_t outputs_pins[] = {};
+
+#endif
 
 #define MAX_CHANNELS ARRAY_SIZE(outputs_pins)
 
