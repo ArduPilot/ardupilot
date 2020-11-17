@@ -14,6 +14,9 @@ ekf_ring_buffer::ekf_ring_buffer(uint8_t _elsize) :
 
 bool ekf_ring_buffer::init(uint8_t size)
 {
+    if (buffer) {
+        free(buffer);
+    }
     buffer = calloc(size, elsize);
     if (buffer == nullptr) {
         return false;
@@ -141,6 +144,10 @@ void *ekf_imu_buffer::get_offset(uint8_t idx) const
 // initialise buffer, returns false when allocation has failed
 bool ekf_imu_buffer::init(uint32_t size)
 {
+    if (buffer != nullptr) {
+        // allow for init twive
+        free(buffer);
+    }
     buffer = calloc(size, elsize);
     if (buffer == nullptr) {
         return false;
