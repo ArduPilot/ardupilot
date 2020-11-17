@@ -12,9 +12,9 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define HAL_ESP32_SDCARD 1
+//#define HAL_ESP32_SDCARD 1
 
-#ifdef HAL_ESP32_SDCARD
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
@@ -27,6 +27,8 @@
 #include <sys/unistd.h>
 #include <sys/types.h>
 #include "SPIDevice.h"
+
+#ifdef HAL_ESP32_SDCARD
 
 sdmmc_card_t* card = nullptr;
 
