@@ -15,6 +15,7 @@
 #include "AP_Baro_BMP280.h"
 
 #include <utility>
+#include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
 
