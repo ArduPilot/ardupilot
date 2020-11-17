@@ -15,7 +15,7 @@ namespace Linux {
 class RCOutput_PCA9685 : public AP_HAL::RCOutput {
 public:
     RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                     bool external_clock,
+                     uint32_t external_clock,
                      uint8_t channel_offset,
                      int16_t oe_pin_number);
 
@@ -42,7 +42,7 @@ private:
 
     uint16_t *_pulses_buffer;
 
-    bool _external_clock;
+    uint32_t _external_clock;
     bool _corking = false;
     uint8_t _channel_offset;
     int16_t _oe_pin_number;
