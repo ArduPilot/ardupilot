@@ -36,13 +36,13 @@
 
 static Empty::UARTDriver uartADriver;
 static ESP32::UARTDriver cons(0);
-static ESP32::UARTDriver uartBDriver(2);
+static Empty::UARTDriver uartBDriver;//uartBDriver(2);
 #ifdef HAL_ESP32_WIFI
 static ESP32::WiFiDriver uartCDriver;
 #else
 static Empty::UARTDriver uartCDriver;
 #endif
-static ESP32::UARTDriver uartDDriver(1);
+static Empty::UARTDriver uartDDriver;//uartDDriver(1);
 static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
@@ -50,17 +50,17 @@ static Empty::UARTDriver uartHDriver;
 
 static Empty::DSP dspDriver;
 
-static ESP32::I2CDeviceManager i2cDeviceManager;
+static Empty::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 #ifndef HAL_DISABLE_ADC_DRIVER
 static ESP32::AnalogIn analogIn;
-static ESP32::Storage storageDriver;
 #else
 static Empty::AnalogIn analogIn;
 #endif
+static Empty::Storage storageDriver;
 static Empty::GPIO gpioDriver;
-static ESP32::RCOutput rcoutDriver;
-static ESP32::RCInput rcinDriver;
+static Empty::RCOutput rcoutDriver;
+static Empty::RCInput rcinDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;

@@ -60,17 +60,21 @@ void Scheduler::init()
 {
 
 printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+//printf(" Scheduler::init\n");
 
     //xTaskCreatePinnedToCore(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle, 0);
 	xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
-    xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
+ //   xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
+//printf(" Scheduler::init2\n");
     xTaskCreate(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle);
+//printf(" Scheduler::init3\n");
     xTaskCreate(_io_thread, "APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle);
   //  xTaskCreate(test_esc, "APM_TEST", IO_SS, this, IO_PRIO, nullptr);
-    xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
-    xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
+  //  xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
+ //   xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
  //   xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
+
   //disableCore0WDT();
   //disableCore1WDT();
 
@@ -485,6 +489,7 @@ void Scheduler::_uart_thread(void *arg)
     }
 }
 
+// once every 60 seconds, print some stats...
 void print_stats()
 {
     static int64_t last_run = 0;
@@ -533,10 +538,9 @@ printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 printf("%s:%d 2222\n", __PRETTY_FUNCTION__, __LINE__);
     hal.uartA->begin(115200);
     hal.uartB->begin(57600);
-    //hal.uartC->begin(57600);
+    hal.uartC->begin(57600);
     hal.uartC->begin(921600);
     hal.uartD->begin(115200);
-    hal.analogin->init();
 printf("%s:%d 333\n", __PRETTY_FUNCTION__, __LINE__);
 
 #ifndef HAL_DISABLE_ADC_DRIVER
@@ -545,6 +549,7 @@ printf("%s:%d 333\n", __PRETTY_FUNCTION__, __LINE__);
     hal.rcout->init();
 
 printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
+
     sched->callbacks->setup();
 		printf("555\n");
     sched->system_initialized();
@@ -555,6 +560,8 @@ printf("%s:%d 777\n", __PRETTY_FUNCTION__, __LINE__);
         sched->callbacks->loop();
         sched->delay_microseconds(250);
 
+
+        //vTaskDelay(10);// hack to poke the task_wdt
 
         print_stats(); // only runs every 60 seconds.
     }
