@@ -59,8 +59,8 @@ static Empty::AnalogIn analogIn;
 #endif
 static Empty::Storage storageDriver;
 static Empty::GPIO gpioDriver;
-static Empty::RCOutput rcoutDriver;
-static Empty::RCInput rcinDriver;
+static ESP32::RCOutput rcoutDriver;
+static ESP32::RCInput rcinDriver;
 static ESP32::Scheduler schedulerInstance;
 static ESP32::Util utilInstance;
 static Empty::OpticalFlow opticalFlowDriver;
