@@ -37,11 +37,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS 
 // hal.console can be accessed from bus threads on ChibiOS
 #define debug(fmt, args ...)  do {hal.console->printf("MPU: " fmt "\n", ## args); } while(0)
 #else
-#define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
+#define debug(fmt, args ...)  do {/*printf("MPU: " fmt "\n", ## args); */} while(0)
 #endif
 
 /*
