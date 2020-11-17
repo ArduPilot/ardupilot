@@ -33,6 +33,7 @@ extern const AP_HAL::HAL& hal;
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
     thread_priority(_thread_priority), semaphore()
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 }
 
 /*
@@ -40,6 +41,7 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
 */
 void IRAM_ATTR DeviceBus::bus_thread(void *arg)
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     struct DeviceBus *binfo = (struct DeviceBus *)arg;
 
     while (true) {
@@ -91,6 +93,7 @@ void IRAM_ATTR DeviceBus::bus_thread(void *arg)
 
 AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb, AP_HAL::Device *_hal_device)
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     if (!thread_started) {
         thread_started = true;
         hal_device = _hal_device;
@@ -109,7 +112,7 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
         default:
             break;
         }
-
+printf("%s:%d BUS thread start\n", __PRETTY_FUNCTION__, __LINE__);
         xTaskCreate(DeviceBus::bus_thread, name, Scheduler::DEVICE_SS,
                     this, thread_priority, &bus_thread_handle);
     }

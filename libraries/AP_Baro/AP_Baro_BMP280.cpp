@@ -48,25 +48,34 @@ AP_Baro_BMP280::AP_Baro_BMP280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev
     : AP_Baro_Backend(baro)
     , _dev(std::move(dev))
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 }
 
 AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro,
                                        AP_HAL::OwnPtr<AP_HAL::Device> dev)
 {
+
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     if (!dev) {
         return nullptr;
     }
-
+	printf("bmp280 probe2\n");
     AP_Baro_BMP280 *sensor = new AP_Baro_BMP280(baro, std::move(dev));
+	printf("bmp280 probe3\n");
     if (!sensor || !sensor->_init()) {
         delete sensor;
+	printf("bmp280 probe4\n");
         return nullptr;
     }
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     return sensor;
 }
 
 bool AP_Baro_BMP280::_init()
 {
+
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+
     if (!_dev) {
         return false;
     }
@@ -76,6 +85,7 @@ bool AP_Baro_BMP280::_init()
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     uint8_t whoami;
     if (!_dev->read_registers(BMP280_REG_ID, &whoami, 1)  ||
         (whoami != BME280_ID && whoami != BMP280_ID)) {
@@ -83,6 +93,7 @@ bool AP_Baro_BMP280::_init()
         return false;
     }
 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     // read the calibration data
     uint8_t buf[24];
     _dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf));
@@ -105,7 +116,7 @@ bool AP_Baro_BMP280::_init()
     if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         mask = 0x7F;
     }
-
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     _dev->setup_checked_registers(2, 20);
     
     _dev->write_register((BMP280_REG_CTRL_MEAS & mask), (BMP280_OVERSAMPLING_T << 5) |
@@ -114,13 +125,13 @@ bool AP_Baro_BMP280::_init()
     _dev->write_register((BMP280_REG_CONFIG & mask), BMP280_FILTER_COEFFICIENT << 2, true);
 
     _instance = _frontend.register_sensor();
-
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     _dev->set_device_type(DEVTYPE_BARO_BMP280);
     set_bus_id(_instance, _dev->get_bus_id());
-    
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     // request 50Hz update
     _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
-
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     return true;
 }
 
@@ -130,7 +141,9 @@ bool AP_Baro_BMP280::_init()
 void AP_Baro_BMP280::_timer(void)
 {
     uint8_t buf[6];
-
+#ifdef SPIDEBUG 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     _dev->read_registers(BMP280_REG_DATA, buf, sizeof(buf));
 
     _update_temperature((buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4));
@@ -142,6 +155,9 @@ void AP_Baro_BMP280::_timer(void)
 // transfer data to the frontend
 void AP_Baro_BMP280::update(void)
 {
+#ifdef SPIDEBUG 
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     WITH_SEMAPHORE(_sem);
 
     if (!_has_sample) {

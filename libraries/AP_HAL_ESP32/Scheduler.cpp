@@ -23,6 +23,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include <stdio.h>
+
+//#define SCHEDULERDEBUG 1
+
 using namespace ESP32;
 
 extern const AP_HAL::HAL& hal;
@@ -36,16 +40,19 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
+
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+
     //xTaskCreatePinnedToCore(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle, 0);
-		xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
+	xTaskCreate(_main_thread, "APM_MAIN", Scheduler::MAIN_SS, this, Scheduler::MAIN_PRIO, &_main_task_handle);
     xTaskCreate(_timer_thread, "APM_TIMER", TIMER_SS, this, TIMER_PRIO, &_timer_task_handle);
     xTaskCreate(_rcin_thread, "APM_RCIN", RCIN_SS, this, RCIN_PRIO, &_rcin_task_handle);
     xTaskCreate(_uart_thread, "APM_UART", UART_SS, this, UART_PRIO, &_uart_task_handle);
     xTaskCreate(_io_thread, "APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle);
-    //xTaskCreate(test_esc, "APM_TEST", IO_SS, this, IO_PRIO, nullptr);
+  //  xTaskCreate(test_esc, "APM_TEST", IO_SS, this, IO_PRIO, nullptr);
     xTaskCreate(set_position, "APM_POS", IO_SS, this, IO_PRIO, nullptr);
     xTaskCreate(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle);
-//    xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
+ //   xTaskCreate(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr);
 }
 
 template <typename T>
@@ -66,6 +73,8 @@ void Scheduler::thread_create_trampoline(void *ctx)
 */
 bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+
     // take a copy of the MemberProc, it is freed after thread exits
     AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
     if (!tproc) {
@@ -92,6 +101,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
             thread_priority = constrain_int16(priority_map[i].p + priority, 1, 25);
             break;
         }
@@ -131,6 +141,7 @@ void Scheduler::delay_microseconds(uint16_t us)
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
             return;
@@ -148,21 +159,25 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 	_io_sem.take_blocking();
     for (uint8_t i = 0; i < _num_io_procs; i++) {
+printf("%s:%d _num_io_procs \n", __PRETTY_FUNCTION__, __LINE__);
         if (_io_proc[i] == proc) {
 			_io_sem.give();
             return;
         }
     }
-
+printf("%s:%d zzzzzzz \n", __PRETTY_FUNCTION__, __LINE__);
     if (_num_io_procs < ESP32_SCHEDULER_MAX_IO_PROCS) {
         _io_proc[_num_io_procs] = proc;
         _num_io_procs++;
     } else {
         printf("Out of IO processes\n");
     }
+printf("%s:%d qqq \n", __PRETTY_FUNCTION__, __LINE__);
 	_io_sem.give();
+printf("%s:%d www \n", __PRETTY_FUNCTION__, __LINE__);
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -185,6 +200,7 @@ bool Scheduler::in_main_thread() const
 
 void Scheduler::system_initialized()
 {
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     if (_initialized) {
         AP_HAL::panic("PANIC: scheduler::system_initialized called more than once");
     }
@@ -194,10 +210,12 @@ void Scheduler::system_initialized()
 
 void Scheduler::_timer_thread(void *arg)
 {
+printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(1000);
     }
+printf("%s:%d _initialized\n", __PRETTY_FUNCTION__, __LINE__);
     while (true) {
         sched->delay_microseconds(1000);
         sched->_run_timers();
@@ -210,9 +228,15 @@ void Scheduler::_timer_thread(void *arg)
 
 void Scheduler::_run_timers()
 {
+#ifdef SCHEDULERDEBUG 
+printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     if (_in_timer_proc) {
         return;
     }
+#ifdef SCHEDULERDEBUG 
+printf("%s:%d _in_timer_proc \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     _in_timer_proc = true;
 
     int num_procs = 0;
@@ -339,10 +363,15 @@ void Scheduler::test_esc(void* arg)
 
 void Scheduler::_run_io(void)
 {
+#ifdef SCHEDULERDEBUG 
+printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     if (_in_io_proc) {
         return;
     }
-
+#ifdef SCHEDULERDEBUG 
+printf("%s:%d _in_io_proc \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     _in_io_proc = true;
 
     int num_procs = 0;
@@ -360,11 +389,12 @@ void Scheduler::_run_io(void)
 
 void Scheduler::_io_thread(void* arg)
 {
+printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
     Scheduler *sched = (Scheduler *)arg;
     while (!sched->_initialized) {
         sched->delay_microseconds(1000);
     }
-
+printf("%s:%d _initialized \n", __PRETTY_FUNCTION__, __LINE__);
    // uint32_t last_sd_start_ms = AP_HAL::millis();
     while (true) {
         sched->delay_microseconds(1000);
@@ -385,10 +415,12 @@ void Scheduler::_io_thread(void* arg)
 
 void Scheduler::_storage_thread(void* arg)
 {
+printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(10000);
     }
+printf("%s:%d _initialized \n", __PRETTY_FUNCTION__, __LINE__);
     while (true) {
         sched->delay_microseconds(1000);
         // process any pending storage writes
@@ -414,10 +446,12 @@ void Scheduler::_print_profile(void* arg)
 
 void Scheduler::_uart_thread(void *arg)
 {
+//printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(20000);
     }
+//printf("%s:%d _initialized\n", __PRETTY_FUNCTION__, __LINE__);
     while (true) {
         sched->delay_microseconds(1000);
         hal.uartA->_timer_tick();
@@ -471,26 +505,31 @@ void Scheduler::set_position(void* arg)
 
 void IRAM_ATTR Scheduler::_main_thread(void *arg)
 {
+printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
     Scheduler *sched = (Scheduler *)arg;
+printf("%s:%d 2222\n", __PRETTY_FUNCTION__, __LINE__);
     hal.uartA->begin(115200);
     hal.uartB->begin(57600);
     //hal.uartC->begin(57600);
     hal.uartC->begin(921600);
     hal.uartD->begin(115200);
     hal.analogin->init();
+printf("%s:%d 333\n", __PRETTY_FUNCTION__, __LINE__);
     hal.rcout->init();
 
+printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
     sched->callbacks->setup();
-		printf("test\n");
+		printf("555\n");
     sched->system_initialized();
-		printf("inited\n");
+		printf("666\n");
 
-
+printf("%s:%d 777\n", __PRETTY_FUNCTION__, __LINE__);
     while (true) {
         sched->callbacks->loop();
         sched->delay_microseconds(250);
 
-        //print_stats();
+
+        print_stats(); // only runs every 60 seconds.
     }
 }
 
