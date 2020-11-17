@@ -592,7 +592,7 @@ bool QuadPlane::setup(void)
     if (!enable || hal.util->get_soft_armed()) {
         return false;
     }
-    float loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
+    loop_delta_t = 1.0 / plane.scheduler.get_loop_rate_hz();
 
     enum AP_Motors::motor_frame_class motor_class;
     enum Rotation rotation = ROTATION_NONE;
@@ -847,10 +847,10 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 
             if (!(tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
                 // In multicopter input mode, the roll and yaw stick axes are independent of pitch
-                attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
-                                                                                plane.nav_roll_cd,
-                                                                                plane.nav_pitch_cd,
-                                                                                yaw_rate_cds);
+                input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
+                                                                plane.nav_roll_cd,
+                                                                plane.nav_pitch_cd,
+                                                                yaw_rate_cds);
                 return;
             } else {
                 // In plane input mode, the roll and yaw sticks are swapped
@@ -876,10 +876,10 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
                 float p_yaw_rate = plane.nav_roll_cd / y2r_scale;
                 float p_roll_angle = -y2r_scale * yaw_rate_cds;
 
-                attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(true,
-                                                                                p_roll_angle,
-                                                                                plane.nav_pitch_cd,
-                                                                                p_yaw_rate);
+                input_euler_rate_yaw_euler_angle_pitch_bf_roll(true,
+                                                                p_roll_angle,
+                                                                plane.nav_pitch_cd,
+                                                                p_yaw_rate);
                 return;
             }
         }
@@ -910,10 +910,7 @@ void QuadPlane::hold_stabilize(float throttle_in)
     if ((throttle_in <= 0) && (air_mode == AirMode::OFF)) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        if (!is_tailsitter()) {
-            // always stabilize with tailsitters so we can do belly takeoffs
-            attitude_control->relax_attitude_controllers();
-        }
+        relax_attitude_control();
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         bool should_boost = true;
@@ -984,7 +981,7 @@ void QuadPlane::check_attitude_relax(void)
 {
     uint32_t now = AP_HAL::millis();
     if (now - last_att_control_ms > 100) {
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
     }
     last_att_control_ms = now;
 }
@@ -1078,7 +1075,7 @@ void QuadPlane::control_qacro(void)
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
     } else {
         check_attitude_relax();
 
@@ -1111,6 +1108,19 @@ void QuadPlane::control_qacro(void)
     }
 }
 
+void QuadPlane::relax_attitude_control()
+{
+    // disable some or all axis controllers to prevent windup
+    if (is_vectored_tailsitter()) {
+        // always stabilize pitch for vectored tailsitters so we can do belly takeoffs
+        // but disable roll and yaw control
+        relax_roll_and_yaw_controllers();
+    } else {
+        // if not a vectored tailsitter completely disable attitude control
+        attitude_control->relax_attitude_controllers();
+    }
+}
+
 /*
   control QHOVER mode
  */
@@ -1119,7 +1129,7 @@ void QuadPlane::control_hover(void)
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
         pos_control->relax_alt_hold_controllers(0);
     } else {
         hold_hover(get_pilot_desired_climb_rate_cms());
@@ -1253,7 +1263,7 @@ void QuadPlane::control_loiter()
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
-        attitude_control->relax_attitude_controllers();
+        relax_attitude_control();
         pos_control->relax_alt_hold_controllers(0);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
@@ -1467,7 +1477,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
  */
 bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
 {
-    if (assist_speed <= 0 || is_contol_surface_tailsitter()) {
+    if (assist_speed <= 0 || is_control_surface_tailsitter()) {
         // assistance disabled
         in_angle_assist = false;
         angle_error_start_ms = 0;

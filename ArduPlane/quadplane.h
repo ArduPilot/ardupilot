@@ -112,15 +112,29 @@ public:
     // see if we are flying from vtol point of view
     bool is_flying_vtol(void) const;
 
+    // control loop interval passed to AC_AttitudeControl and AC_PosControl
+    float loop_delta_t;
+
+    // Command euler yaw rate and pitch angle with roll angle specified in body frame
+    // (used only by tailsitter quadplanes)
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+
+
     // return true when tailsitter frame configured
     bool is_tailsitter(void) const;
 
-    // return true when flying a control surface only tailsitter tailsitter
-    bool is_contol_surface_tailsitter(void) const;
+    // return true when flying a control surface only tailsitter
+    bool is_control_surface_tailsitter(void) const;
+
+    // return true when flying a tilt-vectored tailsitter
+    bool is_vectored_tailsitter(void) const;
 
     // return true when flying a tailsitter in VTOL
     bool tailsitter_active(void);
     
+    // Relax only the roll and yaw rate controllers
+    void relax_roll_and_yaw_controllers(void);
+
     // create outputs for tailsitters
     void tailsitter_output(void);
 
@@ -243,6 +257,8 @@ private:
     void control_qacro(void);
     void init_hover(void);
     void control_hover(void);
+    void relax_attitude_control();
+
 
     void init_loiter(void);
     void init_qland(void);
