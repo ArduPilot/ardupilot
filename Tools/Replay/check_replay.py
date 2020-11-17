@@ -69,7 +69,7 @@ def check_log(logfile, progress, ekf2_only=False, ekf3_only=False, verbose=False
     if verbose:
         for mtype in counts.keys():
             progress("%s %u/%u %d" % (mtype, counts[mtype], base_counts[mtype], base_counts[mtype]-counts[mtype]))
-    if count == 0 or abs(count - base_count) > 30:
+    if count == 0 or abs(count - base_count) > 100:
         failure += 1
     if failure != 0 or errors != 0:
         return False
