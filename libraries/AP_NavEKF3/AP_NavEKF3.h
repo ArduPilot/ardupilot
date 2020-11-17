@@ -39,6 +39,7 @@ public:
     NavEKF3 &operator=(const NavEKF3&) = delete;
 
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 
     // allow logging to determine the number of active cores
     uint8_t activeCores(void) const {

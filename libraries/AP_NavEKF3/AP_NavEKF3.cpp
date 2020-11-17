@@ -640,9 +640,17 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
 
-    // @Group: SRC_
+    AP_SUBGROUPEXTENSION("", 63, NavEKF3, var_info2),
+
+    AP_GROUPEND
+};
+
+// second table of parameters. allows us to go beyond the 64 parameter limit
+const AP_Param::GroupInfo NavEKF3::var_info2[] = {
+
+    // @Group: SRC
     // @Path: ../AP_NavEKF/AP_NavEKF_Source.cpp
-    AP_SUBGROUPINFO(sources, "SRC", 63, NavEKF3, AP_NavEKF_Source),
+    AP_SUBGROUPINFO(sources, "SRC", 1, NavEKF3, AP_NavEKF_Source),
 
     AP_GROUPEND
 };
@@ -650,6 +658,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 NavEKF3::NavEKF3()
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info2);
 }
 
 
