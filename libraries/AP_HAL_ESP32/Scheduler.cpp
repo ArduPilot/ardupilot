@@ -243,7 +243,9 @@ printf("%s:%d _initialized\n", __PRETTY_FUNCTION__, __LINE__);
         // process any pending RC output requests
         hal.rcout->timer_tick();
         //analog in
+#ifndef HAL_DISABLE_ADC_DRIVER
 		((AnalogIn*)hal.analogin)->_timer_tick();
+#endif
 	}
 }
 
@@ -536,6 +538,10 @@ printf("%s:%d 2222\n", __PRETTY_FUNCTION__, __LINE__);
     hal.uartD->begin(115200);
     hal.analogin->init();
 printf("%s:%d 333\n", __PRETTY_FUNCTION__, __LINE__);
+
+#ifndef HAL_DISABLE_ADC_DRIVER
+    hal.analogin->init();
+#endif
     hal.rcout->init();
 
 printf("%s:%d 444\n", __PRETTY_FUNCTION__, __LINE__);
