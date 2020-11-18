@@ -508,7 +508,6 @@ bool NavEKF3_core::readyToUseExtNav(void) const
 // return true if we should use the compass
 bool NavEKF3_core::use_compass(void) const
 {
-    const auto *compass  = dal.get_compass();
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
@@ -516,6 +515,7 @@ bool NavEKF3_core::use_compass(void) const
         return false;
     }
 
+    const auto *compass = dal.get_compass();
     return compass &&
            compass->use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
