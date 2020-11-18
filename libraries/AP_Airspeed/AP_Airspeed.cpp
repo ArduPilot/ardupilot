@@ -574,9 +574,10 @@ void AP_Airspeed::Log_Airspeed()
         if (!get_temperature(i, temperature)) {
             temperature = 0;
         }
-        struct log_AIRSPEED pkt = {
-            LOG_PACKET_HEADER_INIT(i==0?LOG_ARSP_MSG:LOG_ASP2_MSG),
+        const struct log_ARSP pkt{
+            LOG_PACKET_HEADER_INIT(LOG_ARSP_MSG),
             time_us       : now,
+            instance      : i,
             airspeed      : get_raw_airspeed(i),
             diffpressure  : get_differential_pressure(i),
             temperature   : (int16_t)(temperature * 100.0f),
