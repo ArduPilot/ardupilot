@@ -3,6 +3,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+#define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
+#endif
+
 class AP_Frsky_Backend
 {
 public:
@@ -26,10 +30,13 @@ public:
     {
         return false;
     }
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     virtual bool set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
     {
         return false;
     }
+#endif
 
     virtual void queue_text_message(MAV_SEVERITY severity, const char *text) { }
 

@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 /*
  * An instance of this class decodes a stream of SPort packets into a
  * MAVlite message (see AP_Frsky_MAVlite_Message.h).  It is expected
@@ -46,3 +47,4 @@ private:
     int16_t checksum;                       // sent at end of packet
     void update_checksum(const uint8_t c);
 };
+#endif
