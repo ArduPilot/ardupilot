@@ -22,7 +22,11 @@
 
 #include "esp_vfs_fat.h"
 #include "esp_ota_ops.h"
+
 #include "driver/sdmmc_host.h"
+#include "driver/sdspi_host.h"
+#include "sdmmc_cmd.h"
+
 #include <sys/stat.h>
 #include <sys/unistd.h>
 #include <sys/types.h>
@@ -76,27 +80,122 @@ done:
     unlink(fw_name);
 }
 
-#ifdef HAL_ESP32_SDSPI
-ESP32::SPIBusDesc bus_ = HAL_ESP32_SDSPI;
-#endif
+#ifdef HAL_ESP32_SDMMC
 
-void mount_sdcard()
+void mount_sdcard_mmc()
 {
 	printf("Mounting sd \n");
     WITH_SEMAPHORE(sem);
 
-    // todo the dedicated SDMMC host peripheral on the esp32 is about twice as fast as SD card SPI interface in '1-line' mode and somewht faster again in '4-line' mode.     either of those would probably be better that what we have now. (SPI)
-//https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/sdmmc_host.html
-	//sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-    //sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+    /*
+    https://docs.espressif.com/projects/esp-idf/en/v4.1/api-reference/peripherals/sdmmc_host.html
 
-    //  however In SPI mode, pins can be customized...
+    // we take the MMC parts from this example:
+    https://github.com/espressif/esp-idf/blob/release/v4.1/examples/storage/sd_card/main/sd_card_example_main.c
+
+    hardcoded SDMMC gpio options....
+
+    Slot 0 (SDMMC_HOST_SLOT_0) is an 8-bit slot. It uses HS1_* signals in the PIN MUX.- dont use slot0, is used for SPI-flash chip.
+
+    Slot 1 (SDMMC_HOST_SLOT_1) is a 4-bit slot. It uses HS2_* signals in the PIN MUX.
+
+    this is the full list, but u can get away without some (2 or 3) of these in some cases:
+    Signal	Slot 1
+      CMD	GPIO15
+      CLK	GPIO14
+      D0	GPIO2
+      D1	GPIO4
+      D2	GPIO12
+      D3	GPIO13
+
+    */
+
+    //  the dedicated SDMMC host peripheral on the esp32 is about twice as fast as SD card SPI interface in '1-line' mode and somewht faster again in '4-line' mode.  we've using 1-line mode in this driver, so we need less gpio's
+
+static const char *TAG = "SD...";
+    ESP_LOGI(TAG, "Initializing SD card as SDMMC");
+
+    sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+
+    // This initializes the slot without card detect (CD) and write protect (WP) signals.
+    // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+    sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+
+    // To use 1-line SD mode (this driver does), uncomment the following line:
+    slot_config.width = 1;
+
+    // GPIOs 15, 2, 4, 12, 13 should have external 10k pull-ups.
+    // Internal pull-ups are not sufficient. However, enabling internal pull-ups
+    // does make a difference some boards, so we do that here.
+    gpio_set_pull_mode(GPIO_NUM_15, GPIO_PULLUP_ONLY);   // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode(GPIO_NUM_2, GPIO_PULLUP_ONLY);    // D0, needed in 4- and 1-line modes
+    //gpio_set_pull_mode(GPIO_NUM_4, GPIO_PULLUP_ONLY);    // D1, needed in 4-line mode only
+    //gpio_set_pull_mode(GPIO_NUM_12, GPIO_PULLUP_ONLY);   // D2, needed in 4-line mode only
+    //
+    // Pin 13 / chip-select  - is an interesting one, because if its the only thing on this 
+    //   spi bus(it is), then NOT connecting the SD to this pin, and instead directly to a pull-up
+    //   also asserts the CS pin 'permanently high' to the SD card, without the micro being involved.. 
+    //   which means pin 13 on micro can be re-used elsewhere. If one of these isnt true for u, 
+    //   then uncomment this line and connect it electrically to the CS pin on the SDcard.
+    //gpio_set_pull_mode(GPIO_NUM_13, GPIO_PULLUP_ONLY);   // D3, needed in 4- and 1-line modes
+
+
+   // Options for mounting the filesystem.
+    // If format_if_mount_failed is set to true, SD card will be partitioned and
+    // formatted in case when mounting fails.
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        .format_if_mount_failed = false,
+        .max_files = 10,
+        .allocation_unit_size = 16 * 1024
+    };
+
+    //https://docs.espressif.com/projects/esp-idf/en/v4.1/api-reference/peripherals/sdmmc_host.html
+
+
+   // Use settings defined above to initialize SD card and mount FAT filesystem.
+    // Note: esp_vfs_fat_sdmmc_mount is an all-in-one convenience function.
+    // Please check its source code and implement error recovery when developing
+    // production applications.
+    sdmmc_card_t* card;
+    esp_err_t ret = esp_vfs_fat_sdmmc_mount("/sdcard", &host, &slot_config, &mount_config, &card);
+
+
+    if (ret == ESP_OK) {
+        mkdir("/SDCARD/APM", 0777);
+        mkdir("/SDCARD/APM/LOGS", 0777);
+        printf("sdcard is mounted\n");
+        //update_fw();
+        sdcard_running = true;
+    } else {
+        printf("sdcard is not mounted\n");
+        sdcard_running = false;
+    }
+}
+
+void mount_sdcard(){ mount_sdcard_mmc(); }
+
+#endif // emd mmc
+
+
+#ifdef HAL_ESP32_SDSPI
+ESP32::SPIBusDesc bus_ = HAL_ESP32_SDSPI;
+
+void mount_sdcard_spi()
+{
+	printf("Mounting sd \n");
+    WITH_SEMAPHORE(sem);
+
+    //  In SPI mode, pins can be customized...
 
     // and 'SPI bus sharing with SDSPI has been added in 067f3d2 — please see the new sdspi_host_init_device, sdspi_host_remove_device functions'. https://github.com/espressif/esp-idf/issues/1597 buzz..: thats in idf circa 4.3-dev tho.
 
     // readme shows esp32 pinouts and pullups needed for different modes and 1 vs 4 line gotchass... 
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/README.md
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/main/sd_card_example_main.c
+
+    static const char *TAG = "SD...";
+    ESP_LOGI(TAG, "Initializing SD card as SDSPI");
+
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_miso = bus_.miso;
@@ -124,6 +223,10 @@ void mount_sdcard()
         sdcard_running = false;
     }
 }
+void mount_sdcard(){ mount_sdcard_mmc(); }
+#endif // end spi
+
+
 bool sdcard_retry(void)
 {
     if (!sdcard_running) {
