@@ -14,10 +14,6 @@
 */
 #pragma once
 
-#ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-#define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
-#endif
-
 #include "AP_Frsky_Backend.h"
 
 class AP_Frsky_Parameters;
@@ -57,12 +53,11 @@ public:
 private:
 
     AP_Frsky_Backend *_backend;
-
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     AP_Frsky_Parameters* _frsky_parameters;
 
     // get next telemetry data for external consumers of SPort data (internal function)
     bool _get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data);
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     // set telemetry data from external producer of SPort data (internal function)
     bool _set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data);
 #endif

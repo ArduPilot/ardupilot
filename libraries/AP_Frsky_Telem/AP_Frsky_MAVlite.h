@@ -1,4 +1,5 @@
 #pragma once
+#include "AP_Frsky_Backend.h"
 
 /*
 
@@ -25,7 +26,6 @@
   sequence number.
 
 */
-
 
 #define MAVLITE_MAX_PAYLOAD_LEN                 31 // 7 float params + cmd_id + options
 #define MAVLITE_MSG_SPORT_PACKETS_COUNT(LEN)    static_cast<uint8_t>(1 + ceilf((LEN-2)/5.0f)) // number of sport packets required to transport a message with LEN payload

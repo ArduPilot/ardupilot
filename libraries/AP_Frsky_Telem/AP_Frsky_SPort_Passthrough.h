@@ -43,7 +43,9 @@ public:
     bool get_next_msg_chunk(void) override;
 
     bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data) override;
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     bool set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data) override;
+#endif
 
     void queue_text_message(MAV_SEVERITY severity, const char *text) override
     {

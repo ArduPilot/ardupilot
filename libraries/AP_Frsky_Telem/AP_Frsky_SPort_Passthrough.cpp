@@ -545,27 +545,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     return attiandrng;
 }
 
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-/*
-  allow external transports (e.g. FPort), to supply telemetry data
- */
-bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
-{
-    // queue only Uplink packets
-    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
-        const AP_Frsky_SPort::sport_packet_t sp {
-            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
-            frame,
-            appid,
-            data
-        };
-
-        _SPort_bidir.rx_packet_queue.push_force(sp);
-        return true;
-    }
-    return false;
-}
-
 /*
   fetch Sport data for an external transport, such as FPort
  */
@@ -647,8 +626,26 @@ uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits,
     return res;
 }
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+/*
+  allow external transports (e.g. FPort), to supply telemetry data
+ */
+bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+{
+    // queue only Uplink packets
+    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
+        const AP_Frsky_SPort::sport_packet_t sp {
+            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
+            frame,
+            appid,
+            data
+        };
 
-
+        _SPort_bidir.rx_packet_queue.push_force(sp);
+        return true;
+    }
+    return false;
+}
 
 /*
  * Queue uplink packets in the sport rx queue

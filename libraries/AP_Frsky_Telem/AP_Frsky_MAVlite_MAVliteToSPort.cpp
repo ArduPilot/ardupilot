@@ -4,6 +4,7 @@
 
 #include "AP_Frsky_SPort.h"
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 void AP_Frsky_MAVlite_MAVliteToSPort::reset()
 {
     checksum = 0;
@@ -96,3 +97,4 @@ void AP_Frsky_MAVlite_MAVliteToSPort::process_byte(const uint8_t b, ObjectBuffer
         packet_offs = 2;  // skip setting sensorid and frame
     }
 }
+#endif
