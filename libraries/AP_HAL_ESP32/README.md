@@ -152,18 +152,18 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [x] Build system
 - [x] Scheduler and semaphores
 - [x] SPI driver
-- [x] WiFi driver ( TCP mavlink over 192.168.4.1 port 5760 )
+- [x] WiFi driver ( connect with MissionPlanner or mavproxy on TCP to host: 192.168.4.1 and port: 5760 )
 - [x] Uart driver ( non-mavlink console messages and ardupilot Serial0 with mavlink or gps )
 - [X] RCIN driver ( PPMSUM INPUT on GPIO4 )
 - [X] GPS testing/integration ( Serial ublox GPS, as ardupilot SERIAL0 on RX2/TX2 aka GPIO16 and GPIO17 )
 - [ ] PWM driver
-- [ ] RCOUT driver
+- [x] RCOUT driver ( 4 channels working right now)
 - [x] I2C driver
 - [x] Storage
 - [X] OTA update of the fw
 - [X] SdCard
 - [ ] Buzzer
-- [x] Mavlink
+- [x] Mavlink on console/usb as well as wifi.
 - [x] parameter storage in a esp32 flash partition area
 
 - [x] Custom boards build
@@ -176,6 +176,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] DShot driver / 4way pass / esc telemetry / ws2812b led
 - [ ] INA219 driver
 - [ ] GSD
+- [ ] UDP mavlink over wifi, preferably automatically sent to client/s when they connect. - better for poor links and resilience.
 
 ### analysing a 'coredump' fro mthe uart...
 
