@@ -43,7 +43,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
         return MagCal::NEVER;
     }
 
-    // handle deprecated values
+    // handle deprecated MagCal::EXTERNAL_YAW and MagCal::EXTERNAL_YAW_FALLBACK values
     const int8_t magCalParamVal = frontend->_magCal.get();
     if ((magCalParamVal == 5) || (magCalParamVal == 6)) {
         return MagCal::NEVER;
@@ -458,6 +458,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
         !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+        // exit immediately if sources not configured to fuse external nav or wheel encoders
         return false;
     }
 
