@@ -35,6 +35,9 @@ sdmmc_card_t* card = nullptr;
 const size_t buffer_size = 8*1024;
 const char* fw_name = "/SDCARD/APM/ardupilot.bin";
 
+static bool sdcard_running;
+static HAL_Semaphore sem;
+
 void update_fw()
 {
     FILE *f = fopen(fw_name, "r");
@@ -80,6 +83,8 @@ ESP32::SPIBusDesc bus_ = HAL_ESP32_SDSPI;
 void mount_sdcard()
 {
 	printf("Mounting sd \n");
+    WITH_SEMAPHORE(sem);
+
     // todo the dedicated SDMMC host peripheral on the esp32 is about twice as fast as SD card SPI interface in '1-line' mode and somewht faster again in '4-line' mode.     either of those would probably be better that what we have now. (SPI)
 //https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/sdmmc_host.html
 	//sdmmc_host_t host = SDMMC_HOST_DEFAULT();
@@ -92,7 +97,7 @@ void mount_sdcard()
     // readme shows esp32 pinouts and pullups needed for different modes and 1 vs 4 line gotchass... 
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/README.md
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/main/sd_card_example_main.c
-	sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+    sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     sdspi_slot_config_t slot_config = SDSPI_SLOT_CONFIG_DEFAULT();
     slot_config.gpio_miso = bus_.miso;
     slot_config.gpio_mosi = bus_.mosi;
@@ -113,27 +118,45 @@ void mount_sdcard()
         mkdir("/SDCARD/APM/LOGS", 0777);
         printf("sdcard is mounted\n");
         //update_fw();
+        sdcard_running = true;
     } else {
         printf("sdcard is not mounted\n");
+        sdcard_running = false;
     }
 }
+bool sdcard_retry(void)
+{
+    if (!sdcard_running) {
+        mount_sdcard();
+    }
+    return sdcard_running;
+}
+
 
 void unmount_sdcard()
 {
     if (card != nullptr) {
         esp_vfs_fat_sdmmc_unmount();
     }
+    sdcard_running = false;
 }
-#else
 
+
+#else
+// empty impl's
 void mount_sdcard()
 {
 	printf("No sdcard setup.\n");
 }
-
 void unmount_sdcard()
 {
 }
-
+bool sdcard_retry(void)
+{
+ return true;
+}
 #endif
+
+
+
 

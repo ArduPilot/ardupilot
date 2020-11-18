@@ -17,3 +17,4 @@
 
 void mount_sdcard();
 void unmount_sdcard();
+bool sdcard_retry();

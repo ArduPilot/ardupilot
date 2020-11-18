@@ -421,23 +421,24 @@ printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
         sched->delay_microseconds(1000);
     }
 printf("%s:%d _initialized \n", __PRETTY_FUNCTION__, __LINE__);
-   // uint32_t last_sd_start_ms = AP_HAL::millis();
+    uint32_t last_sd_start_ms = AP_HAL::millis();
     while (true) {
         sched->delay_microseconds(1000);
         // run registered IO processes
         sched->_run_io();
 
-	/*	if (!hal.util->get_soft_armed()) {
+		if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
-    //            sdcard_retry();
+                sdcard_retry();
             }
-        }*/
+        }
     }
 }
+
 
 void Scheduler::_storage_thread(void* arg)
 {
