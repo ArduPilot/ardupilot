@@ -81,7 +81,7 @@
 //RCOUT which pins are used?
 //#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
 // or
-#define HAL_ESP32_RCOUT {GPIO_NUM_27, GPIO_NUM_25, GPIO_NUM_22, GPIO_NUM_21} // 33,32,21,22,25,27
+#define HAL_ESP32_RCOUT { GPIO_NUM_25,GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32, GPIO_NUM_22, GPIO_NUM_21 } 
 
 // SPI BUS setup, including gpio, dma, etc
 // note... we use 'vspi' for the bmp280 and mpu9250

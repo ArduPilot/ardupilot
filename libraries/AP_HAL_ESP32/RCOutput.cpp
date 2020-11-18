@@ -22,11 +22,17 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+#include "driver/rtc_io.h"
+
+#include <stdio.h>
+
 using namespace ESP32;
 
 #ifdef HAL_ESP32_RCOUT
 
 gpio_num_t outputs_pins[] = HAL_ESP32_RCOUT;
+
+//If the RTC source is not required, then GPIO32/Pin12/32K_XP and GPIO33/Pin13/32K_XN can be used as digital GPIOs.
 
 #else
 gpio_num_t outputs_pins[] = {};
@@ -41,7 +47,15 @@ void RCOutput::init()
 {
 	_max_channels = MAX_CHANNELS;
 
-	printf("RCOutput::init()\n");
+
+    //32 and 33 are special as they dont default to gpio, but can be if u disable their rtc setup:
+    rtc_gpio_deinit(GPIO_NUM_32); 
+    rtc_gpio_deinit(GPIO_NUM_33); 
+
+printf("oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
+	printf("RCOutput::init() - channels available: %d \n",(int)MAX_CHANNELS);
+printf("oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo\n");
+
 	static const mcpwm_io_signals_t signals[] = {
 		MCPWM0A,
 		MCPWM0B,

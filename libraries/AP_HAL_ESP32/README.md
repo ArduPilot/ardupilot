@@ -100,14 +100,32 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 
 ### RC Servo connection/s
 
-|ESP32|  RCOUT   |TYPICAL |
-| --- |   ---    | ---    | 
-|PIN27|SERVO-OUT1|AILERON |
-|PIN25|SERVO-OUT2|ELEVATOR|
-|PIN22|SERVO-OUT3|THROTTLE|
-|PIN21|SERVO-OUT4|RUDDER  |
-|TBA  |SERVO-OUT5|  ?     |
-|TBA  |SERVO-OUT6|  ?     |
+| BuzzsPcbHeader|ESP32|  RCOUT   |TYPICAL |
+|     ---       | --- |   ---    | ---    | 
+|  servo1       |PIN25|SERVO-OUT1|AILERON |
+|  servo2       |PIN27|SERVO-OUT2|ELEVATOR|
+|  servo3       |PIN33|SERVO-OUT3|THROTTLE| 
+|  servo4       |PIN32|SERVO-OUT4| RUDDER | 
+|  servo5       |PIN22|SERVO-OUT5| avail  |
+|  servo6       |PIN21|SERVO-OUT6| avail  |
+
+If you don't get any PWM output on any/some/one of the pins while ardupilot is running, be sure you have set all of these:
+//ail
+SERVO1_FUNCTION = 4
+// ele
+SERVO2_FUNCTION = 19
+//thr
+SERVO3_FUNCTION = 70
+//rud
+SERVO4_FUNCTION = 21
+// for now make it a copy of ail, in case u have two ail servos and no Y lead
+SERVO5_FUNCTION = 4
+// for now make it a copy of ail,for testing etc.
+SERVO6_FUNCTION = 4
+// right now, we only have 6 channels of output due to pin limitations..
+
+
+(If the RTC source is not required, then Pin12 32K_XP and Pin13 32K_XN can be used as digital GPIOs, so we do, and it works)
 
 
 ### GY-91 connection
@@ -156,7 +174,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [x] Uart driver ( non-mavlink console messages and ardupilot Serial0 with mavlink or gps )
 - [X] RCIN driver ( PPMSUM INPUT on GPIO4 )
 - [X] GPS testing/integration ( Serial ublox GPS, as ardupilot SERIAL0 on RX2/TX2 aka GPIO16 and GPIO17 )
-- [ ] PWM driver
+- [X] PWM output driver
 - [x] RCOUT driver ( 4 channels working right now)
 - [x] I2C driver
 - [x] Storage
