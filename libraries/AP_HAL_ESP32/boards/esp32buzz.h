@@ -63,7 +63,18 @@
 // allow boot without a baro
 #define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
-#define HAL_DISABLE_ADC_DRIVER 1
+
+// ADC is available on lots of pints on the esp32, but adc2 cant co-exist with wifi we choose to allow ADC on :
+//#define HAL_DISABLE_ADC_DRIVER 1
+#define HAL_USE_ADC TRUE
+// the pin number, and the gain/multiplier associated with it
+#define HAL_ESP32_ADC_PINS {\
+	{ADC1_GPIO34_CHANNEL, 11},\
+	{ADC1_GPIO35_CHANNEL, 11},\
+	{ADC1_GPIO36_CHANNEL, 11},\
+	{ADC1_GPIO39_CHANNEL, 11}\
+}
+
 
 #define HAL_INS_MPU9250_NAME "mpu9250"
 #define HAL_INS_MPU9250_EXT_NAME "mpu9250_ext"

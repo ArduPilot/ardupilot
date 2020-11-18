@@ -57,12 +57,7 @@ using namespace ESP32;
    scaling table between ADC count and actual input voltage, to account
    for voltage dividers on the board.
    */
-const AnalogIn::pin_info AnalogIn::pin_config[] = {
-	{ADC1_GPIO36_CHANNEL, 11},
-	{ADC1_GPIO32_CHANNEL, 11}
-
-
-};
+const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ESP32_ADC_PINS;
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
