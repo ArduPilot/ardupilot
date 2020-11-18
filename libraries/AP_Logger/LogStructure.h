@@ -985,9 +985,10 @@ struct PACKED log_CESC {
     uint8_t power_pct;
 };
 
-struct PACKED log_AIRSPEED {
+struct PACKED log_ARSP {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float   airspeed;
     float   diffpressure;
     int16_t temperature;
@@ -1326,11 +1327,6 @@ struct PACKED log_PSC {
 #define QUAT_UNITS  "s#????"
 #define QUAT_MULTS  "F-????"
 
-#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
-#define ARSP_FMT "QffcffBBfB"
-#define ARSP_UNITS "snPOPP----"
-#define ARSP_MULTS "F00B00----"
-
 // @LoggerMessage: ACC
 // @Description: IMU accelerometer data
 // @Field: TimeUS: Time since system startup
@@ -1374,9 +1370,10 @@ struct PACKED log_PSC {
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
 
-// @LoggerMessage: ARSP,ASP2
+// @LoggerMessage: ARSP
 // @Description: Airspeed sensor data
 // @Field: TimeUS: Time since system startup
+// @Field: I: Airspeed sensor instance number
 // @Field: Airspeed: Current airspeed
 // @Field: DiffPress: Pressure difference between static and dynamic port
 // @Field: Temp: Temperature used for calculation
@@ -2468,8 +2465,7 @@ struct PACKED log_PSC {
       "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
-    { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
-    { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
+    { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBfB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hfp,Pri", "s#nPOPP----", "F-00B00----" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current),                     \
       "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
@@ -2749,7 +2745,6 @@ enum LogMessages : uint8_t {
     LOG_SRTL_MSG,
     LOG_ISBH_MSG,
     LOG_ISBD_MSG,
-    LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,
