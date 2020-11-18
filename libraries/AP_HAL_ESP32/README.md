@@ -49,7 +49,7 @@ Do NOT use "./waf build", it's broken right now.
 TIPS:
  -  we use toolchain and esp-idf from espressif , as a submodule, so no need to preinstall etc. 
 https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -  
- (https://github.com/espressif/esp-idf/tree/release/v3.3)
+ (note we currently use https://github.com/espressif/esp-idf/tree/release/v4.0 )
 
 
  -   if you get compile error/s to do with CONFIG... such as 
@@ -163,6 +163,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [X] OTA update of the fw
 - [X] SdCard
 - [ ] Buzzer
+- [x] Mavlink
 - [x] parameter storage in a esp32 flash partition area
 
 - [x] Custom boards build
@@ -176,7 +177,36 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] INA219 driver
 - [ ] GSD
 
-example log of boot messages:
+### analysing a 'coredump' fro mthe uart...
+
+Save the log where coredump appears to a file, i'll call it core.txt
+cat > core.txt
+...
+ctrl-d
+cp build/esp32buzz/idf-plane/arduplane.elf .
+espcoredump.py dbg_corefile arduplane.elf -c core.txt -t b64
+
+.. this wiull give u a 'gdb' of the core dump, from which you can type..
+bt 
+..short for 'backtrace of current thread' or ..
+thread apply all bt full
+..short for 'backtrace of all threads' or ..
+info var
+.. which lists "All global and static variable names".
+info locals
+.. lists "All global and static variable names"..
+ info args 
+..to list "Arguments of the current stack frame" (names and values)..
+
+other things to sue..
+print varname
+ptype varname
+select-frame 5
+
+ctrl-c to exit gdb
+
+
+### example log of boot messages:
  
 [22:51:20:226] ets Jun  8 2016 00:22:57
 [22:51:20:228] 
