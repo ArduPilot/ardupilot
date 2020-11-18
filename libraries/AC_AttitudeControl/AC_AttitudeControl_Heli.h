@@ -89,6 +89,9 @@ public:
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     void set_hover_roll_trim_scalar(float scalar) override {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
+    // get_roll_trim - angle in centi-degrees to be added to roll angle for learn hover collective. Used by helicopter to counter tail rotor thrust in hover
+    float get_roll_trim_cd() override { return constrain_float(_hover_roll_trim_scalar * _hover_roll_trim, -1000.0f,1000.0f);}
+
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
 
