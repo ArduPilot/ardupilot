@@ -448,10 +448,10 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // detect position source changes.  Trigger position reset if position source is valid
-    AP_NavEKF_Source::SourceXY pos_source = frontend->sources.getPosXYSource();
-    if (pos_source != pos_source_last) {
-        pos_source_reset = (pos_source != AP_NavEKF_Source::SourceXY::NONE);
-        pos_source_last = pos_source;
+    const AP_NavEKF_Source::SourceXY posxy_source = frontend->sources.getPosXYSource();
+    if (posxy_source != posxy_source_last) {
+        posxy_source_reset = (posxy_source != AP_NavEKF_Source::SourceXY::NONE);
+        posxy_source_last = posxy_source;
     }
 
     // initialise all possible data we may fuse
@@ -459,7 +459,7 @@ void NavEKF3_core::SelectVelPosFusion()
     fuseVelData = false;
 
     // Determine if we need to fuse position and velocity data on this time step
-    if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS)) {
+    if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (posxy_source == AP_NavEKF_Source::SourceXY::GPS)) {
 
         // Don't fuse velocity data if GPS doesn't support it
         fuseVelData = frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS);
@@ -501,9 +501,9 @@ void NavEKF3_core::SelectVelPosFusion()
     selectHeightForFusion();
 
     // if we are using GPS, check for a change in receiver and reset position and height
-    if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) && (gpsDataDelayed.sensor_idx != last_gps_idx || pos_source_reset)) {
+    if (gpsDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS) && (gpsDataDelayed.sensor_idx != last_gps_idx || posxy_source_reset)) {
         // mark a source reset as consumed
-        pos_source_reset = false;
+        posxy_source_reset = false;
 
         // record the ID of the GPS that we are using for the reset
         last_gps_idx = gpsDataDelayed.sensor_idx;
@@ -518,9 +518,9 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // check for external nav position reset
-    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) && (extNavDataDelayed.posReset || pos_source_reset)) {
+    if (extNavDataToFuse && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) && (extNavDataDelayed.posReset || posxy_source_reset)) {
         // mark a source reset as consumed
-        pos_source_reset = false;
+        posxy_source_reset = false;
         ResetPositionNE(extNavDataDelayed.pos.x, extNavDataDelayed.pos.y);
         if (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV) {
             ResetPositionD(-hgtMea);
