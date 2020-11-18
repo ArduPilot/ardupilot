@@ -535,7 +535,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     ResetHeight();
 
     // initialise sources
-    pos_source_last = frontend->sources.getPosXYSource();
+    posxy_source_last = frontend->sources.getPosXYSource();
     yaw_source_last = frontend->sources.getYawSource();
 
     // define Earth rotation vector in the NED navigation frame
