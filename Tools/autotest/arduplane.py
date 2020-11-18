@@ -1540,7 +1540,7 @@ class AutoTestPlane(AutoTest):
             # message ADSB_VEHICLE 37 -353632614 1491652305 0 584070 0 0 0 "bob" 3 1 255 17
             self.set_parameter("RC12_OPTION", 38) # avoid-adsb
             self.set_rc(12, 2000)
-            self.set_parameter("ADSB_ENABLE", 1)
+            self.set_parameter("ADSB_TYPE", 1)
             self.set_parameter("AVD_ENABLE", 1)
             self.set_parameter("AVD_F_ACTION", mavutil.mavlink.MAV_COLLISION_ACTION_RTL)
             self.reboot_sitl()
