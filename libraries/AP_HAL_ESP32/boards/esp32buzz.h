@@ -73,7 +73,10 @@
 
 #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
 
-//#define HAL_ESP32_WIFI 1
+#define HAL_ESP32_WIFI 1
+
+#define WIFI_SSID "ardupilot123"
+#define WIFI_PWD "ardupilot123"
 
 //RCOUT which pins are used?
 //#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
