@@ -5,6 +5,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 /*
  * Handle the COMMAND_LONG mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
@@ -284,3 +285,4 @@ bool AP_Frsky_MAVliteMsgHandler::send_message(AP_Frsky_MAVlite_Message &txmsg)
 {
     return _send_fn(txmsg);
 }
+#endif

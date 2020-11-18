@@ -89,6 +89,7 @@ bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &
     return _backend->get_telem_data(frame, appid, data);
 }
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 bool AP_Frsky_Telem::_set_telem_data(uint8_t frame, uint16_t appid, uint32_t data)
 {
     if (_backend == nullptr) {
@@ -96,6 +97,7 @@ bool AP_Frsky_Telem::_set_telem_data(uint8_t frame, uint16_t appid, uint32_t dat
     }
     return _backend->set_telem_data(frame, appid, data);
 }
+#endif
 
 /*
   fetch Sport data for an external transport, such as FPort
@@ -117,6 +119,7 @@ bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &d
     return singleton->_get_telem_data(frame, appid, data);
 }
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 /*
   allow external transports (e.g. FPort), to supply telemetry data
  */
@@ -135,6 +138,7 @@ bool AP_Frsky_Telem::set_telem_data(const uint8_t frame, const uint16_t appid, c
     }
     return singleton->_set_telem_data(frame, appid, data);
 }
+#endif
 
 namespace AP
 {
