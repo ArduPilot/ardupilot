@@ -6,6 +6,7 @@
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
+#include "AP_BattMonitor_Analog_GPIO.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -146,6 +147,11 @@ AP_BattMonitor::init()
             case AP_BattMonitor_Params::BattMonitor_TYPE_FuelLevel_PWM:
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
+            case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO:
+                drivers[instance] = new AP_BattMonitor_Analog_GPIO(*this, state[instance], _params[instance],
+                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_EXTERNAL, AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR,
+                                                                                            100000, true, 20));
+                break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
                 break;
@@ -253,7 +259,7 @@ AP_BattMonitor::read()
     }
 
     check_failsafes();
-    
+
     checkPoweringOff();
 }
 
