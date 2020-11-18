@@ -1116,14 +1116,25 @@ void Compass::_probe_external_i2c_compasses(void)
                     true, ROTATION_NONE));
     }
 
+#ifdef HAL_COMPASS_RM3100_I2C_ADDR
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
+#else
+    // RM3100 can be on 4 different addresses
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR1,
+                                         HAL_COMPASS_RM3100_I2C_ADDR2,
+                                         HAL_COMPASS_RM3100_I2C_ADDR3,
+                                         HAL_COMPASS_RM3100_I2C_ADDR4 };
+#endif
     // external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, HAL_COMPASS_RM3100_I2C_ADDR),
-                    true, ROTATION_NONE));
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), true, ROTATION_NONE));
+        }
     }
     FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, HAL_COMPASS_RM3100_I2C_ADDR),
-                    all_external, ROTATION_NONE));
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), all_external, ROTATION_NONE));
+        }
     }
 }
 

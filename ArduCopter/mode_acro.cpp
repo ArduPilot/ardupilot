@@ -84,7 +84,7 @@ void ModeAcro::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, 
     }
 
     // range check expo
-    g.acro_rp_p = constrain_float(g.acro_rp_p, 0.0f, 1.0f);
+    g.acro_rp_expo = constrain_float(g.acro_rp_expo, 0.0f, 1.0f);
     
     // calculate roll, pitch rate requests
     if (is_zero(g.acro_rp_expo)) {

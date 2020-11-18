@@ -179,6 +179,8 @@ void Plane::read_radio()
 {
     if (!rc().read_input()) {
         control_failsafe();
+        airspeed_nudge_cm = 0;
+        throttle_nudge = 0;
         return;
     }
 
@@ -280,7 +282,7 @@ void Plane::control_failsafe()
         }
     }
 
-    if(g.throttle_fs_enabled == 0) {
+    if (ThrFailsafe(g.throttle_fs_enabled.get()) != ThrFailsafe::Enabled) {
         return;
     }
 
@@ -373,7 +375,7 @@ bool Plane::trim_radio()
  */
 bool Plane::rc_throttle_value_ok(void) const
 {
-    if (!g.throttle_fs_enabled) {
+    if (ThrFailsafe(g.throttle_fs_enabled.get()) == ThrFailsafe::Disabled) {
         return true;
     }
     if (channel_throttle->get_reverse()) {

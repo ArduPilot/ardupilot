@@ -190,10 +190,14 @@ int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) co
     int16_t radio_trim_low  = _trim - _dead_zone;
 
     int16_t reverse_mul = (reversed?-1:1);
-    if (radio_in > radio_trim_high && radio_max != radio_trim_high) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(radio_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
-    } else if (radio_in < radio_trim_low && radio_trim_low != radio_min) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(radio_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+
+    // don't allow out of range values
+    int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+
+    if (r_in > radio_trim_high && radio_max != radio_trim_high) {
+        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+    } else if (r_in < radio_trim_low && radio_trim_low != radio_min) {
+        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
     } else {
         return 0;
     }
