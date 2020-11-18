@@ -83,9 +83,11 @@
 // or
 #define HAL_ESP32_RCOUT {GPIO_NUM_27, GPIO_NUM_25, GPIO_NUM_22, GPIO_NUM_21} // 33,32,21,22,25,27
 
-// SPI BUS setup, including gpio, dma, 
+// SPI BUS setup, including gpio, dma, etc
+// note... we use 'vspi' for the bmp280 and mpu9250
 #define HAL_ESP32_SPI_BUSES \
     {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+// tip:  VSPI_HOST  is an alternative name for esp's SPI3
 //#define HAL_ESP32_SPI_BUSES {}
 
 // SPI per-device setup, including speeds, etc.
@@ -139,13 +141,6 @@
 #define HAL_OS_POSIX_IO 1
 
 #define HAL_LOGGING_BACKENDS_DEFAULT 2
-
-
-
-// SD config, its also SPI, but gets it s own - also not configured here right now...
-// this is used by libraries/AP_HAL_ESP32/SdCard.cpp
-//#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_21}
-
 
 
 
