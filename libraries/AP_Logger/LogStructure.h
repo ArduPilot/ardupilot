@@ -253,14 +253,6 @@ struct PACKED log_IMU {
     uint16_t gyro_rate, accel_rate;
 };
 
-struct PACKED log_IMUDT {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float delta_time, delta_vel_dt, delta_ang_dt;
-    float delta_ang_x, delta_ang_y, delta_ang_z;
-    float delta_vel_x, delta_vel_y, delta_vel_z;
-};
-
 struct PACKED log_ISBH {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1323,11 +1315,6 @@ struct PACKED log_PSC {
 #define GPS_UNITS "s---SmDUmnhnh-"
 #define GPS_MULTS "F---0BGGB000--"
 
-#define IMT_LABELS "TimeUS,DelT,DelvT,DelaT,DelAX,DelAY,DelAZ,DelVX,DelVY,DelVZ"
-#define IMT_FMT    "Qfffffffff"
-#define IMT_UNITS  "ssssrrrnnn"
-#define IMT_MULTS  "FF00000000"
-
 #define ISBH_LABELS "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate"
 #define ISBH_FMT    "QHBBHHQf"
 #define ISBH_UNITS  "s-----sz"
@@ -1717,19 +1704,6 @@ struct PACKED log_PSC {
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
 // @Field: GyrZ: measured rotation rate about Z axis
-
-// @LoggerMessage: IMT,IMT2,IMT3
-// @Description: Inertial Measurement Unit timing data
-// @Field: TimeUS: Time since system startup
-// @Field: DelT: Delta time
-// @Field: DelvT: Delta velocity accumulation time
-// @Field: DelaT: Delta angle accumulation time
-// @Field: DelAX: Accumulated delta angle X
-// @Field: DelAY: Accumulated delta angle Y
-// @Field: DelAZ: Accumulated delta angle Z
-// @Field: DelVX: Accumulated delta velocity X
-// @Field: DelVY: Accumulated delta velocity Y
-// @Field: DelVZ: Accumulated delta velocity Z
 
 // @LoggerMessage: IMU
 // @Description: Inertial Measurement Unit data
@@ -2648,12 +2622,6 @@ struct PACKED log_PSC {
       "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
     { LOG_VIBE_MSG, sizeof(log_Vibe), \
       "VIBE", "QBfffI",     "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
-    { LOG_IMUDT_MSG, sizeof(log_IMUDT), \
-      "IMT",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
-    { LOG_IMUDT2_MSG, sizeof(log_IMUDT), \
-      "IMT2",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
-    { LOG_IMUDT3_MSG, sizeof(log_IMUDT), \
-      "IMT3",IMT_FMT,IMT_LABELS, IMT_UNITS, IMT_MULTS }, \
     { LOG_ISBH_MSG, sizeof(log_ISBH), \
       "ISBH",ISBH_FMT,ISBH_LABELS,ISBH_UNITS,ISBH_MULTS },  \
     { LOG_ISBD_MSG, sizeof(log_ISBD), \
@@ -2801,9 +2769,6 @@ enum LogMessages : uint8_t {
     LOG_PIDS_MSG,
     LOG_DSTL_MSG,
     LOG_VIBE_MSG,
-    LOG_IMUDT_MSG,
-    LOG_IMUDT2_MSG,
-    LOG_IMUDT3_MSG,
     LOG_ORGN_MSG,
     LOG_RPM_MSG,
     LOG_GPA_MSG,
