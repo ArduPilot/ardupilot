@@ -106,4 +106,6 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define KNOTS_TO_METERS_PER_SECOND 0.51444
 #define FEET_TO_METERS 0.3048
 
-
+// Convert amps milliseconds to milliamp hours
+// Amp.millisec to milliAmp.hour = 1/1E3(ms->s) * 1/3600(s->hr) * 1000(A->mA)
+#define AMS_TO_MAH 0.000277777778f
