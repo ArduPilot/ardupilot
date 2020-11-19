@@ -6,7 +6,7 @@
 
 ## Building instructions
 0. Build currently tested on linux
-1. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_wip
+1. Checkout this branch https://github.com/davidbuzz/ardupilot/tree/esp32_new
 2. Use this to install ardupilot requirements:
 ```
 Tools/environment_install/install-prereqs-ubuntu.sh
