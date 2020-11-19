@@ -201,6 +201,7 @@ struct PACKED log_Error {
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     uint8_t  status;
     uint32_t gps_week_ms;
     uint16_t gps_week;
@@ -219,6 +220,7 @@ struct PACKED log_GPS {
 struct PACKED log_GPA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     uint16_t vdop;
     uint16_t hacc;
     uint16_t vacc;
@@ -1246,17 +1248,6 @@ struct PACKED log_Arm_Disarm {
 #define ESC_UNITS "sqvAO-"
 #define ESC_MULTS "FBBBB-"
 
-#define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
-#define GPA_FMT   "QCCCCfBIH"
-#define GPA_UNITS "smmmnd-ss"
-#define GPA_MULTS "FBBBB0-CC"
-
-// see "struct GPS_State" and "Write_GPS":
-#define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U"
-#define GPS_FMT   "QBIHBcLLeffffB"
-#define GPS_UNITS "s---SmDUmnhnh-"
-#define GPS_MULTS "F---0BGGB000--"
-
 #define GYR_LABELS "TimeUS,SampleUS,GyrX,GyrY,GyrZ"
 #define GYR_FMT    "QQfff"
 #define GYR_UNITS  "ssEEE"
@@ -1325,17 +1316,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--"  },       \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
-    { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2", GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
-    { LOG_GPSB_MSG, sizeof(log_GPS), \
-      "GPSB", GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
+      "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
-    { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
-    { LOG_GPAB_MSG, sizeof(log_GPA), \
-      "GPAB", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
+      "GPA",  "QBCCCCfBIH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta", "s#mmmnd-ss", "F-BBBB0-CC" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  IMU_FMT,     IMU_LABELS, IMU_UNITS, IMU_MULTS }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -1675,8 +1658,6 @@ enum LogMessages : uint8_t {
 
     LOG_PARAMETER_MSG,
     LOG_GPS_MSG,
-    LOG_GPS2_MSG,
-    LOG_GPSB_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
@@ -1757,8 +1738,6 @@ enum LogMessages : uint8_t {
     LOG_ORGN_MSG,
     LOG_RPM_MSG,
     LOG_GPA_MSG,
-    LOG_GPA2_MSG,
-    LOG_GPAB_MSG,
     LOG_RFND_MSG,
     LOG_BAR3_MSG,
     LOG_MAV_STATS,
