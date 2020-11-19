@@ -50,6 +50,12 @@ public:
 	// return maximum climb rate
 	virtual float get_max_climbrate(void) const = 0;
 
+    // return maximum sink rate
+    virtual float get_max_sinkrate(void) const = 0;
+
+    // true when aircraft is trying but not able to maintain target altitude (indicative of motor failure or stall event)
+    virtual bool uncommanded_altitude_loss(void) const { return false; };
+
     // added to let SoaringController reset pitch integrator to zero
     virtual void reset_pitch_I(void) = 0;
     
@@ -70,6 +76,9 @@ public:
 
     // set propulsion failed flag
     virtual void set_propulsion_failed_flag(bool propulsion_failed) = 0;
+
+    // get altitude error. Positive m if too low.
+    virtual float get_altitude_error(void) const = 0;
 
 	// add new controllers to this enum. Users can then
 	// select which controller to use by setting the
