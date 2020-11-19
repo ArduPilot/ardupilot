@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
     // @Param: PIVOT_ANGLE
     // @DisplayName: Waypoint Pivot Angle
-    // @Description: Pivot when the difference between the vehicle's heading and its target heading is more than this many degrees.  Set to zero to disable pivot turns
+    // @Description: Pivot when the difference between the vehicle's heading and its target heading is more than this many degrees. Set to zero to disable pivot turns. Note: This parameter should be greater than 10 degrees for pivot turns to work.
     // @Units: deg
     // @Range: 0 360
     // @Increment: 1
