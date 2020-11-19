@@ -5354,6 +5354,57 @@ class AutoTestCopter(AutoTest):
         if not ok:
             raise NotAchievedException("check_replay failed")
 
+    def test_replay_of(self):
+        '''test replay correctness when using optical flow'''
+        self.progress("Building Replay")
+        util.build_SITL('tools/Replay', clean=False, configure=False)
+
+        self.context_push()
+        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameter("LOG_DISARMED", 1)
+        self.set_parameter("EK3_ENABLE", 1)
+        self.set_parameter("EK2_ENABLE", 1)
+        self.set_parameter("RNGFND1_TYPE", 1)
+        self.set_parameter("RNGFND1_PIN", 0)
+        self.set_parameter("RNGFND1_SCALING", 30)
+        self.set_parameter("RNGFND1_POS_X", 0.17)
+        self.set_parameter("RNGFND1_POS_Y", -0.07)
+        self.set_parameter("RNGFND1_POS_Z", -0.005)
+        self.set_parameter("SIM_SONAR_SCALE", 30)
+        self.set_parameter("SIM_GPS_DISABLE", 1)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.set_parameter("FLOW_TYPE", 10)
+        self.set_parameter("EK2_GPS_TYPE", 3)
+        self.set_parameter("EK3_GPS_TYPE", 3)
+        self.set_parameter("ARMING_CHECK", 0)
+        self.reboot_sitl()
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.change_mode("LAND")
+        self.wait_disarmed()
+
+        self.progress("Running replay")
+
+        util.run_cmd(['build/sitl/tools/Replay', current_log_filepath],
+                     directory=util.topdir(), checkfail=True, show=True)
+
+        self.context_pop()
+
+        replay_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Replay log path: %s" % str(replay_log_filepath))
+
+        check_replay = util.load_local_module("Tools/Replay/check_replay.py")
+
+        ok = check_replay.check_log(replay_log_filepath, self.progress)
+        if not ok:
+            raise NotAchievedException("check_replay of failed")
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -5701,6 +5752,10 @@ class AutoTestCopter(AutoTest):
             ("Replay",
              "Test Replay",
              self.test_replay),
+
+            ("ReplayOF",
+             "Test Replay Optical Flow",
+             self.test_replay_of),
 
             ("LogUpload",
              "Log upload",
