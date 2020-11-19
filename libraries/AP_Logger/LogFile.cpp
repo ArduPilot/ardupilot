@@ -142,9 +142,10 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     float yaw_deg=0, yaw_accuracy_deg=0;
     gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
 
-    const struct log_GPS pkt = {
-        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
+    const struct log_GPS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
         time_us       : time_us,
+        instance      : i,
         status        : (uint8_t)gps.status(i),
         gps_week_ms   : gps.time_week_ms(i),
         gps_week      : gps.time_week(i),
@@ -167,8 +168,9 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     gps.vertical_accuracy(i, vacc);
     gps.speed_accuracy(i, sacc);
     struct log_GPA pkt2{
-        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPA_MSG+i)),
+        LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
+        instance      : i,
         vdop          : gps.get_vdop(i),
         hacc          : (uint16_t)MIN((hacc*100), UINT16_MAX),
         vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
