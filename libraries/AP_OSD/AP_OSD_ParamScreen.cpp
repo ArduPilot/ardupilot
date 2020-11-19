@@ -57,172 +57,37 @@ const AP_Param::GroupInfo AP_OSD_ParamScreen::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHAN_MAX", 3, AP_OSD_ParamScreen, channel_max, 2100),
 
-    // @Param: PARAM1_EN
-    // @DisplayName: PARAM1_EN
-    // @Description: Enables display of parameter 1
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM1_X
-    // @DisplayName: PARAM1_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM1_Y
-    // @DisplayName: PARAM1_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-
     // @Group: PARAM1
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[0], "PARAM1", 4, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
-    
-    // @Param: PARAM2_EN
-    // @DisplayName: PARAM2_EN
-    // @Description: Enables display of parameter 2
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM2_X
-    // @DisplayName: PARAM2_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM2_Y
-    // @DisplayName: PARAM2_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
 
     // @Group: PARAM2
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[1], "PARAM2", 5, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM3_EN
-    // @DisplayName: PARAM3_EN
-    // @Description: Enables display of parameter 3
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM3_X
-    // @DisplayName: PARAM3_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM3_Y
-    // @DisplayName: PARAM3_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-
     // @Group: PARAM3
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[2], "PARAM3", 6, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
-
-    // @Param: PARAM4_EN
-    // @DisplayName: PARAM4_EN
-    // @Description: Enables display of parameter 4
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM4_X
-    // @DisplayName: PARAM4_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM4_Y
-    // @DisplayName: PARAM4_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
 
     // @Group: PARAM4
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[3], "PARAM4", 7, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM5_EN
-    // @DisplayName: PARAM5_EN
-    // @Description: Enables display of parameter 5
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM5_X
-    // @DisplayName: PARAM5_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM5_Y
-    // @DisplayName: PARAM5_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-
     // @Group: PARAM5
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[4], "PARAM5", 8, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
-
-    // @Param: PARAM6_EN
-    // @DisplayName: PARAM6_EN
-    // @Description: Enables display of parameter 6
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM6_X
-    // @DisplayName: PARAM6_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM6_Y
-    // @DisplayName: PARAM6_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
 
     // @Group: PARAM6
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[5], "PARAM6", 9, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM7_EN
-    // @DisplayName: PARAM7_EN
-    // @Description: Enables display of parameter 7
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM7_X
-    // @DisplayName: PARAM7_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM7_Y
-    // @DisplayName: PARAM7_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-
     // @Group: PARAM7
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[6], "PARAM7", 10, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM8_EN
-    // @DisplayName: PARAM8_EN
-    // @Description: Enables display of parameter 8
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM8_X
-    // @DisplayName: PARAM8_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM8_Y
-    // @DisplayName: PARAM8_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
-
     // @Group: PARAM8
     // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[7], "PARAM8", 11, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
-
-    // @Param: PARAM9_EN
-    // @DisplayName: PARAM9_EN
-    // @Description: Enables display of parameter 8
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM9_X
-    // @DisplayName: PARAM9_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM9_Y
-    // @DisplayName: PARAM9_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
 
     // @Group: PARAM9
     // @Path: AP_OSD_ParamSetting.cpp
