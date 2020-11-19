@@ -147,6 +147,9 @@ public:
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);
 
+    // handle display override from scripting
+    static void handle_scr_disp(uint8_t r, const char *str);
+
     // play a tune string
     static void play_tune(const char *tune);
 

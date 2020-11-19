@@ -382,6 +382,16 @@ void AP_Notify::handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
     }
 }
 
+// handle display override from scripting
+void AP_Notify::handle_scr_disp(uint8_t r, const char *str)
+{
+    for (uint8_t i = 0; i < _num_devices; i++) {
+        if (_devices[i] != nullptr) {
+            _devices[i]->scr_disp_overide(r, str);
+        }
+    }
+}
+
 // handle a PLAY_TUNE message
 void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {

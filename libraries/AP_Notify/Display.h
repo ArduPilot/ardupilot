@@ -16,6 +16,9 @@ public:
     bool init(void) override;
     void update() override;
 
+    // Allows scripting to override the display message
+    void scr_disp_overide(uint8_t r, const char *str) override;
+
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);
     void draw_text(uint16_t x, uint16_t y, const char *c);
@@ -35,6 +38,14 @@ private:
     uint8_t _mstartpos; // ticker shift position
     uint8_t _movedelay; // ticker delay before shifting after new message displayed
     uint8_t _screenpage;
+
+    void update_scr_screen(void);
+
+    // stop scripting override if we have not recieved anything for 5 sec
+    static const uint16_t _script_timeout_ms = 5000;
+
+    uint32_t _last_scr_override;
+    char _scr_msg[6][DISPLAY_MESSAGE_SIZE] = {};
 
     // stop showing text in display after this many millis:
     const uint16_t _send_text_valid_millis = 20000;

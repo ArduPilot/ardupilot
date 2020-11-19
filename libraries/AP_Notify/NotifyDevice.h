@@ -27,6 +27,9 @@ public:
     // give RGB and flash rate, used with scripting
     virtual void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) {}
 
+    // Allows scripting to override the display message
+    virtual void scr_disp_overide(uint8_t r, const char *str) {}
+
     // this pointer is used to read the parameters relative to devices
     const AP_Notify *pNotify;
 };
