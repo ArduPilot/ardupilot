@@ -76,6 +76,5 @@ struct ekf_timing {
     float delVelDT_max;
     float delVelDT_min;
 };
-void Log_EKF_Timing(const char *name, const uint8_t core, uint64_t time_us, const struct ekf_timing &timing);
 
 #define N_MODELS_EKFGSF 5U

@@ -761,7 +761,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
                  apples to either tilted motors or tailsitters
                  */
                 float diff_thrust = get_roll_factor(i) * rudder_dt * 0.5f;
-                set_actuator_with_slew(_actuator[i], thrust_to_actuator(thrust + diff_thrust));
+                set_actuator_with_slew(_actuator[i], thrust + diff_thrust);
                 int16_t pwm_output = pwm_min + pwm_range * _actuator[i];
                 rc_write(i, pwm_output);
             } else {

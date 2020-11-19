@@ -593,6 +593,7 @@ bool UARTDriver::_select_check(int fd)
     if (fd == -1) {
         return false;
     }
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
     fd_set fds;
     struct timeval tv;
 
@@ -606,6 +607,7 @@ bool UARTDriver::_select_check(int fd)
     if (select(fd+1, &fds, nullptr, nullptr, &tv) == 1) {
         return true;
     }
+#endif
     return false;
 }
 

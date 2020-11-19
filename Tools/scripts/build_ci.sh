@@ -234,6 +234,18 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "replay" ]; then
+        echo "Building replay"
+        $waf configure --board linux --disable-scripting
+        $way --target tools/Replay
+        echo "Building AP_DAL standalone test"
+        $waf configure --board linux --disable-scripting --disable-gcs
+        $way --target tools/AP_DAL_Standalone
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py

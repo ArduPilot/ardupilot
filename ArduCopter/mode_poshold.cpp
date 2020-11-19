@@ -59,10 +59,7 @@ bool ModePosHold::init(bool ignore_checks)
     loiter_nav->init_target();
 
     // initialise wind_comp each time PosHold is switched on
-    wind_comp_ef.zero();
-    wind_comp_timer = 0;
-    wind_comp_roll = 0.0f;
-    wind_comp_pitch = 0.0f;
+    init_wind_comp_estimate();
 
     return true;
 }
@@ -118,6 +115,9 @@ void ModePosHold::run()
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
         pitch_mode = RPMode::PILOT_OVERRIDE;
+
+        // initialise wind compensation estimate
+        init_wind_comp_estimate();
         break;
 
     case AltHold_Takeoff:
@@ -151,6 +151,7 @@ void ModePosHold::run()
         loiter_nav->init_target();
         loiter_nav->update();
         attitude_control->set_yaw_target_to_current_heading();
+        init_wind_comp_estimate();
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
@@ -560,6 +561,15 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle, float vel
 
     // constrain final brake_angle
     brake_angle = constrain_float(brake_angle, -(float)g.poshold_brake_angle_max, (float)g.poshold_brake_angle_max);
+}
+
+// initialise wind compensation estimate back to zero
+void ModePosHold::init_wind_comp_estimate()
+{
+    wind_comp_ef.zero();
+    wind_comp_timer = 0;
+    wind_comp_roll = 0.0f;
+    wind_comp_pitch = 0.0f;
 }
 
 // update_wind_comp_estimate - updates wind compensation estimate

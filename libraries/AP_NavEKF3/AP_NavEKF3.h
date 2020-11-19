@@ -26,7 +26,6 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF3_core;
-class AP_AHRS;
 
 class NavEKF3 {
     friend class NavEKF3_core;
@@ -51,23 +50,11 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
-    // check if we should write log messages
-    void check_log_write(void);
-    
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
-
-    // Update instance error scores for all available cores 
-    float updateCoreErrorScores(void);
-
-    // Update relative error scores for all alternate available cores
-    void updateCoreRelativeErrors(void);
-
-    // Reset error scores for all available cores
-    void resetCoreErrors(void);
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -402,9 +389,6 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
-    // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
-
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
 
@@ -439,7 +423,6 @@ private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
-    const AP_AHRS *_ahrs;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -480,7 +463,6 @@ private:
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
-    AP_Int8 _logging_mask;          // mask of IMUs to log
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
@@ -542,19 +524,16 @@ private:
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)
     const uint8_t flowIntervalMin_ms = 20;         // The minimum allowed time between measurements from optical flow sensors (msec)
     const uint8_t extNavIntervalMin_ms = 20;       // The minimum allowed time between measurements from external navigation sensors (msec)
-
-    struct {
-        bool enabled:1;
-        bool log_compass:1;
-        bool log_baro:1;
-        bool log_imu:1;
-    } logging;
+    const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
 
     // time at start of current filter update
     uint64_t imuSampleTime_us;
 
     // time of last lane switch
     uint32_t lastLaneSwitch_ms;
+
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
 
     struct {
         uint32_t last_function_call;  // last time getLastYawResetAngle was called
@@ -609,6 +588,15 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
+    // Update instance error scores for all available cores 
+    float updateCoreErrorScores(void);
+
+    // Update relative error scores for all alternate available cores
+    void updateCoreRelativeErrors(void);
+
+    // Reset error scores for all available cores
+    void resetCoreErrors(void);
+
     // return true if a new core has a better score than an existing core, including
     // checks for alignment
     bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
@@ -618,12 +606,13 @@ private:
     void Log_Write_XKF2(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF5(uint64_t time_us) const;
+    void Log_Write_XKF5(uint8_t core, uint64_t time_us) const;
     void Log_Write_XKFS(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us) const;
-    void Log_Write_BodyOdom(uint64_t time_us) const;
-    void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
+    void Log_Write_BodyOdom(uint8_t core, uint64_t time_us) const;
+    void Log_Write_State_Variances(uint8_t core, uint64_t time_us) const;
+    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 
 };

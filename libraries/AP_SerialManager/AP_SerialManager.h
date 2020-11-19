@@ -189,7 +189,8 @@ public:
     void set_blocking_writes_all(bool blocking);
 
     // get the passthru ports if enabled
-    bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s) const;
+    bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
+                      uint32_t &baud1, uint32_t &baud2) const;
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);

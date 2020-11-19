@@ -1,5 +1,7 @@
 #include "SIM_I2CDevice.h"
 
+#pragma once
+
 namespace SITL {
 
 class SMBusBattDevReg : public I2CRegEnum {

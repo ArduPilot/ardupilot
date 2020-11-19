@@ -29,7 +29,12 @@
 #include <hal.h>
 #include <ch.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include "stm32_util.h"
+
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+#pragma GCC optimize("Og")
+#endif
 
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
@@ -41,6 +46,10 @@ static const struct memory_region {
     uint32_t flags;
 } memory_regions[] = { HAL_MEMORY_REGIONS };
 
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+static mutex_t mem_mutex;
+#endif
+
 // the first memory region is already setup as the ChibiOS
 // default heap, so we will index from 1 in the allocators
 #define NUM_MEMORY_REGIONS (sizeof(memory_regions)/sizeof(memory_regions[0]))
@@ -49,12 +58,12 @@ static const struct memory_region {
 
 static memory_heap_t heaps[NUM_MEMORY_REGIONS];
 
-#define MIN_ALIGNMENT 8
+#define MIN_ALIGNMENT 8U
 
 #if defined(STM32H7)
-#define DMA_ALIGNMENT 32
+#define DMA_ALIGNMENT 32U
 #else
-#define DMA_ALIGNMENT 8
+#define DMA_ALIGNMENT 8U
 #endif
 
 // size of memory reserved for dma-capable alloc
@@ -71,6 +80,19 @@ static memory_heap_t dma_reserve_heap;
  */
 void malloc_init(void)
 {
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+    chMtxObjectInit(&mem_mutex);
+#endif
+
+#if defined(STM32H7)
+    // zero first 1k of ITCM. We leave 1k free to avoid addresses
+    // close to nullptr being valid. Zeroing it here means we can
+    // check for changes which indicate a write to an uninitialised
+    // object.  We start at address 0x1 as writing the first byte
+    // causes a fault
+    memset((void*)0x00000001, 0, 1023);
+#endif
+
     uint8_t i;
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
         chHeapObjectInit(&heaps[i], memory_regions[i].address, memory_regions[i].size);
@@ -93,6 +115,10 @@ void malloc_init(void)
 #endif
 }
 
+/*
+  allocate memory, using flags from MEM_REGION_FLAG_* to determine
+  memory type
+ */
 static void *malloc_flags(size_t size, uint32_t flags)
 {
     if (size == 0) {
@@ -169,6 +195,152 @@ found:
     memset(p, 0, size);
     return p;
 }
+
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+/*
+  memory guard system. We put all allocated memory in a doubly linked
+  list and add canary bytes at the front and back of all
+  allocations. On all free operations, plus on calls to malloc_check()
+  we walk the list and check for memory corruption, flagging an
+  internal error if one is found
+ */
+struct memguard {
+    uint32_t size;
+    uint32_t inv_size;
+    struct memguard *next, *prev;
+    uint32_t pad[4]; // pad to 32 bytes
+};
+static struct memguard *mg_head;
+
+#define MALLOC_HEAD_SIZE sizeof(struct memguard)
+#define MALLOC_GUARD_SIZE DMA_ALIGNMENT
+#define MALLOC_GUARD1_START 73
+#define MALLOC_GUARD2_START 172
+
+/*
+  optional malloc guard regions
+ */
+static void *malloc_flags_guard(size_t size, uint32_t flags)
+{
+    chMtxLock(&mem_mutex);
+
+    if (flags & (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_SDCARD)) {
+        size = (size + (DMA_ALIGNMENT-1U)) & ~(DMA_ALIGNMENT-1U);
+    } else {
+        size = (size + (MIN_ALIGNMENT-1U)) & ~(MIN_ALIGNMENT-1U);
+    }
+    void *ret = malloc_flags(size+MALLOC_GUARD_SIZE*2+MALLOC_HEAD_SIZE, flags);
+    if (!ret) {
+        chMtxUnlock(&mem_mutex);
+        return NULL;
+    }
+    struct memguard *mg = (struct memguard *)ret;
+    uint8_t *b1 = (uint8_t *)&mg[1];
+    uint8_t *b2 = b1 + MALLOC_GUARD_SIZE + size;
+    mg->size = size;
+    mg->inv_size = ~size;
+    for (uint32_t i=0; i<MALLOC_GUARD_SIZE; i++) {
+        b1[i] = (uint8_t)(MALLOC_GUARD1_START + i);
+        b2[i] = (uint8_t)(MALLOC_GUARD2_START + i);
+    }
+
+    if (mg_head != NULL) {
+        mg->next = mg_head;
+        mg_head->prev = mg;
+    }
+    mg_head = mg;
+
+    chMtxUnlock(&mem_mutex);
+    return (void *)(b1+MALLOC_GUARD_SIZE);
+}
+
+extern void AP_memory_guard_error(uint32_t size);
+
+/*
+  check for errors in malloc memory using guard bytes
+ */
+void malloc_check_mg(const struct memguard *mg)
+{
+    if (mg->size != ~mg->inv_size) {
+        AP_memory_guard_error(0);
+        return;
+    }
+    const uint32_t size = mg->size;
+    const uint8_t *b1 = (uint8_t *)&mg[1];
+    const uint8_t *b2 = b1 + MALLOC_GUARD_SIZE + size;
+    for (uint32_t i=0; i<MALLOC_GUARD_SIZE; i++) {
+        if (b1[i] != (uint8_t)(MALLOC_GUARD1_START + i) ||
+            b2[i] != (uint8_t)(MALLOC_GUARD2_START + i)) {
+            AP_memory_guard_error(size);
+            return;
+        }
+    }
+}
+
+/*
+  check for errors across entire allocation list
+ */
+void malloc_check_all(void)
+{
+    for (struct memguard *mg=mg_head; mg; mg=mg->next) {
+        malloc_check_mg(mg);
+    }
+}
+
+/*
+  check for errors in malloc memory using guard bytes
+ */
+void malloc_check(const void *p)
+{
+    if (p == NULL) {
+        // allow for malloc_check(nullptr) to check all allocated memory
+        chMtxLock(&mem_mutex);
+        malloc_check_all();
+        chMtxUnlock(&mem_mutex);
+        return;
+    }
+    if (((uintptr_t)p) & 3) {
+        // misaligned memory
+        AP_memory_guard_error(0);
+        return;
+    }
+    chMtxLock(&mem_mutex);
+    struct memguard *mg = (struct memguard *)(((uint8_t *)p) - (MALLOC_GUARD_SIZE+MALLOC_HEAD_SIZE));
+    malloc_check_mg(mg);
+    malloc_check_all();
+    chMtxUnlock(&mem_mutex);
+}
+
+static void free_guard(void *p)
+{
+    chMtxLock(&mem_mutex);
+    malloc_check(p);
+    struct memguard *mg = (struct memguard *)(((uint8_t *)p) - (MALLOC_GUARD_SIZE+MALLOC_HEAD_SIZE));
+    if (mg->next) {
+        mg->next->prev = mg->prev;
+    }
+    if (mg->prev) {
+        mg->prev->next = mg->next;
+    }
+    if (mg == mg_head) {
+        mg_head = mg->next;
+    }
+    chHeapFree((void*)(((uint8_t *)p) - (MALLOC_GUARD_SIZE+MALLOC_HEAD_SIZE)));
+    chMtxUnlock(&mem_mutex);
+}
+
+#define malloc_flags(size, flags) malloc_flags_guard(size, flags)
+
+#else // HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+
+void malloc_check(const void *p)
+{
+    (void)p;
+}
+#endif // HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+
+
+
 /*
   allocate normal memory
  */
@@ -214,7 +386,11 @@ void *calloc(size_t nmemb, size_t size)
 void free(void *ptr)
 {
     if(ptr != NULL) {
+#ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
+        free_guard(ptr);
+#else
         chHeapFree(ptr);
+#endif
     }
 }
 

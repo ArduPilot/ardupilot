@@ -277,12 +277,6 @@ public:
 
     bool getGpsGlitchStatus() const;
 
-    // used by Replay to force start at right timestamp
-    void force_ekf_start(void) { _force_ekf = true; }
-
-    // is the EKF backend doing its own sensor logging?
-    bool have_ekf_logging(void) const override;
-
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
     // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
@@ -348,8 +342,7 @@ private:
     bool _ekf3_started;
     void update_EKF3(void);
 #endif
-    bool _force_ekf;
-    
+
     // rotation from vehicle body to NED frame
     Matrix3f _dcm_matrix;
     Vector3f _dcm_attitude;
@@ -367,6 +360,16 @@ private:
 
     // get the index of the current primary IMU
     uint8_t get_primary_IMU_index(void) const;
+
+    // avoid setting current state repeatedly across all cores on all EKFs:
+    enum class TriState {
+        False = 0,
+        True = 1,
+        UNKNOWN = 3,
+    };
+    TriState touchdownExpectedState = TriState::UNKNOWN;
+    TriState takeoffExpectedState = TriState::UNKNOWN;
+    TriState terrainHgtStableState = TriState::UNKNOWN;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;

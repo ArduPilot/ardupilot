@@ -88,6 +88,11 @@ public:
 
     // unmount filesystem for reboot
     void unmount(void);
+
+    /*
+      load a full file. Use delete to free the data
+     */
+    FileData *load_file(const char *filename);
     
 private:
     struct Backend {

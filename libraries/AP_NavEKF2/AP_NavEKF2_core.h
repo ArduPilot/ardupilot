@@ -24,16 +24,13 @@
     #pragma GCC optimize("O2")
 #endif
 
-#define EK2_DISABLE_INTERRUPTS 0
-
-
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
 #include <AP_NavEKF/AP_NavEKF_core_common.h>
 #include <AP_NavEKF2/AP_NavEKF2_Buffer.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -371,6 +368,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
+    AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF2 *frontend;
@@ -426,8 +424,6 @@ private:
     typedef ftype Matrix34_50[34][50];
     typedef uint32_t Vector_u32_50[50];
 #endif
-
-    const AP_AHRS *_ahrs;
 
     // the states are available in two forms, either as a Vector31, or
     // broken down as individual elements. Both are equivalent (same
@@ -504,11 +500,11 @@ private:
     };
 
     struct of_elements {
-        Vector2f    flowRadXY;      // 0..1
-        Vector2f    flowRadXYcomp;  // 2..3
-        uint32_t    time_ms;        // 4
-        Vector3f    bodyRadXYZ;     //8..10
-        const Vector3f *body_offset;// 5..7
+        Vector2f    flowRadXY;
+        Vector2f    flowRadXYcomp;
+        uint32_t    time_ms;
+        Vector3f    bodyRadXYZ;
+        Vector3f    body_offset;
     };
 
     struct ext_nav_elements {
@@ -1222,17 +1218,6 @@ private:
 
     // string representing last reason for prearm failure
     char prearm_fail_string[41];
-
-    // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
-    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
-    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
-    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
-    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
-    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
-    AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
-    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
-    AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // earth field from WMM tables
     bool have_table_earth_field;   // true when we have initialised table_earth_field_ga

@@ -952,7 +952,7 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_ENABLED
+#if OSD_PARAM_ENABLED && OSD_ENABLED 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
@@ -1073,8 +1073,10 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
     }
 
     // send failure or waiting message
-    if (some_failures && !failure_msg_sent) {
-        check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Auxiliary authorisation refused");
+    if (some_failures) {
+        if (!failure_msg_sent) {
+            check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Auxiliary authorisation refused");
+        }
         return false;
     } else if (waiting_for_responses) {
         check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Waiting for auxiliary authorisation");

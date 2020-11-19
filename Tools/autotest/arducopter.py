@@ -8,6 +8,8 @@ import os
 import shutil
 import time
 import numpy
+import sys
+import shutil
 
 from pymavlink import mavutil
 from pymavlink import mavextra
@@ -899,7 +901,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("RTL")
         self.wait_rtl_complete()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl_mavproxy()
+        self.reboot_sitl()
         self.end_subtest("Completed Batt failsafe disabled test")
 
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition, then critical battery condition. Verify RTL and Land actions complete.
@@ -919,7 +921,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("LAND")
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl_mavproxy()
+        self.reboot_sitl()
         self.end_subtest("Completed two stage battery failsafe test with RTL and Land")
 
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition, then critical battery condition. Verify both SmartRTL actions complete
@@ -940,7 +942,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("SMART_RTL")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl_mavproxy()
+        self.reboot_sitl()
         self.end_subtest("Completed two stage battery failsafe test with SmartRTL")
 
         # Trigger low battery condition in land mode with FS_OPTIONS set to allow land mode to continue. Verify landing completes uninterupted.
@@ -955,7 +957,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("LAND")
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl_mavproxy()
+        self.reboot_sitl()
         self.end_subtest("Completed battery failsafe with FS_OPTIONS set to continue landing")
 
         # Trigger a critical battery condition, which triggers a land mode failsafe. Trigger an RC failure. Verify the RC failsafe is prevented from stopping the low battery landing.
@@ -976,7 +978,7 @@ class AutoTestCopter(AutoTest):
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.set_parameter("SIM_RC_FAIL", 0)
-        self.reboot_sitl_mavproxy()
+        self.reboot_sitl()
         self.end_subtest("Completed battery failsafe critical landing")
 
         # Trigger low battery condition with failsafe set to terminate. Copter will disarm and crash.
@@ -1755,7 +1757,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
 
             # we can't takeoff in loiter as we need flow healthy
-            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            self.takeoff(alt_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
             self.change_mode('LOITER')
 
             # speed should be limited to <10m/s
@@ -1770,11 +1772,11 @@ class AutoTestCopter(AutoTest):
 
                 # calculate max speed from altitude above the ground
                 margin = 2.0
-                max_speed = alt * 1.4 + margin
-                self.progress("%0.1f: Low Speed: %f (want <= %u)" %
+                max_speed = alt * 1.5 + margin
+                self.progress("%0.1f: Low Speed: %f (want <= %u) alt=%.1f" %
                               (self.get_sim_time_cached() - tstart,
                                spd,
-                               max_speed))
+                               max_speed, alt))
                 if spd > max_speed:
                     raise NotAchievedException(("Speed should be limited by"
                                                 "EKF optical flow limits"))
@@ -5291,9 +5293,66 @@ class AutoTestCopter(AutoTest):
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
+
+    def test_replay(self):
+        '''test replay correctness'''
+        self.progress("Building Replay")
+        util.build_SITL('tools/Replay', clean=False, configure=False)
+
+        self.context_push()
+        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameter("LOG_DISARMED", 1)
+        self.set_parameter("EK3_ENABLE", 1)
+        self.set_parameter("EK2_ENABLE", 1)
+        self.set_parameter("AHRS_TRIM_X", 0.01)
+        self.set_parameter("AHRS_TRIM_Y", -0.03)
+        self.set_parameter("GPS_TYPE2", 1)
+        self.set_parameter("GPS_POS1_X", 0.1)
+        self.set_parameter("GPS_POS1_Y", 0.2)
+        self.set_parameter("GPS_POS1_Z", 0.3)
+        self.set_parameter("GPS_POS2_X", -0.1)
+        self.set_parameter("GPS_POS2_Y", -0.02)
+        self.set_parameter("GPS_POS2_Z", -0.31)
+        self.set_parameter("INS_POS1_X", 0.12)
+        self.set_parameter("INS_POS1_Y", 0.14)
+        self.set_parameter("INS_POS1_Z", -0.02)
+        self.set_parameter("INS_POS2_X", 0.07)
+        self.set_parameter("INS_POS2_Y", 0.012)
+        self.set_parameter("INS_POS2_Z", -0.06)
+        self.set_parameter("RNGFND1_TYPE", 1)
+        self.set_parameter("RNGFND1_PIN", 0)
+        self.set_parameter("RNGFND1_SCALING", 30)
+        self.set_parameter("RNGFND1_POS_X", 0.17)
+        self.set_parameter("RNGFND1_POS_Y", -0.07)
+        self.set_parameter("RNGFND1_POS_Z", -0.005)
+        self.set_parameter("SIM_SONAR_SCALE", 30)
+        self.set_parameter("SIM_GPS2_DISABLE", 0)
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=True)
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        self.progress("Running replay")
+
+        util.run_cmd(['build/sitl/tools/Replay', current_log_filepath],
+                     directory=util.topdir(), checkfail=True, show=True)
+
+        self.context_pop()
+
+        replay_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Replay log path: %s" % str(replay_log_filepath))
+
+        check_replay = util.load_local_module("Tools/Replay/check_replay.py")
+
+        ok = check_replay.check_log(replay_log_filepath, self.progress)
+        if not ok:
+            raise NotAchievedException("check_replay failed")
 
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
@@ -5638,6 +5697,10 @@ class AutoTestCopter(AutoTest):
             ("DataFlashErase",
              "Test DataFlash Block backend erase",
              self.test_dataflash_erase),
+
+            ("Replay",
+             "Test Replay",
+             self.test_replay),
 
             ("LogUpload",
              "Log upload",

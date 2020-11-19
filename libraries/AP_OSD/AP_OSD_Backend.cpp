@@ -25,6 +25,7 @@ extern const AP_HAL::HAL& hal;
 
 void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
 {
+#if OSD_ENABLED
     if (blink && (blink_phase < 2)) {
         return;
     }
@@ -48,4 +49,34 @@ void AP_OSD_Backend::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ..
         write(x, y, buff);
     }
     va_end(ap);
+#endif
+}
+
+/*
+  load a font from sdcard or ROMFS
+ */
+FileData *AP_OSD_Backend::load_font_data(uint8_t font_num)
+{
+    FileData *fd;
+
+    // first try from microSD
+    char fontname[] = "font0.bin";
+    fontname[4] = font_num + '0';
+
+    fd = AP::FS().load_file(fontname);
+    if (fd == nullptr) {
+        char fontname_romfs[] = "@ROMFS/font0.bin";
+        fontname_romfs[7+4] = font_num + '0';
+        fd = AP::FS().load_file(fontname_romfs);
+    }
+    if (fd == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "OSD: Failed to load font %u", font_num);
+        if (font_num != 0) {
+            // fallback to font0.bin. This allows us to reduce the
+            // number of fonts we include in flash without breaking
+            // user setups
+            return load_font_data(0);
+        }
+    }
+    return fd;
 }

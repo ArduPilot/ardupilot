@@ -3163,7 +3163,7 @@ void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg)
 {
-#if OSD_ENABLED
+#if OSD_PARAM_ENABLED
     AP_OSD *osd = AP::osd();
     if (osd != nullptr) {
         osd->handle_msg(msg, *this);
@@ -4937,7 +4937,8 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
 
-    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s);
+    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
+                                                    _passthru.baud1, _passthru.baud2);
     if (enabled && !_passthru.enabled) {
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
@@ -4983,6 +4984,8 @@ void GCS::passthru_timer(void)
             return;
         }
         _passthru.start_ms = 0;
+        _passthru.port1->begin(_passthru.baud1);
+        _passthru.port2->begin(_passthru.baud2);
     }
 
     // while pass-thru is enabled lock both ports. They remain
@@ -5062,8 +5065,10 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
-    ret |= MAV_PROTOCOL_CAPABILITY_FTP;
-
+    if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
+        ret |= MAV_PROTOCOL_CAPABILITY_FTP;
+    }
+ 
     return ret;
 }
 

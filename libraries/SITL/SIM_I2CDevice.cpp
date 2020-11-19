@@ -1,4 +1,5 @@
 #include "SIM_I2CDevice.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
 void SITL::I2CRegisters::add_register(const char *name, uint8_t reg, int8_t mode)
 {
@@ -63,12 +64,62 @@ int SITL::I2CRegisters_16Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
         if (data->msgs[0].flags != 0) {
             AP_HAL::panic("Unexpected flags");
         }
+        // FIXME: handle multi-register writes
         const uint8_t reg_addr = data->msgs[0].buf[0];
         if (!writable_registers.get(reg_addr)) {
             AP_HAL::panic("Register 0x%02x is not writable!", reg_addr);
         }
         const uint16_t register_value = data->msgs[0].buf[2] << 8 | data->msgs[0].buf[1];
         word[reg_addr] = register_value;
+        return 0;
+    }
+
+    return -1;
+};
+
+
+
+int SITL::I2CRegisters_8Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
+{
+    if (data->nmsgs == 2) {
+        // data read request
+        if (data->msgs[0].flags != 0) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        if (data->msgs[1].flags != I2C_M_RD) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        const uint8_t reg_base_addr = data->msgs[0].buf[0];
+        uint8_t bytes_copied = 0;
+        while (bytes_copied < data->msgs[1].len) {
+            const uint8_t reg_addr = reg_base_addr + bytes_copied;
+            if (!readable_registers.get(reg_addr)) {
+                // ::printf("Register 0x%02x is not readable!\n", reg_addr);
+                return -1;
+            }
+            const uint8_t register_value = byte[reg_addr];
+            data->msgs[1].buf[bytes_copied++] = register_value;
+        }
+        data->msgs[1].len = bytes_copied;
+        return 0;
+    }
+
+    if (data->nmsgs == 1) {
+        // data write request
+        if (data->msgs[0].flags != 0) {
+            AP_HAL::panic("Unexpected flags");
+        }
+        const uint8_t reg_base_addr = data->msgs[0].buf[0];
+        uint8_t bytes_copied = 0;
+        while (bytes_copied < data->msgs[0].len-1) {
+            const uint8_t reg_addr = reg_base_addr + bytes_copied;
+            if (!writable_registers.get(reg_addr)) {
+                AP_HAL::panic("Register 0x%02x is not writable!", reg_addr);
+            }
+            const uint8_t register_value = data->msgs[0].buf[1+bytes_copied];
+            byte[reg_addr] = register_value;
+            bytes_copied++;
+        }
         return 0;
     }
 

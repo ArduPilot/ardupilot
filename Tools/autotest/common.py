@@ -1345,12 +1345,24 @@ class AutoTest(ABC):
                                        0,
                                        0)
 
+    def reboot_check_valgrind_log(self):
+        valgrind_log = util.valgrind_log_filepath(binary=self.binary,
+                                                  model=self.frame)
+        if os.path.getsize(valgrind_log) > 0:
+            backup_valgrind_log = ("%s-%s" % (str(int(time.time())), valgrind_log))
+            shutil.move(valgrind_log, backup_valgrind_log)
+
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
-        self.send_reboot_command()
+        if self.valgrind:
+            self.reboot_check_valgrind_log()
+            self.stop_SITL()
+            self.start_SITL(wipe=False)
+        else:
+            self.send_reboot_command()
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
     def send_cmd_enter_cpu_lockup(self):
@@ -1502,9 +1514,9 @@ class AutoTest(ABC):
 #        if fail:
 #            raise NotAchievedException("Extra parameters in XML")
 
-    def find_format_defines(self, filepath):
+    def find_format_defines(self, lines):
         ret = {}
-        for line in open(filepath,'rb').readlines():
+        for line in lines:
             if type(line) == bytes:
                 line = line.decode("utf-8")
             m = re.match('#define (\w+_(?:LABELS|FMT|UNITS|MULTS))\s+(".*")', line)
@@ -1525,20 +1537,32 @@ class AutoTest(ABC):
             dirname = "ArduCopter"
         return os.path.join(self.rootdir(), dirname)
 
+    def find_LogStructureFiles(self):
+        '''return list of files named LogStructure.h'''
+        ret = []
+        for root, _, files in os.walk(self.rootdir()):
+            for f in files:
+                if f == 'LogStructure.h':
+                    ret.append(os.path.join(root, f))
+        return ret
+
     def all_log_format_ids(self):
+        structure_files = self.find_LogStructureFiles()
+        structure_lines = []
+        for f in structure_files:
+            structure_lines.extend(open(f).readlines())
         ids = {}
-        filepath = os.path.join(self.rootdir(), 'libraries', 'AP_Logger', 'LogStructure.h')
         state_outside = 0
         state_inside = 1
         state = state_outside
 
-        defines = self.find_format_defines(filepath)
+        defines = self.find_format_defines(structure_lines)
 
         linestate_none = 45
         linestate_within = 46
         linestate = linestate_none
         message_infos = []
-        for line in open(filepath,'rb').readlines():
+        for line in structure_lines:
 #            print("line: %s" % line)
             if type(line) == bytes:
                 line = line.decode("utf-8")
@@ -1552,12 +1576,16 @@ class AutoTest(ABC):
                     state = state_inside
                 continue
             if state == state_inside:
-                if "#define LOG_COMMON_STRUCTURES" in line:
-#                    self.progress("Moving outside")
-                    state = state_outside
-                    break
                 if linestate == linestate_none:
-                    if "#define LOG_SBP_STRUCTURES" in line:
+                    allowed_list = ['LOG_SBP_STRUCTURES',
+                                    'LOG_STRUCTURE_FROM_DAL',
+                                    'LOG_STRUCTURE_FROM_NAVEKF']
+
+                    allowed = False
+                    for a in allowed_list:
+                        if a in line:
+                            allowed = True
+                    if allowed:
                         continue
                     m = re.match("\s*{(.*)},\s*", line)
                     if m is not None:
@@ -1567,7 +1595,7 @@ class AutoTest(ABC):
                         continue
                     m = re.match("\s*{(.*)[\\\]", line)
                     if m is None:
-                        raise NotAchievedException("Bad line %s" % line)
+                        continue
                     partial_line = m.group(1)
                     linestate = linestate_within
                     continue
@@ -1582,8 +1610,6 @@ class AutoTest(ABC):
 
         if linestate != linestate_none:
             raise NotAchievedException("Must be linestate-none at end of file")
-        if state == state_inside:
-            raise NotAchievedException("Must be outside at end of file")
 
         # now look in the vehicle-specific logfile:
         filepath = os.path.join(self.vehicle_code_dirpath(), "Log.cpp")
@@ -1648,7 +1674,7 @@ class AutoTest(ABC):
                 message_info = re.sub(define, defines[define], message_info)
             m = re.match('\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*$', message_info)
             if m is None:
-                raise NotAchievedException("Failed to match (%s)" % message_info)
+                continue
             (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
             if name in ids:
                 raise NotAchievedException("Already seen a (%s) message" % name)
@@ -1714,15 +1740,6 @@ class AutoTest(ABC):
                 my_re = ' AP::logger\(\)[.]Write\(\s*"(\w+)"\s*,\s*"([\w,]+)".*\);'
                 m = re.match(my_re, log_write_statement)
             if m is None:
-                if "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin" in log_write_statement:
-                    # special-case for logging ekf timing:
-                    for name in ["NKT", "XKT"]:
-                        x = re.sub(" name,", '"'+name+'",', log_write_statement)
-                        m = re.match(my_re, x)
-                        if m is None:
-                            raise NotAchievedException("Did not match (%s)", x)
-                        results.append((m.group(1), m.group(2)))
-                    continue
                 raise NotAchievedException("Did not match (%s) with (%s)" % (log_write_statement, str(my_re)))
             else:
                 results.append((m.group(1), m.group(2)))
@@ -1779,6 +1796,13 @@ class AutoTest(ABC):
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
 
+        # we allow for no docs for replay messages, as these are not for end-users. They are
+        # effectively binary blobs for replay
+        REPLAY_MSGS = [ 'RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
+                        'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
+                        'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
+                        'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH' ]
+
         docco_ids = {}
         for thing in tree.logformat:
             name = str(thing.get("name"))
@@ -1786,6 +1810,10 @@ class AutoTest(ABC):
                 "name": name,
                 "labels": [],
             }
+            if getattr(thing.fields, 'field', None) is None:
+                if name in REPLAY_MSGS:
+                    continue
+                raise NotAchievedException("no doc fields for %s" % name)
             for field in thing.fields.field:
 #                print("field: (%s)" % str(field))
                 fieldname = field.get("name")
@@ -1793,8 +1821,8 @@ class AutoTest(ABC):
                 docco_ids[name]["labels"].append(fieldname)
 
         code_ids = self.all_log_format_ids()
-        self.progress("Code ids: (%s)" % str(sorted(code_ids.keys())))
-        self.progress("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
+        #self.progress("Code ids: (%s)" % str(sorted(code_ids.keys())))
+        #self.progress("Docco ids: (%s)" % str(sorted(docco_ids.keys())))
 
         for name in sorted(code_ids.keys()):
             if name not in docco_ids:
@@ -1809,13 +1837,17 @@ class AutoTest(ABC):
                 if label not in docco_ids[name]["labels"]:
                     raise NotAchievedException("%s.%s not in documented fields (have (%s))" %
                                                (name, label, ",".join(docco_ids[name]["labels"])))
+        missing = []
         for name in sorted(docco_ids):
-            if name not in code_ids:
-                raise NotAchievedException("Documented message (%s) not in code" % name)
+            if name not in code_ids and name not in REPLAY_MSGS:
+                missing.append(name)
+                continue
             for label in docco_ids[name]["labels"]:
                 if label not in code_ids[name]["labels"].split(","):
                     raise NotAchievedException("documented field %s.%s not found in code" %
                                                (name, label))
+        if len(missing) > 0:
+            raise NotAchievedException("Documented messages (%s) not in code" % missing)
 
     def initialise_after_reboot_sitl(self):
 
@@ -1873,11 +1905,15 @@ class AutoTest(ABC):
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
                                                   model=self.frame)
-        if os.path.exists(valgrind_log):
+        files = glob.glob("*" + valgrind_log)
+        for valgrind_log in files:
             os.chmod(valgrind_log, 0o644)
-            shutil.copy(valgrind_log,
-                        self.buildlogs_path("%s-valgrind.log" %
-                                            self.log_name()))
+            if os.path.getsize(valgrind_log) > 0:
+                target = self.buildlogs_path("%s-%s" % (
+                    self.log_name(),
+                    os.path.basename(valgrind_log)))
+                self.progress("Valgrind log: moving %s to %s" % (valgrind_log, target))
+                shutil.move(valgrind_log, target)
 
     def start_test(self, description):
         self.progress("##################################################################################")
@@ -4425,6 +4461,8 @@ Also, ignores heartbeats not from our target system'''
         return ((v, k))
 
     def show_test_timings(self):
+        if len(self.test_timings.keys()) == 0:
+            return
         longest = 0
         for desc in self.test_timings.keys():
             if len(desc) > longest:

@@ -35,6 +35,20 @@ protected:
     uint16_t word[256];
 };
 
+class I2CRegisters_8Bit : public I2CRegisters {
+public:
+    int rdwr(I2C::i2c_rdwr_ioctl_data *&data) override;
+    void set_register(uint8_t reg, uint8_t value);
+    void set_register(uint8_t reg, int8_t value);
+
+    uint8_t get_register(uint8_t num) {
+        return byte[(uint8_t)num];
+    }
+
+protected:
+
+    uint8_t byte[256];
+};
 
 class I2CDevice {
 public:

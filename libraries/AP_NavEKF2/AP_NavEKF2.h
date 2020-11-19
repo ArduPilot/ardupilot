@@ -29,7 +29,6 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF2_core;
-class AP_AHRS;
 
 class NavEKF2 {
     friend class NavEKF2_core;
@@ -54,9 +53,6 @@ public:
     // Update Filter States - this should be called whenever new IMU data is available
     void UpdateFilter(void);
 
-    // check if we should write log messages
-    void check_log_write(void);
-    
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
@@ -128,7 +124,7 @@ public:
 
     // Set the argument to true to prevent the EKF using the GPS vertical velocity
     // This can be used for situations where GPS velocity errors are causing problems with height accuracy
-    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
+    void setInhibitGpsVertVelUse(const bool varIn);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
@@ -318,9 +314,6 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
-    // are we doing sensor logging inside the EKF?
-    bool have_ekf_logging(void) const { return logging.enabled && _logging_mask != 0; }
-
     // get timing statistics structure
     void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
 
@@ -381,7 +374,6 @@ private:
     uint8_t primary;   // current primary core
     NavEKF2_core *core = nullptr;
     bool core_malloc_failed;
-    const AP_AHRS *_ahrs;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -423,7 +415,6 @@ private:
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF2 for
     AP_Int16 _gpsCheckScaler;       // Percentage increase to be applied to GPS pre-flight accuracy and drift thresholds
     AP_Float _noaidHorizNoise;      // horizontal position measurement noise assumed when synthesised zero position measurements are used to constrain attitude drift : m
-    AP_Int8 _logging_mask;          // mask of IMUs to log
     AP_Float _yawNoise;             // magnetic yaw measurement noise : rad
     AP_Int16 _yawInnovGate;         // Percentage number of standard deviations applied to magnetic yaw innovation consistency check
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
@@ -475,20 +466,17 @@ private:
     const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
+    const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
 
     // origin set by one of the cores
     struct Location common_EKF_origin;
     bool common_origin_valid;
 
-    struct {
-        bool enabled:1;
-        bool log_compass:1;
-        bool log_baro:1;
-        bool log_imu:1;
-    } logging;
-
     // time at start of current filter update
     uint64_t imuSampleTime_us;
+
+    // last time of Log_Write
+    uint64_t lastLogWrite_us;
     
     struct {
         uint32_t last_function_call;  // last time getLastYawResetAngle was called
@@ -562,8 +550,9 @@ private:
     void Log_Write_NKF2(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF3(uint8_t core, uint64_t time_us) const;
     void Log_Write_NKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_NKF5(uint8_t core, uint64_t time_us) const;
     void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint64_t time_us) const;
+    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
+    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
     void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 };

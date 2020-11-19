@@ -85,8 +85,8 @@ public:
         VRX_BOARD_UBRAIN52 = 35,
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
-        PX4_BOARD_OLDDRIVERS = 100,
         PX4_BOARD_FMUV6    = 39,
+        PX4_BOARD_OLDDRIVERS = 100,
     };
 
     // set default value for BRD_SAFETY_MASK
@@ -164,7 +164,13 @@ public:
 
     enum board_options {
         BOARD_OPTION_WATCHDOG = (1 << 0),
+        DISABLE_FTP = (1<<1),
     };
+
+    // return true if ftp is disabled
+    static bool ftp_disabled(void) {
+        return _singleton?(_singleton->_options & DISABLE_FTP)!=0:1;
+    }
 
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {

@@ -1527,7 +1527,7 @@ Compass::read(void)
     }
 #endif
 #ifndef HAL_NO_LOGGING
-    if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit) && !AP::ahrs().have_ekf_logging()) {
+    if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         AP::logger().Write_Compass();
     }
 #endif

@@ -664,12 +664,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     //update _accel_ef_blended
+#if INS_MAX_INSTANCES > 1
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         const float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
         _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
         _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
-    } else {
+    } else
+#endif
+    {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
     }
 

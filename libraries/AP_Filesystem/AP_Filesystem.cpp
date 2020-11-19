@@ -53,6 +53,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #endif
     { "@PARAM/", fs_param },
     { "@SYS/", fs_sys },
+    { "@SYS", fs_sys },
 };
 
 #define MAX_FD_PER_BACKEND 256U
@@ -226,6 +227,16 @@ void AP_Filesystem::unmount(void)
 {
     return LOCAL_BACKEND.fs.unmount();
 }
+
+/*
+  load a file to memory as a single chunk. Use only for small files
+ */
+FileData *AP_Filesystem::load_file(const char *filename)
+{
+    const Backend &backend = backend_by_path(filename);
+    return backend.fs.load_file(filename);
+}
+
 
 namespace AP
 {

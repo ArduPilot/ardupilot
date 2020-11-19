@@ -130,6 +130,8 @@ void AP_Vehicle::setup()
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
 #endif
+
+    send_watchdog_reset_statustext();
 }
 
 void AP_Vehicle::loop()

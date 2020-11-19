@@ -24,8 +24,6 @@
     #pragma GCC optimize("O2")
 #endif
 
-#define EK3_DISABLE_INTERRUPTS 0
-
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
@@ -33,6 +31,7 @@
 #include <AP_NavEKF3/AP_NavEKF3_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -85,8 +84,6 @@
 
 // number of continuous valid GSF yaw estimates required to confirm valid hostory
 #define GSF_YAW_VALID_HISTORY_THRESHOLD 5
-
-class AP_AHRS;
 
 class NavEKF3_core : public NavEKF_core_common
 {
@@ -457,6 +454,7 @@ public:
     
 private:
     EKFGSF_yaw *yawEstimator;
+    AP_DAL &dal;
 
     // Reference to the global EKF frontend for parameters
     class NavEKF3 *frontend;
@@ -516,8 +514,6 @@ private:
     typedef ftype Matrix34_50[34][50];
     typedef uint32_t Vector_u32_50[50];
 #endif
-
-    const AP_AHRS *_ahrs;
 
     // the states are available in two forms, either as a Vector24, or
     // broken down as individual elements. Both are equivalent (same
@@ -597,13 +593,13 @@ private:
         Vector2f    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
         uint32_t    time_ms;        // measurement timestamp (msec)
         Vector3f    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
-        const Vector3f *body_offset;// pointer to XYZ position of the optical flow sensor in body frame (m)
+        Vector3f    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
     };
 
     struct vel_odm_elements {
         Vector3f        vel;        // XYZ velocity measured in body frame (m/s)
         float           velErr;     // velocity measurement error 1-std (m/s)
-        const Vector3f *body_offset;// pointer to XYZ position of the velocity sensor in body frame (m)
+        Vector3f        body_offset;// XYZ position of the velocity sensor in body frame (m)
         Vector3f        angRate;    // angular rate estimated from odometry (rad/sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
@@ -611,7 +607,7 @@ private:
     struct wheel_odm_elements {
         float           delAng;     // wheel rotation angle measured in body frame - positive is forward movement of vehicle (rad/s)
         float           radius;     // wheel radius (m)
-        const Vector3f *hub_offset; // pointer to XYZ position of the wheel hub in body frame (m)
+        Vector3f        hub_offset; // XYZ position of the wheel hub in body frame (m)
         float           delTime;    // time interval that the measurement was accumulated over (sec)
         uint32_t        time_ms;    // measurement timestamp (msec)
     };
@@ -1418,18 +1414,6 @@ private:
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
-
-    // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_UpdateFilter;
-    AP_HAL::Util::perf_counter_t  _perf_CovariancePrediction;
-    AP_HAL::Util::perf_counter_t  _perf_FuseVelPosNED;
-    AP_HAL::Util::perf_counter_t  _perf_FuseMagnetometer;
-    AP_HAL::Util::perf_counter_t  _perf_FuseAirspeed;
-    AP_HAL::Util::perf_counter_t  _perf_FuseSideslip;
-    AP_HAL::Util::perf_counter_t  _perf_TerrainOffset;
-    AP_HAL::Util::perf_counter_t  _perf_FuseOptFlow;
-    AP_HAL::Util::perf_counter_t  _perf_FuseBodyOdom;
-    AP_HAL::Util::perf_counter_t  _perf_test[10];
 
     // earth field from WMM tables
     bool have_table_earth_field;   // true when we have initialised table_earth_field_ga

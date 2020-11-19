@@ -148,3 +148,13 @@ void HALSITL::Util::set_cmdline_parameters()
     }
 }
 #endif
+
+/**
+   return commandline arguments, if available
+*/
+void HALSITL::Util::commandline_arguments(uint8_t &argc, char * const *&argv)
+{
+    argc = saved_argc;
+    argv = saved_argv;
+}
+

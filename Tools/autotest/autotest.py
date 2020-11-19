@@ -412,6 +412,9 @@ def run_step(step):
     if step == 'build.SITLPeriphGPS':
         vehicle_binary = 'sitl_periph_gps.bin/AP_Periph'
 
+    if step == 'build.Replay':
+        return util.build_SITL('tools/Replay', clean=False, configure=False)
+        
     if vehicle_binary is not None:
         if len(vehicle_binary.split(".")) == 1:
             return util.build_SITL(vehicle_binary, **build_opts)
@@ -860,6 +863,8 @@ if __name__ == "__main__":
         'build.Binaries',
         'build.All',
         'build.Parameters',
+
+        'build.Replay',
 
         'build.unit_tests',
         'run.unit_tests',

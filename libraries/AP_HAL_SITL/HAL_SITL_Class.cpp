@@ -176,6 +176,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
 
+    utilInstance.init(argc, argv);
     _sitl_state->init(argc, argv);
 
     scheduler->init();
@@ -233,13 +234,18 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     setup_signal_handlers();
 
     uint32_t last_watchdog_save = AP_HAL::millis();
+    uint8_t fill_count = 0;
 
     while (!HALSITL::Scheduler::_should_reboot) {
         if (HALSITL::Scheduler::_should_exit) {
             ::fprintf(stderr, "Exitting\n");
             exit(0);
         }
-        fill_stack_nan();
+        if (fill_count++ % 10 == 0) {
+            // only fill every 10 loops. This still gives us a lot of
+            // protection, but saves a lot of CPU
+            fill_stack_nan();
+        }
         callbacks->loop();
         HALSITL::Scheduler::_run_io_procs();
 

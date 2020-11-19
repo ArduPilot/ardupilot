@@ -642,6 +642,18 @@ bool EKFGSF_yaw::getYawData(float &yaw, float &yawVariance)
     return true;
 }
 
+bool EKFGSF_yaw::getVelInnovLength(float &velInnovLength)
+{
+    if (!vel_fuse_running) {
+        return false;
+    }
+    velInnovLength = 0.0f;
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+        velInnovLength += GSF.weights[mdl_idx] * sqrtf((sq(EKF[mdl_idx].innov[0]) + sq(EKF[mdl_idx].innov[1])));
+    }
+    return true;
+}
+
 void EKFGSF_yaw::setGyroBias(Vector3f &gyroBias)
 {
     for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {

@@ -208,6 +208,9 @@ public:
     /* Write an *important* block of data at current offset */
     void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
+    /* Write a block of replay data at current offset */
+    bool WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size);
+
     // high level interface
     uint16_t find_last_log() const;
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
@@ -228,7 +231,6 @@ public:
                      LogErrorCode error_code);
     void Write_GPS(uint8_t instance, uint64_t time_us=0);
     void Write_IMU();
-    void Write_IMUDT(uint64_t time_us, uint8_t imu_mask);
     bool Write_ISBH(uint16_t seqno,
                         AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
                         uint8_t instance,
@@ -325,6 +327,10 @@ public:
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const;
+
     // number of blocks that have been dropped
     uint32_t num_dropped(void) const;
 
@@ -332,14 +338,14 @@ public:
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     bool log_while_disarmed(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
-    
+
     vehicle_startup_message_Writer _vehicle_messages;
 
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
         AP_Int8 backend_types;
-        AP_Int8 file_bufsize; // in kilobytes
+        AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
         AP_Int8 log_disarmed;
         AP_Int8 log_replay;
@@ -452,17 +458,10 @@ private:
     // state to help us not log unneccesary RCIN values:
     bool seen_nonzero_rcin15_or_rcin16;
 
-    void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance, enum LogMessages type);
-    void Write_IMU_instance(uint64_t time_us,
-                                uint8_t imu_instance,
-                                enum LogMessages type);
-    void Write_Compass_instance(uint64_t time_us,
-                                    uint8_t mag_instance,
-                                    enum LogMessages type);
+    void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
+    void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
+    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
     void Write_Current_instance(uint64_t time_us, uint8_t battery_instance);
-    void Write_IMUDT_instance(uint64_t time_us,
-                                  uint8_t imu_instance,
-                                  enum LogMessages type);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
@@ -473,7 +472,7 @@ private:
     void validate_structures(const struct LogStructure *logstructures, const uint8_t num_types);
     void dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum);
     void dump_structures(const struct LogStructure *logstructures, const uint8_t num_types);
-    void assert_same_fmt_for_name(const log_write_fmt *f,
+    bool assert_same_fmt_for_name(const log_write_fmt *f,
                                   const char *name,
                                   const char *labels,
                                   const char *units,
@@ -490,6 +489,9 @@ private:
 
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
+
+    // remember formats for replay
+    void save_format_Replay(const void *pBuffer);
 
     /* support for retrieving logs via mavlink: */
 

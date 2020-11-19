@@ -32,6 +32,7 @@
 #ifndef HAL_BOOTLOADER_BUILD
 #include <AP_Logger/AP_Logger.h>
 #endif
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <hwdef.h>
 
@@ -257,7 +258,7 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
-#ifndef HAL_DISABLE_LOOP_DELAY
+#if !defined(HAL_DISABLE_LOOP_DELAY) && !APM_BUILD_TYPE(APM_BUILD_Replay)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(50);
         }

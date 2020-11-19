@@ -603,6 +603,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoControlZeroF7",
                 "mRoNexus",
                 "mRoPixracerPro",
+                "mRoControlZeroOEMH7",
                 "F35Lightning",
                 "speedybeef4",
                 "SuccexF4",
@@ -637,6 +638,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 "CubeOrange-periph",
+                "CubeBlack-periph",
                 ]
 
     def build_arducopter(self, tag):

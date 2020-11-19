@@ -382,12 +382,25 @@ Vector3f get_vel_correction_for_sensor_offset(const Vector3f &sensor_offset_bf, 
     return rot_ef_to_bf.mul_transpose(vel_offset_body) * -1.0f;
 }
 
+/*
+  calculate a low pass filter alpha value
+ */
+float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
+{
+    if (dt <= 0.0f || cutoff_freq <= 0.0f) {
+        return 1.0;
+    }
+    float rc = 1.0f/(M_2PI*cutoff_freq);
+    return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+}
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
+    const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
-        *f++ = std::numeric_limits<float>::signaling_NaN();
+        *f++ = n;
     }
 }
 #endif

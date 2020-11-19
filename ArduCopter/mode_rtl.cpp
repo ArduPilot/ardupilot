@@ -163,7 +163,7 @@ void ModeRTL::climb_return_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -220,7 +220,7 @@ void ModeRTL::loiterathome_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -319,8 +319,10 @@ void ModeRTL::descent_run()
             }
         }
 
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (g.land_repositioning || use_pilot_yaw()) {
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        }
     }
 
     // set motors to full range
@@ -558,6 +560,12 @@ uint32_t ModeRTL::wp_distance() const
 int32_t ModeRTL::wp_bearing() const
 {
     return wp_nav->get_wp_bearing_to_destination();
+}
+
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeRTL::use_pilot_yaw(void) const
+{
+    return (copter.g2.rtl_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
 }
 
 #endif

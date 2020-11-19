@@ -332,6 +332,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 // send ESC telemetry messages over MAVLink
 void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
+#ifndef HAL_NO_GCS
     static const uint8_t MAV_ESC_GROUPS = 3;
     static const uint8_t MAV_ESC_PER_GROUP = 4;
 
@@ -398,6 +399,7 @@ void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 break;
         }
     }
+#endif // HAL_NO_GCS
 }
 
 void AP_UAVCAN::loop(void)

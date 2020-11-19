@@ -22,6 +22,7 @@
 #include "AP_OSD.h"
 #include "AP_OSD_Backend.h"
 
+#if OSD_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -39,6 +40,7 @@
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <ctype.h>
 #include <GCS_MAVLink/GCS.h>
@@ -857,6 +859,25 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
 #endif
+
+#if HAVE_FILESYSTEM_SUPPORT
+    // @Param: CALLSIGN_EN
+    // @DisplayName: CALLSIGN_EN
+    // @Description: Displays callsign from callsign.txt on microSD card
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CALLSIGN_X
+    // @DisplayName: CALLSIGN_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CALLSIGN_Y
+    // @DisplayName: CALLSIGN_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(callsign, "CALLSIGN", 53, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1436,7 +1457,7 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_DOWN_DOWN;
     }
     vs_scaled = u_scale(VSPEED, fabsf(vspd));
-    if (vs_scaled < 5.0f) {
+    if (vs_scaled < 10.0f) {
         backend->write(x, y, false, "%c%2.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
     } else {
         backend->write(x, y, false, "%c%3d%c", sym, (int)vs_scaled, u_icon(VSPEED));
@@ -1748,6 +1769,31 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
 }
 #endif
 
+/*
+  support callsign display from a file called callsign.txt
+ */
+void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
+{
+#if HAVE_FILESYSTEM_SUPPORT
+    if (!callsign_data.load_attempted) {
+        callsign_data.load_attempted = true;
+        FileData *fd = AP::FS().load_file("callsign.txt");
+        if (fd != nullptr) {
+            uint32_t len = fd->length;
+            // trim off whitespace
+            while (len > 0 && isspace(fd->data[len-1])) {
+                len--;
+            }
+            callsign_data.str = strndup((const char *)fd->data, len);
+            delete fd;
+        }
+    }
+    if (callsign_data.str != nullptr) {
+        backend->write(x, y, false, callsign_data.str);
+    }
+#endif
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1807,5 +1853,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(stat);
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
+    DRAW_SETTING(callsign);
 }
 #endif
+#endif // OSD_ENABLED

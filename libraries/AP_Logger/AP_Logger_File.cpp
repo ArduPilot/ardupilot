@@ -79,9 +79,6 @@ void AP_Logger_File::Init()
 {
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
-    if (bufsize > 64) {
-        bufsize = 64; // PixHawk has DMA limitations.
-    }
     bufsize *= 1024;
 
     const uint32_t desired_bufsize = bufsize;
@@ -490,15 +487,21 @@ bool AP_Logger_File::StartNewLogOK() const
 /* Write a block of data at current offset */
 bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+    WITH_SEMAPHORE(semaphore);
+
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
         return false;
     }
 
-    if (!semaphore.take(1)) {
-        return false;
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    if (AP::FS().write(_write_fd, pBuffer, size) != size) {
+        AP_HAL::panic("Short write");
     }
-        
+    return true;
+#endif
+
+
     uint32_t space = _writebuf.space();
 
     if (_writing_startup_messages &&
@@ -512,7 +515,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
-            semaphore.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -520,7 +522,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space(_writebuf.get_size())) {
             _dropped++;
-            semaphore.give();
             return false;
         }
     }
@@ -529,13 +530,11 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     if (space < size) {
         hal.util->perf_count(_perf_overruns);
         _dropped++;
-        semaphore.give();
         return false;
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, _writebuf.space());
-    semaphore.give();
     return true;
 }
 
@@ -550,15 +549,10 @@ uint16_t AP_Logger_File::find_last_log()
         return ret;
     }
     EXPECT_DELAY_MS(3000);
-    int fd = AP::FS().open(fname, O_RDONLY);
-    free(fname);
-    if (fd != -1) {
-        char buf[10];
-        memset(buf, 0, sizeof(buf));
-        if (AP::FS().read(fd, buf, sizeof(buf)-1) > 0) {
-            ret = strtol(buf, NULL, 10);
-        }
-        AP::FS().close(fd);
+    FileData *fd = AP::FS().load_file(fname);
+    if (fd != nullptr) {
+        ret = strtol((const char *)fd->data, NULL, 10);
+        delete fd;
     }
     return ret;
 }

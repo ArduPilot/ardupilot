@@ -366,6 +366,10 @@ void Scheduler::_monitor_thread(void *arg)
         if (using_watchdog) {
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
         }
+
+        // if running memory guard then check all allocations
+        malloc_check(nullptr);
+
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
@@ -488,6 +492,34 @@ void Scheduler::_io_thread(void* arg)
     }
 }
 
+#if defined(STM32H7)
+/*
+  the H7 has 64k of ITCM memory at address zero. We reserve 1k of it
+  to prevent nullptr being valid. This function checks that memory is
+  always zero
+ */
+void Scheduler::check_low_memory_is_zero()
+{
+    const uint32_t *lowmem = nullptr;
+    // we start at address 0x1 as reading address zero causes a fault
+    for (uint16_t i=1; i<256; i++) {
+        if (lowmem[i] != 0) {
+            // re-use memory guard internal error
+            AP_memory_guard_error(1023);
+            break;
+        }
+    }
+    // we can't do address 0, but can check next 3 bytes
+    const uint8_t *addr0 = (const uint8_t *)0;
+    for (uint8_t i=1; i<4; i++) {
+        if (addr0[i] != 0) {
+            AP_memory_guard_error(1023);
+            break;
+        }
+    }
+}
+#endif // STM32H7
+
 void Scheduler::_storage_thread(void* arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -495,11 +527,21 @@ void Scheduler::_storage_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
+#if defined STM32H7
+    uint8_t memcheck_counter=0;
+#endif
     while (true) {
         sched->delay_microseconds(10000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
+
+#if defined STM32H7
+        if (memcheck_counter++ % 50 == 0) {
+            // run check at 2Hz
+            sched->check_low_memory_is_zero();
+        }
+#endif
     }
 }
 

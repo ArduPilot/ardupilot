@@ -209,6 +209,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
+    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -272,6 +273,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
+    if (is_replay) {
+        model_str = "quad";
+        HALSITL::UARTDriver::_console = true;
+    }
+
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
     }
@@ -282,7 +288,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
-    while ((opt = gopt.getoption()) != -1) {
+    while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
             AP_Param::erase_all();
