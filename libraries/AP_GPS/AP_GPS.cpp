@@ -1659,9 +1659,11 @@ void AP_GPS::calc_blended_state(void)
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
 
+#ifndef HAL_BUILD_AP_PERIPH
+    const uint32_t last_blended_message_time_ms = timing[GPS_BLENDED_INSTANCE].last_message_time_ms;
+#endif
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = 0;
-    bool data_should_be_logged = false;
 
     // combine the states into a blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
@@ -1717,9 +1719,7 @@ void AP_GPS::calc_blended_state(void)
         }
         if (timing[i].last_message_time_ms > timing[GPS_BLENDED_INSTANCE].last_message_time_ms) {
             timing[GPS_BLENDED_INSTANCE].last_message_time_ms = timing[i].last_message_time_ms;
-            data_should_be_logged = true;
         }
-
     }
 
     /*
@@ -1805,7 +1805,7 @@ void AP_GPS::calc_blended_state(void)
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
 
 #ifndef HAL_BUILD_AP_PERIPH
-    if (data_should_be_logged &&
+    if (timing[GPS_BLENDED_INSTANCE].last_message_time_ms > last_blended_message_time_ms &&
         should_log()) {
         AP::logger().Write_GPS(GPS_BLENDED_INSTANCE);
     }
