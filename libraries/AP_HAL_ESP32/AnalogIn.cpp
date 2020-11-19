@@ -76,6 +76,10 @@ AnalogSource::AnalogSource(int16_t pin, float initial_value, uint8_t unit) :
 	_sum_value(0)
 {
 	printf("Adding analogin on: %d\n", pin);
+
+    // init the pin now if possible, otherwise doo it later from set_pin
+    if ( _pin != ANALOG_INPUT_NONE ) {
+
 	gpio_num_t gpio;
 	//Configure ADC
 	if (unit == 1) {
@@ -88,11 +92,16 @@ AnalogSource::AnalogSource(int16_t pin, float initial_value, uint8_t unit) :
     esp_adc_cal_characteristics_t adc_chars;
     esp_adc_cal_characterize(ADC_UNIT_1, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
 	printf("Adding gpio on: %d\n", gpio);
+
+    }
 }
 
 
 float AnalogSource::read_average()
 {
+
+    if ( _pin == ANALOG_INPUT_NONE )  return 0.0f; 
+
 	WITH_SEMAPHORE(_semaphore);
 
 	if (_sum_count == 0) {
@@ -164,8 +173,29 @@ void AnalogSource::set_pin(uint8_t pin)
 	if (_pin == pin) {
 		return;
 	}
+    hal.console->printf("analog channel detached from pin %d and attached to pin %d\n",_pin,pin);
+
 	WITH_SEMAPHORE(_semaphore);
 	_pin = pin;
+
+    // init the pin now if possible, otherwise doo it later from set_pin
+    if ( _pin != ANALOG_INPUT_NONE ) {
+
+	    gpio_num_t gpio;
+	    //Configure ADC
+	    if (_unit == 1) {
+		    adc1_config_channel_atten((adc1_channel_t)_pin, atten);
+		    adc1_pad_get_io_num((adc1_channel_t)_pin, &gpio);
+	    } else {
+		    adc2_config_channel_atten((adc2_channel_t)_pin, atten);
+	    }
+
+        esp_adc_cal_characteristics_t adc_chars;
+        esp_adc_cal_characterize(ADC_UNIT_1, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
+	    printf("Adding gpio on: %d\n", gpio);
+
+    }
+
 	_sum_value = 0;
 	_sum_count = 0;
 	_latest_value = 0;
@@ -177,6 +207,9 @@ void AnalogSource::set_pin(uint8_t pin)
    */
 void AnalogSource::_add_value()
 {
+
+    if ( _pin == ANALOG_INPUT_NONE )  return; 
+
 	WITH_SEMAPHORE(_semaphore);
 
 	int value = 0;
@@ -260,6 +293,7 @@ AP_HAL::AnalogSource *AnalogIn::channel(int16_t pin)
 	for (uint8_t j = 0; j < ANALOG_MAX_CHANNELS; j++) {
 		if (_channels[j] == nullptr) {
 			_channels[j] = new AnalogSource(pin, 0.0f);
+        	hal.console->printf("analog channel %d attached to pin %d\n",j,pin);
 			return _channels[j];
 		}
 	}
