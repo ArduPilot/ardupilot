@@ -1,4 +1,5 @@
 #include "AP_BattMonitor_Analog_GPIO.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,6 +29,14 @@ void AP_BattMonitor_Analog_GPIO::timer() {
   if(!_dev->read_registers(0, &buf, 1)) {
     return;
   }
+
+  bool new_is_using_battery = (bool)(buf & 0x01);
+  if(!_is_using_battery && new_is_using_battery) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Using battery power");
+  } else if (_is_using_battery && !new_is_using_battery) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Using tether power");
+  }
+
   //The state of the battery discharging is on GPIO 0
-  _is_using_battery = (bool)(buf & 0x01);
+  _is_using_battery = new_is_using_battery;
 }
