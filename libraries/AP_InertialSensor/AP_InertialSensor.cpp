@@ -1003,10 +1003,10 @@ AP_InertialSensor::detect_backends(void)
 
     if (_backend_count == 0) {
 
-        // no real INS backends avail, lets use an empty substitude to all board to boot ok and get to mavlink
-        ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_SITL_SENSOR_A));
+        // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
+        ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
 
-        hal.console->printf("INS: unable to initialise driver");
+        hal.console->printf("INS: unable to initialise driver\n");
         gcs().send_text(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
         //AP_BoardConfig::config_error("INS: unable to initialise driver");
     }

@@ -26,18 +26,16 @@ AP_InertialSensor_NONE::AP_InertialSensor_NONE(AP_InertialSensor &imu, const uin
  */
 AP_InertialSensor_Backend *AP_InertialSensor_NONE::detect(AP_InertialSensor &_imu, const uint16_t sample_rates[])
 {
-printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     AP_InertialSensor_NONE *sensor = new AP_InertialSensor_NONE(_imu, sample_rates);
     if (sensor == nullptr) {
-printf("%s:%d false\n", __PRETTY_FUNCTION__, __LINE__);
+
         return nullptr;
     }
     if (!sensor->init_sensor()) {
         delete sensor;
-printf("%s:%d false2\n", __PRETTY_FUNCTION__, __LINE__);
+
         return nullptr;
     }
-printf("%s:%d true\n", __PRETTY_FUNCTION__, __LINE__);
     return sensor;
 }
 
@@ -254,15 +252,8 @@ void AP_InertialSensor_NONE::generate_gyro()
 
 void AP_InertialSensor_NONE::timer_update(void)
 {
-//printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+
     uint64_t now = AP_HAL::micros64();
-#if 0
-    // insert a 1s pause in IMU data. This triggers a pause in EK2
-    // processing that leads to some interesting issues
-    if (now > 5e6 && now < 6e6) {
-        return;
-    }
-#endif
 
     static uint64_t last_msg_sent = 0;
     if (now > last_msg_sent + 2000000) { //2sec= 2000ms = 2000000us
@@ -309,7 +300,6 @@ float AP_InertialSensor_NONE::gyro_drift(void)
 
 bool AP_InertialSensor_NONE::update(void) 
 {
-//printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
     update_accel(accel_instance);
     update_gyro(gyro_instance);
     return true;
@@ -319,7 +309,6 @@ uint8_t AP_InertialSensor_NONE::bus_id = 0;
 
 void AP_InertialSensor_NONE::start()
 {
-printf("%s:%d srtart\n", __PRETTY_FUNCTION__, __LINE__);
     gyro_instance = _imu.register_gyro(gyro_sample_hz,
                                         AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, bus_id, 1, DEVTYPE_SITL));
     accel_instance = _imu.register_accel(accel_sample_hz,
@@ -327,7 +316,6 @@ printf("%s:%d srtart\n", __PRETTY_FUNCTION__, __LINE__);
     bus_id++;
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_NONE::timer_update, void));
 
-printf("%s:%d end start\n", __PRETTY_FUNCTION__, __LINE__);
 }
 
 #endif // HAL_BOARD_NONE

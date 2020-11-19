@@ -9,7 +9,7 @@
 
 // simulated sensor rates in Hz. This matches a pixhawk1
 const uint16_t INS_NONE_SENSOR_A[] = { 1000, 1000 };
-const uint16_t INS_NONE_SENSOR_B[] = { 760, 800 };
+
 
 class AP_InertialSensor_NONE : public AP_InertialSensor_Backend
 {
