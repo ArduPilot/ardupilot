@@ -24,6 +24,7 @@
 #include "AP_InertialSensor_BMI088.h"
 #include "AP_InertialSensor_Invensensev2.h"
 #include "AP_InertialSensor_ADIS1647x.h"
+#include "AP_InertialSensor_NONE.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -986,7 +987,13 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     if (_backend_count == 0) {
-        AP_BoardConfig::config_error("INS: unable to initialise driver");
+
+        // no real INS backends avail, lets use an empty substitude to all board to boot ok and get to mavlink
+        ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_SITL_SENSOR_A));
+
+        hal.console->printf("INS: unable to initialise driver");
+        gcs().send_text(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
+        //AP_BoardConfig::config_error("INS: unable to initialise driver");
     }
 }
 
@@ -1574,6 +1581,9 @@ check_sample:
                     break;
                 }
             }
+
+            // give up if we got nothing after a long time, don't just hang in loop forever, serious INS issue.
+            if (wait_counter > 10) { break;}
 
             hal.scheduler->delay_microseconds_boost(100);
             wait_counter++;
