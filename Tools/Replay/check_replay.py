@@ -20,7 +20,7 @@ def check_log(logfile, progress, ekf2_only=False, ekf3_only=False, verbose=False
     mlog = mavutil.mavlink_connection(logfile)
 
     ek2_list = ['NKF1','NKF2','NKF3','NKF4','NKF5','NKF0','NKQ', 'NKY0', 'NKY1']
-    ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
+    ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF5','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
     
     if ekf2_only:
         mlist = ek2_list
