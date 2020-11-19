@@ -131,12 +131,10 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
+void AP_Logger::Write_GPS(uint8_t i)
 {
     const AP_GPS &gps = AP::gps();
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const struct Location &loc = gps.location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
@@ -290,11 +288,9 @@ void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
 }
 
 // Write a BARO packet
-void AP_Logger::Write_Baro(uint64_t time_us)
+void AP_Logger::Write_Baro()
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const AP_Baro &baro = AP::baro();
     for (uint8_t i=0; i< baro.num_instances(); i++) {
         Write_Baro_instance(time_us, i);
@@ -330,7 +326,7 @@ void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_ins
 // Write an raw accel/gyro data packet
 void AP_Logger::Write_IMU()
 {
-    uint64_t time_us = AP_HAL::micros64();
+    const uint64_t time_us = AP_HAL::micros64();
 
     const AP_InertialSensor &ins = AP::ins();
 
@@ -692,11 +688,9 @@ void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag
 }
 
 // Write a Compass packet
-void AP_Logger::Write_Compass(uint64_t time_us)
+void AP_Logger::Write_Compass()
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const Compass &compass = AP::compass();
     for (uint8_t i=0; i<compass.get_count(); i++) {
         Write_Compass_instance(time_us, i);
