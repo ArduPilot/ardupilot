@@ -740,6 +740,9 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
+#ifdef INSEDEBUG
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     // remember the sample rate
     _loop_rate = loop_rate;
     _loop_delta_t = 1.0f / loop_rate;
@@ -760,12 +763,21 @@ AP_InertialSensor::init(uint16_t loop_rate)
             _accel_scale[i].set(Vector3f(1,1,1));
         }
     }
-
+#ifdef INSEDEBUG
+printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     // calibrate gyros unless gyro calibration has been disabled
     if (gyro_calibration_timing() != GYRO_CAL_NEVER) {
+#ifdef INSEDEBUG
+printf("%s:%d init\n", __PRETTY_FUNCTION__, __LINE__);
+#endif
+        _calibrating = false;
         init_gyro();
     }
 
+#ifdef INSEDEBUG
+printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     _sample_period_usec = 1000*1000UL / _loop_rate;
 
     // establish the baseline time between samples
@@ -795,6 +807,9 @@ bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 {
 
     if (!backend) {
+#ifdef INSEDEBUG
+printf("%s:%d false\n", __PRETTY_FUNCTION__, __LINE__);
+#endif
         return false;
     }
     if (_backend_count == INS_MAX_BACKENDS) {
@@ -1111,6 +1126,9 @@ bool AP_InertialSensor::get_accel_health_all(void) const
  */
 bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
 {
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     Vector3f level_sample;
 
     // exit immediately if calibration is already in progress
@@ -1218,6 +1236,9 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
 void
 AP_InertialSensor::_init_gyro()
 {
+#ifdef INSEDEBUG
+printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
+#endif
     uint8_t num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
     Vector3f new_gyro_offset[INS_MAX_INSTANCES];
@@ -1226,6 +1247,9 @@ AP_InertialSensor::_init_gyro()
 
     // exit immediately if calibration is already in progress
     if (_calibrating) {
+#ifdef INSEDEBUG
+        hal.console->printf(" Gyro cal....");
+#endif
         return;
     }
 
@@ -1237,7 +1261,9 @@ AP_InertialSensor::_init_gyro()
 
     // cold start
     hal.console->printf("Init Gyro");
-
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     /*
       we do the gyro calibration with no board rotation. This avoids
       having to rotate readings during the calibration
@@ -1254,6 +1280,9 @@ AP_InertialSensor::_init_gyro()
         converged[k] = false;
     }
 
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     for(int8_t c = 0; c < 5; c++) {
         hal.scheduler->delay(5);
         update();
@@ -1265,6 +1294,9 @@ AP_InertialSensor::_init_gyro()
 
     uint8_t num_converged = 0;
 
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     // we try to get a good calibration estimate for up to 30 seconds
     // if the gyros are stable, we should get it in 1 second
     for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
@@ -1346,6 +1378,10 @@ AP_InertialSensor::_init_gyro()
         }
     }
 
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
+
     // restore orientation
     _board_orientation = saved_orientation;
 
@@ -1375,6 +1411,9 @@ void AP_InertialSensor::_save_gyro_calibration()
  */
 void AP_InertialSensor::update(void)
 {
+#ifdef INSEDEBUG
+printf("%s:%d %d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     // during initialisation update() may be called without
     // wait_for_sample(), and a wait is implied
     wait_for_sample();
@@ -1482,6 +1521,9 @@ void AP_InertialSensor::update(void)
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     if (_have_sample) {
         // the user has called wait_for_sample() again without
         // consuming the sample with update()
@@ -1535,6 +1577,9 @@ check_sample:
             for (uint8_t i=0; i<_backend_count; i++) {
                 // this is normally a nop, but can be used by backends
                 // that don't accumulate samples on a timer
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d be:%d wait:%d\n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating,i,(int)wait_counter);
+#endif
                 _backends[i]->accumulate();
             }
 
@@ -2026,6 +2071,9 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
  */
 MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
+#ifdef INSEDEBUG
+printf("%s:%d cal:%d \n", __PRETTY_FUNCTION__, __LINE__,(int)_calibrating);
+#endif
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
     Vector3f new_accel_offset[INS_MAX_INSTANCES];
