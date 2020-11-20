@@ -265,6 +265,12 @@ public:
         return true;
     }
 
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    virtual bool airspeed_vector_true(Vector3f &vec) const WARN_IF_UNUSED {
+        return false;
+    }
+
     // return a synthetic airspeed estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified

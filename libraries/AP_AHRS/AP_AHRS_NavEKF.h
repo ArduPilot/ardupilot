@@ -96,6 +96,10 @@ public:
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;
 
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    bool airspeed_vector_true(Vector3f &vec) const override;
+
     // true if compass is being used
     bool use_compass() override;
 
