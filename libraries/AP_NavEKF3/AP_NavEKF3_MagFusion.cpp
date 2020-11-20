@@ -363,7 +363,8 @@ void NavEKF3_core::SelectMagFusion()
 
     // Control reset of yaw and magnetic field states if we are using compass data
     if (magDataToFuse) {
-        if (yaw_source_reset && (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS)) {
+        if (yaw_source_reset && (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS ||
+                                 yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
             magYawResetRequest = true;
             yaw_source_reset = false;
         }
