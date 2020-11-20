@@ -188,9 +188,6 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
-    // inhibit GPS usage
-    uint8_t setInhibitGPS(void);
-
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
