@@ -32,6 +32,56 @@ bool QuadPlane::is_tailsitter(void) const
 }
 
 /*
+  return true from time of arming until throttle has been up for a specified interval
+ */
+bool QuadPlane::acro_mode_takeoff(void) const
+{
+    enum class Machine_State {
+        Relaxed,
+        Flying,
+        Disarmed
+    };
+    static Machine_State state;
+    bool result = false;
+    uint32_t now;
+    static uint32_t last_zero_throttle;
+    bool thr_timeout;
+
+    switch (state) {
+    case Machine_State::Disarmed:
+        result = false;
+        if (hal.util->get_soft_armed()) {
+            state = Machine_State::Relaxed;
+        }
+        break;
+    case Machine_State::Relaxed:
+        result = true;
+        now = AP_HAL::millis();
+        if (plane.quadplane.get_pilot_throttle() <= .01f) {
+            last_zero_throttle = now;
+        }
+        thr_timeout = (now - last_zero_throttle) > 5000;
+        if (thr_timeout) {
+            state = Machine_State::Flying;
+            result = false;
+        }
+        break;
+    case Machine_State::Flying:
+        result = false;
+        if (!hal.util->get_soft_armed()) {
+            state = Machine_State::Disarmed;
+        }
+        break;
+    }
+
+#ifdef DBG_PRINT
+    DBGprint::watch(DBGTYPE::CONSOLE, (int)state, 0, "state: %d\n", (int)state);
+#endif
+
+    return result;
+}
+
+/*
   return true when flying a control surface only tailsitter
  */
 bool QuadPlane::is_control_surface_tailsitter(void) const

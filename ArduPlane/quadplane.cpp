@@ -849,6 +849,24 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
     // tailsitter in transition to VTOL flight is not really in a VTOL mode yet
     if (in_vtol_mode() && !in_tailsitter_vtol_transition()) {
 
+        // acro mode takeoff for non-vectored tailsitters
+        if (!_is_vectored && acro_mode_takeoff()) {
+            // use rate control only
+            float target_pitch = plane.channel_pitch->norm_input() * 45 * 100.0f;
+            float target_roll;
+            float target_yaw;
+            if (tailsitter.input_type & TAILSITTER_INPUT_PLANE) {
+                target_roll =  plane.channel_rudder->norm_input() * 45 * 100.0f;
+                target_yaw  = -plane.channel_roll->norm_input() * 45 * 100.0f;
+            } else {
+                target_roll = plane.channel_roll->norm_input() * 45 * 100.0f;
+                target_yaw  =  plane.channel_rudder->norm_input() * 45 * 100.0f;
+            }
+            // call attitude controller
+            attitude_control->input_rate_bf_roll_pitch_yaw_2(target_roll, target_pitch, target_yaw);
+            return;
+        }
+
         // tailsitter-only body-frame roll control options
         // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
         if (is_tailsitter() &&
