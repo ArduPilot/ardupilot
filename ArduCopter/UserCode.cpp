@@ -209,7 +209,7 @@ if(motors->armed()){
 			if(_fwd_rpm >= 1000.0f and _aft_rpm >= 1000.0f){  //fully spun up
 				motors->spoolup_complete(true);
 				spirit_state = land;
-				gcs().send_text(MAV_SEVERITY_INFO,"landed");
+				//gcs().send_text(MAV_SEVERITY_INFO,"landed");
 				timer_trigger = false;
 
 			}else if((AP_HAL::millis16() - spoolup_timer) > (uint16_t)(g.spool_delta*1000)){
@@ -241,13 +241,13 @@ if(motors->armed()){
 			if(copter.flightmode->is_landing()){
 				spirit_state = landing;
 				attitude_control->enable_angle_boost(false);
-				gcs().send_text(MAV_SEVERITY_INFO,"L:auto");
+				//gcs().send_text(MAV_SEVERITY_INFO,"L:auto");
 				break;
 			// for manual also need to be decending
 			}else if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate((float)channel_throttle->get_control_in()) < 0.0f){
 				spirit_state = landing;
 				attitude_control->enable_angle_boost(false);
-				gcs().send_text(MAV_SEVERITY_INFO,"L:dct");
+				//gcs().send_text(MAV_SEVERITY_INFO,"L:dct");
 				break;
 			}
 		}
@@ -260,14 +260,14 @@ if(motors->armed()){
 			if(!copter.flightmode->is_autopilot() and copter.flightmode->get_pilot_desired_climb_rate(channel_throttle->get_control_in()) >= 0.0f){
 				spirit_state = hover;
 				attitude_control->enable_angle_boost(true);
-				gcs().send_text(MAV_SEVERITY_INFO,"H:cr");
+			//	gcs().send_text(MAV_SEVERITY_INFO,"H:cr");
 				break;
 			}
 
 			if(copter.flightmode->is_autopilot() and !copter.flightmode->is_landing()){
 				spirit_state = hover;
 				attitude_control->enable_angle_boost(true);
-				gcs().send_text(MAV_SEVERITY_INFO,"H:!land");
+			//	gcs().send_text(MAV_SEVERITY_INFO,"H:!land");
 				break;
 			}
 
@@ -327,11 +327,12 @@ void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
 
-	if(!motors->armed() and (copter.battery.voltage() < 40.0) and !hal.gpio->usb_connected()){
-		AP_Notify::flags.critical_battery_voltage = true;
+	if(!motors->armed() and copter.battery.voltage() < 36.0 ){
+		//AP_Notify::flags.critical_battery_voltage = true;
+		gcs().send_text(MAV_SEVERITY_INFO,"Battery Critical");
 		hal.gpio->write(52, true);
 	}else{
-		AP_Notify::flags.critical_battery_voltage = false;
+		//AP_Notify::flags.critical_battery_voltage = false;
 		hal.gpio->write(52, false);
 	}
 
@@ -432,7 +433,6 @@ int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 		if(g.top_cam){
 
 			gimbal_tilt = (RC_Channels::rc_channel(CH_2)->get_radio_max() - gimbal_tilt) + RC_Channels::rc_channel(CH_2)->get_radio_min();
-			gimbal_pan = (RC_Channels::rc_channel(CH_1)->get_radio_max() - gimbal_pan) + RC_Channels::rc_channel(CH_1)->get_radio_min();
 
 			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
 			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);

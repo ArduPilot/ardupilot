@@ -41,6 +41,13 @@ void ModeRTL::restart_without_terrain()
 // should be called at 100hz or more
 void ModeRTL::run(bool disarm_on_land)
 {
+
+
+
+
+
+
+
     if (!motors->armed()) {
         return;
     }
