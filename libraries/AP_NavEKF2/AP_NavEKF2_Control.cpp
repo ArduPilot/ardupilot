@@ -162,7 +162,7 @@ void NavEKF2_core::setAidingMode()
         bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
         // GPS aiding is the preferred option unless excluded by the user
-        bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
+        bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable);
         bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
         bool canUseExtNav = readyToUseExtNav();
         if(canUseGPS || canUseRangeBeacon || canUseExtNav) {
@@ -180,7 +180,7 @@ void NavEKF2_core::setAidingMode()
         bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
         // Enable switch to absolute position mode if GPS is available
         // If GPS is not available and flow fusion has timed out, then fall-back to no-aiding
-        if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit) {
+        if((frontend->_fusionModeGPS) != 3 && readyToUseGPS()) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (flowSensorTimeout || flowFusionTimeout) {
             PV_AidingMode = AID_NONE;
@@ -299,7 +299,7 @@ void NavEKF2_core::setAidingMode()
             break;
 
         case AID_ABSOLUTE: {
-            bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit);
+            bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS());
             bool canUseRangeBeacon = readyToUseRangeBeacon();
             bool canUseExtNav = readyToUseExtNav();
             // We have commenced aiding and GPS usage is allowed
@@ -482,23 +482,6 @@ bool NavEKF2_core::checkGyroCalStatus(void)
                              (P[11][11] <= delAngBiasVarMax);
     }
     return delAngBiasLearned;
-}
-
-// Commands the EKF to not use GPS.
-// This command must be sent prior to arming
-// This command is forgotten by the EKF each time the vehicle disarms
-// Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
-uint8_t NavEKF2_core::setInhibitGPS(void)
-{
-    if((PV_AidingMode == AID_ABSOLUTE) && motorsArmed) {
-        return 0;
-    } else {
-        gpsInhibit = true;
-        return 1;
-    }
-    // option 2 is not yet implemented as it requires a deeper integration of optical flow and GPS operation
 }
 
 // Update the filter status
