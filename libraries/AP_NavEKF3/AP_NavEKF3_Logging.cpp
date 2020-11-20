@@ -152,13 +152,13 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : (float)tiltError,
+        tiltErr : tiltError,
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
-        faults : (uint16_t)(_faultStatus),
-        timeouts : (uint8_t)(timeoutStatus),
-        solution : (uint32_t)(solutionStatus.value),
-        gps : (uint16_t)(gpsStatus.value),
+        faults : _faultStatus,
+        timeouts : timeoutStatus,
+        solution : solutionStatus.value,
+        gps : gpsStatus.value,
         primary : frontend->getPrimaryCoreIndex()
     };
     AP::logger().WriteBlock(&pkt4, sizeof(pkt4));
