@@ -667,7 +667,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     delVelNav  = prevTnb.mul_transpose(delVelCorrected);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
 
-    // calculate the body to nav cosine matrix
+    // calculate the nav to body cosine matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
     // calculate the rate of change of velocity (used for launch detect and other functions)

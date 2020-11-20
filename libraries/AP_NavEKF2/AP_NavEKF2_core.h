@@ -102,6 +102,10 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    bool getAirSpdVec(Vector3f &vel) const;
+
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state

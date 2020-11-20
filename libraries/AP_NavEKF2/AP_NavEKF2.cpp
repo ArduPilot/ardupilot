@@ -943,6 +943,18 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel) const
     }
 }
 
+// return estimate of true airspeed vector in body frame in m/s for the specified instance
+// An out of range instance (eg -1) returns data for the primary instance
+// returns false if estimate is unavailable
+bool NavEKF2::getAirSpdVec(int8_t instance, Vector3f &vel) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getAirSpdVec(vel);
+    }
+    return false;
+}
+
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance) const
 {
