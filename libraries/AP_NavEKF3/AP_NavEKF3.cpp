@@ -680,6 +680,9 @@ bool NavEKF3::InitialiseFilter(void)
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
+    // convert parameters if necessary
+    convert_parameters();
+
     // initialise sources
     sources.init();
 
@@ -1619,7 +1622,7 @@ bool NavEKF3::getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_co
 void NavEKF3::convert_parameters()
 {
     // exit immediately if param conversion has been done before
-    if (sources.any_params_configured_in_storage()) {
+    if (sources.configured_in_storage()) {
         return;
     }
 
@@ -1632,11 +1635,14 @@ void NavEKF3::convert_parameters()
     // use EK3_GPS_TYPE to set EK3_SRC1_POSXY, EK3_SRC1_VELXY, EK3_SRC1_VELZ
     const AP_Param::ConversionInfo gps_type_info = {k_param_ekf3, 1, AP_PARAM_INT8, "EK3_GPS_TYPE"};
     AP_Int8 gps_type_old;
-    if (AP_Param::find_old_parameter(&gps_type_info, &gps_type_old)) {
+    const bool found_gps_type = AP_Param::find_old_parameter(&gps_type_info, &gps_type_old);
+    if (found_gps_type) {
         switch (gps_type_old.get()) {
         case 0:
-            // EK3_GPS_TYPE == 0 (GPS 3D Vel and 2D Pos), the default so do nothing
-            // sources default to EK3_SRC1_POSXY = GPS, EK3_SRC1_VELXY = GPS, EK3_SRC1_VELZ = GPS
+            // EK3_GPS_TYPE == 0 (GPS 3D Vel and 2D Pos)
+            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
+            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
+            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
             break;
         case 1:
             // EK3_GPS_TYPE == 1 (GPS 2D Vel and 2D Pos) then EK3_SRC1_POSXY = GPS(1), EK3_SRC1_VELXY = GPS(1), EK3_SRC1_VELZ = NONE(0)
@@ -1653,9 +1659,12 @@ void NavEKF3::convert_parameters()
         case 3:
         default:
             // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow or external nav
-            AP_BoardConfig::config_error("Configure EK3_SRC1_POSXY and EK3_SRC1_VELXY");
+            AP_BoardConfig::config_error("Configure EK3_SRC1_POSXY and _VELXY");
             break;
         }
+    } else {
+        // mark configured in storage so conversion is only run once
+        sources.mark_configured_in_storage();
     }
 
     // use EK3_ALT_SOURCE to set EK3_SRC1_POSZ
@@ -1701,6 +1710,12 @@ void NavEKF3::convert_parameters()
     default:
         // do nothing
         break;
+    }
+
+    // if GPS and optical flow enabled set EK3_SRC2_VELXY to optical flow
+    // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
+    if (AP::dal().opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
+        AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
     }
 }
 
