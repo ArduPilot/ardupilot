@@ -253,6 +253,10 @@ private:
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
         AP_Int32 bus_id;
+        AP_Float pcoef_xp;             // ratio of static pressure rise to dynamic pressure when flying forwards
+        AP_Float pcoef_xn;             // ratio of static pressure rise to dynamic pressure when flying backwards
+        AP_Float pcoef_yp;             // ratio of static pressure rise to dynamic pressure when flying to the right
+        AP_Float pcoef_yn;             // ratio of static pressure rise to dynamic pressure when flying to the left
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
