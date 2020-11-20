@@ -561,6 +561,31 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
     return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 }
 
+// return estimate of true airspeed vector in body frame in m/s
+// returns false if estimate is unavailable
+bool AP_AHRS_NavEKF::airspeed_vector_true(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+    case EKFType::NONE:
+        break;
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.getAirSpdVec(-1, vec);
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getAirSpdVec(-1, vec);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        break;
+#endif
+    }
+    return false;
+}
+
 // true if compass is being used
 bool AP_AHRS_NavEKF::use_compass(void)
 {
