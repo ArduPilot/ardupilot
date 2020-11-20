@@ -1023,34 +1023,6 @@ bool NavEKF2::resetHeightDatum(void)
     return status;
 }
 
-// Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in static mode
-// This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
-// Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
-uint8_t NavEKF2::setInhibitGPS(void)
-{
-    AP::dal().log_event2(AP_DAL::Event::setInhibitGPS);
-
-    if (!core) {
-        return 0;
-    }
-    return core[primary].setInhibitGPS();
-}
-
-// Set the argument to true to prevent the EKF using the GPS vertical velocity
-// This can be used for situations where GPS velocity errors are causing problems with height accuracy
-void NavEKF2::setInhibitGpsVertVelUse(const bool varIn) {
-    if (varIn) {
-        AP::dal().log_event2(AP_DAL::Event::setInhibitGpsVertVelUse);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetInhibitGpsVertVelUse);
-    }
-    inhibitGpsVertVelUse = varIn;
-};
-
-
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const

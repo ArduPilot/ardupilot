@@ -246,7 +246,6 @@ void NavEKF2_core::InitialiseVariables()
     quatAtLastMagReset = stateStruct.quat;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
-    gpsInhibit = false;
     activeHgtSource = 0;
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
     memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
