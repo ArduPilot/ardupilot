@@ -149,6 +149,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
+    if (!storedDrag.init(obs_buffer_length)) {
+        return false;
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
                     (unsigned)imu_buffer_length,
@@ -191,7 +195,7 @@ void NavEKF3_core::InitialiseVariables()
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
     prevTasStep_ms = imuSampleTime_ms;
-    prevBetaStep_ms = imuSampleTime_ms;
+    prevBetaDragStep_ms = imuSampleTime_ms;
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = 0;
     lastPosPassTime_ms = 0;
@@ -673,8 +677,8 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Update states using airspeed data
         SelectTasFusion();
 
-        // Update states using sideslip constraint assumption for fly-forward vehicles
-        SelectBetaFusion();
+        // Update states using sideslip constraint assumption for fly-forward vehicles or body drag for multicopters
+        SelectBetaDragFusion();
 
         // Update the filter status
         updateFilterStatus();

@@ -116,6 +116,10 @@ public:
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
 
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    bool getAirSpdVec(Vector3f &vel) const;
+
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
@@ -196,7 +200,10 @@ public:
     // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
     void getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
-    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
+    // return the synthetic air data drag and sideslip innovations
+    void getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const;
+
+   // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     void getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // get a particular source's velocity innovations
@@ -581,6 +588,10 @@ private:
         bool corrected;             // true when the velocity has been corrected for sensor position
     };
 
+    struct drag_elements : EKF_obs_element_t {
+        Vector2f accelXY;       // measured specific force along the X and Y body axes (m/sec**2)
+    };
+
     // bias estimates for the IMUs that are enabled but not being used
     // by this core.
     struct {
@@ -719,8 +730,8 @@ private:
     // determine when to perform fusion of true airspeed measurements
     void SelectTasFusion();
 
-    // determine when to perform fusion of synthetic sideslp measurements
-    void SelectBetaFusion();
+    // determine when to perform fusion of drag or synthetic sideslip measurements
+    void SelectBetaDragFusion();
 
     // force alignment of the yaw angle using GPS velocity data
     void realignYawGPS();
@@ -935,6 +946,11 @@ private:
     // returns false if unsuccessful
     bool EKFGSF_resetMainFilterYaw();
 
+	// Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
+    void FuseDragForces();
+    void SelectDragFusion();
+    void SampleDragData(const imu_elements &imu);
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
@@ -981,7 +997,8 @@ private:
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     MagCal effectiveMagCal;         // the actual mag calibration being used as the default
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
-    uint32_t prevBetaStep_ms;       // time stamp of last synthetic sideslip fusion step
+    uint32_t prevBetaDragStep_ms;   // time stamp of last synthetic sideslip fusion step
+    ftype innovBeta;                // synthetic sideslip innovation (rad)
     uint32_t lastMagUpdate_us;      // last time compass was updated in usec
     uint32_t lastMagRead_ms;        // last time compass data was successfully read
     Vector3f velDotNED;             // rate of change of velocity in NED frame
@@ -1248,6 +1265,17 @@ private:
         float testRatio;    // innovation consistency test ratio
         Vector3f beaconPosNED; // beacon NED position
     } *rngBcnFusionReport;
+
+    // drag fusion for multicopter wind estimation
+    EKF_obs_buffer_t<drag_elements> storedDrag;
+    drag_elements dragSampleDelayed;
+	drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
+	uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
+	float dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
+    Vector2f innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
+	Vector2f innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
+	Vector2f dragTestRatio;		        // drag innovation consistency check ratio
+    bool dragFusionEnabled;
 
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source

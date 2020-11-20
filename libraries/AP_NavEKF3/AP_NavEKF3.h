@@ -82,6 +82,11 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getVelNED(int8_t instance, Vector3f &vel) const;
 
+    // return estimate of true airspeed vector in body frame in m/s for the specified instance
+    // An out of range instance (eg -1) returns data for the primary instance
+    // returns false if estimate is unavailable
+    bool getAirSpdVec(int8_t instance, Vector3f &vel) const;
+
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -175,6 +180,9 @@ public:
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+
+    // publish output observer angular, velocity and position tracking error
+    void getOutputTrackingError(int8_t instance, Vector3f &error) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
@@ -453,6 +461,9 @@ private:
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
+    AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s/s)**2
+    AP_Vector3f _ballisticCoef;     // ballistic coefficient measured for flow in X and Y body frame directions (Z is unused)
+    AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
