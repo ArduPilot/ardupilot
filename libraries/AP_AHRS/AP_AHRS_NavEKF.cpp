@@ -1529,32 +1529,6 @@ void AP_AHRS_NavEKF::writeExtNavVelData(const Vector3f &vel, float err, uint32_t
 #endif
 }
 
-// inhibit GPS usage
-uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        return 0;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.setInhibitGPS();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.setInhibitGPS();
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        return 0;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return 0;
-}
-
 // get speed limit
 void AP_AHRS_NavEKF::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
