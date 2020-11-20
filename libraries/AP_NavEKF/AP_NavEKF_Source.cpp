@@ -135,7 +135,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Description: EKF Source Options
     // @Bitmask: 0:FuseAllVelocities
     // @User: Advanced
-    AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, 0),
+    AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, (int16_t)SourceOptions::FUSE_ALL_VELOCITIES),
 
     AP_GROUPEND
 };
