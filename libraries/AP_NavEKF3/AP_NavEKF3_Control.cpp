@@ -45,8 +45,11 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 
     // handle deprecated MagCal::EXTERNAL_YAW and MagCal::EXTERNAL_YAW_FALLBACK values
     const int8_t magCalParamVal = frontend->_magCal.get();
-    if ((magCalParamVal == 5) || (magCalParamVal == 6)) {
+    if (magCalParamVal == 5) {
         return MagCal::NEVER;
+    }
+    if (magCalParamVal == 6) {
+        return MagCal::WHEN_FLYING;
     }
 
     return MagCal(magCalParamVal);
