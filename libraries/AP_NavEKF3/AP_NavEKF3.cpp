@@ -39,6 +39,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
+#define WIND_P_NSE_DEFAULT      0.2
 
 #elif APM_BUILD_TYPE(APM_BUILD_Rover)
 // rover defaults
@@ -64,6 +65,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
+#define WIND_P_NSE_DEFAULT      0.1
 
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 // plane defaults
@@ -89,6 +91,7 @@
 #define FLOW_I_GATE_DEFAULT     500
 #define CHECK_SCALER_DEFAULT    150
 #define FLOW_USE_DEFAULT        2
+#define WIND_P_NSE_DEFAULT      0.1
 
 #else
 // build type not specified, use copter defaults
@@ -98,7 +101,7 @@
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define ACC_P_NSE_DEFAULT       3.5E-01ff
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
 #define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
@@ -114,6 +117,7 @@
 #define FLOW_I_GATE_DEFAULT     300
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
+#define WIND_P_NSE_DEFAULT      0.1
 
 #endif // APM_BUILD_DIRECTORY
 
@@ -184,9 +188,30 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("GLITCH_RAD", 7, NavEKF3, _gpsGlitchRadiusMax, GLITCH_RADIUS_DEFAULT),
 
-    // 8 previously used for EKF3_GPS_DELAY parameter that has been deprecated.
-    // The EKF now takes its GPS delay form the GPS library with the default delays
-    // specified by the GPS_DELAY and GPS_DELAY2 parameters.
+    // bluff body drag fusion
+
+    // @Param: BCOEF_X
+    // @DisplayName: Ballistic coefficient measured in X direction
+    // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Units: kg/m^2
+    // @Range: 0.0 100.0
+    // @Increment: 1.0
+    // @User: Advanced
+
+    // @Param: BCOEF_Y
+    // @DisplayName: Ballistic coefficient measured in Y direction
+    // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Units: kg/m^2
+    // @Range: 50.0 1000.0
+    // @Increment: 10.0
+    // @User: Advanced
+    // @Param: BCOEF_Y
+
+    // @Param: BCOEF_Z
+    // @DisplayName: unused
+    // @Description: unused
+    // @User: Advanced
+    AP_GROUPINFO("BCOEF", 8, NavEKF3, _ballisticCoef, 0.0f),
 
     // Height measurement parameters
 
@@ -352,7 +377,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: rad/s/s
     AP_GROUPINFO("GBIAS_P_NSE", 26, NavEKF3, _gyroBiasProcessNoise, GBIAS_P_NSE_DEFAULT),
 
-    // 27 previously used for EK2_GSCL_P_NSE parameter that has been removed
+    // @Param: DRAG_M_NSE
+    // @DisplayName: Observation noise for drag acceleration
+    // @Description: This sets the amount of noise used when fusing X and Y acceleration as an observation that enables esitmation of wind velocity for multi-rotor vehicles. This feature is enabled by the EK3_BCOEF_X and EK3_BCOEF_Y parameters
+    // @Range: 0.1 2.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m/s/s
+    AP_GROUPINFO("DRAG_M_NSE", 27, NavEKF3, _dragObsNoise, 0.5f),
 
     // @Param: ABIAS_P_NSE
     // @DisplayName: Accelerometer bias stability (m/s^3)
@@ -362,7 +394,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m/s/s/s
     AP_GROUPINFO("ABIAS_P_NSE", 28, NavEKF3, _accelBiasProcessNoise, ABIAS_P_NSE_DEFAULT),
 
-    // 29 previously used for EK2_MAG_P_NSE parameter that has been replaced with EK3_MAGE_P_NSE and EK3_MAGB_P_NSE
+    // @Param: MCOEF
+    // @DisplayName: Momentum drag coefficient
+    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. It represents the ratio of rotor drag induced acceleration to airspeed. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on an will change with different propellers. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEFto a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
+    // @Range: 0.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    // @Units: 1/s
+    AP_GROUPINFO("MCOEF", 29, NavEKF3, _momentumDragCoef, 0.0f),
 
     // @Param: WIND_P_NSE
     // @DisplayName: Wind velocity process noise (m/s^2)
@@ -371,7 +410,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m/s/s
-    AP_GROUPINFO("WIND_P_NSE", 30, NavEKF3, _windVelProcessNoise, 0.1f),
+    AP_GROUPINFO("WIND_P_NSE", 30, NavEKF3, _windVelProcessNoise, WIND_P_NSE_DEFAULT),
 
     // @Param: WIND_PSCALE
     // @DisplayName: Height rate to wind process noise scaler
@@ -1108,6 +1147,18 @@ void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
     }
 }
 
+// return estimate of true airspeed vector in body frame in m/s for the specified instance
+// An out of range instance (eg -1) returns data for the primary instance
+// returns false if estimate is unavailable
+bool NavEKF3::getAirSpdVec(int8_t instance, Vector3f &vel) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getAirSpdVec(vel);
+    }
+    return false;
+}
+
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF3::getPosDownDerivative(int8_t instance) const
 {
@@ -1360,6 +1411,15 @@ void NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posI
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    }
+}
+
+// publish output observer angular, velocity and position tracking error
+void NavEKF3::getOutputTrackingError(int8_t instance, Vector3f &error) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        core[instance].getOutputTrackingError(error);
     }
 }
 
