@@ -220,7 +220,7 @@ void NavEKF2_core::ResetHeight(void)
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 &&
-        dal.gps().have_vertical_velocity() && !frontend->inhibitGpsVertVelUse) {
+        dal.gps().have_vertical_velocity()) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel) {
         stateStruct.velocity.z = extNavVelNew.vel.z;
@@ -707,7 +707,7 @@ void NavEKF2_core::FuseVelPosNED()
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
             if (!useExtNavVel && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE ||
-                                  frontend->inhibitGpsVertVelUse || !dal.gps().have_vertical_velocity())) {
+                                  !dal.gps().have_vertical_velocity())) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
