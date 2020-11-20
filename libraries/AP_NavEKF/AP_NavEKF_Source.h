@@ -82,8 +82,11 @@ public:
     // true if any source is GPS
     bool usingGPS() const;
 
-    // true if any primary source parameters have been configured (used for parameter conversion)
-    bool any_params_configured_in_storage() const;
+    // true if source parameters have been configured (used for parameter conversion)
+    bool configured_in_storage() const;
+
+    // mark parameters as configured in storage (used to ensure parameter conversion is only done once)
+    void mark_configured_in_storage();
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;

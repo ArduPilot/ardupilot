@@ -293,13 +293,17 @@ bool AP_NavEKF_Source::usingGPS() const
 }
 
 // true if some parameters have been configured (used during parameter conversion)
-bool AP_NavEKF_Source::any_params_configured_in_storage() const
+bool AP_NavEKF_Source::configured_in_storage() const
 {
-    return _source_set[0].posxy.configured_in_storage() ||
-           _source_set[0].velxy.configured_in_storage() ||
-           _source_set[0].posz.configured_in_storage() ||
-           _source_set[0].velz.configured_in_storage() ||
-           _source_set[0].yaw.configured_in_storage();
+    // first source parameter is used to determine if configured or not
+    return _source_set[0].posxy.configured_in_storage();
+}
+
+// mark parameters as configured in storage (used to ensure parameter conversion is only done once)
+void AP_NavEKF_Source::mark_configured_in_storage()
+{
+    // save first parameter's current value to mark as configured
+    return _source_set[0].posxy.save(true);
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
