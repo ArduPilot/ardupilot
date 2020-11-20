@@ -1188,20 +1188,6 @@ bool NavEKF3::resetHeightDatum(void)
     return status;
 }
 
-// Commands the EKF to not use GPS.
-// This command must be sent prior to vehicle arming and EKF commencement of GPS usage
-// Returns 0 if command rejected
-// Returns 1 if command accepted
-uint8_t NavEKF3::setInhibitGPS(void)
-{
-    AP::dal().log_event3(AP_DAL::Event::setInhibitGPS);
-
-    if (!core) {
-        return 0;
-    }
-    return core[primary].setInhibitGPS();
-}
-
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
