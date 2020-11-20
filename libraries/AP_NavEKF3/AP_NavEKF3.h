@@ -113,16 +113,6 @@ public:
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
 
-    // Commands the EKF to not use GPS.
-    // This command must be sent prior to vehicle arming and EKF commencement of GPS usage
-    // Returns 0 if command rejected
-    // Returns 1 if command accepted
-    uint8_t setInhibitGPS(void);
-
-    // Set the argument to true to prevent the EKF using the GPS vertical velocity
-    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
-    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
-
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -542,8 +532,6 @@ private:
     float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
     float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
     uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
-
-    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
 
     // origin set by one of the cores
     struct Location common_EKF_origin;

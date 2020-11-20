@@ -143,12 +143,6 @@ public:
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
 
-    // Commands the EKF to not use GPS.
-    // This command must be sent prior to vehicle arming and EKF commencement of GPS usage
-    // Returns 0 if command rejected
-    // Returns 1 if command accepted
-    uint8_t setInhibitGPS(void);
-
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -1175,7 +1169,6 @@ private:
                     };
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
-    bool gpsInhibit;                // externally set flag informing the EKF not to use the GPS
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3f delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     float delTimeOF;                // time that delAngBodyOF is summed across

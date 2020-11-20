@@ -316,7 +316,6 @@ void NavEKF3_core::InitialiseVariables()
     gpsYawResetRequest = false;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
-    gpsInhibit = false;
     activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     prevHgtSource = activeHgtSource;
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
