@@ -878,6 +878,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     AP_SUBGROUPINFO(callsign, "CALLSIGN", 53, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
+    // @Param: CURRENT2_EN
+    // @DisplayName: CURRENT2_EN
+    // @Description: Displays 2nd battery current
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CURRENT2_X
+    // @DisplayName: CURRENT2_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CURRENT2_Y
+    // @DisplayName: CURRENT2_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(current2, "CURRENT2", 54, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1118,11 +1134,10 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP::battery();
     float amps;
-    if (!battery.current_amps(amps)) {
+    if (!AP::battery().current_amps(amps, instance)) {
         osd->avg_current_a = 0;
     }
     //filter current and display with autoranging for low values
@@ -1133,6 +1148,11 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
     else {
         backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYM_AMP);
     }
+}
+
+void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
+{
+    draw_current(0, x, y);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1795,6 +1815,11 @@ void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
 #endif
 }
 
+void AP_OSD_Screen::draw_current2(uint8_t x, uint8_t y)
+{
+    draw_current(1, x, y);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1855,6 +1880,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
+    DRAW_SETTING(current2);
 }
 #endif
 #endif // OSD_ENABLED
