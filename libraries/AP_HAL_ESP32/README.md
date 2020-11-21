@@ -78,16 +78,26 @@ OR locate the 'libraries/AP_HAL_ESP32/targets/sdkconfig' and delete it, as it sh
 ## Test hardware
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
 
-### Uart connecion
+### Uart connecion/s
 Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.  
+
+Console/usb/boot-messages/mavlink telem:
 
 | ESP32 | CP2102 |
 | ---   | ---    |
 | GPIO3 | UART_TX |  AKA UART0_RX |
 | GPIO1 | UART_RX |  AKA UART0_TX |
 
+GPS:
+
+| ESP32       | GPS       |
+| ---         | ---       |
+| GPIO17 (TX) | GPS (RX)  |
+| GPIO16 (RX) | GPS (TX)  |
+| GND         |      GND  |
+| 5v          |      Pwr  |
 
 ### RC reciever connection
 

@@ -133,8 +133,7 @@
 //HARDWARE UARTS
     
 #define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 }//
-//	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },
+  {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17 }
 //	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
 
 #define HAVE_FILESYSTEM_SUPPORT 1
