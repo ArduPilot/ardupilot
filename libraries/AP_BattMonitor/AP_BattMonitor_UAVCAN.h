@@ -29,11 +29,16 @@ public:
     }
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
-    static AP_BattMonitor_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id);
+    static AP_BattMonitor_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id);
     static void handle_battery_info_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoCb &cb);
 
 private:
     void handle_battery_info(const BattInfoCb &cb);
+
+    static bool match_battery_id(uint8_t instance, uint8_t battery_id) {
+        // when serial number is negative, all batteries are accepted. Else, it must match
+        return (AP::battery().get_serial_number(instance) < 0) || (AP::battery().get_serial_number(instance) == (int32_t)battery_id);
+    }
 
     AP_BattMonitor::BattMonitor_State _interim_state;
     BattMonitor_UAVCAN_Type _type;
