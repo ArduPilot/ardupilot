@@ -50,7 +50,7 @@ static Empty::UARTDriver uartHDriver;
 
 static Empty::DSP dspDriver;
 
-static Empty::I2CDeviceManager i2cDeviceManager;
+static ESP32::I2CDeviceManager i2cDeviceManager;
 static ESP32::SPIDeviceManager spiDeviceManager;
 #ifndef HAL_DISABLE_ADC_DRIVER
 static ESP32::AnalogIn analogIn;
