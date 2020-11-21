@@ -185,6 +185,9 @@ public:
     // request information on running threads
     virtual size_t thread_info(char *buf, size_t bufsize) { return 0; }
 
+    // request information on dma contention
+    virtual size_t dma_info(char *buf, size_t bufsize) { return 0; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
