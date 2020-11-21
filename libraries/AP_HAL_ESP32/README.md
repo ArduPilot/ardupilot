@@ -107,6 +107,12 @@ GPS:
 | GND |       GND  |
 | 5v  |       Pwr  |
 
+### Compass 
+ - u need to set the ardupilot params, and connected a GPS that has at least one i2c compass on it.. tested this with a HMC5883 and/or LIS3MDL 
+COMPASS_ENABLE=1
+COMPASS_EXTERNAL=1
+COMPASS_EXTERN2=1
+COMPASS_EXTERN3=1
 
 ### RC Servo connection/s
 
