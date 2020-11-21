@@ -50,6 +50,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(gps, "GPS_", AP_GPS),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    // @Group: BATT
+    // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
+    GOBJECT(battery, "BATT", AP_BattMonitor),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_MAG
     // @Group: COMPASS_
     // @Path: ../../libraries/AP_Compass/AP_Compass.cpp

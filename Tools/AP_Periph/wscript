@@ -21,6 +21,7 @@ def build(bld):
         'AP_HAL_Empty',
         'AP_Math',
         'AP_BoardConfig',
+        'AP_BattMonitor',
         'AP_Param',
         'StorageManager',
         'AP_FlashStorage',

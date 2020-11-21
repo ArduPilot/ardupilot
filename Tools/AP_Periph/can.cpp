@@ -42,6 +42,7 @@
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
 #include <uavcan/equipment/gnss/RTCMStream.h>
+#include <uavcan/equipment/power/BatteryInfo.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <drivers/stm32/canard_stm32.h>
@@ -291,6 +292,9 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
         AP_Param::setup_sketch_defaults();
 #ifdef HAL_PERIPH_ENABLE_GPS
         AP_Param::setup_object_defaults(&periph.gps, periph.gps.var_info);
+#endif
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+        AP_Param::setup_object_defaults(&periph.battery, periph.battery.lib.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
         AP_Param::setup_object_defaults(&periph.compass, periph.compass.var_info);
@@ -1153,6 +1157,7 @@ void AP_Periph_FW::can_update()
     }
     can_mag_update();
     can_gps_update();
+    can_battery_update();
     can_baro_update();
     can_airspeed_update();
     can_rangefinder_update();
@@ -1225,6 +1230,59 @@ void AP_Periph_FW::can_mag_update(void)
                     &buffer[0],
                     total_size);
 #endif // HAL_PERIPH_ENABLE_MAG
+}
+
+/*
+  update CAN battery monitor
+ */
+void AP_Periph_FW::can_battery_update(void)
+{
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    const uint32_t now_ms = AP_HAL::native_millis();
+    if (now_ms - battery.last_can_send_ms < 100) {
+        return;
+    }
+    battery.last_can_send_ms = now_ms;
+
+    const uint8_t battery_instances = battery.lib.num_instances();
+    for (uint8_t i=0; i<battery_instances; i++) {
+        if (!battery.lib.healthy(i)) {
+            continue;
+        }
+
+        uavcan_equipment_power_BatteryInfo pkt {};
+
+        // if a battery serial number is assigned, use that as the ID. Else, use the index.
+        const int32_t serial_number = battery.lib.get_serial_number(i);
+        pkt.battery_id = (serial_number >= 0) ? serial_number : i+1;
+
+        pkt.voltage = battery.lib.voltage(i);
+
+        float current;
+        if (battery.lib.current_amps(current, i)) {
+            pkt.current = current;
+        }
+        float temperature;
+        if (battery.lib.get_temperature(temperature, i)) {
+            pkt.temperature = temperature;
+        }
+
+        fix_float16(pkt.voltage);
+        fix_float16(pkt.current);
+        fix_float16(pkt.temperature);
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE] {};
+        const uint16_t total_size = uavcan_equipment_power_BatteryInfo_encode(&pkt, buffer);
+
+        canardBroadcast(&canard,
+                        UAVCAN_EQUIPMENT_POWER_BATTERYINFO_SIGNATURE,
+                        UAVCAN_EQUIPMENT_POWER_BATTERYINFO_ID,
+                        &transfer_id,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+    }
+#endif
 }
 
 /*
