@@ -193,17 +193,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: BCOEF_X
     // @DisplayName: Ballistic coefficient measured in X direction
     // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
-    // @Range: 0.0 100.0
-    // @Increment: 1.0
+    // @Range: 0.0 1000.0
     // @User: Advanced
 
     // @Param: BCOEF_Y
     // @DisplayName: Ballistic coefficient measured in Y direction
     // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
     // @Range: 50.0 1000.0
-    // @Increment: 10.0
     // @User: Advanced
-    // @Param: BCOEF_Y
 
     // @Param: BCOEF_Z
     // @DisplayName: unused
