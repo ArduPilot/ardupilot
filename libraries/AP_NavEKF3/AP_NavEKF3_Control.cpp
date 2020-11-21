@@ -718,14 +718,14 @@ void NavEKF3_core::runYawEstimatorCorrection()
             } else {
                 EKFGSF_yaw_valid_count = 0;
             }
-        } else {
-            EKFGSF_yaw_valid_count = 0;
         }
 
         // action an external reset request
         if (EKFGSF_yaw_reset_request_ms > 0 && imuSampleTime_ms - EKFGSF_yaw_reset_request_ms < YAW_RESET_TO_GSF_TIMEOUT_MS) {
             EKFGSF_resetMainFilterYaw();
         }
+    } else {
+        EKFGSF_yaw_valid_count = 0;
     }
 }
 
