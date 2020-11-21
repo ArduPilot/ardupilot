@@ -111,7 +111,7 @@
 
 //I2C bus list
 #define HAL_ESP32_I2C_BUSES \
-	{.port=I2C_NUM_0, .sda=GPIO_NUM_12, .scl=GPIO_NUM_13, .speed=400*KHZ, .internal=true}
+	{.port=I2C_NUM_0, .sda=GPIO_NUM_13, .scl=GPIO_NUM_12, .speed=400*KHZ, .internal=true}
 
 //	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true}
 //#define HAL_ESP32_I2C_BUSES {} // using this embty block appears to cause crashes?
