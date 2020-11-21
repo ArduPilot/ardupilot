@@ -5,6 +5,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_MSP/AP_MSP.h>
@@ -41,6 +42,7 @@ public:
     void can_baro_update();
     void can_airspeed_update();
     void can_rangefinder_update();
+    void can_battery_update();
 
     void load_parameters();
 
@@ -57,6 +59,17 @@ public:
 #ifdef HAL_PERIPH_ENABLE_BARO
     AP_Baro baro;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    struct AP_Periph_Battery {
+        void handle_battery_failsafe(const char* type_str, const int8_t action) { }
+        AP_BattMonitor lib{0, FUNCTOR_BIND_MEMBER(&AP_Periph_FW::AP_Periph_Battery::handle_battery_failsafe, void, const char*, const int8_t), nullptr};
+
+        uint32_t last_read_ms;
+        uint32_t last_can_send_ms;
+    } battery;
+#endif
+
 
 #ifdef HAL_PERIPH_ENABLE_MSP
     struct {

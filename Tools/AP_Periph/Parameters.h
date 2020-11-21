@@ -28,6 +28,7 @@ public:
         k_param_hardpoint_rate,
         k_param_baro_enable,
         k_param_esc_number,
+        k_param_battery,
     };
 
     AP_Int16 format_version;
