@@ -25,6 +25,7 @@
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
 #include "sdcard.h"
+#include "shared_dma.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -340,3 +341,9 @@ size_t Util::thread_info(char *buf, size_t bufsize)
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
+#if CH_CFG_USE_SEMAPHORES
+// request information on dma contention
+size_t Util::dma_info(char *buf, size_t bufsize) {
+    return ChibiOS::Shared_DMA::dma_info(buf, bufsize);
+}
+#endif

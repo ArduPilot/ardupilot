@@ -62,6 +62,10 @@ public:
     // request information on running threads
     size_t thread_info(char *buf, size_t bufsize) override;
 #endif
+#if CH_CFG_USE_SEMAPHORES
+    // request information on dma contention
+    size_t dma_info(char *buf, size_t bufsize) override;
+#endif
     
 private:
 #ifdef HAL_PWM_ALARM
