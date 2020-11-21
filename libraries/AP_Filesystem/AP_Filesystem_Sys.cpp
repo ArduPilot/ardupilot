@@ -33,6 +33,7 @@ struct SysFileList {
 static const SysFileList sysfs_file_list[] = {
     {"threads.txt", 1024},
     {"tasks.txt", 6500},
+    {"dma.txt", 1024},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt", 1024},
     {"can0_stats.txt", 1024},
@@ -96,6 +97,12 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
                 free(r.data->data);
                 r.data->data = nullptr;
             }
+        }
+    }
+    if (strcmp(fname, "dma.txt") == 0) {
+        r.data->data = (char *)malloc(max_size);
+        if (r.data->data) {
+            r.data->length = hal.util->dma_info(r.data->data, max_size);
         }
     }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
