@@ -296,11 +296,13 @@ AP_BattMonitor::read()
         }
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
     AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger->should_log(_log_battery_bit)) {
+    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
         logger->Write_Current();
         logger->Write_Power();
     }
+#endif
 
     check_failsafes();
     
@@ -411,10 +413,12 @@ void AP_BattMonitor::check_failsafes(void)
                     break;
             }
 
-            gcs().send_text(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Battery %d is %s %.2fV used %.0f mAh", i + 1, type_str,
                             (double)voltage(i), (double)state[i].consumed_mah);
             _has_triggered_failsafe = true;
+#ifndef HAL_BUILD_AP_PERIPH
             AP_Notify::flags.failsafe_battery = true;
+#endif
             state[i].failsafe = type;
 
             // map the desired failsafe action to a prioritiy level
@@ -520,15 +524,19 @@ void AP_BattMonitor::checkPoweringOff(void)
 {
     for (uint8_t i = 0; i < _num_instances; i++) {
         if (state[i].is_powering_off && !state[i].powerOffNotified) {
+#ifndef HAL_BUILD_AP_PERIPH
             // Set the AP_Notify flag, which plays the power off tones
             AP_Notify::flags.powering_off = true;
+#endif
 
             // Send a Mavlink broadcast announcing the shutdown
+#ifndef HAL_NO_GCS
             mavlink_command_long_t cmd_msg{};
             cmd_msg.command = MAV_CMD_POWER_OFF_INITIATED;
             cmd_msg.param1 = i+1;
             GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
             gcs().send_text(MAV_SEVERITY_WARNING, "Vehicle %d battery %d is powering off", mavlink_system.sysid, i+1);
+#endif
 
             // only send this once
             state[i].powerOffNotified = true;
