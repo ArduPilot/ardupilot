@@ -36,24 +36,19 @@ void NavEKF2_core::ResetVelocity(void)
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
             P[4][4] = P[3][3] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
-            // clear the timeout flags and counters
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - extNavVelMeasTime_ms < 250) {
             // use external nav data as the 2nd preference
             stateStruct.velocity = extNavVelDelayed.vel;
             P[5][5] = P[4][4] = P[3][3] = sq(extNavVelDelayed.err);
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         } else {
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
             // set the variances using the likely speed range
             P[4][4] = P[3][3] = sq(25.0f);
-            // clear the timeout flags and counters
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         }
+        // clear the timeout flags and counters
+        velTimeout = false;
+        lastVelPassTime_ms = imuSampleTime_ms;
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].velocity.x = stateStruct.velocity.x;
@@ -565,9 +560,9 @@ void NavEKF2_core::SelectVelPosFusion()
 void NavEKF2_core::FuseVelPosNED()
 {
     // health is set bad until test passed
-    velHealth = false;
-    posHealth = false;
-    hgtHealth = false;
+    bool velHealth = false;                 // boolean true if velocity measurements have passed innovation consistency check
+    bool posHealth = false;                 // boolean true if position measurements have passed innovation consistency check
+    bool hgtHealth = false;                 // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to check measurement errors
     Vector3f velInnov;
@@ -696,8 +691,6 @@ void NavEKF2_core::FuseVelPosNED()
                     posTestRatio = 0.0f;
                     velTestRatio = 0.0f;
                 }
-            } else {
-                posHealth = false;
             }
         }
 
@@ -742,8 +735,6 @@ void NavEKF2_core::FuseVelPosNED()
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     velTestRatio = 0.0f;
                 }
-            } else {
-                velHealth = false;
             }
         }
 
