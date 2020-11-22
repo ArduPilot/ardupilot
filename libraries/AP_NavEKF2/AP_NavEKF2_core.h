@@ -872,7 +872,6 @@ private:
     uint32_t lastYawTime_ms;        // time stamp when yaw observation was last fused (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
     Vector2f lastKnownPositionNE;   // last known position
-    uint32_t lastDecayTime_ms;      // time of last decay of GPS position offset
     float velTestRatio;             // sum of squares of GPS velocity innovation divided by fail threshold
     float posTestRatio;             // sum of squares of GPS position innovation divided by fail threshold
     float hgtTestRatio;             // sum of squares of baro height innovation divided by fail threshold
@@ -907,8 +906,6 @@ private:
     imu_elements imuDataNew;        // IMU data at the current time horizon
     imu_elements imuDataDownSampledNew; // IMU data at the current time horizon that has been downsampled to a 100Hz rate
     Quaternion imuQuatDownSampleNew; // Quaternion obtained by rotating through the IMU delta angles since the start of the current down sampled frame
-    uint8_t fifoIndexNow;           // Global index for inertial and output solution at current time horizon
-    uint8_t fifoIndexDelayed;       // Global index for inertial and output solution at delayed/fusion time horizon
     baro_elements baroDataNew;      // Baro data at the current time horizon
     baro_elements baroDataDelayed;  // Baro data at the fusion time horizon
     range_elements rangeDataNew;    // Range finder data at the current time horizon
@@ -944,7 +941,6 @@ private:
     uint32_t lastPosResetD_ms;      // System time at which the last position reset occurred. Returned by getLastPosDownReset
     float yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     Quaternion prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
-    uint8_t fusionHorizonOffset;    // number of IMU samples that the fusion time horizon  has been shifted to prevent multiple EKF instances fusing data at the same time
     float hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
     uint8_t magSelectIndex;         // Index of the magnetometer that is being used by the EKF
     bool runUpdates;                // boolean true when the EKF updates can be run
