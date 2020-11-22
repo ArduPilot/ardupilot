@@ -2,6 +2,7 @@
 
 #include "RC_Channel.h"
 
+
 // defining these two macros and including the RC_Channels_VarInfo header defines the parameter information common to all vehicle types
 #define RC_CHANNELS_SUBCLASS RC_Channels_Copter
 #define RC_CHANNEL_SUBCLASS RC_Channel_Copter
@@ -107,7 +108,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::PARACHUTE_ENABLE:
     case AUX_FUNC::PRECISION_LOITER:
     case AUX_FUNC::RANGEFINDER:
-    case AUX_FUNC::RETRACT_MOUNT:
     case AUX_FUNC::SIMPLE_MODE:
     case AUX_FUNC::STANDBY:
     case AUX_FUNC::SUPERSIMPLE_MODE:
@@ -361,22 +361,6 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
         case AUX_FUNC::ATTCON_ACCEL_LIM:
             // enable or disable accel limiting by restoring defaults
             copter.attitude_control->accel_limiting(ch_flag == AuxSwitchPos::HIGH);
-            break;
-
-        case AUX_FUNC::RETRACT_MOUNT:
-#if HAL_MOUNT_ENABLED
-            switch (ch_flag) {
-                case AuxSwitchPos::HIGH:
-                    copter.camera_mount.set_mode(MAV_MOUNT_MODE_RETRACT);
-                    break;
-                case AuxSwitchPos::MIDDLE:
-                    // nothing
-                    break;
-                case AuxSwitchPos::LOW:
-                    copter.camera_mount.set_mode_to_default();
-                    break;
-            }
-#endif
             break;
 
         case AUX_FUNC::MOTOR_INTERLOCK:
