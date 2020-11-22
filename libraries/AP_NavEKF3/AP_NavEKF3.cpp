@@ -101,7 +101,7 @@
 #define ALT_M_NSE_DEFAULT       2.0f
 #define MAG_M_NSE_DEFAULT       0.05f
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
-#define ACC_P_NSE_DEFAULT       3.5E-01ff
+#define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
 #define ABIAS_P_NSE_DEFAULT     3.0E-03f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
