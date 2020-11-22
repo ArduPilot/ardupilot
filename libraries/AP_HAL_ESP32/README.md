@@ -47,8 +47,8 @@ Do NOT use "./waf build", it's broken right now.
 ```
 
 TIPS:
- -  we use toolchain and esp-idf from espressif , as a submodule, so no need to preinstall etc. 
-https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -  
+ -  we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc. 
+https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
  (note we currently use https://github.com/espressif/esp-idf/tree/release/v4.0 )
 
 
@@ -73,7 +73,11 @@ OR locate the 'libraries/AP_HAL_ESP32/targets/sdkconfig' and delete it, as it sh
 
 ... try ./waf plane" 
 
-5. To flash binary use espressif flash tool via `make flash` inside `libraries/AP_HAL_ESP32/targets/plane/` directory. Also other make targets are avaliable (`make monitor` , `make size` and so on) 
+5. To flash binary use espressif flash tool via `make flash` inside `libraries/AP_HAL_ESP32/targets/plane/` directory. Also other make targets are avaliable (`make monitor` , `make size` and so on) .  
+
+Alternatively, the "./waf plane' build outputs a python command that y can cut-n-paste to flash... buzz found that but using that command with a slower baudrate of 921600 instead of its recommended 2000000 worked for him:
+cd ardupilot
+python ./modules/esp_idf/components/esptool_py/esptool/esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0xf000 ./build/esp32buzz/idf-plane/ota_data_initial.bin 0x1000 ./build/esp32buzz/idf-plane/bootloader/bootloader.bin 0x20000 ./build/esp32buzz/idf-plane/arduplane.bin 0x8000 ./build/esp32buzz/idf-plane/partitions.bin
 
 ## Test hardware
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
@@ -83,14 +87,14 @@ Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.  
 
-Console/usb/boot-messages/mavlink telem:
+### Console/usb/boot-messages/mavlink telem aka serial0/uart0:
 
 | ESP32 | CP2102 |
 | ---   | ---    |
 | GPIO3 | UART_TX |  AKA UART0_RX |
 | GPIO1 | UART_RX |  AKA UART0_TX |
 
-GPS:
+### GPS aka serial1/uart1:
 
 | ESP32       | GPS       |
 | ---         | ---       |
@@ -99,7 +103,7 @@ GPS:
 | GND         |      GND  |
 | 5v          |      Pwr  |
 
-### RC reciever connection
+### RC reciever connection:
 
 |ESP32| RCRECIEVER |
 | --- |    ---     |
@@ -107,7 +111,18 @@ GPS:
 | GND |       GND  |
 | 5v  |       Pwr  |
 
-### Compass 
+
+###  I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):
+
+| ESP32   | I2C       |
+| ---     | ---       |
+| GPIO12  | SCL       |
+| GPIO13  | SDA       |
+| GND     | GND       |
+| 5v      | Pwr       |
+
+
+### Compass (using i2c)
  - u need to set the ardupilot params, and connected a GPS that has at least one i2c compass on it.. tested this with a HMC5883 and/or LIS3MDL 
 COMPASS_ENABLE=1
 COMPASS_EXTERNAL=1
@@ -125,7 +140,7 @@ COMPASS_EXTERN3=1
 |  servo5       |PIN22|SERVO-OUT5| avail  |
 |  servo6       |PIN21|SERVO-OUT6| avail  |
 
-If you don't get any PWM output on any/some/one of the pins while ardupilot is running, be sure you have set all of these:
+If you don't get any PWM output on any/some/one of the pins while ardupilot is running, be sure you have set all of these params:
 //ail
 SERVO1_FUNCTION = 4
 // ele
@@ -212,12 +227,17 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] GSD
 - [ ] UDP mavlink over wifi, preferably automatically sent to client/s when they connect. - better for poor links and resilience.
 
-### analysing a 'coredump' fro mthe uart...
+### analysing a 'coredump' from the uart...
 
 Save the log where coredump appears to a file, i'll call it core.txt
+================= CORE DUMP START =================
+<body of base64-encoded core dump, save it to file on disk>
+================= CORE DUMP END ===================
 cat > core.txt
 ...
 ctrl-d
+The CORE DUMP START and CORE DUMP END lines must not be included in core dump text file.
+
 cp build/esp32buzz/idf-plane/arduplane.elf .
 espcoredump.py dbg_corefile arduplane.elf -c core.txt -t b64
 
