@@ -1623,6 +1623,10 @@ bool AP_GPS::calc_blend_weights(void)
         }
     }
 
+    if (!is_positive(sum_of_all_weights)) {
+        return false;
+    }
+
     // calculate an overall weight
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         _blend_weights[i] = (hpos_blend_weights[i] + vpos_blend_weights[i] + spd_blend_weights[i]) / sum_of_all_weights;
