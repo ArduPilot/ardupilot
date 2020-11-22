@@ -809,9 +809,6 @@ private:
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
-    bool velHealth;                 // boolean true if velocity measurements have passed innovation consistency check
-    bool posHealth;                 // boolean true if position measurements have passed innovation consistency check
-    bool hgtHealth;                 // boolean true if height measurements have passed innovation consistency check
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
     bool tasHealth;                 // boolean true if true airspeed has passed innovation consistency check
     bool velTimeout;                // boolean true if velocity measurements have failed innovation consistency check and timed out
