@@ -5432,6 +5432,36 @@ class AutoTestCopter(AutoTest):
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
+        if ex is not None:
+            raise ex
+
+    def test_ekf_source(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("AHRS_EKF_TYPE", 3)
+            self.wait_ready_to_arm()
+
+            self.start_subtest("bad yaw source")
+            self.set_parameter("EK3_SRC3_YAW", 17)
+            self.assert_prearm_failure("Check EK3_SRC3_YAW")
+
+            self.context_push()
+            self.start_subtest("missing required yaw source")
+            self.set_parameter("EK3_SRC3_YAW", 1)
+            self.set_parameter("COMPASS_USE", 0)
+            self.set_parameter("COMPASS_USE2", 0)
+            self.set_parameter("COMPASS_USE3", 0)
+            self.assert_prearm_failure("EK3 sources require Compass")
+            self.context_pop()
+
+        except Exception as e:
+            self.disarm_vehicle(force=True)
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
 
     def test_replay(self):
         '''test replay correctness'''
@@ -5836,6 +5866,10 @@ class AutoTestCopter(AutoTest):
             ("AltEstimation",
              "Test that Alt Estimation is mandatory for ALT_HOLD",
              self.test_alt_estimate_prearm), #20secs ish
+
+            ("EKFSource",
+             "Check EKF Source Prearms work",
+             self.test_ekf_source),
 
             ("DataFlash",
              "Test DataFlash Block backend",
