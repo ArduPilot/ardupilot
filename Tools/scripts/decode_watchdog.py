@@ -146,6 +146,11 @@ class DecodeWatchDog(object):
         def expansion(self):
             return "Internal Error Mask"
 
+    class ComponentIEHex(ComponentIE):
+
+        def expansion(self):
+            return "Internal Error Mask"
+
         def string_value(self):
             return hex(int(self.value, 16))
 
@@ -153,6 +158,14 @@ class DecodeWatchDog(object):
 
         def expansion(self):
             return "Internal Error Count"
+
+        def decode(self):
+            return self.value
+
+    class ComponentIEL(Component):
+
+        def expansion(self):
+            return "Internal Error Line"
 
         def decode(self):
             return self.value
@@ -174,22 +187,29 @@ class DecodeWatchDog(object):
         self.components["FICSR"] = DecodeWatchDog.ComponentFICSR
         self.components["MM"] = DecodeWatchDog.ComponentMM
         self.components["MC"] = DecodeWatchDog.ComponentMC
-        self.components["IE"] = DecodeWatchDog.ComponentIE
+        self.components["IE"] = DecodeWatchDog.ComponentIEHex
         self.components["IEC"] = DecodeWatchDog.ComponentIEC
         self.components["TN"] = DecodeWatchDog.ComponentTN
 
         self.df_components = {}
         self.df_components["Task"] = DecodeWatchDog.ComponentT
+        self.df_components["Tsk"] = DecodeWatchDog.ComponentT
         self.df_components["IErr"] = DecodeWatchDog.ComponentIE
-        self.df_components["IErrCnt"] = DecodeWatchDog.ComponentIEC
+        self.df_components["IE"] = DecodeWatchDog.ComponentIE
+        self.df_components["IEC"] = DecodeWatchDog.ComponentIEC
+        self.df_components["IEL"] = DecodeWatchDog.ComponentIEL
         self.df_components["MavMsg"] = DecodeWatchDog.ComponentMM
-        self.df_components["MavCmd"] = DecodeWatchDog.ComponentMC
+        self.df_components["MvMsg"] = DecodeWatchDog.ComponentMM
+        self.df_components["MvCmd"] = DecodeWatchDog.ComponentMC
         self.df_components["SemLine"] = DecodeWatchDog.ComponentSL
+        self.df_components["SmLn"] = DecodeWatchDog.ComponentSL
         self.df_components["FL"] = DecodeWatchDog.ComponentFL
         self.df_components["FT"] = DecodeWatchDog.ComponentFT
         self.df_components["FA"] = DecodeWatchDog.ComponentFA
         self.df_components["FP"] = DecodeWatchDog.ComponentFTP
+        self.df_components["LR"] = DecodeWatchDog.ComponentFLR
         self.df_components["ICSR"] = DecodeWatchDog.ComponentFICSR
+        self.df_components["TN"] = DecodeWatchDog.ComponentTN
 
     def run(self, text):
 
