@@ -417,10 +417,12 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
         // check yaw
         switch ((SourceYaw)_source_set[i].yaw.get()) {
         case SourceYaw::NONE:
-        case SourceYaw::COMPASS:
         case SourceYaw::EXTERNAL:
-        case SourceYaw::EXTERNAL_COMPASS_FALLBACK:
             // valid yaw value
+            break;
+        case SourceYaw::COMPASS:
+        case SourceYaw::EXTERNAL_COMPASS_FALLBACK:
+            compass_required = true;
             break;
         default:
             // invalid yaw value
