@@ -28,7 +28,7 @@ namespace ESP32 {
 class AnalogSource : public AP_HAL::AnalogSource {
 public:
     friend class AnalogIn;
-    AnalogSource(int16_t pin, float initial_value, uint8_t unit = 1);
+    AnalogSource(int16_t ardupin,int16_t pin,float scaler, float initial_value, uint8_t unit);
     float read_average() override;
     float read_latest() override;
     void set_pin(uint8_t p) override;
@@ -42,8 +42,16 @@ private:
 	//ADC number (1 or 2). ADC2 is unavailable when WIFI on
 	uint8_t _unit;
 
-	//Pin number (1-8)
+    //adc Pin number (1-8)
+    // gpio-adc lower level pin name  
     int16_t _pin;
+
+    //human readable Pin number used in ardu params 
+    int16_t _ardupin; 
+    //scaling from ADC count to Volts
+    int16_t _scaler; 
+    // gpio pin number on esp32:
+    gpio_num_t _gpio;
 
 	//Current computed value (average)
     float _value;
@@ -55,7 +63,6 @@ private:
     float _sum_value;
 
     void _add_value();
-    float _pin_scaler();
 
     HAL_Semaphore _semaphore;
 };
@@ -68,16 +75,19 @@ public:
     AP_HAL::AnalogSource* channel(int16_t pin) override;
     void _timer_tick();
     float board_voltage() override { return _board_voltage; }
+    static int8_t find_pinconfig(int16_t ardupin);
 
 private:
-    ESP32::AnalogSource* _channels[ANALOG_MAX_CHANNELS];
+    ESP32::AnalogSource* _channels[ANALOG_MAX_CHANNELS]; // list of pointers to active individual AnalogSource objects or nullptr
 
     uint32_t _last_run;
     float _board_voltage;
 
     struct pin_info {
-        uint8_t channel;
+        uint8_t channel;  // adc1 pin offset
         float scaling;
+        uint8_t ardupin; // eg 3 , as typed into an ardupilot parameter
+        uint8_t gpio; // eg 32 for D32 esp pin number/s
     };
 
     static const pin_info pin_config[];
