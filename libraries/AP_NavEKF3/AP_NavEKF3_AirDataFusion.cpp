@@ -501,31 +501,27 @@ void NavEKF3_core::FuseDragForces()
 		// predicted sign of drag force
 		const float dragForceSign = is_positive(rel_wind_body[axis_index]) ? -1.0f : 1.0f;
 
-        float airSpd; // Airspeed estimated using drag model and used for linearisation point
-        float Kacc; // Derivative of specific force wrt airspeed
 		if (axis_index == 0) {
-            if (!using_bcoef_x && !using_mcoef) {
-                // skip this axis
-                continue;
-            }
-
             // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
             // speed squared, and rotor momentum drag that is proportional to speed.
-            if (using_mcoef && using_bcoef_x) {
+           float Kacc; // Derivative of specific force wrt airspeed
+           if (using_mcoef && using_bcoef_x) {
                 // mixed bluff body and propeller momentum drag
-                airSpd = (bcoef.x / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef.x) * fabsf(mea_acc)));
+                const float airSpd = (bcoef.x / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef.x) * fabsf(mea_acc)));
                 Kacc = fmaxf(1e-1f, (rho / bcoef.x) * airSpd + mcoef * density_ratio);
                 predAccel = (0.5f / bcoef[0]) * rho * sq(rel_wind_body[0]) * dragForceSign - rel_wind_body[0] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
-                airSpd = fabsf(mea_acc) / mcoef;
                 Kacc = fmaxf(1e-1f, mcoef * density_ratio);
                 predAccel = - rel_wind_body[0] * mcoef * density_ratio;
             } else if (using_bcoef_x) {
                 // bluff body drag only
-                airSpd = sqrtf((2.0f * bcoef.x * fabsf(mea_acc)) / rho);
+                const float airSpd = sqrtf((2.0f * bcoef.x * fabsf(mea_acc)) / rho);
                 Kacc = fmaxf(1e-1f, (rho / bcoef.x) * airSpd);
                 predAccel = (0.5f / bcoef[0]) * rho * sq(rel_wind_body[0]) * dragForceSign;
+            } else {
+                // skip this axis
+                continue;
             }
 
 			// intermediate variables
@@ -610,28 +606,26 @@ void NavEKF3_core::FuseDragForces()
 
 
 		} else if (axis_index == 1) {
-            if (!using_bcoef_y && !using_mcoef) {
-                // skip this axis
-                continue;
-            }
-
             // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
             // speed squared, and rotor momentum drag that is proportional to speed.
+            float Kacc; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_y) {
                 // mixed bluff body and propeller momentum drag
-                airSpd = (bcoef.y / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef.y) * fabsf(mea_acc)));
+                const float airSpd = (bcoef.y / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef.y) * fabsf(mea_acc)));
                 Kacc = fmaxf(1e-1f, (rho / bcoef.y) * airSpd + mcoef * density_ratio);
                 predAccel = (0.5f / bcoef[1]) * rho * sq(rel_wind_body[1]) * dragForceSign - rel_wind_body[1] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
-                airSpd = fabsf(mea_acc) / mcoef;
                 Kacc = fmaxf(1e-1f, mcoef * density_ratio);
                 predAccel = - rel_wind_body[1] * mcoef * density_ratio;
             } else if (using_bcoef_y) {
                 // bluff body drag only
-                airSpd = sqrtf((2.0f * bcoef.y * fabsf(mea_acc)) / rho);
+                const float airSpd = sqrtf((2.0f * bcoef.y * fabsf(mea_acc)) / rho);
                 Kacc = fmaxf(1e-1f, (rho / bcoef.y) * airSpd);
 		        predAccel = (0.5f / bcoef[1]) * rho * sq(rel_wind_body[1]) * dragForceSign;
+            } else {
+                // nothing more to do
+                return;
             }
 
 			// intermediate variables
