@@ -348,7 +348,6 @@ void NavEKF2_core::InitialiseVariablesMag()
     magYawResetTimer_ms = imuSampleTime_ms;
     magTimeout = false;
     allMagSensorsFailed = false;
-    badMagYaw = false;
     finalInflightYawInit = false;
     finalInflightMagInit = false;
 
