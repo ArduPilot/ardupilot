@@ -317,6 +317,13 @@ public:
     void reset_mode_switch();
     virtual void read_mode_switch();
 
+    /*
+      get the RC input PWM value given a channel number.  Note that
+      channel numbers start at 1, as this API is designed for use in
+      LUA
+    */
+    bool get_pwm(uint8_t c, uint16_t &pwm) const;
+
     // has_valid_input should be pure-virtual when Plane is converted
     virtual bool has_valid_input() const { return false; };
 

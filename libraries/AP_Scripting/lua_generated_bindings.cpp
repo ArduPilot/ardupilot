@@ -1,6 +1,7 @@
 // auto generated bindings, don't manually edit
 #include "lua_generated_bindings.h"
 #include "lua_boxed_numerics.h"
+#include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_SerialLED/AP_SerialLED.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -392,6 +393,18 @@ static int Vector3f___sub(lua_State *L) {
     return 1;
 }
 
+static int Location_get_distance_NED(lua_State *L) {
+    binding_argcheck(L, 2);
+    Location * ud = check_Location(L, 1);
+    Location & data_2 = *check_Location(L, 2);
+    const Vector3f &data = ud->get_distance_NED(
+            data_2);
+
+    new_Vector3f(L);
+    *check_Vector3f(L, -1) = data;
+    return 1;
+}
+
 static int Location_get_bearing(lua_State *L) {
     binding_argcheck(L, 2);
     Location * ud = check_Location(L, 1);
@@ -480,12 +493,36 @@ const luaL_Reg Location_meta[] = {
     {"relative_alt", Location_relative_alt},
     {"lng", Location_lng},
     {"lat", Location_lat},
+    {"get_distance_NED", Location_get_distance_NED},
     {"get_bearing", Location_get_bearing},
     {"get_vector_from_origin_NEU", Location_get_vector_from_origin_NEU},
     {"offset", Location_offset},
     {"get_distance", Location_get_distance},
     {NULL, NULL}
 };
+
+static int RC_Channels_get_pwm(lua_State *L) {
+    RC_Channels * ud = RC_Channels::get_singleton();
+    if (ud == nullptr) {
+        return luaL_argerror(L, 1, "rc not supported on this firmware");
+    }
+
+    binding_argcheck(L, 2);
+    const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_data_2 >= MAX(1, 0)) && (raw_data_2 <= MIN(NUM_RC_CHANNELS, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+    uint16_t data_5003 = {};
+    const bool data = ud->get_pwm(
+            data_2,
+            data_5003);
+
+    if (data) {
+        lua_pushinteger(L, data_5003);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
+}
 
 static int SRV_Channels_find_channel(lua_State *L) {
     SRV_Channels * ud = SRV_Channels::get_singleton();
@@ -1711,6 +1748,11 @@ static int AP_AHRS_get_roll(lua_State *L) {
     return 1;
 }
 
+const luaL_Reg RC_Channels_meta[] = {
+    {"get_pwm", RC_Channels_get_pwm},
+    {NULL, NULL}
+};
+
 const luaL_Reg SRV_Channels_meta[] = {
     {"find_channel", SRV_Channels_find_channel},
     {NULL, NULL}
@@ -1861,6 +1903,7 @@ const struct userdata_meta userdata_fun[] = {
 };
 
 const struct userdata_meta singleton_fun[] = {
+    {"rc", RC_Channels_meta, NULL},
     {"SRV_Channels", SRV_Channels_meta, NULL},
     {"serialLED", AP_SerialLED_meta, NULL},
     {"vehicle", AP_Vehicle_meta, NULL},
@@ -1914,6 +1957,7 @@ void load_generated_bindings(lua_State *L) {
 }
 
 const char *singletons[] = {
+    "rc",
     "SRV_Channels",
     "serialLED",
     "vehicle",
