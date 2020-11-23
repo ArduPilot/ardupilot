@@ -8,17 +8,27 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: khancyr/ardupilot-dev-chibios:latest
+    container: khancyr/ardupilot-dev-${{ matrix.toolchain }}:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
-        gcc: [9]
         config: [
             stm32f7,
             stm32h7,
             fmuv2-plane,
             periph-build,
+            iofirmware,
+            CubeOrange-bootloader,
+            revo-bootloader
         ]
+        toolchain: [
+            chibios,  # GCC-6
+            chibios-clang,
+        ]
+        gcc: [6, 9]
+        exclude:
+          - gcc: 9
+            toolchain: chibios-clang
 
     steps:
       # git checkout the PR
@@ -35,8 +45,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{matrix.config}}-${{matrix.gcc}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+          key: ${{github.workflow}}-ccache-${{matrix.config}}-${{ matrix.toolchain }}-${{ matrix.gcc }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-${{matrix.config}}-${{ matrix.toolchain }}-${{ matrix.gcc }}  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
           mkdir -p ~/.ccache
@@ -46,25 +56,17 @@ jobs:
           echo "max_size = 400M" >> ~/.ccache/ccache.conf
           ccache -s
           ccache -z
-      - name: test ${{matrix.config}} gcc-${{matrix.gcc}}
+      - name: test ${{matrix.config}} ${{ matrix.toolchain }} gcc-${{matrix.gcc}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          if [[ ${{ matrix.toolchain }} = "chibios-clang" ]]; then
+            export CC=clang-7
+            export CXX=clang++-7
+          fi
           PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
-
-      - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v2
-        with:
-           name: buildlogs-for-${{matrix.config}}
-           path: /tmp/buildlogs
-           retention-days: 14
-
-      - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v2
-        with:
-           name: BIN-files-for-${{matrix.config}}
-           path: /__w/ardupilot/ardupilot/logs
-           retention-days: 7
+          ccache -s
+          ccache -z
