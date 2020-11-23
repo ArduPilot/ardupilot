@@ -1362,10 +1362,11 @@ void NavEKF3_core::updateMovementCheck(void)
 void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
     // Average and down sample to 5Hz
-    const Vector3f bcoef = frontend->_ballisticCoef.get();
+    const float bcoef_x = frontend->_ballisticCoef_x;
+    const float bcoef_y = frontend->_ballisticCoef_y;
     const float mcoef = frontend->_momentumDragCoef.get();
-    const bool using_bcoef_x = bcoef.x > 1.0f;
-    const bool using_bcoef_y = bcoef.y > 1.0f;
+    const bool using_bcoef_x = bcoef_x > 1.0f;
+    const bool using_bcoef_y = bcoef_y > 1.0f;
     const bool using_mcoef = mcoef > 0.001f;
 	if (!using_bcoef_x && !using_bcoef_y && !using_mcoef) {
         // nothing to do
