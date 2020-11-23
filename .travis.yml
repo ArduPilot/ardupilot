@@ -59,7 +59,7 @@ matrix:
     - if: type != cron
       compiler: "gcc"
       env: CI_BUILD_TARGET="navigator periph-build"
-      name: navigator periph-build replay
+      name: navigator periph-build
     - if: type != cron
       compiler: "clang"
       env: CI_BUILD_TARGET="periph-build"
