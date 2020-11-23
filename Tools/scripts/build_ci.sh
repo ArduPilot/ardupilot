@@ -237,10 +237,10 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board linux --disable-scripting
-        $way --target tools/Replay
+        $waf --target tools/Replay
         echo "Building AP_DAL standalone test"
         $waf configure --board linux --disable-scripting --disable-gcs
-        $way --target tools/AP_DAL_Standalone
+        $waf --target tools/AP_DAL_Standalone
         $waf clean
         $waf bootloader
         continue
