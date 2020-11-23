@@ -123,7 +123,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-can" ]; then
-        echo "Building navigator"
+        echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
