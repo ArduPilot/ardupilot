@@ -83,7 +83,7 @@ public:
     bool usingGPS() const;
 
     // true if source parameters have been configured (used for parameter conversion)
-    bool configured_in_storage() const;
+    bool configured_in_storage();
 
     // mark parameters as configured in storage (used to ensure parameter conversion is only done once)
     void mark_configured_in_storage();
@@ -115,4 +115,5 @@ private:
         SourceYaw yaw;      // current yaw source
     } _active_source_set;
     bool initialised;       // true once init has been run
+    bool config_in_storage; // true once configured in storage has returned true
 };

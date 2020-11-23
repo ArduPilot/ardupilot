@@ -293,10 +293,16 @@ bool AP_NavEKF_Source::usingGPS() const
 }
 
 // true if some parameters have been configured (used during parameter conversion)
-bool AP_NavEKF_Source::configured_in_storage() const
+bool AP_NavEKF_Source::configured_in_storage()
 {
+    if (config_in_storage) {
+        return true;
+    }
+
     // first source parameter is used to determine if configured or not
-    return _source_set[0].posxy.configured_in_storage();
+    config_in_storage = _source_set[0].posxy.configured_in_storage();
+
+    return config_in_storage;
 }
 
 // mark parameters as configured in storage (used to ensure parameter conversion is only done once)
