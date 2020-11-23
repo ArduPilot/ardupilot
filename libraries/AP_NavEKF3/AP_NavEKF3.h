@@ -181,9 +181,6 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
-    // publish output observer angular, velocity and position tracking error
-    void getOutputTrackingError(int8_t instance, Vector3f &error) const;
-
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
@@ -462,7 +459,8 @@ private:
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
     AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s/s)**2
-    AP_Vector3f _ballisticCoef;     // ballistic coefficient measured for flow in X and Y body frame directions (Z is unused)
+    AP_Float _ballisticCoef_x;      // ballistic coefficient measured for flow in X body frame directions
+    AP_Float _ballisticCoef_y;      // ballistic coefficient measured for flow in Y body frame directions
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
 
 // Possible values for _flowUse
