@@ -620,6 +620,9 @@ public:
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
+
+    // pin to enable standby mode
+    AP_Int8 standby_pin;
 };
 
 extern const AP_Param::Info        var_info[];
