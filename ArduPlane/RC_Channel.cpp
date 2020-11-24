@@ -156,6 +156,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::SOARING:
     case AUX_FUNC::AIRMODE:
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    case AUX_FUNC::ARSPD_CALIBRATE:
+#endif
         do_aux_function(ch_option, ch_flag);
         break;
 
@@ -275,6 +278,21 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
             plane.quadplane.air_mode = AirMode::OFF;
             break;
         }
+        break;
+
+case AUX_FUNC::ARSPD_CALIBRATE:
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+       switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.airspeed.set_calibration_enabled(true);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            break;
+        case AuxSwitchPos::LOW:
+            plane.airspeed.set_calibration_enabled(false);
+            break;
+        }
+#endif
         break;
 
    case AUX_FUNC::LANDING_FLARE:
