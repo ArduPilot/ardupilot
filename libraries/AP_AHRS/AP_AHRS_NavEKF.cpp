@@ -1254,15 +1254,18 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
         (_flags.fly_forward || !hal.util->get_soft_armed())) {
+        bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
         if (ret == EKFType::TWO) {
             EKF2.getFilterStatus(-1,filt_state);
+            should_use_gps = EKF2.configuredToUseGPSForPosXY();
         }
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         if (ret == EKFType::THREE) {
             EKF3.getFilterStatus(-1,filt_state);
+            should_use_gps = EKF3.configuredToUseGPSForPosXY();
         }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1273,6 +1276,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         if (hal.util->get_soft_armed() &&
             (!filt_state.flags.using_gps ||
              !filt_state.flags.horiz_pos_abs) &&
+            should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
             // and we have a 3D lock, then plane and rover would
