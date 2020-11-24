@@ -9,7 +9,7 @@
 
 #if defined(ARDUPILOT_BUILD)
 #pragma GCC diagnostic ignored "-Wfloat-equal"
-#if defined(__GNUC__) &&  __GNUC__ >= 7 || defined(__clang_major__) && __clang_major__ >= 11
+#if defined(__GNUC__) &&  __GNUC__ >= 7 || defined(__clang_major__) && __clang_major__ >= 10
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 #endif
