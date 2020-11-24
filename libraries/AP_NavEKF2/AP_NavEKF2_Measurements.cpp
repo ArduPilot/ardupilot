@@ -904,13 +904,6 @@ void NavEKF2_core::updateTimingStatistics(void)
     timing.count++;
 }
 
-// get timing statistics structure
-void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
-{
-    _timing = timing;
-    memset(&timing, 0, sizeof(timing));
-}
-
 void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
     // protect against NaN
