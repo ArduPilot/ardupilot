@@ -362,6 +362,9 @@ public:
     // check if external navigation is being used for yaw observation
     bool isExtNavUsedForYaw(void) const;
 
+    // check if configured to use GPS for horizontal position estimation
+    bool configuredToUseGPSForPosXY(void) const;
+
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 

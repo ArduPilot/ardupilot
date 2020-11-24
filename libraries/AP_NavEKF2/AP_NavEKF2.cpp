@@ -1694,6 +1694,13 @@ bool NavEKF2::isExtNavUsedForYaw() const
     return false;
 }
 
+// check if configured to use GPS for horizontal position estimation
+bool NavEKF2::configuredToUseGPSForPosXY(void) const
+{
+    // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
+    return  (_fusionModeGPS.get() != 3);
+}
+
 void NavEKF2::requestYawReset(void)
 {
     AP::dal().log_event2(AP_DAL::Event::requestYawReset);
