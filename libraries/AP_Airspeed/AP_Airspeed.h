@@ -48,6 +48,11 @@ public:
 
     void init(void);
 
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    // inflight ratio calibration
+    void set_calibration_enabled(bool enable) {calibration_enabled = enable;}
+#endif //AP_AIRSPEED_AUTOCAL_ENABLE
+
     // read the analog source and update airspeed
     void update(bool log);
 
@@ -229,6 +234,8 @@ private:
             uint32_t last_warn_ms;
         } failures;
     } state[AIRSPEED_MAX_SENSORS];
+
+    bool calibration_enabled = false;
 
     // current primary sensor
     uint8_t primary;
