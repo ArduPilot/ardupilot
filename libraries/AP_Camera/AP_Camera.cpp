@@ -341,6 +341,33 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
         0.0f, CAMERA_FEEDBACK_PHOTO, _camera_trigger_logged);
 }
 
+void AP_Camera::update_campos() {
+    if (_campos_updated_roll_angle) {
+        return;
+    }
+    if (_campos_positions < 2) {
+        return;
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+    if (_last_photo_time + _min_interval > tnow) {
+        return;
+    }
+
+    if (++_campos_pose_counter == _campos_positions) {
+        _campos_pose_counter = 0;
+    }
+
+    float roll = _campos_angle_interval * _campos_pose_counter - _campos_roll;
+    _campos_updated_roll_angle = true;
+
+    AP_Mount *mount = AP_Mount::get_singleton();
+    if (!mount) {
+        return;
+    }
+    
+    mount->set_angle_targets(roll, _campos_pitch, 0);
+}
 
 /*
   update; triggers by distance moved and camera trigger
@@ -348,6 +375,9 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
 void AP_Camera::update()
 {
     update_trigger();
+#if HAL_MOUNT_ENABLED
+    update_campos();
+#endif
 
     if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
         return;
@@ -389,6 +419,7 @@ void AP_Camera::update()
 
     _last_location = current_loc;
     _last_photo_time = tnow;
+    _campos_updated_roll_angle = false;
 }
 
 /*
