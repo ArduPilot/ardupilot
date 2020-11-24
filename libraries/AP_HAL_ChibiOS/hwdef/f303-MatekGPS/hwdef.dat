@@ -157,8 +157,9 @@ define HAL_PERIPH_ENABLE_ADSB
 
 define HAL_MSP_ENABLED 1
 
-# the GPS is good at 10Hz
-define GPS_MAX_RATE_MS 100
+# the M8 GPS is good at 10Hz, but the M9 is better at 5Hz,
+# so stick to 5Hz as the firmware is shared
+define GPS_MAX_RATE_MS 200
 
 # 10" DLVR sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 9
