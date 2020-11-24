@@ -718,7 +718,7 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 //   current is in centi-amps
 //   temperature is in centi-degrees Celsius
 //   current_tot is in centi-amp hours
-void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp)
+void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate)
 {
     const struct log_Esc pkt{
         LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
@@ -729,7 +729,8 @@ void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint1
         current     : current,
         esc_temp    : esc_temp,
         current_tot : current_tot,
-        motor_temp  : motor_temp
+        motor_temp  : motor_temp,
+        error_rate  : error_rate
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
