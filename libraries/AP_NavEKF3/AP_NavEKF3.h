@@ -387,7 +387,10 @@ public:
 
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
     bool using_external_yaw(void) const;
-    
+
+    // check if configured to use GPS for horizontal position estimation
+    bool configuredToUseGPSForPosXY(void) const;
+
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
