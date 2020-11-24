@@ -107,19 +107,19 @@ bool AP_Generator_IE_650_800::check_for_err_code(char* msg_txt, uint8_t msg_len)
 }
 
 // Check for failsafes
-AP_BattMonitor::BatteryFailsafe AP_Generator_IE_650_800::update_failsafes() const
+AP_BattMonitor::Failsafe AP_Generator_IE_650_800::update_failsafes() const
 {
     // Check if we are in a critical failsafe
     if ((_err_code & fs_crit_mask) != 0) {
-        return  AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_Critical;
+        return  AP_BattMonitor::Failsafe::Critical;
     }
 
     // Check if we are in a low failsafe
     if ((_err_code & fs_low_mask) != 0) {
-        return  AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_Low;
+        return  AP_BattMonitor::Failsafe::Low;
     }
 
-    return AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_None;
+    return AP_BattMonitor::Failsafe::None;
 }
 
 #endif
