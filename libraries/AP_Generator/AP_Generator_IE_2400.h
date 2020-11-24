@@ -13,7 +13,7 @@ public:
 
     void init(void) override;
 
-    AP_BattMonitor::BatteryFailsafe update_failsafes() const override;
+    AP_BattMonitor::Failsafe update_failsafes() const override;
 
 private:
 

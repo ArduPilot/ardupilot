@@ -120,11 +120,11 @@ bool AP_Generator::pre_arm_check(char* failmsg, uint8_t failmsg_len) const
 }
 
 // Tell backend check failsafes
-AP_BattMonitor::BatteryFailsafe AP_Generator::update_failsafes()
+AP_BattMonitor::Failsafe AP_Generator::update_failsafes()
 {
     // Don't invoke a failsafe if driver not assigned
     if (_driver_ptr == nullptr) {
-        return AP_BattMonitor::BatteryFailsafe_None;
+        return AP_BattMonitor::Failsafe::None;
     }
     return _driver_ptr->update_failsafes();
 }
