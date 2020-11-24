@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Description: Yaw Source (Secondary)
     // @Values: 0:None, 1:Compass, 2:External, 3:External with Compass Fallback
     // @User: Advanced
-    AP_GROUPINFO("2_YAW", 10, AP_NavEKF_Source, _source_set[1].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::COMPASS),
+    AP_GROUPINFO("2_YAW", 10, AP_NavEKF_Source, _source_set[1].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::NONE),
 #endif
 
 #if AP_NAKEKF_SOURCE_SET_MAX >= 3
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Description: Yaw Source (Tertiary)
     // @Values: 0:None, 1:Compass, 2:External, 3:External with Compass Fallback
     // @User: Advanced
-    AP_GROUPINFO("3_YAW", 15, AP_NavEKF_Source, _source_set[2].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::COMPASS),
+    AP_GROUPINFO("3_YAW", 15, AP_NavEKF_Source, _source_set[2].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::NONE),
 #endif
 
     // @Param: _OPTIONS
