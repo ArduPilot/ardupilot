@@ -44,11 +44,15 @@ function package_is_installed() {
     dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }
 
+function heading() {
+    echo "$sep"
+    echo $*
+    echo "$sep"
+}
+
 # Install lsb-release as it is needed to check Ubuntu version
 if package_is_installed "lsb-release" -eq 1; then
-    echo "$sep"
-    echo "Installing lsb-release"
-    echo "$sep"
+    heading "Installing lsb-release"
     $APT_GET install lsb-release
     echo "Done!"
 fi
@@ -114,9 +118,7 @@ function install_arm_none_eabi_toolchain() {
   if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
-        echo "$sep"
-        echo "Installing toolchain for STM32 Boards"
-        echo "$sep"
+        heading "Installing toolchain for STM32 Boards"
         echo "Downloading from ArduPilot server"
         sudo wget $ARM_TARBALL_URL
         echo "Installing..."
@@ -153,9 +155,7 @@ elif [ ${RELEASE_CODENAME} == "trusty" ]; then
     $APT_GET update
 fi
 
-echo "$sep"
-echo "Add user to dialout group to allow managing serial ports"
-echo "$sep"
+heading "Add user to dialout group to allow managing serial ports"
 sudo usermod -a -G dialout $USER
 echo "Done!"
 
@@ -207,9 +207,7 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
-echo "$sep"
-echo "Removing modemmanager package that could conflict with firmware uploading"
-echo "$sep"
+heading "Removing modemmanager package that could conflict with firmware uploading"
 if package_is_installed "modemmanager" -eq 1; then
     $APT_GET remove modemmanager
 fi
@@ -220,9 +218,7 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
   install_arm_none_eabi_toolchain
 fi
 
-echo "$sep"
-echo "Check if we are inside docker environment..."
-echo "$sep"
+heading "Check if we are inside docker environment..."
 IS_DOCKER=false
 if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
     IS_DOCKER=true
@@ -235,9 +231,7 @@ if $IS_DOCKER; then
     SHELL_LOGIN=".bashrc"
 fi
 
-echo "$sep"
-echo "Adding ArduPilot Tools to environment"
-echo "$sep"
+heading "Adding ArduPilot Tools to environment"
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
@@ -286,9 +280,7 @@ echo "Done!"
 
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
   if [ -d ".git" ]; then
-    echo "$sep"
-    echo "Update git submodules"
-    echo "$sep"
+    heading "Update git submodules"
     cd $ARDUPILOT_ROOT
     git submodule update --init --recursive
     echo "Done!"
