@@ -1380,7 +1380,7 @@ struct PACKED log_PSC {
 // @Field: RawPress: Raw pressure less offset
 // @Field: Offset: Offset from parameter
 // @Field: U: True if sensor is being used
-// @Field: Health: True if sensor is healthy
+// @Field: H: True if sensor is healthy
 // @Field: Hfp: Probability sensor has failed
 // @Field: Pri: True if sensor is the primary sensor
 
