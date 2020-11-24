@@ -145,9 +145,6 @@ public:
     // return body magnetic field estimates in measurement units / 1000
     void getMagXYZ(Vector3f &magXYZ) const;
 
-    // return the index for the active magnetometer
-    uint8_t getActiveMag() const;
-
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
@@ -200,9 +197,6 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
-
-    // return data for debugging optical flow fusion
-    void getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
 
     /*
         Returns the following data for debugging range beacon fusion
@@ -300,16 +294,10 @@ public:
     // this is used by other instances to level load
     uint8_t getFramesSincePredict(void) const;
 
-    // publish output observer angular, velocity and position tracking error
-    void getOutputTrackingError(Vector3f &error) const;
-
     // get the IMU index. For now we return the gyro index, as that is most
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
 
-    // get timing statistics structure
-    void getTimingStatistics(struct ekf_timing &timing);
-    
     /*
      * Write position and quaternion data from an external navigation system
      *
@@ -338,10 +326,6 @@ public:
     // return true when external nav data is also being used as a yaw observation
     bool isExtNavUsedForYaw(void);
 
-    // get solution data for the EKF-GSF emergency yaw estimator
-    // return false if data not available
-    bool getDataEKFGSF(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
-
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
@@ -357,7 +341,9 @@ public:
     bool have_aligned_yaw(void) const {
         return yawAlignComplete;
     }
-    
+
+    void Log_Write(uint64_t time_us);
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -1080,7 +1066,7 @@ private:
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
-    struct {
+    struct rngBcnFusionReport_t {
         float rng;          // measured range to beacon (m)
         float innov;        // range innovation (m)
         float innovVar;     // innovation variance (m^2)
@@ -1213,4 +1199,15 @@ private:
     uint32_t EKFGSF_yaw_reset_request_ms;   // timestamp of last emergency yaw reset request (uSec)
     uint8_t EKFGSF_yaw_reset_count;         // number of emergency yaw resets performed
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
+
+    // logging functions shared by cores:
+    void Log_Write_NKF1(uint64_t time_us) const;
+    void Log_Write_NKF2(uint64_t time_us) const;
+    void Log_Write_NKF3(uint64_t time_us) const;
+    void Log_Write_NKF4(uint64_t time_us) const;
+    void Log_Write_NKF5(uint64_t time_us) const;
+    void Log_Write_Quaternion(uint64_t time_us) const;
+    void Log_Write_Beacon(uint64_t time_us);
+    void Log_Write_Timing(uint64_t time_us);
+    void Log_Write_GSF(uint64_t time_us) const;
 };
