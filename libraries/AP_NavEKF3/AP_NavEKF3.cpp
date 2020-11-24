@@ -680,8 +680,10 @@ bool NavEKF3::InitialiseFilter(void)
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
     // convert parameters if necessary
     convert_parameters();
+#endif
 
     // initialise sources
     sources.init();
