@@ -39,7 +39,7 @@ public:
 
     bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const;
 
-    AP_BattMonitor::BatteryFailsafe update_failsafes(void);
+    AP_BattMonitor::Failsafe update_failsafes(void);
 
     // Helpers to retrieve measurements
     float get_voltage(void) const { return _voltage; }

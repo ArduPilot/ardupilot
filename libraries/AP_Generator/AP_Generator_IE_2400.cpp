@@ -120,19 +120,19 @@ void AP_Generator_IE_2400::decode_latest_term()
 }
 
 // Check for failsafes
-AP_BattMonitor::BatteryFailsafe AP_Generator_IE_2400::update_failsafes() const
+AP_BattMonitor::Failsafe AP_Generator_IE_2400::update_failsafes() const
 {
     // Check for error codes that lead to critical action battery monitor failsafe
     if (is_critical_error(_err_code)) {
-        return AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_Critical;
+        return AP_BattMonitor::Failsafe::Critical;
     }
 
     // Check for error codes that lead to low action battery monitor failsafe
     if (is_low_error(_err_code)) {
-        return AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_Low;
+        return AP_BattMonitor::Failsafe::Low;
     }
 
-    return AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_None;
+    return AP_BattMonitor::Failsafe::None;
 }
 
 // Check for error codes that are deemed critical

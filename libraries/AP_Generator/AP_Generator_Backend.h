@@ -21,8 +21,8 @@ public:
     virtual bool pre_arm_check(char *failmsg, uint8_t failmsg_len) const { return true; }
 
     // Set default to not fail failsafes
-    virtual AP_BattMonitor::BatteryFailsafe update_failsafes(void) const {
-        return AP_BattMonitor::BatteryFailsafe::BatteryFailsafe_None;
+    virtual AP_BattMonitor::Failsafe update_failsafes(void) const {
+        return AP_BattMonitor::Failsafe::None;
     }
 
     virtual bool healthy(void) const = 0;
