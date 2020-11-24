@@ -134,10 +134,6 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
 
-    // return the magnetometer in use for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    uint8_t getActiveMag(int8_t instance) const;
-
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
@@ -181,9 +177,6 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void  getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
-    // publish output observer angular, velocity and position tracking error
-    void getOutputTrackingError(int8_t instance, Vector3f &error) const;
-
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void  getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
@@ -200,23 +193,6 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
-
-    // return data for debugging optical flow fusion for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
-
-    /*
-        Returns the following data for debugging range beacon fusion from the specified instance
-        An out of range instance (eg -1) returns data for the primary instance
-        ID : beacon identifier
-        rng : measured range to beacon (m)
-        innov : range innovation (m)
-        innovVar : innovation variance (m^2)
-        testRatio : innovation consistency test ratio
-        beaconPosNED : beacon NED position (m)
-        returns true if data could be found, false if it could not
-    */
-    bool getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow) const;
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -302,9 +278,6 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
-    // get timing statistics structure
-    void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
-
     /*
      * Write position and quaternion data from an external navigation system
      *
@@ -355,10 +328,6 @@ public:
 
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
-
-    // log debug data for yaw estimator
-    // return false if data not available
-    bool getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -533,15 +502,4 @@ private:
     // return true if a new core has a better score than an existing core, including
     // checks for alignment
     bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
-    
-    // logging functions shared by cores:
-    void Log_Write_NKF1(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF2(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF3(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_NKF5(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
-    void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
 };
