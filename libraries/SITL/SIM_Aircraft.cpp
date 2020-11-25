@@ -349,6 +349,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.yawDeg   = degrees(y);
     fdm.quaternion.from_rotation_matrix(dcm);
     fdm.airspeed = airspeed_pitot;
+    fdm.velocity_air_bf = velocity_air_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.num_motors = num_motors;
