@@ -1873,8 +1873,8 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("EK3_IMU_MASK", 3) # use only 2 IMUs
         self.set_parameter("GPS_TYPE2", 1)
         self.set_parameter("SIM_GPS2_DISABLE", 0)
-        self.set_parameter("SIM_BARO2_DISABL", 0)
         self.set_parameter("SIM_BARO_COUNT", 2)
+        self.set_parameter("SIM_BAR2_DISABLE", 0)
         self.set_parameter("ARSPD2_TYPE", 2)
         self.set_parameter("ARSPD2_USE", 1)
         self.set_parameter("ARSPD2_PIN", 2)
@@ -1918,14 +1918,14 @@ class AutoTestPlane(AutoTest):
             self.start_subtest("BAROMETER: Freeze to last measured value")
             self.context_collect("STATUSTEXT")
             # create a barometer error by inhibiting any pressure change while changing altitude
-            old_parameter = self.get_parameter("SIM_BARO2_FREEZE")
-            self.set_parameter("SIM_BARO2_FREEZE", 1)
+            old_parameter = self.get_parameter("SIM_BAR2_FREEZE")
+            self.set_parameter("SIM_BAR2_FREEZE", 1)
             self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=lambda: self.set_rc(2, 2000), check_context=True)
             if self.lane_switches != [1, 0]:
                 raise NotAchievedException("Expected lane switch 0, got %s" % str(self.lane_switches[-1]))
             # Cleanup
             self.set_rc(2, 1500)
-            self.set_parameter("SIM_BARO2_FREEZE", old_parameter)
+            self.set_parameter("SIM_BAR2_FREEZE", old_parameter)
             self.context_clear_collection("STATUSTEXT")
             self.wait_heading(0, accuracy=10, timeout=60)
             self.wait_heading(180, accuracy=10, timeout=60)
