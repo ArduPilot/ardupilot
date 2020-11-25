@@ -1271,7 +1271,7 @@ private:
     drag_elements dragSampleDelayed;
 	drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
 	uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
-	float dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
+    float dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
     Vector2f innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
 	Vector2f innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
 	Vector2f dragTestRatio;		        // drag innovation consistency check ratio
