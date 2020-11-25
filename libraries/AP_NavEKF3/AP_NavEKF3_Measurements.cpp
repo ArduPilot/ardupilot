@@ -1368,11 +1368,11 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;
     const bool using_mcoef = mcoef > 0.001f;
-	if (!using_bcoef_x && !using_bcoef_y && !using_mcoef) {
+    if (!using_bcoef_x && !using_bcoef_y && !using_mcoef) {
         // nothing to do
         dragFusionEnabled = false;
-		return;
-	}
+        return;
+    }
 
     dragFusionEnabled = true;
 

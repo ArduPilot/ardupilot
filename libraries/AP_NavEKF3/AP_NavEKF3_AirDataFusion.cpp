@@ -452,7 +452,7 @@ void NavEKF3_core::FuseSideslip()
 /*
  * Fuse X and Y body axis specific forces using explicit algebraic equations generated with SymPy.
  * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/acc_bf_generarted.cpp
+ * Output for change reference: AP_NavEKF3/derivation/generated/acc_bf_generated.cpp
 */
 void NavEKF3_core::FuseDragForces()
 {
