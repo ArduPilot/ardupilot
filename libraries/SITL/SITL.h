@@ -54,6 +54,7 @@ struct sitl_fdm {
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
     double airspeed; // m/s
+    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
     double battery_voltage; // Volts
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
@@ -244,6 +245,12 @@ public:
         AP_Int8  freeze; // freeze baro to last recorded altitude
         AP_Int8  disable; // disable simulated barometers
         AP_Int16 delay;  // barometer data delay in ms
+
+        // wind coefficients
+        AP_Float wcof_xp;
+        AP_Float wcof_xn;
+        AP_Float wcof_yp;
+        AP_Float wcof_yn;
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
