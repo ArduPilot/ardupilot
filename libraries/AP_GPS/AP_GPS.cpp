@@ -186,7 +186,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -196,7 +196,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
