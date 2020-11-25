@@ -288,7 +288,7 @@ class AutoTestSub(AutoTest):
 
         lat = 5
         lon = 5
-        alt = 10
+        alt = -10
 
         tstart = self.get_sim_time()
         while True:
