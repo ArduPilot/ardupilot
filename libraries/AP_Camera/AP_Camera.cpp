@@ -343,6 +343,7 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
 }
 
 void AP_Camera::update_campos() {
+#if HAL_MOUNT_ENABLED
     if (_campos_updated_roll_angle) {
         return;
     }
@@ -362,7 +363,7 @@ void AP_Camera::update_campos() {
     float roll = _campos_angle_interval * _campos_pose_counter - _campos_roll;
     _campos_updated_roll_angle = true;
 
-#if HAL_MOUNT_ENABLED
+
     AP_Mount *mount = AP_Mount::get_singleton();
     if (!mount) {
         return;
