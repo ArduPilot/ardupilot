@@ -60,8 +60,8 @@ function update()
   end
 
   -- check if GPS speed accuracy is over threshold
-  local gps_speed_accuracy = gps:speed_accuracy(gps:primary())
-  local gps_over_threshold = (gps_speed_accuracy == nil) or (gps:speed_accuracy(gps:primary()) > gps_speedaccuracy_thresh)
+  local gps_speed_accuracy = gps:speed_accuracy(gps:primary_sensor())
+  local gps_over_threshold = (gps_speed_accuracy == nil) or (gps:speed_accuracy(gps:primary_sensor()) > gps_speedaccuracy_thresh)
   local gps_usable = (gps_speed_accuracy ~= nil) and (gps_speed_accuracy <= gps_usable_accuracy)
 
   -- get external nav innovations from ahrs
