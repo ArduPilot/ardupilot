@@ -173,6 +173,17 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
         flightmode->crosstrack_error() * 1.0e-2f);
 }
 
+float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
+{
+    Vector3f airspeed_vec_bf;
+    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // we are running the EKF3 wind estimation code which can give
+        // us an airspeed estimate
+        return airspeed_vec_bf.length();
+    }
+    return AP::gps().ground_speed();
+}
+
 int16_t GCS_MAVLINK_Copter::vfr_hud_throttle() const
 {
     if (copter.motors == nullptr) {
@@ -272,6 +283,10 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         break;
 
     case MSG_WIND:
+        CHECK_PAYLOAD_SIZE(WIND);
+        send_wind();
+        break;
+
     case MSG_SERVO_OUT:
     case MSG_AOA_SSA:
     case MSG_LANDING:
@@ -440,6 +455,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
     MSG_HWSTATUS,
     MSG_SYSTEM_TIME,
+    MSG_WIND,
     MSG_RANGEFINDER,
     MSG_DISTANCE_SENSOR,
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
@@ -1377,4 +1393,20 @@ MAV_LANDED_STATE GCS_MAVLINK_Copter::landed_state() const
         return MAV_LANDED_STATE_TAKEOFF;
     }
     return MAV_LANDED_STATE_IN_AIR;
+}
+
+void GCS_MAVLINK_Copter::send_wind() const
+{
+    Vector3f airspeed_vec_bf;
+    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // if we don't have an airspeed estimate then we don't have a
+        // valid wind estimate on copters
+        return;
+    }
+    const Vector3f wind = AP::ahrs().wind_estimate();
+    mavlink_msg_wind_send(
+        chan,
+        degrees(atan2f(-wind.y, -wind.x)),
+        wind.length(),
+        wind.z);
 }
