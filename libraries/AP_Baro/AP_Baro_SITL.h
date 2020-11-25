@@ -32,7 +32,10 @@ private:
 
     // adjust for simulated board temperature
     void temperature_adjustment(float &p, float &T);
-    
+
+    // adjust for wind effects
+    float wind_pressure_correction(void);
+
     // is the barometer usable for flight 
     bool healthy(uint8_t instance);
     
