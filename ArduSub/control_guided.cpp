@@ -39,8 +39,7 @@ bool Sub::guided_init(bool ignore_checks)
     if (!position_ok() && !ignore_checks) {
         return false;
     }
-    // initialise yaw
-    set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+
     // start in position control mode
     guided_pos_control_start();
     return true;
@@ -59,8 +58,7 @@ void Sub::guided_pos_control_start()
     // To-Do: set to current location if disarmed?
     // To-Do: set to stopping point altitude?
     Vector3f stopping_point;
-    stopping_point.z = inertial_nav.get_altitude();
-    wp_nav.get_wp_stopping_point_xy(stopping_point);
+    wp_nav.get_wp_stopping_point(stopping_point);
 
     // no need to check return status because terrain data is not used
     wp_nav.set_wp_destination(stopping_point, false);
