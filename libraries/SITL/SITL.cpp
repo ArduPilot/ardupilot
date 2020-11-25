@@ -269,6 +269,12 @@ const AP_Param::GroupInfo SITL::BaroParm::var_info[] = {
     AP_GROUPINFO("GLITCH",   4, SITL::BaroParm,  glitch, 0),
     AP_GROUPINFO("FREEZE",   5, SITL::BaroParm,  freeze, 0),
     AP_GROUPINFO("DELAY",    6, SITL::BaroParm,  delay, 0),
+
+    // wind coeffients
+    AP_GROUPINFO("WCF_FWD", 7,  SITL::BaroParm, wcof_xp, 0.0),
+    AP_GROUPINFO("WCF_BAK", 8,  SITL::BaroParm, wcof_xn, 0.0),
+    AP_GROUPINFO("WCF_RGT", 9,  SITL::BaroParm, wcof_yp, 0.0),
+    AP_GROUPINFO("WCF_LFT", 10, SITL::BaroParm, wcof_yn, 0.0),
     AP_GROUPEND
 };
     
