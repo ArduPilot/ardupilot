@@ -30,6 +30,7 @@ _ap_bin()
     opts+=" --uartF"
     opts+=" --uartG"
     opts+=" --uartH"
+    opts+=" --uartI"
     opts+=" --rtscts"
     opts+=" --base-port"
     opts+=" --rc-in-port"
