@@ -143,7 +143,6 @@ private:
 
     // initialize vehicle_list
     void init();
-    void deinit();
 
     // check to see if we are initialized (and possibly do initialization)
     bool check_startup();
