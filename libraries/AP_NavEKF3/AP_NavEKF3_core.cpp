@@ -360,7 +360,11 @@ void NavEKF3_core::InitialiseVariables()
     bcnPosOffsetMinVar = 0.0f;
     minOffsetStateChangeFilt = 0.0f;
     rngBcnFuseDataReportIndex = 0;
-    memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
+    if (dal.beacon()) {
+        if (rngBcnFusionReport == nullptr) {
+            rngBcnFusionReport = new rngBcnFusionReport_t[dal.beacon()->count()];
+        }
+    }
     bcnPosOffsetNED.zero();
     bcnOriginEstInit = false;
 

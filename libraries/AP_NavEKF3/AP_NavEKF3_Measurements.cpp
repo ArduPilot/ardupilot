@@ -839,7 +839,6 @@ void NavEKF3_core::readRngBcnData()
 {
     // check that arrays are large enough
     static_assert(ARRAY_SIZE(lastTimeRngBcn_ms) >= AP_BEACON_MAX_BEACONS, "lastTimeRngBcn_ms should have at least AP_BEACON_MAX_BEACONS elements");
-    static_assert(ARRAY_SIZE(rngBcnFusionReport) >= AP_BEACON_MAX_BEACONS, "rngBcnFusionReport should have at least AP_BEACON_MAX_BEACONS elements");
 
     // get the location of the beacon data
     const AP_DAL_Beacon *beacon = dal.beacon();

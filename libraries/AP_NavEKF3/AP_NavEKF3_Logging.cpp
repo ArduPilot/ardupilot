@@ -217,7 +217,7 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         return;
     }
 
-    if (!statesInitialised || N_beacons == 0) {
+    if (!statesInitialised || N_beacons == 0 || rngBcnFusionReport == nullptr) {
         return;
     }
 

@@ -1247,7 +1247,7 @@ private:
         float innovVar;     // innovation variance (m^2)
         float testRatio;    // innovation consistency test ratio
         Vector3f beaconPosNED; // beacon NED position
-    } rngBcnFusionReport[4];
+    } *rngBcnFusionReport;
 
     // height source selection logic
     AP_NavEKF_Source::SourceZ activeHgtSource;  // active height source
