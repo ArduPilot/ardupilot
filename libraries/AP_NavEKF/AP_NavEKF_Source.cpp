@@ -477,3 +477,50 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
 
     return true;
 }
+
+// return true if ext nav is enabled on any source
+bool AP_NavEKF_Source::ext_nav_enabled(void) const
+{
+    for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+        const auto &src = _source_set[i];
+        if (SourceXY(src.posxy.get()) == SourceXY::EXTNAV) {
+            return true;
+        }
+        if (SourceZ(src.posz.get()) == SourceZ::EXTNAV) {
+            return true;
+        }
+        if (SourceXY(src.velxy.get()) == SourceXY::EXTNAV) {
+            return true;
+        }
+        if (SourceZ(src.velz.get()) == SourceZ::EXTNAV) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// return true if wheel encoder is enabled on any source
+bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
+{
+    for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+        const auto &src = _source_set[i];
+        if (SourceXY(src.velxy.get()) == SourceXY::WHEEL_ENCODER) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// return true if ext yaw is enabled on any source
+bool AP_NavEKF_Source::ext_yaw_enabled(void) const
+{
+    for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
+        const auto &src = _source_set[i];
+        const SourceYaw yaw = SourceYaw(src.yaw.get());
+        if (yaw == SourceYaw::EXTERNAL ||
+            yaw == SourceYaw::EXTERNAL_COMPASS_FALLBACK) {
+            return true;
+        }
+    }
+    return false;
+}
