@@ -33,13 +33,6 @@ public:
     // should only be called when this library is not being used as the position source
     void align_position_to_ahrs(bool align_xy, bool align_z);
 
-    AP_DAL_VisualOdom *visualodom() {
-        if (RVOH.ptr_is_nullptr) {
-            return nullptr;
-        }
-        return this;
-    }
-
     void start_frame();
 
     void handle_message(const log_RVOH &msg) {

@@ -22,6 +22,10 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
 
+    if (!init_done) {
+        init_sensors();
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     const uint32_t imu_us = AP::ins().get_last_update_usec();
@@ -54,8 +58,6 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
     _RFRN.get_compass_is_null = AP::ahrs().get_compass() == nullptr;
-    _RFRN.rangefinder_ptr_is_null = AP::rangefinder() == nullptr;
-    _RFRN.airspeed_ptr_is_null = AP::airspeed() == nullptr;
     _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
     _RFRN.vehicle_class = ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
@@ -72,11 +74,19 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _baro.start_frame();
     _gps.start_frame();
     _compass.start_frame();
-    _airspeed.start_frame();
-    _rangefinder.start_frame();
-    _beacon.start_frame();
+    if (_airspeed) {
+        _airspeed->start_frame();
+    }
+    if (_rangefinder) {
+        _rangefinder->start_frame();
+    }
+    if (_beacon) {
+        _beacon->start_frame();
+    }
 #if HAL_VISUALODOM_ENABLED
-    _visualodom.start_frame();
+    if (_visualodom) {
+        _visualodom->start_frame();
+    }
 #endif
 
     // populate some derivative values:
@@ -85,6 +95,46 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 
     force_write = false;
 #endif
+}
+
+/*
+  setup optional sensor backends
+ */
+void AP_DAL::init_sensors(void)
+{
+    init_done = true;
+    bool alloc_failed = false;
+
+    /*
+      we only allocate the DAL backends if we had at least one sensor
+      at the time we startup the EKF
+     */
+
+    auto *rangefinder = AP::rangefinder();
+    if (rangefinder && rangefinder->num_sensors() > 0) {
+        alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
+    }
+
+    auto *airspeed = AP::airspeed();
+    if (airspeed != nullptr && airspeed->get_num_sensors() > 0) {
+        alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
+    }
+
+    auto *beacon = AP::beacon();
+    if (beacon != nullptr && beacon->enabled()) {
+        alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
+    }
+
+#if HAL_VISUALODOM_ENABLED
+    auto *visualodom = AP::visualodom();
+    if (visualodom != nullptr && visualodom->enabled()) {
+        alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
+    }
+#endif
+
+    if (alloc_failed) {
+        AP_BoardConfig::config_error("Unable to allocate DAL backends");
+    }
 }
 
 /*

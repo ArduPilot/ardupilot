@@ -121,24 +121,19 @@ public:
     AP_DAL_InertialSensor &ins() { return _ins; }
     AP_DAL_Baro &baro() { return _baro; }
     AP_DAL_GPS &gps() { return _gps; }
+
     AP_DAL_RangeFinder *rangefinder() {
-        if (_RFRN.rangefinder_ptr_is_null) {
-            return nullptr;
-        }
-        return &_rangefinder;
+        return _rangefinder;
     }
     AP_DAL_Airspeed *airspeed() {
-        if (_RFRN.airspeed_ptr_is_null) {
-            return nullptr;
-        }
-        return &_airspeed;
+        return _airspeed;
     }
     AP_DAL_Beacon *beacon() {
-        return _beacon.beacon();
+        return _beacon;
     }
 #if HAL_VISUALODOM_ENABLED
     AP_DAL_VisualOdom *visualodom() {
-        return _visualodom.visualodom();
+        return _visualodom;
     }
 #endif
 
@@ -230,10 +225,16 @@ public:
     }
 
     void handle_message(const log_RASH &msg) {
-        _airspeed.handle_message(msg);
+        if (_airspeed == nullptr) {
+            _airspeed = new AP_DAL_Airspeed;
+        }
+        _airspeed->handle_message(msg);
     }
     void handle_message(const log_RASI &msg) {
-        _airspeed.handle_message(msg);
+        if (_airspeed == nullptr) {
+            _airspeed = new AP_DAL_Airspeed;
+        }
+        _airspeed->handle_message(msg);
     }
 
     void handle_message(const log_RBRH &msg) {
@@ -244,10 +245,16 @@ public:
     }
 
     void handle_message(const log_RRNH &msg) {
-        _rangefinder.handle_message(msg);
+        if (_rangefinder == nullptr) {
+            _rangefinder = new AP_DAL_RangeFinder;
+        }
+        _rangefinder->handle_message(msg);
     }
     void handle_message(const log_RRNI &msg) {
-        _rangefinder.handle_message(msg);
+        if (_rangefinder == nullptr) {
+            _rangefinder = new AP_DAL_RangeFinder;
+        }
+        _rangefinder->handle_message(msg);
     }
 
     void handle_message(const log_RGPH &msg) {
@@ -268,14 +275,23 @@ public:
     }
 
     void handle_message(const log_RBCH &msg) {
-        _beacon.handle_message(msg);
+        if (_beacon == nullptr) {
+            _beacon = new AP_DAL_Beacon;
+        }
+        _beacon->handle_message(msg);
     }
     void handle_message(const log_RBCI &msg) {
-        _beacon.handle_message(msg);
+        if (_beacon == nullptr) {
+            _beacon = new AP_DAL_Beacon;
+        }
+        _beacon->handle_message(msg);
     }
     void handle_message(const log_RVOH &msg) {
 #if HAL_VISUALODOM_ENABLED
-        _visualodom.handle_message(msg);
+        if (_visualodom == nullptr) {
+            _visualodom = new AP_DAL_VisualOdom;
+        }
+        _visualodom->handle_message(msg);
 #endif
     }
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
@@ -318,12 +334,12 @@ private:
     AP_DAL_InertialSensor _ins;
     AP_DAL_Baro _baro;
     AP_DAL_GPS _gps;
-    AP_DAL_RangeFinder _rangefinder;
+    AP_DAL_RangeFinder *_rangefinder;
     AP_DAL_Compass _compass;
-    AP_DAL_Airspeed _airspeed;
-    AP_DAL_Beacon _beacon;
+    AP_DAL_Airspeed *_airspeed;
+    AP_DAL_Beacon *_beacon;
 #if HAL_VISUALODOM_ENABLED
-    AP_DAL_VisualOdom _visualodom;
+    AP_DAL_VisualOdom *_visualodom;
 #endif
 
     static bool logging_started;
@@ -331,6 +347,9 @@ private:
 
     bool ekf2_init_done;
     bool ekf3_init_done;
+
+    void init_sensors(void);
+    bool init_done;
 };
 
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))
