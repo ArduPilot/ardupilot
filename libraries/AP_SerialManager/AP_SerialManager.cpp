@@ -70,6 +70,14 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL7_BAUD HAL_SERIAL7_BAUD
 #endif
 
+#ifndef HAL_SERIAL8_PROTOCOL
+#define SERIAL8_PROTOCOL SerialProtocol_None
+#define SERIAL8_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#else
+#define SERIAL8_PROTOCOL HAL_SERIAL8_PROTOCOL
+#define SERIAL8_BAUD HAL_SERIAL8_BAUD
+#endif
+
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if SERIALMANAGER_NUM_PORTS > 0
     // @Param: 0_BAUD
@@ -298,6 +306,31 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
 #endif
+
+#if SERIALMANAGER_NUM_PORTS > 8
+    // @Param: 8_PROTOCOL
+    // @DisplayName: Serial8 protocol selection
+    // @Description: Control what protocol Serial8 port should be used for. Note that the Frsky options require external converter hardware. See the wiki for details.
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:MegaSquirt EFI, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed
+    // @User: Standard
+    // @RebootRequired: True
+    AP_GROUPINFO("8_PROTOCOL",  26, AP_SerialManager, state[8].protocol, SERIAL8_PROTOCOL),
+
+    // @Param: 8_BAUD
+    // @DisplayName: Serial 8 Baud Rate
+    // @Description: The baud rate used for Serial7. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @User: Standard
+    AP_GROUPINFO("8_BAUD", 27, AP_SerialManager, state[8].baud, SERIAL8_BAUD),
+
+    // @Param: 8_OPTIONS
+    // @DisplayName: Serial8 options
+    // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire.
+    // @Bitmask: 0:InvertRX, 1:InvertTX, 2:HalfDuplex, 3:Swap, 4: RX_PullDown, 5: RX_PullUp, 6: TX_PullDown, 7: TX_PullUp, 8: RX_NoDMA, 9: TX_NoDMA, 10: Don't forward mavlink to/from
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("8_OPTIONS",  28, AP_SerialManager, state[8].options, 0),
+#endif
     
     AP_GROUPEND
 };
@@ -354,6 +387,9 @@ void AP_SerialManager::init()
 #endif
 #if SERIALMANAGER_NUM_PORTS > 7
     state[7].uart = hal.uartH;  // serial7, uartH, User Configurable
+#endif
+#if SERIALMANAGER_NUM_PORTS > 8
+    state[8].uart = hal.uartI;  // serial8, uartI, User Configurable
 #endif
 
 #ifdef HAL_OTG1_CONFIG
