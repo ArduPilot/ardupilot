@@ -1592,8 +1592,8 @@ void NavEKF3::convert_parameters()
             break;
         case 3:
         default:
-            // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow or external nav
-            AP_BoardConfig::config_error("Configure EK3_SRC1_POSXY and _VELXY");
+            // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow, beacon or external nav
+            sources.mark_configured_in_storage();
             break;
         }
     } else {
