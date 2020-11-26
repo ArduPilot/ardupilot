@@ -402,6 +402,7 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         gcs().update_receive();
         gcs().update_send();
 #endif
+        EXPECT_DELAY_MS(10);
         hal.scheduler->delay(5);
     }
 }
