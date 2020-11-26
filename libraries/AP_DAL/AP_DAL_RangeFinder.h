@@ -33,19 +33,14 @@ public:
 
     class AP_DAL_RangeFinder_Backend *get_backend(uint8_t id) const;
 
-    void handle_message(const log_RRNH &msg) {
-        _RRNH = msg;
-    }
-    void handle_message(const log_RRNI &msg) {
-        _RRNI[msg.instance] = msg;
-    }
+    void handle_message(const log_RRNH &msg);
+    void handle_message(const log_RRNI &msg);
 
 private:
 
     struct log_RRNH _RRNH;
-    struct log_RRNI _RRNI[RANGEFINDER_MAX_INSTANCES];
-
-    AP_DAL_RangeFinder_Backend *_backend[RANGEFINDER_MAX_INSTANCES];
+    struct log_RRNI *_RRNI;
+    AP_DAL_RangeFinder_Backend **_backend;
 };
 
 
