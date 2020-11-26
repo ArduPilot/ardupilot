@@ -6,6 +6,7 @@
 #include "EKF_Buffer.h"
 #include <stdlib.h>
 #include <string.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // constructor
 ekf_ring_buffer::ekf_ring_buffer(uint8_t _elsize) :
@@ -145,7 +146,7 @@ void *ekf_imu_buffer::get_offset(uint8_t idx) const
 bool ekf_imu_buffer::init(uint32_t size)
 {
     if (buffer != nullptr) {
-        // allow for init twive
+        // allow for init twice
         free(buffer);
     }
     buffer = calloc(size, elsize);
@@ -165,6 +166,7 @@ bool ekf_imu_buffer::init(uint32_t size)
 void ekf_imu_buffer::push_youngest_element(const void *element)
 {
     if (!buffer) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
     // push youngest to the buffer
@@ -180,7 +182,12 @@ void ekf_imu_buffer::push_youngest_element(const void *element)
 // retrieve the oldest data from the ring buffer tail
 void ekf_imu_buffer::get_oldest_element(void *element)
 {
-    memcpy(element, get_offset(_oldest), elsize);
+    if (buffer == nullptr) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        memset(element, 0, elsize);
+    } else {
+        memcpy(element, get_offset(_oldest), elsize);
+    }
 }
 
 // writes the same data to all elements in the ring buffer
