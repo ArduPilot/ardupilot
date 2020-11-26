@@ -55,6 +55,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
     // @Values: 0:Disabled,1:uAvionix-MAVLink
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
 
     // index 1 is reserved - was BEHAVIOR
@@ -211,27 +212,12 @@ void AP_ADSB::init(void)
     }
 }
 
-
-/*
- * de-initialize and free up some memory
- */
-void AP_ADSB::deinit(void)
-{
-    if (in_state.vehicle_list != nullptr) {
-        delete [] in_state.vehicle_list;
-        in_state.vehicle_list = nullptr;
-    }
-    for (uint8_t i=0; i<ADSB_MAX_INSTANCES; i++) {
-        if (_backend[i] != nullptr) {
-            delete _backend[i];
-            _backend[i] = nullptr;
-        }
-    }
-    detected_num_instances = 0;
-}
-
 bool AP_ADSB::check_startup()
 {
+    if (_init_failed) {
+        return false;
+    }
+
     bool all_backends_disabled = true;
     for (uint8_t instance=0; instance<ADSB_MAX_INSTANCES; instance++) {
         if (_type[instance] > 0) {
@@ -240,10 +226,7 @@ bool AP_ADSB::check_startup()
         }
     }
 
-    if (all_backends_disabled || _init_failed) {
-        if (in_state.vehicle_list != nullptr) {
-            deinit();
-        }
+    if (all_backends_disabled) {
         // nothing to do
         return false;
     }
@@ -359,7 +342,7 @@ void AP_ADSB::update(void)
     }
 
     for (uint8_t i=0; i<detected_num_instances; i++) {
-        if (_backend[i] != nullptr) {
+        if (_backend[i] != nullptr && _type[i].get() != (int8_t)Type::None) {
             _backend[i]->update();
         }
     }
