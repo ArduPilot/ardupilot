@@ -38,6 +38,7 @@ from waflib.TaskGen import before_method, feature, taskgen_method
 
 import os.path
 import re
+import subprocess
 
 class update_submodule(Task.Task):
     color = 'BLUE'
@@ -111,8 +112,24 @@ class update_submodule(Task.Task):
     def __str__(self):
         return 'Submodule update: %s' % self.submodule
 
+def module_is_uninitialised(d):
+    return not any(not i.startswith('.') for i in os.listdir(d))
+
 def configure(cfg):
     cfg.find_program('git')
+    path = cfg.srcnode.abspath()+'/modules/'
+    check_modules = ['ChibiOS', 'gbenchmark', 'gtest', 'libcanard', 'mavlink', 'uavcan']
+    missing_modules = []
+
+    for i in check_modules:
+        path_module = os.path.join(path, i)
+        if module_is_uninitialised(path_module):
+            missing_modules.append(i)
+
+    for i in missing_modules:
+        path_module = os.path.join(path, i)
+        subprocess.check_call(['git', 'submodule', 'update', '--init', path_module])
+
 
 _submodules_tasks = {}
 
