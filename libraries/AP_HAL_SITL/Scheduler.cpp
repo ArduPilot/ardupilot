@@ -243,6 +243,7 @@ void Scheduler::_run_io_procs()
     hal.uartF->_timer_tick();
     hal.uartG->_timer_tick();
     hal.uartH->_timer_tick();
+    hal.uartI->_timer_tick();
     hal.storage->_timer_tick();
 
 #ifndef HAL_BUILD_AP_PERIPH
