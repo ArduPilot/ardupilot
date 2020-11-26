@@ -25,7 +25,6 @@ void AP_DAL_VisualOdom::start_frame()
     const auto *vo = AP::visualodom();
 
     const log_RVOH old = RVOH;
-    RVOH.ptr_is_nullptr = (vo == nullptr);
     if (vo != nullptr) {
         RVOH.pos_offset = vo->get_pos_offset();
         RVOH.delay_ms = vo->get_delay_ms();

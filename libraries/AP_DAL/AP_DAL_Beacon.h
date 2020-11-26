@@ -58,9 +58,6 @@ public:
     AP_DAL_Beacon();
 
     AP_DAL_Beacon *beacon() {
-        if (_RBCH.ptr_is_nullptr) {
-            return nullptr;
-        }
         return this;
     }
 
