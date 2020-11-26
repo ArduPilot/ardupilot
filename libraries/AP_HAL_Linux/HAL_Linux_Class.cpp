@@ -69,6 +69,7 @@ static UARTDriver uartEDriver(false);
 static UARTDriver uartFDriver(false);
 static UARTDriver uartGDriver(false);
 static UARTDriver uartHDriver(false);
+static UARTDriver uartIDriver(false);
 
 static I2CDeviceManager i2c_mgr_instance;
 static SPIDeviceManager spi_mgr_instance;
@@ -233,6 +234,7 @@ HAL_Linux::HAL_Linux() :
         &uartFDriver,
         &uartGDriver,
         &uartHDriver,
+        &uartIDriver,
         &i2c_mgr_instance,
         &spi_mgr_instance,
         &analogIn,
@@ -256,7 +258,7 @@ HAL_Linux::HAL_Linux() :
 
 void _usage(void)
 {
-    printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath -G uartGpath -H uartHpath\n");
+    printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath -G uartGpath -H uartHpath -I uartIpath\n");
     printf("Options:\n");
     printf("\tserial:\n");
     printf("                    -A /dev/ttyO4\n");
@@ -302,6 +304,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"uartF",         true,  0, 'F'},
         {"uartG",         true,  0, 'G'},
         {"uartH",         true,  0, 'H'},
+        {"uartI",         true,  0, 'I'},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
@@ -342,6 +345,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         case 'H':
             uartHDriver.set_device_path(gopt.optarg);
             break;
+        case 'I':
+            uartIDriver.set_device_path(gopt.optarg);
+            break;
         case 'l':
             utilInstance.set_custom_log_directory(gopt.optarg);
             break;
@@ -376,6 +382,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     uartF->begin(115200);
     uartG->begin(115200);
     uartH->begin(115200);
+    uartI->begin(115200);
     analogin->init();
     utilInstance.init(argc+gopt.optind-1, &argv[gopt.optind-1]);
 
