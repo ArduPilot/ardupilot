@@ -122,7 +122,12 @@ public:
 
     void set_log_rfnd_bit(uint32_t log_rfnd_bit) { _log_rfnd_bit = log_rfnd_bit; }
 
-    // Return the number of range finder instances
+    /*
+      Return the number of range finder instances. Note that if users
+      sets up rangefinders with a gap in the types then this is the
+      index of the maximum sensor ID plus one, so this gives the value
+      that should be used when iterating over all sensors
+    */
     uint8_t num_sensors(void) const {
         return num_instances;
     }
@@ -204,7 +209,7 @@ private:
 
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
-    bool _add_backend(AP_RangeFinder_Backend *driver);
+    bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND();
