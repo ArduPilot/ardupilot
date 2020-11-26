@@ -110,24 +110,24 @@ void AP_DAL::init_sensors(void)
       at the time we startup the EKF
      */
 
-    auto *rangefinder = AP::rangefinder();
-    if (rangefinder && rangefinder->num_sensors() > 0) {
+    auto *rng = AP::rangefinder();
+    if (rng && rng->num_sensors() > 0) {
         alloc_failed |= (_rangefinder = new AP_DAL_RangeFinder) == nullptr;
     }
 
-    auto *airspeed = AP::airspeed();
-    if (airspeed != nullptr && airspeed->get_num_sensors() > 0) {
+    auto *aspeed = AP::airspeed();
+    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
         alloc_failed |= (_airspeed = new AP_DAL_Airspeed) == nullptr;
     }
 
-    auto *beacon = AP::beacon();
-    if (beacon != nullptr && beacon->enabled()) {
+    auto *bcn = AP::beacon();
+    if (bcn != nullptr && bcn->enabled()) {
         alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
     }
 
 #if HAL_VISUALODOM_ENABLED
-    auto *visualodom = AP::visualodom();
-    if (visualodom != nullptr && visualodom->enabled()) {
+    auto *vodom = AP::visualodom();
+    if (vodom != nullptr && vodom->enabled()) {
         alloc_failed |= (_visualodom = new AP_DAL_VisualOdom) == nullptr;
     }
 #endif
