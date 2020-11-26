@@ -7,9 +7,13 @@
 
 AP_DAL_Beacon::AP_DAL_Beacon()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    const auto *bcon = AP::beacon();
+    _RBCH.count = bcon->count();
     for (uint8_t i=0; i<ARRAY_SIZE(_RBCI); i++) {
         _RBCI[i].instance = i;
     }
+#endif
 }
 
 void AP_DAL_Beacon::start_frame()
@@ -18,9 +22,7 @@ void AP_DAL_Beacon::start_frame()
 
     const log_RBCH old = _RBCH;
     if (bcon != nullptr) {
-        _RBCH.count = bcon->count();
         _RBCH.get_vehicle_position_ned_returncode = bcon->get_vehicle_position_ned(_RBCH.vehicle_position_ned, _RBCH.accuracy_estimate);
-
         Location loc;
         _RBCH.get_origin_returncode = bcon->get_origin(loc);
         _RBCH.enabled = bcon->enabled();
