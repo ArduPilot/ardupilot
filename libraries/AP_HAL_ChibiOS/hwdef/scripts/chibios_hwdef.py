@@ -1154,7 +1154,7 @@ def write_UART_config(f):
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
-    devnames = "ABCDEFGH"
+    devnames = "ABCDEFGHI"
     sdev = 0
     idx = 0
     num_empty_uarts = 0
@@ -1262,8 +1262,8 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    if num_uarts > 8:
-        error("Exceeded max num UARTs of 8 (%u)" % num_uarts)
+    if num_uarts > 9:
+        error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
     f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
 
 
