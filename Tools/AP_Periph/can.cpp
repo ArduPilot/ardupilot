@@ -902,7 +902,23 @@ static void process1HzTasks(uint64_t timestamp_usec)
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     if (periph.g.flash_bootloader.get()) {
+        const uint8_t flash_bl = periph.g.flash_bootloader.get();
         periph.g.flash_bootloader.set_and_save_ifchanged(0);
+        if (flash_bl == 42) {
+            // magic developer value to test watchdog support with main loop lockup
+            while (true) {
+                can_printf("entering lockup\n");
+                hal.scheduler->delay(100);
+            }
+        }
+        if (flash_bl == 43) {
+            // magic developer value to test watchdog support with hard fault
+            can_printf("entering fault\n");
+            void *foo = (void*)0xE000ED38;
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *) foo;
+            gptr();
+        }
         hal.scheduler->delay(1000);
         AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
         switch (res) {
@@ -1043,6 +1059,8 @@ void AP_Periph_FW::can_start()
     if (g.can_node >= 0 && g.can_node < 128) {
         PreferredNodeID = g.can_node;
     }
+
+    periph.g.flash_bootloader.set_and_save_ifchanged(0);
 
     can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
 
