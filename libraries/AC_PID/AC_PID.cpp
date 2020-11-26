@@ -261,6 +261,7 @@ float AC_PID::get_ff()
 
 void AC_PID::reset_I()
 {
+    _pid_info.I = 0;
     _integrator = 0;
 }
 
