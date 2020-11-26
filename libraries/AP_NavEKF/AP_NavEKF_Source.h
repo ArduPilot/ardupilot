@@ -93,10 +93,19 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // return true if ext nav is enabled on any source
+    bool ext_nav_enabled(void) const;
+
+    // return true if ext yaw is enabled on any source
+    bool ext_yaw_enabled(void) const;
+    
+    // return true if wheel encoder is enabled on any source
+    bool wheel_encoder_enabled(void) const;
+    
 private:
 
     // Parameters
-    struct {
+    struct SourceSet {
         AP_Int8 posxy;  // xy position source
         AP_Int8 velxy;  // xy velocity source
         AP_Int8 posz;   // position z (aka altitude or height) source
