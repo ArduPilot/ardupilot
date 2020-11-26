@@ -319,6 +319,65 @@ void Plane::airbrake_update(void)
 }
 
 /*
+    Set CROW. CROW is a mix between flaps and airbrakes. There are two types of CROW outputs available -
+    corresponding to inner and outer flaps.
+*/
+void Plane::crow_update(void)
+{
+    float flap     = (float)SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)/100;
+    float airbrake = (float)SRV_Channels::get_output_scaled(SRV_Channel::k_airbrake)/100;
+
+    if (g.flap_slewrate)
+    {
+        // Rate limit the output using the FLAP_SLEWRATE parameter.
+        float max_flap_change = G_Dt * g.flap_slewrate*0.01f;
+
+        if ((flap - flap_function_output) > max_flap_change) {
+            flap_function_output += max_flap_change;
+        }
+        else if ((flap - flap_function_output) < -max_flap_change) {
+            flap_function_output -= max_flap_change;
+        } else {
+            flap_function_output = flap;
+        }
+    } else {
+        flap_function_output = flap;
+    }
+
+    if (g2.airbrake_slewrate) 
+    {
+        // Rate limit the output using the AIRBRAKE_SLEWRATE parameter.
+        float max_airbrake_change = G_Dt * g2.airbrake_slewrate*0.01f;
+
+        if ((airbrake - airbrake_function_output) > max_airbrake_change) {
+            airbrake_function_output += max_airbrake_change;
+        }
+        else if ((airbrake - airbrake_function_output) < -max_airbrake_change) {
+            airbrake_function_output -= max_airbrake_change;
+        } else {
+            airbrake_function_output = airbrake;
+        }
+    } else {
+        airbrake_function_output = airbrake;
+    }
+
+    float flap_inner = flap_function_output * g2.crow_flap_weight_inner*0.01f;
+    float flap_outer = flap_function_output * g2.crow_flap_weight_outer*0.01f;
+
+    float crow_inner = flap_inner - airbrake_function_output - flap_inner*airbrake_function_output;
+    float crow_outer = flap_outer + airbrake_function_output - flap_outer*airbrake_function_output;
+
+    // Rescale to use -4500 to 4500 (enables trim)
+    crow_inner  = constrain_float(crow_inner*4500, -4500, 4500);
+    crow_outer  = constrain_float(crow_outer*4500, -4500, 4500);
+
+    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_inner, crow_inner);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_outer, crow_outer);
+
+    flaperon_update(flap_function_output*100);
+}
+
+/*
   setup servos for idle mode
   Idle mode is used during balloon launch to keep servos still, apart
   from occasional wiggle to prevent freezing up
@@ -631,10 +690,7 @@ void Plane::set_servos_flaps(void)
     if (g.flap_slewrate) {
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate, G_Dt);
         SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
-    }    
-
-    // output to flaperons, if any
-    flaperon_update(auto_flap_percent);
+    }
 }
 
 #if LANDING_GEAR_ENABLED == ENABLED
@@ -827,6 +883,9 @@ void Plane::set_servos(void)
 
     // set airbrake outputs
     airbrake_update();
+
+    // set crow ooutputs
+    crow_update();
     
     if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
