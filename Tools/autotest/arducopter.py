@@ -2209,7 +2209,10 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("GPS_TYPE", 0)
-            self.set_parameter("EK2_GPS_TYPE", 3)
+            self.set_parameter("EK3_SRC1_POSXY", 6)
+            self.set_parameter("EK3_SRC1_VELXY", 6)
+            self.set_parameter("EK3_SRC1_POSZ", 6)
+            self.set_parameter("EK3_SRC1_VELZ", 6)
             self.set_parameter("VISO_TYPE", 1)
             self.set_parameter("SERIAL5_PROTOCOL", 1)
             self.reboot_sitl()
