@@ -1764,6 +1764,15 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_FLOW_ENABLE", 1)
             self.set_parameter("FLOW_TYPE", 10)
 
+            # configure EKF to use optical flow instead of GPS
+            ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
+            if ahrs_ekf_type == 2:
+                self.set_parameter("EK2_GPS_TYPE", 3)
+            if ahrs_ekf_type == 3:
+                self.set_parameter("EK3_SRC1_POSXY", 0)
+                self.set_parameter("EK3_SRC1_VELXY", 5)
+                self.set_parameter("EK3_SRC1_VELZ", 0)
+
             self.set_analog_rangefinder_parameters()
 
             self.set_parameter("SIM_GPS_DISABLE", 1)
