@@ -41,8 +41,8 @@ public:
         unsetTakeoffExpected      =  4,
         setTouchdownExpected      =  5,
         unsetTouchdownExpected    =  6,
-        setInhibitGpsVertVelUse   =  7,
-        unsetInhibitGpsVertVelUse =  8,
+//        setInhibitGpsVertVelUse   =  7,   no longer used
+//        unsetInhibitGpsVertVelUse =  8,   no longer used
         setTerrainHgtStable       =  9,
         unsetTerrainHgtStable     = 10,
         requestYawReset           = 11,
