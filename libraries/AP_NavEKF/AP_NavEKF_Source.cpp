@@ -323,6 +323,7 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
     bool rangefinder_required = false;
     bool visualodom_required = false;
     bool optflow_required = false;
+    bool wheelencoder_required = false;
 
     // check source params are valid
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
@@ -362,7 +363,7 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
             visualodom_required = true;
             break;
         case SourceXY::WHEEL_ENCODER:
-            // ToDo: add wheelencoder_required and test below
+            wheelencoder_required = true;
             break;
         case SourceXY::BEACON:
         default:
@@ -473,6 +474,11 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
             hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom");
             return false;
         }
+    }
+
+    if (wheelencoder_required && !dal.wheelencoder_enabled()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "WheelEncoder");
+        return false;
     }
 
     return true;
