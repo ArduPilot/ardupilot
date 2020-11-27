@@ -192,6 +192,10 @@ public:
         return _RFRN.opticalflow_enabled;
     }
 
+    bool wheelencoder_enabled(void) const {
+        return _RFRN.wheelencoder_enabled;
+    }
+
     // log optical flow data
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
 
