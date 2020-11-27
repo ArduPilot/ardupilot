@@ -539,11 +539,20 @@ bool NavEKF3_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
 void NavEKF3_core::readGpsData()
 {
     // check for new GPS data
-    // limit update rate to avoid overflowing the FIFO buffer
     const auto &gps = dal.gps();
 
-        if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms > frontend->sensorIntervalMin_ms) {
-            if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
+    // limit update rate to avoid overflowing the FIFO buffer
+    if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
+        return;
+    }
+
+    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+        // report GPS fix status
+        gpsCheckStatus.bad_fix = true;
+        dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
+        return;
+    }
+
             // report GPS fix status
             gpsCheckStatus.bad_fix = false;
 
@@ -690,13 +699,6 @@ void NavEKF3_core::readGpsData()
                 yaw_accuracy_deg = MAX(yaw_accuracy_deg, min_yaw_accuracy_deg);
                 writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), gpsDataNew.time_ms, 2);
             }
-
-        } else {
-            // report GPS fix status
-            gpsCheckStatus.bad_fix = true;
-            dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
-        }
-    }
 }
 
 // read the delta angle and corresponding time interval from the IMU
