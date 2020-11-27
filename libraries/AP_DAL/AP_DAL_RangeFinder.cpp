@@ -73,6 +73,8 @@ void AP_DAL_RangeFinder::start_frame()
     _RRNH.ground_clearance_cm = rangefinder->ground_clearance_cm_orient(ROTATION_PITCH_270);
     _RRNH.max_distance_cm = rangefinder->max_distance_cm_orient(ROTATION_PITCH_270);
 
+    WRITE_REPLAY_BLOCK_IFCHANGED(RRNH, _RRNH, old);
+
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         auto *backend = rangefinder->get_backend(i);
         if (backend == nullptr) {
@@ -80,8 +82,6 @@ void AP_DAL_RangeFinder::start_frame()
         }
         _backend[i]->start_frame(backend);
     }
-
-    WRITE_REPLAY_BLOCK_IFCHANGED(RRNH, _RRNH, old);
 }
 
 
