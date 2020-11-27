@@ -74,12 +74,6 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     case AP_DAL::Event::unsetTouchdownExpected:
         ekf2.setTouchdownExpected(false);
         break;
-    case AP_DAL::Event::setInhibitGpsVertVelUse:
-        ekf2.setInhibitGpsVertVelUse(true);
-        break;
-    case AP_DAL::Event::unsetInhibitGpsVertVelUse:
-        ekf2.setInhibitGpsVertVelUse(false);
-        break;
     case AP_DAL::Event::setTerrainHgtStable:
         ekf2.setTerrainHgtStable(true);
         break;
@@ -151,12 +145,6 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         break;
     case AP_DAL::Event::unsetTouchdownExpected:
         ekf3.setTouchdownExpected(false);
-        break;
-    case AP_DAL::Event::setInhibitGpsVertVelUse:
-        ekf3.setInhibitGpsVertVelUse(true);
-        break;
-    case AP_DAL::Event::unsetInhibitGpsVertVelUse:
-        ekf3.setInhibitGpsVertVelUse(false);
         break;
     case AP_DAL::Event::setTerrainHgtStable:
         ekf3.setTerrainHgtStable(true);
