@@ -151,6 +151,8 @@ const AP_Param::GroupInfo AP_WheelEncoder::var_info[] = {
 
 AP_WheelEncoder::AP_WheelEncoder(void)
 {
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -346,4 +348,16 @@ uint32_t AP_WheelEncoder::get_last_reading_ms(uint8_t instance) const
         return 0;
     }
     return state[instance].last_reading_ms;
+}
+
+// singleton instance
+AP_WheelEncoder *AP_WheelEncoder::_singleton;
+
+namespace AP {
+
+AP_WheelEncoder *wheelencoder()
+{
+    return AP_WheelEncoder::get_singleton();
+}
+
 }
