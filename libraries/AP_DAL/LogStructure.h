@@ -66,6 +66,7 @@ struct log_RFRN {
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
+    uint8_t wheelencoder_enabled:1;
     uint8_t _end;
 };
 
