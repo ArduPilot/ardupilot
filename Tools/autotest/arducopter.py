@@ -2567,11 +2567,15 @@ class AutoTestCopter(AutoTest):
             self.set_analog_rangefinder_parameters()
 
             self.set_parameters({
-                "RNGFND1_MAX_CM": 1500,
-                "EK2_RNG_USE_HGT": 70,
-                "EK2_ENABLE": 1,
-                "AHRS_EKF_TYPE": 2,
+                "RNGFND1_MAX_CM": 1500
             })
+
+            # configure EKF to use rangefinder for altitude at low altitudes
+            ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
+            if ahrs_ekf_type == 2:
+                self.set_parameter("EK2_RNG_USE_HGT", 70)
+            if ahrs_ekf_type == 3:
+                self.set_parameter("EK3_RNG_USE_HGT", 70)
 
             self.reboot_sitl() # needed for both rangefinder and initial position
             self.assert_vehicle_location_is_at_startup_location()
