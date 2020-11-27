@@ -569,7 +569,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, if it is allowed to be used, and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;

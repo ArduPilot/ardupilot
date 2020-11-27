@@ -1039,18 +1039,6 @@ uint8_t NavEKF2::setInhibitGPS(void)
     return core[primary].setInhibitGPS();
 }
 
-// Set the argument to true to prevent the EKF using the GPS vertical velocity
-// This can be used for situations where GPS velocity errors are causing problems with height accuracy
-void NavEKF2::setInhibitGpsVertVelUse(const bool varIn) {
-    if (varIn) {
-        AP::dal().log_event2(AP_DAL::Event::setInhibitGpsVertVelUse);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetInhibitGpsVertVelUse);
-    }
-    inhibitGpsVertVelUse = varIn;
-};
-
-
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
