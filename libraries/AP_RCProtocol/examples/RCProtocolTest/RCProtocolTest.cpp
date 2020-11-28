@@ -325,12 +325,20 @@ void loop()
 
     const uint16_t fport_output[] = {1499, 1499, 1101, 1499, 1035, 1341, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
-    const uint8_t fport2_bytes[] = {0x18, 0xff, 0xac, 0x00, 0x5f, 0xf8, 0xc0, 0x07,
-                                    0x3e, 0xf0, 0x81, 0x0f, 0x7c, 0xe0, 0x03, 0x1f,
-                                    0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c,
+    const uint8_t fport2_16ch_bytes[] = {0x18, 0xff, 
+                                    0xac, 0x00, 0x5f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
                                     0x00, 0x5e, 0x98};
-    const uint16_t fport2_output[] = {982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
+    const uint16_t fport2_16ch_output[] = {982, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
+    const uint8_t fport2_24ch_bytes[] = {0x23, 0xff,
+                                    0xe0, 0x03, 0xdf, 0x2c, 0xc2, 0xc7, 0x0a, 0xf0, 0xb1, 0x82, 0x15, // 8ch on 11 bits
+                                    0xe0, 0x9b, 0x38, 0x2b, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c, // 8ch on 11 bits
+                                    0x00, 0x5b, 0x02 };
+
+    // we only decode up to 18ch
+    const uint16_t fport2_24ch_output[] = {1495, 1495, 986, 1495, 982, 1495, 982, 982, 1495, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
@@ -353,7 +361,8 @@ void loop()
     test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 9, 16);
 
     test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
-    test_protocol("FPORT2", 115200, fport2_bytes, sizeof(fport2_bytes), fport2_output, ARRAY_SIZE(fport2_output), 3, 0, true);
+    test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 3, 0, true);
+    test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 3, 0, true);
 }
 
 AP_HAL_MAIN();
