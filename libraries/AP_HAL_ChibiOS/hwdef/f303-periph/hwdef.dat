@@ -77,8 +77,8 @@ define DMA_RESERVE_SIZE 0
 
 define PERIPH_FW TRUE
 
-# MAIN_STACK is stack of initial thread
-MAIN_STACK 0x80
+# MAIN_STACK is stack of initial thread and of ISRs
+MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0x800
@@ -107,7 +107,7 @@ define IO_THD_WA_SIZE      256
 
 define HAL_NO_GCS
 define HAL_NO_LOGGING
-define HAL_NO_MONITOR_THREAD
+//define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
