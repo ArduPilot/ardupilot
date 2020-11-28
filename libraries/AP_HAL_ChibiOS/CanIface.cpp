@@ -519,7 +519,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
     /*
      * Read the frame contents
      */
-    AP_HAL::CANFrame frame;
+    AP_HAL::CANFrame &frame = isr_rx_frame;
     const bxcan::RxMailboxType& rf = can_->RxMailbox[fifo_index];
 
     if ((rf.RIR & bxcan::RIR_IDE) == 0) {
@@ -549,7 +549,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
     /*
      * Store with timeout into the FIFO buffer and signal update event
      */
-    CanRxItem rx_item;
+    CanRxItem &rx_item = isr_rx_item;
     rx_item.frame = frame;
     rx_item.timestamp_us = timestamp_us;
     rx_item.flags = 0;
