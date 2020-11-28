@@ -1,13 +1,18 @@
 ###########################################################################################################################################################
 # mRo Pixracer Pro Flight Controller
-# STM32H753IIK6
-# 8 PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
-# Exposed JST GH Connectors: GPS UART+I2C connector, 5 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, Power with analog current and voltage sense
+# STM32H743IIK6
+# 8 PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
+# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
+# Exposed JST GH Connectors: GPS UART+I2C connector, 6 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, I2C, Power with analog current and voltage sense
 # 3 IMUs (ICM20602 6DOF, ICM20948 9DOF, BMI088 6DOF)
-# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG
+# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG, USB-C
 # Onboard 3 color LED and buzzer
-# 36mm x 36mm, 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
-# M10064B - Initial Release
+# Uncased weight and dimensions:
+# Weight (with headers): 11.3g (.40oz)
+# Length: 36mm (1.42in)
+# Width:  36mm (1.42in)
+# Mounting holes: 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
+# M10064C - Initial Release
 ###########################################################################################################################################################
 
 # MCU class and specific type
@@ -34,8 +39,8 @@ define HAL_WITH_RAMTRON 1
 # USB setup
 USB_STRING_MANUFACTURER "mRo"
 
-# RC Input set for Interrupt not DMA
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW # also USART6_RX for serial RC
+# RC Input set for Interrupt also USART6_RX for serial RC
+PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
@@ -55,13 +60,14 @@ I2C_ORDER I2C1
 define HAL_I2C_INTERNAL_MASK 0
 
 # order of UARTs (and USB) and suggested usage
-# UART4 GPS
 # USART2 Telem 1 (Flow Control)
 # USART3 Telem 2 (Flow Control)
+# UART4 GPS
 # UART8 FRSKY Telem
-# USART6 RC input (Only RX pin is connected)
 # USART1 Additional UART
 # UART7 Additional UART
+
+# USART6 RC input (Only RX pin is connected)
 
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7 OTG2
 
@@ -258,15 +264,12 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-# DMA_PRIORITY SDMMC*
-# DMA_NOSHARE SPI1* SPI2* SPI3*
-
 # 3 IMUs
 IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
 IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
 IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
 
-define HAL_DEFAULT_INS_FAST_SAMPLE 5
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # 1 baro
 BARO DPS280  SPI:dps310
