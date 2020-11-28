@@ -679,10 +679,13 @@ def write_mcu_config(f):
     else:
         env_vars['PROCESS_STACK'] = "0x2000"
 
+    # MAIN_STACK is location of initial stack on startup and is also the stack
+    # used for slow interrupts. It needs to be big enough for maximum interrupt
+    # nesting
     if get_config('MAIN_STACK', required=False):
         env_vars['MAIN_STACK'] = get_config('MAIN_STACK')
     else:
-        env_vars['MAIN_STACK'] = "0x400"
+        env_vars['MAIN_STACK'] = "0x600"
 
     if get_config('IOMCU_FW', required=False):
         env_vars['IOMCU_FW'] = get_config('IOMCU_FW')

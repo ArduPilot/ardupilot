@@ -82,8 +82,8 @@ define DMA_RESERVE_SIZE 0
 
 define PERIPH_FW TRUE
 
-# MAIN_STACK is stack of initial thread
-MAIN_STACK 0x80
+# MAIN_STACK is stack of initial thread and ISRs
+MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0x600
