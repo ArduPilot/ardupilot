@@ -1,13 +1,18 @@
 ###########################################################################################################################################################
 # mRo Pixracer Pro Flight Controller
-# STM32H753IIK6
-# 8 PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
-# Exposed JST GH Connectors: GPS UART+I2C connector, 5 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, Power with analog current and voltage sense
+# STM32H743IIK6
+# 8 PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
+# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
+# Exposed JST GH Connectors: GPS UART+I2C connector, 6 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, I2C, Power with analog current and voltage sense
 # 3 IMUs (ICM20602 6DOF, ICM20948 9DOF, BMI088 6DOF)
-# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG
+# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG, USB-C
 # Onboard 3 color LED and buzzer
-# 36mm x 36mm, 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
-# M10064B - Initial Release
+# Uncased weight and dimensions:
+# Weight (with headers): 11.3g (.40oz)
+# Length: 36mm (1.42in)
+# Width:  36mm (1.42in)
+# Mounting holes: 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
+# M10064C - Initial Release
 ###########################################################################################################################################################
 
 # MCU class and specific type
@@ -40,11 +45,7 @@ PB3 LED_ACTIVITY2 OUTPUT
 define HAL_LED_ON 0
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 UART7
-
-# UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
-PE7 UART7_RX UART7
-PE8 UART7_TX UART7
+SERIAL_ORDER OTG1
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
