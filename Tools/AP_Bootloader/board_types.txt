@@ -92,7 +92,7 @@ AP_HW_CUAV_X7_PRO                    1010
 AP_HW_SUCCEXF4                       1011
 AP_HW_LIGHTSPARKMINI                 1012
 AP_HW_MATEKH743                      1013
-AP_HW_MRO_CONTROL_ZERO_PR            1014
+AP_HW_MRO_MAXXIUM                    1014
 AP_HW_MRO_NEXUS                      1015
 AP_HW_HITEC_MOSAIC                   1016
 AP_HW_MRO_PIXRACER_PRO               1017
