@@ -1,0 +1,3 @@
+include hwdef.dat
+
+define HAL_WITH_DSP 1
