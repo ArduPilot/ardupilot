@@ -375,6 +375,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
+#ifndef HAL_NO_LOGGING
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
                 AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
@@ -390,6 +391,7 @@ void Scheduler::_monitor_thread(void *arg)
                                    pd.spi_count,
                                    pd.i2c_count);
                 }
+#endif
         }
         if (loop_delay >= 500) {
             // at 500ms we declare an internal error
