@@ -71,6 +71,11 @@ def options(opt):
         default=None,
         help='Target board to build, choices are %s.' % ', '.join(boards_names))
 
+    g.add_option('--board-profile',
+        action='store',
+        default=None,
+        help='Target board profile to build, choices are %s.' % ', '.join(boards.get_profile_names()))
+
     g.add_option('--debug',
         action='store_true',
         default=False,
@@ -280,6 +285,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.PROFILE = cfg.options.board_profile
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -298,6 +304,8 @@ def configure(cfg):
     cfg.load('ap_library')
 
     cfg.msg('Setting board to', cfg.options.board)
+    if cfg.options.board_profile is not None:
+        cfg.msg('Setting board profile to', cfg.options.board_profile)
     cfg.get_board().configure(cfg)
 
     cfg.load('clang_compilation_database')

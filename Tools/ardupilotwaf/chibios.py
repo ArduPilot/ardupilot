@@ -372,6 +372,9 @@ def generate_hwdef_h(env):
     if env.BOOTLOADER:
         env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
         env.BOOTLOADER_OPTION="--bootloader"
+    elif env.PROFILE:
+        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-%s.dat' % (env.BOARD, env.PROFILE))
+        env.BOOTLOADER_OPTION=""
     else:
         env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
         env.BOOTLOADER_OPTION=""

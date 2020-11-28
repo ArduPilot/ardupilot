@@ -10,6 +10,7 @@ from waflib import Utils
 from waflib.Configure import conf
 
 _board_classes = {}
+_board_profiles = {'racer'}
 _board = None
 
 class BoardMeta(type):
@@ -362,6 +363,9 @@ def get_boards_names():
     add_dynamic_boards()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
+
+def get_profile_names():
+    return sorted(list(_board_profiles))
 
 def get_removed_boards():
     '''list of boards which have been removed'''
