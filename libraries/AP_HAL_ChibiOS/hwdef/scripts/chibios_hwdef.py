@@ -821,12 +821,6 @@ def write_mcu_config(f):
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
-    if 'AP_PERIPH' in env_vars:
-        f.write('''
-#define CH_DBG_ENABLE_STACK_CHECK FALSE
-''')
-
-
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
     flash_size = get_config('FLASH_USE_MAX_KB', type=int, default=0)

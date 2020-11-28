@@ -145,3 +145,6 @@ env ROMFS_UNCOMPRESSED True
 
 # reduce the number of CAN RX Buffer
 define HAL_CAN_RX_QUEUE_SIZE 32
+
+# disable stack checking to reduce flash cost
+define CH_DBG_ENABLE_STACK_CHECK FALSE
