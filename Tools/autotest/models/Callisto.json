@@ -18,7 +18,6 @@
     "refTempC" : 25,     # degrees C
     "refBatRes" : 0.024, # BAT.Res from log
 
-
     # full battery voltage
     "maxVoltage" : 50.4,
 
@@ -47,5 +46,13 @@
     "spin_max" : 0.975,
 
     # maximum motor slew rate, or zero to disable
-    "slew_max" : 75
+    "slew_max" : 75,
+
+    # total effective disc area in sq m for 4 x 30 inch diameter rotors
+    # coaxial rotors count as a single rotor for this parameter)
+    "disc_area" : 1.82,
+
+    # momentum drag coefficient
+    # ratio of momentum drag realtive to a ducted rotor of the same effective disc area
+    "mdrag_coef" : 0.10
 }
