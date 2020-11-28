@@ -119,6 +119,14 @@ private:
 
         // maximum slew rate of motors
         float slew_max = 150;
+
+        // rotor disc area in m**2 for 4 x 0.35m dia rotors
+        // Note that coaxial rotors count as one rotor only when cauclating effective disc area
+        float disc_area = 0.385;
+
+        // momentum drag coefficient
+        float mdrag_coef = 0.2;
+
     } default_model;
 
     struct Model model;
