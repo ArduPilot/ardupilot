@@ -45,6 +45,10 @@ extern const AP_HAL::HAL& hal;
 #define CHAN_SCALE_FACTOR2 1600U
 #define CHAN_SCALE_OFFSET 875U
 
+#define FPORT2_PRIM_NULL 0x00
+#define FPORT2_PRIM_READ 0x30
+#define FPORT2_PRIM_WRITE 0x31
+
 struct PACKED FPort2_Frame {
     uint8_t len;
     uint8_t type;
@@ -103,31 +107,52 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
         return;
     }
 
-    // we're only interested in "flight controller" requests
+    // no telemetry for 24ch fport2, timing is too tight
+    if (chan_count > 16) {
+        return;
+    }
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    // 0x30,0x31 read/write frames
+    // allowed reply prim: 0x00,0x32
+    if (frame.downlink.prim == FPORT2_PRIM_READ || frame.downlink.prim == FPORT2_PRIM_WRITE) {
+        AP_Frsky_Telem::set_telem_data(frame.downlink.prim, frame.downlink.appid, le32toh_ptr(frame.downlink.data));
+    }
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+
+    /*
+     we're only interested in "flight controller" requests i.e. 0x1B
+     Notes:
+     need to check how to handle multiple sensor IDs (we probably should respond to 0x1E as well)
+     with fport2 we need to account for the IDs we send sensor data from
+     if we respond to multiple sensors like we do for sport we need to make sure GPS data
+     is always sent with the same sensor ID or else OpenTX will see multiple sensor instances (one for each sensor we respond to)
+     (need to double check on OpenTX if fport2 carries sensor IDs up to the OpenTX sensor tables)
+    */
     if (frame.type != FRAME_TYPE_FC) {
+        /*
+         get SPort data from FRSky_Telem
+         when we are not polled for data we prepare telemetry data for the next poll
+         we save the data to a variable so in case we're late we'll
+         send it in the next call, this prevents corruption of status text messages
+        */
+        if (!telem_data.available) {
+            if (!AP_Frsky_Telem::get_telem_data(telem_data.frame, telem_data.appid, telem_data.data)) {
+                telem_data.frame = 0x00;
+                telem_data.appid = 0x00;
+                telem_data.data = 0x00;
+            }
+            telem_data.available = true;
+        }
         return;
     }
 
     /*
-      get SPort data from FRSky_Telem
-      We save the data to a variable so in case we're late we'll
-      send it in the next call, this prevents corruption of
-      status text messages
-     */
-    if (!telem_data.available) {
-        if (!AP_Frsky_Telem::get_telem_data(telem_data.frame, telem_data.appid, telem_data.data)) {
-            // nothing to send, send a null frame. This ensures the
-            // receiver keeps requesting data from us at the full rate
-            telem_data.frame = 0x00; 
-            telem_data.appid = 0x00; 
-            telem_data.data = 0x00;
-        }
-        telem_data.available = true;
-    }
-    /*
       check that we haven't been too slow in responding to the new
       UART data. If we respond too late then we will corrupt the next
-      incoming control frame
+      incoming control frame.
+      16ch fport2: 4.5ms window before next control frame
+      specs require to release the bus at least 1.5ms before next control frame (uplink frame takes 0.851ms)
      */
     uint64_t tend = uart->receive_time_constraint_us(1);
     uint64_t now = AP_HAL::micros64();
@@ -137,20 +162,23 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
         return;
     }
 
-    uint8_t buf[10];
+    // we initialize to a default null frame
+    uint8_t buf[10] {};
 
     buf[0] = 0x08;
     buf[1] = frame.type;
-    buf[2] = telem_data.frame;
-    buf[3] = telem_data.appid & 0xFF;
-    buf[4] = telem_data.appid >> 8;
-    memcpy(&buf[5], &telem_data.data, 4);
+    // do not consume telemetry data for invalid downlink frames, i.e. incoming prim == 0x00
+    if (frame.downlink.prim != FPORT2_PRIM_NULL) {
+        buf[2] = telem_data.frame;
+        buf[3] = telem_data.appid & 0xFF;
+        buf[4] = telem_data.appid >> 8;
+        memcpy(&buf[5], &telem_data.data, 4);
+        // get fresh telem_data in the next call
+        telem_data.available = false;
+    }
     buf[9] = crc_sum8(&buf[1], 8);
     
     uart->write(buf, sizeof(buf));
-
-    // get fresh telem_data in the next call
-    telem_data.available = false;
 #endif
 }
 
@@ -203,7 +231,7 @@ void AP_RCProtocol_FPort2::_process_byte(uint32_t timestamp_us, uint8_t b)
             byte_input.is_downlink = false;
             break;
         case FRAME_LEN_24:
-            byte_input.control_len = 37;
+            byte_input.control_len = 38;
             chan_count = 24;
             byte_input.is_downlink = false;
             break;
