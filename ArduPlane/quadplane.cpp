@@ -709,12 +709,7 @@ bool QuadPlane::setup(void)
         AP_BoardConfig::config_error("Unable to allocate %s", "ahrs_view");
     }
 
-    if (((frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) || (tailsitter.motor_mask != 0))
-        && (tilt.tilt_type != TILT_TYPE_BICOPTER)) {
-        attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
-    } else {
-        attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, loop_delta_t);
-    }
+    attitude_control = new AC_AttitudeControl_TS(*ahrs_view, aparm, *motors, loop_delta_t);
     if (!attitude_control) {
         AP_BoardConfig::config_error("Unable to allocate %s", "attitude_control");
     }
