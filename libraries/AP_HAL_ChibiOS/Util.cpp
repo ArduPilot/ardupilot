@@ -304,7 +304,8 @@ size_t Util::thread_info(char *buf, size_t bufsize)
   size_t total = 0;
 
   // a header to allow for machine parsers to determine format
-  int n = snprintf(buf, bufsize, "ThreadsV1\n");
+  int n = snprintf(buf, bufsize, "ThreadsV2\nISR PRI=255 sp=%p STACK_FREE=%u/%u\n",
+                   __main_stack_base__, stack_free(__main_stack_base__), __main_stack_size__);
   if (n <= 0) {
       return 0;
   }
@@ -315,13 +316,10 @@ size_t Util::thread_info(char *buf, size_t bufsize)
   tp = chRegFirstThread();
 
   do {
-      uint32_t stklimit = (uint32_t)tp->wabase;
-      uint8_t *p = (uint8_t *)tp->wabase;
-      while (*p == CH_DBG_STACK_FILL_VALUE) {
-          p++;
-      }
-      uint32_t stack_left = ((uint32_t)p) - stklimit;
-      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
+      const uint32_t total_stack = uint32_t(tp) - uint32_t(tp->wabase);
+      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u sp=%p STACK_LEFT=%u/%u\n",
+                   tp->name, unsigned(tp->prio), tp->wabase,
+                   stack_free(tp->wabase), total_stack);
       if (n <= 0) {
           break;
       }
