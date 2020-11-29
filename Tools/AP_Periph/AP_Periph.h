@@ -132,6 +132,9 @@ public:
     uint32_t last_gps_update_ms;
     uint32_t last_baro_update_ms;
     uint32_t last_airspeed_update_ms;
+
+    // show stack as DEBUG msgs
+    void show_stack_free();
 };
 
 extern AP_Periph_FW periph;
