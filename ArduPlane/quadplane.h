@@ -228,6 +228,9 @@ private:
     // get desired climb rate in cm/s
     float get_pilot_desired_climb_rate_cms(void) const;
 
+    // get pilot lean angle
+    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
+
     // initialise throttle_wait when entering mode
     void init_throttle_wait();
 
