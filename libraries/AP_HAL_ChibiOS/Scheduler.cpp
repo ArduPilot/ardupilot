@@ -500,7 +500,7 @@ void Scheduler::_io_thread(void* arg)
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
         if (now - last_stack_check_ms > 1000) {
             last_stack_check_ms = now;
-            check_stack_free();
+            sched->check_stack_free();
         }
 #endif
     }
@@ -711,20 +711,29 @@ void Scheduler::watchdog_pat(void)
  */
 void Scheduler::check_stack_free(void)
 {
+    // we raise an internal error stack_overflow when the available
+    // stack on any thread or the ISR stack drops below this
+    // threshold. This means we get an overflow error when we haven't
+    // yet completely run out of stack. This gives us a good
+    // pre-warning when we are getting too close
+#if defined(STM32F1)
     const uint32_t min_stack = 32;
-    bool ok = false;
+#else
+    const uint32_t min_stack = 64;
+#endif
 
-    if (stack_free(__main_stack_base__) < min_stack) {
-        AP::internalerror().error(error_number, 0xFFFF);
+    if (stack_free(&__main_stack_base__) < min_stack) {
+        // use "line number" of 0xFFFF for ISR stack low
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
     }
 
-    thread_t *tp = chRegFirstThread();
-    do {
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (stack_free(tp->wabase) < min_stack) {
-            AP::internalerror().error(error_number, tp->prio);
+            // use task priority for line number. This allows us to
+            // identify the task fairly reliably
+            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->prio);
         }
-        tp = chRegNextThread(tp);
-    } while (tp != NULL);
+    }
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 

@@ -462,6 +462,6 @@ uint32_t stack_free(void *stack_base)
     while (*p == canary_word) {
         p++;
     }
-    return uint32_t(p) - uint32_t(stack_base);
+    return ((uint32_t)p) - (uint32_t)stack_base;
 }
 #endif

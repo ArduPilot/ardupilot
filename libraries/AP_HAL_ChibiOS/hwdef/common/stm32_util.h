@@ -117,8 +117,10 @@ void stack_overflow(thread_t *tp);
 uint32_t stack_free(void *stack_base);
 
 // allow stack view code to show free ISR stack
-extern void *__main_stack_base__;
-extern uint32_t __main_stack_size__;
+extern uint32_t __main_stack_base__;
+extern uint32_t __main_stack_end__;
+extern uint32_t __main_thread_stack_base__;
+extern uint32_t __main_thread_stack_end__;
 
 #ifdef __cplusplus
 }
