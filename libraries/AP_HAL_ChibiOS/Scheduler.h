@@ -176,5 +176,8 @@ private:
 #if defined STM32H7
     void check_low_memory_is_zero();
 #endif
+
+    // check for free stack space
+    void check_stack_free(void);
 };
 #endif
