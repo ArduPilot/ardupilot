@@ -109,7 +109,7 @@ public:
     void set_input_tc(float input_tc) { _input_tc = constrain_float(input_tc, 0.0f, 1.0f); }
 
     // Ensure attitude controller have zero errors to relax rate controller output
-    virtual void relax_attitude_controllers();
+    void relax_attitude_controllers();
 
     // Used by child class AC_AttitudeControl_TS to change behavior for tailsitter quadplanes
     virtual void relax_attitude_controllers(bool exclude_pitch) { relax_attitude_controllers(); }
