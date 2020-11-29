@@ -474,21 +474,33 @@ void Scheduler::_io_thread(void* arg)
 #ifndef HAL_NO_LOGGING
     uint32_t last_sd_start_ms = AP_HAL::millis();
 #endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+    uint32_t last_stack_check_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#if !defined(HAL_NO_LOGGING) || CH_DBG_ENABLE_STACK_CHECK == TRUE
+        uint32_t now = AP_HAL::millis();
+#endif
+
 #ifndef HAL_NO_LOGGING
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
-            uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
                 AP::FS().retry_mount();
             }
+        }
+#endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+        if (now - last_stack_check_ms > 1000) {
+            last_stack_check_ms = now;
+            check_stack_free();
         }
 #endif
     }
@@ -692,5 +704,29 @@ void Scheduler::watchdog_pat(void)
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  check we have enough stack free on all threads and the ISR stack
+ */
+void Scheduler::check_stack_free(void)
+{
+    const uint32_t min_stack = 32;
+    bool ok = false;
+
+    if (stack_free(__main_stack_base__) < min_stack) {
+        AP::internalerror().error(error_number, 0xFFFF);
+    }
+
+    thread_t *tp = chRegFirstThread();
+    do {
+        if (stack_free(tp->wabase) < min_stack) {
+            AP::internalerror().error(error_number, tp->prio);
+        }
+        tp = chRegNextThread(tp);
+    } while (tp != NULL);
+}
+#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
 
 #endif // CH_CFG_USE_DYNAMIC
