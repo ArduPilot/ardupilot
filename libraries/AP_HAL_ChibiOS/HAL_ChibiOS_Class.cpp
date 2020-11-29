@@ -231,11 +231,9 @@ static void main_loop()
         stm32_watchdog_init();
     }
 
-#ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
-#endif // HAL_NO_LOGGING
 #endif // IOMCU_FW
 
     schedulerInstance.watchdog_pat();
