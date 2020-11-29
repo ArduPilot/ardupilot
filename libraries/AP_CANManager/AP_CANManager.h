@@ -42,7 +42,7 @@ public:
         return _singleton;
     }
 
-    enum LogLevel {
+    enum LogLevel : uint8_t {
         LOG_NONE,
         LOG_ERROR,
         LOG_WARNING,
@@ -76,6 +76,12 @@ public:
         return nullptr;
     }
 
+    // returns current log level
+    LogLevel get_log_level(void) const
+    {
+        return LogLevel(_loglevel.get());
+    }
+    
     // Method to log status and debug information for review while debugging
     void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...);
 
