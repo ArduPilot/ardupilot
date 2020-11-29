@@ -56,6 +56,7 @@ class ButtonCb;
 class TrafficReportCb;
 class ActuatorStatusCb;
 class ESCStatusCb;
+class DebugCb;
 
 #if defined(__GNUC__) && (__GNUC__ > 8)
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
@@ -241,12 +242,13 @@ private:
     // safety status send state
     uint32_t _last_safety_state_ms;
 
-    // safety button handling
+    // incoming button handling
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
     static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
     static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
     static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
     static bool is_esc_data_index_valid(const uint8_t index);
+    static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
 };
 
 #endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
