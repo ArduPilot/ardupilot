@@ -1223,13 +1223,12 @@ private:
     EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
 
-    // yaw sensor fusion
-    uint32_t yawMeasTime_ms;
-    EKF_obs_buffer_t<yaw_elements> storedYawAng;
-    yaw_elements yawAngDataNew;
-    yaw_elements yawAngDataDelayed;
-    yaw_elements yawAngDataStatic;
-
+    // GPS yaw sensor fusion
+    uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer
+    EKF_obs_buffer_t<yaw_elements> storedYawAng;    // GPS yaw angle buffer
+    yaw_elements yawAngDataNew;         // GPS yaw angle at the current time horizon
+    yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
+    yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
