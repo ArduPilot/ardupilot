@@ -246,7 +246,7 @@ void NavEKF3_core::ResetHeight(void)
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
     if (inFlight && !gpsNotAvailable && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS) &&
-        dal.gps().have_vertical_velocity(selected_gps)) {
+        gpsDataNew.have_vz) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel && (activeHgtSource == AP_NavEKF_Source::SourceZ::EXTNAV)) {
         stateStruct.velocity.z = extNavVelDelayed.vel.z;
@@ -659,7 +659,7 @@ void NavEKF3_core::FuseVelPosNED()
         // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
-        if (useGpsVertVel && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
+        if (gpsDataDelayed.have_vz && fuseVelData && (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::GPS)) {
             // calculate innovations for height and vertical GPS vel measurements
             const float hgtErr  = stateStruct.position.z - velPosObs[5];
             const float velDErr = stateStruct.velocity.z - velPosObs[2];
@@ -720,9 +720,9 @@ void NavEKF3_core::FuseVelPosNED()
         if (fuseVelData) {
             // test velocity measurements
             uint8_t imax = 2;
-            // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
+            // Don't fuse vertical velocity observations if disabled in sources or not available
             if ((!frontend->sources.haveVelZSource() || PV_AidingMode != AID_ABSOLUTE ||
-                 !dal.gps().have_vertical_velocity(selected_gps)) && !useExtNavVel) {
+                 !gpsDataDelayed.have_vz) && !useExtNavVel) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations

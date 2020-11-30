@@ -580,6 +580,7 @@ void NavEKF3_core::readGpsData()
 
             // read the NED velocity from the GPS
             gpsDataNew.vel = gps.velocity(selected_gps);
+            gpsDataNew.have_vz = gps.have_vertical_velocity(selected_gps);
 
             // position and velocity are not yet corrected for sensor position
             gpsDataNew.corrected = false;
@@ -625,7 +626,7 @@ void NavEKF3_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity(selected_gps) && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
+            if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
