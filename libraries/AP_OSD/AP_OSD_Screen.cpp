@@ -84,17 +84,17 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(altitude, "ALTITUDE", 4, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATVOLT_EN
+    // @Param: BAT_VOLT_EN
     // @DisplayName: BATVOLT_EN
     // @Description: Displays main battery voltage
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BATVOLT_X
+    // @Param: BAT_VOLT_X
     // @DisplayName: BATVOLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BATVOLT_Y
+    // @Param: BAT_VOLT_Y
     // @DisplayName: BATVOLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -631,17 +631,17 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BAT2VLT_EN
+    // @Param: BAT2_VLT_EN
     // @DisplayName: BAT2VLT_EN
     // @Description: Displays battery2 voltage
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BAT2VLT_X
+    // @Param: BAT2_VLT_X
     // @DisplayName: BAT2VLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BAT2VLT_Y
+    // @Param: BAT2_VLT_Y
     // @DisplayName: BAT2VLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -793,33 +793,33 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(power, "POWER", 48, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: CELL_VOLT_EN
+    // @Param: CELLVOLT_EN
     // @DisplayName: CELL_VOLT_EN
     // @Description: Displays average cell voltage (MSP OSD only)
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: CELL_VOLT_X
+    // @Param: CELLVOLT_X
     // @DisplayName: CELL_VOLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: CELL_VOLT_Y
+    // @Param: CELLVOLT_Y
     // @DisplayName: CELL_VOLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(cell_volt, "CELLVOLT", 49, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATT_BAR_EN
+    // @Param: BATTBAR_EN
     // @DisplayName: BATT_BAR_EN
     // @Description: Displays battery usage bar (MSP OSD only)
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BATT_BAR_X
+    // @Param: BATTBAR_X
     // @DisplayName: BATT_BAR_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BATT_BAR_Y
+    // @Param: BATTBAR_Y
     // @DisplayName: BATT_BAR_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
