@@ -491,6 +491,9 @@ bool AP_NavEKF_Source::ext_nav_enabled(void) const
         if (src.velz == SourceZ::EXTNAV) {
             return true;
         }
+        if (src.yaw == SourceYaw::EXTNAV) {
+            return true;
+        }
     }
     return false;
 }
