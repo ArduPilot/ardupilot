@@ -56,9 +56,9 @@ public:
     void set_campos_parameters(uint8_t positions, float roll, float pitch, int16_t interval)
     {
         _campos_positions = positions;
-        _campos_roll.set(roll);
-        _campos_pitch.set(pitch);
-        _campos_angle_interval.set(_campos_roll * 2 / (_campos_positions - 1));
+        _campos_roll = roll;
+        _campos_pitch = pitch;
+        _campos_angle_interval = _campos_roll * 2 / (_campos_positions - 1);
         _campos_pose_counter = 0;
         _campos_updated_roll_angle = false;
 
@@ -129,9 +129,9 @@ private:
 
     //Camera Auto Mount Pivoting Oblique Survey (CAMPOS) command parameters
     uint8_t         _campos_positions;              //number of positions to take pictures along the [-roll, roll] interval
-    AP_Float        _campos_roll;                   //the roll limits for the camera positions
-    AP_Float        _campos_pitch;                  //the fixed pitch angle that the camera will remain
-    AP_Float        _campos_angle_interval;         //auxiliary parameter to control the roll positions
+    uint8_t         _campos_roll;                   //the roll limits for the camera positions
+    int16_t         _campos_pitch;                  //the fixed pitch angle that the camera will remain
+    float           _campos_angle_interval;         //auxiliary parameter to control the roll positions
     uint8_t         _campos_pose_counter;           //auxiliary parameter to control the roll positions
     bool            _campos_updated_roll_angle;     //auxiliary parameter to control the roll positions
 
