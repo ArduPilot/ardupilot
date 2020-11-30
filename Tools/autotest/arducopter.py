@@ -5463,12 +5463,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_replay(self):
-        '''test replay correctness'''
-        self.progress("Building Replay")
-        util.build_SITL('tools/Replay', clean=False, configure=False)
-
-        self.context_push()
+    def test_replay_gps_bit(self):
         self.set_parameter("LOG_REPLAY", 1)
         self.set_parameter("LOG_DISARMED", 1)
         self.set_parameter("EK3_ENABLE", 1)
@@ -5507,7 +5502,47 @@ class AutoTestCopter(AutoTest):
         self.takeoffAndMoveAway()
         self.do_RTL()
 
-        self.progress("Running replay")
+        return current_log_filepath
+
+    def test_replay_beacon_bit(self):
+        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameter("LOG_DISARMED", 1)
+
+        old_onboard_logs = sorted(self.log_list())
+        self.fly_beacon_position()
+        new_onboard_logs = sorted(self.log_list())
+
+        log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
+        return log_difference[2]
+
+
+    def test_replay_optical_flow_bit(self):
+        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameter("LOG_DISARMED", 1)
+
+        old_onboard_logs = sorted(self.log_list())
+        self.fly_optical_flow_limits()
+        new_onboard_logs = sorted(self.log_list())
+
+        log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
+        print("log difference: %s" % str(log_difference))
+        return log_difference[0]
+
+    def test_replay(self):
+        '''test replay correctness'''
+        self.progress("Building Replay")
+        util.build_SITL('tools/Replay', clean=False, configure=False)
+
+        self.test_replay_bit(self.test_replay_gps_bit)
+        self.test_replay_bit(self.test_replay_beacon_bit)
+        self.test_replay_bit(self.test_replay_optical_flow_bit)
+
+    def test_replay_bit(self, bit):
+
+        self.context_push()
+        current_log_filepath = bit()
+
+        self.progress("Running replay on (%s)" % current_log_filepath)
 
         util.run_cmd(['build/sitl/tools/Replay', current_log_filepath],
                      directory=util.topdir(), checkfail=True, show=True)
@@ -5519,7 +5554,7 @@ class AutoTestCopter(AutoTest):
 
         check_replay = util.load_local_module("Tools/Replay/check_replay.py")
 
-        ok = check_replay.check_log(replay_log_filepath, self.progress)
+        ok = check_replay.check_log(replay_log_filepath, self.progress, verbose=True)
         if not ok:
             raise NotAchievedException("check_replay failed")
 
