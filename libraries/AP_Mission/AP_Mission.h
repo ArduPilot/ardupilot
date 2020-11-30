@@ -147,8 +147,8 @@ public:
         float distance;     //distance
         uint16_t interval;  //minumum camera interval (ms), the mount will move after this time is past
         uint8_t positions;  //number of positions to take pictures along the [-roll, roll] interval
-        float roll;         //the roll limits for the camera positions
-        float pitch;        //the fixed pitch angle that the camera will remain
+        uint8_t roll;         //the roll limits for the camera positions
+        int16_t pitch;        //the fixed pitch angle that the camera will remain
     };
 
     // gripper command structure

@@ -1187,6 +1187,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
     switch (packet.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_OBLIQUE_SURVEY:
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
         break;
@@ -1228,6 +1229,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     switch (item_int.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_OBLIQUE_SURVEY:
         item.x = item_int.x;
         item.y = item_int.y;
         break;
@@ -1472,6 +1474,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.campos_cmd.positions;
         packet.x = cmd.content.campos_cmd.roll;
         packet.y = cmd.content.campos_cmd.pitch;
+        packet.frame = MAV_FRAME_MISSION;               // for compatibility with QGC
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
