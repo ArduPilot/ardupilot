@@ -101,9 +101,6 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     // calculate buffer size for external nav data
     const uint8_t extnav_buffer_length = MIN((ekf_delay_ms / frontend->extNavIntervalMin_ms) + 1, imu_buffer_length);
 
-    // buffer size for external yaw
-    const uint8_t yaw_angle_buffer_length = MAX(obs_buffer_length, extnav_buffer_length);
-
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
     }
@@ -126,7 +123,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
-    if(frontend->sources.ext_yaw_enabled() && !storedYawAng.init(yaw_angle_buffer_length)) {
+    if(frontend->sources.ext_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
@@ -141,6 +138,9 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
     if (frontend->sources.ext_nav_enabled() && !storedExtNavVel.init(extnav_buffer_length)) {
+        return false;
+    }
+    if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
@@ -452,6 +452,7 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+    storedExtNavYawAng.reset();
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
 }

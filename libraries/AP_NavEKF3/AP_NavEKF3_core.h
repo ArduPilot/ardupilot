@@ -625,6 +625,7 @@ private:
         GSF=2,
         STATIC=3,
         PREDICTED=4,
+        EXTNAV=5,
     };
 
     // update the navigation filter status
@@ -747,8 +748,8 @@ private:
 
     // initialise the earth magnetic field states using declination and current attitude and magnetometer measurements
 
-    // align the yaw angle for the quaternion states using the external yaw sensor
-    void alignYawAngle();
+    // align the yaw angle for the quaternion states to the given yaw angle which should be at the fusion horizon
+    void alignYawAngle(const yaw_elements &yawAngData);
 
     // update mag field states and associated variances using magnetomer and declination data
     void resetMagFieldStates();
@@ -1344,6 +1345,9 @@ private:
     Vector3f extNavVelInnov;            // external nav velocity innovations
     Vector3f extNavVelVarInnov;         // external nav velocity innovation variances
     uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
+    EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
+    yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
+    uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
