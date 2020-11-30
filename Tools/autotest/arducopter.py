@@ -4967,8 +4967,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("EK3_SRC1_VELXY", 0) # None
             self.set_parameter("EK3_SRC1_VELZ", 0)  # None
             self.set_parameter("EK2_ENABLE", 0)
-            self.reboot_sitl()
             self.set_parameter("AHRS_EKF_TYPE", 3)
+            self.reboot_sitl()
 
             # turn off GPS arming checks.  This may be considered a
             # bug that we need to do this.
@@ -5023,8 +5023,9 @@ class AutoTestCopter(AutoTest):
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
-        self.context_pop()
         self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        self.context_pop()
         self.reboot_sitl()
         if ex is not None:
             raise ex
