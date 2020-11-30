@@ -78,7 +78,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
 
     // Check that the vertical GPS vertical velocity is reasonable after noise filtering
     bool gpsVertVelFail;
-    if (gps.have_vertical_velocity(preferred_gps) && onGround) {
+    if (gpsDataNew.have_vz && onGround) {
         // check that the average vertical GPS velocity is close to zero
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);

@@ -514,6 +514,7 @@ private:
         Vector3f    vel;            // velocity of the GPS antenna in local NED earth frame (m/sec)
         uint8_t     sensor_idx;     // unique integer identifying the GPS sensor
         bool        corrected;      // true when the position and velocity have been corrected for sensor position
+        bool        have_vz;        // true when vertical velocity is valid
     };
 
     struct mag_elements : EKF_obs_element_t {
