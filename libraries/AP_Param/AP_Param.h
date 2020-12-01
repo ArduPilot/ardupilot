@@ -1003,3 +1003,15 @@ AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_ ## _suffix;
+
+/*
+  template class for enum types based on AP_Int8
+ */
+template<typename eclass>
+class AP_Enum : public AP_Int8
+{
+public:
+    operator const eclass () const {
+        return (eclass)_value;
+    }
+};
