@@ -307,6 +307,8 @@ private:
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 
     static AP_Vehicle *_singleton;
+
+    bool done_safety_init;
 };
 
 namespace AP {
