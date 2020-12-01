@@ -127,6 +127,7 @@ public:
     void update_throttle_hover(float dt);
     float get_throttle_hover() const override { return _collective_hover; }
 
+    // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
     bool get_takeoff_collective() const { return _heliflags.takeoff_collective; }
 
     // support passing init_targets_on_arming flag to greater code
@@ -143,6 +144,14 @@ public:
 
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
+    
+    // enum for heli optional features
+    enum class HeliOption {
+        USE_LEAKY_I                     = (1<<0),   // 1
+    };
+
+    // use leaking integrator management scheme
+    bool using_leaky_integrator() const { return heli_option(HeliOption::USE_LEAKY_I); }
     
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -207,6 +216,12 @@ protected:
     // save parameters as part of disarming
     void save_params_on_disarm() override;
 
+    // Determines if _heli_options bit is set
+    bool heli_option(HeliOption opt) const;
+
+    // updates the takeoff collective flag indicating that current collective is greater than collective required to indicate takeoff.
+    void update_takeoff_collective_flag(float coll_out);
+
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
         HOVER_LEARN_DISABLED = 0,
@@ -237,6 +252,7 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
     AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
     AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
+    AP_Int8         _heli_options;              // bitmask for optional features
 
     // internal variables
     float           _collective_mid_pct = 0.0f;      // collective mid parameter value converted to 0 ~ 1 range
