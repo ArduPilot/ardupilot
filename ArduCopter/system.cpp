@@ -216,9 +216,6 @@ void Copter::init_ardupilot()
         enable_motor_output();
     }
 
-    // disable safety if requested
-    BoardConfig.init_safety();
-
     // flag that initialisation has completed
     ap.initialised = true;
 }
