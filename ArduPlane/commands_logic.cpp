@@ -386,13 +386,13 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     }
 
 #if GEOFENCE_ENABLED == ENABLED 
-    if (g.fence_autoenable == 1) {
+    if (g.fence_autoenable == FenceAutoEnable::Auto) {
         if (! geofence_set_enabled(false)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
         } else {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
         }
-    } else if (g.fence_autoenable == 2) {
+    } else if (g.fence_autoenable == FenceAutoEnable::AutoDisableFloorOnly) {
         if (! geofence_set_floor_enabled(false)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
         } else {
