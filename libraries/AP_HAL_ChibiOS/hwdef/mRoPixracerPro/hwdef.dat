@@ -15,6 +15,9 @@
 # M10064C - Initial Release
 ###########################################################################################################################################################
 
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
