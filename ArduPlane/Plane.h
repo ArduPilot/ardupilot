@@ -949,6 +949,7 @@ private:
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);
     void geofence_disable_and_send_error_msg(const char *errorMsg);
+    void disable_fence_for_landing(void);
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
