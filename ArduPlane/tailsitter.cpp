@@ -243,6 +243,14 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
         // transition immediately
         return true;
     }
+    // for vectored tailsitters at zero pilot throttle
+    if ((plane.quadplane.get_pilot_throttle() < .05f) && plane.quadplane._is_vectored) {
+        // if we are not moving (hence on the ground?) or don't know
+        // transition immediately to tilt motors up and prevent prop strikes
+        if (ahrs.groundspeed() < 1.0f) {
+            return true;
+        }
+    }
     if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
         labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
         AP_HAL::millis() - transition_start_ms > 2000) {
