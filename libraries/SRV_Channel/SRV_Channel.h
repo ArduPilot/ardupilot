@@ -21,7 +21,11 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
-#define NUM_SERVO_CHANNELS 16
+#if !defined(NUM_SERVO_CHANNELS) && defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT) && (HAL_PWM_COUNT >= 1)
+    #define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#else
+    #define NUM_SERVO_CHANNELS 16
+#endif
 
 class SRV_Channels;
 
@@ -525,6 +529,7 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
@@ -542,6 +547,8 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+#endif // HAL_BUILD_AP_PERIPH
+
     static uint16_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not
