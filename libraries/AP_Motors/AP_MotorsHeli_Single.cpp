@@ -419,11 +419,8 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         limit.throttle_lower = true;
     }
 
-    if (collective_out > _collective_mid_pct + 0.5f * (_collective_hover - _collective_mid_pct)) {
-        _heliflags.takeoff_collective = true;
-    } else {
-        _heliflags.takeoff_collective = false;
-    }
+    // updates takeoff collective flag based on 50% hover collective
+    update_takeoff_collective_flag(collective_out);
 
     // if servo output not in manual mode and heli is not in autorotation, process pre-compensation factors
     if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED && !_heliflags.in_autorotation) {
