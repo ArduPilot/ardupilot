@@ -272,7 +272,7 @@ return_zero:
 void Plane::complete_auto_takeoff(void)
 {
 #if GEOFENCE_ENABLED == ENABLED
-    if (g.fence_autoenable > 0) {
+    if (g.fence_autoenable != FenceAutoEnable::OFF) {
         if (! geofence_set_enabled(true)) {
             gcs().send_text(MAV_SEVERITY_NOTICE, "Enable fence failed (cannot autoenable");
         } else {

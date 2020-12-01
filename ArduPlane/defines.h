@@ -172,3 +172,10 @@ enum class AirMode {
     OFF,
     ON,
 };
+
+enum class FenceAutoEnable : uint8_t {
+    OFF=0,
+    Auto=1,
+    AutoDisableFloorOnly=2,
+    WhenArmed=3
+};
