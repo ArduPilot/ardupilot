@@ -239,7 +239,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
 #if GEOFENCE_ENABLED == ENABLED
-    if (plane.g.fence_autoenable == FenceAutoEnable::AutoDisableFloorOnly) {
+    if (plane.g.fence_autoenable == FenceAutoEnable::WhenArmed) {
         plane.geofence_set_enabled(false);
     }
 #endif
