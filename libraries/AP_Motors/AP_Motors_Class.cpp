@@ -171,6 +171,14 @@ void AP_Motors::add_motor_num(int8_t motor_num)
     }
 }
 
+    // set limit flag for pitch, roll and yaw
+void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
+{
+    limit.roll = flag;
+    limit.pitch = flag;
+    limit.yaw = flag;
+}
+
 namespace AP {
     AP_Motors *motors()
     {
