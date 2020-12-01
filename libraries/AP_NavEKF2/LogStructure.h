@@ -5,20 +5,6 @@
 #define LOG_IDS_FROM_NAVEKF2 \
     LOG_NKT_MSG
 
-struct PACKED log_NKT {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    uint32_t timing_count;
-    float dtIMUavg_min;
-    float dtIMUavg_max;
-    float dtEKFavg_min;
-    float dtEKFavg_max;
-    float delAngDT_min;
-    float delAngDT_max;
-    float delVelDT_min;
-    float delVelDT_max;
-};
 
 // @LoggerMessage: NKT
 // @Description: EKF2 timing information
@@ -33,6 +19,20 @@ struct PACKED log_NKT {
 // @Field: AngMax: accumulated measurement time interval for the delta angle (maximum)
 // @Field: VMin: accumulated measurement time interval for the delta velocity (minimum)
 // @Field: VMax: accumulated measurement time interval for the delta velocity (maximum)
+struct PACKED log_NKT {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint32_t timing_count;
+    float dtIMUavg_min;
+    float dtIMUavg_max;
+    float dtEKFavg_min;
+    float dtEKFavg_max;
+    float delAngDT_min;
+    float delAngDT_max;
+    float delVelDT_min;
+    float delVelDT_max;
+};
 
 #define LOG_STRUCTURE_FROM_NAVEKF2        \
     { LOG_NKT_MSG, sizeof(log_NKT),   \
