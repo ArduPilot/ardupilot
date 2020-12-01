@@ -32,6 +32,9 @@ f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
 af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
 
+default_gpio = ['INPUT', 'FLOATING']
+
+
 vtypes = []
 
 # number of pins in each port
@@ -128,7 +131,6 @@ def get_mcu_lib(mcu):
     except ImportError:
         error("Unable to find module for MCU %s" % mcu)
 
-
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
     global pincount, ports, portmap, vtypes, mcu_type
@@ -144,7 +146,7 @@ def setup_mcu_type_defaults():
     for port in ports:
         portmap[port] = []
         for pin in range(pincount[port]):
-            portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
+            portmap[port].append(generic_pin(port, pin, None, default_gpio[0], default_gpio[1:]))
 
 
 def get_alt_function(mcu, pin, function):
@@ -1940,7 +1942,7 @@ def romfs_add_dir(subdirs):
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins, imu_list, compass_list, baro_list
-    global mcu_type, mcu_series
+    global mcu_type, mcu_series, default_gpio
     all_lines.append(line)
     a = shlex.split(line, posix=False)
     # keep all config lines for later use
@@ -1985,6 +1987,10 @@ def process_line(line):
 
     if p is None and line.find('ALT(') != -1:
         error("ALT() invalid for %s" % a[0])
+
+    if a[0] == 'DEFAULTGPIO':
+        default_gpio = a[1:]
+        return
 
     config[a[0]] = a[1:]
     if p is not None:
