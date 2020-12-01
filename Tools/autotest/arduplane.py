@@ -2953,6 +2953,26 @@ class AutoTestPlane(AutoTest):
             True,
             True)
 
+    def fly_landing_baro_drift(self):
+
+        self.customise_SITL_commandline([], wipe=True)
+
+        self.set_parameters({
+            "SIM_BARO_DRIFT": -0.02,
+            "SIM_TERRAIN": 0,
+            "RNGFND_LANDING": 1,
+            "RNGFND1_MAX_CM": 4000,
+            "LAND_SLOPE_RCALC": 2,
+            "LAND_ABORT_DEG": 2,
+        })
+
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.fly_mission("ap-circuit.txt", mission_timeout=1200)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3149,6 +3169,10 @@ class AutoTestPlane(AutoTest):
             ("RCDisableAirspeedUse",
              "Test RC DisableAirspeedUse option",
              self.RCDisableAirspeedUse),
+
+            ("Landing-Drift",
+             "Circuit with baro drift",
+             self.fly_landing_baro_drift),
 
             ("LogUpload",
              "Log upload",
