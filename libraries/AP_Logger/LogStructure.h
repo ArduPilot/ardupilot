@@ -426,23 +426,6 @@ struct PACKED log_EKF1 {
     int32_t originHgt;
 };
 
-struct PACKED log_EKF2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int8_t Ratio;
-    int8_t AZ1bias;
-    int8_t AZ2bias;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-};
-
 struct PACKED log_NKF2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -479,22 +462,6 @@ struct PACKED log_XKF2 {
     int16_t magZ;
 };
 
-struct PACKED log_EKF3 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t innovVN;
-    int16_t innovVE;
-    int16_t innovVD;
-    int16_t innovPN;
-    int16_t innovPE;
-    int16_t innovPD;
-    int16_t innovMX;
-    int16_t innovMY;
-    int16_t innovMZ;
-    int16_t innovVT;
-};
-
 struct PACKED log_NKF3 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -512,25 +479,6 @@ struct PACKED log_NKF3 {
     int16_t innovVT;
     float rerr;
     float errorScore;
-};
-
-struct PACKED log_EKF4 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t sqrtvarV;
-    int16_t sqrtvarP;
-    int16_t sqrtvarH;
-    int16_t sqrtvarMX;
-    int16_t sqrtvarMY;
-    int16_t sqrtvarMZ;
-    int16_t sqrtvarVT;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
-    uint16_t faults;
-    uint8_t timeouts;
-    uint16_t solution;
-    uint16_t gps;
 };
 
 struct PACKED log_NKF4 {
