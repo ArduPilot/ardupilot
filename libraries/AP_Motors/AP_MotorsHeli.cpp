@@ -115,6 +115,14 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOVER_LEARN", 27, AP_MotorsHeli, _collective_hover_learn, HOVER_LEARN_AND_SAVE),
 
+    // @Param: OPTIONS
+    // @DisplayName: Heli_Options
+    // @Description: Bitmask of heli options.  Bit 0 changes how the pitch, roll, and yaw axis integrator term is managed for low speed and takeoff/landing. In AC 4.0 and earlier, scheme uses a leaky integrator for ground speeds less than 5 m/s and won't let the steady state integrator build above ILMI. The integrator is allowed to build to the ILMI value when it is landed.  The other integrator management scheme bases integrator limiting on takeoff and landing.  Whenever the aircraft is landed the integrator is set to zero.  When the aicraft is airborne, the integrator is only limited by IMAX. 
+    // @Values: 0:I term management based landed state, 1:Leaky I(4.0 and earlier)
+    // @Bitmask: 0:Use Leaky I
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 28, AP_MotorsHeli, _heli_options, (uint8_t)HeliOption::USE_LEAKY_I),
+
     AP_GROUPEND
 };
 
@@ -173,9 +181,7 @@ void AP_MotorsHeli::output_min()
     update_motor_control(ROTOR_CONTROL_STOP);
 
     // override limits flags
-    limit.roll = true;
-    limit.pitch = true;
-    limit.yaw = true;
+    set_limit_flag_pitch_roll_yaw(true);
     limit.throttle_lower = true;
     limit.throttle_upper = false;
 }
@@ -322,9 +328,11 @@ void AP_MotorsHeli::output_logic()
             // Servos set to their trim values or in a test condition.
 
             // set limits flags
-            limit.roll = true;
-            limit.pitch = true;
-            limit.yaw = true;
+            if (!using_leaky_integrator()) {
+                set_limit_flag_pitch_roll_yaw(true);
+            } else {
+                set_limit_flag_pitch_roll_yaw(false);
+            }
 
             // make sure the motors are spooling in the correct direction
             if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
@@ -337,14 +345,10 @@ void AP_MotorsHeli::output_logic()
         case SpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
             // set limits flags
-            if (_heliflags.land_complete) {
-                limit.roll = true;
-                limit.pitch = true;
-                limit.yaw = true;
+            if (_heliflags.land_complete && !using_leaky_integrator()) {
+                set_limit_flag_pitch_roll_yaw(true);
             } else {
-                limit.roll = false;
-                limit.pitch = false;
-                limit.yaw = false;
+                set_limit_flag_pitch_roll_yaw(false);
             }
 
             // Servos should be moving to correct the current attitude.
@@ -363,14 +367,10 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete) {
-                limit.roll = true;
-                limit.pitch = true;
-                limit.yaw = true;
+            if (_heliflags.land_complete && !using_leaky_integrator()) {
+                set_limit_flag_pitch_roll_yaw(true);
             } else {
-                limit.roll = false;
-                limit.pitch = false;
-                limit.yaw = false;
+                set_limit_flag_pitch_roll_yaw(false);
             }
 
             // make sure the motors are spooling in the correct direction
@@ -389,14 +389,10 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete) {
-                limit.roll = true;
-                limit.pitch = true;
-                limit.yaw = true;
+            if (_heliflags.land_complete && !using_leaky_integrator()) {
+                set_limit_flag_pitch_roll_yaw(true);
             } else {
-                limit.roll = false;
-                limit.pitch = false;
-                limit.yaw = false;
+                set_limit_flag_pitch_roll_yaw(false);
             }
 
             // make sure the motors are spooling in the correct direction
@@ -413,14 +409,10 @@ void AP_MotorsHeli::output_logic()
             // Servos should exhibit normal flight behavior.
 
             // set limits flags
-            if (_heliflags.land_complete) {
-                limit.roll = true;
-                limit.pitch = true;
-                limit.yaw = true;
+            if (_heliflags.land_complete && !using_leaky_integrator()) {
+                set_limit_flag_pitch_roll_yaw(true);
             } else {
-                limit.roll = false;
-                limit.pitch = false;
-                limit.yaw = false;
+                set_limit_flag_pitch_roll_yaw(false);
             }
 
             // make sure the motors are spooling in the correct direction
@@ -536,7 +528,7 @@ void AP_MotorsHeli::update_throttle_hover(float dt)
             curr_collective = _collective_mid_pct;
         }
 
-        // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
+        // we have chosen to constrain the hover collective to be within the range reachable by the third order expo polynomial.
         _collective_hover = constrain_float(_collective_hover + (dt / (dt + AP_MOTORS_HELI_COLLECTIVE_HOVER_TC)) * (curr_collective - _collective_hover), AP_MOTORS_HELI_COLLECTIVE_HOVER_MIN, AP_MOTORS_HELI_COLLECTIVE_HOVER_MAX);
     }
 }
@@ -549,3 +541,20 @@ void AP_MotorsHeli::save_params_on_disarm()
         _collective_hover.save();
     }
 }
+
+// updates the takeoff collective flag
+void AP_MotorsHeli::update_takeoff_collective_flag(float coll_out)
+{
+    if (coll_out > _collective_mid_pct + 0.5f * (_collective_hover - _collective_mid_pct)) {
+        _heliflags.takeoff_collective = true;
+    } else {
+        _heliflags.takeoff_collective = false;
+    }
+}
+
+// Determines if _heli_options bit is set
+bool AP_MotorsHeli::heli_option(HeliOption opt) const
+{
+    return (_heli_options & (uint8_t)opt);
+}
+
