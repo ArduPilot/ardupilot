@@ -148,6 +148,18 @@ void AP_Vehicle::loop()
 {
     scheduler.loop();
     G_Dt = scheduler.get_loop_period_s();
+
+    if (!done_safety_init) {
+        /*
+          disable safety if requested. This is delayed till after the
+          first loop has run to ensure that all servos have received
+          an update for their initial values. Otherwise we may end up
+          briefly driving a servo to a position out of the configured
+          range which could damage hardware
+        */
+        done_safety_init = true;
+        BoardConfig.init_safety();
+    }
 }
 
 /*
