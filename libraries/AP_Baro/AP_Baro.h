@@ -92,6 +92,9 @@ public:
     float get_altitude(void) const { return get_altitude(_primary); }
     float get_altitude(uint8_t instance) const { return sensors[instance].altitude; }
 
+    // returns which i2c bus is considered "the" external bus
+    uint8_t external_bus() const { return _ext_bus; }
+
     // get altitude difference in meters relative given a base
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
