@@ -327,9 +327,9 @@ void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
 
-	if(!motors->armed() and copter.battery.voltage() < 36.0 ){
+	if(!motors->armed() and copter.battery.voltage() < 36.0 and (copter.battery.voltage() > 5.0 or !hal.gpio->usb_connected())){
 		//AP_Notify::flags.critical_battery_voltage = true;
-		gcs().send_text(MAV_SEVERITY_INFO,"Battery Critical");
+		gcs().send_text(MAV_SEVERITY_CRITICAL,"Battery Critical");
 		hal.gpio->write(52, true);
 	}else{
 		//AP_Notify::flags.critical_battery_voltage = false;
