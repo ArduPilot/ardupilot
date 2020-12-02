@@ -166,7 +166,7 @@ bool AP_Baro_KellerLD::_init()
 bool AP_Baro_KellerLD::_read()
 {
     uint8_t data[5];
-    if (!_dev->transfer(nullptr, 1, data, sizeof(data))) {
+    if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
         Debug("Keller LD read failed!");
         return false;
     }
