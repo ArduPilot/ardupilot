@@ -5503,6 +5503,8 @@ class AutoTestCopter(AutoTest):
         self.takeoffAndMoveAway()
         self.do_RTL()
 
+        self.reboot_sitl()
+
         return current_log_filepath
 
     def test_replay_beacon_bit(self):
