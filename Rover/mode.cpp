@@ -375,39 +375,30 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
 //  reversed should be true if the vehicle is intentionally backing up which allows the pilot to increase the backing up speed by pulling the throttle stick down
 float Mode::calc_speed_nudge(float target_speed, bool reversed)
 {
-    // return immediately during RC/GCS failsafe
-    if (rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) {
-        return target_speed;
-    }
-
-    // return immediately if pilot is not attempting to nudge speed
-    // pilot can nudge up speed if throttle (in range -100 to +100) is above 50% of center in direction of travel
-    const int16_t pilot_throttle = constrain_int16(rover.channel_throttle->get_control_in(), -100, 100);
-    if (((pilot_throttle <= 50) && !reversed) ||
-        ((pilot_throttle >= -50) && reversed)) {
-        return target_speed;
-    }
-
     // sanity checks
     if (g.throttle_cruise > 100 || g.throttle_cruise < 5) {
         return target_speed;
     }
 
-    // project vehicle's maximum speed
-    const float vehicle_speed_max = calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
+    // convert pilot throttle input to speed
+    float pilot_steering, pilot_throttle;
+    get_pilot_input(pilot_steering, pilot_throttle);
+    float pilot_speed = pilot_throttle * 0.01f * calc_speed_max(g.speed_cruise, g.throttle_cruise * 0.01f);
 
-    // return unadjusted target if already over vehicle's projected maximum speed
-    if (fabsf(target_speed) >= vehicle_speed_max) {
+    // ignore pilot's input if in opposite direction to vehicle's desired direction of travel
+    // note that the target_speed may be negative while reversed is true (or vice-versa)
+    // while vehicle is transitioning between forward and backwards movement
+    if ((is_positive(pilot_speed) && reversed) ||
+        (is_negative(pilot_speed) && !reversed)) {
         return target_speed;
     }
 
-    const float speed_increase_max = vehicle_speed_max - fabsf(target_speed);
-    float speed_nudge = ((static_cast<float>(abs(pilot_throttle)) - 50.0f) * 0.02f) * speed_increase_max;
-    if (pilot_throttle < 0) {
-        speed_nudge = -speed_nudge;
+    // return the larger of the pilot speed and the original target speed
+    if (reversed) {
+        return MIN(target_speed, pilot_speed);
+    } else {
+        return MAX(target_speed, pilot_speed);
     }
-
-    return target_speed + speed_nudge;
 }
 
 // high level call to navigate to waypoint
