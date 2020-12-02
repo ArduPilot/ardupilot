@@ -235,7 +235,7 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     }
 
     const struct log_XKF0 pkt10{
-        LOG_PACKET_HEADER_INIT(LOG_XKF10_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_XKF0_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
         ID : rngBcnFuseDataReportIndex,
