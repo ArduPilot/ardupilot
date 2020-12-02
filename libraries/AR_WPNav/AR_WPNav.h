@@ -115,8 +115,6 @@ private:
     // calculate the crosstrack error (does not rely on L1 controller)
     float calc_crosstrack_error(const Location& current_loc) const;
 
-private:
-
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _speed_min;            // target speed minimum in m/s.  Vehicle will not slow below this speed for corners
