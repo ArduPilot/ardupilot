@@ -3,11 +3,22 @@
 #include <AP_Logger/LogStructure.h>
 
 #define LOG_IDS_FROM_NAVEKF3 \
-    LOG_XKT_MSG, \
+    LOG_XKF0_MSG, \
+    LOG_XKF1_MSG, \
+    LOG_XKF2_MSG, \
+    LOG_XKF3_MSG, \
+    LOG_XKF4_MSG, \
+    LOG_XKF5_MSG, \
+    LOG_XKFD_MSG, \
     LOG_XKFM_MSG, \
+    LOG_XKFS_MSG, \
+    LOG_XKQ_MSG,  \
+    LOG_XKT_MSG,  \
+    LOG_XKTV_MSG, \
+    LOG_XKV1_MSG, \
+    LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
-    LOG_XKY1_MSG, \
-    LOG_XKTV_MSG
+    LOG_XKY1_MSG
 
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
