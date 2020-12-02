@@ -80,7 +80,7 @@ void NavEKF3_core::Log_Write_XKF2(uint64_t time_us) const
 void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
 {
     // Write sensor selection EKF packet
-    const struct log_EKFS pkt {
+    const struct log_XKFS pkt {
         LOG_PACKET_HEADER_INIT(LOG_XKFS_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -101,7 +101,7 @@ void NavEKF3_core::Log_Write_XKF3(uint64_t time_us) const
     float tasInnov = 0;
     float yawInnov = 0;
     getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-    const struct log_NKF3 pkt3{
+    const struct log_XKF3 pkt3{
         LOG_PACKET_HEADER_INIT(LOG_XKF3_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -197,7 +197,7 @@ void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
     // log quaternion
     Quaternion quat;
     getQuaternion( quat);
-    const struct log_Quaternion pktq1{
+    const struct log_XKQ pktq1{
         LOG_PACKET_HEADER_INIT(LOG_XKQ_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -234,7 +234,7 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         return;
     }
 
-    const struct log_RngBcnDebug pkt10{
+    const struct log_XKF0 pkt10{
         LOG_PACKET_HEADER_INIT(LOG_XKF10_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -267,7 +267,7 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
     static uint32_t lastUpdateTime_ms = 0;
     uint32_t updateTime_ms = getBodyFrameOdomDebug( velBodyInnov, velBodyInnovVar);
     if (updateTime_ms > lastUpdateTime_ms) {
-        const struct log_ekfBodyOdomDebug pkt11{
+        const struct log_XKFD pkt11{
             LOG_PACKET_HEADER_INIT(LOG_XKFD_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
@@ -293,7 +293,7 @@ void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us) const
     static uint32_t lastEkfStateVarLogTime_ms = 0;
     if (AP::dal().millis() - lastEkfStateVarLogTime_ms > 490) {
         lastEkfStateVarLogTime_ms = AP::dal().millis();
-        const struct log_ekfStateVar pktv1{
+        const struct log_XKV pktv1{
             LOG_PACKET_HEADER_INIT(LOG_XKV1_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
@@ -311,7 +311,7 @@ void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us) const
             v11 : P[11][11]
         };
         AP::logger().WriteBlock(&pktv1, sizeof(pktv1));
-        const struct log_ekfStateVar pktv2{
+        const struct log_XKV pktv2{
             LOG_PACKET_HEADER_INIT(LOG_XKV2_MSG),
             time_us : time_us,
             core    : DAL_CORE(core_index),
