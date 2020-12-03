@@ -2073,6 +2073,8 @@ LOG_STRUCTURE_FROM_NAVEKF3 \
 // message types for common messages
 enum LogMessages : uint8_t {
     LOG_PARAMETER_MSG = 64,
+    LOG_IDS_FROM_NAVEKF2,
+    LOG_IDS_FROM_NAVEKF3,
     LOG_GPS_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
@@ -2109,8 +2111,6 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_IDS_FROM_DAL,
-    LOG_IDS_FROM_NAVEKF2,
-    LOG_IDS_FROM_NAVEKF3,
 
     LOG_GPS_RAWS_MSG,
     LOG_ACC_MSG,
