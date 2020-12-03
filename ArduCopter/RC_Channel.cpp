@@ -499,6 +499,9 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::KILL_MOT4:
             copter.motkill.kill_mot[3] = (ch_flag == HIGH);
             break;
+        case AUX_FUNC::KILL_MAGPRIMARY:
+            copter.compass.set_kill_primary(ch_flag == HIGH);
+            break;
 
 #ifdef USERHOOK_AUXSWITCH
         case AUX_FUNC::USER_FUNC1:
