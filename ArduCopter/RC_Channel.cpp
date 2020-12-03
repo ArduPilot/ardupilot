@@ -503,6 +503,15 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
         case AUX_FUNC::KILL_MAGPRIMARY:
             copter.compass.set_kill_primary(ch_flag == HIGH);
             break;
+        case AUX_FUNC::KILL_RANGEFINDER:
+            copter.rangefinder.set_kill(ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_GPS1:
+            copter.gps.set_kill(0, ch_flag == HIGH);
+            break;
+        case AUX_FUNC::KILL_GPS2:
+            copter.gps.set_kill(1, ch_flag == HIGH);
+            break;
 
 #ifdef USERHOOK_AUXSWITCH
         case AUX_FUNC::USER_FUNC1:
