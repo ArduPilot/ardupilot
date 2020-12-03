@@ -2072,14 +2072,7 @@ LOG_STRUCTURE_FROM_NAVEKF3 \
 
 // message types for common messages
 enum LogMessages : uint8_t {
-    LOG_NKF1_MSG = 64,
-    LOG_NKF2_MSG,
-    LOG_NKF3_MSG,
-    LOG_NKF4_MSG,
-    LOG_NKF5_MSG,
-    LOG_NKF10_MSG,
-    LOG_NKQ_MSG,
-    LOG_PARAMETER_MSG,
+    LOG_PARAMETER_MSG = 64,
     LOG_GPS_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
