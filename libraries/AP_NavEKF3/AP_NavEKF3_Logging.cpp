@@ -25,7 +25,7 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
     if (!getOriginLLH(originLLH)) {
         originLLH.alt = 0;
     }
-    const struct log_EKF1 pkt{
+    const struct log_XKF1 pkt{
         LOG_PACKET_HEADER_INIT(LOG_XKF1_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
