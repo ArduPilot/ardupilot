@@ -221,12 +221,14 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_ROLL_90_PITCH_68_YAW_293: {
+#if !defined(HAL_BUILD_AP_PERIPH)
         float tmpx = x;
         float tmpy = y;
         float tmpz = z;
         x =  0.143039f * tmpx +  0.368776f * tmpy + -0.918446f * tmpz;
         y = -0.332133f * tmpx + -0.856289f * tmpy + -0.395546f * tmpz;
         z = -0.932324f * tmpx +  0.361625f * tmpy +  0.000000f * tmpz;
+#endif
         return;
     }
     case ROTATION_PITCH_315: {
@@ -243,12 +245,14 @@ void Vector3<T>::rotate(enum Rotation rotation)
         return;
     }
     case ROTATION_PITCH_7: {
+#if !defined(HAL_BUILD_AP_PERIPH)
         const float sin_pitch = 0.12186934340514748f; // sinf(pitch);
         const float cos_pitch = 0.992546151641322f; // cosf(pitch);
         float tmpx = x;
         float tmpz = z;
         x =  cos_pitch * tmpx + sin_pitch * tmpz;
         z = -sin_pitch * tmpx + cos_pitch * tmpz;
+#endif
         return;
     }
     case ROTATION_CUSTOM: 
