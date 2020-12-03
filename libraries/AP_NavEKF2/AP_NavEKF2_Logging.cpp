@@ -23,7 +23,7 @@ void NavEKF2_core::Log_Write_NKF1(uint64_t time_us) const
     if (!getOriginLLH(originLLH)) {
         originLLH.alt = 0;
     }
-    const struct log_EKF1 pkt{
+    const struct log_NKF1 pkt{
         LOG_PACKET_HEADER_INIT(LOG_NKF1_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -184,7 +184,7 @@ void NavEKF2_core::Log_Write_Quaternion(uint64_t time_us) const
     // log quaternion
     Quaternion quat;
     getQuaternion(quat);
-    const struct log_Quaternion pktq1{
+    const struct log_NKQ pktq1{
         LOG_PACKET_HEADER_INIT(LOG_NKQ_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -224,7 +224,7 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
         return;
     }
 
-    struct log_RngBcnDebug pkt10 = {
+    struct log_NKF0 pkt0 = {
         LOG_PACKET_HEADER_INIT(LOG_NKF10_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -242,7 +242,7 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
         posE : 0,
         posD : 0
     };
-    AP::logger().WriteBlock(&pkt10, sizeof(pkt10));
+    AP::logger().WriteBlock(&pkt0, sizeof(pkt0));
     rngBcnFuseDataReportIndex++;
 }
 
