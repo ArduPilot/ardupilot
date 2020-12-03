@@ -480,6 +480,7 @@ private:
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
+        float transition_yaw;
     } tilt;
 
     // bit 0 enables plane mode and bit 1 enables body-frame roll mode
@@ -542,8 +543,7 @@ private:
     void tiltrotor_binary_update(void);
     void tiltrotor_vectored_yaw(void);
     void tiltrotor_bicopter(void);
-    void tilt_compensate_up(float *thrust, uint8_t num_motors);
-    void tilt_compensate_down(float *thrust, uint8_t num_motors);
+    void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
