@@ -50,11 +50,6 @@ PB7 I2C1_SDA I2C1
 
 PB0 MAG_CS CS
 
-# spi bus for compass
-PA5 SPI1_SCK SPI1
-PA6 SPI1_MISO SPI1
-PA7 SPI1_MOSI SPI1
-
 # analog input
 # PA5 VIN5 ADC1
 define HAL_USE_ADC TRUE
