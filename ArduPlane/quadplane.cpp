@@ -794,6 +794,10 @@ void QuadPlane::setup_defaults(void)
     if (esc_calibration != 0) {
         esc_calibration.set_and_save(0);
     }
+    // Quadplanes need the same level of GPS error checking as Copters do, Plane is more relaxed
+    AP_Param::set_default_by_name("EK2_CHECK_SCALE",100);
+    AP_Param::set_default_by_name("EK3_CHECK_SCALE",100);
+
 }
 
 // run ESC calibration
