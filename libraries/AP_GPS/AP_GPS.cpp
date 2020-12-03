@@ -607,7 +607,9 @@ void AP_GPS::detect_instance(uint8_t instance)
 
         if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
             if (_type[instance] == GPS_TYPE_HEMI) {
+#ifndef HAL_BUILD_AP_PERIPH
                 send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+#endif
             } else if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
                        _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
                 static const char blob[] = UBLOX_SET_BINARY_460800;
