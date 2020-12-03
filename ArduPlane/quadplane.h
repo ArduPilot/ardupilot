@@ -534,6 +534,10 @@ private:
 
     // time when we were last in a vtol control mode
     uint32_t last_vtol_mode_ms;
+
+	//Quadplane landing abort using throttle
+	AP_Int16 vtol_land_abort_ms;
+	uint32_t land_abort_ms=0;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);

@@ -500,6 +500,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
+    // @Param: LAND_ABORT_MS
+    // @DisplayName: Quadplane landing abort using throttle
+    // @Description: Allow a landing abort to trigger with a throttle > 95%
+    // @Units: ms
+    // @Range: 0 6000
+    // @Increment: 100
+    // @RebootRequired: False
+    AP_GROUPINFO("LAND_ABORT_MS", 21, QuadPlane, vtol_land_abort_ms, 0),
+
     AP_GROUPEND
 };
 
@@ -2875,6 +2884,23 @@ bool QuadPlane::land_detector(uint32_t timeout_ms)
  */
 bool QuadPlane::check_land_complete(void)
 {
+    //landing abort using throttle
+    if(vtol_land_abort_ms > 0 && !plane.failsafe.rc_failsafe && 
+        (poscontrol.state == QPOS_LAND_DESCEND || poscontrol.state==QPOS_LAND_FINAL)){
+        if(plane.get_throttle_input() >= 95){
+            const uint32_t now = AP_HAL::millis();
+            if(land_abort_ms == 0)land_abort_ms=now;
+            if(now-land_abort_ms > (unsigned)vtol_land_abort_ms){
+                gcs().send_text(MAV_SEVERITY_INFO,"Landing ABORT!!");
+                plane.set_mode(plane.mode_qloiter, ModeReason::RC_COMMAND);
+                land_abort_ms=0;
+                return false;
+            }
+        }
+        else{
+            land_abort_ms=0;
+        }
+    }
     if (poscontrol.state != QPOS_LAND_FINAL) {
         // only apply to final landing phase
         return false;
