@@ -165,6 +165,7 @@ public:
     enum board_options {
         BOARD_OPTION_WATCHDOG = (1 << 0),
         DISABLE_FTP = (1<<1),
+        ALLOW_SET_INTERNAL_PARM = (1<<2),
     };
 
     // return true if ftp is disabled
@@ -177,6 +178,11 @@ public:
         return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:HAL_WATCHDOG_ENABLED_DEFAULT;
     }
 
+    // return true if we allow setting of internal parameters (for developers)
+    static bool allow_set_internal_parameters(void) {
+        return _singleton?(_singleton->_options & ALLOW_SET_INTERNAL_PARM)!=0:false;
+    }
+    
     // handle press of safety button. Return true if safety state
     // should be toggled
     bool safety_button_handle_pressed(uint8_t press_count);
