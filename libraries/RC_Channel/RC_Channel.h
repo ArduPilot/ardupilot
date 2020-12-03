@@ -184,6 +184,9 @@ public:
         KILL_MOT3  =         106, // kill motor 3
         KILL_MOT4  =         107, // kill motor 4
         KILL_MAGPRIMARY =    108, // kill primary magnetometer
+        KILL_RANGEFINDER =   109, // kill all rangefinders
+        KILL_GPS1 =          110, // kill GNSS1 receiver
+        KILL_GPS2 =          111, // kill GNSS2 receiver
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
