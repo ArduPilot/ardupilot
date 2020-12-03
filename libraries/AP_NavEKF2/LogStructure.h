@@ -3,8 +3,15 @@
 #include <AP_Logger/LogStructure.h>
 
 #define LOG_IDS_FROM_NAVEKF2 \
-    LOG_NKT_MSG,  \
-    LOG_NKY0_MSG, \
+    LOG_NKF0_MSG,  \
+    LOG_NKF1_MSG,  \
+    LOG_NKF2_MSG,  \
+    LOG_NKF3_MSG,  \
+    LOG_NKF4_MSG,  \
+    LOG_NKF5_MSG,  \
+    LOG_NKQ_MSG,   \
+    LOG_NKT_MSG,   \
+    LOG_NKY0_MSG,  \
     LOG_NKY1_MSG
 
 
@@ -344,7 +351,7 @@ struct PACKED log_NKY1 {
 
 
 #define LOG_STRUCTURE_FROM_NAVEKF2        \
-    { LOG_NKF10_MSG, sizeof(log_NKF0), \
+    { LOG_NKF0_MSG, sizeof(log_NKF0), \
       "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
     { LOG_NKF1_MSG, sizeof(log_NKF1), \
       "NKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
