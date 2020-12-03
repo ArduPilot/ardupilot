@@ -735,6 +735,15 @@ bool QuadPlane::setup(void)
     if (!motors->initialised_ok()) {
         AP_BoardConfig::config_error("unknown Q_FRAME_TYPE %u", (unsigned)frame_type.get());
     }
+
+    if (motors_var_info == AP_MotorsMatrix::var_info &&
+        tilt.tilt_mask != 0 &&
+        tilt.tilt_type == TILT_TYPE_VECTORED_YAW) {
+        // we will be using vectoring for yaw
+        motors->disable_yaw_torque();
+    }
+
+
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
     motors->set_interlock(true);
@@ -1728,11 +1737,18 @@ void QuadPlane::update_transition(void)
         }
         hold_hover(climb_rate_cms);
 
-        // set desired yaw to current yaw in both desired angle and
-        // rate request. This reduces wing twist in transition due to
-        // multicopter yaw demands
-        attitude_control->set_yaw_target_to_current_heading();
-        attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
+        if (tilt.tilt_mask == 0 ||
+            tilt.tilt_type != TILT_TYPE_VECTORED_YAW ||
+            now - transition_start_ms < 100) {
+            // set desired yaw to current yaw in both desired angle
+            // and rate request. This reduces wing twist in transition
+            // due to multicopter yaw demands. This is disabled when
+            // using vectored yaw for tilt-rotors as the yaw control
+            // is needed to maintain good control in forward
+            // transitions
+            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
+        }
 
         last_throttle = motors->get_throttle();
 
