@@ -178,6 +178,11 @@ public:
         KILL_IMU1 =          100, // disable first IMU (for IMU failure testing)
         KILL_IMU2 =          101, // disable second IMU (for IMU failure testing)
         CAM_MODE_TOGGLE =    102, // Momentary switch to cycle camera modes
+        KILL_ALL   =         103, // kill all motors
+        KILL_MOT1  =         104, // kill motor 1
+        KILL_MOT2  =         105, // kill motor 2
+        KILL_MOT3  =         106, // kill motor 3
+        KILL_MOT4  =         107, // kill motor 4
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
