@@ -213,11 +213,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(pitch_max,               "PITCH_MAX",	PITCH_MAX_DEFAULT),
 
-    // barometer ground calibration. The GND_ prefix is chosen for
-    // compatibility with previous releases of ArduPlane
-    // @Group: GND_
+    // barometer library
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp

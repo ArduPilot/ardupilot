@@ -582,9 +582,9 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
-    // @Group: GND_
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
     // @Group: GPS_

@@ -857,11 +857,9 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     ASCALAR(crash_detection_enable,         "CRASH_DETECT",   0),
 
-    // barometer ground calibration. The GND_ prefix is chosen for
-    // compatibility with previous releases of ArduPlane
-    // @Group: GND_
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
     // @Group: GPS_
