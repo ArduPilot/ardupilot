@@ -225,7 +225,7 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
     }
 
     struct log_NKF0 pkt0 = {
-        LOG_PACKET_HEADER_INIT(LOG_NKF10_MSG),
+        LOG_PACKET_HEADER_INIT(LOG_NKF0_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
         ID : rngBcnFuseDataReportIndex,
