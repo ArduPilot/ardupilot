@@ -1038,6 +1038,14 @@ GCS &gcs();
 // send text when we do have a GCS
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
 
+#elif defined(HAL_BUILD_AP_PERIPH) && !defined(STM32F1)
+
+// map send text to can_printf() on larger AP_Periph boards
+extern "C" {
+void can_printf(const char *fmt, ...);
+}
+#define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
+
 #else // HAL_NO_GCS
 // empty send text when we have no GCS
 #define GCS_SEND_TEXT(severity, format, args...)
