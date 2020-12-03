@@ -67,7 +67,13 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY_230400 MTK_SET_BINARY SIRF_SET_BINARY;
+const char AP_GPS::_initialisation_blob[] =
+    UBLOX_SET_BINARY_230400
+#ifndef HAL_BUILD_AP_PERIPH
+    MTK_SET_BINARY
+    SIRF_SET_BINARY
+#endif
+    ;
 
 AP_GPS *AP_GPS::_singleton;
 
