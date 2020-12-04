@@ -473,6 +473,7 @@ void AP_Airspeed::read(uint8_t i)
     // try and get a direct reading of airspeed
     if (sensor[i]->has_airspeed()) {
         state[i].healthy = sensor[i]->get_airspeed(state[i].airspeed);
+        state[i].raw_airspeed = state[i].airspeed;  // for logging
         return;
     }
 
