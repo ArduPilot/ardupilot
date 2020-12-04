@@ -509,6 +509,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TAILSIT_VACCT", 21, QuadPlane, tailsitter.vertical_acceleration_time, 2000),
 
+    // @Param: TAILSIT_THRT
+    // @DisplayName: Transition throttle
+    // @Description: Throttle to use in transitions from VTOL to FW flight. If less than hover throttle, hover throttle is used
+    // @Range: 0.5 1
+    // @User: Standard
+    AP_GROUPINFO("TAILSIT_THRT", 22, QuadPlane, tailsitter.transition_throttle, 0.5f),
+
     AP_GROUPEND
 };
 
@@ -1257,7 +1264,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 
 
 // run quadplane loiter controller
-void QuadPlane::control_loiter()
+void QuadPlane::control_loiter(bool is_auto_mode)
 {
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
@@ -1330,7 +1337,7 @@ void QuadPlane::control_loiter()
         float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
         check_land_complete();
-    } else if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
+    } else if (is_auto_mode || (plane.control_mode == &plane.mode_guided && guided_takeoff)) {
         pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
     } else {
         // update altitude target and call position controller
@@ -1755,21 +1762,17 @@ void QuadPlane::update_transition(void)
         // in half the transition time
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
+        // set throttle at either hover throttle, transition throttle or current throttle, whichever is higher, through the transition
+        float throttle = MAX(MAX(motors->get_throttle_hover(), attitude_control->get_throttle_in()), tailsitter_get_transition_throttle());
+        attitude_control->set_throttle_out(throttle, true, 0);
 
         if (dt < (uint32_t)tailsitter.vertical_acceleration_time) {
-            plane.nav_pitch_cd = -15.0f;
-            // Full power!
-            attitude_control->set_throttle_out(1.0f, false, 0);
-            // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Climb rate: %f", plane.barometer.get_climb_rate());
+            plane.nav_pitch_cd = transition_initial_pitch;
         } else {
             float pitch_cd;
             pitch_cd = constrain_float((-transition_rate * (dt - (uint32_t)tailsitter.vertical_acceleration_time)) * 100, -8500, 0);
             // if already pitched forward at start of transition, wait until curve catches up
-            // Angle is always 0 with acceleration time
-            // plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
-            plane.nav_pitch_cd = pitch_cd;
-            // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
-            attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(), attitude_control->get_throttle_in()), true, 0);
+            plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
         }
         plane.nav_roll_cd = 0;
         check_attitude_relax();
@@ -1873,10 +1876,10 @@ void QuadPlane::update(void)
                   setup for the back transition when needed
                 */
                 gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done");
-                // float alt_cm = inertial_nav.get_altitude();
-                // pos_control->set_alt_target(alt_cm + 200);
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
+                vtol_transition_finished_ms = now;
+                init_mode();
             }
         } else {
             /*
@@ -2295,6 +2298,12 @@ void QuadPlane::vtol_position_controller(void)
         return;
     }
 
+    // Loiter for 5 seconds after transition to stabilize the aircraft before starting to move
+    if (AP_HAL::millis() - vtol_transition_finished_ms < 5000) {
+        control_loiter(true);
+        return;
+    }
+
     setup_target_position();
 
     const Location &loc = plane.next_WP_loc;
@@ -2657,6 +2666,7 @@ void QuadPlane::init_qrtl(void)
     poscontrol.speed_scale = 0;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
+    init_loiter();
 }
 
 /*

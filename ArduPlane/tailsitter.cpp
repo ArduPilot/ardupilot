@@ -235,7 +235,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
     }
     if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
         labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > 2000) {
+        AP_HAL::millis() - transition_start_ms > 2500) {
         return true;
     }
     // still waiting
@@ -361,4 +361,8 @@ void QuadPlane::tailsitter_speed_scaling(void)
         v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
+}
+
+float QuadPlane::tailsitter_get_transition_throttle() {
+    return constrain_float(tailsitter.transition_throttle, 0.5f, 1.0f);
 }
