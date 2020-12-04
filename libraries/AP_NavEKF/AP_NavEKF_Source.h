@@ -62,7 +62,6 @@ public:
     // get/set velocity source
     SourceXY getVelXYSource() const { return _active_source_set.velxy; }
     SourceZ getVelZSource() const { return _active_source_set.velz; }
-    void setVelZSource(SourceZ source) { _active_source_set.velz = source; }
 
     // true/false of whether velocity source should be used
     bool useVelXYSource(SourceXY velxy_source) const;
