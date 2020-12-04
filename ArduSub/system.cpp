@@ -42,6 +42,9 @@ void Sub::init_ardupilot()
     case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
         AP_Param::set_default_by_name("GND_EXT_BUS", 0);
         break;
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        break;
     default:
         AP_Param::set_default_by_name("GND_EXT_BUS", 1);
         break;
