@@ -152,6 +152,9 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     }
 	
     // Scale the integration limit
+    if (is_zero(scaler)) {
+        scaler = 1.0f;
+    }
     float intLimScaled = _imax * 0.01f / (_K_D * scaler * scaler);
 
     // Constrain the integrator state
