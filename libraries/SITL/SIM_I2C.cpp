@@ -27,6 +27,7 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
+#include "SIM_EagleTreeAirspeedv3.h"
 
 #include <signal.h>
 
@@ -51,6 +52,7 @@ static Maxell maxell;
 static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
+static EagleTreeAirspeedv3 eagletreeairspeedv3;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -65,6 +67,7 @@ struct i2c_device_at_address {
     { 1, 0x76, ignored }, // MS56XX
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },
+    { 1, 0xEA, eagletreeairspeedv3 }, // MS56XX
     { 2, 0x28, airspeed_dlvr },
 };
 
