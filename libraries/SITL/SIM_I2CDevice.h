@@ -50,6 +50,25 @@ protected:
     uint8_t byte[256];
 };
 
+/*
+  for devices that take a command then will provide data to a read();
+  for example, MCU writes 0x07 to device then expects to be able to
+  read 2 bytes from it.
+*/
+class I2CCommandResponseDevice {
+public:
+    int rdwr(I2C::i2c_rdwr_ioctl_data *&data);
+
+protected:
+
+    // time taken for device to process command:
+    uint16_t command_processing_time_ms() const { return 20; }
+    virtual uint8_t command_take_reading() const = 0;
+    virtual uint16_t reading() const = 0;
+
+    uint32_t cmd_take_reading_received_ms;
+};
+
 class I2CDevice {
 public:
     virtual void init() {}
