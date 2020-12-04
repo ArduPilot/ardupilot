@@ -151,7 +151,6 @@ define HAL_PERIPH_ENABLE_RANGEFINDER
 define HAL_PERIPH_ENABLE_MSP
 
 # allow for rangefinder to be plugged in on "MSP" port
-define RANGEFINDER_MAX_INSTANCES 1
 define ADSB_PORT hal.uartC
 define HAL_PERIPH_ENABLE_ADSB
 
