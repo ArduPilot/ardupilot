@@ -32,10 +32,10 @@ public:
     AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager);
 
     // return true if sensor is basically healthy (we are receiving data)
-    bool healthy();
+    bool healthy() override;
 
     // update
-    void update();
+    void update() override;
 
 private:
     // Variables for Marvelmind
@@ -79,7 +79,6 @@ private:
     uint16_t num_bytes_in_block_received;
     uint16_t data_id;
 
-    uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
     StationaryBeaconPosition* get_or_alloc_beacon(uint8_t address);
     void process_beacons_positions_datagram();
     void process_beacons_positions_highres_datagram();

@@ -23,7 +23,7 @@ void Copter::update_ground_effect_detector(void)
         xy_des_speed_cms = vel_target.length();
     }
 
-    if (position_ok() || optflow_position_ok()) {
+    if (position_ok() || ekf_has_relative_position()) {
         Vector3f vel = inertial_nav.get_velocity();
         vel.z = 0.0f;
         xy_speed_cms = vel.length();
@@ -52,9 +52,9 @@ void Copter::update_ground_effect_detector(void)
     // landing logic
     Vector3f angle_target_rad = attitude_control->get_att_target_euler_cd() * radians(0.01f);
     bool small_angle_request = cosf(angle_target_rad.x)*cosf(angle_target_rad.y) > cosf(radians(7.5f));
-    bool xy_speed_low = (position_ok() || optflow_position_ok()) && xy_speed_cms <= 125.0f;
+    bool xy_speed_low = (position_ok() || ekf_has_relative_position()) && xy_speed_cms <= 125.0f;
     bool xy_speed_demand_low = pos_control->is_active_xy() && xy_des_speed_cms <= 125.0f;
-    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_xy()) || (control_mode == ALT_HOLD && small_angle_request);
+    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->is_active_xy()) || (control_mode == Mode::Number::ALT_HOLD && small_angle_request);
 
     bool descent_demanded = pos_control->is_active_z() && des_climb_rate_cms < 0.0f;
     bool slow_descent_demanded = descent_demanded && des_climb_rate_cms >= -100.0f;
@@ -66,4 +66,18 @@ void Copter::update_ground_effect_detector(void)
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
     ahrs.setTakeoffExpected(gndeffect_state.takeoff_expected);
     ahrs.setTouchdownExpected(gndeffect_state.touchdown_expected);
+}
+
+// update ekf terrain height stable setting
+// when set to true, this allows the EKF to stabilize the normally barometer based altitude using a rangefinder
+// this is not related to terrain following
+void Copter::update_ekf_terrain_height_stable()
+{
+    // set to false if no position estimate
+    if (!position_ok() && !ekf_has_relative_position()) {
+        ahrs.set_terrain_hgt_stable(false);
+    }
+
+    // consider terrain height stable if vehicle is taking off or landing
+    ahrs.set_terrain_hgt_stable(flightmode->is_taking_off() || flightmode->is_landing());
 }

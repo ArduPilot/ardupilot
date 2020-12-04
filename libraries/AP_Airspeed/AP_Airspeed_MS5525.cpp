@@ -26,6 +26,7 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -70,9 +71,7 @@ bool AP_Airspeed_MS5525::init()
         if (!dev) {
             continue;
         }
-        if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-            continue;
-        }
+        dev->get_semaphore()->take_blocking();
 
         // lots of retries during probe
         dev->set_retries(5);
@@ -113,27 +112,7 @@ bool AP_Airspeed_MS5525::init()
  */
 uint16_t AP_Airspeed_MS5525::crc4_prom(void)
 {
-    uint16_t n_rem = 0;
-    uint8_t n_bit;
-
-    for (uint8_t cnt = 0; cnt < sizeof(prom); cnt++) {
-        /* uneven bytes */
-        if (cnt & 1) {
-            n_rem ^= (uint8_t)((prom[cnt >> 1]) & 0x00FF);
-        } else {
-            n_rem ^= (uint8_t)(prom[cnt >> 1] >> 8);
-        }
-
-        for (n_bit = 8; n_bit > 0; n_bit--) {
-            if (n_rem & 0x8000) {
-                n_rem = (n_rem << 1) ^ 0x3000;
-            } else {
-                n_rem = (n_rem << 1);
-            }
-        }
-    }
-
-    return (n_rem >> 12) & 0xF;
+    return crc_crc4(prom);
 }
 
 bool AP_Airspeed_MS5525::read_prom(void)
@@ -218,17 +197,16 @@ void AP_Airspeed_MS5525::calculate(void)
     }
 #endif
     
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        pressure_sum += P_Pa;
-        temperature_sum += Temp_C;
-        press_count++;
-        temp_count++;
-        last_sample_time_ms = AP_HAL::millis();
-        sem->give();
-    }
+    WITH_SEMAPHORE(sem);
+
+    pressure_sum += P_Pa;
+    temperature_sum += Temp_C;
+    press_count++;
+    temp_count++;
+    last_sample_time_ms = AP_HAL::millis();
 }
 
-// 50Hz timer
+// 80Hz timer
 void AP_Airspeed_MS5525::timer()
 {
     if (AP_HAL::micros() - command_send_us < 10000) {
@@ -284,35 +262,37 @@ void AP_Airspeed_MS5525::timer()
 // return the current differential_pressure in Pascal
 bool AP_Airspeed_MS5525::get_differential_pressure(float &_pressure)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (press_count > 0) {
-            pressure = pressure_sum / press_count;
-            press_count = 0;
-            pressure_sum = 0;
-        }
-        sem->give();
+
+    if (press_count > 0) {
+        pressure = pressure_sum / press_count;
+        press_count = 0;
+        pressure_sum = 0;
     }
     _pressure = pressure;
+
     return true;
 }
 
 // return the current temperature in degrees C, if available
 bool AP_Airspeed_MS5525::get_temperature(float &_temperature)
 {
+    WITH_SEMAPHORE(sem);
+
     if ((AP_HAL::millis() - last_sample_time_ms) > 100) {
         return false;
     }
-    if (sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (temp_count > 0) {
-            temperature = temperature_sum / temp_count;
-            temp_count = 0;
-            temperature_sum = 0;
-        }
-        sem->give();
+
+    if (temp_count > 0) {
+        temperature = temperature_sum / temp_count;
+        temp_count = 0;
+        temperature_sum = 0;
     }
+
     _temperature = temperature;
     return true;
 }

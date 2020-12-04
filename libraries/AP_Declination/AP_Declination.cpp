@@ -127,3 +127,19 @@ float AP_Declination::get_declination(float latitude_deg, float longitude_deg)
     return declination_deg;
 }
 
+/*
+  get earth field as a Vector3f in Gauss given a Location
+*/
+Vector3f AP_Declination::get_earth_field_ga(const Location &loc)
+{
+    float declination_deg=0, inclination_deg=0, intensity_gauss=0;
+    get_mag_field_ef(loc.lat*1.0e-7f, loc.lng*1.0e-7f, intensity_gauss, declination_deg, inclination_deg);
+
+    // create earth field
+    Vector3f mag_ef = Vector3f(intensity_gauss, 0.0, 0.0);
+    Matrix3f R;
+
+    R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
+    mag_ef = R * mag_ef;
+    return mag_ef;
+}

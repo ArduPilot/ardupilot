@@ -31,10 +31,16 @@ public:
     virtual bool init(void) = 0;
 
     // return the current differential_pressure in Pascal
-    virtual bool get_differential_pressure(float &pressure) = 0;
+    virtual bool get_differential_pressure(float &pressure) {return false;}
 
     // return the current temperature in degrees C, if available
     virtual bool get_temperature(float &temperature) = 0;
+
+    // true if sensor reads airspeed directly, not via pressue
+    virtual bool has_airspeed() {return false;}
+
+    // return airspeed in m/s if available
+    virtual bool get_airspeed(float& airspeed) {return false;}
 
 protected:
     int8_t get_pin(void) const;
@@ -44,9 +50,9 @@ protected:
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
         return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
     }
-    
+
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *sem;
+    HAL_Semaphore sem;
 
     float get_airspeed_ratio(void) const {
         return frontend.get_airspeed_ratio(instance);
@@ -66,7 +72,12 @@ protected:
     void set_offset(float ofs) {
         frontend.param[instance].offset.set(ofs);
     }
-    
+
+    // set use
+    void set_use(int8_t use) {
+        frontend.param[instance].use.set(use);
+    }
+
 private:
     AP_Airspeed &frontend;
     uint8_t instance;

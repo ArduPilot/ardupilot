@@ -23,9 +23,9 @@ This provides some support code and variables for MAVLink enabled sketches
 #include "GCS_MAVLink.h"
 
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 
+extern const AP_HAL::HAL& hal;
 
 #ifdef MAVLINK_SEPARATE_HELPERS
 // Shut up warnings about missing declarations; TODO: should be fixed on
@@ -39,46 +39,36 @@ This provides some support code and variables for MAVLink enabled sketches
 AP_HAL::UARTDriver	*mavlink_comm_port[MAVLINK_COMM_NUM_BUFFERS];
 bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
-mavlink_system_t mavlink_system = {7,1};
+// per-channel lock
+static HAL_Semaphore chan_locks[MAVLINK_COMM_NUM_BUFFERS];
 
-// mask of serial ports disabled to allow for SERIAL_CONTROL
-static uint8_t mavlink_locked_mask;
+mavlink_system_t mavlink_system = {7,1};
 
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-// static AP_SerialManager pointer
-const AP_SerialManager *GCS_MAVLINK::serialmanager_p;
-
-/*
-  lock a channel, preventing use by MAVLink
- */
-void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
+// set a channel as private. Private channels get sent heartbeats, but
+// don't get broadcast packets or forwarded packets
+void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)
 {
-    if (!valid_channel(chan)) {
-        return;
-    }
-    if (lock) {
-        mavlink_locked_mask |= (1U<<(unsigned)_chan);
-    } else {
-        mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
-    }
+    const uint8_t mask = (1U<<(unsigned)_chan);
+    mavlink_private |= mask;
 }
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t)
+// return a MAVLink parameter type given a AP_Param type
+MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
 {
     if (t == AP_PARAM_INT8) {
-	    return MAVLINK_TYPE_INT8_T;
+	    return MAV_PARAM_TYPE_INT8;
     }
     if (t == AP_PARAM_INT16) {
-	    return MAVLINK_TYPE_INT16_T;
+	    return MAV_PARAM_TYPE_INT16;
     }
     if (t == AP_PARAM_INT32) {
-	    return MAVLINK_TYPE_INT32_T;
+	    return MAV_PARAM_TYPE_INT32;
     }
     // treat any others as float
-    return MAVLINK_TYPE_FLOAT;
+    return MAV_PARAM_TYPE_REAL32;
 }
 
 
@@ -88,36 +78,11 @@ uint8_t mav_var_type(enum ap_var_type t)
 /// @returns		Number of bytes available
 uint16_t comm_get_txspace(mavlink_channel_t chan)
 {
-    if (!valid_channel(chan)) {
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
         return 0;
     }
-    if ((1U<<chan) & mavlink_locked_mask) {
-        return 0;
-    }
-	int16_t ret = mavlink_comm_port[chan]->txspace();
-	if (ret < 0) {
-		ret = 0;
-	}
-    return (uint16_t)ret;
-}
-
-/// Check for available data on the nominated MAVLink channel
-///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available
-uint16_t comm_get_available(mavlink_channel_t chan)
-{
-    if (!valid_channel(chan)) {
-        return 0;
-    }
-    if ((1U<<chan) & mavlink_locked_mask) {
-        return 0;
-    }
-    int16_t bytes = mavlink_comm_port[chan]->available();
-	if (bytes == -1) {
-		return 0;
-	}
-    return (uint16_t)bytes;
+    return link->txspace();
 }
 
 /*
@@ -132,5 +97,28 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
         // an alternative protocol is active
         return;
     }
-    mavlink_comm_port[chan]->write(buf, len);
+    const size_t written = mavlink_comm_port[chan]->write(buf, len);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (written < len) {
+        AP_HAL::panic("Short write on UART: %lu < %u", (unsigned long)written, len);
+    }
+#else
+    (void)written;
+#endif
+}
+
+/*
+  lock a channel for send
+ */
+void comm_send_lock(mavlink_channel_t chan)
+{
+    chan_locks[(uint8_t)chan].take_blocking();
+}
+
+/*
+  unlock a channel
+ */
+void comm_send_unlock(mavlink_channel_t chan)
+{
+    chan_locks[(uint8_t)chan].give();
 }

@@ -1,0 +1,43 @@
+# hw definition file for processing by chibios_pins.py
+# for omnibusf4 Nano V6 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 133
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# don't allow bootloader to use more than 16k
+FLASH_USE_MAX_KB 16
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PA8 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 15360
+
+
+# Add CS pins to ensure they are high in bootloader
+PA4 MPU6000_CS CS
+PB12 FLASH_CS CS
+PA15 OSD_CS CS
+PB3 BMP280_CS CS

@@ -4,8 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
 #include <AP_Common/Location.h>
 
@@ -17,6 +16,9 @@
 // valid actions should a fence be breached
 #define AC_FENCE_ACTION_REPORT_ONLY                 0       // report to GCS that boundary has been breached but take no further action
 #define AC_FENCE_ACTION_RTL_AND_LAND                1       // return to launch and, if that fails, land
+#define AC_FENCE_ACTION_ALWAYS_LAND                 2       // always land
+#define AC_FENCE_ACTION_SMART_RTL                   3       // smartRTL, if that fails, RTL, it that still fails, land
+#define AC_FENCE_ACTION_BRAKE                       4       // brake, if that fails, land
 
 // default boundaries
 #define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
@@ -33,11 +35,18 @@
 class AC_Fence
 {
 public:
-    AC_Fence(const AP_AHRS_NavEKF &ahrs);
+    AC_Fence();
 
     /* Do not allow copies */
     AC_Fence(const AC_Fence &other) = delete;
     AC_Fence &operator=(const AC_Fence&) = delete;
+
+    void init() {
+        _poly_loader.init();
+    }
+
+    // get singleton instance
+    static AC_Fence *get_singleton() { return _singleton; }
 
     /// enable - allows fence to be enabled/disabled.  Note: this does not update the eeprom saved value
     void enable(bool value);
@@ -47,6 +56,11 @@ public:
 
     /// get_enabled_fences - returns bitmask of enabled fences
     uint8_t get_enabled_fences() const;
+
+    // should be called @10Hz to handle loading from eeprom
+    void update() {
+        _poly_loader.update();
+    }
 
     /// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
     bool pre_arm_check(const char* &fail_msg) const;
@@ -59,7 +73,7 @@ public:
     uint8_t check();
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
-    bool check_destination_within_fence(const Location_Class& loc);
+    bool check_destination_within_fence(const Location& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }
@@ -70,7 +84,8 @@ public:
     /// get_breach_count - returns number of times we have breached the fence
     uint16_t get_breach_count() const { return _breach_count; }
 
-    /// get_breach_distance - returns distance in meters outside of the given fence
+    /// get_breach_distance - returns maximum distance in meters outside
+    /// of the given fences.  fence_type is a bitmask here.
     float get_breach_distance(uint8_t fence_type) const;
 
     /// get_action - getter for user requested action on limit breach
@@ -93,27 +108,18 @@ public:
     ///     has no effect if no breaches have occurred
     void manual_recovery_start();
 
-    ///
-    /// polygon related methods
-    ///
-
-    /// returns pointer to array of polygon points and num_points is filled in with the total number
-    Vector2f* get_polygon_points(uint16_t& num_points) const;
-
-    /// returns true if we've breached the polygon boundary.  simple passthrough to underlying _poly_loader object
-    bool boundary_breached(const Vector2f& location, uint16_t num_points, const Vector2f* points) const;
-
-    /// handler for polygon fence messages with GCS
-    void handle_msg(GCS_MAVLINK &link, mavlink_message_t* msg);
-
-    static const struct AP_Param::GroupInfo var_info[];
-
-    // methods for mavlink SYS_STATUS message (send_extended_status1)
+    // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
 
+    AC_PolyFence_loader &polyfence();
+    const AC_PolyFence_loader &polyfence() const;
+
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
+    static AC_Fence *_singleton;
 
     /// check_fence_alt_max - true if alt fence has been newly breached
     bool check_fence_alt_max();
@@ -134,12 +140,6 @@ private:
     bool pre_arm_check_polygon(const char* &fail_msg) const;
     bool pre_arm_check_circle(const char* &fail_msg) const;
     bool pre_arm_check_alt(const char* &fail_msg) const;
-
-    /// load polygon points stored in eeprom into boundary array and perform validation.  returns true if load successfully completed
-    bool load_polygon_from_eeprom(bool force_reload = false);
-
-    // pointers to other objects we depend upon
-    const AP_AHRS_NavEKF& _ahrs;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control
@@ -171,11 +171,9 @@ private:
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
-    // polygon fence variables
-    AC_PolyFence_loader _poly_loader;               // helper for loading/saving polygon points
-    Vector2f        *_boundary = nullptr;           // array of boundary points.  Note: point 0 is the return point
-    uint8_t         _boundary_num_points = 0;       // number of points in the boundary array (should equal _total parameter after load has completed)
-    bool            _boundary_create_attempted = false; // true if we have attempted to create the boundary array
-    bool            _boundary_loaded = false;       // true if boundary array has been loaded from eeprom
-    bool            _boundary_valid = false;        // true if boundary forms a closed polygon
+    AC_PolyFence_loader _poly_loader{_total}; // polygon fence
+};
+
+namespace AP {
+    AC_Fence *fence();
 };

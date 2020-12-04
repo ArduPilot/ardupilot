@@ -30,7 +30,9 @@ public:
         BUS_TYPE_UNKNOWN = 0,
         BUS_TYPE_I2C     = 1,
         BUS_TYPE_SPI     = 2,
-        BUS_TYPE_UAVCAN  = 3
+        BUS_TYPE_UAVCAN  = 3,
+        BUS_TYPE_SITL    = 4,
+        BUS_TYPE_MSP     = 5,
     };
 
     enum Speed {
@@ -40,6 +42,8 @@ public:
 
     FUNCTOR_TYPEDEF(PeriodicCb, void);
     typedef void* PeriodicHandle;
+
+    FUNCTOR_TYPEDEF(BankSelectCb, bool, uint8_t);
 
     Device(enum BusType type)
     {
@@ -132,6 +136,56 @@ public:
     }
 
     /**
+     * Wrapper function over #transfer() to call bank selection callback
+     * and then invoke the transfer call
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool transfer_bank(uint8_t bank, const uint8_t *send, uint32_t send_len,
+                          uint8_t *recv, uint32_t recv_len) {
+        if (_bank_select) {
+            if (!_bank_select(bank)) {
+                return false;
+            }
+        }
+        return transfer(send, send_len, recv, recv_len);
+    }
+
+    /**
+     * Wrapper function over #transfer_bank() to read recv_len registers, starting
+     * by first_reg, into the array pointed by recv. The read flag passed to
+     * #set_read_flag(uint8_t) is ORed with first_reg before performing the
+     * transfer.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool read_bank_registers(uint8_t bank, uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
+    {
+        first_reg |= _read_flag;
+        return transfer_bank(bank, &first_reg, 1, recv, recv_len);
+    }
+
+    /**
+     * Wrapper function over #transfer_bank() to write a byte to the register reg.
+     * The transfer is done by sending reg and val in that order.
+     *
+     * Return: true on a successful transfer, false on failure.
+     */
+    bool write_bank_register(uint8_t bank, uint8_t reg, uint8_t val, bool checked=false)
+    {
+        uint8_t buf[2] = { reg, val };
+        if (checked) {
+            set_checked_register(bank, reg, val);
+        }
+        return transfer_bank(bank, buf, sizeof(buf), nullptr, 0);
+    }
+
+    /**
+     * set a value for a checked register in a bank
+     */
+    void set_checked_register(uint8_t bank, uint8_t reg, uint8_t val);
+
+    /**
      * set a value for a checked register
      */
     void set_checked_register(uint8_t reg, uint8_t val);
@@ -197,6 +251,20 @@ public:
      */
     virtual bool unregister_callback(PeriodicHandle h) { return false; }
 
+    /*
+     * Sets a bank_select callback to be used for bank selection during register check
+     */
+    virtual void setup_bankselect_callback(BankSelectCb bank_select) {
+        _bank_select = bank_select;
+    }
+
+    /*
+     * Sets a bank_select callback to be used for bank selection during register check
+     */
+    virtual void deregister_bankselect_callback() {
+        _bank_select = nullptr;
+    }
+
 
     /*
         allows to set callback that will be called after DMA transfer complete.
@@ -230,7 +298,7 @@ public:
      * the standard HAL Device types, such as UAVCAN devices
      */
     static uint32_t make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
-        union DeviceId d;
+        union DeviceId d {};
         d.devid_s.bus_type = bus_type;
         d.devid_s.bus = bus;
         d.devid_s.address = address;
@@ -255,6 +323,34 @@ public:
     uint32_t get_bus_id_devtype(uint8_t devtype) {
         return change_bus_id(get_bus_id(), devtype);
     }
+
+    /**
+     * get bus type
+     */
+    static enum BusType devid_get_bus_type(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.bus_type;
+    }
+
+    static uint8_t devid_get_bus(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.bus;
+    }
+
+    static uint8_t devid_get_address(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.address;
+    }
+
+    static uint8_t devid_get_devtype(uint32_t dev_id) {
+        union DeviceId d;
+        d.devid = dev_id;
+        return d.devid_s.devtype;
+    }
+
 
     /* set number of retries on transfers */
     virtual void set_retries(uint8_t retries) {};
@@ -293,8 +389,11 @@ protected:
     }
 
 private:
+    BankSelectCb _bank_select;
+
     // checked registers
     struct checkreg {
+        uint8_t bank;
         uint8_t regnum;
         uint8_t value;
     };

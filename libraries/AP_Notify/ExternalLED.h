@@ -21,9 +21,6 @@
 
 #include "NotifyDevice.h"
 
-#define HIGH 1
-#define LOW 0
-
 class ExternalLED: public NotifyDevice
 {
 public:
@@ -31,10 +28,10 @@ public:
     ExternalLED() : _pattern(NONE) {}
 
     // initialise the LED driver
-    bool init(void);
+    bool init(void) override;
 
     // should be called at 50Hz
-    void update(void);
+    void update(void) override;
 
 private:
 

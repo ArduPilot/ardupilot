@@ -372,8 +372,8 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
@@ -391,8 +391,8 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                             enum Rotation rotation_a,
                                                             enum Rotation rotation_g,
                                                             enum Rotation rotation_gH)
@@ -449,9 +449,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
 
 bool AP_InertialSensor_LSM9DS0::_hardware_init()
 {
-    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _spi_sem->take_blocking();
 
     uint8_t tries, whoami;
 
@@ -461,13 +459,11 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     
     whoami_g = _register_read_g(WHO_AM_I_G);
     if (whoami_g != LSM9DS0_G_WHOAMI && whoami_g != LSM9DS0_G_WHOAMI_H) {
-        hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami_g);
         goto fail_whoami;
     }
 
     whoami = _register_read_xm(WHO_AM_I_XM);
     if (whoami != LSM9DS0_XM_WHOAMI) {
-        hal.console->printf("LSM9DS0: unexpected acc/mag  WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 
@@ -676,7 +672,7 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
     _accel_scale = (((float) scale + 1.0f) * 2.0f) / 32768.0f;
     if (scale == A_SCALE_16G) {
         /* the datasheet shows an exception for +-16G */
-        _accel_scale = 0.000732;
+        _accel_scale = 0.000732f;
     }
     /* convert to G/LSB to (m/s/s)/LSB */
     _accel_scale *= GRAVITY_MSS;

@@ -26,38 +26,34 @@ public:
     AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
 
     // update state
-    void update(void);
+    void update(void) override;
 
 private:
 
-    // gpio interrupt handlers
-    static int irq_handler0_pina(int irq, void *context);   // instance 0's pin_a handler
-    static int irq_handler0_pinb(int irq, void *context);   // instance 0's pin_b handler
-    static int irq_handler1_pina(int irq, void *context);   // instance 1's pin_a handler
-    static int irq_handler1_pinb(int irq, void *context);   // instance 1's pin_b handler
-    static void irq_handler(uint8_t instance, bool pin_a);  // combined irq handler
+    // check if pin has changed and initialise gpio event callback
+    void update_pin(uint8_t &pin, uint8_t new_pin, uint8_t &pin_value);
 
-    // get gpio id from pin number
-    static uint32_t get_gpio(uint8_t pin_number);
+    // gpio interrupt handlers
+    void irq_handler(uint8_t pin, bool pin_value, uint32_t timestamp);  // combined irq handler
 
     // convert pin a and b status to phase
     static uint8_t pin_ab_to_phase(bool pin_a, bool pin_b);
 
     // update phase, distance_count and error count using pin a and b's latest state
-    static void update_phase_and_error_count(bool pin_a_now, bool pin_b_now, uint8_t &phase, int32_t &distance_count, uint32_t &total_count, uint32_t &error_count);
+    void update_phase_and_error_count();
 
     struct IrqState {
-        uint32_t last_gpio_a;       // gpio used for pin a
-        uint32_t last_gpio_b;       // gpio used for pin b
         uint8_t  phase;             // current phase of encoder (from 0 to 3)
-        int32_t  distance_count;    // distance measured by cumulative steps forward or backwards
+        int32_t  distance_count;    // distance measured by cumulative steps forward or backwards since last update
         uint32_t total_count;       // total number of successful readings from sensor (used for sensor quality calcs)
         uint32_t error_count;       // total number of errors reading from sensor (used for sensor quality calcs)
         uint32_t last_reading_ms;   // system time of last update from encoder
-    };
-    static struct IrqState irq_state[WHEELENCODER_MAX_INSTANCES];
+    } irq_state;
 
     // private members
-    uint8_t last_pin_a;
-    uint8_t last_pin_b;
+    uint8_t last_pin_a = -1;
+    uint8_t last_pin_b = -1;
+
+    uint8_t last_pin_a_value;
+    uint8_t last_pin_b_value;
 };

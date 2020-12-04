@@ -30,7 +30,7 @@ enum autopilot_yaw_mode {
 };
 
 // Auto Pilot Modes enumeration
-enum control_mode_t {
+enum control_mode_t : uint8_t {
     STABILIZE =     0,  // manual angle with manual depth/throttle
     ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
     ALT_HOLD =      2,  // manual angle with automatic depth/throttle
@@ -39,25 +39,8 @@ enum control_mode_t {
     CIRCLE =        7,  // automatic circular flight with automatic throttle
     SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
     POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    MANUAL =       19   // Pass-through input with no stabilization
-};
-
-enum mode_reason_t {
-    MODE_REASON_UNKNOWN=0,
-    MODE_REASON_TX_COMMAND,
-    MODE_REASON_GCS_COMMAND,
-    MODE_REASON_RADIO_FAILSAFE,
-    MODE_REASON_BATTERY_FAILSAFE,
-    MODE_REASON_GCS_FAILSAFE,
-    MODE_REASON_EKF_FAILSAFE,
-    MODE_REASON_GPS_GLITCH,
-    MODE_REASON_MISSION_END,
-    MODE_REASON_THROTTLE_SURFACE_ESCAPE,
-    MODE_REASON_FENCE_BREACH,
-    MODE_REASON_TERRAIN_FAILSAFE,
-    MODE_REASON_SURFACE_COMPLETE,
-    MODE_REASON_LEAK_FAILSAFE,
-    MODE_REASON_BAD_DEPTH
+    MANUAL =       19,  // Pass-through input with no stabilization
+    MOTOR_DETECT = 20   // Automatically detect motors orientation
 };
 
 // Acro Trainer types
@@ -102,19 +85,13 @@ enum RTLState {
 
 //  Logging parameters
 enum LoggingParameters {
-    TYPE_AIRSTART_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_CONTROL_TUNING_MSG,
-    LOG_OPTFLOW_MSG,
-    LOG_EVENT_MSG,
-    LOG_ERROR_MSG,
     LOG_DATA_INT16_MSG,
     LOG_DATA_UINT16_MSG,
     LOG_DATA_INT32_MSG,
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
     LOG_MOTBATT_MSG,
-    LOG_PARAMTUNE_MSG,
     LOG_GUIDEDTARGET_MSG
 };
 
@@ -137,84 +114,6 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ANY                    0xFFFF
-
-// DATA - event logging
-#define DATA_AP_STATE                       7
-// 8 was DATA_SYSTEM_TIME_SET
-#define DATA_ARMED                          10
-#define DATA_DISARMED                       11
-#define DATA_LOST_GPS                       19
-#define DATA_SET_HOME                       25
-#define DATA_SAVE_TRIM                      38
-#define DATA_SAVEWP_ADD_WP                  39
-#define DATA_FENCE_ENABLE                   41
-#define DATA_FENCE_DISABLE                  42
-#define DATA_ACRO_TRAINER_DISABLED          43
-#define DATA_ACRO_TRAINER_LEVELING          44
-#define DATA_ACRO_TRAINER_LIMITED           45
-#define DATA_GRIPPER_GRAB                   46
-#define DATA_GRIPPER_RELEASE                47
-#define DATA_EKF_ALT_RESET                  60
-#define DATA_SURFACE_CANCELLED_BY_PILOT     61
-#define DATA_EKF_YAW_RESET                  62
-#define DATA_SURFACED                       63
-#define DATA_NOT_SURFACED                   64
-#define DATA_BOTTOMED                       65
-#define DATA_NOT_BOTTOMED                   66
-
-// Error message sub systems and error codes
-#define ERROR_SUBSYSTEM_MAIN                1
-#define ERROR_SUBSYSTEM_INPUT               2
-#define ERROR_SUBSYSTEM_COMPASS             3
-#define ERROR_SUBSYSTEM_OPTFLOW             4
-#define ERROR_SUBSYSTEM_FAILSAFE_RADIO      5
-#define ERROR_SUBSYSTEM_FAILSAFE_BATT       6
-#define ERROR_SUBSYSTEM_FAILSAFE_GPS        7   // not used
-#define ERROR_SUBSYSTEM_FAILSAFE_GCS        8
-#define ERROR_SUBSYSTEM_FAILSAFE_FENCE      9
-#define ERROR_SUBSYSTEM_FLIGHT_MODE         10
-#define ERROR_SUBSYSTEM_GPS                 11  // not used
-#define ERROR_SUBSYSTEM_CRASH_CHECK         12
-#define ERROR_SUBSYSTEM_EKFCHECK            16
-#define ERROR_SUBSYSTEM_FAILSAFE_EKFINAV    17
-#define ERROR_SUBSYSTEM_BARO                18
-#define ERROR_SUBSYSTEM_CPU                 19
-#define ERROR_SUBSYSTEM_TERRAIN             21
-#define ERROR_SUBSYSTEM_NAVIGATION          22
-#define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
-#define ERROR_SUBSYSTEM_FAILSAFE_LEAK       24
-#define ERROR_SUBSYSTEM_FAILSAFE_SENSORS    25
-
-// general error codes
-#define ERROR_CODE_ERROR_RESOLVED           0
-#define ERROR_CODE_FAILED_TO_INITIALISE     1
-#define ERROR_CODE_UNHEALTHY                4
-// subsystem specific error codes -- radio
-#define ERROR_CODE_RADIO_LATE_FRAME         2
-// subsystem specific error codes -- failsafe_thr, batt, gps
-#define ERROR_CODE_FAILSAFE_RESOLVED        0
-#define ERROR_CODE_FAILSAFE_OCCURRED        1
-// subsystem specific error codes -- compass
-#define ERROR_CODE_COMPASS_FAILED_TO_READ   2
-// subsystem specific error codes -- main
-#define ERROR_CODE_MAIN_INS_DELAY           1
-// subsystem specific error codes -- crash checker
-#define ERROR_CODE_CRASH_CHECK_CRASH        1
-#define ERROR_CODE_CRASH_CHECK_LOSS_OF_CONTROL 2
-// subsystem specific error codes -- terrain
-#define ERROR_CODE_MISSING_TERRAIN_DATA     2
-// subsystem specific error codes -- navigation
-#define ERROR_CODE_FAILED_TO_SET_DESTINATION    2
-#define ERROR_CODE_RESTARTED_RTL            3
-#define ERROR_CODE_FAILED_CIRCLE_INIT       4
-#define ERROR_CODE_DEST_OUTSIDE_FENCE       5
-
-// EKF check definitions
-#define ERROR_CODE_EKFCHECK_BAD_VARIANCE       2
-#define ERROR_CODE_EKFCHECK_VARIANCE_CLEARED   0
-
-// Baro specific error codes
-#define ERROR_CODE_BAD_DEPTH              0
 
 // GCS failsafe
 #ifndef FS_GCS

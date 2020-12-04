@@ -27,7 +27,7 @@
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
 
@@ -94,9 +94,7 @@ AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
 */
 bool AP_Baro_ICM20789::imu_spi_init(void)
 {
-    if (!dev_imu->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore ICM");
-    }
+    dev_imu->get_semaphore()->take_blocking();
 
     dev_imu->set_read_flag(0x80);
 
@@ -172,9 +170,7 @@ bool AP_Baro_ICM20789::init()
 
     debug("Looking for 20789 baro\n");
 
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_ICM20789: failed to take serial semaphore for init");
-    }
+    dev->get_semaphore()->take_blocking();
 
     debug("Setting up IMU\n");
     if (dev_imu->bus_type() != AP_HAL::Device::BUS_TYPE_I2C) {
@@ -210,6 +206,9 @@ bool AP_Baro_ICM20789::init()
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_ICM20789);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     debug("ICM20789: startup OK\n");
@@ -296,7 +295,7 @@ static struct {
 void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
 {
     // temperature is easy
-    float T = -45 + (175.0 / (1U<<16)) * Traw;
+    float T = -45 + (175.0f / (1U<<16)) * Traw;
 
     // pressure involves a few more calculations
     float P = get_pressure(Praw, Traw);
@@ -305,19 +304,18 @@ void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
         return;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    WITH_SEMAPHORE(_sem);
+    
 #if BARO_ICM20789_DEBUG
-        dd.Praw = Praw;
-        dd.Traw = Traw;
-        dd.P = P;
-        dd.T = T;
+    dd.Praw = Praw;
+    dd.Traw = Traw;
+    dd.P = P;
+    dd.T = T;
 #endif
         
-        accum.psum += P;
-        accum.tsum += T;
-        accum.count++;
-        _sem->give();
-    }
+    accum.psum += P;
+    accum.tsum += T;
+    accum.count++;
 }
 
 void AP_Baro_ICM20789::timer(void)
@@ -342,19 +340,26 @@ void AP_Baro_ICM20789::timer(void)
 
 void AP_Baro_ICM20789::update()
 {
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (accum.count > 0) {
-            _copy_to_frontend(instance, accum.psum/accum.count, accum.tsum/accum.count);
-            accum.psum = accum.tsum = 0;
-            accum.count = 0;
-        }
-        _sem->give();
 #if BARO_ICM20789_DEBUG
-        // useful for debugging
-        DataFlash_Class::instance()->Log_Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
-                                               AP_HAL::micros64(),
-                                               dd.Traw, dd.Praw, dd.P, dd.T);
+    // useful for debugging
+// @LoggerMessage: ICMB
+// @Description: ICM20789 diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: Traw: raw temperature from sensor
+// @Field: Praw: raw pressure from sensor
+// @Field: P: pressure
+// @Field: T: temperature
+    AP::logger().Write("ICMB", "TimeUS,Traw,Praw,P,T", "QIIff",
+                                           AP_HAL::micros64(),
+                                           dd.Traw, dd.Praw, dd.P, dd.T);
 #endif
+
+    WITH_SEMAPHORE(_sem);
+    
+    if (accum.count > 0) {
+        _copy_to_frontend(instance, accum.psum/accum.count, accum.tsum/accum.count);
+        accum.psum = accum.tsum = 0;
+        accum.count = 0;
     }
 }
 

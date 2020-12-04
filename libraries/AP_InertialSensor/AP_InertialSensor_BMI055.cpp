@@ -58,6 +58,9 @@
 #define REGG_FIFO_CONFIG_1 0x3E
 #define REGG_FIFO_DATA     0x3F
 
+#define ACCEL_BACKEND_SAMPLE_RATE   2000
+#define GYRO_BACKEND_SAMPLE_RATE    2000
+
 extern const AP_HAL::HAL& hal;
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
@@ -98,17 +101,17 @@ AP_InertialSensor_BMI055::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI055::start()
 {
-    accel_instance = _imu.register_accel(2000, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055));
-    gyro_instance = _imu.register_gyro(2000,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI055));
+    accel_instance = _imu.register_accel(ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055));
+    gyro_instance = _imu.register_gyro(GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI055));
 
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
     
     // setup callbacks
-    dev_accel->register_periodic_callback(1000,
+    dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
                                           FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI055::read_fifo_accel, void));
-    dev_gyro->register_periodic_callback(1000,
+    dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
                                          FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI055::read_fifo_gyro, void));
 }
 
@@ -155,7 +158,6 @@ bool AP_InertialSensor_BMI055::accel_init()
     if (!dev_accel->write_register(REGA_FIFO_CONFIG_1, 0x80, true)) {
         goto failed;
     }
-
 
     hal.console->printf("BMI055: found accel\n");
 
@@ -256,7 +258,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
         return;
     }
     // data is 12 bits with 16g range, 7.81mg/LSB
-    const float scale = 7.81 * 0.001 * GRAVITY_MSS / 16.0;
+    const float scale = 7.81 * 0.001 * GRAVITY_MSS / 16.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {
@@ -277,7 +279,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
         if (!dev_accel->read_registers(REGA_ACCD_TEMP, (uint8_t *)&t, 1)) {
             _inc_accel_error_count(accel_instance);
         } else {
-            float temp_degc = (0.5 * t) + 23.0;
+            float temp_degc = (0.5f * t) + 23.0f;
             _publish_temperature(accel_instance, temp_degc);
         }
     }
@@ -313,7 +315,7 @@ void AP_InertialSensor_BMI055::read_fifo_gyro(void)
     }
 
     // data is 16 bits with 2000dps range
-    const float scale = radians(2000.0) / 32767.0;
+    const float scale = radians(2000.0f) / 32767.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
         const uint8_t *d = &data[i*6];
         int16_t xyz[3] {

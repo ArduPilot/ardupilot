@@ -8,7 +8,7 @@
 /*
   constructor for Mode object
  */
-Copter::Mode::Mode(void) :
+Mode::Mode(void) :
     g(copter.g),
     g2(copter.g2),
     wp_nav(copter.wp_nav),
@@ -22,136 +22,150 @@ Copter::Mode::Mode(void) :
     channel_pitch(copter.channel_pitch),
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
-    G_Dt(copter.G_Dt),
-    ap(copter.ap),
-    ekfGndSpdLimit(copter.ekfGndSpdLimit),
-#if FRAME_CONFIG == HELI_FRAME
-    heli_flags(copter.heli_flags),
-#endif
-    ekfNavVelGainScaler(copter.ekfNavVelGainScaler)
+    G_Dt(copter.G_Dt)
 { };
 
 // return the static controller object corresponding to supplied mode
-Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
+Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
-    Copter::Mode *ret = nullptr;
+    Mode *ret = nullptr;
 
     switch (mode) {
 #if MODE_ACRO_ENABLED == ENABLED
-        case ACRO:
+        case Mode::Number::ACRO:
             ret = &mode_acro;
             break;
 #endif
 
-        case STABILIZE:
+        case Mode::Number::STABILIZE:
             ret = &mode_stabilize;
             break;
 
-        case ALT_HOLD:
+        case Mode::Number::ALT_HOLD:
             ret = &mode_althold;
             break;
 
 #if MODE_AUTO_ENABLED == ENABLED
-        case AUTO:
+        case Mode::Number::AUTO:
             ret = &mode_auto;
             break;
 #endif
 
 #if MODE_CIRCLE_ENABLED == ENABLED
-        case CIRCLE:
+        case Mode::Number::CIRCLE:
             ret = &mode_circle;
             break;
 #endif
 
 #if MODE_LOITER_ENABLED == ENABLED
-        case LOITER:
+        case Mode::Number::LOITER:
             ret = &mode_loiter;
             break;
 #endif
 
 #if MODE_GUIDED_ENABLED == ENABLED
-        case GUIDED:
+        case Mode::Number::GUIDED:
             ret = &mode_guided;
             break;
 #endif
 
-        case LAND:
+        case Mode::Number::LAND:
             ret = &mode_land;
             break;
 
 #if MODE_RTL_ENABLED == ENABLED
-        case RTL:
+        case Mode::Number::RTL:
             ret = &mode_rtl;
             break;
 #endif
 
 #if MODE_DRIFT_ENABLED == ENABLED
-        case DRIFT:
+        case Mode::Number::DRIFT:
             ret = &mode_drift;
             break;
 #endif
 
 #if MODE_SPORT_ENABLED == ENABLED
-        case SPORT:
+        case Mode::Number::SPORT:
             ret = &mode_sport;
             break;
 #endif
 
-        case FLIP:
+#if MODE_FLIP_ENABLED == ENABLED
+        case Mode::Number::FLIP:
             ret = &mode_flip;
             break;
+#endif
 
 #if AUTOTUNE_ENABLED == ENABLED
-        case AUTOTUNE:
+        case Mode::Number::AUTOTUNE:
             ret = &mode_autotune;
             break;
 #endif
 
 #if MODE_POSHOLD_ENABLED == ENABLED
-        case POSHOLD:
+        case Mode::Number::POSHOLD:
             ret = &mode_poshold;
             break;
 #endif
 
 #if MODE_BRAKE_ENABLED == ENABLED
-        case BRAKE:
+        case Mode::Number::BRAKE:
             ret = &mode_brake;
             break;
 #endif
 
 #if MODE_THROW_ENABLED == ENABLED
-        case THROW:
+        case Mode::Number::THROW:
             ret = &mode_throw;
             break;
 #endif
 
-#if ADSB_ENABLED == ENABLED
-        case AVOID_ADSB:
+#if HAL_ADSB_ENABLED
+        case Mode::Number::AVOID_ADSB:
             ret = &mode_avoid_adsb;
             break;
 #endif
 
 #if MODE_GUIDED_NOGPS_ENABLED == ENABLED
-        case GUIDED_NOGPS:
+        case Mode::Number::GUIDED_NOGPS:
             ret = &mode_guided_nogps;
             break;
 #endif
 
 #if MODE_SMARTRTL_ENABLED == ENABLED
-        case SMART_RTL:
+        case Mode::Number::SMART_RTL:
             ret = &mode_smartrtl;
             break;
 #endif
 
 #if OPTFLOW == ENABLED
-        case FLOWHOLD:
-            ret = (Copter::Mode *)g2.mode_flowhold_ptr;
+        case Mode::Number::FLOWHOLD:
+            ret = (Mode *)g2.mode_flowhold_ptr;
             break;
 #endif
 
 #if MODE_FOLLOW_ENABLED == ENABLED
-        case FOLLOW:
+        case Mode::Number::FOLLOW:
             ret = &mode_follow;
+            break;
+#endif
+
+#if MODE_ZIGZAG_ENABLED == ENABLED
+        case Mode::Number::ZIGZAG:
+            ret = &mode_zigzag;
+            break;
+#endif
+
+#if MODE_SYSTEMID_ENABLED == ENABLED
+        case Mode::Number::SYSTEMID:
+            ret = (Mode *)g2.mode_systemid_ptr;
+            break;
+#endif
+
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+        case Mode::Number::AUTOROTATE:
+            ret = &mode_autorotate;
             break;
 #endif
 
@@ -167,7 +181,7 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
-bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
 
     // return immediately if we are already in the desired mode
@@ -176,10 +190,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
         return true;
     }
 
-    Copter::Mode *new_flightmode = mode_from_mode_num(mode);
+    Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
@@ -188,30 +202,86 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() &&
+        (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
+        #if MODE_AUTOROTATE_ENABLED == ENABLED
+            //if the mode being exited is the autorotation mode allow mode change despite rotor not being at
+            //full speed.  This will reduce altitude loss on bail-outs back to non-manual throttle modes
+            bool in_autorotation_check = (flightmode != &mode_autorotate || new_flightmode != &mode_autorotate);
+        #else
+            bool in_autorotation_check = false;
+        #endif
+
+        if (!in_autorotation_check) {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
+            AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+            return false;
+        }
+    }
+#endif
+
+#if FRAME_CONFIG != HELI_FRAME
+    // ensure vehicle doesn't leap off the ground if a user switches
+    // into a manual throttle mode from a non-manual-throttle mode
+    // (e.g. user arms in guided, raises throttle to 1300 (not enough to
+    // trigger auto takeoff), then switches into manual):
+    bool user_throttle = new_flightmode->has_manual_throttle();
+#if MODE_DRIFT_ENABLED == ENABLED
+    if (new_flightmode == &mode_drift) {
+        user_throttle = true;
+    }
+#endif
+    if (!ignore_checks &&
+        ap.land_complete &&
+        user_throttle &&
+        !copter.flightmode->has_manual_throttle() &&
+        new_flightmode->get_pilot_desired_throttle() > copter.get_non_takeoff_throttle()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: throttle too high");
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 #endif
 
+    if (!ignore_checks &&
+        new_flightmode->requires_GPS() &&
+        !copter.position_ok()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        return false;
+    }
+
+    // check for valid altitude if old mode did not require it but new one does
+    // we only want to stop changing modes if it could make things worse
+    if (!ignore_checks &&
+        !copter.ekf_alt_ok() &&
+        flightmode->has_manual_throttle() &&
+        !new_flightmode->has_manual_throttle()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        return false;
+    }
+
     if (!new_flightmode->init(ignore_checks)) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
+        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
+    // store previous flight mode (only used by tradeheli's autorotation)
+    prev_control_mode = control_mode;
+
     // update flight mode
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
-    DataFlash.Log_Write_Mode(control_mode, reason);
+    logger.Write_Mode((uint8_t)control_mode, reason);
+    gcs().send_message(MSG_HEARTBEAT);
 
-#if ADSB_ENABLED == ENABLED
-    adsb.set_is_auto_mode((mode == AUTO) || (mode == RTL) || (mode == GUIDED));
+#if HAL_ADSB_ENABLED
+    adsb.set_is_auto_mode((mode == Mode::Number::AUTO) || (mode == Mode::Number::RTL) || (mode == Mode::Number::GUIDED));
 #endif
 
 #if AC_FENCE == ENABLED
@@ -221,15 +291,8 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     fence.manual_recovery_start();
 #endif
 
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.update_control_mode(control_mode);
-#endif
-#if DEVO_TELEM_ENABLED == ENABLED
-    devo_telemetry.update_control_mode(control_mode);
-#endif
-
 #if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == AUTO);
+    camera.set_is_auto_mode(control_mode == Mode::Number::AUTO);
 #endif
 
     // update notify object
@@ -239,21 +302,30 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     return true;
 }
 
+bool Copter::set_mode(const uint8_t new_mode, const ModeReason reason)
+{
+    static_assert(sizeof(Mode::Number) == sizeof(new_mode), "The new mode can't be mapped to the vehicles mode number");
+#ifdef DISALLOW_GCS_MODE_CHANGE_DURING_RC_FAILSAFE
+    if (reason == ModeReason::GCS_COMMAND && copter.failsafe.radio) {
+        // don't allow mode changes while in radio failsafe
+        return false;
+    }
+#endif
+    return copter.set_mode(static_cast<Mode::Number>(new_mode), reason);
+}
+
 // update_flight_mode - calls the appropriate attitude controllers based on flight mode
 // called at 100hz or more
 void Copter::update_flight_mode()
 {
-    // Update EKF speed limit - used to limit speed when we are using optical flow
-    ahrs.getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
-
-    target_rangefinder_alt_used = false;
+    surface_tracking.invalidate_for_logging();  // invalidate surface tracking alt, flight mode will set to true if used
 
     flightmode->run();
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
-void Copter::exit_mode(Copter::Mode *&old_flightmode,
-                       Copter::Mode *&new_flightmode)
+void Copter::exit_mode(Mode *&old_flightmode,
+                       Mode *&new_flightmode)
 {
 #if AUTOTUNE_ENABLED == ENABLED
     if (old_flightmode == &mode_autotune) {
@@ -264,12 +336,12 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // stop mission when we leave auto mode
 #if MODE_AUTO_ENABLED == ENABLED
     if (old_flightmode == &mode_auto) {
-        if (mission.state() == AP_Mission::MISSION_RUNNING) {
-            mission.stop();
+        if (mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
+            mode_auto.mission.stop();
         }
-#if MOUNT == ENABLED
+#if HAL_MOUNT_ENABLED
         camera_mount.set_mode_to_default();
-#endif  // MOUNT == ENABLED
+#endif  // HAL_MOUNT_ENABLED
     }
 #endif
 
@@ -286,6 +358,24 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     // call smart_rtl cleanup
     if (old_flightmode == &mode_smartrtl) {
         mode_smartrtl.exit();
+    }
+#endif
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    if (old_flightmode == &mode_follow) {
+        mode_follow.exit();
+    }
+#endif
+
+#if MODE_ZIGZAG_ENABLED == ENABLED
+    if (old_flightmode == &mode_zigzag) {
+        mode_zigzag.exit();
+    }
+#endif
+
+#if MODE_ACRO_ENABLED == ENABLED
+    if (old_flightmode == &mode_acro) {
+        mode_acro.exit();
     }
 #endif
 
@@ -312,11 +402,11 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
-    AP_Notify::flags.flight_mode = control_mode;
+    AP_Notify::flags.flight_mode = (uint8_t)control_mode;
     notify.set_flight_mode_str(flightmode->name4());
 }
 
-void Copter::Mode::update_navigation()
+void Mode::update_navigation()
 {
     // run autopilot to make high level decisions about control modes
     run_autopilot();
@@ -324,13 +414,19 @@ void Copter::Mode::update_navigation()
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
-void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const
+void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const
 {
+    // throttle failsafe check
+    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+        roll_out = 0;
+        pitch_out = 0;
+        return;
+    }
     // fetch roll and pitch inputs
     roll_out = channel_roll->get_control_in();
     pitch_out = channel_pitch->get_control_in();
 
-	// limit max lean angle
+    // limit max lean angle
     angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range
@@ -352,7 +448,7 @@ void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_o
     // roll_out and pitch_out are returned
 }
 
-bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
+bool Mode::_TakeOff::triggered(const float target_climb_rate) const
 {
     if (!copter.ap.land_complete) {
         // can't take off if we're already flying
@@ -362,84 +458,121 @@ bool Copter::Mode::_TakeOff::triggered(const float target_climb_rate) const
         // can't takeoff unless we want to go up...
         return false;
     }
-#if FRAME_CONFIG == HELI_FRAME
-    if (!copter.motors->rotor_runup_complete()) {
-        // hold heli on the ground until rotor speed runup has finished
+
+    if (copter.motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        // hold aircraft on the ground until rotor speed runup has finished
         return false;
     }
-#endif
+
     return true;
 }
 
-void Copter::Mode::zero_throttle_and_relax_ac()
+bool Mode::is_disarmed_or_landed() const
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // Helicopters always stabilize roll/pitch/yaw
+    if (!motors->armed() || !copter.ap.auto_armed || copter.ap.land_complete) {
+        return true;
+    }
+    return false;
+}
+
+void Mode::zero_throttle_and_relax_ac(bool spool_up)
+{
+    if (spool_up) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    } else {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    }
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
-#else
-    motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-    // multicopters do not stabilize roll/pitch/yaw when disarmed
-    attitude_control->set_throttle_out_unstabilized(0.0f, true, copter.g.throttle_filt);
-#endif
+}
+
+void Mode::zero_throttle_and_hold_attitude()
+{
+    // run attitude controller
+    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+    attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
+}
+
+void Mode::make_safe_spool_down()
+{
+    // command aircraft to initiate the shutdown process
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    switch (motors->get_spool_state()) {
+
+    case AP_Motors::SpoolState::SHUT_DOWN:
+    case AP_Motors::SpoolState::GROUND_IDLE:
+        // relax controllers during idle states
+        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->set_yaw_target_to_current_heading();
+        break;
+
+    case AP_Motors::SpoolState::SPOOLING_UP:
+    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
+    case AP_Motors::SpoolState::SPOOLING_DOWN:
+        // while transitioning though active states continue to operate normally
+        break;
+    }
+
+    pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+    pos_control->update_z_controller();
+    // we may need to move this out
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
 }
 
 /*
   get a height above ground estimate for landing
  */
-int32_t Copter::Mode::get_alt_above_ground(void)
+int32_t Mode::get_alt_above_ground_cm(void)
 {
-    int32_t alt_above_ground;
-    if (copter.rangefinder_alt_ok()) {
-        alt_above_ground = copter.rangefinder_state.alt_cm_filt.get();
-    } else {
-        bool navigating = pos_control->is_active_xy();
-        if (!navigating || !copter.current_loc.get_alt_cm(Location_Class::ALT_FRAME_ABOVE_TERRAIN, alt_above_ground)) {
-            alt_above_ground = copter.current_loc.alt;
-        }
+    int32_t alt_above_ground_cm;
+    if (copter.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
+        return alt_above_ground_cm;
     }
-    return alt_above_ground;
+    if (!pos_control->is_active_xy()) {
+        return copter.current_loc.alt;
+    }
+    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_cm)) {
+        return alt_above_ground_cm;
+    }
+
+    // Assume the Earth is flat:
+    return copter.current_loc.alt;
 }
 
-void Copter::Mode::land_run_vertical_control(bool pause_descent)
+void Mode::land_run_vertical_control(bool pause_descent)
 {
-#if PRECISION_LANDING == ENABLED
-    AC_PrecLand &precland = copter.precland;
-
-    const bool navigating = pos_control->is_active_xy();
-    bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired() && navigating;
-#else
-    bool doing_precision_landing = false;
-#endif
-
-    // compute desired velocity
-    const float precland_acceptable_error = 15.0f;
-    const float precland_min_descent_speed = 10.0f;
-    const int32_t alt_above_ground = get_alt_above_ground();
-
     float cmb_rate = 0;
     if (!pause_descent) {
         float max_land_descent_velocity;
         if (g.land_speed_high > 0) {
             max_land_descent_velocity = -g.land_speed_high;
         } else {
-            max_land_descent_velocity = pos_control->get_speed_down();
+            max_land_descent_velocity = pos_control->get_max_speed_down();
         }
 
         // Don't speed up for landing.
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-alt_above_ground, pos_control->get_pos_z_p().kP(), pos_control->get_accel_z(), G_Dt);
+        cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
+#if PRECISION_LANDING == ENABLED
+        const bool navigating = pos_control->is_active_xy();
+        bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
+
         if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            float max_descent_speed = abs(g.land_speed)/2.0f;
+            // compute desired velocity
+            const float precland_acceptable_error = 15.0f;
+            const float precland_min_descent_speed = 10.0f;
+
+            float max_descent_speed = abs(g.land_speed)*0.5f;
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
+#endif
     }
 
     // update altitude target and call position controller
@@ -447,27 +580,24 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
     pos_control->update_z_controller();
 }
 
-void Copter::Mode::land_run_horizontal_control()
+void Mode::land_run_horizontal_control()
 {
-    LowPassFilterFloat &rc_throttle_control_in_filter = copter.rc_throttle_control_in_filter;
-    AP_Vehicle::MultiCopter &aparm = copter.aparm;
-
     float target_roll = 0.0f;
     float target_pitch = 0.0f;
     float target_yaw_rate = 0;
 
     // relax loiter target if we might be landed
-    if (ap.land_complete_maybe) {
+    if (copter.ap.land_complete_maybe) {
         loiter_nav->soften_for_landing();
     }
 
     // process pilot inputs
     if (!copter.failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-            copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
-                set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
+            if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+                set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
             }
         }
 
@@ -478,27 +608,32 @@ void Copter::Mode::land_run_horizontal_control()
             // convert pilot input to lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
 
-            // record if pilot has overriden roll or pitch
+            // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
-                ap.land_repo_active = true;
+                if (!copter.ap.land_repo_active) {
+                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                }
+                copter.ap.land_repo_active = true;
             }
         }
 
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
     }
 
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand &precland = copter.precland;
-    bool doing_precision_landing = !ap.land_repo_active && precland.target_acquired();
+    bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (doing_precision_landing) {
         Vector2f target_pos, target_vel_rel;
-        if (!precland.get_target_position_cm(target_pos)) {
+        if (!copter.precland.get_target_position_cm(target_pos)) {
             target_pos.x = inertial_nav.get_position().x;
             target_pos.y = inertial_nav.get_position().y;
         }
-        if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
+        if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
             target_vel_rel.x = -inertial_nav.get_velocity().x;
             target_vel_rel.y = -inertial_nav.get_velocity().y;
         }
@@ -511,10 +646,10 @@ void Copter::Mode::land_run_horizontal_control()
     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
 
     // run loiter controller
-    loiter_nav->update(ekfGndSpdLimit, ekfNavVelGainScaler);
+    loiter_nav->update();
 
-    int32_t nav_roll  = loiter_nav->get_roll();
-    int32_t nav_pitch = loiter_nav->get_pitch();
+    float nav_roll  = loiter_nav->get_roll();
+    float nav_pitch = loiter_nav->get_pitch();
 
     if (g2.wp_navalt_min > 0) {
         // user has requested an altitude below which navigation
@@ -523,8 +658,7 @@ void Copter::Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        const int alt_above_ground = get_alt_above_ground();
-        float attitude_limit_cd = linear_interpolate(700, aparm.angle_max, alt_above_ground,
+        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
         float total_angle_cd = norm(nav_roll, nav_pitch);
         if (total_angle_cd > attitude_limit_cd) {
@@ -537,75 +671,161 @@ void Copter::Mode::land_run_horizontal_control()
         }
     }
 
-
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(nav_roll, nav_pitch, auto_yaw.yaw(), true);
+    }
+}
+
+float Mode::throttle_hover() const
+{
+    return motors->get_throttle_hover();
+}
+
+// transform pilot's manual throttle input to make hover throttle mid stick
+// used only for manual throttle modes
+// thr_mid should be in the range 0 to 1
+// returns throttle output 0 to 1
+float Mode::get_pilot_desired_throttle() const
+{
+    const float thr_mid = throttle_hover();
+    int16_t throttle_control = channel_throttle->get_control_in();
+
+    int16_t mid_stick = copter.get_throttle_mid();
+    // protect against unlikely divide by zero
+    if (mid_stick <= 0) {
+        mid_stick = 500;
+    }
+
+    // ensure reasonable throttle values
+    throttle_control = constrain_int16(throttle_control,0,1000);
+
+    // calculate normalised throttle input
+    float throttle_in;
+    if (throttle_control < mid_stick) {
+        throttle_in = ((float)throttle_control)*0.5f/(float)mid_stick;
+    } else {
+        throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
+    }
+
+    const float expo = constrain_float(-(thr_mid-0.5f)/0.375f, -0.5f, 1.0f);
+    // calculate the output throttle using the given expo function
+    float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
+    return throttle_out;
+}
+
+float Mode::get_avoidance_adjusted_climbrate(float target_rate)
+{
+#if AC_AVOID_ENABLED == ENABLED
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
+    return target_rate;
+#else
+    return target_rate;
+#endif
+}
+
+Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
+{
+    // Alt Hold State Machine Determination
+    if (!motors->armed()) {
+        // the aircraft should moved to a shut down state
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+
+        // transition through states as aircraft spools down
+        switch (motors->get_spool_state()) {
+
+        case AP_Motors::SpoolState::SHUT_DOWN:
+            return AltHold_MotorStopped;
+
+        case AP_Motors::SpoolState::GROUND_IDLE:
+            return AltHold_Landed_Ground_Idle;
+
+        default:
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
+    } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
+        // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
+        // the aircraft should progress through the take off procedure
+        return AltHold_Takeoff;
+
+    } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
+        // the aircraft is armed and landed
+        if (target_climb_rate_cms < 0.0f && !copter.ap.using_interlock) {
+            // the aircraft should move to a ground idle state
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+
+        } else {
+            // the aircraft should prepare for imminent take off
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        }
+
+        if (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
+            // the aircraft is waiting in ground idle
+            return AltHold_Landed_Ground_Idle;
+
+        } else {
+            // the aircraft can leave the ground at any time
+            return AltHold_Landed_Pre_Takeoff;
+        }
+
+    } else {
+        // the aircraft is in a flying state
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        return AltHold_Flying;
+    }
 }
 
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
-
-float Copter::Mode::get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt)
-{
-    return copter.get_surface_tracking_climb_rate(target_rate, current_alt_target, dt);
-}
-
-float Copter::Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
+float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
 {
     return copter.get_pilot_desired_yaw_rate(stick_angle);
 }
 
-float Copter::Mode::get_pilot_desired_climb_rate(float throttle_control)
+float Mode::get_pilot_desired_climb_rate(float throttle_control)
 {
     return copter.get_pilot_desired_climb_rate(throttle_control);
 }
 
-float Copter::Mode::get_pilot_desired_throttle(int16_t throttle_control, float thr_mid)
-{
-    return copter.get_pilot_desired_throttle(throttle_control, thr_mid);
-}
-
-float Copter::Mode::get_non_takeoff_throttle()
+float Mode::get_non_takeoff_throttle()
 {
     return copter.get_non_takeoff_throttle();
 }
 
-void Copter::Mode::update_simple_mode(void) {
+void Mode::update_simple_mode(void) {
     copter.update_simple_mode();
 }
 
-bool Copter::Mode::set_mode(control_mode_t mode, mode_reason_t reason)
+bool Mode::set_mode(Mode::Number mode, ModeReason reason)
 {
     return copter.set_mode(mode, reason);
 }
 
-void Copter::Mode::set_land_complete(bool b)
+void Mode::set_land_complete(bool b)
 {
     return copter.set_land_complete(b);
 }
 
-GCS_Copter &Copter::Mode::gcs()
+GCS_Copter &Mode::gcs()
 {
     return copter.gcs();
 }
 
-void Copter::Mode::Log_Write_Event(uint8_t id)
+// set_throttle_takeoff - allows modes to tell throttle controller we
+// are taking off so I terms can be cleared
+void Mode::set_throttle_takeoff()
 {
-    return copter.Log_Write_Event(id);
+    // tell position controller to reset alt target and reset I terms
+    pos_control->init_takeoff();
 }
 
-void Copter::Mode::set_throttle_takeoff()
-{
-    return copter.set_throttle_takeoff();
-}
-
-float Copter::Mode::get_avoidance_adjusted_climbrate(float target_rate)
-{
-    return copter.get_avoidance_adjusted_climbrate(target_rate);
-}
-
-uint16_t Copter::Mode::get_pilot_speed_dn()
+uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
 }

@@ -35,6 +35,14 @@ public:
     // read latest values from sensor and fill in x,y and totals.
     virtual void update() = 0;
 
+    // handle optical flow mavlink messages
+    virtual void handle_msg(const mavlink_message_t &msg) {}
+
+#if HAL_MSP_OPTICALFLOW_ENABLED
+    // handle optical flow msp messages
+    virtual void handle_msp(const MSP::msp_opflow_data_message_t &pkt) {}
+#endif
+
 protected:
     // access to frontend
     OpticalFlow &frontend;
@@ -50,13 +58,10 @@ protected:
 
     // apply yaw angle to a vector
     void _applyYaw(Vector2f &v);
-    
-    // get access to AHRS object
-    AP_AHRS_NavEKF &get_ahrs(void) { return frontend._ahrs; }
 
     // get ADDR parameter value
     uint8_t get_address(void) const { return frontend._address; }
     
     // semaphore for access to shared frontend data
-    AP_HAL::Semaphore *_sem;
+    HAL_Semaphore _sem;
 };

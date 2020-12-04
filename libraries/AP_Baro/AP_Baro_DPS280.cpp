@@ -38,6 +38,7 @@ extern const AP_HAL::HAL &hal;
 
 #define DPS280_WHOAMI 0x10
 
+#define TEMPERATURE_LIMIT_C 120
 
 AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
     : AP_Baro_Backend(baro)
@@ -120,10 +121,24 @@ bool AP_Baro_DPS280::read_calibration(void)
     return true;
 }
 
+void AP_Baro_DPS280::set_config_registers(void)
+{
+    dev->write_register(DPS280_REG_CREG, 0x0C, true); // shift for 16x oversampling
+    dev->write_register(DPS280_REG_PCONF, 0x54, true); // 32 Hz, 16x oversample
+    dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source, true); // 32 Hz, 16x oversample
+    dev->write_register(DPS280_REG_MCONF, 0x07); // continuous temp and pressure.
+}
+
 bool AP_Baro_DPS280::init()
 {
-    if (!dev || !dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
+    if (!dev) {
         return false;
+    }
+    dev->get_semaphore()->take_blocking();
+
+    // setup to allow reads on SPI
+    if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        dev->set_read_flag(0x80);
     }
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
@@ -131,8 +146,6 @@ bool AP_Baro_DPS280::init()
     uint8_t whoami=0;
     if (!dev->read_registers(DPS280_REG_PID, &whoami, 1) ||
         whoami != DPS280_WHOAMI) {
-        // not a DPS280
-        printf("DPS280 whoami=0x%x\n", whoami);
         dev->get_semaphore()->give();
         return false;
     }
@@ -142,13 +155,15 @@ bool AP_Baro_DPS280::init()
         return false;
     }
 
-    dev->write_register(DPS280_REG_CREG, 0x0C); // shift for 16x oversampling
-    dev->write_register(DPS280_REG_PCONF, 0x54); // 32 Hz, 16x oversample
-    dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source); // 32 Hz, 16x oversample
-    dev->write_register(DPS280_REG_MCONF, 0x07); // continuous temp and pressure
+    dev->setup_checked_registers(4, 20);
+
+    set_config_registers();
 
     instance = _frontend.register_sensor();
 
+    dev->set_device_type(DEVTYPE_BARO_DPS280);
+    set_bus_id(instance, dev->get_bus_id());
+    
     dev->get_semaphore()->give();
 
     // request 64Hz update. New data will be available at 32Hz
@@ -164,13 +179,13 @@ void AP_Baro_DPS280::calculate_PT(int32_t UT, int32_t UP, float &pressure, float
 {
     const struct dps280_cal &cal = calibration;
     // scaling for 16x oversampling
-    const float scaling_16 = 1.0/253952;
+    const float scaling_16 = 1.0f/253952;
 
     float temp_scaled;
     float press_scaled;
 
     temp_scaled = float(UT) * scaling_16;
-    temperature = cal.C0 * 0.5 + cal.C1 * temp_scaled;
+    temperature = cal.C0 * 0.5f + cal.C1 * temp_scaled;
 
     press_scaled = float(UP) * scaling_16;
 
@@ -180,20 +195,44 @@ void AP_Baro_DPS280::calculate_PT(int32_t UT, int32_t UP, float &pressure, float
     pressure += temp_scaled * press_scaled * (cal.C11 + press_scaled * cal.C21);
 }
 
+/*
+  check health and possibly reset
+ */
+void AP_Baro_DPS280::check_health(void)
+{
+    dev->check_next_register();
+
+    if (fabsf(last_temperature) > TEMPERATURE_LIMIT_C) {
+        err_count++;
+    }
+    if (err_count > 16) {
+        err_count = 0;
+        dev->write_register(DPS280_REG_RESET, 0x09);
+        set_config_registers();
+        pending_reset = true;
+    }
+}
+
 //  acumulate a new sensor reading
 void AP_Baro_DPS280::timer(void)
 {
     uint8_t buf[6];
     uint8_t ready;
 
-    if (!dev->read_registers(DPS280_REG_MCONF, &ready, 1) || !(ready & (1U<<4))) {
-        // pressure not ready
+    if (pending_reset) {
+        // reset registers after software reset from check_health()
+        pending_reset = false;
+        set_config_registers();
         return;
     }
-    if (!dev->read_registers(DPS280_REG_PRESS, buf, 3)) {
-        return;
-    }
-    if (!dev->read_registers(DPS280_REG_TEMP, &buf[3], 3)) {
+
+    if (!dev->read_registers(DPS280_REG_MCONF, &ready, 1) ||
+        !(ready & (1U<<4)) ||
+        !dev->read_registers(DPS280_REG_PRESS, buf, 3) ||
+        !dev->read_registers(DPS280_REG_TEMP, &buf[3], 3)) {
+        // data not ready
+        err_count++;
+        check_health();
         return;
     }
 
@@ -206,32 +245,36 @@ void AP_Baro_DPS280::timer(void)
 
     calculate_PT(temp, press, pressure, temperature);
 
+    last_temperature = temperature;
+
     if (!pressure_ok(pressure)) {
         return;
     }
 
-    if (_sem->take_nonblocking()) {
-        pressure_sum += pressure;
-        temperature_sum += temperature;
-        count++;
-        _sem->give();
+    check_health();
+
+    if (fabsf(last_temperature) <= TEMPERATURE_LIMIT_C) {
+        err_count = 0;
     }
+    
+    WITH_SEMAPHORE(_sem);
+
+    pressure_sum += pressure;
+    temperature_sum += temperature;
+    count++;
 }
 
 // transfer data to the frontend
 void AP_Baro_DPS280::update(void)
 {
-    if (count != 0 && _sem->take_nonblocking()) {
-        if (count == 0) {
-            _sem->give();
-            return;
-        }
-
-        _copy_to_frontend(instance, pressure_sum/count, temperature_sum/count);
-        pressure_sum = 0;
-        temperature_sum = 0;
-        count=0;
-
-        _sem->give();
+    if (count == 0) {
+        return;
     }
+
+    WITH_SEMAPHORE(_sem);
+
+    _copy_to_frontend(instance, pressure_sum/count, temperature_sum/count);
+    pressure_sum = 0;
+    temperature_sum = 0;
+    count=0;
 }

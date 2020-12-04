@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
 #include "AC_PrecLand.h"
@@ -36,7 +35,7 @@ public:
     virtual float distance_to_target() { return 0.0f; };
 
     // parses a mavlink message from the companion computer
-    virtual void handle_msg(mavlink_message_t* msg) {};
+    virtual void handle_msg(const mavlink_message_t &msg) {};
 
     // get bus parameter
     int8_t get_bus(void) const { return _frontend._bus.get(); }

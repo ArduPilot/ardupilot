@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#if HAL_SOARING_ENABLED
+
 /*
 *  ArduSoar support function
 *
@@ -7,6 +9,10 @@
 */
 void Plane::update_soaring() {
     
+    // Check if soaring is active. Also sets throttle suppressed
+    // status on active state changes.
+    plane.g2.soaring_controller.update_active_state();
+
     if (!g2.soaring_controller.is_active()) {
         return;
     }
@@ -14,24 +20,19 @@ void Plane::update_soaring() {
     g2.soaring_controller.update_vario();
 
     // Check for throttle suppression change.
-    switch (control_mode){
-    case AUTO:
+    switch (control_mode->mode_number()) {
+    case Mode::Number::AUTO:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
         g2.soaring_controller.suppress_throttle();
         break;
-    case FLY_BY_WIRE_B:
-    case CRUISE:
-        if (!g2.soaring_controller.suppress_throttle()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: forcing RTL");
-            set_mode(RTL, MODE_REASON_SOARING_FBW_B_WITH_MOTOR_RUNNING);
-        }
-        break;
-    case LOITER:
-        // Do nothing. We will switch back to auto/rtl before enabling throttle.
+    case Mode::Number::THERMAL:
+        // Never use throttle in THERMAL with soaring active.
+        g2.soaring_controller.set_throttle_suppressed(true);
         break;
     default:
-        // This does not affect the throttle since suppressed is only checked in the above three modes. 
-        // It ensures that the soaring always starts with throttle suppressed though.
-        g2.soaring_controller.set_throttle_suppressed(true);
+        // In any other mode allow throttle.
+        g2.soaring_controller.set_throttle_suppressed(false);
         break;
     }
 
@@ -40,57 +41,26 @@ void Plane::update_soaring() {
         return;
     }
 
-    switch (control_mode){
-    case AUTO:
-    case FLY_BY_WIRE_B:
-    case CRUISE:
+    switch (control_mode->mode_number()) {
+    default:
+        // nothing to do
+        break;
+    case Mode::Number::AUTO:
+    case Mode::Number::FLY_BY_WIRE_B:
+    case Mode::Number::CRUISE:
         // Test for switch into thermalling mode
         g2.soaring_controller.update_cruising();
 
         if (g2.soaring_controller.check_thermal_criteria()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering loiter");
-            set_mode(LOITER, MODE_REASON_SOARING_THERMAL_DETECTED);
+            gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
+            set_mode(mode_thermal, ModeReason::SOARING_THERMAL_DETECTED);
         }
         break;
-
-    case LOITER:
-        // Update thermal estimate and check for switch back to AUTO
-        g2.soaring_controller.update_thermalling();  // Update estimate
-
-        if (g2.soaring_controller.check_cruise_criteria()) {
-            // Exit as soon as thermal state estimate deteriorates
-            switch (previous_mode) {
-            case FLY_BY_WIRE_B:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, entering RTL");
-                set_mode(RTL, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
-
-            case CRUISE: {
-                // return to cruise with old ground course
-                CruiseState cruise = cruise_state;
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring CRUISE");
-                set_mode(CRUISE, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                cruise_state = cruise;
-                set_target_altitude_current();
-                break;
-            }
-
-            case AUTO:
-                gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal ended, restoring AUTO");
-                set_mode(AUTO, MODE_REASON_SOARING_THERMAL_ESTIMATE_DETERIORATED);
-                break;
-
-            default:
-                break;
-            }
-        } else {
-            // still in thermal - need to update the wp location
-            g2.soaring_controller.get_target(next_WP_loc);
-        }
+    case Mode::Number::THERMAL:
+        // Update thermal mode soaring logic.
+        mode_thermal.update_soaring();
         break;
-    default:
-        // nothing to do
-        break;
-    }
+    } // switch control_mode
 }
 
+#endif // SOARING_ENABLED

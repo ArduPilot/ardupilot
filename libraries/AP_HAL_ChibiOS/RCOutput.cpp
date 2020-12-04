@@ -20,6 +20,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "GPIO.h"
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/watchdog.h"
 
 #if HAL_USE_PWM == TRUE
 
@@ -37,7 +38,7 @@ extern AP_IOMCU iomcu;
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 struct RCOutput::irq_state RCOutput::irq;
 
-#define NUM_GROUPS ARRAY_SIZE_SIMPLE(pwm_group_list)
+#define NUM_GROUPS ARRAY_SIZE(pwm_group_list)
 
 // marker for a disabled channel
 #define CHAN_DISABLED 255
@@ -68,6 +69,7 @@ void RCOutput::init()
             pwmStart(group.pwm_drv, &group.pwm_cfg);
             group.pwm_started = true;
         }
+        chVTObjectInit(&group.dma_timeout);
     }
 
 #if HAL_WITH_IO_MCU
@@ -80,7 +82,7 @@ void RCOutput::init()
     chMtxObjectInit(&trigger_mutex);
 
     // setup default output rate of 50Hz
-    set_freq(0xFFFF, 50);
+    set_freq(0xFFFF ^ ((1U<<chan_offset)-1), 50);
 
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     safety_state = AP_HAL::Util::SAFETY_DISARMED;
@@ -96,7 +98,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         // speed setup in DMA handler
         return;
     }
-    
+
     uint16_t freq_set = group.rc_frequency;
     uint32_t old_clock = group.pwm_cfg.frequency;
     uint32_t old_period = group.pwm_cfg.period;
@@ -130,7 +132,7 @@ void RCOutput::set_freq_group(pwm_group &group)
     } else {
         group.pwm_cfg.period = group.pwm_cfg.frequency/freq_set;
     }
-    
+
     bool force_reconfig = false;
     for (uint8_t j=0; j<4; j++) {
         if (group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
@@ -163,16 +165,24 @@ void RCOutput::set_freq_group(pwm_group &group)
  */
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 {
-    //check if the request spans accross any of the channel groups
-    uint8_t update_mask = 0;
-
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         // change frequency on IOMCU
-        if (freq_hz > 50) {
-            io_fast_channel_mask = chmask;
+        uint16_t io_chmask = chmask & 0xFF;
+        if (io_chmask) {
+            // disallow changing frequency of this group if it is greater than the default
+            for (uint8_t i=0; i<ARRAY_SIZE(iomcu.ch_masks); i++) {
+                const uint16_t mask = io_chmask & iomcu.ch_masks[i];
+                if (mask != 0) {
+                    if (freq_hz > 50) {
+                        io_fast_channel_mask |= mask;
+                    } else {
+                        io_fast_channel_mask &= ~mask;
+                    }
+                }
+            }
+            iomcu.set_freq(io_fast_channel_mask, freq_hz);
         }
-        iomcu.set_freq(chmask, freq_hz);
     }
 #endif
 
@@ -186,7 +196,7 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
       we enable the new frequency on all groups that have one
       of the requested channels. This means we may enable high
       speed on some channels that aren't requested, but that
-      is needed in order to fly a vehicle such a a hex
+      is needed in order to fly a vehicle such as a hex
       multicopter properly
     */
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
@@ -200,14 +210,11 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
         if ((group.ch_mask & chmask) != 0) {
             group.rc_frequency = group_freq;
             set_freq_group(group);
-            update_mask |= group.ch_mask;
+            // disallow changing frequency of this group if it is greater than the default
+            if (group_freq > 50) {
+                fast_channel_mask |= group.ch_mask;
+            }
         }
-        if (group_freq > 50) {
-            fast_channel_mask |= group.ch_mask;
-        }
-    }
-    if (chmask != update_mask) {
-        hal.console->printf("RCOutput: Failed to set PWM frequency req %x set %x\n", (unsigned)chmask, (unsigned)update_mask);
     }
 }
 
@@ -234,25 +241,42 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
     }
 }
 
-uint16_t RCOutput::get_freq(uint8_t chan)
+/*
+  find pwm_group and index in group given a channel number
+ */
+RCOutput::pwm_group *RCOutput::find_chan(uint8_t chan, uint8_t &group_idx)
 {
     if (chan >= max_channels) {
-        return 0;
+        return nullptr;
     }
-#if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
-        return iomcu.get_freq(chan);
+        return nullptr;
     }
-#endif
     chan -= chan_offset;
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
         for (uint8_t j = 0; j < 4; j++) {
             if (group.chan[j] == chan) {
-                return group.pwm_drv->config->frequency / group.pwm_drv->period;
+                group_idx = j;
+                return &group;
             }
         }
+    }
+    return nullptr;
+}
+
+uint16_t RCOutput::get_freq(uint8_t chan)
+{
+#if HAL_WITH_IO_MCU
+    if (chan < chan_offset) {
+        return iomcu.get_freq(chan);
+    }
+#endif
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (grp) {
+        return grp->pwm_drv->config->frequency / grp->pwm_drv->period;
     }
     // assume 50Hz default
     return 50;
@@ -260,42 +284,20 @@ uint16_t RCOutput::get_freq(uint8_t chan)
 
 void RCOutput::enable_ch(uint8_t chan)
 {
-    if (chan >= max_channels) {
-        return;
-    }
-    if (chan < chan_offset) {
-        return;
-    }
-    chan -= chan_offset;
-
-    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-        pwm_group &group = pwm_group_list[i];
-        for (uint8_t j = 0; j < 4; j++) {
-            if ((group.chan[j] == chan) && !(en_mask & 1<<chan)) {
-                en_mask |= 1<<chan;
-            }
-        }
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (grp) {
+        en_mask |= 1U << (chan - chan_offset);
     }
 }
 
 void RCOutput::disable_ch(uint8_t chan)
 {
-    if (chan >= max_channels) {
-        return;
-    }
-    if (chan < chan_offset) {
-        return;
-    }
-    chan -= chan_offset;
-
-    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
-        pwm_group &group = pwm_group_list[i];
-        for (uint8_t j = 0; j < 4; j++) {
-            if (group.chan[j] == chan) {
-                pwmDisableChannel(group.pwm_drv, j);
-                en_mask &= ~(1<<chan);
-            }
-        }
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (grp) {
+        pwmDisableChannel(grp->pwm_drv, i);
+        en_mask &= ~(1U<<(chan - chan_offset));
     }
 }
 
@@ -310,7 +312,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     // handle IO MCU channels
     if (AP_BoardConfig::io_enabled()) {
         uint16_t io_period_us = period_us;
-        if (iomcu_oneshot125 && ((1U<<chan) & io_fast_channel_mask)) {
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<chan) & io_fast_channel_mask)) {
             // the iomcu only has one oneshot setting, so we need to scale by a factor
             // of 8 here for oneshot125
             io_period_us /= 8;
@@ -321,7 +323,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     if (chan < chan_offset) {
         return;
     }
-    
+
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
         // implement safety pwm value
         period_us = safe_pwm[chan];
@@ -356,7 +358,7 @@ void RCOutput::push_local(void)
 
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (serial_group == &group) {
+        if (serial_group) {
             continue;
         }
         if (!group.pwm_started) {
@@ -374,7 +376,7 @@ void RCOutput::push_local(void)
                     // safety is on, overwride pwm
                     period_us = safe_pwm[chan+chan_offset];
                 }
-                
+
                 if (group.current_mode == MODE_PWM_BRUSHED) {
                     if (period_us <= _esc_pwm_min) {
                         period_us = 0;
@@ -388,21 +390,28 @@ void RCOutput::push_local(void)
                 } else if (group.current_mode == MODE_PWM_ONESHOT125) {
                     // this gives us a width in 125 ns increments, giving 1000 steps over the 125 to 250 range
                     uint32_t width = ((group.pwm_cfg.frequency/1000000U) * period_us) / 8U;
-                    pwmEnableChannel(group.pwm_drv, j, width);                    
-                } else if (group.current_mode < MODE_PWM_DSHOT150) {
+                    pwmEnableChannel(group.pwm_drv, j, width);
+                    // scale the period down so we don't delay for longer than we need to
+                    period_us /= 8;
+                }
+                else if (group.current_mode < MODE_PWM_DSHOT150) {
                     uint32_t width = (group.pwm_cfg.frequency/1000000U) * period_us;
                     pwmEnableChannel(group.pwm_drv, j, width);
-                } else if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
+                }
+#ifndef DISABLE_DSHOT
+                else if (is_dshot_protocol(group.current_mode) || group.current_mode == MODE_NEOPIXEL || group.current_mode == MODE_PROFILED) {
                     // set period_us to time for pulse output, to enable very fast rates
                     period_us = dshot_pulse_time_us;
                 }
+#endif //#ifndef DISABLE_DSHOT
                 if (period_us > widest_pulse) {
                     widest_pulse = period_us;
                 }
                 if (group.current_mode == MODE_PWM_ONESHOT ||
                     group.current_mode == MODE_PWM_ONESHOT125 ||
-                    (group.current_mode >= MODE_PWM_DSHOT150 &&
-                     group.current_mode <= MODE_PWM_DSHOT1200)) {
+                    group.current_mode == MODE_NEOPIXEL ||
+                    group.current_mode == MODE_PROFILED ||
+                    is_dshot_protocol(group.current_mode)) {
                     need_trigger |= (1U<<i);
                 }
             }
@@ -477,16 +486,11 @@ void RCOutput::read_last_sent(uint16_t* period_us, uint8_t len)
  */
 bool RCOutput::mode_requires_dma(enum output_mode mode) const
 {
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        break;
-    }
+#ifdef DISABLE_DSHOT
     return false;
+#else
+    return is_dshot_protocol(mode) || (mode == MODE_NEOPIXEL) || (mode == MODE_PROFILED);
+#endif //#ifdef DISABLE_DSHOT
 }
 
 /*
@@ -495,17 +499,22 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
   This is used for both DShot and serial output
  */
-bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high)
+bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length, bool choose_high)
 {
-    if (!group.dma_buffer) {
-        group.dma_buffer = (uint32_t *)hal.util->malloc_type(dshot_buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
+#ifndef DISABLE_DSHOT
+    if (!group.dma_buffer || buffer_length != group.dma_buffer_len) {
+        if (group.dma_buffer) {
+            hal.util->free_type(group.dma_buffer, group.dma_buffer_len, AP_HAL::Util::MEM_DMA_SAFE);
+            group.dma_buffer_len = 0;
+        }
+        group.dma_buffer = (uint32_t *)hal.util->malloc_type(buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
         if (!group.dma_buffer) {
             return false;
         }
+        group.dma_buffer_len = buffer_length;
     }
     // for dshot we setup for DMAR based output
-    if (!group.dma) {
-        group.dma = STM32_DMA_STREAM(group.dma_up_stream_id);
+    if (!group.dma_handle) {
         group.dma_handle = new Shared_DMA(group.dma_up_stream_id, SHARED_DMA_NONE,
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_allocate, void, Shared_DMA *),
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_deallocate, void, Shared_DMA *));
@@ -516,7 +525,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 
     // hold the lock during setup, to ensure there isn't a DMA operation ongoing
     group.dma_handle->lock();
-    
+
     // configure timer driver for DMAR at requested rate
     if (group.pwm_started) {
         pwmStop(group.pwm_drv);
@@ -525,16 +534,32 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 
     // adjust frequency to give an allowed value given the
     // clock. There is probably a better way to do this
-    uint32_t clock_hz = group.pwm_drv->clock;
+    const uint32_t original_bitrate = bitrate;
+    uint32_t freq = 0;
     uint32_t target_frequency = bitrate * bit_width;
-    uint32_t prescaler = clock_hz / target_frequency;
-    while ((clock_hz / prescaler) * prescaler != clock_hz && prescaler <= 0x8000) {
-        prescaler++;
-    }
-    uint32_t freq = clock_hz / prescaler;
-    if (prescaler > 0x8000) {
-        group.dma_handle->unlock();
-        return false;
+    while (true) {
+        uint32_t clock_hz = group.pwm_drv->clock;
+        target_frequency = bitrate * bit_width;
+        uint32_t prescaler = clock_hz / target_frequency;
+        freq = clock_hz / prescaler;
+        // hal.console->printf("CLOCK=%u BW=%u FREQ=%u PRE=%u BR=%u\n", clock_hz, bit_width, freq/bit_width, prescaler, bitrate);
+        if (prescaler > 0x8000) {
+            group.dma_handle->unlock();
+            return false;
+        }
+        if (!choose_high) {
+            break;
+        }
+        // we want to choose a frequency that gives at least the
+        // target, erring on the high side not low side
+        uint32_t actual_bitrate = freq / bit_width;
+        if (actual_bitrate >= original_bitrate || bitrate < 10000) {
+            break;
+        }
+        bitrate += 10000;
+        if (bitrate >= 2 * original_bitrate) {
+            break;
+        }
     }
 
     group.pwm_cfg.frequency = freq;
@@ -553,10 +578,10 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
             }
         }
     }
-    
+
     pwmStart(group.pwm_drv, &group.pwm_cfg);
     group.pwm_started = true;
-    
+
     for (uint8_t j=0; j<4; j++) {
         if (group.chan[j] != CHAN_DISABLED) {
             pwmEnableChannel(group.pwm_drv, j, 0);
@@ -564,11 +589,14 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     }
     group.dma_handle->unlock();
     return true;
+#else
+    return false;
+#endif //#ifndef DISABLE_DSHOT
 }
 
 
 /*
-  setup output mode for a group, using group.current_mode. Used to restore output 
+  setup output mode for a group, using group.current_mode. Used to restore output
   after serial operations
  */
 void RCOutput::set_group_mode(pwm_group &group)
@@ -577,7 +605,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         pwmStop(group.pwm_drv);
         group.pwm_started = false;
     }
-    
+
     switch (group.current_mode) {
     case MODE_PWM_BRUSHED:
         // force zero output initially
@@ -589,15 +617,44 @@ void RCOutput::set_group_mode(pwm_group &group)
             write(chan, 0);
         }
         break;
-        
-    case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
-        const uint16_t rates[(1 + MODE_PWM_DSHOT1200) - MODE_PWM_DSHOT150] = { 150, 300, 600, 1200 };
-        uint32_t rate = rates[uint8_t(group.current_mode - MODE_PWM_DSHOT150)] * 1000UL;
-        const uint32_t bit_period = 19;
-        
+
+    case MODE_NEOPIXEL:
+    case MODE_PROFILED:
+    {
+        uint8_t bits_per_pixel = 24;
+        bool active_high = true;
+
+        if (group.current_mode == MODE_PROFILED) {
+            bits_per_pixel = 25;
+            active_high = false;
+        }
+
+        const uint32_t rate = protocol_bitrate(group.current_mode);
+        const uint32_t bit_period = 20;
+
         // configure timer driver for DMAR at requested rate
-        if (!setup_group_DMA(group, rate, bit_period, true)) {
+        const uint8_t pad_end_bits = 8;
+        const uint8_t pad_start_bits = 1;
+        const uint8_t channels_per_group = 4;
+        const uint16_t bit_length = bits_per_pixel * channels_per_group * group.serial_nleds + (pad_start_bits + pad_end_bits) * channels_per_group;
+        const uint16_t buffer_length = bit_length * sizeof(uint32_t);
+        if (!setup_group_DMA(group, rate, bit_period, active_high, buffer_length, true)) {
             group.current_mode = MODE_PWM_NONE;
+            break;
+        }
+
+        // calculate min time between pulses
+        dshot_pulse_time_us = 1000000UL * bit_length / rate;
+        break;
+    }
+
+    case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
+        const uint32_t rate = protocol_bitrate(group.current_mode);
+        const uint32_t bit_period = 20;
+
+        // configure timer driver for DMAR at requested rate
+        if (!setup_group_DMA(group, rate, bit_period, true, dshot_buffer_length, false)) {
+            group.current_mode = MODE_PWM_NORMAL;
             break;
         }
 
@@ -605,7 +662,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         dshot_pulse_time_us = 1000000UL * dshot_bit_length / rate;
         break;
     }
-            
+
     case MODE_PWM_ONESHOT:
     case MODE_PWM_ONESHOT125:
         // for oneshot we set a period of 0, which results in no pulses till we trigger
@@ -623,7 +680,7 @@ void RCOutput::set_group_mode(pwm_group &group)
     }
 
     set_freq_group(group);
-    
+
     if (group.current_mode != MODE_PWM_NONE &&
         !group.pwm_started) {
         pwmStart(group.pwm_drv, &group.pwm_cfg);
@@ -639,22 +696,23 @@ void RCOutput::set_group_mode(pwm_group &group)
 /*
   setup output mode
  */
-void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
+void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
+        enum output_mode thismode = mode;
         if (((group.ch_mask << chan_offset) & mask) == 0) {
             // this group is not affected
             continue;
         }
-        if (mode_requires_dma(mode) && !group.have_up_dma) {
-            mode = MODE_PWM_NONE;
+        if (mode_requires_dma(thismode) && !group.have_up_dma) {
+            thismode = MODE_PWM_NORMAL;
         }
         if (mode > MODE_PWM_NORMAL) {
             fast_channel_mask |= group.ch_mask;
         }
-        if (group.current_mode != mode) {
-            group.current_mode = mode;
+        if (group.current_mode != thismode) {
+            group.current_mode = thismode;
             set_group_mode(group);
         }
     }
@@ -663,13 +721,83 @@ void RCOutput::set_output_mode(uint16_t mask, enum output_mode mode)
          mode == MODE_PWM_ONESHOT125) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_oneshot125 = (mode == MODE_PWM_ONESHOT125);
+        iomcu_mode = mode;
         // also setup IO to use a 1Hz frequency, so we only get output
         // when we trigger
         iomcu.set_freq(io_fast_channel_mask, 1);
-        return iomcu.set_oneshot_mode();
+        iomcu.set_oneshot_mode();
+        return;
+    }
+    if (mode == MODE_PWM_BRUSHED &&
+        (mask & ((1U<<chan_offset)-1)) &&
+        AP_BoardConfig::io_enabled()) {
+        iomcu_mode = mode;
+        iomcu.set_brushed_mode();
+        return;
     }
 #endif
+}
+
+/*
+ * get output mode banner to inform user of how outputs are configured
+ */
+bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const
+{
+    // create array of each channel's mode
+    output_mode ch_mode[chan_offset + NUM_GROUPS * ARRAY_SIZE(pwm_group::chan)] = {};
+    bool have_nonzero_modes = false;
+
+#if HAL_WITH_IO_MCU
+    // fill in ch_mode array for IOMCU channels
+    if (AP_BoardConfig::io_enabled()) {
+        for (uint8_t i = 0; i < chan_offset; i++ ) {
+            ch_mode[i] = iomcu_mode;
+        }
+        have_nonzero_modes = (chan_offset > 0) && (iomcu_mode != MODE_PWM_NONE);
+    }
+#endif
+
+    // fill in ch_mode array for FMU channels
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        const pwm_group &group = pwm_group_list[i];
+        if (group.current_mode != MODE_PWM_NONE) {
+            for (uint8_t j = 0; j < ARRAY_SIZE(group.chan); j++) {
+                if (group.chan[j] != CHAN_DISABLED) {
+                    const uint8_t chan_num = group.chan[j] + chan_offset;
+                    if (chan_num < ARRAY_SIZE(ch_mode)) {
+                        ch_mode[chan_num] = group.current_mode;
+                        have_nonzero_modes = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // handle simple case
+    if (!have_nonzero_modes) {
+        hal.util->snprintf(banner_msg, banner_msg_len, "RCOut: None");
+        return true;
+    }
+
+    // write banner to banner_msg
+    hal.util->snprintf(banner_msg, banner_msg_len, "RCOut:");
+    uint8_t curr_mode_lowest_ch = 0;
+    for (uint8_t k = 1; k < ARRAY_SIZE(ch_mode); k++) {
+        if (ch_mode[k-1] != ch_mode[k]) {
+            if (ch_mode[k-1] != MODE_PWM_NONE) {
+                append_to_banner(banner_msg, banner_msg_len, ch_mode[k-1], curr_mode_lowest_ch + 1, k);
+            }
+            curr_mode_lowest_ch = k;
+        }
+    }
+
+    // add final few channel's mode to banner (won't have been done by above loop)
+    const uint8_t final_index = ARRAY_SIZE(ch_mode)-1;
+    if (ch_mode[final_index] != MODE_PWM_NONE) {
+        append_to_banner(banner_msg, banner_msg_len, ch_mode[final_index], curr_mode_lowest_ch + 1, final_index + 1);
+    }
+
+    return true;
 }
 
 /*
@@ -743,16 +871,15 @@ void RCOutput::trigger_groups(void)
     }
     osalSysUnlock();
 
-    for (uint8_t i = 0; i < NUM_GROUPS; i++) {
-        pwm_group &group = pwm_group_list[i];
-        if (serial_group == &group) {
-            continue;
-        }
-        if (group.current_mode >= MODE_PWM_DSHOT150 && group.current_mode <= MODE_PWM_DSHOT1200) {
-            dshot_send(group, false);
+    if (!serial_group) {
+        for (uint8_t i = 0; i < NUM_GROUPS; i++) {
+            pwm_group &group = pwm_group_list[i];
+            if (is_dshot_protocol(group.current_mode)) {
+                dshot_send(group, false);
+            }
         }
     }
-    
+
     /*
       calculate time that we are allowed to trigger next pulse
       to guarantee at least a 50us gap between pulses
@@ -769,20 +896,31 @@ void RCOutput::trigger_groups(void)
 void RCOutput::timer_tick(void)
 {
     safety_update();
-    
+
     uint64_t now = AP_HAL::micros64();
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (serial_group != &group &&
-            group.current_mode >= MODE_PWM_DSHOT150 &&
-            group.current_mode <= MODE_PWM_DSHOT1200 &&
-            now - group.last_dshot_send_us > 900) {
+        if (!serial_group &&
+            is_dshot_protocol(group.current_mode) &&
+            now - group.last_dmar_send_us > 400) {
             // do a blocking send now, to guarantee DShot sends at
             // above 1000 Hz. This makes the protocol more reliable on
             // long cables, and also keeps some ESCs happy that don't
             // like low rates
             dshot_send(group, true);
         }
+    }
+    if (serial_led_pending && chMtxTryLock(&trigger_mutex)) {
+        serial_led_pending = false;
+        for (uint8_t j = 0; j < NUM_GROUPS; j++) {
+            pwm_group &group = pwm_group_list[j];
+            if (group.serial_led_pending && (group.current_mode == MODE_NEOPIXEL || group.current_mode == MODE_PROFILED)) {
+                group.serial_led_pending = !serial_led_send(group);
+                group.prepared_send = group.serial_led_pending;
+                serial_led_pending |=  group.serial_led_pending;
+            }
+        }
+        chMtxUnlock(&trigger_mutex);
     }
     if (min_pulse_trigger_us == 0 ||
         serial_group != nullptr) {
@@ -802,8 +940,15 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (group.dma_handle == ctx) {
-            dmaStreamAllocate(group.dma, 10, dma_irq_callback, &group);
+        if (group.dma_handle == ctx && group.dma == nullptr) {
+            chSysLock();
+            group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_irq_callback, &group);
+            chSysUnlock();
+#if STM32_DMA_SUPPORTS_DMAMUX
+            if (group.dma) {
+                dmaSetRequestSource(group.dma, group.dma_up_channel);
+            }
+#endif
         }
     }
 }
@@ -815,8 +960,11 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
 {
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
-        if (group.dma_handle == ctx) {
-            dmaStreamRelease(group.dma);
+        if (group.dma_handle == ctx && group.dma != nullptr) {
+            chSysLock();
+            dmaStreamFreeI(group.dma);
+            group.dma = nullptr;
+            chSysUnlock();
         }
     }
 }
@@ -853,9 +1001,16 @@ void RCOutput::fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t 
 {
     const uint32_t DSHOT_MOTOR_BIT_0 = 7 * clockmul;
     const uint32_t DSHOT_MOTOR_BIT_1 = 14 * clockmul;
-    for (uint16_t i = 0; i < 16; i++) {
+    uint16_t i = 0;
+    for (; i < dshot_pre; i++) {
+        buffer[i * stride] = 0;
+    }
+    for (; i < 16 + dshot_pre; i++) {
         buffer[i * stride] = (packet & 0x8000) ? DSHOT_MOTOR_BIT_1 : DSHOT_MOTOR_BIT_0;
         packet <<= 1;
+    }
+    for (; i<dshot_bit_length; i++) {
+        buffer[i * stride] = 0;
     }
 }
 
@@ -866,11 +1021,12 @@ void RCOutput::fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t 
  */
 void RCOutput::dshot_send(pwm_group &group, bool blocking)
 {
+#ifndef DISABLE_DSHOT
     if (irq.waiter) {
         // doing serial output, don't send DShot pulses
         return;
     }
-    
+
     if (blocking) {
         group.dma_handle->lock();
     } else {
@@ -878,9 +1034,11 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
             return;
         }
     }
-    
+
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
-    
+
+    memset((uint8_t *)group.dma_buffer, 0, dshot_buffer_length);
+
     for (uint8_t i=0; i<4; i++) {
         uint8_t chan = group.chan[i];
         if (chan != CHAN_DISABLED) {
@@ -890,14 +1048,32 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
                 // safety is on, overwride pwm
                 pwm = safe_pwm[chan+chan_offset];
             }
-            
-            pwm = constrain_int16(pwm, _esc_pwm_min, _esc_pwm_max);
-            uint16_t value = 2000UL * uint32_t(pwm - _esc_pwm_min) / uint32_t(_esc_pwm_max - _esc_pwm_min);
+
+            const uint16_t chan_mask = (1U<<chan);
+            if (pwm == 0) {
+                // no output
+                continue;
+            }
+
+            pwm = constrain_int16(pwm, 1000, 2000);
+            uint16_t value = 2 * (pwm - 1000);
+
+            if (chan_mask & (reversible_mask>>chan_offset)) {
+                // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
+                if (value < 1000) {
+                    value = 2000 - value;
+                } else if (value > 1000) {
+                    value = value - 1000;
+                } else {
+                    // mid-throttle is off
+                    value = 0;
+                }
+            }
             if (value != 0) {
                 // dshot values are from 48 to 2047. Zero means off.
                 value += 47;
             }
-            uint16_t chan_mask = (1U<<chan);
+
             bool request_telemetry = (telem_request_mask & chan_mask)?true:false;
             uint16_t packet = create_dshot_packet(value, request_telemetry);
             if (request_telemetry) {
@@ -910,8 +1086,31 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
     // start sending the pulses out
     send_pulses_DMAR(group, dshot_buffer_length);
 
-    group.last_dshot_send_us = AP_HAL::micros64();
+    group.last_dmar_send_us = AP_HAL::micros64();
+#endif //#ifndef DISABLE_DSHOT
 }
+
+
+/*
+  send a set of Serial LED packets for a channel group
+  return true if send was successful
+ */
+bool RCOutput::serial_led_send(pwm_group &group)
+{
+#ifndef DISABLE_DSHOT
+    if (irq.waiter || !group.dma_handle->lock_nonblock()) {
+        // doing serial output, don't send Serial LED pulses
+        return false;
+    }
+
+    // start sending the pulses out
+    send_pulses_DMAR(group, group.dma_buffer_len);
+
+    group.last_dmar_send_us = AP_HAL::micros64();
+#endif //#ifndef DISABLE_DSHOT
+    return true;
+}
+
 
 /*
   send a series of pulses for a group using DMAR. Pulses must have
@@ -920,6 +1119,7 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
  */
 void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 {
+#ifndef DISABLE_DSHOT
     /*
       The DMA approach we are using is based on the DMAR method from
       betaflight. We use the TIMn_UP DMA channel for the timer, and
@@ -933,6 +1133,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       up with this great method.
      */
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
+    stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length/sizeof(uint32_t));
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
@@ -947,6 +1148,20 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     group.pwm_drv->tim->DCR = 0x0D | STM32_TIM_DCR_DBL(3);
 
     dmaStreamEnable(group.dma);
+#endif //#ifndef DISABLE_DSHOT
+}
+
+/*
+  unlock DMA channel after a dshot send completes
+ */
+void RCOutput::dma_unlock(void *p)
+{
+#if STM32_DMA_ADVANCED
+    pwm_group *group = (pwm_group *)p;
+    chSysLockFromISR();
+    group->dma_handle->unlock_from_IRQ();
+    chSysUnlockFromISR();
+#endif
 }
 
 /*
@@ -961,7 +1176,8 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
         // tell the waiting process we've done the DMA
         chEvtSignalI(irq.waiter, serial_event_mask);
     } else {
-        group->dma_handle->unlock_from_IRQ();
+        // this prevents us ever having two dshot pulses too close together
+        chVTSetI(&group->dma_timeout, chTimeUS2I(dshot_min_gap_us), dma_unlock, p);
     }
     chSysUnlockFromISR();
 }
@@ -971,16 +1187,17 @@ void RCOutput::dma_irq_callback(void *p, uint32_t flags)
   baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
   databits. This is used for passthrough ESC configuration and
   firmware flashing
-  
+
   While serial output is active normal output to the channel group is
   suspended.
 */
-bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
+bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t chanmask)
 {
     // account for IOMCU channels
     chan -= chan_offset;
+    chanmask >>= chan_offset;
     pwm_group *new_serial_group = nullptr;
-    
+
     // find the channel group
     for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
         pwm_group &group = pwm_group_list[i];
@@ -989,10 +1206,6 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
             continue;
         }
         if (group.ch_mask & (1U<<chan)) {
-            if (serial_group && serial_group != &group) {
-                // we're changing to a new group, end the previous output
-                serial_end();
-            }
             new_serial_group = &group;
             for (uint8_t j=0; j<4; j++) {
                 if (group.chan[j] == chan) {
@@ -1011,9 +1224,17 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
         return false;
     }
 
-    // setup the group for serial output. We ask for a bit width of 1, which gets modified by the 
-    if (!setup_group_DMA(*new_serial_group, baudrate, 10, false)) {
-        return false;
+    // setup the groups for serial output. We ask for a bit width of 1, which gets modified by the
+    // we setup all groups so they all are setup with the right polarity, and to make switching between
+    // channels in blheli pass-thru fast
+    for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+        pwm_group &group = pwm_group_list[i];
+        if (group.ch_mask & chanmask) {
+            if (!setup_group_DMA(group, baudrate, 10, false, dshot_buffer_length, false)) {
+                serial_end();
+                return false;
+            }
+        }
     }
 
     serial_group = new_serial_group;
@@ -1023,10 +1244,10 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
     serial_thread = chThdGetSelfX();
     serial_priority  = chThdGetSelfX()->realprio;
     chThdSetPriority(HIGHPRIO);
-    
+
     // remember the bit period for serial_read_byte()
     serial_group->serial.bit_time_us = 1000000UL / baudrate;
-    
+
     // remember the thread that set things up. This is also used to
     // mark the group as doing serial output, so normal output is
     // suspended
@@ -1034,7 +1255,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate)
 
     return true;
 }
-        
+
 
 /*
   fill in a DMA buffer for a serial byte, assuming 1 start bit and 1 stop bit
@@ -1064,19 +1285,19 @@ void RCOutput::fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b,
 bool RCOutput::serial_write_byte(uint8_t b)
 {
     chEvtGetAndClearEvents(serial_event_mask);
-    
+
     fill_DMA_buffer_byte(serial_group->dma_buffer+serial_group->serial.chan, 4, b, serial_group->bit_width_mul*10);
 
     serial_group->in_serial_dma = true;
-    
+
     // start sending the pulses out
     send_pulses_DMAR(*serial_group, 10*4*sizeof(uint32_t));
 
     // wait for the event
-    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, MS2ST(2));
+    eventmask_t mask = chEvtWaitAnyTimeout(serial_event_mask, chTimeMS2I(2));
 
     serial_group->in_serial_dma = false;
-    
+
     return (mask & serial_event_mask) != 0;
 }
 
@@ -1085,6 +1306,7 @@ bool RCOutput::serial_write_byte(uint8_t b)
 */
 bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 {
+#if STM32_DMA_ADVANCED
     if (!serial_group) {
         return false;
     }
@@ -1100,9 +1322,12 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     // add a small delay for last word of output to have completely
     // finished
     hal.scheduler->delay_microseconds(25);
-    
+
     serial_group->dma_handle->unlock();
     return true;
+#else
+    return false;
+#endif //#if STM32_DMA_ADVANCED
 }
 
 /*
@@ -1118,7 +1343,7 @@ void RCOutput::serial_bit_irq(void)
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO55, bit);
 #endif
-    
+
     if (irq.nbits == 0 || bit == irq.last_bit) {
         // start of byte, should be low
         if (bit != 0) {
@@ -1128,6 +1353,11 @@ void RCOutput::serial_bit_irq(void)
             irq.nbits = 1;
             irq.byte_start_tick = now;
             irq.bitmask = 0;
+            // setup a timeout for 11 bits width, so we aren't left
+            // waiting at the end of bytes
+            chSysLockFromISR();
+            chVTSetI(&irq.serial_timeout, irq.bit_time_tick*11, serial_byte_timeout, irq.waiter);
+            chSysUnlockFromISR();
         }
     } else {
         systime_t dt = now - irq.byte_start_tick;
@@ -1151,21 +1381,34 @@ void RCOutput::serial_bit_irq(void)
         }
     }
     irq.last_bit = bit;
-    
+
     if (send_signal) {
         chSysLockFromISR();
+        chVTResetI(&irq.serial_timeout);
         chEvtSignalI(irq.waiter, serial_event_mask);
         chSysUnlockFromISR();
     }
 }
 
+/*
+  timeout a byte read
+ */
+void RCOutput::serial_byte_timeout(void *ctx)
+{
+    chSysLockFromISR();
+    irq.timed_out = true;
+    chEvtSignalI((thread_t *)ctx, serial_event_mask);
+    chSysUnlockFromISR();
+}
 
 /*
   read a byte from a port, using serial parameters from serial_setup_output()
 */
 bool RCOutput::serial_read_byte(uint8_t &b)
 {
-    bool timed_out = ((chEvtWaitAnyTimeout(serial_event_mask, MS2ST(10)) & serial_event_mask) == 0);
+    irq.timed_out = false;
+    chVTSet(&irq.serial_timeout, chTimeMS2I(10), serial_byte_timeout, irq.waiter);
+    bool timed_out = ((chEvtWaitAny(serial_event_mask) & serial_event_mask) == 0) || irq.timed_out;
 
     uint16_t byteval = irq.byteval;
 
@@ -1177,7 +1420,7 @@ bool RCOutput::serial_read_byte(uint8_t &b)
         }
         byteval = irq.bitmask | 0x200;
     }
-    
+
     if ((byteval & 0x201) != 0x200) {
         // wrong start/stop bits
         return false;
@@ -1192,6 +1435,7 @@ bool RCOutput::serial_read_byte(uint8_t &b)
 */
 uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 {
+#ifndef DISABLE_SERIAL_ESC_COMM
     if (serial_group == nullptr) {
         return 0;
     }
@@ -1205,10 +1449,11 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     hal.gpio->pinMode(54, 1);
     hal.gpio->pinMode(55, 1);
 #endif
-    
+
     // assume GPIO mappings for PWM outputs start at 50
     palSetLineMode(line, gpio_mode);
 
+    chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
 
     irq.line = group.pal_lines[group.serial.chan];
@@ -1222,14 +1467,14 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 1);
 #endif
-    
-    if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, HAL_GPIO_INTERRUPT_BOTH)) {
+
+    if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
 #if RCOU_SERIAL_TIMING_DEBUG
         palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
         return false;
     }
-    
+
     for (i=0; i<len; i++) {
         if (!serial_read_byte(buf[i])) {
             break;
@@ -1238,12 +1483,16 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 
     ((GPIO *)hal.gpio)->_attach_interrupt(line, nullptr, 0);
     irq.waiter = nullptr;
-    
+
     palSetLineMode(line, restore_mode);
 #if RCOU_SERIAL_TIMING_DEBUG
     palWriteLine(HAL_GPIO_LINE_GPIO54, 0);
 #endif
     return i;
+#else
+    return false;
+#endif //#ifndef DISABLE_SERIAL_ESC_COMM
+
 }
 
 /*
@@ -1251,22 +1500,26 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
 */
 void RCOutput::serial_end(void)
 {
+#ifndef DISABLE_SERIAL_ESC_COMM
     if (serial_group) {
-        pwm_group &group = *serial_group;
-        // restore normal output
-        if (group.pwm_started) {
-            pwmStop(group.pwm_drv);
-            group.pwm_started = false;
-        }
-        set_group_mode(group);
-        set_freq_group(group);
-        irq.waiter = nullptr;
         if (serial_thread == chThdGetSelfX()) {
             chThdSetPriority(serial_priority);
             serial_thread = nullptr;
         }
+        irq.waiter = nullptr;
+        for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
+            pwm_group &group = pwm_group_list[i];
+            // restore normal output
+            if (group.pwm_started) {
+                pwmStop(group.pwm_drv);
+                group.pwm_started = false;
+            }
+            set_group_mode(group);
+            set_freq_group(group);
+        }
     }
     serial_group = nullptr;
+#endif //#ifndef DISABLE_SERIAL_ESC_COMM
 }
 
 /*
@@ -1276,9 +1529,12 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
 {
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
-        return iomcu.get_safety_switch_state();
+        safety_state = iomcu.get_safety_switch_state();
     }
 #endif
+    if (!hal.util->was_watchdog_reset()) {
+        hal.util->persistent_data.safety_state = safety_state;
+    }
     return safety_state;
 }
 
@@ -1342,44 +1598,30 @@ void RCOutput::safety_update(void)
     }
     safety_update_ms = now;
 
-    AP_BoardConfig *boardconfig = AP_BoardConfig::get_instance();
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
 
     if (boardconfig) {
         // remember mask of channels to allow with safety on
         safety_mask = boardconfig->get_safety_mask();
     }
-    
+
 #ifdef HAL_GPIO_PIN_SAFETY_IN
     // handle safety button
-    uint16_t safety_options = 0;
-    if (boardconfig) {
-        safety_options = boardconfig->get_safety_button_options();
-    }
     bool safety_pressed = palReadLine(HAL_GPIO_PIN_SAFETY_IN);
-    if (!(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) &&
-        hal.util->get_soft_armed()) {
-        safety_pressed = false;
-    }
-    if (safety_state==AP_HAL::Util::SAFETY_DISARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
-        safety_pressed = false;        
-    }
-    if (safety_state==AP_HAL::Util::SAFETY_ARMED &&
-        !(safety_options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF)) {
-        safety_pressed = false;        
-    }
     if (safety_pressed) {
-        safety_button_counter++;
-    } else {
-        safety_button_counter = 0;
-    }
-    if (safety_button_counter == 10) {
-        // safety has been pressed for 1 second, change state
-        if (safety_state==AP_HAL::Util::SAFETY_ARMED) {
-            safety_state = AP_HAL::Util::SAFETY_DISARMED;
-        } else {
-            safety_state = AP_HAL::Util::SAFETY_ARMED;
+        AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
+        if (safety_press_count < 255) {
+            safety_press_count++;
         }
+        if (brdconfig && brdconfig->safety_button_handle_pressed(safety_press_count)) {
+            if (safety_state ==AP_HAL::Util::SAFETY_ARMED) {
+                safety_state = AP_HAL::Util::SAFETY_DISARMED;
+            } else {
+                safety_state = AP_HAL::Util::SAFETY_ARMED;
+            }
+        }
+    } else {
+        safety_press_count = 0;
     }
 #elif HAL_WITH_IO_MCU
     safety_state = _safety_switch_state();
@@ -1391,6 +1633,242 @@ void RCOutput::safety_update(void)
     const uint16_t led_pattern = safety_state==AP_HAL::Util::SAFETY_DISARMED?0x5500:0xFFFF;
     palWriteLine(HAL_GPIO_PIN_LED_SAFETY, (led_pattern & (1U << led_counter))?0:1);
 #endif
+}
+
+/*
+  set PWM to send to a set of channels if the FMU firmware dies
+*/
+void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
+{
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.set_failsafe_pwm(chmask, period_us);
+    }
+#endif
+}
+
+/*
+  true when the output mode is of type dshot
+*/
+bool RCOutput::is_dshot_protocol(const enum output_mode mode) const
+{
+    switch (mode) {
+    case MODE_PWM_DSHOT150:
+    case MODE_PWM_DSHOT300:
+    case MODE_PWM_DSHOT600:
+    case MODE_PWM_DSHOT1200:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*
+    returns the bitrate in Hz of the given output_mode
+*/
+uint32_t RCOutput::protocol_bitrate(const enum output_mode mode) const
+{
+    switch (mode) {
+    case MODE_PWM_DSHOT150:
+        return 150000;
+    case MODE_PWM_DSHOT300:
+        return 300000;
+    case MODE_PWM_DSHOT600:
+        return 600000;
+    case MODE_PWM_DSHOT1200:
+        return 1200000;
+    case MODE_NEOPIXEL:
+        return 800000;
+    case MODE_PROFILED:
+        return 1500000; // experiment winding this up 3000000 max from data sheet
+    default:
+        // use 1 to prevent a possible divide-by-zero
+        return 1;
+    }
+}
+
+/*
+  setup serial led output for a given channel number, with
+  the given max number of LEDs in the chain.
+*/
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+{
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (!grp) {
+        return false;
+    }
+
+    switch (mode) {
+        case MODE_NEOPIXEL: {
+            grp->serial_nleds = MAX(num_leds, grp->serial_nleds);
+            break;
+        }
+        case MODE_PROFILED: {
+            // ProfiLED requires two dummy LED's to mark end of transmission
+            grp->serial_nleds = MAX(num_leds + 2, grp->serial_nleds);
+
+            // Enable any clock channels in the same group
+            grp->clock_mask = 0;
+            for (uint8_t j = 0; j < 4; j++) {
+                if ((clock_mask & (1U<<(grp->chan[j] + chan_offset))) != 0) {
+                    grp->clock_mask |= 1U<<j;
+                }
+            }
+
+            break;
+        }
+        default: {
+            return false;
+        }
+    }
+
+    set_output_mode(1U<<chan, mode);
+
+    return grp->current_mode == mode;
+}
+
+/*
+  setup neopixel (WS2812B) output data for a given output channel
+  and a LED number. LED -1 is all LEDs
+*/
+void RCOutput::_set_neopixel_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t neopixel_bit_length = 24;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * neopixel_bit_length + pad_start_bits) * stride + idx;
+    uint32_t bits = (green<<16) | (red<<8) | blue;
+    const uint32_t BIT_0 = 7 * grp->bit_width_mul;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < 24; b++) {
+        buf[b * stride] = (bits & 0x800000) ? BIT_1 : BIT_0;
+        bits <<= 1;
+    }
+}
+
+/*
+  ProfiLED frame for a given output channel
+  channel is active high and bits inverted to get clock rising edge away from data rising edge
+*/
+void RCOutput::_set_profiled_rgb_data(pwm_group *grp, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    uint32_t bits = 0x1000000 | (blue<<16) | (red<<8) | green;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = (bits & 0x1000000) ? 0 : BIT_1;
+        bits <<= 1;
+    }
+}
+
+/*
+  ProfiLED blank frame for a given output channel
+  channel is active high and bits inverted to get clock rising edge away from data rising edge
+*/
+void RCOutput::_set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    const uint32_t BIT_1 = 14 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = BIT_1;
+    }
+}
+
+/*
+  setup ProfiLED clock frame for a given output channel
+*/
+void RCOutput::_set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led)
+{
+    const uint8_t pad_start_bits = 1;
+    const uint8_t bit_length = 25;
+    const uint8_t stride = 4;
+    uint32_t *buf = grp->dma_buffer + (led * bit_length + pad_start_bits) * stride + idx;
+    const uint32_t BIT_1 = 7 * grp->bit_width_mul;
+    for (uint16_t b=0; b < bit_length; b++) {
+        buf[b * stride] = BIT_1;
+    }
+}
+
+
+/*
+  setup serial LED output data for a given output channel
+  and a LED number. LED -1 is all LEDs
+*/
+void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (!grp) {
+        return;
+    }
+
+    if (led >= grp->serial_nleds || (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED)) {
+        return;
+    }
+
+    if (led == -1) {
+        grp->prepared_send = true;
+        for (uint8_t n=0; n<grp->serial_nleds; n++) {
+            set_serial_led_rgb_data(chan, n, red, green, blue);
+        }
+        return;
+    } else if (!grp->prepared_send) {
+        // if not ouput clock and trailing frames, run through all LED's to do it now
+        set_serial_led_rgb_data(chan, -1, 0, 0, 0);
+    }
+
+    switch (grp->current_mode) {
+        case MODE_NEOPIXEL: {
+            _set_neopixel_rgb_data(grp, i, uint8_t(led), red, green, blue);
+            break;
+        }
+
+        case MODE_PROFILED: {
+            if (led < grp->serial_nleds - 2) {
+                _set_profiled_rgb_data(grp, i, uint8_t(led), red, green, blue);
+            } else {
+                _set_profiled_blank_frame(grp, i, uint8_t(led));
+            }
+
+            for (uint8_t j = 0; j < 4; j++) {
+                if ((grp->clock_mask & 1U<<j) != 0) {
+                   _set_profiled_clock(grp, j, uint8_t(led));
+                }
+            }
+
+            break;
+        }
+
+        default: {
+            return;
+        }
+    }
+}
+
+/*
+  trigger send of serial led data for one group
+*/
+void RCOutput::serial_led_send(const uint16_t chan)
+{
+    uint8_t i;
+    pwm_group *grp = find_chan(chan, i);
+    if (!grp) {
+        return;
+    }
+    if (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED) {
+        return;
+    }
+    if (grp->prepared_send) {
+        serial_led_pending = true; 
+        grp->serial_led_pending = true;
+    }
 }
 
 #endif // HAL_USE_PWM

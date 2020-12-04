@@ -13,12 +13,11 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <StorageManager/StorageManager.h>
 
 // definitions
@@ -39,10 +38,16 @@
 
 #define AP_MISSION_OPTIONS_DEFAULT          0       // Do not clear the mission when rebooting
 #define AP_MISSION_MASK_MISSION_CLEAR       (1<<0)  // If set then Clear the mission on boot
+#define AP_MISSION_MASK_DIST_TO_LAND_CALC   (1<<1)  // Allow distance to best landing calculation to be run on failsafe
+#define AP_MISSION_MASK_CONTINUE_AFTER_LAND (1<<2)  // Allow mission to continue after land
+
+#define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
+#define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
 
 /// @class    AP_Mission
 /// @brief    Object managing Mission
-class AP_Mission {
+class AP_Mission
+{
 
 public:
     // jump command structure
@@ -134,6 +139,7 @@ public:
     // set cam trigger distance command structure
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
+        uint8_t trigger;        // triggers one image capture immediately
     };
 
     // gripper command structure
@@ -162,7 +168,7 @@ public:
         uint8_t target_state;
     };
 
-     // navigation delay command structure
+    // navigation delay command structure
     struct PACKED Navigation_Delay_Command {
         float seconds; // period of delay in seconds
         int8_t hour_utc; // absolute time's hour (utc)
@@ -192,7 +198,7 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
-    union PACKED Content {
+    union Content {
         // jump structure
         Jump_Command jump;
 
@@ -238,7 +244,7 @@ public:
         // do-guided-limits
         Guided_Limits_Command guided_limits;
 
-        // cam trigg distance
+        // high altitude balloon altitude wait
         Altitude_Wait altitude_wait;
 
         // do vtol transition
@@ -250,18 +256,14 @@ public:
         // navigation delay
         Navigation_Delay_Command nav_delay;
 
-        // navigation delay
+        // NAV_SET_YAW_SPEED support
         Set_Yaw_Speed set_yaw_speed;
 
         // do-winch
         Winch_Command winch;
 
         // location
-        Location location;      // Waypoint location
-
-        // raw bytes, for reading/writing to eeprom. Note that only 10 bytes are available
-        // if a 16 bit command ID is used
-        uint8_t bytes[12];
+        Location location{};      // Waypoint location
     };
 
     // command structure
@@ -281,8 +283,7 @@ public:
     FUNCTOR_TYPEDEF(mission_complete_fn_t, void);
 
     // constructor
-    AP_Mission(AP_AHRS &ahrs, mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
-        _ahrs(ahrs),
+    AP_Mission(mission_cmd_fn_t cmd_start_fn, mission_cmd_fn_t cmd_verify_fn, mission_complete_fn_t mission_complete_fn) :
         _cmd_start_fn(cmd_start_fn),
         _cmd_verify_fn(cmd_verify_fn),
         _mission_complete_fn(mission_complete_fn),
@@ -291,6 +292,13 @@ public:
         _prev_nav_cmd_wp_index(AP_MISSION_CMD_INDEX_NONE),
         _last_change_time_ms(0)
     {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (_singleton != nullptr) {
+            AP_HAL::panic("Mission must be singleton");
+        }
+#endif
+        _singleton = this;
+
         // load parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
 
@@ -302,12 +310,21 @@ public:
         _flags.state = MISSION_STOPPED;
         _flags.nav_cmd_loaded = false;
         _flags.do_cmd_loaded = false;
+        _flags.in_landing_sequence = false;
+        _flags.resuming_mission = false;
+        _force_resume = false;
+    }
+
+    // get singleton instance
+    static AP_Mission *get_singleton()
+    {
+        return _singleton;
     }
 
     /* Do not allow copies */
     AP_Mission(const AP_Mission &other) = delete;
-    AP_Mission &operator=(const AP_Mission&) = delete;    
-    
+    AP_Mission &operator=(const AP_Mission&) = delete;
+
     // mission state enumeration
     enum mission_state {
         MISSION_STOPPED=0,
@@ -323,11 +340,17 @@ public:
     void init();
 
     /// status - returns the status of the mission (i.e. Mission_Started, Mission_Complete, Mission_Stopped
-    mission_state state() const { return _flags.state; }
+    mission_state state() const
+    {
+        return _flags.state;
+    }
 
     /// num_commands - returns total number of commands in the mission
     ///                 this number includes offset 0, the home location
-    uint16_t num_commands() const { return _cmd_total; }
+    uint16_t num_commands() const
+    {
+        return _cmd_total;
+    }
 
     /// num_commands_max - returns maximum number of commands that can be stored
     uint16_t num_commands_max() const;
@@ -353,7 +376,6 @@ public:
     void reset();
 
     /// clear - clears out mission
-    ///     returns true if mission was running so it could not be cleared
     bool clear();
 
     /// truncate - truncate any mission items beyond given index
@@ -375,34 +397,54 @@ public:
     /// replace_cmd - replaces the command at position 'index' in the command list with the provided cmd
     ///     replacing the current active command will have no effect until the command is restarted
     ///     returns true if successfully replaced, false on failure
-    bool replace_cmd(uint16_t index, Mission_Command& cmd);
+    bool replace_cmd(uint16_t index, const Mission_Command& cmd);
 
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
     /// get_current_nav_cmd - returns the current "navigation" command
-    const Mission_Command& get_current_nav_cmd() const { return _nav_cmd; }
+    const Mission_Command& get_current_nav_cmd() const
+    {
+        return _nav_cmd;
+    }
 
     /// get_current_nav_index - returns the current "navigation" command index
     /// Note that this will return 0 if there is no command. This is
     /// used in MAVLink reporting of the mission command
-    uint16_t get_current_nav_index() const { 
-        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index; }
+    uint16_t get_current_nav_index() const
+    {
+        return _nav_cmd.index==AP_MISSION_CMD_INDEX_NONE?0:_nav_cmd.index;
+    }
+
+    /// get_current_nav_id - return the id of the current nav command
+    uint16_t get_current_nav_id() const
+    {
+        return _nav_cmd.id;
+    }
 
     /// get_prev_nav_cmd_id - returns the previous "navigation" command id
     ///     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE
     ///     we do not return the entire command to save on RAM
-    uint16_t get_prev_nav_cmd_id() const { return _prev_nav_cmd_id; }
+    uint16_t get_prev_nav_cmd_id() const
+    {
+        return _prev_nav_cmd_id;
+    }
 
     /// get_prev_nav_cmd_index - returns the previous "navigation" commands index (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
     ///     we do not return the entire command to save on RAM
-    uint16_t get_prev_nav_cmd_index() const { return _prev_nav_cmd_index; }
+    uint16_t get_prev_nav_cmd_index() const
+    {
+        return _prev_nav_cmd_index;
+    }
 
     /// get_prev_nav_cmd_with_wp_index - returns the previous "navigation" commands index that contains a waypoint (i.e. position in the mission command list)
     ///     if there was no previous nav command it returns AP_MISSION_CMD_INDEX_NONE
     ///     we do not return the entire command to save on RAM
-    uint16_t get_prev_nav_cmd_with_wp_index() const { return _prev_nav_cmd_wp_index; }
+    uint16_t get_prev_nav_cmd_with_wp_index() const
+    {
+        return _prev_nav_cmd_wp_index;
+    }
 
     /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
     ///     returns true if found, false if not found (i.e. reached end of mission command list)
@@ -415,10 +457,19 @@ public:
     int32_t get_next_ground_course_cd(int32_t default_angle);
 
     /// get_current_do_cmd - returns active "do" command
-    const Mission_Command& get_current_do_cmd() const { return _do_cmd; }
+    const Mission_Command& get_current_do_cmd() const
+    {
+        return _do_cmd;
+    }
+
+    /// get_current_do_cmd_id - returns id of the active "do" command
+    uint16_t get_current_do_cmd_id() const
+    {
+        return _do_cmd.id;
+    }
 
     // set_current_cmd - jumps to command specified by index
-    bool set_current_cmd(uint16_t index);
+    bool set_current_cmd(uint16_t index, bool rewind = false);
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
@@ -427,28 +478,34 @@ public:
     /// write_cmd_to_storage - write a command to storage
     ///     cmd.index is used to calculate the storage location
     ///     true is returned if successful
-    bool write_cmd_to_storage(uint16_t index, Mission_Command& cmd);
+    bool write_cmd_to_storage(uint16_t index, const Mission_Command& cmd);
 
     /// write_home_to_storage - writes the special purpose cmd 0 (home) to storage
     ///     home is taken directly from ahrs
     void write_home_to_storage();
 
-    // mavlink_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &mission_item,
+            mavlink_mission_item_int_t &mission_item_int) WARN_IF_UNUSED;
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &mission_item_int,
+            mavlink_mission_item_t &mission_item) WARN_IF_UNUSED;
+
+    // mavlink_int_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
     //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-    static MAV_MISSION_RESULT mavlink_to_mission_cmd(const mavlink_mission_item_t& packet, AP_Mission::Mission_Command& cmd);
     static MAV_MISSION_RESULT mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd);
 
     // mavlink_cmd_long_to_mission_cmd - converts a mavlink cmd long to an AP_Mission::Mission_Command object which can be stored to eeprom
     // return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
     static MAV_MISSION_RESULT mavlink_cmd_long_to_mission_cmd(const mavlink_command_long_t& packet, AP_Mission::Mission_Command& cmd);
 
-    // mission_cmd_to_mavlink - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
+    // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
-    static bool mission_cmd_to_mavlink(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_t& packet);
     static bool mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet);
 
     // return the last time the mission changed in milliseconds
-    uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
+    uint32_t last_change_time_ms(void) const
+    {
+        return _last_change_time_ms;
+    }
 
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
@@ -460,18 +517,76 @@ public:
     // available.
     bool jump_to_landing_sequence(void);
 
+    // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+    bool jump_to_abort_landing_sequence(void);
+
+    // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
+    bool is_best_land_sequence(void);
+
+    // set in_landing_sequence flag
+    void set_in_landing_sequence_flag(bool flag)
+    {
+        _flags.in_landing_sequence = flag;
+    }
+
+    // get in_landing_sequence flag
+    bool get_in_landing_sequence_flag() const {
+        return _flags.in_landing_sequence;
+    }
+
+    // force mission to resume when start_or_resume() is called
+    void set_force_resume(bool force_resume)
+    {
+        _force_resume = force_resume;
+    }
+
+    // get a reference to the AP_Mission semaphore, allowing an external caller to lock the
+    // storage while working with multiple waypoints
+    HAL_Semaphore &get_semaphore(void)
+    {
+        return _rsem;
+    }
+
+    // returns true if the mission contains the requested items
+    bool contains_item(MAV_CMD command) const;
+
+    // reset the mission history to prevent recalling previous mission histories when restarting missions.
+    void reset_wp_history(void);
+
+    /*
+      return true if MIS_OPTIONS is set to allow continue of mission
+      logic after a land. If this is false then after a landing is
+      complete the vehicle should disarm and mission logic should stop
+     */
+    bool continue_after_land(void) const {
+        return (_options.get() & AP_MISSION_MASK_CONTINUE_AFTER_LAND) != 0;
+    }
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    // allow lua to get/set any WP items in any order in a mavlink-ish kinda way.
+    bool get_item(uint16_t index, mavlink_mission_item_int_t& result) ;
+    bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
+
 private:
+    static AP_Mission *_singleton;
+
     static StorageAccess _storage;
+
+    static bool stored_in_location(uint16_t id);
 
     struct Mission_Flags {
         mission_state state;
-        uint8_t nav_cmd_loaded  : 1; // true if a "navigation" command has been loaded into _nav_cmd
-        uint8_t do_cmd_loaded   : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
-        uint8_t do_cmd_all_done : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
+        uint8_t nav_cmd_loaded    : 1; // true if a "navigation" command has been loaded into _nav_cmd
+        uint8_t do_cmd_loaded     : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
+        uint8_t do_cmd_all_done   : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
+        bool in_landing_sequence  : 1; // true if the mission has jumped to a landing
+        bool resuming_mission     : 1; // true if the mission is resuming and set false once the aircraft attains the interupted WP
     } _flags;
+
+    // mission WP resume history
+    uint16_t _wp_index_history[AP_MISSION_MAX_WP_HISTORY]; // storing the nav_cmd index for the last 6 WPs
 
     ///
     /// private methods
@@ -480,11 +595,15 @@ private:
     /// complete - mission is marked complete and clean-up performed including calling the mission_complete_fn
     void complete();
 
+    bool verify_command(const Mission_Command& cmd);
+    bool start_command(const Mission_Command& cmd);
+
     /// advance_current_nav_cmd - moves current nav command forward
+    //      starting_index is used to set the index from which searching will begin, leave as 0 to search from the current navigation target
     ///     do command will also be loaded
     ///     accounts for do-jump commands
     //      returns true if command is advanced, false if failed (i.e. mission completed)
-    bool advance_current_nav_cmd();
+    bool advance_current_nav_cmd(uint16_t starting_index = 0);
 
     /// advance_current_do_cmd - moves current do command forward
     ///     accounts for do-jump commands
@@ -495,7 +614,7 @@ private:
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found);
+    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
@@ -514,17 +633,26 @@ private:
     int16_t get_jump_times_run(const Mission_Command& cmd);
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-    void increment_jump_times_run(Mission_Command& cmd);
+    void increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg = true);
 
     /// check_eeprom_version - checks version of missions stored in eeprom matches this library
     /// command list will be cleared if they do not match
     void check_eeprom_version();
 
+    // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
+    bool is_landing_type_cmd(uint16_t id) const;
+
+    // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
+    bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
+
+    // calculate the location of a resume cmd wp
+    bool calc_rewind_pos(Mission_Command& rewind_cmd);
+
+    // update progress made in mission to store last position in the event of mission exit
+    void update_exit_position(void);
+
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
-
-    // references to external libraries
-    const AP_AHRS&   _ahrs;      // used only for home position
 
     // parameters
     AP_Int16                _cmd_total;  // total number of commands in the mission
@@ -539,9 +667,12 @@ private:
     // internal variables
     struct Mission_Command  _nav_cmd;   // current "navigation" command.  It's position in the command list is held in _nav_cmd.index
     struct Mission_Command  _do_cmd;    // current "do" command.  It's position in the command list is held in _do_cmd.index
+    struct Mission_Command  _resume_cmd;  // virtual wp command that is used to resume mission if the mission needs to be rewound on resume.
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
+    bool                    _force_resume;  // when set true it forces mission to resume irrespective of MIS_RESTART param.
+    struct Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
     struct jump_tracking_struct {
@@ -551,4 +682,23 @@ private:
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
+
+    // Distance to repeat on mission resume (m), can be set with MAV_CMD_DO_SET_RESUME_REPEAT_DIST
+    uint16_t _repeat_dist;
+
+    // multi-thread support. This is static so it can be used from
+    // const functions
+    static HAL_Semaphore _rsem;
+
+    // mission items common to all vehicles:
+    bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
+    bool start_command_camera(const AP_Mission::Mission_Command& cmd);
+    bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
+    bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
+};
+
+namespace AP
+{
+AP_Mission *mission();
 };

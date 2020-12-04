@@ -1,5 +1,16 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 1.1.0 3-Aug-2019
+Changes from 1.1.0-rc1
+1) Instantiate battery monitor instance
+2) Correct continuous servo rotation bug
+------------------------------------------------------------------
+AntennaTracker 1.1.0-rc1 26-Apr-2019
+Changes from 1.0.0
+1) ChibiOS support including support for many new flight controllers
+2) Large numbers of architectural changes but few behavioural changes
+3) Battery monitoring enabled
+------------------------------------------------------------------
 AntennaTracker 1.0.0 28-Jul-2016
 Changes from 0.8.0
 1) Compensate for tracker tilt by converting earth-frame angle targets to body-frame servo outputs

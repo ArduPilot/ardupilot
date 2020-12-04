@@ -6,6 +6,15 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
+// construct a semaphore
+Semaphore::Semaphore()
+{
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&_lock, &attr);
+}
+
 bool Semaphore::give()
 {
     return pthread_mutex_unlock(&_lock) == 0;
@@ -33,3 +42,4 @@ bool Semaphore::take_nonblocking()
 {
     return pthread_mutex_trylock(&_lock) == 0;
 }
+

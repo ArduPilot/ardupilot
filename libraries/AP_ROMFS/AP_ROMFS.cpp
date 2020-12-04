@@ -17,6 +17,7 @@
  */
 
 #include "AP_ROMFS.h"
+#include "tinf.h"
 
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
 #include <ap_romfs_embedded.h>
@@ -29,10 +30,103 @@ const AP_ROMFS::embedded_file AP_ROMFS::files[] = {};
 */
 const uint8_t *AP_ROMFS::find_file(const char *name, uint32_t &size)
 {
-    for (uint16_t i=0; i<ARRAY_SIZE_SIMPLE(files); i++) {
+    for (uint16_t i=0; i<ARRAY_SIZE(files); i++) {
         if (strcmp(name, files[i].filename) == 0) {
             size = files[i].size;
             return files[i].contents;
+        }
+    }
+    return nullptr;
+}
+
+/*
+  find a compressed file and uncompress it. Space for decompressed
+  data comes from malloc. Caller must be careful to free the resulting
+  data after use. The next byte after the file data is guaranteed to
+  be null
+*/
+const uint8_t *AP_ROMFS::find_decompress(const char *name, uint32_t &size)
+{
+    uint32_t compressed_size = 0;
+    const uint8_t *compressed_data = find_file(name, compressed_size);
+    if (!compressed_data) {
+        return nullptr;
+    }
+
+#ifdef HAL_ROMFS_UNCOMPRESSED
+    size = compressed_size;
+    return compressed_data;
+#else
+    // last 4 bytes of gzip file are length of decompressed data
+    const uint8_t *p = &compressed_data[compressed_size-4];
+    uint32_t decompressed_size = p[0] | p[1] << 8 | p[2] << 16 | p[3] << 24;
+    
+    uint8_t *decompressed_data = (uint8_t *)malloc(decompressed_size + 1);
+    if (!decompressed_data) {
+        return nullptr;
+    }
+
+    // explicitly null terimnate the data
+    decompressed_data[decompressed_size] = 0;
+
+    TINF_DATA *d = (TINF_DATA *)malloc(sizeof(TINF_DATA));
+    if (!d) {
+        ::free(decompressed_data);
+        return nullptr;
+    }
+    uzlib_uncompress_init(d, NULL, 0);
+
+    d->source = compressed_data;
+    d->source_limit = compressed_data + compressed_size - 4;
+
+    // assume gzip format
+    int res = uzlib_gzip_parse_header(d);
+    if (res != TINF_OK) {
+        ::free(decompressed_data);
+        ::free(d);
+        return nullptr;
+    }
+
+    d->dest = decompressed_data;
+    d->destSize = decompressed_size;
+
+    // we don't check CRC, as it just wastes flash space for constant
+    // ROMFS data
+    res = uzlib_uncompress(d);
+
+    ::free(d);
+    
+    if (res != TINF_OK) {
+        ::free(decompressed_data);
+        return nullptr;
+    }
+
+    size = decompressed_size;
+    return decompressed_data;
+#endif
+}
+
+// free returned data
+void AP_ROMFS::free(const uint8_t *data)
+{
+#ifndef HAL_ROMFS_UNCOMPRESSED
+    ::free(const_cast<uint8_t *>(data));
+#endif
+}
+
+/*
+  directory listing interface. Start with ofs=0. Returns pathnames
+  that match dirname prefix. Ends with nullptr return when no more
+  files found
+*/
+const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
+{
+    const size_t dlen = strlen(dirname);
+    for ( ; ofs < ARRAY_SIZE(files); ofs++) {
+        if (strncmp(dirname, files[ofs].filename, dlen) == 0 &&
+            files[ofs].filename[dlen] == '/') {
+            // found one
+            return files[ofs++].filename;
         }
     }
     return nullptr;

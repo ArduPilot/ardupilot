@@ -40,12 +40,18 @@
  ****************************************************************************/
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"
 
 #include "bl_protocol.h"
 #include "support.h"
+#include "can.h"
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+
+// #pragma GCC optimize("O0")
 
 
 // bootloader flash update protocol.
@@ -89,6 +95,7 @@
 #define PROTO_GET_DEVICE			0x22    // get device ID bytes
 #define PROTO_CHIP_ERASE			0x23    // erase program area and reset program address
 #define PROTO_PROG_MULTI			0x27    // write bytes at program address and increment
+#define PROTO_READ_MULTI			0x28    // read bytes at address and increment
 #define PROTO_GET_CRC				0x29	// compute & return a CRC
 #define PROTO_GET_OTP				0x2a	// read a byte from OTP at the given address
 #define PROTO_GET_SN				0x2b    // read a word from UDID area ( Serial)  at the given address
@@ -125,12 +132,18 @@ static enum led_state {LED_BLINK, LED_ON, LED_OFF} led_state;
 
 volatile unsigned timer[NTIMERS];
 
+// keep back 32 bytes at the front of flash. This is long enough to allow for aligned
+// access on STM32H7
+#define RESERVE_LEAD_WORDS 8
+
 /*
   1ms timer tick callback
  */
 static void sys_tick_handler(void *ctx)
 {
-    chVTSetI(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    chSysLockFromISR();
+    chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    chSysUnlockFromISR();
     uint8_t i;
     for (i = 0; i < NTIMERS; i++)
         if (timer[i] > 0) {
@@ -145,7 +158,7 @@ static void sys_tick_handler(void *ctx)
 
 static void delay(unsigned msec)
 {
-    chThdSleep(MS2ST(msec));
+    chThdSleep(chTimeMS2I(msec));
 }
 
 static void
@@ -172,7 +185,7 @@ led_set(enum led_state state)
 static void
 do_jump(uint32_t stacktop, uint32_t entrypoint)
 {
-#if defined(STM32F7)
+#if defined(STM32F7) || defined(STM32H7)
     // disable caches on F7 before starting program
     __DSB();
     __ISB();
@@ -190,7 +203,7 @@ do_jump(uint32_t stacktop, uint32_t entrypoint)
         : : "r"(stacktop), "r"(entrypoint) :);
 }
 
-#define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + FLASH_BOOTLOADER_LOAD_KB*1024U)
+#define APP_START_ADDRESS (FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U)
 
 void
 jump_to_app()
@@ -198,11 +211,14 @@ jump_to_app()
     const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
 
     /*
-     * We refuse to program the first word of the app until the upload is marked
-     * complete by the host.  So if it's not 0xffffffff, we should try booting it.
+     * We hold back the programming of the lead words until the upload
+     * is marked complete by the host. So if they are not 0xffffffff,
+     * we should try booting it.
      */
-    if (app_base[0] == 0xffffffff) {
-        return;
+    for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
+        if (app_base[i] == 0xffffffff) {
+            return;
+        }
     }
 
     /*
@@ -217,15 +233,32 @@ jump_to_app()
         return;
     }
 
+#if HAL_USE_CAN == TRUE ||  HAL_NUM_CAN_IFACES
+    // for CAN firmware we start the watchdog before we run the
+    // application code, to ensure we catch a bad firmare. If we get a
+    // watchdog reset and the firmware hasn't changed the RTC flag to
+    // indicate that it has been running OK for 30s then we will stay
+    // in bootloader
+    stm32_watchdog_init();
+    stm32_watchdog_pat();
+#endif
+
     flash_set_keep_unlocked(false);
     
     led_set(LED_OFF);
 
     // resetting the clocks is needed for loading NuttX
-    rccDisableAPB1(~0, 0);
-    rccDisableAPB2(~0, 0);
+#if defined(STM32H7)
+    rccDisableAPB1L(~0);
+    rccDisableAPB1H(~0);
+#else
+    rccDisableAPB1(~0);
+#endif
+    rccDisableAPB2(~0);
+#if HAL_USE_SERIAL_USB == TRUE    
     rccResetOTG_FS();
     rccResetOTG_HS();
+#endif
     
     // disable all interrupt sources
     port_disable();
@@ -270,8 +303,6 @@ failure_response(void)
     cout(data, sizeof(data));
 }
 
-static volatile unsigned cin_count;
-
 /**
  * Function to wait for EOC
  *
@@ -290,47 +321,82 @@ cout_word(uint32_t val)
     cout((uint8_t *)&val, 4);
 }
 
-static uint32_t
-crc32(const uint8_t *src, unsigned len, unsigned state)
+#define TEST_FLASH 0
+
+#if TEST_FLASH
+static void test_flash()
 {
-    static uint32_t crctab[256];
-
-    /* check whether we have generated the CRC table yet */
-    /* this is much smaller than a static table */
-    if (crctab[1] == 0) {
-        for (unsigned i = 0; i < 256; i++) {
-            uint32_t c = i;
-
-            for (unsigned j = 0; j < 8; j++) {
-                if (c & 1) {
-                    c = 0xedb88320U ^ (c >> 1);
-
-                } else {
-                    c = c >> 1;
+    uint32_t loop = 1;
+    bool init_done = false;
+    while (true) {
+        uint32_t addr = 0;
+        uint32_t page = 0;
+        while (true) {
+            uint32_t v[8];
+            for (uint8_t i=0; i<8; i++) {
+                v[i] = (page<<16) + loop;
+            }
+            if (flash_func_sector_size(page) == 0) {
+                continue;
+            }
+            uint32_t num_writes = flash_func_sector_size(page) / sizeof(v);
+            uprintf("page %u size %u addr=0x%08x v=0x%08x\n",
+                    page, flash_func_sector_size(page), addr, v[0]); delay(10);
+            if (init_done) {
+                for (uint32_t j=0; j<flash_func_sector_size(page)/4; j++) {
+                    uint32_t v1 = (page<<16) + (loop-1);
+                    uint32_t v2 = flash_func_read_word(addr+j*4);
+                    if (v2 != v1) {
+                        uprintf("read error at 0x%08x v=0x%08x v2=0x%08x\n", addr+j*4, v1, v2);
+                        break;
+                    }
                 }
             }
-
-            crctab[i] = c;
+            if (!flash_func_erase_sector(page)) {
+                uprintf("erase of %u failed\n", page);
+            }
+            for (uint32_t j=0; j<num_writes; j++) {
+                if (!flash_func_write_words(addr+j*sizeof(v), v, ARRAY_SIZE(v))) {
+                    uprintf("write failed at 0x%08x\n", addr+j*sizeof(v));
+                    break;
+                }
+            }
+            addr += flash_func_sector_size(page);
+            page++;
+            if (flash_func_sector_size(page) == 0) {
+                break;
+            }
         }
+        init_done = true;
+        delay(1000);
+        loop++;
     }
-
-    for (unsigned i = 0; i < len; i++) {
-        state = crctab[(state ^ src[i]) & 0xff] ^ (state >> 8);
-    }
-
-    return state;
 }
+#endif
 
 void
 bootloader(unsigned timeout)
 {
+#if TEST_FLASH
+    test_flash();
+#endif
+
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
-    uint32_t	first_word = 0xffffffff;
+    uint32_t	read_address = 0;
+    uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
     bool done_get_device = false;
+    bool done_erase = false;
+    static bool done_timer_init;
+    unsigned original_timeout = timeout;
 
-    chVTObjectInit(&systick_vt);
-    chVTSet(&systick_vt, MS2ST(1), sys_tick_handler, nullptr);
+    memset(first_words, 0xFF, sizeof(first_words));
+
+    if (!done_timer_init) {
+        done_timer_init = true;
+        chVTObjectInit(&systick_vt);
+        chVTSet(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
+    }
 
     /* if we are working with a timeout, start it running */
     if (timeout) {
@@ -359,7 +425,11 @@ bootloader(unsigned timeout)
 
             /* try to get a byte from the host */
             c = cin(0);
-
+#if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
+            if (c < 0) {
+                can_update();
+            }
+#endif
         } while (c < 0);
 
         led_on(LED_ACTIVITY);
@@ -402,6 +472,9 @@ bootloader(unsigned timeout)
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
+
+            // reset read pointer
+            read_address = 0;
 
             switch (arg) {
             case PROTO_DEVICE_BL_REV: {
@@ -449,12 +522,17 @@ bootloader(unsigned timeout)
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
             }
-            
+
             /* expect EOC */
             if (!wait_for_eoc(2)) {
                 goto cmd_bad;
             }
 
+            // once erase is done there is no going back, set timeout
+            // to zero
+            done_erase = true;
+            timeout = 0;
+            
             flash_set_keep_unlocked(true);
 
             // clear the bootloader LED while erasing - it stops blinking at random
@@ -463,7 +541,9 @@ bootloader(unsigned timeout)
 
             // erase all sectors
             for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
-                flash_func_erase_sector(i);
+                if (!flash_func_erase_sector(i)) {
+                    goto cmd_fail;
+                }
             }
 
             // enable the LED while verifying the erase
@@ -531,26 +611,20 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            if (address == 0) {
-                // save the first word and don't program it until everything else is done
-                first_word = flash_buffer.w[0];
-                // replace first word with bits we can overwrite later
-                flash_buffer.w[0] = 0xffffffff;
+            // save the first words and don't program it until everything else is done
+            if (address < sizeof(first_words)) {
+                uint8_t n = MIN(sizeof(first_words)-address, arg);
+                memcpy(&first_words[address/4], &flash_buffer.w[0], n);
+                // replace first words with 1 bits we can overwrite later
+                memset(&flash_buffer.w[0], 0xFF, n);
             }
 
             arg /= 4;
-            for (int i = 0; i < arg; i++) {
-                // program the word
-                flash_func_write_word(address, flash_buffer.w[i]);
-
-                // do immediate read-back verify
-                if (flash_func_read_word(address) != flash_buffer.w[i]) {
-                    goto cmd_fail;
-                }
-
-                address += 4;
+            // program the words
+            if (!flash_write_buffer(address, flash_buffer.w, arg)) {
+                goto cmd_fail;
             }
-
+            address += arg * 4;
             break;
 
         // fetch CRC of the entire flash area
@@ -564,20 +638,22 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
+            if (!flash_write_flush()) {
+                goto cmd_bad;
+            }
+
             // compute CRC of the programmed area
             uint32_t sum = 0;
 
             for (unsigned p = 0; p < board_info.fw_size; p += 4) {
                 uint32_t bytes;
 
-                if ((p == 0) && (first_word != 0xffffffff)) {
-                    bytes = first_word;
-
+                if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                    bytes = first_words[p/4];
                 } else {
                     bytes = flash_func_read_word(p);
                 }
-
-                sum = crc32((uint8_t *)&bytes, sizeof(bytes), sum);
+                sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
             }
 
             cout_word(sum);
@@ -705,6 +781,30 @@ bootloader(unsigned timeout)
         break;
 #endif
 
+        case PROTO_READ_MULTI: {
+            arg = cin(50);
+            if (arg < 0) {
+                goto cmd_bad;
+            }
+            if (arg % 4) {
+                goto cmd_bad;
+            }
+            if ((read_address + arg) > board_info.fw_size) {
+                goto cmd_bad;
+            }
+            // expect EOC
+            if (!wait_for_eoc(2)) {
+                goto cmd_bad;
+            }
+            arg /= 4;
+
+            while (arg-- > 0) {
+                cout_word(flash_func_read_word(read_address));
+                read_address += 4;
+            }
+            break;
+        }
+
         // finalise programming and boot the system
         //
         // command:			BOOT/EOC
@@ -717,16 +817,17 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
 
-            // program the deferred first word
-            if (first_word != 0xffffffff) {
-                flash_func_write_word(0, first_word);
+            if (!flash_write_flush()) {
+                goto cmd_fail;
+            }
 
-                if (flash_func_read_word(0) != first_word) {
+            // program the deferred first word
+            if (first_words[0] != 0xffffffff) {
+                if (!flash_write_buffer(0, first_words, RESERVE_LEAD_WORDS)) {
                     goto cmd_fail;
                 }
-
                 // revert in case the flash was bad...
-                first_word = 0xffffffff;
+                memset(first_words, 0xff, sizeof(first_words));
             }
 
             // send a sync and wait for it to be collected
@@ -741,7 +842,11 @@ bootloader(unsigned timeout)
             break;
 
 		case PROTO_SET_BAUD: {
-			/* expect arg then EOC */
+            if (!done_sync || !done_get_device) {
+                // prevent timeout going to zero on noise
+                goto cmd_bad;
+            }
+            /* expect arg then EOC */
             uint32_t baud = 0;
 
             if (cin_word(&baud, 100)) {
@@ -777,14 +882,22 @@ bootloader(unsigned timeout)
         // we got a good command on this port, lock to the port
         lock_bl_port();
         
-        // we got a command worth syncing, so kill the timeout because
-        // we are probably talking to the uploader
-        timeout = 0;
+        // once we get both a valid sync and valid get_device then kill
+        // the timeout
+        if (done_sync && done_get_device) {
+            timeout = 0;
+        }
 
         // send the sync response for this command
         sync_response();
         continue;
 cmd_bad:
+        // if we get a bad command it could be line noise on a
+        // uart. Set timeout back to original timeout so we don't get
+        // stuck in the bootloader
+        if (!done_erase) {
+            timeout = original_timeout;
+        }
         // send an 'invalid' response but don't kill the timeout - could be garbage
         invalid_response();
         continue;

@@ -21,22 +21,21 @@
 
 #include "NotifyDevice.h"
 
-#define HIGH 1
-#define LOW 0
-
 class AP_BoardLED2: public NotifyDevice
 {
 public:
     // initialise the LED driver
-    bool init(void);
+    bool init(void) override;
 
     // should be called at 50Hz
-    void update(void);
+    void update(void) override;
 
 private:
     // counter incremented at 50Hz
     uint8_t _counter;
+#if defined(HAL_GPIO_A_LED_PIN) && defined(HAL_GPIO_B_LED_PIN)
     uint16_t _sat_cnt;
     uint8_t save_trim_counter;
     uint8_t arm_counter = 0;
+#endif
 };

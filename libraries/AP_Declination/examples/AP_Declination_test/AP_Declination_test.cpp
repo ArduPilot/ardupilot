@@ -5,7 +5,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Declination/AP_Declination.h>
-#include <AP_Buffer/AP_Buffer.h>
 #include <Filter/Filter.h>
 
 void setup();

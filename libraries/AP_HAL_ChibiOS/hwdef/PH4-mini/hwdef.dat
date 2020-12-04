@@ -1,0 +1,46 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Holybro PH4-mini hardware.
+# This is a varient of fmuv5 without the IOMCU
+
+include ../fmuv5/hwdef.dat
+
+# we shift the system timer to TIM5 to allow
+# us to use TIM2 for extra PWM outputs
+STM32_ST_USE_TIMER 5
+
+# order of UARTs (and USB). Telem2 is UART4 on the mini, USART3 is not available
+SERIAL_ORDER OTG1 USART2 UART4 USART1 USART6 UART7 OTG2
+
+# enable TX on USART6 (disabled for fmuv5 with iomcu)
+PG14 USART6_TX USART6 NODMA
+
+# disable the IOMCU UART
+undef IOMCU_UART
+undef UART8_TX
+undef UART8_RX
+undef AP_FEATURE_SBUS_OUT
+
+# allow the first 3 capture ports to be used as PWM outputs or GPIOs
+undef PA5
+undef PB3
+undef PB11
+undef FMU_CAP1
+undef FMU_CAP2
+undef FMU_CAP3
+
+PA5  TIM2_CH1 TIM2 PWM(9)  GPIO(58)
+PB3  TIM2_CH2 TIM2 PWM(10) GPIO(59)
+PB11 TIM2_CH4 TIM2 PWM(11) GPIO(60)
+
+# RCInput on the PPM pin, for all protocols
+PI5 TIM8_CH1 TIM8 RCININT PULLUP LOW
+
+# setup for supplied power brick
+undef HAL_BATT_VOLT_SCALE
+define HAL_BATT_VOLT_SCALE 18.182
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 36.364
+
+# setup safety switch
+PE12 LED_SAFETY OUTPUT
+PE10 SAFETY_IN INPUT PULLDOWN

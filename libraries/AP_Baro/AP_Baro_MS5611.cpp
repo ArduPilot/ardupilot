@@ -18,6 +18,7 @@
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -81,9 +82,7 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_MS56XX: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // high retries for init
     _dev->set_retries(10);
@@ -135,6 +134,9 @@ bool AP_Baro_MS56XX::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_MS5611);
+    set_bus_id(_instance, _dev->get_bus_id());
+
     if (_ms56xx_type == BARO_MS5837) {
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
     }
@@ -148,34 +150,6 @@ bool AP_Baro_MS56XX::_init()
     _dev->register_periodic_callback(10 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_Baro_MS56XX::_timer, void));
     return true;
-}
-
-/**
- * MS56XX crc4 method from datasheet for 16 bytes (8 short values)
- */
-static uint16_t crc4(uint16_t *data)
-{
-    uint16_t n_rem = 0;
-    uint8_t n_bit;
-
-    for (uint8_t cnt = 0; cnt < 16; cnt++) {
-        /* uneven bytes */
-        if (cnt & 1) {
-            n_rem ^= (uint8_t)((data[cnt >> 1]) & 0x00FF);
-        } else {
-            n_rem ^= (uint8_t)(data[cnt >> 1] >> 8);
-        }
-
-        for (n_bit = 8; n_bit > 0; n_bit--) {
-            if (n_rem & 0x8000) {
-                n_rem = (n_rem << 1) ^ 0x3000;
-            } else {
-                n_rem = (n_rem << 1);
-            }
-        }
-    }
-
-    return (n_rem >> 12) & 0xF;
 }
 
 uint16_t AP_Baro_MS56XX::_read_prom_word(uint8_t word)
@@ -224,7 +198,7 @@ bool AP_Baro_MS56XX::_read_prom_5611(uint16_t prom[8])
     /* remove CRC byte */
     prom[7] &= 0xff00;
 
-    return crc_read == crc4(prom);
+    return crc_read == crc_crc4(prom);
 }
 
 bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
@@ -257,7 +231,7 @@ bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
     /* remove CRC byte */
     prom[0] &= ~0xf000;
 
-    return crc_read == crc4(prom);
+    return crc_read == crc_crc4(prom);
 }
 
 /*
@@ -291,9 +265,10 @@ void AP_Baro_MS56XX::_timer(void)
     }
 
     /* if we had a failed read we are all done */
-    if (adc_val == 0) {
+    if (adc_val == 0 || adc_val == 0xFFFFFF) {
         // a failed read can mean the next returned value will be
-        // corrupt, we must discard it
+        // corrupt, we must discard it. This copes with MISO being
+        // pulled either high or low
         _discard_next = true;
         return;
     }
@@ -304,19 +279,17 @@ void AP_Baro_MS56XX::_timer(void)
         return;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        if (_state == 0) {
-            _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
-                                         &_accum.d2_count, 32);
-        } else {
-            if (pressure_ok(adc_val)) {
-                _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
-                                             &_accum.d1_count, 128);
-            }
-        }
-        _sem->give();
-        _state = next_state;
+    WITH_SEMAPHORE(_sem);
+
+    if (_state == 0) {
+        _update_and_wrap_accumulator(&_accum.s_D2, adc_val,
+                                     &_accum.d2_count, 32);
+    } else if (pressure_ok(adc_val)) {
+        _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
+                                     &_accum.d1_count, 128);
     }
+    
+    _state = next_state;
 }
 
 void AP_Baro_MS56XX::_update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
@@ -335,22 +308,19 @@ void AP_Baro_MS56XX::update()
     uint32_t sD1, sD2;
     uint8_t d1count, d2count;
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
+    {
+        WITH_SEMAPHORE(_sem);
+
+        if (_accum.d1_count == 0) {
+            return;
+        }
+
+        sD1 = _accum.s_D1;
+        sD2 = _accum.s_D2;
+        d1count = _accum.d1_count;
+        d2count = _accum.d2_count;
+        memset(&_accum, 0, sizeof(_accum));
     }
-
-    if (_accum.d1_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    sD1 = _accum.s_D1;
-    sD2 = _accum.s_D2;
-    d1count = _accum.d1_count;
-    d2count = _accum.d2_count;
-    memset(&_accum, 0, sizeof(_accum));
-
-    _sem->give();
 
     if (d1count != 0) {
         _D1 = ((float)sD1) / d1count;

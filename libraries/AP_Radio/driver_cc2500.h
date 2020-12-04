@@ -87,21 +87,21 @@ enum {
 #define CC2500_SRES 0x30 // Reset chip.
 #define CC2500_SFSTXON                                                         \
     0x31 // Enable and calibrate frequency synthesizer (if MCSM0.FS_AUTOCAL=1).
-         // If in RX/TX: Go to a wait state where only the synthesizer is
-         // running (for quick RX / TX turnaround).
+// If in RX/TX: Go to a wait state where only the synthesizer is
+// running (for quick RX / TX turnaround).
 #define CC2500_SXOFF 0x32 // Turn off crystal oscillator.
 #define CC2500_SCAL 0x33  // Calibrate frequency synthesizer and turn it off
-                          // (enables quick start).
+// (enables quick start).
 #define CC2500_SRX                                                             \
     0x34 // Enable RX. Perform calibration first if coming from IDLE and
-         // MCSM0.FS_AUTOCAL=1.
+// MCSM0.FS_AUTOCAL=1.
 #define CC2500_STX                                                             \
     0x35 // In IDLE state: Enable TX. Perform calibration first if
-         // MCSM0.FS_AUTOCAL=1. If in RX state and CCA is enabled:
-         // Only go to TX if channel is clear.
+// MCSM0.FS_AUTOCAL=1. If in RX state and CCA is enabled:
+// Only go to TX if channel is clear.
 #define CC2500_SIDLE                                                           \
     0x36 // Exit RX / TX, turn off frequency synthesizer and exit
-         // Wake-On-Radio mode if applicable.
+// Wake-On-Radio mode if applicable.
 #define CC2500_SAFC 0x37 // Perform AFC adjustment of the frequency synthesizer
 #define CC2500_SWOR 0x38 // Start automatic RX polling sequence (Wake-on-Radio)
 #define CC2500_SPWD 0x39 // Enter power down mode when CSn goes high.
@@ -110,7 +110,7 @@ enum {
 #define CC2500_SWORRST 0x3C // Reset real time clock.
 #define CC2500_SNOP                                                            \
     0x3D // No operation. May be used to pad strobe commands to two
-         // bytes for simpler software.
+// bytes for simpler software.
 //----------------------------------------------------------------------------------
 // Chip Status Byte
 //----------------------------------------------------------------------------------
@@ -137,7 +137,8 @@ enum {
 #define CC2500_LQI_EST_BM 0x7F
 
 // CC2500 driver class
-class Radio_CC2500 {
+class Radio_CC2500
+{
 public:
     Radio_CC2500(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev);
 
@@ -154,13 +155,20 @@ public:
     void SetPower(uint8_t power);
     bool Reset(void);
 
-    bool lock_bus(void) {
-        return dev && dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    bool lock_bus(void)
+    {
+        if (!dev) {
+            return false;
+        }
+        dev->get_semaphore()->take_blocking();
+        return true;
     }
-    void unlock_bus(void) {
+    void unlock_bus(void)
+    {
         dev->get_semaphore()->give();
     }
 
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+    uint8_t last_power;
 };

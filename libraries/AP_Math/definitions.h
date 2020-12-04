@@ -73,6 +73,11 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 #define C_TO_KELVIN 273.15f
 
+#define M_PER_SEC_TO_KNOTS 1.94384449f
+#define KNOTS_TO_M_PER_SEC (1/M_PER_SEC_TO_KNOTS)
+
+#define KM_PER_HOUR_TO_M_PER_SEC 0.27777778f
+
 // Gas Constant is from Aerodynamics for Engineering Students, Third Edition, E.L.Houghton and N.B.Carruthers
 #define ISA_GAS_CONSTANT 287.26f
 #define ISA_LAPSE_RATE 0.0065f
@@ -82,6 +87,8 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define SSL_AIR_DENSITY         1.225f // kg/m^3
 #define SSL_AIR_PRESSURE 101325.01576f // Pascal
 #define SSL_AIR_TEMPERATURE    288.15f // K
+
+#define INCH_OF_H2O_TO_PASCAL 248.84f
 
 /*
   use AP_ prefix to prevent conflict with OS headers, such as NuttX
@@ -94,3 +101,11 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define AP_MSEC_PER_SEC   1000ULL
 #define AP_SEC_PER_WEEK   (7ULL * 86400ULL)
 #define AP_MSEC_PER_WEEK  (AP_SEC_PER_WEEK * AP_MSEC_PER_SEC)
+
+// speed and distance conversions
+#define KNOTS_TO_METERS_PER_SECOND 0.51444
+#define FEET_TO_METERS 0.3048
+
+// Convert amps milliseconds to milliamp hours
+// Amp.millisec to milliAmp.hour = 1/1E3(ms->s) * 1/3600(s->hr) * 1000(A->mA)
+#define AMS_TO_MAH 0.000277777778f

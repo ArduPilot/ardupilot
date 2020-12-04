@@ -25,4 +25,5 @@ AP_RPM_Backend::AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
         ap_rpm(_ap_rpm),
         state(_state) 
 {
+    state.instance = instance;
 }

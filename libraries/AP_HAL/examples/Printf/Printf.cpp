@@ -47,8 +47,10 @@ static const struct {
     { "%.1f", 10.6f, "10.6" },
 };
 
-static void test_printf(void)
+static void test_printf_floats(void)
 {
+    hal.console->printf("Starting Printf floats test\n");
+
     uint8_t i;
     char buf[30];
     uint8_t failures = 0;
@@ -73,6 +75,40 @@ static void test_printf(void)
         }
     }
     hal.console->printf("%u failures\n", (unsigned)failures);
+}
+
+static void test_printf_null_termination(void)
+{
+    hal.console->printf("Starting Printf null-termination tests\n");
+
+    {
+        char buf[10];
+        int ret = hal.util->snprintf(buf,sizeof(buf), "%s", "ABCDEABCDE");
+        const int want = 9;
+        if (ret != want) {
+            hal.console->printf("snprintf returned %d expected %d\n", ret, want);
+        }
+        if (!strncmp(buf, "ABCDEABCD", sizeof(buf))) {
+            hal.console->printf("Bad snprintf string (%s)\n", buf);
+        }
+    }
+    {
+        char buf[10];
+        int ret = hal.util->snprintf(buf,sizeof(buf), "ABCDEABCDE");
+        const int want = 9;
+        if (ret != want) {
+            hal.console->printf("snprintf returned %d expected %d\n", ret, want);
+        }
+        if (!strncmp(buf, "ABCDEABCD", sizeof(buf))) {
+            hal.console->printf("Bad snprintf string (%s)\n", buf);
+        }
+    }
+}
+
+static void test_printf(void)
+{
+    test_printf_floats();
+    test_printf_null_termination();
 }
 
 void loop(void)

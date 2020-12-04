@@ -1,16 +1,13 @@
 #include "AP_Mount_SToRM32.h"
+#if HAL_MOUNT_ENABLED
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
-    _initialised(false),
-    _sysid(0),
-    _compid(0),
-    _chan(MAVLINK_COMM_0),
-    _last_send(0)
+    _chan(MAVLINK_COMM_0)
 {}
 
 // update mount position - should be called periodically
@@ -50,6 +47,7 @@ void AP_Mount_SToRM32::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+            resend_now = true;
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
@@ -61,8 +59,13 @@ void AP_Mount_SToRM32::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true);
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+                resend_now = true;
+            }
+            break;
+
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true)) {
                 resend_now = true;
             }
             break;
@@ -97,8 +100,8 @@ void AP_Mount_SToRM32::set_mode(enum MAV_MOUNT_MODE mode)
     _state._mode = mode;
 }
 
-// status_msg - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_SToRM32::status_msg(mavlink_channel_t chan)
+// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
+void AP_Mount_SToRM32::send_mount_status(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.  To-Do: retrieve actual gimbal attitude and send these instead
     mavlink_msg_mount_status_send(chan, 0, 0, ToDeg(_angle_ef_target_rad.y)*100, ToDeg(_angle_ef_target_rad.x)*100, ToDeg(_angle_ef_target_rad.z)*100);
@@ -154,3 +157,4 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     // store time of send
     _last_send = AP_HAL::millis();
 }
+#endif // HAL_MOUNT_ENABLED

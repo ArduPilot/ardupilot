@@ -25,10 +25,10 @@ extern const AP_HAL::HAL& hal;
    constructor is not called until detect() returns true, so we
    already know that we should setup the rangefinder
 */
-AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state) :
-    AP_RangeFinder_Backend(_state)
+AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
 {
-    last_update_ms = AP_HAL::millis();
+    state.last_reading_ms = AP_HAL::millis();
     distance_cm = 0;
 }
 
@@ -46,14 +46,14 @@ bool AP_RangeFinder_MAVLink::detect()
 /*
    Set the distance based on a MAVLINK message
 */
-void AP_RangeFinder_MAVLink::handle_msg(mavlink_message_t *msg)
+void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
 {
     mavlink_distance_sensor_t packet;
-    mavlink_msg_distance_sensor_decode(msg, &packet);
+    mavlink_msg_distance_sensor_decode(&msg, &packet);
 
     // only accept distances for downward facing sensors
     if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
-        last_update_ms = AP_HAL::millis();
+        state.last_reading_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
     }
     sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
@@ -66,8 +66,8 @@ void AP_RangeFinder_MAVLink::update(void)
 {
     //Time out on incoming data; if we don't get new
     //data in 500ms, dump it
-    if(AP_HAL::millis() - last_update_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
-        set_status(RangeFinder::RangeFinder_NoData);
+    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_MAVLINK_TIMEOUT_MS) {
+        set_status(RangeFinder::Status::NoData);
         state.distance_cm = 0;
     } else {
         state.distance_cm = distance_cm;

@@ -25,148 +25,65 @@
 extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "RC_Channel.h"
-
-RC_Channel *RC_Channels::channels;
-bool RC_Channels::has_new_overrides;
-AP_Float *RC_Channels::override_timeout;
-
-const AP_Param::GroupInfo RC_Channels::var_info[] = {
-    // @Group: 1_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[0], "1_",  1, RC_Channels, RC_Channel),
-
-    // @Group: 2_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[1], "2_",  2, RC_Channels, RC_Channel),
-
-    // @Group: 3_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[2], "3_",  3, RC_Channels, RC_Channel),
-
-    // @Group: 4_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[3], "4_",  4, RC_Channels, RC_Channel),
-
-    // @Group: 5_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[4], "5_",  5, RC_Channels, RC_Channel),
-
-    // @Group: 6_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[5], "6_",  6, RC_Channels, RC_Channel),
-
-    // @Group: 7_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[6], "7_",  7, RC_Channels, RC_Channel),
-
-    // @Group: 8_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[7], "8_",  8, RC_Channels, RC_Channel),
-
-    // @Group: 9_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[8], "9_",  9, RC_Channels, RC_Channel),
-
-    // @Group: 10_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[9], "10_", 10, RC_Channels, RC_Channel),
-
-    // @Group: 11_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[10], "11_", 11, RC_Channels, RC_Channel),
-
-    // @Group: 12_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[11], "12_", 12, RC_Channels, RC_Channel),
-
-    // @Group: 13_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[12], "13_", 13, RC_Channels, RC_Channel),
-
-    // @Group: 14_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[13], "14_", 14, RC_Channels, RC_Channel),
-
-    // @Group: 15_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[14], "15_", 15, RC_Channels, RC_Channel),
-
-    // @Group: 16_
-    // @Path: RC_Channel.cpp
-    AP_SUBGROUPINFO(obj_channels[15], "16_", 16, RC_Channels, RC_Channel),
-
-    // @Param: _OVERRIDE_TIME
-    // @DisplayName: RC override timeout
-    // @Description: Timeout after which RC overrides will no longer be used, and RC input will resume, 0 will disable RC overrides
-    // @User: Advanced
-    // @Range: 0.0 120.0
-    // @Units: s
-    AP_GROUPINFO("_OVERRIDE_TIME", 32, RC_Channels, _override_timeout, 3.0),
-    
-    AP_GROUPEND
-};
-
 
 /*
   channels group object constructor
  */
 RC_Channels::RC_Channels(void)
 {
-    channels = obj_channels;
-
-    override_timeout = &_override_timeout;
-    
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
 
-    // setup ch_in on channels
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channels[i].ch_in = i;
+    if (_singleton != nullptr) {
+        AP_HAL::panic("RC_Channels must be singleton");
     }
+    _singleton = this;
 }
 
-uint16_t RC_Channels::get_radio_in(const uint8_t chan)
+void RC_Channels::init(void)
 {
-    if (chan >= NUM_RC_CHANNELS) {
-        return 0;
+    // setup ch_in on channels
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        channel(i)->ch_in = i;
     }
-    return channels[chan].get_radio_in();
+
+    init_aux_all();
 }
 
 uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 {
-    uint8_t read_channels = MIN(num_channels, NUM_RC_CHANNELS);
-    for (uint8_t i = 0; i < read_channels; i++) {
-        chans[i] = channels[i].get_radio_in();
-    }
+    memset(chans, 0, num_channels*sizeof(*chans));
 
-    // clear any excess channels we couldn't read
-    if (read_channels < num_channels) {
-        memset(&chans[NUM_RC_CHANNELS], 0, sizeof(uint16_t) * (num_channels - read_channels));
+    const uint8_t read_channels = MIN(num_channels, NUM_RC_CHANNELS);
+    for (uint8_t i = 0; i < read_channels; i++) {
+        chans[i] = channel(i)->get_radio_in();
     }
 
     return read_channels;
 }
 
-/*
-  call read() and set_pwm() on all channels if there is new data
- */
-bool
-RC_Channels::read_input(void)
+// update all the input channels
+bool RC_Channels::read_input(void)
 {
-    if (!hal.rcin->new_input() && !has_new_overrides) {
+    if (hal.rcin->new_input()) {
+        _has_had_rc_receiver = true;
+    } else if (!has_new_overrides) {
         return false;
     }
 
     has_new_overrides = false;
 
+    last_update_ms = AP_HAL::millis();
+
+    bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channels[i].set_pwm(channels[i].read());
+        success |= channel(i)->update();
     }
 
-    return true;
+    return success;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)
@@ -181,8 +98,9 @@ int16_t RC_Channels::get_receiver_rssi(void)
 
 void RC_Channels::clear_overrides(void)
 {
+    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        channels[i].clear_override();
+        _rc.channel(i)->clear_override();
     }
     // we really should set has_new_overrides to true, and rerun read_input from
     // the vehicle code however doing so currently breaks the failsafe system on
@@ -191,16 +109,17 @@ void RC_Channels::clear_overrides(void)
 
 void RC_Channels::set_override(const uint8_t chan, const int16_t value, const uint32_t timestamp_ms)
 {
+    RC_Channels &_rc = rc();
     if (chan < NUM_RC_CHANNELS) {
-        channels[chan].set_override(value, timestamp_ms);
-        has_new_overrides = true;
+        _rc.channel(chan)->set_override(value, timestamp_ms);
     }
 }
 
 bool RC_Channels::has_active_overrides()
 {
+    RC_Channels &_rc = rc();
     for (uint8_t i = 0; i < NUM_RC_CHANNELS; i++) {
-        if (channels[i].has_override()) {
+        if (_rc.channel(i)->has_override()) {
             return true;
         }
     }
@@ -211,4 +130,115 @@ bool RC_Channels::has_active_overrides()
 bool RC_Channels::receiver_bind(const int dsmMode)
 {
     return hal.rcin->rc_bind(dsmMode);
+}
+
+
+// support for auxillary switches:
+// read_aux_switches - checks aux switch positions and invokes configured actions
+void RC_Channels::read_aux_all()
+{
+    if (!has_valid_input()) {
+        // exit immediately when no RC input
+        return;
+    }
+    bool need_log = false;
+
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        need_log |= c->read_aux();
+    }
+    if (need_log) {
+        // guarantee that we log when a switch changes
+        AP::logger().Write_RCIN();
+    }
+}
+
+void RC_Channels::init_aux_all()
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        c->init_aux();
+    }
+    reset_mode_switch();
+}
+
+//
+// Support for mode switches
+//
+RC_Channel *RC_Channels::flight_mode_channel()
+{
+    const int8_t num = flight_mode_channel_number();
+    if (num <= 0) {
+        return nullptr;
+    }
+    if (num >= NUM_RC_CHANNELS) {
+        return nullptr;
+    }
+    return channel(num-1);
+}
+
+void RC_Channels::reset_mode_switch()
+{
+    RC_Channel *c = flight_mode_channel();
+    if (c == nullptr) {
+        return;
+    }
+    c->reset_mode_switch();
+}
+
+void RC_Channels::read_mode_switch()
+{
+    if (!has_valid_input()) {
+        // exit immediately when no RC input
+        return;
+    }
+    RC_Channel *c = flight_mode_channel();
+    if (c == nullptr) {
+        return;
+    }
+    c->read_mode_switch();
+}
+
+/*
+  get the RC input PWM value given a channel number.  Note that
+  channel numbers start at 1, as this API is designed for use in
+  LUA
+*/
+bool RC_Channels::get_pwm(uint8_t c, uint16_t &pwm) const
+{
+    RC_Channel *chan = rc_channel(c-1);
+    if (chan == nullptr) {
+        return false;
+    }
+    int16_t pwm_signed = chan->get_radio_in();
+    if (pwm_signed < 0) {
+        return false;
+    }
+    pwm = (uint16_t)pwm_signed;
+    return true;
+}
+
+// return mask of enabled protocols.
+uint32_t RC_Channels::enabled_protocols() const
+{
+    if (_singleton == nullptr) {
+        // for example firmware
+        return 1U;
+    }
+    return uint32_t(_protocols.get());
+}
+
+// singleton instance
+RC_Channels *RC_Channels::_singleton;
+
+
+RC_Channels &rc()
+{
+    return *RC_Channels::get_singleton();
 }

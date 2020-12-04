@@ -21,11 +21,10 @@ class uavcangen(Task.Task):
         out = self.env.get_flat('OUTPUT_DIR')
         src = self.env.get_flat('SRC')
         dsdlc = self.env.get_flat("DSDL_COMPILER")
-        input_dir = os.path.dirname(self.inputs[0].abspath())
+
         ret = self.exec_command(['{}'.format(python),
                                  '{}'.format(dsdlc),
-                                 '{}'.format(input_dir),
-                                 '-O{}'.format(out)])
+                                 '-O{}'.format(out)] + [x.abspath() for x in self.inputs])
 
         if ret != 0:
             # ignore if there was a signal to the interpreter rather

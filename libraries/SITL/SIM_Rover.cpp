@@ -23,14 +23,8 @@
 
 namespace SITL {
 
-SimRover::SimRover(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str),
-    max_speed(20),
-    max_accel(10),
-    max_wheel_turn(35),
-    turning_circle(1.8),
-    skid_turn_rate(140), // degrees/sec
-    skid_steering(false)
+SimRover::SimRover(const char *frame_str) :
+    Aircraft(frame_str)
 {
     skid_steering = strstr(frame_str, "skid") != nullptr;
 
@@ -148,6 +142,8 @@ void SimRover::update(const struct sitl_input &input)
 
     // new position vector
     position += velocity_ef * delta_time;
+
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

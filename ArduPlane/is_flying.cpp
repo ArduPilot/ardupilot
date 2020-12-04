@@ -14,7 +14,7 @@
 */
 void Plane::update_is_flying_5Hz(void)
 {
-    float aspeed;
+    float aspeed=0;
     bool is_flying_bool;
     uint32_t now_ms = AP_HAL::millis();
 
@@ -23,8 +23,16 @@ void Plane::update_is_flying_5Hz(void)
                                     (gps.ground_speed_cm() >= ground_speed_thresh_cm);
 
     // airspeed at least 75% of stall speed?
-    bool airspeed_movement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= (MAX(aparm.airspeed_min,2)*0.75f));
+    const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
+    bool airspeed_movement = ahrs.airspeed_estimate(aspeed) && (aspeed >= airspeed_threshold);
 
+    if (gps.status() < AP_GPS::GPS_OK_FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
+        // when flying with no GPS, use the last airspeed estimate to
+        // determine if we think we have airspeed movement. This
+        // prevents the crash detector from triggering when
+        // dead-reckoning under long GPS loss
+        airspeed_movement = aspeed >= airspeed_threshold;
+    }
 
     if (quadplane.is_flying()) {
         is_flying_bool = true;
@@ -45,7 +53,7 @@ void Plane::update_is_flying_5Hz(void)
                                 gps_confirmed_movement; // locked and we're moving
         }
 
-        if (control_mode == AUTO) {
+        if (control_mode == &mode_auto) {
             /*
               make is_flying() more accurate during various auto modes
              */
@@ -138,7 +146,7 @@ void Plane::update_is_flying_5Hz(void)
             started_flying_ms = now_ms;
         }
 
-        if ((control_mode == AUTO) &&
+        if ((control_mode == &mode_auto) &&
             ((auto_state.started_flying_in_auto_ms == 0) || !previous_is_flying) ) {
 
             // We just started flying, note that time also
@@ -146,20 +154,23 @@ void Plane::update_is_flying_5Hz(void)
         }
     }
     previous_is_flying = new_is_flying;
+#if HAL_ADSB_ENABLED
     adsb.set_is_flying(new_is_flying);
-#if FRSKY_TELEM_ENABLED == ENABLED
-    frsky_telemetry.set_is_flying(new_is_flying);
+#endif
+#if PARACHUTE == ENABLED
+    parachute.set_is_flying(new_is_flying);
 #endif
 #if STATS_ENABLED == ENABLED
     g2.stats.set_flying(new_is_flying);
 #endif
+    AP_Notify::flags.flying = new_is_flying;
 
     crash_detection_update();
 
     Log_Write_Status();
 
     // tell AHRS flying state
-    ahrs.set_likely_flying(new_is_flying);
+    set_likely_flying(new_is_flying);
 }
 
 /*
@@ -186,7 +197,7 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
-    if (control_mode != AUTO || !aparm.crash_detection_enable)
+    if (control_mode != &mode_auto || !aparm.crash_detection_enable)
     {
         // crash detection is only available in AUTO mode
         crash_state.debounce_timer_ms = 0;
@@ -215,7 +226,7 @@ void Plane::crash_detection_update(void)
 
                 // did we "crash" within 75m of the landing location? Probably just a hard landing
                 crashed_near_land_waypoint =
-                        get_distance(current_loc, mission.get_current_nav_cmd().content.location) < 75;
+                        current_loc.get_distance(mission.get_current_nav_cmd().content.location) < 75;
 
                 // trigger hard landing event right away, or never again. This inhibits a false hard landing
                 // event when, for example, a minute after a good landing you pick the plane up and
@@ -270,6 +281,12 @@ void Plane::crash_detection_update(void)
         crash_state.checkedHardLanding = false;
     }
 
+    // if we have no GPS lock and we don't have a functional airspeed
+    // sensor then don't do crash detection
+    if (gps.status() < AP_GPS::GPS_OK_FIX_3D && (!airspeed.use() || !airspeed.healthy())) {
+        crashed = false;
+    }
+
     if (!crashed) {
         // reset timer
         crash_state.debounce_timer_ms = 0;
@@ -280,23 +297,13 @@ void Plane::crash_detection_update(void)
 
     } else if ((now_ms - crash_state.debounce_timer_ms >= crash_state.debounce_time_total_ms) && !crash_state.is_crashed) {
         crash_state.is_crashed = true;
-
-        if (aparm.crash_detection_enable == CRASH_DETECT_ACTION_BITMASK_DISABLED) {
-            if (crashed_near_land_waypoint) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected. No action taken");
-            } else {
-                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected. No action taken");
-            }
+        if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
+            arming.disarm(AP_Arming::Method::CRASH);
         }
-        else {
-            if (aparm.crash_detection_enable & CRASH_DETECT_ACTION_BITMASK_DISARM) {
-                disarm_motors();
-            }
-            if (crashed_near_land_waypoint) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
-            } else {
-                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
-            }
+        if (crashed_near_land_waypoint) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Hard landing detected");
+        } else {
+            gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash detected");
         }
     }
 }
@@ -304,12 +311,14 @@ void Plane::crash_detection_update(void)
 /*
  * return true if we are in a pre-launch phase of an auto-launch, typically used in bungee launches
  */
-bool Plane::in_preLaunch_flight_stage(void) {
-    return (control_mode == AUTO &&
+bool Plane::in_preLaunch_flight_stage(void)
+{
+    if (control_mode == &mode_takeoff && throttle_suppressed) {
+        return true;
+    }
+    return (control_mode == &mode_auto &&
             throttle_suppressed &&
             flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
             mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF &&
             !quadplane.is_vtol_takeoff(mission.get_current_nav_cmd().id));
 }
-
-

@@ -12,16 +12,14 @@ public:
     ADCSource(SITL_State *sitlState, int16_t pin);
 
     /* implement AnalogSource virtual api: */
-    float read_average();
-    float read_latest();
-    void set_pin(uint8_t p);
-    float voltage_average();
-    float voltage_latest();
-    float voltage_average_ratiometric() {
+    float read_average() override;
+    float read_latest() override;
+    void set_pin(uint8_t p) override;
+    float voltage_average() override;
+    float voltage_latest() override;
+    float voltage_average_ratiometric() override {
         return voltage_average();
     }
-    void set_stop_pin(uint8_t pin) {}
-    void set_settle_time(uint16_t settle_time_ms) {}
 
 private:
     SITL_State *_sitlState;
@@ -33,9 +31,9 @@ private:
 class HALSITL::AnalogIn : public AP_HAL::AnalogIn {
 public:
     explicit AnalogIn(SITL_State *sitlState): _sitlState(sitlState) {}
-    void init();
-    AP_HAL::AnalogSource* channel(int16_t n);
-    float board_voltage(void) {
+    void init() override;
+    AP_HAL::AnalogSource* channel(int16_t n) override;
+    float board_voltage(void) override {
         return 5.0f;
     }
 private:

@@ -92,30 +92,32 @@ bool SocketAPM::bind(const char *address, uint16_t port)
 /*
   set SO_REUSEADDR
  */
-void SocketAPM::reuseaddress(void)
+bool SocketAPM::reuseaddress(void)
 {
     int one = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
 }
 
 /*
   set blocking state
  */
-void SocketAPM::set_blocking(bool blocking)
+bool SocketAPM::set_blocking(bool blocking)
 {
+    int fcntl_ret;
     if (blocking) {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
     } else {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
     }
+    return fcntl_ret != -1;
 }
 
 /*
   set cloexec state
  */
-void SocketAPM::set_cloexec()
+bool SocketAPM::set_cloexec()
 {
-    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
 }
 
 /*

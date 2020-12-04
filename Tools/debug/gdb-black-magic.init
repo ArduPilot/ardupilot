@@ -1,0 +1,18 @@
+# copy the file to .gdbinit in your Firmware tree, and adjust the path
+# below to match your system
+
+# using ttyBmpGdb is appropriate if you have setup udev to
+# automatically create a link when a black magic probe is
+# inserted. See 99-blackmagic.rules in this directory
+target extended /dev/ttyBmpGdb
+monitor swdp_scan
+attach 1
+
+#monitor vector_catch disable hard
+set mem inaccessible-by-default off
+set print pretty
+
+b AP_HAL::panic
+b HardFault_Handler
+b chSysHalt
+set confirm off

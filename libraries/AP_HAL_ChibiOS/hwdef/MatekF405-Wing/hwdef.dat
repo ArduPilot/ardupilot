@@ -2,13 +2,18 @@
 # Matek F405-Wing, developed by David Ingraham
 # Board configuration borrowed from Inav F405SE target
 
-# There is currently an issue with UART Mapping. For now, reference the table below:
-#-----------------------------------------------------------------------------------
-# Serial1 - T3/R3
-# Serial2 - T4/R4
-# Serial3 - T1/R1
-# Serial4 - T5/R5
-# Serial5 - T6/R6
+# Read hwdef/fmuv3/hwdef.dat for more info on these options
+
+# SerialX ports are mapped as printed on the top board
+# R1/T1 -> Serial1
+# R2 -> Sbus (T2 not currently used or available)
+# R3/T3 -> Serial3
+# R4/T4 -> Serial4
+# R5/T5 -> Serial5
+# R6/T6 -> Serial6
+
+# Note: UART4/Serial4, UART5/Serial5, USART6/Serial6 have no DMA on RX (TX always DMA).
+# If sending highspeed serial data (eg. 921600 baud) to the board, use Serial1/Serial3.
 
 #################################################
 ###             MCU CONFIGURATION             ###
@@ -17,14 +22,11 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_MATEKF405WING
-
 # board ID for firmware load
 APJ_BOARD_ID 127
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
-STM32_PLLM_VALUE 8
 
 define STM32_ST_USE_TIMER 5
 define CH_CFG_ST_RESOLUTION 32
@@ -36,15 +38,12 @@ FLASH_SIZE_KB 1024
 define HAL_STORAGE_SIZE 15360
 define STORAGE_FLASH_PAGE 1
 
-# board voltage
-STM32_VDD 330U
 
 # I2C Buses
 I2C_ORDER I2C1 I2C2
 
 # order of UARTs
-UART_ORDER OTG1 USART1 USART3 UART4 UART5 USART6
-
+SERIAL_ORDER OTG1 USART1 EMPTY USART3 UART4 UART5 USART6 USART2
 
 #################################################
 ###             PIN DEFINITIONS               ###
@@ -53,10 +52,12 @@ UART_ORDER OTG1 USART1 USART3 UART4 UART5 USART6
 PA0 UART4_TX UART4
 PA1 UART4_RX UART4
 
-# USART 2 is used for RC Input
-# PA2 USART2_TX USART2
-# PA3 USART2_RX USART2
-PA3 TIM2_CH4 TIM2 RCININT FLOAT LOW
+# default to timer for RC input
+PA3 TIM9_CH2 TIM9 RCININT FLOAT LOW
+
+# alternative using USART2
+PA2 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA ALT(1)
 
 PA4 MPU_CS CS
 
@@ -79,15 +80,17 @@ define HAL_GPIO_B_LED_PIN 1
 
 
 #pwm output
-PB7  TIM4_CH2  TIM4 PWM(1) GPIO(59)
-PB6  TIM4_CH1  TIM4 PWM(2) GPIO(58)
-PB0  TIM3_CH3  TIM3 PWM(3) GPIO(26)
-PB1  TIM3_CH4  TIM3 PWM(4) GPIO(27)
-PC8  TIM8_CH3  TIM8 PWM(5) GPIO(39)
-PC9  TIM8_CH4  TIM8 PWM(6) GPIO(40)
-PB14 TIM1_CH2N TIM1 PWM(7) GPIO(35)
-PB15 TIM1_CH3N TIM1 PWM(8) GPIO(36)
-PA8  TIM1_CH1  TIM1 PWM(9) GPIO(41)
+PB7  TIM4_CH2  TIM4 PWM(1) GPIO(50)
+PB6  TIM4_CH1  TIM4 PWM(2) GPIO(51)
+PB0  TIM3_CH3  TIM3 PWM(3) GPIO(52)
+PB1  TIM3_CH4  TIM3 PWM(4) GPIO(53)
+PC8  TIM8_CH3  TIM8 PWM(5) GPIO(54)
+PC9  TIM8_CH4  TIM8 PWM(6) GPIO(55)
+PB14 TIM1_CH2N TIM1 PWM(7) GPIO(56)
+PB15 TIM1_CH3N TIM1 PWM(8) GPIO(57)
+PA8  TIM1_CH1  TIM1 PWM(9) GPIO(58)
+PA15 TIM2_CH1  TIM2 PWM(10) GPIO(59) #on LED pin,allows odd motor groups
+
 
 # SD CARD SPI
 PB3 SPI3_SCK SPI3
@@ -141,35 +144,52 @@ SPIDEV osd SPI2 DEVID2 OSD_CS MODE0 10*MHZ 10*MHZ
 # SD Card on SPI
 SPIDEV sdcard SPI3 DEVID3 SDCARD_CS MODE0 400*KHZ 25*MHZ
 
-# Baro on I2C
-define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
-define HAL_BARO_BMP280_BUS 0
-define HAL_BARO_BMP280_I2C_ADDR 0x76
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
-define HAL_INS_DEFAULT HAL_INS_MPU60XX_SPI
-define HAL_INS_DEFAULT_ROTATION ROTATION_YAW_180
+# one baro, multiple possible choices for different board varients
+BARO BMP280 I2C:0:0x76
+BARO DPS280 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-define HAL_DATAFLASH_FILE_BUFSIZE 8
-define HAL_DATAFLASH_MAV_BUFSIZE 2
+
+# define default battery setup
+define HAL_BATT_MONITOR_DEFAULT 4
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 31.7
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_HMC5843
-define HAL_COMPASS_HMC5843_I2C_BUS 1
-define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-define HAL_COMPASS_HMC5843_ROTATION ROTATION_YAW_90
+#analog rssi pin (also could be used as analog airspeed input)
+# PC5 - ADC12_CH15
+define BOARD_RSSI_ANA_PIN 15
 
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
 define ALLOW_ARM_NO_COMPASS
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-define OSD_ENABLED ENABLED
-ROMFS osd_font.bin libraries/AP_OSD/fonts/clarity.bin
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define BOARD_PWM_COUNT_DEFAULT 9
+define BOARD_PWM_COUNT_DEFAULT 10
 
 define STM32_PWM_USE_ADVANCED TRUE
 
+# disable SMBUS and fuel battery monitors to save flash
+define HAL_BATTMON_SMBUS_ENABLE 0
+define HAL_BATTMON_FUEL_ENABLE 0
+
+# disable parachute and sprayer to save flash
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+
+# reduce max size of embedded params for apj_tool.py
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+define HAL_WITH_DSP FALSE

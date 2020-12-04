@@ -1,32 +1,58 @@
 /*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  *       Example of APM_Compass library (HMC5843 sensor).
  *       Code by Jordi MuÒoz and Jose Julio. DIYDrones.com
  */
 
-#include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static AP_BoardConfig board_config;
+
+class DummyVehicle {
+public:
+    AP_AHRS_DCM ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
+    AP_Baro baro; // Compass tries to set magnetic model based on location.
+};
+
+static DummyVehicle vehicle;
+// create compass object
 static Compass compass;
+static AP_SerialManager serial_manager;
 
 uint32_t timer;
 
+// to be called only once on boot for initializing objects
 static void setup()
 {
     hal.console->printf("Compass library test\n");
 
     board_config.init();
-
-    if (!compass.init()) {
-        AP_HAL::panic("compass initialisation failed!");
-    }
+    vehicle.ahrs.init();
+    compass.init();
     hal.console->printf("init done - %u compasses detected\n", compass.get_count());
 
     // set offsets to account for surrounding interference
-    compass.set_and_save_offsets(0, 0, 0, 0);
+    compass.set_and_save_offsets(0, Vector3f(0, 0, 0));
     // set local difference between magnetic north and true north
     compass.set_declination(ToRad(0.0f));
 
@@ -34,6 +60,7 @@ static void setup()
     timer = AP_HAL::micros();
 }
 
+// loop
 static void loop()
 {
     static const uint8_t compass_count = compass.get_count();
@@ -41,8 +68,7 @@ static void loop()
     static float max[COMPASS_MAX_INSTANCES][3];
     static float offset[COMPASS_MAX_INSTANCES][3];
 
-    compass.accumulate();
-
+    // run read() at 10Hz
     if ((AP_HAL::micros() - timer) > 100000L) {
         timer = AP_HAL::micros();
         compass.read();
@@ -98,6 +124,8 @@ static void loop()
             hal.console->printf("\n");
         }
     } else {
+
+        // if stipulated time has not passed between two distinct readings, delay the program for a millisecond
         hal.scheduler->delay(1);
     }
 }

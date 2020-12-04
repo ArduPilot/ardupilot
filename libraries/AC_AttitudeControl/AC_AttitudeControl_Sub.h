@@ -31,9 +31,9 @@ public:
     virtual ~AC_AttitudeControl_Sub() {}
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() { return _pid_rate_yaw; }
+    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -49,16 +49,16 @@ public:
     //  has no effect when throttle is above hover throttle
     void set_throttle_mix_min() override { _throttle_rpy_mix_desired = _thr_mix_min; }
     void set_throttle_mix_man() override { _throttle_rpy_mix_desired = _thr_mix_man; }
-    void set_throttle_mix_max() override { _throttle_rpy_mix_desired = _thr_mix_max; }
+    void set_throttle_mix_max(float ratio) override { _throttle_rpy_mix_desired = _thr_mix_max; }
 
     // are we producing min throttle?
     bool is_throttle_mix_min() const override { return (_throttle_rpy_mix < 1.25f*_thr_mix_min); }
 
     // run lowest level body-frame rate controller and send outputs to the motors
-    void rate_controller_run();
+    void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off
-    void parameter_sanity_check();
+    void parameter_sanity_check() override;
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];

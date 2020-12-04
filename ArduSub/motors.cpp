@@ -6,128 +6,13 @@ void Sub::enable_motor_output()
     motors.output_min();
 }
 
-// init_arm_motors - performs arming process including initialisation of barometer and gyros
-//  returns false if arming failed because of pre-arm checks, arming checks or a gyro calibration failure
-bool Sub::init_arm_motors(AP_Arming::ArmingMethod method)
-{
-    static bool in_arm_motors = false;
-
-    // exit immediately if already in this function
-    if (in_arm_motors) {
-        return false;
-    }
-
-    in_arm_motors = true;
-
-    if (!arming.pre_arm_checks(true)) {
-        AP_Notify::events.arming_failed = true;
-        in_arm_motors = false;
-        return false;
-    }
-
-    // let dataflash know that we're armed (it may open logs e.g.)
-    DataFlash_Class::instance()->set_vehicle_armed(true);
-
-    // disable cpu failsafe because initialising everything takes a while
-    mainloop_failsafe_disable();
-
-    // notify that arming will occur (we do this early to give plenty of warning)
-    AP_Notify::flags.armed = true;
-    // call notify update a few times to ensure the message gets out
-    for (uint8_t i=0; i<=10; i++) {
-        notify.update();
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Arming motors");
-#endif
-
-    initial_armed_bearing = ahrs.yaw_sensor;
-
-    if (!ahrs.home_is_set()) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-
-        // Always use absolute altitude for ROV
-        // ahrs.resetHeightDatum();
-        // Log_Write_Event(DATA_EKF_ALT_RESET);
-    } else if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
-        // Reset home position if it has already been set before (but not locked)
-        set_home_to_current_location(false);
-    }
-	
-    // enable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(true);
-    hal.util->set_soft_armed(true);
-
-    // enable output to motors
-    enable_motor_output();
-
-    // finally actually arm the motors
-    motors.armed(true);
-
-    // log arming to dataflash
-    Log_Write_Event(DATA_ARMED);
-
-    // log flight mode in case it was changed while vehicle was disarmed
-    DataFlash.Log_Write_Mode(control_mode, control_mode_reason);
-
-    // reenable failsafe
-    mainloop_failsafe_enable();
-
-    // perf monitor ignores delay due to arming
-    scheduler.perf_info.ignore_this_loop();
-
-    // flag exiting this function
-    in_arm_motors = false;
-
-    // return success
-    return true;
-}
-
-// init_disarm_motors - disarm motors
-void Sub::init_disarm_motors()
-{
-    // return immediately if we are already disarmed
-    if (!motors.armed()) {
-        return;
-    }
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    gcs().send_text(MAV_SEVERITY_INFO, "Disarming motors");
-#endif
-
-    // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LEARN_EKF) {
-        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                compass.set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
-
-    // log disarm to the dataflash
-    Log_Write_Event(DATA_DISARMED);
-
-    // send disarm command to motors
-    motors.armed(false);
-
-    // reset the mission
-    mission.reset();
-
-    DataFlash_Class::instance()->set_vehicle_armed(false);
-
-    // disable gps velocity based centrefugal force compensation
-    ahrs.set_correct_centrifugal(false);
-    hal.util->set_soft_armed(false);
-
-    // clear input holds
-    clear_input_hold();
-}
-
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Sub::motors_output()
 {
+    // Motor detection mode controls the thrusters directly
+    if (control_mode == MOTOR_DETECT){
+        return;
+    }
     // check if we are performing the motor test
     if (ap.motor_test) {
         verify_motor_test();
@@ -147,7 +32,8 @@ bool Sub::init_motor_test()
     // Ten second cooldown period required with no do_set_motor requests required
     // after failure.
     if (tnow < last_do_motor_test_fail_ms + 10000 && last_do_motor_test_fail_ms > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cool down required");
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "10 second cooldown required after motor test");
+        return false;
     }
 
     // check if safety switch has been pushed
@@ -178,7 +64,7 @@ bool Sub::verify_motor_test()
 
     // Require at least 2 Hz incoming do_set_motor requests
     if (AP_HAL::millis() > last_do_motor_test_ms + 500) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Motor test timed out!");
+        gcs().send_text(MAV_SEVERITY_INFO, "Motor test timed out!");
         pass = false;
     }
 
@@ -196,10 +82,19 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     last_do_motor_test_ms = AP_HAL::millis();
 
     // If we are not already testing motors, initialize test
+    static uint32_t tLastInitializationFailed = 0;
     if(!ap.motor_test) {
-        if (!init_motor_test()) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
-            return false; // init fail
+        // Do not allow initializations attempt under 2 seconds
+        // If one fails, we need to give the user time to fix the issue
+        // instead of spamming error messages
+        if (AP_HAL::millis() > (tLastInitializationFailed + 2000)) {
+            if (!init_motor_test()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "motor test initialization failed!");
+                tLastInitializationFailed = AP_HAL::millis();
+                return false; // init fail
+            }
+        } else {
+            return false;
         }
     }
 

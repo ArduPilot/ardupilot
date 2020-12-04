@@ -25,6 +25,7 @@
 #include "UDPDevice.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL/utility/packetise.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -78,7 +79,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (!_connected) {
         _connected = _device->open();
-        _device->set_blocking(false);
+        if (_connected) {
+            _device->set_blocking(false);
+        }
     }
     _initialised = false;
 
@@ -86,9 +89,20 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     _device->set_speed(b);
 
-    _baudrate = b;
+    bool clear_buffers = false;
+    if (b != 0) {
+        if (_baudrate != b && hal.console != this) {
+            clear_buffers = true;
+        }
+        _baudrate = b;
+    }
 
     _allocate_buffers(rxS, txS);
+
+    if (clear_buffers) {
+        _readbuf.clear();
+        _writebuf.clear();
+    }
 }
 
 void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
@@ -107,10 +121,6 @@ void UARTDriver::_allocate_buffers(uint16_t rxS, uint16_t txS)
 
     if (_writebuf.set_size(txS) && _readbuf.set_size(rxS)) {
         _initialised = true;
-    }
-    if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
-        _readbuf.clear();
-        _writebuf.clear();
     }
 }
 
@@ -283,20 +293,35 @@ int16_t UARTDriver::read()
     return byte;
 }
 
+bool UARTDriver::discard_input()
+{
+    if (!_initialised) {
+        return false;
+    }
+    _readbuf.clear();
+    return true;
+}
+
 /* Linux implementations of Print virtual methods */
 size_t UARTDriver::write(uint8_t c)
 {
     if (!_initialised) {
         return 0;
     }
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
+    }
 
     while (_writebuf.space() == 0) {
         if (_nonblocking_writes) {
+            _write_mutex.give();
             return 0;
         }
         hal.scheduler->delay(1);
     }
-    return _writebuf.write(&c, 1);
+    size_t ret = _writebuf.write(&c, 1);
+    _write_mutex.give();
+    return ret;
 }
 
 /*
@@ -307,10 +332,14 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     if (!_initialised) {
         return 0;
     }
+    if (!_write_mutex.take_nonblocking()) {
+        return 0;
+    }
     if (!_nonblocking_writes) {
         /*
           use the per-byte delay loop in write() above for blocking writes
          */
+        _write_mutex.give();
         size_t ret = 0;
         while (size--) {
             if (write(*buffer++) != 1) break;
@@ -319,7 +348,9 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return ret;
     }
 
-    return _writebuf.write(buffer, size);
+    size_t ret = _writebuf.write(buffer, size);
+    _write_mutex.give();
+    return ret;
 }
 
 /*
@@ -359,58 +390,10 @@ bool UARTDriver::_write_pending_bytes(void)
     // write any pending bytes
     uint32_t available_bytes = _writebuf.available();
     uint16_t n = available_bytes;
-    int16_t b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        b != MAVLINK_STX_MAVLINK1 && b != MAVLINK_STX) {
-        /*
-          we have a non-mavlink packet at the start of the
-          buffer. Look ahead for a MAVLink start byte, up to 256 bytes
-          ahead
-         */
-        uint16_t limit = n>256?256:n;
-        uint16_t i;
-        for (i=0; i<limit; i++) {
-            b = _writebuf.peek(i);
-            if (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX) {
-                n = i;
-                break;
-            }
-        }
-        // if we didn't find a MAVLink marker then limit the send size to 256
-        if (i == limit) {
-            n = limit;
-        }
-    }
-    b = _writebuf.peek(0);
-    if (_packetise && n > 0 &&
-        (b == MAVLINK_STX_MAVLINK1 || b == MAVLINK_STX)) {
-        uint8_t min_length = (b == MAVLINK_STX_MAVLINK1)?8:12;
-        // this looks like a MAVLink packet - try to write on
-        // packet boundaries when possible
-        if (n < min_length) {
-            // we need to wait for more data to arrive
-            n = 0;
-        } else {
-            // the length of the packet is the 2nd byte, and mavlink
-            // packets have a 6 byte header plus 2 byte checksum,
-            // giving len+8 bytes
-            int16_t len = _writebuf.peek(1);
-            if (b == MAVLINK_STX) {
-                // check for signed packet with extra 13 bytes
-                int16_t incompat_flags = _writebuf.peek(2);
-                if (incompat_flags & MAVLINK_IFLAG_SIGNED) {
-                    min_length += MAVLINK_SIGNATURE_BLOCK_LEN;
-                }
-            }
-            if (n < len+min_length) {
-                // we don't have a full packet yet
-                n = 0;
-            } else if (n > len+min_length) {
-                // send just 1 packet at a time (so MAVLink packets
-                // are aligned on UDP boundaries)
-                n = len+min_length;
-            }
-        }
+
+    if (_packetise && n > 0) {
+        // send on MAVLink packet boundaries if possible
+        n = mavlink_packetise(_writebuf, n);
     }
 
     if (n > 0) {
@@ -483,6 +466,10 @@ void UARTDriver::_timer_tick(void)
     }
 
     _in_timer = false;
+}
+
+void UARTDriver::configure_parity(uint8_t v) {
+    _device->set_parity(v);
 }
 
 /*

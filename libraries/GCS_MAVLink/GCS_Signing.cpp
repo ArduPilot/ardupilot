@@ -63,11 +63,18 @@ bool GCS_MAVLINK::signing_key_load(struct SigningKey &key)
 /*
   handle a setup_signing message
  */
-void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
+void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg)
 {
+    // setting up signing key when armed generally not useful /
+    // possibly not a good idea
+    if (hal.util->get_soft_armed()) {
+        send_text(MAV_SEVERITY_WARNING, "ERROR: Won't setup signing when armed");
+        return;
+    }
+
     // decode
     mavlink_setup_signing_t packet;
-    mavlink_msg_setup_signing_decode(msg, &packet);
+    mavlink_msg_setup_signing_decode(&msg, &packet);
 
     struct SigningKey key;
     key.magic = SIGNING_KEY_MAGIC;
@@ -75,12 +82,18 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t *msg)
     memcpy(key.secret_key, packet.secret_key, 32);
 
     if (!signing_key_save(key)) {
-        hal.console->printf("Failed to save signing key");
+        send_text(MAV_SEVERITY_WARNING, "ERROR: Failed to save signing key");
         return;
     }
 
-    // activate it immediately
-    load_signing_key();
+    // activate it immediately on all links:
+    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+        GCS_MAVLINK *backend = gcs().chan(i);
+        if (backend == nullptr) {
+            return;
+        }
+        backend->load_signing_key();
+    }
 }
 
 
@@ -138,22 +151,16 @@ void GCS_MAVLINK::load_signing_key(void)
     for (uint8_t i=0; i<sizeof(key.secret_key); i++) {
         if (signing.secret_key[i] != 0) {
             all_zero = false;
+            break;
         }
     }
-    
-    // enable signing on all channels
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        mavlink_status_t *cstatus = mavlink_get_channel_status((mavlink_channel_t)(MAVLINK_COMM_0 + i));
-        if (cstatus != nullptr) {
-            if (all_zero) {
-                // disable signing
-                cstatus->signing = nullptr;
-                cstatus->signing_streams = nullptr;
-            } else {
-                cstatus->signing = &signing;
-                cstatus->signing_streams = &signing_streams;
-            }
-        }
+    if (all_zero) {
+        // disable signing
+        status->signing = nullptr;
+        status->signing_streams = nullptr;
+    } else {
+        status->signing = &signing;
+        status->signing_streams = &signing_streams;
     }
 }
 

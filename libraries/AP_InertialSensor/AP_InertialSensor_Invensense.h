@@ -39,11 +39,11 @@ public:
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                            enum Rotation rotation = ROTATION_NONE);
+                                            enum Rotation rotation);
 
     /* update accel and gyro state */
     bool update() override;
@@ -56,12 +56,16 @@ public:
 
     void start() override;
 
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
+
     enum Invensense_Type {
         Invensense_MPU6000=0,
         Invensense_MPU6500,
         Invensense_MPU9250,
         Invensense_ICM20608,
         Invensense_ICM20602,
+        Invensense_ICM20601,
         Invensense_ICM20789,
         Invensense_ICM20689,
     };
@@ -82,7 +86,7 @@ private:
     bool _check_whoami();
 
     void _set_filter_register(void);
-    void _fifo_reset();
+    void _fifo_reset(bool log_error);
     bool _has_auxiliary_bus();
 
     /* Read samples from FIFO (FIFO enabled) */
@@ -111,15 +115,18 @@ private:
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
-    float temp_sensitivity = 1.0/340; // degC/LSB
-    float temp_zero = 36.53; // degC
+    float temp_sensitivity = 1.0f/340; // degC/LSB
+    float temp_zero = 36.53f; // degC
     
     float _temp_filtered;
     float _accel_scale;
+    float _gyro_scale;
 
     float _fifo_accel_scale;
     float _fifo_gyro_scale;
     LowPassFilter2pFloat _temp_filter;
+    uint32_t last_reset_ms;
+    uint8_t reset_count;
 
     enum Rotation _rotation;
 
@@ -133,11 +140,20 @@ private:
     // are we doing more than 1kHz sampling?
     bool _fast_sampling;
 
-    // what downsampling rate are we using from the FIFO?
-    uint8_t _fifo_downsample_rate;
+    // what downsampling rate are we using from the FIFO for gyros?
+    uint8_t _gyro_fifo_downsample_rate;
 
-    // what rate are we generating samples into the backend?
-    uint16_t _backend_rate_hz;
+    // what downsampling rate are we using from the FIFO for accels?
+    uint8_t _accel_fifo_downsample_rate;
+
+    // ratio of raw gyro to accel sample rate
+    uint8_t _gyro_to_accel_sample_ratio;
+
+    // what rate are we generating samples into the backend for gyros?
+    uint16_t _gyro_backend_rate_hz;
+
+    // what rate are we generating samples into the backend for accels?
+    uint16_t _accel_backend_rate_hz;
 
     // Last status from register user control
     uint8_t _last_stat_user_ctrl;    
@@ -152,9 +168,9 @@ private:
     struct {
         Vector3f accel;
         Vector3f gyro;
-        uint8_t count;
+        uint8_t accel_count;
+        uint8_t gyro_count;
         LowPassFilterVector3f accel_filter{4000, 188};
-        LowPassFilterVector3f gyro_filter{8000, 188};
     } _accum;
 };
 

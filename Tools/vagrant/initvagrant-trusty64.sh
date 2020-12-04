@@ -8,7 +8,7 @@ set -u
 
 echo "Initial setup of SITL-vagrant instance."
 
-/vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+/vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 
 # extra packages we desire on the VM but aren't prereqs for AP compilation:
 sudo apt-get install -y valgrind gdb
@@ -20,7 +20,7 @@ source /vagrant/Tools/vagrant/shellinit.sh
 # This allows the PX4NuttX build to proceed when the underlying fs is on windows
 # It is only marginally less efficient on Linux
 export PX4_WINTOOL=y
-export PATH=\$PATH:\$HOME/jsbsim/src
+export PATH=\$PATH:\$HOME/jsbsim/build/src
 export BUILDLOGS=/tmp/buildlogs
 "
 

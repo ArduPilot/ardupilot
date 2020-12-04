@@ -7,7 +7,6 @@ extern const AP_HAL::HAL& hal;
 AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
     _frontend(baro) 
 {
-    _sem = hal.util->new_semaphore();    
 }
 
 void AP_Baro_Backend::update_healthy_flag(uint8_t instance)
@@ -15,9 +14,7 @@ void AP_Baro_Backend::update_healthy_flag(uint8_t instance)
     if (instance >= _frontend._num_sensors) {
         return;
     }
-    if (!_sem->take_nonblocking()) {
-        return;
-    }
+    WITH_SEMAPHORE(_sem);
 
     // consider a sensor as healthy if it has had an update in the
     // last 0.5 seconds and values are non-zero and have changed within the last 2 seconds
@@ -27,7 +24,14 @@ void AP_Baro_Backend::update_healthy_flag(uint8_t instance)
         (now - _frontend.sensors[instance].last_change_ms < BARO_DATA_CHANGE_TIMEOUT_MS) &&
         !is_zero(_frontend.sensors[instance].pressure);
 
-    _sem->give();
+    if (_frontend.sensors[instance].temperature < -200 ||
+        _frontend.sensors[instance].temperature > 200) {
+        // if temperature is way out of range then we likely have bad
+        // data from the sensor, treat is as unhealthy. This is done
+        // so SPI sensors which have no data validity checking can
+        // mark a sensor unhealthy
+        _frontend.sensors[instance].healthy = false;
+    }
 }
 
 void AP_Baro_Backend::backend_update(uint8_t instance)

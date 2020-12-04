@@ -7,11 +7,14 @@ ByteBuffer::ByteBuffer(uint32_t _size)
 {
     buf = (uint8_t*)calloc(1, _size);
     size = buf ? _size : 0;
+    external_buf = false;
 }
 
 ByteBuffer::~ByteBuffer(void)
 {
-    free(buf);
+    if (!external_buf) {
+        free(buf);
+    }
 }
 
 /*
@@ -19,6 +22,10 @@ ByteBuffer::~ByteBuffer(void)
  */
 bool ByteBuffer::set_size(uint32_t _size)
 {
+    if (external_buf) {
+        // resize not supported with external buffer
+        return false;
+    }
     head = tail = 0;
     if (_size != size) {
         free(buf);
@@ -71,7 +78,7 @@ uint32_t ByteBuffer::space(void) const
     return ret;
 }
 
-bool ByteBuffer::empty(void) const
+bool ByteBuffer::is_empty(void) const
 {
     return head == tail;
 }
@@ -134,6 +141,13 @@ uint8_t ByteBuffer::peekiovec(ByteBuffer::IoVec iovec[2], uint32_t len)
     }
 
     auto b = readptr(n);
+    if (n == 0) {
+        iovec[0].data = buf;
+        iovec[0].len = len;
+        iovec[1].data = nullptr;
+        iovec[1].len = 0;
+        return 1;
+    }
     if (n > len) {
         n = len;
     }

@@ -1,9 +1,3 @@
-[submodule "modules/PX4Firmware"]
-	path = modules/PX4Firmware
-	url = git://github.com/ArduPilot/PX4Firmware.git
-[submodule "modules/PX4NuttX"]
-	path = modules/PX4NuttX
-	url = git://github.com/ArduPilot/PX4NuttX.git
 [submodule "modules/uavcan"]
 	path = modules/uavcan
 	url = git://github.com/ArduPilot/uavcan.git
@@ -22,3 +16,6 @@
 [submodule "modules/ChibiOS"]
 	path = modules/ChibiOS
 	url = git://github.com/ArduPilot/ChibiOS.git
+[submodule "modules/libcanard"]
+	path = modules/libcanard
+	url = git://github.com/ArduPilot/libcanard.git

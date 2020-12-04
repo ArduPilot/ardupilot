@@ -8,13 +8,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#if AP_AHRS_NAVEKF_AVAILABLE
-
 #include "AP_Mount.h"
+#if HAL_SOLO_GIMBAL_ENABLED
 #include "SoloGimbalEKF.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_AccelCal/AP_AccelCal.h>
 
@@ -38,9 +36,8 @@ class SoloGimbal : AP_AccelCal_Client
 {
 public:
     //Constructor
-    SoloGimbal(const AP_AHRS_NavEKF &ahrs) :
-        _ekf(ahrs),
-        _ahrs(ahrs),
+    SoloGimbal() :
+        _ekf(),
         _state(GIMBAL_STATE_NOT_PRESENT),
         _vehicle_yaw_rate_ef_filt(0.0f),
         _vehicle_to_gimbal_quat(),
@@ -57,8 +54,8 @@ public:
         AP_AccelCal::register_client(this);
     }
 
-    void    update_target(Vector3f newTarget);
-    void    receive_feedback(mavlink_channel_t chan, mavlink_message_t *msg);
+    void    update_target(const Vector3f &newTarget);
+    void    receive_feedback(mavlink_channel_t chan, const mavlink_message_t &msg);
 
     void update_fast();
 
@@ -74,7 +71,7 @@ public:
     void disable_torque_report() { _gimbalParams.set_param(GMB_PARAM_GMB_SND_TORQUE, 0); }
     void fetch_params() { _gimbalParams.fetch_params(); }
 
-    void handle_param_value(mavlink_message_t *msg) {
+    void handle_param_value(const mavlink_message_t &msg) {
         _gimbalParams.handle_param_value(msg);
     }
 
@@ -96,10 +93,10 @@ private:
 
     void readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng);
 
-    void _acal_save_calibrations();
-    bool _acal_get_ready_to_sample();
-    bool _acal_get_saving();
-    AccelCalibrator* _acal_get_calibrator(uint8_t instance);
+    void _acal_save_calibrations() override;
+    bool _acal_get_ready_to_sample() override;
+    bool _acal_get_saving() override;
+    AccelCalibrator* _acal_get_calibrator(uint8_t instance) override;
 
     gimbal_mode_t get_mode();
 
@@ -107,7 +104,6 @@ private:
 
     // private member variables
     SoloGimbalEKF            _ekf;      // state of small EKF for gimbal
-    const AP_AHRS_NavEKF    &_ahrs;     //  Main EKF
 
     gimbal_state_t _state;
 
@@ -149,4 +145,4 @@ private:
     Vector3f _log_del_vel;
 };
 
-#endif // AP_AHRS_NAVEKF_AVAILABLE
+#endif // HAL_SOLO_GIMBAL_ENABLED

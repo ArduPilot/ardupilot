@@ -28,7 +28,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RPLidarA2.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -64,31 +63,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-/*
-   The constructor also initialises the proximity sensor. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the proximity sensor
- */
-AP_Proximity_RPLidarA2::AP_Proximity_RPLidarA2(AP_Proximity &_frontend,
-                                               AP_Proximity::Proximity_State &_state,
-                                               AP_SerialManager &serial_manager) :
-                                               AP_Proximity_Backend(_frontend, _state)
-{
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
-    if (_uart != nullptr) {
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0));
-    }
-    _cnt = 0 ;
-    _sync_error = 0 ;
-    _byte_count = 0;
-}
-
-// detect if a RPLidarA2 proximity sensor is connected by looking for a configured serial port
-bool AP_Proximity_RPLidarA2::detect(AP_SerialManager &serial_manager)
-{
-    return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
-}
-
 // update the _rp_state of the sensor
 void AP_Proximity_RPLidarA2::update(void)
 {
@@ -108,10 +82,10 @@ void AP_Proximity_RPLidarA2::update(void)
 
     // check for timeout and set health status
     if ((_last_distance_received_ms == 0) || (AP_HAL::millis() - _last_distance_received_ms > COMM_ACTIVITY_TIMEOUT_MS)) {
-        set_status(AP_Proximity::Proximity_NoData);
+        set_status(AP_Proximity::Status::NoData);
         Debug(1, "LIDAR NO DATA");
     } else {
-        set_status(AP_Proximity::Proximity_Good);
+        set_status(AP_Proximity::Status::Good);
     }
 }
 
@@ -129,15 +103,12 @@ float AP_Proximity_RPLidarA2::distance_min() const
 
 bool AP_Proximity_RPLidarA2::initialise()
 {
-    // initialise sectors
-    if (!_sector_initialised) {
-        init_sectors();
-        return false;
-    }
+    // initialise boundary
+    init_boundary();
+
     if (!_initialised) {
         reset_rplidar();            // set to a known state
         Debug(1, "LIDAR initialised");
-        return true;
     }
 
     return true;
@@ -156,65 +127,6 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
     _last_reset_ms =  AP_HAL::millis();
     _rp_state = rp_resetted;
 
-}
-
-// initialise sector angles using user defined ignore areas, left same as SF40C
-void AP_Proximity_RPLidarA2::init_sectors()
-{
-    // use defaults if no ignore areas defined
-    const uint8_t ignore_area_count = get_ignore_area_count();
-    if (ignore_area_count == 0) {
-        _sector_initialised = true;
-        return;
-    }
-
-    uint8_t sector = 0;
-    for (uint8_t i=0; i<ignore_area_count; i++) {
-
-        // get ignore area info
-        uint16_t ign_area_angle;
-        uint8_t ign_area_width;
-        if (get_ignore_area(i, ign_area_angle, ign_area_width)) {
-
-            // calculate how many degrees of space we have between this end of this ignore area and the start of the end
-            int16_t start_angle, end_angle;
-            get_next_ignore_start_or_end(1, ign_area_angle, start_angle);
-            get_next_ignore_start_or_end(0, start_angle, end_angle);
-            int16_t degrees_to_fill = wrap_360(end_angle - start_angle);
-
-            // divide up the area into sectors
-            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SECTORS_MAX)) {
-                uint16_t sector_size;
-                if (degrees_to_fill >= 90) {
-                    // set sector to maximum of 45 degrees
-                    sector_size = 45;
-                } else if (degrees_to_fill > 45) {
-                    // use half the remaining area to optimise size of this sector and the next
-                    sector_size = degrees_to_fill / 2.0f;
-                } else  {
-                    // 45 degrees or less are left so put it all into the next sector
-                    sector_size = degrees_to_fill;
-                }
-                // record the sector middle and width
-                _sector_middle_deg[sector] = wrap_360(start_angle + sector_size / 2.0f);
-                _sector_width_deg[sector] = sector_size;
-
-                // move onto next sector
-                start_angle += sector_size;
-                sector++;
-                degrees_to_fill -= sector_size;
-            }
-        }
-    }
-
-    // set num sectors
-    _num_sectors = sector;
-
-    // re-initialise boundary because sector locations have changed
-    init_boundary();
-
-    // record success
-    _sector_initialised = true;
 }
 
 // set Lidar into SCAN mode
@@ -394,15 +306,16 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             Debug(2, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                const float angle_deg = payload.sensor_scan.angle_q6/64.0f;
+                const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
+                const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f * angle_sign + frontend.get_yaw_correction(state.instance));
                 const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
 #if RP_DEBUG_LEVEL >= 2
                 const float quality = payload.sensor_scan.quality;
                 Debug(2, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
-                uint8_t sector;
-                if (convert_angle_to_sector(angle_deg, sector)) {
+                if (!ignore_reading(angle_deg)) {
+                    const uint8_t sector = convert_angle_to_sector(angle_deg);
                     if (distance_m > distance_min()) {
                         if (_last_sector == sector) {
                             if (_distance_m_last > distance_m) {
@@ -415,7 +328,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                             _distance[_last_sector] = _distance_m_last;
                             _distance_valid[_last_sector] = true;
                             // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector);
+                            update_boundary_for_sector(_last_sector, true);
                             // initialize the new sector
                             _last_sector     = sector;
                             _distance_m_last = distance_m;

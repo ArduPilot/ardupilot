@@ -1,0 +1,12 @@
+[flake8]
+ignore =
+    # H301: one import per line
+    H301,
+    # H306: imports not in alphabetical order (time, os)
+    H306,
+    # E226: missing whitespace around arithmetic operator
+    E226,
+    # E261 at least two spaces before inline comment
+    E261
+
+max-line-length = 127

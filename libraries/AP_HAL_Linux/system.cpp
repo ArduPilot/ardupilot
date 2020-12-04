@@ -30,8 +30,12 @@ void panic(const char *errormsg, ...)
     va_end(ap);
     UNUSED_RESULT(write(1, "\n", 1));
 
-    hal.rcin->teardown();
-    hal.scheduler->delay_microseconds(10000);
+    if (hal.rcin != nullptr) {
+        hal.rcin->teardown();
+    }
+    if (hal.scheduler != nullptr) {
+        hal.scheduler->delay_microseconds(10000);
+    }
     exit(1);
 }
 
@@ -74,5 +78,44 @@ uint64_t millis64()
                   (state.start_time.tv_sec +
                    (state.start_time.tv_nsec*1.0e-9)));
 }
+
+
+uint32_t native_micros()
+{
+    return native_micros64() & 0xFFFFFFFF;
+}
+
+uint32_t native_millis()
+{
+    return native_millis64() & 0xFFFFFFFF;
+}
+
+/*
+  we define a millis16() here to avoid an issue with sitl builds in cygwin
+ */
+uint16_t native_millis16()
+{
+    return native_millis64() & 0xFFFF;
+}
+    
+
+uint64_t native_micros64()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
+                  (state.start_time.tv_sec +
+                   (state.start_time.tv_nsec*1.0e-9)));
+}
+
+uint64_t native_millis64()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1.0e3*((ts.tv_sec + (ts.tv_nsec*1.0e-9)) -
+                  (state.start_time.tv_sec +
+                   (state.start_time.tv_nsec*1.0e-9)));
+}
+
 
 } // namespace AP_HAL

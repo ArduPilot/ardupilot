@@ -1,7 +1,8 @@
 
 class Parameter(object):
-    def __init__(self, name):
+    def __init__(self, name, real_path):
         self.name = name
+        self.real_path = real_path
 
 
 class Vehicle(object):
@@ -30,6 +31,7 @@ known_param_fields = [
              'Bitmask',
              'Volatile',
              'ReadOnly',
+             'Calibration',
                       ]
 
 # Follow SI units conventions from:
@@ -47,6 +49,7 @@ known_units = {
              'ds'      : 'deciseconds'           ,
              'cs'      : 'centiseconds'          ,
              'ms'      : 'milliseconds'          ,
+             'us'      : 'microseconds'          ,
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
              'kHz'     : 'kilohertz'             ,
@@ -83,7 +86,7 @@ known_units = {
              'mGauss'  : 'milligauss'            , # Gauss is not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here
 # pressure
              'Pa'      : 'pascal'                ,
-             'mbar'    : 'millibar'              ,
+             'hPa'     : 'hectopascal'           ,
 # ratio
              '%'       : 'percent'               ,
              '%/s'     : 'percent per second'    ,
@@ -92,6 +95,7 @@ known_units = {
 # compound
 
              'kB'      : 'kilobytes'                ,
+             'MB'      : 'megabyte'                ,
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????
@@ -101,6 +105,7 @@ known_units = {
              'm/V'     : 'meters per volt'       ,
              'gravities': 'standard acceleration due to gravity' , # g_n would be a more correct unit, but IMHO no one understands what g_n means
              'octal'   : 'octal'                 ,
+             'RPM'     : 'Revolutions Per Minute',
              }
 
 required_param_fields = [

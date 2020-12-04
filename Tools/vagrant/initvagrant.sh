@@ -26,27 +26,15 @@ cd /home/$VAGRANT_USER
 # artful rootfs is 2GB without resize:
 sudo resize2fs /dev/sda1
 
-usermod -a -G dialout $VAGRANT_USER
-
 echo "calling pre-reqs script..."
-/vagrant/Tools/scripts/install-prereqs-ubuntu.sh -y
+sudo -H -u $VAGRANT_USER /vagrant/Tools/environment_install/install-prereqs-ubuntu.sh -y
 echo "...pre-reqs script done... initvagrant.sh continues."
-
-# run-in-terminal-window uses xterm:
-apt-get install -y xterm
 
 # valgrind support:
 apt-get install -y valgrind
 
 # gdb support:
 apt-get install -y gdb
-
-# gcov support:
-apt-get install -y gcovr lcov
-
-# install pexpect for autotest.py
-pip install pexpect
-
 
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
@@ -61,7 +49,7 @@ echo "source /vagrant/Tools/vagrant/shellinit.sh" |
     sudo -u $VAGRANT_USER dd conv=notrunc oflag=append of=$DOT_PROFILE
 
 # link a half-way decent .mavinit.scr into place:
-sudo --login -u $VAGRANT_USER ln -s /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
+sudo --login -u $VAGRANT_USER ln -sf /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
 
 #Plant a marker for sim_vehicle that we're inside a vagrant box
 touch /ardupilot.vagrant

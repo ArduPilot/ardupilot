@@ -4,16 +4,15 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && HAL_WITH_UAVCAN
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+
+#include <AP_HAL/Semaphores.h>
+
+#include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/uavcan.hpp>
 
-#include <AP_HAL/CAN.h>
-#include <AP_HAL/Semaphores.h>
-#include <AP_HAL_ChibiOS/CAN.h>
-
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
-#include <uavcan/equipment/indication/RGB565.hpp>
 
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
@@ -34,15 +33,28 @@
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 
+#include <com/hex/equipment/flow/Measurement.hpp>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <AP_HAL_Linux/CANSocketIface.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/CANSocketIface.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <AP_HAL_ChibiOS/CANIface.h>
+#endif
+
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define UAVCAN_NODE_POOL_SIZE 8192
+#ifdef UAVCAN_NODE_POOL_BLOCK_SIZE
+#undef UAVCAN_NODE_POOL_BLOCK_SIZE
+#endif
 #define UAVCAN_NODE_POOL_BLOCK_SIZE 256
 
-#define debug_uavcan(level, fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
+#define debug_uavcan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
 
 class UAVCAN_sniffer {
 public:
@@ -52,50 +64,10 @@ public:
     void init(void);
     void loop(void);
     void print_stats(void);
-    
+
 private:
-    AP_HAL::Semaphore *_led_out_sem;
-
-    class SystemClock: public uavcan::ISystemClock, uavcan::Noncopyable {
-        SystemClock()
-        {
-        }
-
-        uavcan::UtcDuration utc_adjustment;
-        virtual void adjustUtc(uavcan::UtcDuration adjustment)
-        {
-            utc_adjustment = adjustment;
-        }
-
-    public:
-        virtual uavcan::MonotonicTime getMonotonic() const
-        {
-            uavcan::uint64_t usec = 0;
-            usec = AP_HAL::micros64();
-            return uavcan::MonotonicTime::fromUSec(usec);
-        }
-        virtual uavcan::UtcTime getUtc() const
-        {
-            uavcan::UtcTime utc;
-            uavcan::uint64_t usec = 0;
-            usec = AP_HAL::micros64();
-            utc.fromUSec(usec);
-            utc += utc_adjustment;
-            return utc;
-        }
-
-        static SystemClock& instance()
-        {
-            static SystemClock inst;
-            return inst;
-        }
-    };
-
+    uint8_t driver_index = 0;
     uavcan::Node<0> *_node;
-
-    uavcan::ISystemClock& get_system_clock();
-    uavcan::ICanDriver* get_can_driver();
-    uavcan::Node<0>* get_node();
 
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
@@ -112,12 +84,7 @@ private:
 
     uavcan::HeapBasedPoolAllocator<UAVCAN_NODE_POOL_BLOCK_SIZE, UAVCAN_sniffer::RaiiSynchronizer> _node_allocator;
 
-    AP_HAL::CANManager* _parent_can_mgr;
-
-    void set_parent_can_mgr(AP_HAL::CANManager* parent_can_mgr)
-    {
-        _parent_can_mgr = parent_can_mgr;
-    }
+    AP_CANManager can_mgr;
 };
 
 static struct {
@@ -127,7 +94,7 @@ static struct {
 
 static void count_msg(const char *name)
 {
-    for (uint16_t i=0; i<ARRAY_SIZE_SIMPLE(counters); i++) {
+    for (uint16_t i=0; i<ARRAY_SIZE(counters); i++) {
         if (counters[i].msg_name == name) {
             counters[i].count++;
             break;
@@ -145,107 +112,115 @@ static void count_msg(const char *name)
 
 MSG_CB(uavcan::protocol::NodeStatus, NodeStatus)
 MSG_CB(uavcan::equipment::gnss::Fix, Fix)
+MSG_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary)
 MSG_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength)
+MSG_CB(uavcan::equipment::ahrs::MagneticFieldStrength2, MagneticFieldStrength2);
 MSG_CB(uavcan::equipment::air_data::StaticPressure, StaticPressure)
 MSG_CB(uavcan::equipment::air_data::StaticTemperature, StaticTemperature)
-MSG_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary)
+MSG_CB(uavcan::equipment::power::BatteryInfo, BatteryInfo);
 MSG_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand)
 MSG_CB(uavcan::equipment::esc::RawCommand, RawCommand)
+MSG_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+MSG_CB(com::hex::equipment::flow::Measurement, Measurement);
 
 void UAVCAN_sniffer::init(void)
 {
-    uint8_t inum = 0;
-    const_cast <AP_HAL::HAL&> (hal).can_mgr[inum] = new ChibiOS::CANManager;
-    hal.can_mgr[0]->begin(1000000, inum);
-
-    set_parent_can_mgr(hal.can_mgr[inum]);
+    const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
     
-    if (!_parent_can_mgr->is_initialized()) {
-        hal.console->printf("Can not initialised\n");
+    if (hal.can[driver_index] == nullptr) {
+        AP_HAL::panic("Couldn't allocate CANManager, something is very wrong");
+    }
+
+    hal.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
+
+    if (!hal.can[driver_index]->is_initialized()) {
+        debug_uavcan("Can not initialised\n");
+        return;
+    }
+    uavcan::CanIfaceMgr *_uavcan_iface_mgr = new uavcan::CanIfaceMgr;
+
+    if (_uavcan_iface_mgr == nullptr) {
         return;
     }
 
-    auto *node = get_node();
+    if (!_uavcan_iface_mgr->add_interface(hal.can[driver_index])) {
+        debug_uavcan("Failed to add iface");
+        return;
+    }
+
+    _node = new uavcan::Node<0>(*_uavcan_iface_mgr,  uavcan::SystemClock::instance(), _node_allocator);
+
+    if (_node == nullptr) {
+        return;
+    }
+
+    if (_node->isStarted()) {
+        return;
+    }
 
     uavcan::NodeID self_node_id(9);
-    node->setNodeID(self_node_id);
-    
+    _node->setNodeID(self_node_id);
+
     char ndname[20];
-    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", inum);
-            
+    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
+
     uavcan::NodeStatusProvider::NodeName name(ndname);
-    node->setName(name);
-            
+    _node->setName(name);
+
     uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
     sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
     sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
-    node->setSoftwareVersion(sw_version);
-    
+    _node->setSoftwareVersion(sw_version);
+
     uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
-    
+
     hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
     hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
-    node->setHardwareVersion(hw_version);
-    
-    const int node_start_res = node->start();
-    if (node_start_res < 0) {
-        debug_uavcan(1, "UAVCAN: node start problem\n\r");
+    _node->setHardwareVersion(hw_version);
+
+    int start_res = _node->start();
+    if (start_res < 0) {
+        debug_uavcan("UAVCAN: node start problem\n\r");
+        return;
     }
 
-#define START_CB(mtype, cbname) (new uavcan::Subscriber<mtype>(*node))->start(cb_ ## cbname)
-    
+#define START_CB(mtype, cbname) (new uavcan::Subscriber<mtype>(*_node))->start(cb_ ## cbname)
+
     START_CB(uavcan::protocol::NodeStatus, NodeStatus);
     START_CB(uavcan::equipment::gnss::Fix, Fix);
+    START_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary);
     START_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength);
+    START_CB(uavcan::equipment::ahrs::MagneticFieldStrength2, MagneticFieldStrength2);
     START_CB(uavcan::equipment::air_data::StaticPressure, StaticPressure);
     START_CB(uavcan::equipment::air_data::StaticTemperature, StaticTemperature);
-    START_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary);
+    START_CB(uavcan::equipment::power::BatteryInfo, BatteryInfo);
     START_CB(uavcan::equipment::actuator::ArrayCommand, ArrayCommand);
     START_CB(uavcan::equipment::esc::RawCommand, RawCommand);
-    
+    START_CB(uavcan::equipment::indication::LightsCommand, LightsCommand);
+    START_CB(com::hex::equipment::flow::Measurement, Measurement);
+
+
     /*
      * Informing other nodes that we're ready to work.
      * Default mode is INITIALIZING.
      */
-    node->setModeOperational();
-    
-    debug_uavcan(1, "UAVCAN: init done\n\r");
-}
+    _node->setModeOperational();
 
-uavcan::Node<0> *UAVCAN_sniffer::get_node()
-{
-    if (_node == nullptr && get_can_driver() != nullptr) {
-        _node = new uavcan::Node<0>(*get_can_driver(), get_system_clock(), _node_allocator);
-    }
-
-    return _node;
-}
-
-uavcan::ICanDriver * UAVCAN_sniffer::get_can_driver()
-{
-    if (_parent_can_mgr != nullptr) {
-        if (_parent_can_mgr->is_initialized() == false) {
-            return nullptr;
-        } else {
-            return _parent_can_mgr->get_driver();
-        }
-    }
-    return nullptr;
-}
-
-uavcan::ISystemClock & UAVCAN_sniffer::get_system_clock()
-{
-    return SystemClock::instance();
+    debug_uavcan("UAVCAN: init done\n\r");
 }
 
 void UAVCAN_sniffer::loop(void)
 {
-    auto *node = get_node();
-    node->spin(uavcan::MonotonicDuration::fromMSec(1));
+    if (_node == nullptr) {
+        return;
+    }
+
+    _node->spin(uavcan::MonotonicDuration::fromMSec(1));
 }
 
 void UAVCAN_sniffer::print_stats(void)
 {
+    hal.console->printf("%lu\n", (unsigned long)AP_HAL::micros());
     for (uint16_t i=0;i<100;i++) {
         if (counters[i].msg_name == nullptr) {
             break;
@@ -271,7 +246,6 @@ void setup(void)
     hal.scheduler->delay(2000);
     hal.console->printf("Starting UAVCAN sniffer\n");
     sniffer.init();
-    
 }
 
 void loop(void)
@@ -287,14 +261,10 @@ void loop(void)
     // auto-reboot for --upload
     if (hal.console->available() > 50) {
         hal.console->printf("rebooting\n");
-        while (hal.console->available()) {
-            hal.console->read();
-        }
+        hal.console->discard_input();
         hal.scheduler->reboot(false);
     }
-    while (hal.console->available()) {
-        hal.console->read();
-    }
+    hal.console->discard_input();
 }
 
 AP_HAL_MAIN();

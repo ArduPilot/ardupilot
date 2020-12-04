@@ -11,36 +11,29 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
 
+#include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
-
-#include "AP_HAL_ChibiOS.h"
-
+#include <AP_HAL/AP_HAL_Macros.h>
+#include <AP_HAL/Semaphores.h>
+#include "AP_HAL_ChibiOS_Namespace.h"
 
 class ChibiOS::Semaphore : public AP_HAL::Semaphore {
 public:
-    Semaphore() {
-#if CH_CFG_USE_MUTEXES == TRUE
-        chMtxObjectInit(&_lock);
-#endif
-    }
-    bool give();
-    bool take(uint32_t timeout_ms);
-    bool take_nonblocking();
-    bool check_owner(void) {
-#if CH_CFG_USE_MUTEXES == TRUE
-        return _lock.owner == chThdGetSelfX();
-#else
-        return true;
-#endif
-    }
-    void assert_owner(void) {
-        osalDbgAssert(check_owner(), "owner");
-    }
-private:
-    mutex_t _lock;
+    Semaphore();
+    virtual bool give() override;
+    virtual bool take(uint32_t timeout_ms) override;
+    virtual bool take_nonblocking() override;
+
+    // methods within HAL_ChibiOS only
+    bool check_owner(void);
+    void assert_owner(void);
+protected:
+    // to avoid polluting the global namespace with the 'ch' variable,
+    // we declare the lock as a uint32_t array, and cast inside the cpp file
+    uint32_t _lock[5];
 };

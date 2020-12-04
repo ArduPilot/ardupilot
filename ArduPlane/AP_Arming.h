@@ -14,26 +14,29 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     }
 
-    enum ArmingRudder {
-        ARMING_RUDDER_DISABLED  = 0,
-        ARMING_RUDDER_ARMONLY   = 1,
-        ARMING_RUDDER_ARMDISARM = 2
-    };
-
     /* Do not allow copies */
     AP_Arming_Plane(const AP_Arming_Plane &other) = delete;
     AP_Arming_Plane &operator=(const AP_Arming_Plane&) = delete;
 
-    bool pre_arm_checks(bool report);
-
-    ArmingRudder rudder_arming() const { return (ArmingRudder)rudder_arming_value.get(); }
+    bool pre_arm_checks(bool report) override;
+    bool arm_checks(AP_Arming::Method method) override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
-    bool ins_checks(bool report);
+    bool disarm(AP_Arming::Method method) override;
+    bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
-    // parameters
-    AP_Int8                 rudder_arming_value;
+    void update_soft_armed();
+    bool get_delay_arming() { return delay_arming; };
+
+protected:
+    bool ins_checks(bool report) override;
+
+private:
+    void change_arm_state(void);
+
+    // oneshot with duration AP_ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
+    // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
+    bool delay_arming;
 };

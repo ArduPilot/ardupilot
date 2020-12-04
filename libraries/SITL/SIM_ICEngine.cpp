@@ -24,7 +24,7 @@ using namespace SITL;
 /*
   update engine state, returning power output from 0 to 1
  */
-float ICEngine::update(const Aircraft::sitl_input &input)
+float ICEngine::update(const struct sitl_input &input)
 {
     bool have_ignition = ignition_servo>=0;
     bool have_choke = choke_servo>=0;

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" width="104" height="20">
+    <linearGradient id="b" x2="0" y2="100%">
+        <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+        <stop offset="1" stop-opacity=".1"/>
+    </linearGradient>
+    <clipPath id="a">
+        <rect width="104" height="20" rx="3" fill="#fff"/>
+    </clipPath>
+    <g clip-path="url(#a)">
+        <path fill="#555" d="M0 0h57v20H0z"/>
+        <path fill="{color}" d="M57 0h47v20H57z"/> 4c1
+        <path fill="url(#b)" d="M0 0h104v20H0z"/>
+    </g>
+    <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="110">
+        <text x="295" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="470">Autotest</text>
+        <text x="295" y="140" transform="scale(.1)" textLength="470">Autotest</text>
+        <text x="795" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{text_length}">{text}</text>
+        <text x="795" y="140" transform="scale(.1)" textLength="{text_length}">{text}</text>
+    </g>
+</svg>

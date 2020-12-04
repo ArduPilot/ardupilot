@@ -11,7 +11,7 @@ set -x
 export BUILDROOT="/tmp/all.build"
 rm -rf $BUILDROOT
 
-BOARDS="sitl linux"
+BOARDS="sitl linux Pixhawk1"
 
 for b in $BOARDS; do
     echo "Testing $b build"
@@ -26,10 +26,7 @@ make clean
 make
 popd
 
-./Tools/scripts/build_all_px4.sh
-
-test -n "$VRBRAIN_ROOT" && test -d "$VRBRAIN_ROOT" && {
-    ./Tools/scripts/build_all_vrbrain.sh
-}
+echo "Testing configure all"
+./Tools/scripts/configure_all.py
 
 exit 0

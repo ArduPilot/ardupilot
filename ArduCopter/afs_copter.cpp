@@ -7,8 +7,8 @@
 #if ADVANCED_FAILSAFE == ENABLED
 
 // Constructor
-AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission, const AP_GPS &_gps) :
-    AP_AdvancedFailsafe(_mission, _gps)
+AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission) :
+    AP_AdvancedFailsafe(_mission)
 {}
 
 
@@ -18,22 +18,22 @@ AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission, con
 void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 {
     if (_terminate_action == TERMINATE_ACTION_LAND) {
-        copter.set_mode(LAND, MODE_REASON_TERMINATE);
+        copter.set_mode(Mode::Number::LAND, ModeReason::TERMINATE);
     } else {
         // stop motors
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.motors->output();
 
         // disarm as well
-        copter.init_disarm_motors();
+        copter.arming.disarm(AP_Arming::Method::AFS);
     
         // and set all aux channels
-        SRV_Channels::set_output_limit(SRV_Channel::k_heli_rsc, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_heli_tail_rsc, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_ignition, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-        SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_heli_rsc, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_heli_tail_rsc, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_ignition, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
+        SRV_Channels::set_output_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
     }
 
     SRV_Channels::output_ch_all();
@@ -42,12 +42,12 @@ void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
 {
     // setup failsafe for all aux channels
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_heli_rsc, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_heli_tail_rsc, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_ignition, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
-    SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::SRV_CHANNEL_LIMIT_TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_heli_rsc, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_heli_tail_rsc, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_ignition, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
 
 #if FRAME_CONFIG != HELI_FRAME
     // setup AP_Motors outputs for failsafe
@@ -62,10 +62,10 @@ void AP_AdvancedFailsafe_Copter::setup_IO_failsafe(void)
 AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
 {
     switch (copter.control_mode) {
-    case AUTO:
-    case GUIDED:
-    case RTL:
-    case LAND:
+    case Mode::Number::AUTO:
+    case Mode::Number::GUIDED:
+    case Mode::Number::RTL:
+    case Mode::Number::LAND:
         return AP_AdvancedFailsafe::AFS_AUTO;
     default:
         break;

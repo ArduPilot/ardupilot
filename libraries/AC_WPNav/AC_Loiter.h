@@ -16,9 +16,6 @@ public:
     /// Constructor
     AC_Loiter(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    /// provide pointer to avoidance library
-    void set_avoidance(AC_Avoid* avoid_ptr) { _avoid = avoid_ptr; }
-
     /// init_target to a position in cm from ekf origin
     void init_target(const Vector3f& position);
 
@@ -51,11 +48,11 @@ public:
     float get_angle_max_cd() const;
 
     /// run the loiter controller
-    void update(float ekfGndSpdLimit, float ekfNavVelGainScaler);
+    void update();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
-    int32_t get_roll() const { return _pos_control.get_roll(); }
-    int32_t get_pitch() const { return _pos_control.get_pitch(); }
+    float get_roll() const { return _pos_control.get_roll(); }
+    float get_pitch() const { return _pos_control.get_pitch(); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -66,14 +63,13 @@ protected:
 
     /// updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
     ///		updated velocity sent directly to position controller
-    void calc_desired_velocity(float nav_dt, float ekfGndSpdLimit);
+    void calc_desired_velocity(float nav_dt);
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AC_Avoid                *_avoid = nullptr;
 
     // parameters
     AP_Float    _angle_max;             // maximum pilot commanded angle in degrees. Set to zero for 2/3 Angle Max

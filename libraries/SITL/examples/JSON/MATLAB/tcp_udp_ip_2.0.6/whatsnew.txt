@@ -1,0 +1,90 @@
+History of tcp/udp/ip toolbox for MATLAB
+========================================
+
+Version 2.0.6  2008-03-06
+
+  -Including precompiled pnet.mexw32 for support to in matlab R2007 (R2008?)
+   No need to compile pnet.c to run at R2007....
+   (Included a real application demo that uses UDP and simulates a UDP based DAQ system.)
+
+Version 2.0.5  2003-09-16
+  -Fixing all GNU License notes more proper and clear and writing an
+   exception that make it "100%" legal and proper to use this as a plug-in
+   as the basic intention of cause is. The note also makes it clear that
+   you can link and distribute this toolbox as non-free stand alone as long as
+   this part (the tcp_udp_ip toolbox) is distributed with it and fullfills
+   the licence agreement for it. See license.txt
+
+  - The windows dll is compiled with matlab 5.3 to make it possible to
+   run in matlab 5.x
+
+Version 2.0.4  2003-07-22
+  -Major bug fix: 'readtofile' and 'writefromfile' now opens the files in
+   binary mode also for the Windows platform which makes the toolbox work properly
+   for many cases where it erlier failed. This probably solvs many bugs
+   that could not be solved. erlier! 
+  -changed call frequency of 'drawnow' from 1 per sec to 10 per seconds. 
+  -'pnet_remote' now supports an array of conection handles for calls that
+   do not return any thing.
+  - new author adress information
+
+Version 2.0.3  2002-04-23
+  -Added support for the "single" (float 32-bit) datatype.
+
+Version 2.0.2  2002-03-12
+  Windows buggfixes (also bugs for unix):
+  -Breaking blocking operations with ctrl-c now works (better..)
+   Fixed with a call to drawnow evry second.
+  -UDP receive of packets now works stable after initialzing fromlen
+   in revfrom() call.
+
+Version 2.0.1  2002-02-25
+  -Long delays in windows is fixed by changing Sleep(...) in pnet.c
+   to correspond to sleep(...) in unix by div. by 1000.
+  -Added drawnow into SERVER loop in pnet_remote. 
+
+Version 2.0 (Beta) 2002-02-14
+   Complete rewrite of the API with new calls.
+   All tcpip_* function is replaced with new mex function named pnet(....).
+   NEW mutch faster support for datatypes and byte swapping!!
+   Datatype support: double,char,uint8,unint16,uint32,int8,nint16,int32.
+   Byte swapping support: native,swap,intel,network  byte orders.
+   tcpip_feval family function replaced by the pnet_remote function.
+   This version in not backwards compatible wit version 1.x but
+     are similar -> easy to port (easy to write wrapper functions?)
+
+Version 1.3        2001-01-13
+   Added support to UDP/IP-packet transmission by Mike Medeiros
+   This version is never published......
+
+Verion 1.2.1       2001-01-04
+
+   Bugfix of variable and file tranfer functions
+   Prelimnaray remote execution interface!
+
+Version 1.2        2000-12-14
+
+   tcpip_servopen() replace by tcpip_servsocket() and
+   tcpip_listen() Now its a non blocking multi connection
+   server!!
+   A simple webserver_demo is now also included.
+
+Version 1.2 BETA   2000-11-20
+
+   Bug fixed. multi connections work proper!
+
+
+Version 1.1   1999-10-28
+
+   Now also support for Windows 95/98(?)/NT4 By Mario Bergeron
+   All data types is now supported to be sent/rec. in network byte
+   order. Solaris and Linux also seams to work well without
+   "broke pipe handling" bug!
+   A demo that reads mail from a pop mail server is also included.
+
+
+Version 1.0 Beta 1  1999-04-06
+
+   Open connections as client or server and send/receive
+   text strings. Works under Linux and Solaris.
+   Under soloris some trouble with "broken pipe handling"

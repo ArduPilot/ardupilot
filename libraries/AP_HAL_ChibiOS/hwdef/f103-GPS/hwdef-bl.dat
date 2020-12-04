@@ -1,0 +1,6 @@
+include ../f103-periph/hwdef-bl.dat
+
+# use DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_gps"

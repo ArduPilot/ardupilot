@@ -1,5 +1,11 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AC_Sprayer.h"
+
+#if HAL_SPRAYER_ENABLED
+
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,6 +56,14 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
 
 AC_Sprayer::AC_Sprayer()
 {
+    if (_singleton) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        AP_HAL::panic("Too many sprayers");
+#endif
+        return;
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
 
     // check for silly parameter values
@@ -61,6 +75,15 @@ AC_Sprayer::AC_Sprayer()
     }
 
     // To-Do: ensure that the pump and spinner servo channels are enabled
+}
+
+/*
+ * Get the AP_Sprayer singleton
+ */
+AC_Sprayer *AC_Sprayer::_singleton;
+AC_Sprayer *AC_Sprayer::get_singleton()
+{
+    return _singleton;
 }
 
 void AC_Sprayer::run(const bool true_false)
@@ -82,8 +105,8 @@ void AC_Sprayer::run(const bool true_false)
 
 void AC_Sprayer::stop_spraying()
 {
-    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
-    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::SRV_CHANNEL_LIMIT_MIN);
+    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
+    SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_spinner, SRV_Channel::Limit::MIN);
 
     _flags.spraying = false;
 }
@@ -168,3 +191,13 @@ void AC_Sprayer::update()
         stop_spraying();
     }
 }
+
+namespace AP {
+
+AC_Sprayer *sprayer()
+{
+    return AC_Sprayer::get_singleton();
+}
+
+};
+#endif // HAL_SPRAYER_ENABLED

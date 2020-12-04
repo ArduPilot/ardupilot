@@ -6,7 +6,8 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 
 #include <errno.h>
 #include <stdarg.h>
@@ -39,8 +40,9 @@ int UtilRPI::_check_rpi_version()
         int ret = sscanf(buffer + 12, "%d", &_rpi_version);
         fclose(f);
         if (ret != EOF) {
-
-            if (_rpi_version > 2) {
+            if (_rpi_version > 3)  {
+                _rpi_version = 4;
+            } else if (_rpi_version > 2) {
                 // Preserving old behavior.
                 _rpi_version = 2;
             } else if (_rpi_version == 0) {
@@ -57,7 +59,10 @@ int UtilRPI::_check_rpi_version()
     // Attempting old method if the version couldn't be read with the new one.
     hw = Util::from(hal.util)->get_hw_arm32();
 
-    if (hw == UTIL_HARDWARE_RPI2) {
+    if (hw == UTIL_HARDWARE_RPI4) {
+        printf("Raspberry Pi 4 with BCM2711!\n");
+        _rpi_version = 4;
+    } else if (hw == UTIL_HARDWARE_RPI2) {
         printf("Raspberry Pi 2/3 with BCM2709!\n");
         _rpi_version = 2;
     } else if (hw == UTIL_HARDWARE_RPI1) {

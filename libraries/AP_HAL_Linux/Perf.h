@@ -64,7 +64,7 @@ class Perf {
 public:
     ~Perf();
 
-    static Perf *get_instance();
+    static Perf *get_singleton();
 
     perf_counter_t add(perf_counter_type type, const char *name);
 
@@ -75,7 +75,7 @@ public:
     unsigned int get_update_count() { return _update_count; }
 
 private:
-    static Perf *_instance;
+    static Perf *_singleton;
 
     Perf();
 

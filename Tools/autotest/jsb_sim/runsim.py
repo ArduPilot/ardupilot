@@ -103,7 +103,7 @@ def process_sitl_input(buf):
         ch1 = aileron
         ch2 = elevator
         aileron = (ch2-ch1)/2.0
-        # the minus does away with the need for RC2_REV=-1
+        # the minus does away with the need for RC2_REVERSED=-1
         elevator = -(ch2+ch1)/2.0
 
     if opts.vtail:
@@ -285,10 +285,8 @@ def main_loop():
     """Run main loop."""
     tnow = time.time()
     last_report = tnow
-    last_sim_input = tnow
     last_wind_update = tnow
     frame_count = 0
-    paused = False
     simstep = 1.0/opts.rate
     simtime = simstep
     frame_time = 1.0/opts.rate
@@ -349,7 +347,6 @@ def main_loop():
         if new_frame:
             now = time.time()
             if now < last_wall_time + scaled_frame_time:
-                dt = last_wall_time+scaled_frame_time - now
                 time.sleep(last_wall_time+scaled_frame_time - now)
                 now = time.time()
 

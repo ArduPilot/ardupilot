@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- UAV0 -->
+    <group ns="uav0">
+        <!-- MAVROS and vehicle configs -->
+        <arg name="ID" value="1"/>
+        <arg name="fcu_url" default="udp://:14550@localhost:14555"/>
+        <!-- MAVROS -->
+        <include file="$(find mavros)/launch/apm.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)"/>
+            <arg name="gcs_url" value=""/>
+            <arg name="tgt_system" value="$(arg ID)"/>
+            <arg name="tgt_component" value="1"/>
+        </include>
+    </group>
+    <!-- UAV1 -->
+    <group ns="uav1">
+        <!-- MAVROS and vehicle configs -->
+        <arg name="ID" value="2"/>
+        <arg name="fcu_url" default="udp://:14560@localhost:14565"/>
+        <!-- MAVROS -->
+        <include file="$(find mavros)/launch/apm.launch">
+            <arg name="fcu_url" value="$(arg fcu_url)"/>
+            <arg name="gcs_url" value=""/>
+            <arg name="tgt_system" value="$(arg ID)"/>
+            <arg name="tgt_component" value="1"/>
+        </include>
+    </group>
+</launch>
+<!-- to add more UAVs:
+Increase the id
+Change the name space
+Set the FCU to default="udp://:14540+id*10@localhost:14545+id*10" -->

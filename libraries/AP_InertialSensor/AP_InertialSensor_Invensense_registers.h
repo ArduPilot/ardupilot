@@ -169,6 +169,7 @@
 #define MPU_WHOAMI_6000			0x68
 #define MPU_WHOAMI_20608		0xaf
 #define MPU_WHOAMI_20602		0x12
+#define MPU_WHOAMI_20601		0xac
 #define MPU_WHOAMI_6500			0x70
 #define MPU_WHOAMI_MPU9250      0x71
 #define MPU_WHOAMI_MPU9255      0x73

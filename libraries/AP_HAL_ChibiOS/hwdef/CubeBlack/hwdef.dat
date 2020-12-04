@@ -1,0 +1,94 @@
+# hw definition file for processing by chibios_hwdef.py
+# for The CUBE Black and the Cube Purple hardware
+# this is based on fmuv3, but with vendor specific USB IDs
+
+include ../fmuv3/hwdef.dat
+
+define HAL_CHIBIOS_ARCH_CUBEBLACK 1
+
+env OPTIMIZE -O2
+
+# USB setup
+USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+USB_PRODUCT 0x1011
+USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+USB_STRING_PRODUCT "CubeBlack"
+USB_STRING_SERIAL  "%SERIAL%"
+
+# remap PB0/1 as ADC's
+undef PB0
+undef PB1
+PB0 PB0_ADC ADC1 SCALE(1)
+PB1 PB1_ADC ADC1 SCALE(1)
+
+SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20602_ext   SPI4 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+
+
+# Sensor Check alias for validating board type
+CHECK_MPU9250           spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)
+CHECK_MPU9250_EXT       spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)
+CHECK_ICM20602_EXT      spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)
+CHECK_LSM9DS0_EXT_G     spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)
+CHECK_LSM9DS0_EXT_AM    spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)
+CHECK_ICM20948_EXT      spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)
+CHECK_MS5611            check_ms5611("ms5611")
+CHECK_MS5611_EXT        check_ms5611("ms5611_ext")
+
+# Sensor Check Macros to be used for validating board type
+CHECK_IMU0_PRESENT   $CHECK_MPU9250_EXT || $CHECK_ICM20602_EXT
+CHECK_IMU1_PRESENT   ($CHECK_LSM9DS0_EXT_G && $CHECK_LSM9DS0_EXT_AM) || $CHECK_ICM20948_EXT
+CHECK_IMU2_PRESENT   $CHECK_MPU9250
+CHECK_BARO0_PRESENT  $CHECK_MS5611
+CHECK_BARO1_PRESENT  $CHECK_MS5611_EXT
+
+BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+
+# also define the default board type
+define BOARD_TYPE_DEFAULT 3
+
+# three IMUs, but allow for different varients. First two IMUs are
+# isolated, 3rd isn't
+IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
+
+# the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
+# and the H varient of the gyro
+IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+
+# 3rd non-isolated IMU
+IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+
+# alternative IMU set for newer cubes
+IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+define HAL_DEFAULT_INS_FAST_SAMPLE 5
+
+# two baros
+BARO MS56XX SPI:ms5611_ext
+BARO MS56XX SPI:ms5611
+
+# two compasses. First is in the LSM303D
+COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+# 2nd compass is part of the 2nd invensense IMU
+COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
+
+# compass as part of ICM20948 on newer cubes
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# This defines an output pin which will default to output HIGH. It is
+# a pin that enables peripheral power on this board. It starts in the
+# off state, then is pulled low to enable peripherals in
+# peripheral_power_enable()
+undef PA8
+PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+# This is the pin to enable the sensors rail. It can be used to power
+# cycle sensors to recover them in case there are problems with power on
+# timing affecting sensor stability. We pull it LOW on startup, which
+# means sensors off, then it is pulled HIGH in peripheral_power_enable()
+undef PE3
+PE3 VDD_3V3_SENSORS_EN OUTPUT LOW

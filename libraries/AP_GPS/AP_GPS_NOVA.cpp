@@ -19,7 +19,7 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_NOVA.h"
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,6 +50,15 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     port->write((const uint8_t*)init_str, strlen(init_str));
     port->write((const uint8_t*)init_str1, strlen(init_str1));
 }
+
+const char* const AP_GPS_NOVA::_initialisation_blob[6] {
+    "\r\n\r\nunlogall\r\n", // cleanup enviroment
+    "log bestposb ontime 0.2 0 nohold\r\n", // get bestpos
+    "log bestvelb ontime 0.2 0 nohold\r\n", // get bestvel
+    "log psrdopb onchanged\r\n", // tersus
+    "log psrdopb ontime 0.2\r\n", // comnav
+    "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
+};
 
 // Process all bytes available from the stream
 //
@@ -185,6 +194,8 @@ AP_GPS_NOVA::process_message(void)
     uint16_t messageid = nova_msg.header.nova_headeru.messageid;
 
     Debug("NOVA process_message messid=%u\n",messageid);
+
+    check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
     
     if (messageid == 42) // bestpos
     {

@@ -1,0 +1,9 @@
+include ../f303-periph/hwdef-bl.dat
+
+# mRo Location One CAN GPS
+# M10084
+
+# start as DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define CAN_APP_NODE_NAME "io.mrobotics.m10070_loc1_BL"

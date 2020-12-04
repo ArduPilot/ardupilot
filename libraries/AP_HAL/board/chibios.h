@@ -1,9 +1,23 @@
 #pragma once
 
 #include <hwdef.h>
+#include <hal.h>
 
 #define HAL_BOARD_NAME "ChibiOS"
-#define HAL_CPU_CLASS HAL_CPU_CLASS_150
+
+#if HAL_MEMORY_TOTAL_KB >= 1000
+#define HAL_MEM_CLASS HAL_MEM_CLASS_1000
+#elif HAL_MEMORY_TOTAL_KB >= 500
+#define HAL_MEM_CLASS HAL_MEM_CLASS_500
+#elif HAL_MEMORY_TOTAL_KB >= 300
+#define HAL_MEM_CLASS HAL_MEM_CLASS_300
+#elif HAL_MEMORY_TOTAL_KB >= 192
+#define HAL_MEM_CLASS HAL_MEM_CLASS_192
+#elif HAL_MEMORY_TOTAL_KB >= 64
+#define HAL_MEM_CLASS HAL_MEM_CLASS_64
+#else
+#define HAL_MEM_CLASS HAL_MEM_CLASS_20
+#endif
 
 #ifndef HAL_GPIO_LED_ON
 #define HAL_GPIO_LED_ON           0
@@ -12,12 +26,20 @@
 #define HAL_GPIO_LED_OFF          1
 #endif
 
-#ifndef HAL_WITH_UAVCAN
-#define HAL_WITH_UAVCAN 0
+#ifndef HAL_NUM_CAN_IFACES
+#define HAL_NUM_CAN_IFACES 0
 #endif
 
 #ifndef HAL_HAVE_BOARD_VOLTAGE
 #define HAL_HAVE_BOARD_VOLTAGE 0
+#endif
+
+#ifndef HAL_HAVE_SERVO_VOLTAGE
+#define HAL_HAVE_SERVO_VOLTAGE 0
+#endif
+
+#ifdef HAL_GPIO_PIN_SAFETY_IN
+#define HAL_HAVE_SAFETY_SWITCH 1
 #endif
 
 #ifndef HAL_HAVE_SAFETY_SWITCH
@@ -33,6 +55,13 @@
 #ifndef HAL_WITH_RAMTRON
 #define HAL_WITH_RAMTRON 0
 #endif
+
+// allow for static semaphores
+#include <AP_HAL_ChibiOS/Semaphores.h>
+#define HAL_Semaphore ChibiOS::Semaphore
+
+#include <AP_HAL/EventHandle.h>
+#define HAL_EventHandle AP_HAL::EventHandle
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
@@ -75,4 +104,16 @@
 #endif
 
 // we support RC serial for BLHeli pass-thru
+#ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 1
+#endif
+
+// by default assume first I2C bus is internal
+#ifndef HAL_I2C_INTERNAL_MASK
+#define HAL_I2C_INTERNAL_MASK 1
+#endif
+
+// put all storage of files under /APM directory
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY "/APM"
+#endif

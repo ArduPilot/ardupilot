@@ -4,7 +4,7 @@
 using the algorithm from Bill Premerlani
 '''
 
-import sys, time, os, math
+import sys
 
 # command line option handling
 from optparse import OptionParser
@@ -19,7 +19,7 @@ parser.add_option("--repeat", type='int', default=1, help="number of repeats thr
 
 (opts, args) = parser.parse_args()
 
-from rotmat import Vector3, Matrix3
+from rotmat import Vector3
 
 if len(args) < 1:
     print("Usage: magfit_flashlog.py [options] <LOGFILE...>")

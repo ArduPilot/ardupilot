@@ -14,8 +14,10 @@
  */
 #pragma once
 
+#if HAL_RCINPUT_WITH_AP_RADIO
+
 /*
-  AP_Radio implementation for Cypress 2.4GHz radio. 
+  AP_Radio implementation for Cypress 2.4GHz radio.
 
   With thanks to the SuperBitRF project
   See http://wiki.paparazziuav.org/wiki/SuperbitRF
@@ -24,26 +26,20 @@
  */
 
 #include "AP_Radio_backend.h"
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#include <nuttx/arch.h>
-#include <systemlib/systemlib.h>
-#include <drivers/drv_hrt.h>
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "hal.h"
-#endif
 #include "telem_structure.h"
 
 class AP_Radio_cypress : public AP_Radio_backend
 {
 public:
     AP_Radio_cypress(AP_Radio &radio);
-    
+
     // init - initialise radio
     bool init(void) override;
 
     // rest radio
     bool reset(void) override;
-    
+
     // send a packet
     bool send(const uint8_t *pkt, uint16_t len) override;
 
@@ -66,31 +62,33 @@ public:
     void update(void) override;
 
     // get TX fw version
-    uint32_t get_tx_version(void) override {
+    uint32_t get_tx_version(void) override
+    {
         // pack date into 16 bits for vendor_id in AUTOPILOT_VERSION
         return (uint16_t(dsm.tx_firmware_year)<<12) + (uint16_t(dsm.tx_firmware_month)<<8) + dsm.tx_firmware_day;
     }
-    
+
     // get radio statistics structure
     const AP_Radio::stats &get_stats(void) override;
 
     // set the 2.4GHz wifi channel used by companion computer, so it can be avoided
-    void set_wifi_channel(uint8_t channel) {
+    void set_wifi_channel(uint8_t channel) override
+    {
         t_status.wifi_chan = channel;
     }
-    
+
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
-    static AP_Radio_cypress *radio_instance;
+    static AP_Radio_cypress *radio_singleton;
 
     void radio_init(void);
-    
+
     void dump_registers(uint8_t n);
 
     void force_initial_state(void);
     void set_channel(uint8_t channel);
     uint8_t read_status_debounced(uint8_t adr);
-    
+
     uint8_t read_register(uint8_t reg);
     void write_register(uint8_t reg, uint8_t value);
     void write_multiple(uint8_t reg, uint8_t n, const uint8_t *data);
@@ -103,7 +101,7 @@ private:
         STATE_SEND_TELEM_WAIT,
         STATE_SEND_FCC
     } state;
-    
+
     struct config {
         uint8_t reg;
         uint8_t value;
@@ -114,17 +112,12 @@ private:
     static const config cyrf_bind_config[];
     static const config cyrf_transfer_config[];
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    sem_t irq_sem;
-    struct hrt_call wait_call;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     virtual_timer_t timeout_vt;
     static thread_t *_irq_handler_ctx;
-#endif
     void radio_set_config(const struct config *config, uint8_t size);
 
     void start_receive(void);
-    
+
     // main IRQ handler
     void irq_handler(void);
 
@@ -133,24 +126,19 @@ private:
 
     // handle timeout IRQ
     void irq_timeout(void);
-    
+
     // trampoline functions to take us from static IRQ function to class functions
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
-    static int irq_radio_trampoline(int irq, void *context);
-    static int irq_timeout_trampoline(int irq, void *context);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     static void irq_handler_thd(void* arg);
     static void trigger_irq_radio_event(void);
     static void trigger_timeout_event(void *arg);
-#endif    
 
     static const uint8_t max_channels = 16;
 
     uint32_t last_debug_print_ms;
 
     void print_debug_info(void);
-    
+
     AP_Radio::stats stats;
     AP_Radio::stats last_stats;
 
@@ -169,8 +157,8 @@ private:
     };
 
     // semaphore between ISR and main thread
-    AP_HAL::Semaphore *sem;    
-    
+    HAL_Semaphore sem;
+
     // dsm config data and status
     struct {
         uint8_t channels[23];
@@ -237,7 +225,7 @@ private:
     };
 
     struct telem_status t_status;
-    
+
     // DSM specific functions
     void dsm_set_channel(uint8_t channel, bool is_dsm2, uint8_t sop_col, uint8_t data_col, uint16_t crc_seed);
 
@@ -252,7 +240,7 @@ private:
 
     // map for mode1/mode2
     void map_stick_mode(uint16_t *channels);
-    
+
     // parse DSM channels from a packet
     bool parse_dsm_channels(const uint8_t *data);
 
@@ -277,7 +265,7 @@ private:
     void irq_handler_send(uint8_t tx_status);
 
     void send_FCC_test_packet(void);
-    
+
     // check sending of fw upload ack
     void check_fw_ack(void);
 
@@ -291,3 +279,4 @@ private:
     void setup_timeout(uint32_t timeout_ms);
 };
 
+#endif

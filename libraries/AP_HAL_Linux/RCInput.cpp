@@ -48,6 +48,11 @@ uint8_t RCInput::num_channels()
     return _num_channels;
 }
 
+void RCInput::set_num_channels(uint8_t num)
+{
+    _num_channels = num;
+}
+
 uint16_t RCInput::read(uint8_t ch)
 {
     if (ch >= _num_channels) {
@@ -276,6 +281,14 @@ void RCInput::_process_dsm_pulse(uint16_t width_s0, uint16_t width_s1)
     return;
 reset:
     memset(&dsm_state, 0, sizeof(dsm_state));
+}
+
+void RCInput::_process_pwm_pulse(uint16_t channel, uint16_t width_s0, uint16_t width_s1)
+{
+    if (channel < _num_channels) {
+        _pwm_values[channel] = width_s1; // range: 700usec ~ 2300usec
+        rc_input_count++;
+    }
 }
 
 /*

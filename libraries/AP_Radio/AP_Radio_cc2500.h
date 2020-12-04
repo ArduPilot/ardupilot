@@ -15,7 +15,7 @@
 #pragma once
 
 /*
-  AP_Radio implementation for CC2500 2.4GHz radio. 
+  AP_Radio implementation for CC2500 2.4GHz radio.
 
   With thanks to cleanflight and betaflight projects
  */
@@ -26,19 +26,19 @@
 #include "telem_structure.h"
 #include "driver_cc2500.h"
 
-#define CC2500_MAX_CHANNELS 16
+#define CC2500_MAX_PWM_CHANNELS 16
 
 class AP_Radio_cc2500 : public AP_Radio_backend
 {
 public:
     AP_Radio_cc2500(AP_Radio &radio);
-    
+
     // init - initialise radio
     bool init(void) override;
 
     // rest radio
     bool reset(void) override;
-    
+
     // send a packet
     bool send(const uint8_t *pkt, uint16_t len) override;
 
@@ -61,22 +61,27 @@ public:
     void update(void) override;
 
     // get TX fw version
-    uint32_t get_tx_version(void) override {
+    uint32_t get_tx_version(void) override
+    {
         // pack date into 16 bits for vendor_id in AUTOPILOT_VERSION
         return (uint16_t(tx_date.firmware_year)<<12) + (uint16_t(tx_date.firmware_month)<<8) + tx_date.firmware_day;
     }
-    
+
     // get radio statistics structure
     const AP_Radio::stats &get_stats(void) override;
 
     // set the 2.4GHz wifi channel used by companion computer, so it can be avoided
-    void set_wifi_channel(uint8_t channel) {
-        // t_status.wifi_chan = channel;
+    void set_wifi_channel(uint8_t channel) override
+    {
+        t_status.wifi_chan = channel;
     }
-    
+
+    // static probe function for device detection
+    static bool probe(void);
+
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
-    static AP_Radio_cc2500 *radio_instance;
+    static AP_Radio_cc2500 *radio_singleton;
     static thread_t *_irq_handler_ctx;
     static virtual_timer_t timeout_vt;
 
@@ -87,16 +92,15 @@ private:
     void radio_init(void);
 
     // semaphore between ISR and main thread
-    AP_HAL::Semaphore *sem;    
+    HAL_Semaphore sem;
 
     AP_Radio::stats stats;
     AP_Radio::stats last_stats;
 
-    uint16_t pwm_channels[CC2500_MAX_CHANNELS];
+    uint16_t pwm_channels[CC2500_MAX_PWM_CHANNELS];
 
     Radio_CC2500 cc2500;
 
-    uint8_t calData[255][3];
     uint8_t bindTxId[2];
     int8_t  bindOffset;
     uint8_t bindHopData[47];
@@ -107,7 +111,6 @@ private:
     int8_t fcc_chan;
     uint32_t packet_timer;
     static uint32_t irq_time_us;
-    const uint32_t sync_time_us = 9000;
     uint8_t chan_count;
     uint32_t lost;
     uint32_t timeouts;
@@ -118,8 +121,12 @@ private:
     uint64_t bind_mask;
     uint8_t best_lqi;
     int8_t best_bindOffset;
+    int8_t auto_bindOffset;
+    uint8_t search_count;
+    uint8_t last_wifi_channel;
 
     uint32_t timeTunedMs;
+    uint32_t autobind_start_recv_ms;
 
     void initTuneRx(void);
     void initialiseData(uint8_t adr);
@@ -128,6 +135,7 @@ private:
     bool getBindData(uint8_t ccLen, uint8_t *packet);
     bool check_best_LQI(void);
     void setChannel(uint8_t channel);
+    void setChannelRX(uint8_t channel);
     void nextChannel(uint8_t skip);
 
     void parse_frSkyX(const uint8_t *packet);
@@ -141,18 +149,18 @@ private:
     void irq_timeout(void);
 
     // bind structure saved to storage
-    static const uint16_t bind_magic = 0x120a;
+    static const uint16_t bind_magic = 0x120c;
     struct PACKED bind_info {
         uint16_t magic;
         uint8_t bindTxId[2];
         int8_t  bindOffset;
-        uint8_t listLength;
+        uint8_t wifi_chan;
         uint8_t bindHopData[47];
     };
-    
+
     void save_bind_info(void);
     bool load_bind_info(void);
-    
+
     enum {
         STATE_INIT = 0,
         STATE_BIND,
@@ -171,6 +179,7 @@ private:
         uint8_t reg;
         uint8_t value;
     };
+    static const config radio_config_GFSK[];
     static const config radio_config[];
 
     struct {
@@ -191,17 +200,29 @@ private:
         uint8_t firmware_month;
         uint8_t firmware_day;
     } tx_date;
-        
-    struct telem_status t_status;
+
+    struct telem_status_cc2500 t_status;
     uint32_t last_pps_ms;
     uint8_t tx_rssi;
     uint8_t tx_pps;
+    bool have_tx_pps;
+    uint8_t last_fcc_chan;
+    uint32_t telem_send_count;
 
     bool handle_D16_packet(const uint8_t *packet);
     bool handle_SRT_packet(const uint8_t *packet);
+    bool handle_autobind_packet(const uint8_t *packet, uint8_t lqi);
+    bool have_channel(uint8_t channel, uint8_t count, uint8_t loop);
+    void setup_hopping_table_SRT(void);
+    uint8_t map_RSSI_to_dBm(uint8_t rssi_raw);
 
     // check sending of fw upload ack
     void check_fw_ack(void);
+    void map_stick_mode(uint16_t *channels);
+    void set_fcc_channel(void);
+
+    // check for double binding
+    void check_double_bind(void);
 };
 
 

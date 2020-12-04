@@ -29,11 +29,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // singleton instance
-SoftSigReaderInt *SoftSigReaderInt::_instance;
+SoftSigReaderInt *SoftSigReaderInt::_singleton;
 
 SoftSigReaderInt::SoftSigReaderInt()
 {
-    _instance = this;
+    _singleton = this;
 }
 
 eicuchannel_t SoftSigReaderInt::get_pair_channel(eicuchannel_t channel)
@@ -63,7 +63,7 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     for (int i=0; i< EICU_CHANNEL_ENUM_END; i++) {
         icucfg.iccfgp[i]=nullptr;
     }
-    
+
     //configure main channel
     icucfg.iccfgp[chan] = &channel_config;
 #ifdef HAL_RCIN_IS_INVERTED
@@ -72,7 +72,7 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     channel_config.alvl = EICU_INPUT_ACTIVE_LOW;
 #endif
     channel_config.capture_cb = nullptr;
-    
+
     //configure aux channel
     icucfg.iccfgp[aux_chan] = &aux_channel_config;
 #ifdef HAL_RCIN_IS_INVERTED
@@ -85,28 +85,33 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
     eicuStart(_icu_drv, &icucfg);
     //sets input filtering to 4 timer clock
     stm32_timer_set_input_filter(_icu_drv->tim, chan, 2);
-    //sets input for aux_chan 
+    //sets input for aux_chan
     stm32_timer_set_channel_input(_icu_drv->tim, aux_chan, 2);
     eicuEnable(_icu_drv);
+}
+
+void SoftSigReaderInt::disable(void)
+{
+    eicuDisable(_icu_drv);
 }
 
 void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel)
 {
     eicuchannel_t channel = get_pair_channel(aux_channel);
-    uint16_t value1 = eicup->tim->CCR[channel];
-    uint16_t value2 = eicup->tim->CCR[aux_channel];
-    
-    _instance->sigbuf.push(value1);
-    _instance->sigbuf.push(value2);
-    
-    //check for missed interrupt 
+    pulse_t pulse;
+    pulse.w0 = eicup->tim->CCR[channel];
+    pulse.w1 = eicup->tim->CCR[aux_channel];
+
+    _singleton->sigbuf.push(pulse);
+
+    //check for missed interrupt
     uint32_t mask = (STM32_TIM_SR_CC1OF << channel) | (STM32_TIM_SR_CC1OF << aux_channel);
     if ((eicup->tim->SR & mask) != 0) {
         //we have missed some pulses
         //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)
-        _instance->sigbuf.push(value2);
-        //second 0 width pulse to keep polarity right
-        _instance->sigbuf.push(value2);
+        pulse.w0 = 0;
+        pulse.w1 = 0;
+        _singleton->sigbuf.push(pulse);
         //reset overcapture mask
         eicup->tim->SR &= ~mask;
     }
@@ -114,12 +119,12 @@ void SoftSigReaderInt::_irq_handler(EICUDriver *eicup, eicuchannel_t aux_channel
 
 bool SoftSigReaderInt::read(uint32_t &widths0, uint32_t &widths1)
 {
-    uint16_t p0, p1;
     if (sigbuf.available() >= 2) {
-        if (sigbuf.pop(p0) && sigbuf.pop(p1)) {
-            widths0 = uint16_t(p0 - last_value);
-            widths1 = uint16_t(p1 - p0);
-            last_value = p1;
+        pulse_t pulse;
+        if (sigbuf.pop(pulse)) {
+            widths0 = uint16_t(pulse.w0 - last_value);
+            widths1 = uint16_t(pulse.w1 - pulse.w0);
+            last_value = pulse.w1;
             return true;
         }
     }

@@ -22,8 +22,7 @@
 bool AP_Rally_Copter::is_valid(const Location &rally_point) const
 {
 #if AC_FENCE == ENABLED
-    Location_Class rally_loc(rally_point);
-    if (!copter.fence.check_destination_within_fence(rally_loc)) {
+    if (!copter.fence.check_destination_within_fence(rally_point)) {
         return false;
     }
 #endif

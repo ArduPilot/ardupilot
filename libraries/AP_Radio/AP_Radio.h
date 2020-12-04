@@ -28,16 +28,16 @@ class AP_Radio
 {
 public:
     friend class AP_Radio_backend;
-    
+
     // constructor
     AP_Radio(void);
-    
+
     // init - initialise radio
     bool init(void);
 
     // reset the radio
     bool reset(void);
-    
+
     // send a packet
     bool send(const uint8_t *pkt, uint16_t len);
 
@@ -58,7 +58,7 @@ public:
 
     // get transmitter firmware version
     uint32_t get_tx_version(void);
-    
+
     struct stats {
         uint32_t bad_packets;
         uint32_t recv_errors;
@@ -71,23 +71,27 @@ public:
         RADIO_TYPE_NONE=0,
         RADIO_TYPE_CYRF6936=1,
         RADIO_TYPE_CC2500=2,
+        RADIO_TYPE_BK2425=3,
+        RADIO_TYPE_AUTO=100,
     };
-    
+
     enum ap_radio_protocol {
         PROTOCOL_AUTO=0,
         PROTOCOL_DSM2=1,
         PROTOCOL_DSMX=2,
         PROTOCOL_D16=3,
+        PROTOCOL_CC2500_GFSK=4, // deviation 57kHz for update of cc2500 with GFSK
     };
-    
+
     // get packet statistics
     const struct stats &get_stats(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
     // get singleton instance
-    static AP_Radio *instance(void) {
-        return _instance;
+    static AP_Radio *get_singleton(void)
+    {
+        return _singleton;
     }
 
     // handle a data96 mavlink packet for fw upload
@@ -95,7 +99,13 @@ public:
 
     // set the 2.4GHz wifi channel used by companion computer, so it can be avoided
     void set_wifi_channel(uint8_t channel);
-    
+
+    // play a tune on the TX
+    void play_tune(const char *tune_str);
+
+    // change TX mode
+    void change_txmode(void);
+
 private:
     AP_Radio_backend *driver;
 
@@ -116,6 +126,6 @@ private:
     AP_Int8 tx_buzzer_adjust;
     AP_Int8 auto_bind_time;
     AP_Int8 auto_bind_rssi;
-    
-    static AP_Radio *_instance;
+
+    static AP_Radio *_singleton;
 };
