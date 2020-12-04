@@ -147,6 +147,9 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
+
+    // Return constrained throttle value 0.5 - 1.0 for transition from VTOL to FW
+    float tailsitter_get_transition_throttle();
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -246,7 +249,7 @@ private:
 
     void init_loiter(void);
     void init_qland(void);
-    void control_loiter(void);
+    void control_loiter(bool is_auto_mode = false);
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
@@ -512,8 +515,8 @@ private:
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
-        // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
-        AP_Int16 vertical_acceleration_time;
+        AP_Int16 vertical_acceleration_time; // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
+        AP_Float transition_throttle;
     } tailsitter;
 
     // tailsitter speed scaler
@@ -532,6 +535,8 @@ private:
 
     // time when we were last in a vtol control mode
     uint32_t last_vtol_mode_ms;
+
+    uint32_t vtol_transition_finished_ms = 0;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);
