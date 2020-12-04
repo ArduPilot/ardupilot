@@ -30,6 +30,7 @@
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_DLVR.h"
+#include "AP_Airspeed_EagleTreeV3.h"
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_Backend.h"
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -370,6 +371,11 @@ void AP_Airspeed::init()
 #if HAL_MSP_AIRSPEED_ENABLED
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
+            break;
+        case TYPE_EAGLETREE_V3:
+#if !HAL_MINIMIZE_FEATURES
+            sensor[i] = new AP_Airspeed_EagleTreeV3(*this, i);
+#endif // !HAL_MINIMIZE_FEATURES
             break;
         }
         if (sensor[i] && !sensor[i]->init()) {
