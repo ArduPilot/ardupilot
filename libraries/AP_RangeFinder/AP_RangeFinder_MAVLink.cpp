@@ -28,8 +28,8 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_270) {
         state.last_reading_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
+        sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
     }
-    sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
 }
 
 /*
