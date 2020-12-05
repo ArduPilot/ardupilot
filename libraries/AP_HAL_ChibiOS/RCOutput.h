@@ -94,7 +94,7 @@ public:
     /*
       timer push (for oneshot min rate)
      */
-    void timer_tick(void) override;
+    void timer_tick(uint32_t last_run_us);
 
     /*
       setup for serial output to a set of ESCs, using the given
@@ -191,6 +191,11 @@ public:
      */
     void serial_led_send(const uint16_t chan) override;
 
+    /*
+      rcout thread
+     */
+    void rcout_thread();
+
 private:
     enum class DshotState {
       IDLE = 0,
@@ -250,7 +255,7 @@ private:
         uint32_t bit_width_mul;
         uint32_t rc_frequency;
         bool in_serial_dma;
-        uint64_t last_dmar_send_us;
+        uint32_t last_dmar_send_us;
         uint32_t dshot_pulse_time_us;
         uint32_t dshot_pulse_send_time_us;
         virtual_timer_t dma_timeout;
@@ -264,6 +269,9 @@ private:
         // structure to hold serial LED data until it can be transferred
         // to the DMA buffer
         SerialLed* serial_led_data[4];
+
+        eventmask_t dshot_event_mask;
+        thread_t* dshot_waiter;
 
         // serial output
         struct {
@@ -326,9 +334,13 @@ private:
 #endif
         // are we safe to send another pulse?
         bool can_send_dshot_pulse() const {
-          return is_dshot_protocol(current_mode) && AP_HAL::micros64() - last_dmar_send_us > (dshot_pulse_time_us + 50);
+          return is_dshot_protocol(current_mode) && AP_HAL::micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
         }
     };
+    /*
+      timer thread for use by dshot events
+     */
+    thread_t *rcout_thread_ctx;
 
     /*
       structure for IRQ handler for soft-serial input
@@ -459,6 +471,7 @@ private:
       Serial lED handling. Max of 32 LEDs uses max 12k of memory per group
       return true if send was successful
     */
+    static const eventmask_t serial_event_mask = EVENT_MASK(10);
     bool serial_led_send(pwm_group &group);
     void serial_led_set_single_rgb_data(pwm_group& group, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue);
     void fill_DMA_buffer_serial_led(pwm_group& group);
@@ -469,10 +482,13 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
-    void dshot_send_groups(bool blocking);
-    void dshot_send(pwm_group &group, bool blocking);
+    void dshot_send_groups();
+    void dshot_send(pwm_group &group);
+    // release locks on the groups that are pending in reverse order
+    void dshot_collect_dma_locks(uint32_t last_run_us);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(void *p);
+    void dma_cancel(pwm_group& group);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
       const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
@@ -509,7 +525,6 @@ private:
     void _set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led);
 
     // serial output support
-    static const eventmask_t serial_event_mask = EVENT_MASK(1);
     bool serial_write_byte(uint8_t b);
     bool serial_read_byte(uint8_t &b);
     void fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);

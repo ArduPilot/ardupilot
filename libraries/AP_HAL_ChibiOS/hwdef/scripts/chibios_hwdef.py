@@ -824,6 +824,10 @@ def write_mcu_config(f):
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
+// avoid timer and RCIN threads to save memory
+#define HAL_NO_TIMER_THREAD
+#define HAL_NO_RCOUT_THREAD
+#define HAL_NO_RCIN_THREAD
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
