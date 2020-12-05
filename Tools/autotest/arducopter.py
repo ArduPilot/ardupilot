@@ -5370,11 +5370,13 @@ class AutoTestCopter(AutoTest):
     def fly_rangefinder_mavlink_distance_sensor(self):
         self.start_subtest("Test mavlink rangefinder using DISTANCE_SENSOR messages")
         self.context_push()
+        self.set_parameter('RTL_ALT_TYPE', 0)
         ex = None
         try:
             self.set_parameter("SERIAL5_PROTOCOL", 1)
             self.set_parameter("RNGFND1_TYPE", 10)
             self.reboot_sitl()
+            self.set_parameter("RNGFND1_MAX_CM", 32767)
 
             self.progress("Should be unhealthy while we don't send messages")
             self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
@@ -5403,12 +5405,87 @@ class AutoTestCopter(AutoTest):
             self.delay_sim_time(1)
             self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
 
+            self.progress("Landing gear should deploy with current_distance below min_distance")
+            self.change_mode('STABILIZE')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_parameter("SERVO10_FUNCTION", 29)
+            self.set_parameter("LGR_DEPLOY_ALT", 1)
+            self.set_parameter("LGR_RETRACT_ALT", 10)  # metres
+            self.delay_sim_time(1)  # servo function maps only periodically updated
+#            self.send_debug_trap()
+
+            self.run_cmd(mavutil.mavlink.MAV_CMD_AIRFRAME_CONFIGURATION,
+                         0,
+                         0,  # deploy
+                         0,
+                         0,
+                         0,
+                         0,
+                         0
+            )
+
+            self.mav.mav.distance_sensor_send(
+                0,  # time_boot_ms
+                100, # min_distance (cm)
+                2500, # max_distance (cm)
+                200, # current_distance (cm)
+                mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, #  type
+                21, #  id
+                mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, #  orientation
+                255  # covariance
+            )
+            self.context_collect("STATUSTEXT")
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Retraction did not happen")
+                self.mav.mav.distance_sensor_send(
+                    0,  # time_boot_ms
+                    100, # min_distance (cm)
+                    6000, # max_distance (cm)
+                    1500, # current_distance (cm)
+                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, #  type
+                    21, #  id
+                    mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, #  orientation
+                    255  # covariance
+                )
+                self.delay_sim_time(0.1)
+                try:
+                    self.wait_text("LandingGear: RETRACT", check_context=True, timeout=0.1)
+                except Exception:
+                    continue
+                self.progress("Retracted")
+                break
+#            self.send_debug_trap()
+            while True:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Deployment did not happen")
+                self.progress("Sending distance-sensor message");
+                self.mav.mav.distance_sensor_send(
+                    0,  # time_boot_ms
+                    300, # min_distance
+                    500, # max_distance
+                    250, # current_distance
+                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, #  type
+                    21, #  id
+                    mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, #  orientation
+                    255  # covariance
+                )
+                try:
+                    self.wait_text("LandingGear: DEPLOY", check_context=True, timeout=0.1)
+                except Exception:
+                    continue
+                self.progress("Deployed")
+                break
+            self.disarm_vehicle()
 
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
+        self.reboot_sitl()
         if ex is not None:
             raise ex
 
