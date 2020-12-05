@@ -923,6 +923,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
             fptr gptr = (fptr) (void *) foo;
             gptr();
         }
+        EXPECT_DELAY_MS(2000);
         hal.scheduler->delay(1000);
         AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
         switch (res) {
