@@ -1894,7 +1894,7 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
     switch (ekf_type()) {
     case EKFType::NONE:
         // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0, 0);
         break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1911,8 +1911,9 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
         EKF_POS_VERT_AGL | /* Set if EKF's vertical position (above ground) estimate is good. | */
         //EKF_CONST_POS_MODE | /* EKF is in constant position mode and does not know it's absolute or relative position. | */
         EKF_PRED_POS_HORIZ_REL | /* Set if EKF's predicted horizontal position (relative) estimate is good. | */
-        EKF_PRED_POS_HORIZ_ABS; /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
-        mavlink_msg_ekf_status_report_send(chan, flags, 0, 0, 0, 0, 0, 0);
+        EKF_PRED_POS_HORIZ_ABS | /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
+        EKF_IS_PRIMARY;  //set if this core is the current primary core
+        mavlink_msg_ekf_status_report_send(chan, flags, 0, 0, 0, 0, 0, 0, 0);
         }
         break;
 #endif
