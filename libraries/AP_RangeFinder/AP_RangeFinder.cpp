@@ -660,15 +660,6 @@ uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
     return backend->distance_cm();
 }
 
-uint16_t RangeFinder::voltage_mv_orient(enum Rotation orientation) const
-{
-    AP_RangeFinder_Backend *backend = find_instance(orientation);
-    if (backend == nullptr) {
-        return 0;
-    }
-    return backend->voltage_mv();
-}
-
 int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
