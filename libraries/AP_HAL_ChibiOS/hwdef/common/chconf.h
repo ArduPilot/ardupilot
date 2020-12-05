@@ -68,6 +68,7 @@ extern "C" {
 #define osalDbgAssert(c, remark) do { if (!(c)) { fault_printf("%s:%d: %s", __FILE__, __LINE__, remark ); chDbgAssert(c, remark); } } while (0)
 #endif
 
+#define PORT_INT_REQUIRED_STACK 256
 #endif
 
 #if HAL_ENABLE_THREAD_STATISTICS
@@ -129,7 +130,7 @@ extern "C" {
   expensive in memory
  */
 #ifndef PORT_INT_REQUIRED_STACK
-#define PORT_INT_REQUIRED_STACK 256
+#define PORT_INT_REQUIRED_STACK 128
 #endif
 
 
