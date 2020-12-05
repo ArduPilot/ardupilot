@@ -105,9 +105,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper, &plane.g2.gripper, update, 10, 75),
 #endif
-#if OSD_ENABLED == ENABLED
-    SCHED_TASK(publish_osd_info, 1, 10),
-#endif
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
@@ -601,17 +598,49 @@ float Plane::tecs_hgt_afe(void)
     return hgt_afe;
 }
 
-#if OSD_ENABLED == ENABLED
-void Plane::publish_osd_info()
+// vehicle specific waypoint info helpers
+bool Plane::get_wp_distance_m(float &distance) const
 {
-    AP_OSD::NavInfo nav_info;
-    nav_info.wp_distance = auto_state.wp_distance;
-    nav_info.wp_bearing = nav_controller->target_bearing_cd();
-    nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
-    nav_info.wp_number = mission.get_current_nav_index();
-    osd.set_nav_info(nav_info);
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() : 0;
+    } else {
+        distance = auto_state.wp_distance;
+    }
+    return true;
 }
-#endif
+
+bool Plane::get_wp_bearing_deg(float &bearing) const
+{
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        bearing = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0;
+    } else {
+        bearing = nav_controller->target_bearing_cd() * 0.01;
+    }
+    return true;
+}
+
+bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
+{
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error() : 0;
+    } else {
+        xtrack_error = nav_controller->crosstrack_error();
+    }
+    return true;
+}
+
 
 // set target location (for use by scripting)
 bool Plane::set_target_location(const Location& target_loc)
