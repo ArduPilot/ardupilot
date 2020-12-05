@@ -35,6 +35,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/flash.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
@@ -344,6 +345,11 @@ bool Scheduler::in_expected_delay(void) const
             return true;
         }
     }
+#ifndef HAL_NO_FLASH_SUPPORT
+    if (stm32_flash_recent_erase()) {
+        return true;
+    }
+#endif
     return false;
 }
 
@@ -393,7 +399,7 @@ void Scheduler::_monitor_thread(void *arg)
                 }
 #endif
         }
-        if (loop_delay >= 500) {
+        if (loop_delay >= 500 && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
