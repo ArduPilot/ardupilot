@@ -1340,6 +1340,11 @@ public:
         Drop = 1
     };
 
+    enum class PreThrowMotorState {
+        STOPPED = 0,
+        RUNNING = 1,
+    };
+
 protected:
 
     const char *name() const override { return "THROW"; }
