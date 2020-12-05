@@ -11,10 +11,11 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 
 public:
     // constructor
-    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
+    using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
-    // static detection function
-    static bool detect();
+    // Assume that if the user set the RANGEFINDER_TYPE parameter to MAVLink,
+    // there is an attached MAVLink rangefinder
+    static bool detect() { return true; }
 
     // update state
     void update(void) override;

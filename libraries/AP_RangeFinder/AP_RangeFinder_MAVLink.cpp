@@ -16,33 +16,6 @@
 #include "AP_RangeFinder_MAVLink.h"
 #include <AP_HAL/AP_HAL.h>
 
-
-
-extern const AP_HAL::HAL& hal;
-
-/*
-   The constructor also initialises the rangefinder. Note that this
-   constructor is not called until detect() returns true, so we
-   already know that we should setup the rangefinder
-*/
-AP_RangeFinder_MAVLink::AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params)
-{
-    state.last_reading_ms = AP_HAL::millis();
-    distance_cm = 0;
-}
-
-/*
-   detect if a MAVLink rangefinder is connected. We'll detect by
-   checking a parameter.
-*/
-bool AP_RangeFinder_MAVLink::detect()
-{
-    // Assume that if the user set the RANGEFINDER_TYPE parameter to MAVLink,
-    // there is an attached MAVLink rangefinder
-    return true;
-}
-
 /*
    Set the distance based on a MAVLINK message
 */
