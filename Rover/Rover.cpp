@@ -107,9 +107,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(afs_fs_check,           10,    200),
 #endif
     SCHED_TASK(read_airspeed,          10,    100),
-#if OSD_ENABLED == ENABLED
-    SCHED_TASK(publish_osd_info,        1,     10),
-#endif
 };
 
 
@@ -384,23 +381,39 @@ void Rover::update_mission(void)
     }
 }
 
-#if OSD_ENABLED == ENABLED
-void Rover::publish_osd_info()
+// vehicle specific waypoint info helpers
+bool Rover::get_wp_distance_m(float &distance) const
 {
-    AP_OSD::NavInfo nav_info {0};
-    if (control_mode == &mode_loiter) {
-        nav_info.wp_xtrack_error = control_mode->get_distance_to_destination();
-    } else {
-        nav_info.wp_xtrack_error = control_mode->crosstrack_error();
+    // see GCS_MAVLINK_Rover::send_nav_controller_output()
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return false;
     }
-    nav_info.wp_distance = control_mode->get_distance_to_destination();
-    nav_info.wp_bearing = control_mode->wp_bearing() * 100.0f;
-    if (control_mode == &mode_auto) {
-         nav_info.wp_number = mode_auto.mission.get_current_nav_index();
-    }
-    osd.set_nav_info(nav_info);
+    distance = control_mode->get_distance_to_destination();
+    return true;
 }
-#endif
+
+// vehicle specific waypoint info helpers
+bool Rover::get_wp_bearing_deg(float &bearing) const
+{
+    // see GCS_MAVLINK_Rover::send_nav_controller_output()
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return false;
+    }
+    bearing = control_mode->wp_bearing();
+    return true;
+}
+
+// vehicle specific waypoint info helpers
+bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
+{
+    // see GCS_MAVLINK_Rover::send_nav_controller_output()
+    if (!rover.control_mode->is_autopilot_mode()) {
+        return false;
+    }
+    xtrack_error = control_mode->crosstrack_error();
+    return true;
+}
+
 
 Rover rover;
 AP_Vehicle& vehicle = rover;
