@@ -311,7 +311,7 @@ class AutoTestCopter(AutoTest):
 
         self.clear_mission_using_mavproxy()
 
-        self.takeoff(10)
+        self.takeoff(10, mode="ALT_HOLD")
 
         """Fly a square, flying N then E ."""
         tstart = self.get_sim_time()
@@ -335,11 +335,8 @@ class AutoTestCopter(AutoTest):
         self.progress("Save WP 1 & 2")
         self.save_wp()
 
-        # switch back to stabilize mode
-        self.change_mode('STABILIZE')
-
-        # increase throttle a bit because we're about to pitch:
-        self.set_rc(3, 1525)
+        # switch back to ALT_HOLD mode
+        self.change_mode('ALT_HOLD')
 
         # pitch forward to fly north
         self.progress("Going north %u meters" % side)
