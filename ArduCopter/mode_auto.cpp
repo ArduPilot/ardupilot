@@ -194,8 +194,8 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
             dest.set_alt_cm(100, Location::AltFrame::ABOVE_HOME);
         }
 
-	// set waypoint controller target
-	if (!wp_nav->set_wp_destination(dest)) {
+    	// set waypoint controller target
+    	if (!wp_nav->set_wp_destination(dest)) {
 	    // failure to set destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
             return;
