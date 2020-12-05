@@ -27,6 +27,7 @@ bool stm32_flash_erasepage(uint32_t page);
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count);
 void stm32_flash_keep_unlocked(bool set);
 bool stm32_flash_ispageerased(uint32_t page);
+bool stm32_flash_recent_erase(void);
 #ifdef __cplusplus
 }
 #endif
