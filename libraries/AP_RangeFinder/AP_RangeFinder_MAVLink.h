@@ -23,6 +23,9 @@ public:
     // Get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
+    int16_t max_distance_cm() const override { return _max_distance_cm; }
+    int16_t min_distance_cm() const override { return _min_distance_cm; }
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -30,7 +33,11 @@ protected:
     }
 
 private:
+
+    // stored data from packet:
     uint16_t distance_cm;
+    uint16_t _max_distance_cm;
+    uint16_t _min_distance_cm;
 
     // start a reading
     static bool start_reading(void);
