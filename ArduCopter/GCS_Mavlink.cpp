@@ -89,6 +89,10 @@ MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 
 void GCS_MAVLINK_Copter::send_position_target_global_int()
 {
+    const uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
+                               POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE | \
+                               POSITION_TARGET_TYPEMASK_FORCE_SET | \
+                               POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
     Location target;
     if (!copter.flightmode->get_wp(target)) {
         return;
@@ -97,7 +101,7 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        0xFFF8, // ignore everything except the x/y/z components
+        type_mask, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
         target.alt * 0.01f, // altitude is sent as a float
