@@ -76,7 +76,7 @@ License, version 3.
 
 Ardupilot is comprised of several parts, vehicles and boards. The list below
 contains the people that regularly contribute to the project and are responsible
-for reviewing patches on their specific area.  See also the list of developers with [merge rights](https://github.com/orgs/ArduPilot/teams/ardupilot-maintainers/members).
+for reviewing patches on their specific area.
 
 - [Andrew Tridgell](https://github.com/tridge):
   - ***Vehicle***: Plane, AntennaTracker
