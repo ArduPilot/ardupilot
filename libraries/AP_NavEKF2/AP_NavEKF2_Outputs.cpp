@@ -551,6 +551,12 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     if (!filterStatus.flags.initalized) {
         flags |= EKF_UNINITIALIZED;
     }
+    if (filterStatus.flags.gps_glitching) {
+        flags |= EKF_GPS_GLITCHING;
+    }
+    if (core_index == frontend->getPrimaryCoreIndex()) {
+        flags |= EKF_IS_PRIMARY;
+    }
 
     // get variances
     float velVar, posVar, hgtVar, tasVar;
@@ -571,7 +577,7 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     }
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar, core_index);
 }
 
 // report the reason for why the backend is refusing to initialise

@@ -1370,9 +1370,16 @@ void  NavEKF2::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
 // send an EKF_STATUS_REPORT message to GCS
 void NavEKF2::send_status_report(mavlink_channel_t chan) const
 {
-    if (core) {
-        core[primary].send_status_report(chan);
+    if (!core) {
+        return;
     }
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (i == primary) {
+            continue;
+        }
+        core[i].send_status_report(chan);
+    }
+    core[primary].send_status_report(chan);
 }
 
 // provides the height limit to be observed by the control loops
