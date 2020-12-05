@@ -111,6 +111,9 @@ struct PACKED log_XKF1 {
 // @Field: MX: Magnetic field strength (body X-axis)
 // @Field: MY: Magnetic field strength (body Y-axis)
 // @Field: MZ: Magnetic field strength (body Z-axis)
+// @Field: IDX: Innovation in vehicle drag acceleration (X-axis component)
+// @Field: IDY: Innovation in vehicle drag acceleration (Y-axis component)
+// @Field: IS: Innovation in vehicle sideslip
 struct PACKED log_XKF2 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -126,6 +129,9 @@ struct PACKED log_XKF2 {
     int16_t magX;
     int16_t magY;
     int16_t magZ;
+    float innovDragX;
+    float innovDragY;
+    float innovSideslip;
 };
 
 
@@ -485,7 +491,7 @@ struct PACKED log_XKY1 {
     { LOG_XKF1_MSG, sizeof(log_XKF1), \
       "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
     { LOG_XKF2_MSG, sizeof(log_XKF2), \
-      "XKF2","QBccccchhhhhh","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ", "s#---nnGGGGGG", "F----BBCCCCCC" }, \
+      "XKF2","QBccccchhhhhhfff","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,IDX,IDY,IS", "s#---nnGGGGGGoor", "F----BBCCCCCC000" }, \
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
