@@ -88,6 +88,8 @@ public:
     // save/load key persistent parameters in bootloader sector
     bool load_persistent_params(ExpandingString &str) const override;
 #endif
+    // request information on uart I/O
+    virtual void uart_info(ExpandingString &str) override;
     
 private:
 #ifdef HAL_PWM_ALARM
