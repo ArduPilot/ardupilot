@@ -561,7 +561,12 @@ void Frame::calculate_forces(const Aircraft &aircraft,
             drag_bf.y = -drag_bf.y;
         }
 
-        drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z);
+        // The application of momentum drag to the Z axis is a 'hack' to compensate for incorrect modelling
+        // of the variation of thust with vel_air_bf.z in SIM_Motor.cpp. If nmot applied, the vehicle will
+        // climb at an unrealistic rate during operation in STABILIZE. TODO replace prop and motor model in
+        // the Motor class with one based on DC motor, mometum disc and blade elemnt theory.
+        drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z) +
+                    model.mdrag_coef * fabsf(vel_air_bf.z) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
         if (is_positive(vel_air_bf.z)) {
             drag_bf.z = -drag_bf.z;
         }
