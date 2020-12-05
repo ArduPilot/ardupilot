@@ -139,6 +139,7 @@ void AP_LandingGear::deploy()
     // set deployed flag
     _deployed = true;
     _have_changed = true;
+    AP::logger().Write_Event(LogEvent::LANDING_GEAR_DEPLOYED);
 }
 
 /// retract - retract landing gear
@@ -150,6 +151,7 @@ void AP_LandingGear::retract()
     // reset deployed flag
     _deployed = false;
     _have_changed = true;
+    AP::logger().Write_Event(LogEvent::LANDING_GEAR_RETRACTED);
 
     // send message only if output has been configured
     if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
