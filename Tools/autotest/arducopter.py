@@ -5367,7 +5367,54 @@ class AutoTestCopter(AutoTest):
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("No RFND messages in log")
 
+    def fly_rangefinder_mavlink_distance_sensor(self):
+        self.start_subtest("Test mavlink rangefinder using DISTANCE_SENSOR messages")
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("SERIAL5_PROTOCOL", 1)
+            self.set_parameter("RNGFND1_TYPE", 10)
+            self.reboot_sitl()
+
+            self.progress("Should be unhealthy while we don't send messages")
+            self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
+
+            self.progress("Should be healthy while we're sending good messages")
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time() - tstart > 5:
+                    raise NotAchievedException("Sensor did not come good")
+                self.mav.mav.distance_sensor_send(
+                    0,  # time_boot_ms
+                    10, # min_distance
+                    50, # max_distance
+                    20, # current_distance
+                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, #  type
+                    21, #  id
+                    mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, #  orientation
+                    255  # covariance
+                )
+                if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, True):
+                    self.progress("Sensor has good state")
+                    break
+                self.delay_sim_time(0.1)
+
+            self.progress("Should be unhealthy again if we stop sending messages")
+            self.delay_sim_time(1)
+            self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
+
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def fly_rangefinder_mavlink(self):
+        self.fly_rangefinder_mavlink_distance_sensor()
+
         # explicit test for the mavlink driver as it doesn't play so nice:
         self.set_parameter("SERIAL5_PROTOCOL", 1)
         self.set_parameter("RNGFND1_TYPE", 10)
