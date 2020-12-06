@@ -254,7 +254,7 @@ public:
     virtual bool get_position(struct Location &loc) const = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const { return false; }
+    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) const = 0;
