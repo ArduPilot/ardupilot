@@ -103,9 +103,6 @@ float AP_Proximity_RPLidarA2::distance_min() const
 
 bool AP_Proximity_RPLidarA2::initialise()
 {
-    // initialise boundary
-    init_boundary();
-
     if (!_initialised) {
         reset_rplidar();            // set to a known state
         Debug(1, "LIDAR initialised");
@@ -315,7 +312,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg)) {
-                    const uint8_t sector = convert_angle_to_sector(angle_deg);
+                    const boundary_location bnd_loc = boundary.get_sector(angle_deg);
+                    const uint8_t sector = bnd_loc.sector;
                     if (distance_m > distance_min()) {
                         if (_last_sector == sector) {
                             if (_distance_m_last > distance_m) {
@@ -324,18 +322,21 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                             }
                         } else {
                             // a new sector started, the previous one can be updated now
-                            _angle[_last_sector] = _angle_deg_last;
-                            _distance[_last_sector] = _distance_m_last;
-                            _distance_valid[_last_sector] = true;
+                            // create a location packet
+                            const boundary_location loc{_last_sector};
+                            boundary.set_attributes(loc, _angle_deg_last, _distance_m_last);
                             // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector, true);
+                            boundary.update_boundary(loc);
+                            // update OA database
+                            database_push(_angle_deg_last, _distance_m_last);
+
                             // initialize the new sector
                             _last_sector     = sector;
                             _distance_m_last = distance_m;
                             _angle_deg_last  = angle_deg;
                         }
                     } else {
-                        _distance_valid[sector] = false;
+                        boundary.reset_sector(bnd_loc);
                     }
                 }
             } else {
