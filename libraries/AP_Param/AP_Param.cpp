@@ -1165,7 +1165,7 @@ void AP_Param::save(bool force_save)
     p.force_save = force_save;
     while (!save_queue.push(p)) {
         // if we can't save to the queue
-        if (hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_armed() || !hal.scheduler->in_main_thread()) {
             // if we are armed then don't sleep, instead we lose the
             // parameter save
             return;
