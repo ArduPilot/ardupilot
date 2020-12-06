@@ -129,6 +129,14 @@ void Plane::rudder_arm_disarm_check()
     // if throttle is not down, then pilot cannot rudder arm/disarm
     if (get_throttle_input() != 0){
         rudder_arm_timer = 0;
+        if (!arming.is_armed() && channel_rudder->get_control_in() > 4000) {
+            static uint8_t counter = 0;
+            counter++;
+            if (counter > 100) {
+                counter = 0;
+                gcs().send_text(MAV_SEVERITY_INFO, "Rudder arming rejected, throttle is not zero");
+            }
+        }
         return;
     }
 
@@ -137,6 +145,14 @@ void Plane::rudder_arm_disarm_check()
     if (auto_throttle_mode &&
         (control_mode != &mode_cruise && control_mode != &mode_fbwb)) {
         rudder_arm_timer = 0;
+        if (!arming.is_armed() && channel_rudder->get_control_in() > 4000) {
+            static uint8_t counter = 0;
+            counter++;
+            if (counter > 100) {
+                counter = 0;
+                gcs().send_text(MAV_SEVERITY_INFO, "Rudder arming rejected in this flightmode");
+            }
+        }
         return;      
     }
 
