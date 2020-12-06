@@ -244,6 +244,9 @@ public:
     // distance from the tip of this vector to a line segment specified by two vectors
     float distance_to_segment(const Vector3<T> &seg_start, const Vector3<T> &seg_end) const;
 
+    // extrapolate position given bearing and pitch (in degrees) and distance
+    void offset_bearing(float bearing, float pitch, float distance);
+    
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1.  If p1 is the
     // zero vector the return from the function will always be the
