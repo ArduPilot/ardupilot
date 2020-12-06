@@ -5773,7 +5773,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 2)
             self.reboot_sitl()
-            self.wait_ready_to_arm()
+            self.wait_ready_to_arm(check_prearm_bit=False)
             self.mavproxy.send('arm throttle\n')
             self.mavproxy.expect('PreArm: Logging failed')
             self.mavproxy.send("module load dataflash_logger\n")
@@ -5781,7 +5781,7 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy.expect('logging started')
             self.mavproxy.send("dataflash_logger set verbose 0\n")
             self.delay_sim_time(1)
-            self.drain_mav() # hopefully draining COMMAND_ACK from that failed arm
+            self.do_timesync_roundtrip()  # drain COMMAND_ACK from that failed arm
             self.arm_vehicle()
             tstart = self.get_sim_time()
             last_status = 0
@@ -5800,8 +5800,9 @@ Also, ignores heartbeats not from our target system'''
                         raise NotAchievedException("Exceptionally low transfer rate")
             self.disarm_vehicle()
         except Exception as e:
+            self.progress("Exception caught: %s" %
+                          self.get_exception_stacktrace(e))
             self.disarm_vehicle()
-            self.progress("Exception (%s) caught" % str(e))
             ex = e
         self.context_pop()
         self.mavproxy.send("module unload dataflash_logger\n")
