@@ -83,7 +83,7 @@ public:
     bool get_position(struct Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override;
+    bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
 
     // status reporting of estimated error
     float           get_error_rp() const override;
