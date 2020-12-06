@@ -33,8 +33,8 @@ void AP_Proximity_AirSimSITL::update(void)
     }
 
     set_status(AP_Proximity::Status::Good);
-
-    memset(_distance_valid, 0, sizeof(_distance_valid));
+    // reset all horizontal sectors to default, so that it can be filled with the fresh lidar data
+    boundary.reset_all_horizontal_sectors();
 
     for (uint16_t i=0; i<points.length; i++) {
         Vector3f &point = points.data[i];
@@ -42,42 +42,37 @@ void AP_Proximity_AirSimSITL::update(void)
             continue;
         }
         const float angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
-        const uint8_t sector = convert_angle_to_sector(angle_deg);
-
+        // Get location on 3-D boundary based on angle to the object
+        const boundary_location bnd_loc = boundary.get_sector(angle_deg);
         const Vector2f v = Vector2f(point.x, point.y);
         const float distance_m = v.length();
 
         if (distance_m > distance_min()) {
-            if (_last_sector == sector) {
+            if (_last_sector == bnd_loc.sector) {
                 if (_distance_m_last > distance_m) {
                     _distance_m_last = distance_m;
                     _angle_deg_last = angle_deg;
                 }
             } else {
                 // new sector started, previous one can be updated
-                _distance_valid[_last_sector] = true;
-                _angle[_last_sector] = _angle_deg_last;
-                _distance[_last_sector] = _distance_m_last;
-
+                // create a boundary location object
+                const boundary_location set_loc{_last_sector};
+                boundary.set_attributes(set_loc, _angle_deg_last, _distance_m_last);
                 // update boundary
-                update_boundary_for_sector(_last_sector, true);
+                boundary.update_boundary(set_loc);
+                // update OA database
+                database_push(_angle_deg_last, _distance_m_last);
 
                 // initialize new sector
-                _last_sector = sector;
+                _last_sector = bnd_loc.sector;
                 _distance_m_last = INT16_MAX;
                 _angle_deg_last = angle_deg;
             }
         } else {
-            _distance_valid[sector] = false;
+            // reset data back to defaults at this location
+            boundary.reset_sector(bnd_loc);
         }
     }
-
-#if 0
-    printf("npoints=%u\n", points.length);
-    for (uint16_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
-        printf("sector[%u] ang=%.1f dist=%.1f\n", i, _angle[i], _distance[i]);
-    }
-#endif
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
