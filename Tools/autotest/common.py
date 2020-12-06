@@ -5736,8 +5736,9 @@ Also, ignores heartbeats not from our target system'''
 
             self.zero_mag_offset_parameters()
 
-            self.change_mode('LOITER')
-            self.wait_ready_to_arm() # so we definitely have position
+            # wait until we definitely know where we are:
+            self.poll_home_position(timeout=120)
+
             ss = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
             if ss is None:
                 raise NotAchievedException("Did not get SIMSTATE")
