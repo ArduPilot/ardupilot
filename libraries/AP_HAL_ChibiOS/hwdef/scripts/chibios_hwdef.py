@@ -821,6 +821,9 @@ def write_mcu_config(f):
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
+    if not args.bootloader:
+        f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
+
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
     flash_size = get_config('FLASH_USE_MAX_KB', type=int, default=0)
