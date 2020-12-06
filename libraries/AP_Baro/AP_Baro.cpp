@@ -199,20 +199,20 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 
 #if HAL_BARO_WIND_COMP_ENABLED
-    // @Group: WCF1_
+    // @Group: 1_WCF_
     // @Path: AP_Baro_Wind.cpp
-    AP_SUBGROUPINFO(sensors[0].wind_coeff, "WCF1_", 18, AP_Baro, WindCoeff),
+    AP_SUBGROUPINFO(sensors[0].wind_coeff, "1_WCF_", 18, AP_Baro, WindCoeff),
 
 #if BARO_MAX_INSTANCES > 1
-    // @Group: WCF2_
+    // @Group: 2_WCF_
     // @Path: AP_Baro_Wind.cpp
-    AP_SUBGROUPINFO(sensors[1].wind_coeff, "WCF2_", 19, AP_Baro, WindCoeff),
+    AP_SUBGROUPINFO(sensors[1].wind_coeff, "2_WCF_", 19, AP_Baro, WindCoeff),
 #endif
 
 #if BARO_MAX_INSTANCES > 2
-    // @Group: WCF3_
+    // @Group: 3_WCF_
     // @Path: AP_Baro_Wind.cpp
-    AP_SUBGROUPINFO(sensors[2].wind_coeff, "WCF3_", 20, AP_Baro, WindCoeff),
+    AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
 #endif
 
