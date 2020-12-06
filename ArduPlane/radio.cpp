@@ -117,27 +117,6 @@ void Plane::init_rc_out_aux()
 */
 void Plane::rudder_arm_disarm_check()
 {
-    AP_Arming::RudderArming arming_rudder = arming.get_rudder_arming_type();
-
-    if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-        //parameter disallows rudder arming/disabling
-        return;
-    }
-
-    // if throttle is not down, then pilot cannot rudder arm/disarm
-    if (get_throttle_input() != 0){
-        rudder_arm_timer = 0;
-        return;
-    }
-
-    // if not in a manual throttle mode and not in CRUISE or FBWB
-    // modes then disallow rudder arming/disarming
-    if (auto_throttle_mode &&
-        (control_mode != &mode_cruise && control_mode != &mode_fbwb)) {
-        rudder_arm_timer = 0;
-        return;      
-    }
-
 	if (!arming.is_armed()) {
 		// when not armed, full right rudder starts arming counter
 		if (channel_rudder->get_control_in() > 4000) {
@@ -158,8 +137,8 @@ void Plane::rudder_arm_disarm_check()
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
-	} else if ((arming_rudder == AP_Arming::RudderArming::ARMDISARM) && !is_flying()) {
-		// when armed and not flying, full left rudder starts disarming counter
+	} else {
+		// full left rudder starts disarming counter
 		if (channel_rudder->get_control_in() < -4000) {
 			uint32_t now = millis();
 
@@ -177,7 +156,7 @@ void Plane::rudder_arm_disarm_check()
 			// not at full left rudder
 			rudder_arm_timer = 0;
 		}
-	}
+    }
 }
 
 void Plane::read_radio()
