@@ -4485,7 +4485,8 @@ Also, ignores heartbeats not from our target system'''
                           mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
                           mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
                           mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
-                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL)
+                          mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL |
+                          mavutil.mavlink.EKF_IS_PRIMARY)
         # none of these bits must be set for arming to happen:
         error_bits = (mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
                       mavutil.mavlink.ESTIMATOR_ACCEL_ERROR)
