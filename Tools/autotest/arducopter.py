@@ -2263,8 +2263,8 @@ class AutoTestCopter(AutoTest):
             # switch to use GPS
             self.set_rc(8, 1000)
 
-            # require_absolute=True infers a GPS is present
-            self.wait_ready_to_arm(require_absolute=True)
+            # ensure we can get a global position:
+            self.poll_home_position(timeout=120)
 
             # record starting position
             old_pos = self.get_global_position_int()
@@ -2275,7 +2275,7 @@ class AutoTestCopter(AutoTest):
 
             # takeoff to 10m in Loiter
             self.progress("Moving to ensure location is tracked")
-            self.takeoff(10, mode="LOITER")
+            self.takeoff(10, mode="LOITER", require_absolute=True)
 
             # fly forward in Loiter
             self.set_rc(2, 1300)
