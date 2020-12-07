@@ -49,6 +49,7 @@
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
+#include <SITL/SIM_PS_TeraRangerTower.h>
 
 #include <SITL/SIM_RichenPower.h>
 #include <AP_HAL/utility/Socket.h>
@@ -284,8 +285,11 @@ private:
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
-    // simulated NMEA rangefinder:
+
+    // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+
+    SITL::PS_TeraRangerTower *terarangertower;
 
     // simulated CRSF devices
     SITL::CRSF *crsf;
