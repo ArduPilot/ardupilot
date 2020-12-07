@@ -421,11 +421,10 @@ void AR_WPNav::update_desired_speed(float dt)
     }
 
     // calculate and limit speed to allow vehicle to stay on circle
-    const float overshoot_speed_max = safe_sqrt(_turn_max_mss * MAX(_turn_radius, radius_m));
+    // ensure limit does not force speed below minimum
+    float overshoot_speed_max = safe_sqrt(_turn_max_mss * MAX(_turn_radius, radius_m));
+    apply_speed_min(overshoot_speed_max);
     des_speed_lim = constrain_float(des_speed_lim, -overshoot_speed_max, overshoot_speed_max);
-
-    // ensure speed does not fall below minimum
-    apply_speed_min(des_speed_lim);
 
     // limit speed based on distance to waypoint and max acceleration/deceleration
     if (is_positive(_oa_distance_to_destination) && is_positive(_atc.get_decel_max())) {
@@ -445,18 +444,15 @@ void AR_WPNav::set_turn_params(float turn_max_g, float turn_radius, bool pivot_p
 }
 
 // adjust speed to ensure it does not fall below value held in SPEED_MIN
-void AR_WPNav::apply_speed_min(float &desired_speed)
+// desired_speed should always be positive (or zero)
+void AR_WPNav::apply_speed_min(float &desired_speed) const
 {
-    if (!is_positive(_speed_min)) {
+    if (!is_positive(_speed_min) || (_speed_min > _speed_max)) {
         return;
     }
 
-    float speed_min = MIN(_speed_min, _speed_max);
-
     // ensure speed does not fall below minimum
-    if (fabsf(desired_speed) < speed_min) {
-        desired_speed = is_negative(desired_speed) ? -speed_min : speed_min;
-    }
+    desired_speed = MAX(desired_speed, _speed_min);
 }
 
 // calculate the crosstrack error (does not rely on L1 controller)
