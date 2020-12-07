@@ -72,6 +72,13 @@ void ModePlanckTracking::run() {
                   yaw_cd = pilot_yaw_rate_cds;
                   is_yaw_rate = true;
               }
+              //Some applications require a fixed yaw command when in PLANCKTRACK
+              //If we are not in takeoff or landing, use the fixed yaw command from the GCS
+              else if(copter.flightmode == &copter.mode_plancktracking)
+              {
+                  yaw_cd = copter.flightmode->auto_yaw.yaw();
+                  is_yaw_rate = false;
+              }
 
               //Convert this to quaternions, yaw rates
               Quaternion q;
