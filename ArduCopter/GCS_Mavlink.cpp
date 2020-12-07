@@ -548,7 +548,12 @@ bool GCS_MAVLINK_Copter::params_ready() const
 void GCS_MAVLINK_Copter::send_banner()
 {
     GCS_MAVLINK::send_banner();
-    send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.motors->get_frame_string());
+    if (copter.motors == nullptr) {
+        send_text(MAV_SEVERITY_INFO, "motors not allocated");
+        return;
+    }
+    send_text(MAV_SEVERITY_INFO, "Frame: %s/%s", copter.motors->get_frame_string(),
+                                                 copter.motors->get_type_string());
 }
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
