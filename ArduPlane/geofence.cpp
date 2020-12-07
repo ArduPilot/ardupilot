@@ -517,15 +517,15 @@ void Plane::disable_fence_for_landing(void)
 {
     if (g.fence_autoenable == FenceAutoEnable::Auto) {
         if (!geofence_set_enabled(false)) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (auto-disable)");
         } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto-disable)");
         }
     } else if (g.fence_autoenable == FenceAutoEnable::AutoDisableFloorOnly) {
         if (!geofence_set_floor_enabled(false)) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (auto-disable)");
         } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto-disable)");
         }
     }
 }
