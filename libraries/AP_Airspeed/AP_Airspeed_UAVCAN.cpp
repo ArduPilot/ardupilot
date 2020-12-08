@@ -116,7 +116,8 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
         driver->_pressure = cb.msg->differential_pressure;
-        if (!isnan(cb.msg->static_air_temperature)) {
+        if (!isnan(cb.msg->static_air_temperature) &&
+            cb.msg->static_air_temperature > 0) {
             driver->_temperature = cb.msg->static_air_temperature - C_TO_KELVIN;
             driver->_have_temperature = true;
         }
