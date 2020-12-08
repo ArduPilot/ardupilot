@@ -290,14 +290,14 @@ class AutoTestCopter(AutoTest):
         self.wait_altitude((alt_min - 5), alt_min, relative=True, called_function=lambda current_alt, target_alt: adjust_altitude(current_alt, target_alt, 1))
         self.hover()
 
-    def setGCSfailsafe(self,paramValue=0):
+    def setGCSfailsafe(self, paramValue=0):
         # Slow down the sim rate if GCS Failsafe is in use
         if paramValue == 0:
-            self.set_parameter("FS_GCS_ENABLE",paramValue)
+            self.set_parameter("FS_GCS_ENABLE", paramValue)
             self.set_parameter("SIM_SPEEDUP",10)
         else:
             self.set_parameter("SIM_SPEEDUP",4)
-            self.set_parameter("FS_GCS_ENABLE",paramValue)
+            self.set_parameter("FS_GCS_ENABLE", paramValue)
 
         
 
@@ -739,7 +739,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.context_pop()
 
-        # Trigger telemety loss with failsafe disabled. Verify no action taken.
+        # Trigger telemetry loss with failsafe disabled. Verify no action taken.
         self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
         self.setGCSfailsafe(0)
         self.takeoffAndMoveAway()
@@ -751,7 +751,7 @@ class AutoTestCopter(AutoTest):
         self.wait_mode("ALT_HOLD")
         self.end_subtest("Completed GCS failsafe disabled test")
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers to RTL. Restory telemety, verify failsafe clears, and change modes.
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers to RTL. Restore telemetry, verify failsafe clears, and change modes.
         self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
@@ -762,7 +762,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("LOITER")
         self.end_subtest("Completed GCS failsafe recovery test")
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers and RTL completes
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
         self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
@@ -773,7 +773,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe RTL with no options test")
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers and land completes
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and land completes
         self.start_subtest("GCS failsafe LAND with no options test: FS_GCS_ENABLE=5 & FS_OPTIONS=0")
         self.setGCSfailsafe(5)
         self.takeoffAndMoveAway()
@@ -784,7 +784,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe land with no options test")
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers and SmartRTL completes
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
         self.start_subtest("GCS failsafe SmartRTL->RTL with no options test: FS_GCS_ENABLE=3 & FS_OPTIONS=0")
         self.setGCSfailsafe(3)
         self.takeoffAndMoveAway()
@@ -795,7 +795,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe SmartRTL->RTL with no options test")
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers and SmartRTL completes
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
         self.start_subtest("GCS failsafe SmartRTL->Land with no options test: FS_GCS_ENABLE=4 & FS_OPTIONS=0")
         self.setGCSfailsafe(4)
         self.takeoffAndMoveAway()
@@ -806,7 +806,7 @@ class AutoTestCopter(AutoTest):
         self.mavproxy.expect("GCS Failsafe Cleared")
         self.end_subtest("Completed GCS failsafe SmartRTL->Land with no options test")
 
-        # Trigger telemetry loss with an invalid failsafe value. Verify failsafe tirggers and RTL completes
+        # Trigger telemetry loss with an invalid failsafe value. Verify failsafe triggers and RTL completes
         self.start_subtest("GCS failsafe invalid value with no options test: FS_GCS_ENABLE=99 & FS_OPTIONS=0")
         self.setGCSfailsafe(99)
         self.takeoffAndMoveAway()
