@@ -42,11 +42,14 @@ void DBGprint::dflog(const uint32_t interval_ms, const char *recnam, const char 
     uint32_t now = AP_HAL::millis();
     if ((instance->_last_millis == 0) ||
         (now - instance->_last_millis) >= interval_ms) {
-        instance->_last_millis = now;
-        va_list ap;
-        va_start(ap, fmt);
-        AP::logger().WriteV(recnam, labels, nullptr, nullptr, fmt, ap);
-        va_end(ap);
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger) {
+            instance->_last_millis = now;
+            va_list ap;
+            va_start(ap, fmt);
+            logger->WriteV(recnam, labels, nullptr, nullptr, fmt, ap);
+            va_end(ap);
+        }
     }
 }
 
