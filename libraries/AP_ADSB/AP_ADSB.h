@@ -42,6 +42,7 @@ class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
     friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_Sagetech;
 
     // constructor
     AP_ADSB();
@@ -59,6 +60,7 @@ public:
     enum class Type {
         None                = 0,
         uAvionix_MAVLink    = 1,
+        Sagetech            = 2,
     };
 
     struct adsb_vehicle_t {
