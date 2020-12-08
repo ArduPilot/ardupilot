@@ -159,6 +159,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
             }
         }
+        if (copter.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+            // FS_GCS_ENABLE == 2 has been removed
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
+        }
 
         // lean angle parameter check
         if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
