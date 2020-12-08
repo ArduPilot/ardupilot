@@ -50,6 +50,11 @@ void AP_Airspeed_MSP::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
         press_count /= 2;
     }
 
+    if (pkt.temp == INT16_MIN) {
+        // invalid temperature
+        return;
+    }
+
     sum_temp += pkt.temp*0.01;
     temp_count++;
     if (temp_count > 100) {
