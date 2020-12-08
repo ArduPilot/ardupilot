@@ -24,6 +24,7 @@
 
 #if HAL_ADSB_ENABLED
 #include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_Sagetech.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -53,7 +54,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
@@ -198,11 +199,16 @@ void AP_ADSB::init(void)
     if (detected_num_instances == 0) {
         for (uint8_t i=0; i<ADSB_MAX_INSTANCES; i++) {
             detect_instance(i);
-            if (_backend[i] != nullptr) {
-                // we loaded a driver for this instance, so it must be
-                // present (although it may not be healthy)
-                detected_num_instances = i+1;
+            if (_backend[i] == nullptr) {
+                continue;
             }
+            if (!_backend[i]->init()) {
+                delete _backend[i];
+                _backend[i] = nullptr;
+                continue;
+            }
+            // success
+            detected_num_instances = i+1;
         }
     }
 
@@ -243,9 +249,17 @@ void AP_ADSB::detect_instance(uint8_t instance)
     switch (get_type(instance)) {
     case Type::None:
         return;
+
     case Type::uAvionix_MAVLink:
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
             _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
+            return;
+        }
+        break;
+
+    case Type::Sagetech:
+        if (AP_ADSB_Sagetech::detect()) {
+            _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
             return;
         }
         break;
