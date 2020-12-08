@@ -8,6 +8,8 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#include "../../DBGprint.h"
+
 void setup();
 void loop();
 void test_print(void);
