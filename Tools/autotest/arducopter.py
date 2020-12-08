@@ -752,8 +752,9 @@ class AutoTestCopter(AutoTest):
         self.end_subtest("Completed GCS failsafe disabled test")
 
         # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers to RTL. Restory telemety, verify failsafe clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test")
+        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
         self.setGCSfailsafe(1)
+        self.set_parameter('FS_OPTIONS', 0)
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.set_heartbeat_rate(self.speedup)
@@ -763,6 +764,8 @@ class AutoTestCopter(AutoTest):
 
         # Trigger telemetry loss with failsafe enabled. Verify failsafe tirggers and RTL completes
         self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
+        self.setGCSfailsafe(1)
+        self.set_parameter('FS_OPTIONS', 0)
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.wait_rtl_complete()
