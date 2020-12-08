@@ -48,7 +48,8 @@ void loop(void)
             value = !value;
         }
         DBG_WCONSOLE(value, 0, "watch, value: %d", value);
-//        DBG_LOG(200, "DBG", "Qf", "TimeUS,Value", AP_HAL::micros(), (float) value);
+        // logger not instantiated
+        DBG_LOG(200, "DBG", "Qf", "TimeUS,Value", AP_HAL::micros(), (float) value);
     }
 
     // Delay 1 mS for 1 KHz loop rate
