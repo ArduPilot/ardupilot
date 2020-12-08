@@ -815,6 +815,7 @@ void NavEKF3_core::readAirSpdData()
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
         airspeed->use(selected_airspeed) &&
+        airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
         tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * dal.get_EAS2TAS();
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
