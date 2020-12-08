@@ -163,8 +163,16 @@ void Mode::get_pilot_desired_lateral(float &lateral_out)
 void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_out)
 {
     // get steering and throttle in the -1 to +1 range
-    const float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
-    const float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
+    float desired_steering = constrain_float(rover.channel_steer->norm_input_dz(), -1.0f, 1.0f);
+    float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
+
+    // handle two paddle input
+    if ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get() == PILOT_STEER_TYPE_TWO_PADDLES) {
+        const float left_paddle = desired_steering;
+        const float right_paddle = desired_throttle;
+        desired_steering = (left_paddle - right_paddle) * 0.5f;
+        desired_throttle = (left_paddle + right_paddle) * 0.5f;
+    }
 
     // calculate angle of input stick vector
     heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
