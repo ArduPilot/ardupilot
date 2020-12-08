@@ -175,6 +175,11 @@ void AP_Periph_FW::send_msp_airspeed(void)
     if (msp.last_airspeed_ms == last_update_ms) {
         return;
     }
+    if (!airspeed.healthy()) {
+        // we don't report at all for an unhealthy sensor. This maps
+        // to unhealthy in the flight controller driver
+        return;
+    }
     msp.last_airspeed_ms = last_update_ms;
 
     p.instance = 0;
