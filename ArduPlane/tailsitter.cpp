@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "Plane.h"
+#include <AP_Logger/DBGprint.h>
 
 /*
   return true when flying a tailsitter
@@ -74,8 +75,8 @@ bool QuadPlane::acro_mode_takeoff(void) const
         break;
     }
 
-#ifdef DBG_PRINT
-    DBGprint::watch(DBGTYPE::CONSOLE, (int)state, 0, "state: %d\n", (int)state);
+#if 1
+    DBG_WCONSOLE((int)state, 0, "state: %d\n", (int)state);
 #endif
 
     return result;
