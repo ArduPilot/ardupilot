@@ -129,6 +129,10 @@ void AP_Periph_FW::send_msp_baro(void)
         return;
     }
     msp.last_baro_ms = baro.get_last_update(0);
+    if (!baro.healthy()) {
+        // don't send any data
+        return;
+    }
 
     p.instance = 0;
     p.time_ms = msp.last_baro_ms;
@@ -148,6 +152,9 @@ void AP_Periph_FW::send_msp_compass(void)
     MSP::msp_compass_data_message_t p;
 
     if (msp.last_mag_ms == compass.last_update_ms(0)) {
+        return;
+    }
+    if (!compass.healthy()) {
         return;
     }
     msp.last_mag_ms = compass.last_update_ms(0);
