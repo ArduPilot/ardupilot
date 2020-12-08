@@ -50,6 +50,7 @@
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
+#include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
 #include <AP_HAL/utility/Socket.h>
@@ -288,6 +289,9 @@ private:
 
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+
+    // simulated SF45B proximity sensor:
+    SITL::PS_LightWare_SF45B *sf45b;
 
     SITL::PS_TeraRangerTower *terarangertower;
 
