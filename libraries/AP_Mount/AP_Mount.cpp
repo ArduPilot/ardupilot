@@ -510,7 +510,6 @@ void AP_Mount::update(float height_above_ground_m)
                     _reached_altitude = true;
                 }
             }
-
             _backends[instance]->update();
         }
     }
