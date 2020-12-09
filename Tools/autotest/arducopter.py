@@ -5677,17 +5677,33 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         ex = None
         try:
-            self.set_parameter("EK2_ALT_SOURCE", 2)
+            # disable barometer so there is no altitude source
+            self.set_parameter("SIM_BARO_DISABLE", 1)
+            self.set_parameter("SIM_BARO2_DISABL", 1)
             self.wait_gps_disable(position_vertical=True)
+
+            # turn off arming checks (mandatory arming checks will still be run)
+            self.set_parameter("ARMING_CHECK", 0)
+
+            # delay 12 sec to allow EKF to lose altitude estimate
+            self.delay_sim_time(12)
+
             self.change_mode("ALT_HOLD")
             self.assert_prearm_failure("Need Alt Estimate")
+
+            # force arm vehicle in stabilize to bypass barometer pre-arm checks
             self.change_mode("STABILIZE")
             self.arm_vehicle()
-            self.takeoff()
+            self.set_rc(3, 1700)
             try:
                 self.change_mode("ALT_HOLD", timeout=10)
             except AutoTestTimeoutException:
                 self.progress("PASS not able to set mode without Position : %s" % "ALT_HOLD")
+
+            # check that mode change to ALT_HOLD has failed (it should)
+            if self.mode_is("ALT_HOLD"):
+                raise NotAchievedException("FAIL - Changed to ALT_HOLD with no altitude estimate")
+
         except Exception as e:
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))
