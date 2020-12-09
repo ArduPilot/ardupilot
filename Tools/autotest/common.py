@@ -6526,6 +6526,29 @@ Also, ignores heartbeats not from our target system'''
         if self.get_parameter(parameter_name) != new_parameter_value:
             raise NotAchievedException("Parameter value did not stick")
 
+    def test_initial_mode(self):
+        if self.is_copter():
+            init_mode = (9, "LAND")
+        if self.is_rover():
+            init_mode = (4, "HOLD")
+        if self.is_plane():
+            init_mode = (13, "TAKEOFF")
+        if self.is_tracker():
+            init_mode = (1, "STOP")
+        if self.is_sub():
+            return # NOT Supported yet
+        self.context_push()
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.progress("Setting INITIAL_MODE to %s" % init_mode[1])
+        self.set_parameter("INITIAL_MODE", init_mode[0])
+        self.reboot_sitl()
+        self.wait_mode(init_mode[1])
+        self.progress("Testing back mode switch")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_for_mode_switch_poll()
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_gripper(self):
         self.context_push()
         self.set_parameter("GRIP_ENABLE", 1)
@@ -8169,6 +8192,10 @@ switch value'''
             ("GetCapabilities",
              "Get Capabilities",
              self.test_get_autopilot_capabilities),
+
+            ("InitialMode",
+             "Test initial mode switching",
+             self.test_initial_mode),
         ]
 
     def post_tests_announcements(self):
