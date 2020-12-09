@@ -4735,16 +4735,22 @@ class AutoTestCopter(AutoTest):
         # ensure we can't switch to LOITER without position
         self.progress("Ensure we can't enter LOITER without position")
         self.context_push()
-        self.set_parameter("GPS_TYPE", 0)
+        self.set_parameter("GPS_TYPE", 2)
+        self.set_parameter("SIM_GPS_DISABLE", 1)
         self.reboot_sitl()
-        self.change_mode('STABILIZE')
-        self.wait_ekf_flags((mavutil.mavlink.ESTIMATOR_ATTITUDE |
+
+        # check for expected EKF flags
+        ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
+        expected_ekf_flags = (mavutil.mavlink.ESTIMATOR_ATTITUDE |
                              mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
                              mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
-                             mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
-                             mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL),
-                            0,
-                            timeout=120)
+                             mavutil.mavlink.ESTIMATOR_CONST_POS_MODE)
+        if ahrs_ekf_type == 2:
+            expected_ekf_flags = expected_ekf_flags | mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL
+        self.wait_ekf_flags(expected_ekf_flags, 0, timeout=120)
+
+        # arm in Stabilize and attempt to switch to Loiter
+        self.change_mode('STABILIZE')
         self.arm_vehicle()
         self.mavproxy.send("mode LOITER\n")
         self.mavproxy.expect("requires position")
