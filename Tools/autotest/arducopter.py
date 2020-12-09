@@ -5430,6 +5430,8 @@ class AutoTestCopter(AutoTest):
             except AutoTestTimeoutException:
                 self.progress("PASS not able to set mode without Position : %s" % "ALT_HOLD")
         except Exception as e:
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
