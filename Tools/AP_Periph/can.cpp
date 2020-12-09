@@ -82,6 +82,10 @@ static uint8_t transfer_id;
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
 #endif
 
+#ifndef AP_PERIPH_BATTERY_MODEL_NAME
+#define AP_PERIPH_BATTERY_MODEL_NAME CAN_APP_NODE_NAME
+#endif
+
 #ifndef CAN_PROBE_CONTINUOUS
 #define CAN_PROBE_CONTINUOUS 0
 #endif
@@ -1296,6 +1300,16 @@ void AP_Periph_FW::can_battery_update(void)
         fix_float16(pkt.voltage);
         fix_float16(pkt.current);
         fix_float16(pkt.temperature);
+
+        pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
+        pkt.state_of_charge_pct = battery.lib.capacity_remaining_pct(i);
+        pkt.model_instance_id = i+1;
+
+        // example model_name: "org.ardupilot.ap_periph SN 123"
+        char text[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MODEL_NAME_MAX_LENGTH+1] {};
+        hal.util->snprintf(text, sizeof(text), "%s %d", AP_PERIPH_BATTERY_MODEL_NAME, serial_number);
+        pkt.model_name.len = strlen(text);
+        pkt.model_name.data = (uint8_t *)text;
 
         uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE] {};
         const uint16_t total_size = uavcan_equipment_power_BatteryInfo_encode(&pkt, buffer);
