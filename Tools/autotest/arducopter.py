@@ -1789,6 +1789,7 @@ class AutoTestCopter(AutoTest):
 
             tstart = self.get_sim_time()
             timeout = 60
+            started_climb = False
             while self.get_sim_time_cached() - tstart < timeout:
                 m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
                 spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
@@ -1805,16 +1806,23 @@ class AutoTestCopter(AutoTest):
                     raise NotAchievedException(("Speed should be limited by"
                                                 "EKF optical flow limits"))
 
-            self.progress("Moving higher")
-            self.change_alt(60)
+                # after 30 seconds start climbing                
+                if not started_climb and self.get_sim_time_cached() - tstart > 30:
+                    started_climb = True
+                    self.set_rc(3, 1900)
+                    self.progress("Moving higher")
 
-            self.wait_groundspeed(10, 100, timeout=60)
+                # check altitude is not climbing above 35m
+                if alt > 35:
+                    raise NotAchievedException("Alt should be limited by EKF optical flow limits")
+
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
 
         self.set_rc(2, 1500)
+        self.set_rc(3, 1500)
         self.context_pop()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
