@@ -5544,5 +5544,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ret[8] = 1800
         return ret
 
+    def initial_mode_switch_mode(self):
+        return "MANUAL"
+
     def default_mode(self):
         return 'MANUAL'
