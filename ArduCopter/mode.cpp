@@ -498,7 +498,12 @@ void Mode::make_safe_ground_handling(bool spool_down)
     if (spool_down) {
         // command aircraft to initiate the shutdown process
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    } else if (copter.ap.using_interlock) {
+        // If interlock enabled keep rotors turning 
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
+
+
     switch (motors->get_spool_state()) {
 
     case AP_Motors::SpoolState::SHUT_DOWN:
