@@ -42,7 +42,7 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
 // dedicated init for lua scripting
 bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
 {
-    if (_last_frame_class != MOTOR_FRAME_SCRIPTING_MATRIX) {
+    if (_active_frame_class != MOTOR_FRAME_SCRIPTING_MATRIX) {
         // not the correct class
         return false;
     }

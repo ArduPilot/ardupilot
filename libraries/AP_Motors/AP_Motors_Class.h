@@ -49,7 +49,7 @@ public:
     };
 
     // return string corresponding to frame_class
-    virtual const char* get_frame_string() = 0;
+    virtual const char* get_frame_string() const = 0;
 
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -71,7 +71,7 @@ public:
     };
 
     // return string corresponding to frame_type
-    virtual const char* get_type_string() { return ""; }
+    virtual const char* get_type_string() const { return ""; }
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);

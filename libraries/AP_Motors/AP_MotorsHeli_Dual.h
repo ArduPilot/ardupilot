@@ -99,7 +99,7 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    const char* get_frame_string() override { return "HELI_DUAL"; }
+    const char* get_frame_string() const override { return "HELI_DUAL"; }
 
 protected:
 

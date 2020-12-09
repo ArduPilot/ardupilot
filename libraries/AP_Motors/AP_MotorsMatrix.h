@@ -70,8 +70,9 @@ public:
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
 
-    const char*         get_frame_string() override { return _frame_class_string; }
-    const char*         get_type_string() override { return _frame_type_string; }
+    const char*         get_frame_string() const override { return _frame_class_string; }
+    const char*         get_type_string() const override { return _frame_type_string; }
+
     // disable the use of motor torque to control yaw. Used when an external mechanism such
     // as vectoring is used for yaw control
     void                disable_yaw_torque(void) override;
