@@ -4310,7 +4310,7 @@ class AutoTest(ABC):
                 else:
                     sum_of_achieved_values = 0.0
                 count_of_achieved_values = 0
-        raise AutoTestTimeoutException("Failed to attain %s want %s, reach %s" % (value_name, str(target), str(sum_of_achieved_values * (1.0 / count_of_achieved_values)) if count_of_achieved_values != 0 else str(last_value)))
+        raise AutoTestTimeoutException("Failed to attain %s want %s, reached %s" % (value_name, str(target), str(sum_of_achieved_values * (1.0 / count_of_achieved_values)) if count_of_achieved_values != 0 else str(last_value)))
 
     def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
