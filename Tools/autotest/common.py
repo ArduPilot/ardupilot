@@ -3627,8 +3627,9 @@ class AutoTest(ABC):
                 self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
             if m.command == command:
                 if m.result != want_result:
-                    raise ValueError("Expected %s got %s" % (want_result,
-                                                             m.result))
+                    raise ValueError("Expected %s got %s" % (
+                        mavutil.mavlink.enums["MAV_RESULT"][want_result].name,
+                        mavutil.mavlink.enums["MAV_RESULT"][m.result].name))
                 break
 
     def verify_parameter_values(self, parameter_stuff, max_delta=0.0):
