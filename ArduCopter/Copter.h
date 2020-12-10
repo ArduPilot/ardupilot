@@ -473,10 +473,6 @@ private:
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
 
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-    bool auto_trim_started = false;
-
     // Camera
 #if CAMERA == ENABLED
     AP_Camera camera{MASK_LOG_CAMERA, current_loc};
@@ -819,10 +815,11 @@ private:
     void motor_test_stop();
 
     // motors.cpp
-    void arm_motors_check();
     void auto_disarm_check();
     void motors_output();
     void lost_vehicle_check();
+    uint32_t auto_disarm_begin;
+
 
     // navigation.cpp
     void run_nav_updates(void);
@@ -864,11 +861,6 @@ private:
     void accel_cal_update(void);
     void init_proximity();
     void update_proximity();
-
-    // RC_Channel.cpp
-    void save_trim();
-    void auto_trim();
-    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;
