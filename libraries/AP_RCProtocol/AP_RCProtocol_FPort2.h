@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
+
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
@@ -53,8 +55,6 @@ private:
 
     struct {
         bool available;
-        uint32_t data;
-        uint16_t appid;
-        uint8_t frame;
+        AP_Frsky_SPort::sport_packet_t packet;
     } telem_data;
 };
