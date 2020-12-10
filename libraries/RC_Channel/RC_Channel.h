@@ -403,6 +403,11 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::FPORT_PAD));
     }
 
+    // returns true if we should pass through data for crsf telemetry
+    bool crsf_custom_telemetry(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::CRSF_CUSTOM_TELEMETRY));
+    }
+
     // should a channel reverse option affect aux switches
     bool switch_reverse_allowed(void) const {
         return get_singleton() != nullptr && (_options & uint32_t(Option::ALLOW_SWITCH_REV));
@@ -464,14 +469,15 @@ public:
 protected:
 
     enum class Option {
-        IGNORE_RECEIVER       = (1 << 0), // RC receiver modules
-        IGNORE_OVERRIDES      = (1 << 1), // MAVLink overrides
-        IGNORE_FAILSAFE       = (1 << 2), // ignore RC failsafe bits
-        FPORT_PAD             = (1 << 3), // pad fport telem output
-        LOG_DATA              = (1 << 4), // log rc input bytes
-        ARMING_CHECK_THROTTLE = (1 << 5), // run an arming check for neutral throttle
-        ARMING_SKIP_CHECK_RPY = (1 << 6), // skip the an arming checks for the roll/pitch/yaw channels
-        ALLOW_SWITCH_REV      = (1 << 7), // honor the reversed flag on switches
+        IGNORE_RECEIVER         = (1U << 0), // RC receiver modules
+        IGNORE_OVERRIDES        = (1U << 1), // MAVLink overrides
+        IGNORE_FAILSAFE         = (1U << 2), // ignore RC failsafe bits
+        FPORT_PAD               = (1U << 3), // pad fport telem output
+        LOG_DATA                = (1U << 4), // log rc input bytes
+        ARMING_CHECK_THROTTLE   = (1U << 5), // run an arming check for neutral throttle
+        ARMING_SKIP_CHECK_RPY   = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
+        ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
+        CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
     };
 
     void new_override_received() {
