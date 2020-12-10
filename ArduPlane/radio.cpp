@@ -105,8 +105,6 @@ void Plane::init_rc_out_aux()
 {
     SRV_Channels::enable_aux_servos();
 
-    SRV_Channels::cork();
-    
     servos_output();
     
     // setup PWM values to send if the FMU firmware dies
