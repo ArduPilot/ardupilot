@@ -29,6 +29,8 @@ extern const AP_HAL::HAL& hal;
 
 #include "RC_Channel.h"
 
+#include <AP_Arming/AP_Arming.h>
+
 /*
   channels group object constructor
  */
@@ -81,6 +83,10 @@ bool RC_Channels::read_input(void)
     bool success = false;
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         success |= channel(i)->update();
+    }
+
+    if (success) {
+        rudder_arm_disarm_check();
     }
 
     return success;
@@ -232,6 +238,59 @@ uint32_t RC_Channels::enabled_protocols() const
         return 1U;
     }
     return uint32_t(_protocols.get());
+}
+
+
+/*
+  check for pilot input on rudder stick for arming/disarming
+*/
+void RC_Channels::rudder_arm_disarm_check()
+{
+    const RC_Channel *channel = rc().get_arming_channel();
+    if (channel == nullptr) {
+        return;
+    }
+
+    if (!AP::arming().is_armed()) {
+        // when not armed, full right rudder starts arming timer
+        if (channel->get_control_in() > 4000) {
+            const uint32_t now = AP_HAL::millis();
+
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
+
+                if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
+            } else {
+                //time to arm!
+                AP::arming().arm(AP_Arming::Method::RUDDER);
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full right rudder
+            rudder_arm_timer = 0;
+        }
+    } else {
+        // full left rudder starts disarming timer
+        if (channel->get_control_in() < -4000) {
+            uint32_t now = AP_HAL::millis();
+
+            if (rudder_arm_timer == 0 ||
+                now - rudder_arm_timer < 3000) {
+                if (rudder_arm_timer == 0) {
+                    rudder_arm_timer = now;
+                }
+            } else {
+                //time to disarm!
+                AP::arming().disarm(AP_Arming::Method::RUDDER);
+                rudder_arm_timer = 0;
+            }
+        } else {
+            // not at full left rudder
+            rudder_arm_timer = 0;
+        }
+    }
 }
 
 // singleton instance

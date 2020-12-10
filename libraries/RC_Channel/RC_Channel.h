@@ -523,6 +523,12 @@ private:
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
+
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
+    // check for arm/disarm command based on rudder stick position:
+    void rudder_arm_disarm_check();
+
 };
 
 RC_Channels &rc();
