@@ -98,7 +98,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
-           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
