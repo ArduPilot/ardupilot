@@ -686,6 +686,12 @@ private:
 
     RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
     RC_Channel dummy_rcchannel;
+
+    // time that rudder arming has been running
+    uint32_t rudder_arm_timer;
+    // check for arm/disarm command based on rudder stick position:
+    void rudder_arm_disarm_check();
+
 };
 
 RC_Channels &rc();
