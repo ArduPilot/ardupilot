@@ -644,6 +644,8 @@ public:
     RC_Channel &get_forward_channel() const;
     RC_Channel &get_lateral_channel() const;
 
+    bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+
 protected:
 
     void new_override_received() {
@@ -690,6 +692,9 @@ private:
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
+    // true if we have seen a neutral rudder control input after
+    // arming via rudder-input:
+    bool have_seen_neutral_rudder;
     // check for arm/disarm command based on rudder stick position:
     void rudder_arm_disarm_check();
 
