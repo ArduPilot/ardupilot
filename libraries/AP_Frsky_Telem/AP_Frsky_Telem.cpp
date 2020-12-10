@@ -81,12 +81,15 @@ bool AP_Frsky_Telem::init(bool use_external_data)
     return true;
 }
 
-bool AP_Frsky_Telem::_get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+bool AP_Frsky_Telem::_get_telem_data(AP_Frsky_Backend::sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
 {
     if (_backend == nullptr) {
         return false;
     }
-    return _backend->get_telem_data(frame, appid, data);
+    if (packet_array == nullptr) {
+        return false;
+    }
+    return _backend->get_telem_data(packet_array, packet_count, max_size);
 }
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -99,24 +102,28 @@ bool AP_Frsky_Telem::_set_telem_data(uint8_t frame, uint16_t appid, uint32_t dat
 }
 #endif
 
-/*
-  fetch Sport data for an external transport, such as FPort
- */
-bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+void AP_Frsky_Telem::try_create_singleton_for_external_data()
 {
+    // try to allocate an AP_Frsky_Telem object only if we are disarmed
     if (!singleton && !hal.util->get_soft_armed()) {
-        // if telem data is requested when we are disarmed and don't
-        // yet have a AP_Frsky_Telem object then try to allocate one
         new AP_Frsky_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init(true);
         }
     }
+}
+
+/*
+  fetch Sport data for an external transport, such as FPort
+ */
+bool AP_Frsky_Telem::get_telem_data(AP_Frsky_Backend::sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
+{
+    try_create_singleton_for_external_data();
     if (singleton == nullptr) {
         return false;
     }
-    return singleton->_get_telem_data(frame, appid, data);
+    return singleton->_get_telem_data(packet_array, packet_count, max_size);
 }
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -125,14 +132,7 @@ bool AP_Frsky_Telem::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &d
  */
 bool AP_Frsky_Telem::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
 {
-    if (!singleton && !hal.util->get_soft_armed()) {
-        // if telem data is requested when we are disarmed and don't
-        // yet have a AP_Frsky_Telem object then try to allocate one
-        new AP_Frsky_Telem();
-        if (singleton) {
-            singleton->init(true);
-        }
-    }
+    try_create_singleton_for_external_data();
     if (singleton == nullptr) {
         return false;
     }
