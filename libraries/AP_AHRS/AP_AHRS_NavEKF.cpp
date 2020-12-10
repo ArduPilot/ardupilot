@@ -1372,16 +1372,20 @@ bool AP_AHRS_NavEKF::healthy(void) const
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
+    bool ret = true;
+    if (!healthy()) {
+        // this rather generic failure might be overwritten by
+        // something more specific in the "backend"
+        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
+        ret = false;
+    }
+
     switch (ekf_type()) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
 #endif
     case EKFType::NONE:
-        if (!healthy()) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
-            return false;
-        }
-        return true;
+        return ret;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1389,7 +1393,7 @@ bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 not started");
             return false;
         }
-        return EKF2.pre_arm_check(failure_msg, failure_msg_len);
+        return EKF2.pre_arm_check(failure_msg, failure_msg_len) && ret;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
@@ -1398,7 +1402,7 @@ bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
             return false;
         }
-        return EKF3.pre_arm_check(failure_msg, failure_msg_len);
+        return EKF3.pre_arm_check(failure_msg, failure_msg_len) && ret;
 #endif
     }
 
