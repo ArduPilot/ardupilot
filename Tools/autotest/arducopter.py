@@ -5616,6 +5616,16 @@ class AutoTestCopter(AutoTest):
         print("log difference: %s" % str(log_difference))
         return log_difference[0]
 
+    def test_callisto(self):
+        self.customise_SITL_commandline([
+            "--defaults", self.model_defaults_filepath('ArduCopter', 'Callisto')
+        ],
+                                        model="octa-quad:@ROMFS/models/Callisto.json",
+                                        wipe=True,
+)
+        self.takeoff(10)
+        self.do_RTL()
+
     def test_replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -6014,6 +6024,10 @@ class AutoTestCopter(AutoTest):
             ("DataFlashErase",
              "Test DataFlash Block backend erase",
              self.test_dataflash_erase),
+
+            ("Callisto",
+             "Test Callisto",
+             self.test_callisto),
 
             ("Replay",
              "Test Replay",
