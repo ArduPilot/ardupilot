@@ -74,7 +74,8 @@ void ModePlanckTracking::run() {
               }
               //Some applications require a fixed yaw command when in PLANCKTRACK
               //If we are not in takeoff or landing, use the fixed yaw command from the GCS
-              else if(copter.flightmode == &copter.mode_plancktracking)
+              else if(copter.flightmode == &copter.mode_plancktracking
+                      && copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED)
               {
                   yaw_cd = copter.flightmode->auto_yaw.yaw();
                   is_yaw_rate = false;
