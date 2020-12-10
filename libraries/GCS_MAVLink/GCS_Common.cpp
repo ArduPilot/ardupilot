@@ -45,6 +45,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_Winch/AP_Winch.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 
 #include <stdio.h>
 
@@ -1945,6 +1946,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
     AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
     if (spektrum != nullptr) {
         spektrum->queue_message(severity, first_piece_of_text);
+    }
+#endif
+#if HAL_CRSF_TELEM_ENABLED
+    AP_CRSF_Telem* crsf = AP::crsf_telem();
+    if (crsf != nullptr) {
+        crsf->queue_message(severity, first_piece_of_text);
     }
 #endif
     AP_Notify *notify = AP_Notify::get_singleton();
