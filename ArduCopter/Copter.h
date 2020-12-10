@@ -945,7 +945,6 @@ private:
     void motor_test_stop();
 
     // motors.cpp
-    void arm_motors_check();
     void auto_disarm_check();
     void motors_output(bool full_push = true);
     void motors_output_main();
