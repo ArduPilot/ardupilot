@@ -566,6 +566,29 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
+
+        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
+            //parameter disallows rudder arming/disabling
+            return false;
+        }
+
+#if TOY_MODE_ENABLED
+        if (g2.toy_mode.enabled()) {
+            // not armed with sticks in toy mode
+            check_failed(true, "Rudder-arming: disabled in toy mode");
+            return false;
+        }
+#endif
+
+        // ensure throttle is down
+        if (copter.channel_throttle->get_control_in() > 0) {
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
+    }
+
     const auto &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
@@ -799,6 +822,17 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
         AP_Arming::method_is_GCS(method) &&
         !copter.ap.land_complete) {
         return false;
+    }
+
+    if (method == AP_Arming::Method::RUDDER) {
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            return false;
+        }
+        if (!copter.flightmode->has_manual_throttle() && !copter.ap.land_complete) {
+            return false;
+        }
     }
 
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
