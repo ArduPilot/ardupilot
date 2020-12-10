@@ -361,45 +361,37 @@ void RC_Channels::rudder_arm_disarm_check()
         return;
     }
 
-    if (!AP::arming().is_armed()) {
-        // when not armed, full right rudder starts arming timer
-        if (channel->get_control_in() > 4000) {
-            const uint32_t now = AP_HAL::millis();
+    const auto control_in = abs(channel->get_control_in());
 
-            if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < 3000) {
+    if (control_in == 0) {
+        have_seen_neutral_rudder = true;
+    }
 
-                if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-            } else {
-                //time to arm!
-                AP::arming().arm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-            }
-        } else {
-            // not at full right rudder
-            rudder_arm_timer = 0;
-        }
+    if (control_in <= 4000) {
+        // not trying to (or no longer trying to) arm or disarm
+        rudder_arm_timer = 0;
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if (rudder_arm_timer == 0) {
+        // first time we've seen the attempt
+        rudder_arm_timer = now;
+        return;
+    }
+
+    if (now - rudder_arm_timer < 3000) {
+        // not time yet....
+        return;
+    }
+
+    // time to try to arm or disarm:
+    rudder_arm_timer = 0;
+    if (channel->get_control_in() > 4000) {
+        AP::arming().arm(AP_Arming::Method::RUDDER);
+        have_seen_neutral_rudder = false;
     } else {
-        // full left rudder starts disarming timer
-        if (channel->get_control_in() < -4000) {
-            uint32_t now = AP_HAL::millis();
-
-            if (rudder_arm_timer == 0 ||
-                now - rudder_arm_timer < 3000) {
-                if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-            } else {
-                //time to disarm!
-                AP::arming().disarm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-            }
-        } else {
-            // not at full left rudder
-            rudder_arm_timer = 0;
-        }
+        AP::arming().disarm(AP_Arming::Method::RUDDER);
     }
 }
 
