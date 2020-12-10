@@ -367,7 +367,6 @@ private:
     // radio.cpp
     void set_control_channels(void) override;
     void init_rc_in();
-    void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
 
