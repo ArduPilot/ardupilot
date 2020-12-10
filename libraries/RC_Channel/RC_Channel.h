@@ -634,6 +634,8 @@ public:
 
 protected:
 
+    bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+
     void new_override_received() {
         has_new_overrides = true;
         _has_had_override = true;
@@ -679,6 +681,9 @@ private:
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
+    // true if we have seen a neutral rudder control input after
+    // arming via rudder-input:
+    bool have_seen_neutral_rudder;
     // check for arm/disarm command based on rudder stick position:
     void rudder_arm_disarm_check();
 
