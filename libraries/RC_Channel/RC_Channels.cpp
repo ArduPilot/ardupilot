@@ -363,9 +363,12 @@ void RC_Channels::rudder_arm_disarm_check()
         have_seen_neutral_rudder = true;
     }
 
-    if (control_in <= 4000) {
-        // not trying to (or no longer trying to) arm or disarm
+    if (!has_valid_input() ||
+        control_in <= 4000) {
+        // not trying to (or no longer trying to) arm or disarm - or
+        // we don't have valid RC input.
         rudder_arm_timer = 0;
+        rudder_10_second_timer = 0;
         return;
     }
 
@@ -373,20 +376,26 @@ void RC_Channels::rudder_arm_disarm_check()
     if (rudder_arm_timer == 0) {
         // first time we've seen the attempt
         rudder_arm_timer = now;
-        return;
+    } else if (now - rudder_arm_timer >= 3000) {
+        rudder_arm_timer = 0;  // do not reattempt for a while
+        // time to try to arm or disarm:
+        if (channel->get_control_in() > 4000) {
+            AP::arming().arm(AP_Arming::Method::RUDDER);
+            have_seen_neutral_rudder = false;
+        } else {
+            AP::arming().disarm(AP_Arming::Method::RUDDER);
+        }
     }
 
-    if (now - rudder_arm_timer < 3000) {
-        // not time yet....
-        return;
-    }
-
-    // time to try to arm or disarm:
-    if (channel->get_control_in() > 4000) {
-        AP::arming().arm(AP_Arming::Method::RUDDER);
-        have_seen_neutral_rudder = false;
-    } else {
-        AP::arming().disarm(AP_Arming::Method::RUDDER);
+    if (rudder_10_second_timer == 0) {
+        // first time we've seen the attempt
+        rudder_10_second_timer = now;
+    } else if (AP::arming().is_armed() &&
+        now - rudder_10_second_timer >= 10000 &&
+        channel->get_control_in() > 4000) {
+        // callback so Copter can enable AHRS-trim
+        rudder_10_second_timer = 0;
+        rudder_10_second_callback();
     }
 }
 

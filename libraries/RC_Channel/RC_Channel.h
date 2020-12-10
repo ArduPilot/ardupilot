@@ -684,9 +684,14 @@ private:
     // true if we have seen a neutral rudder control input after
     // arming via rudder-input:
     bool have_seen_neutral_rudder;
+
+    // time that rudder arming has been running - for Copter's
+    // auto-trim behaviour
+    uint32_t rudder_10_second_timer;
+
     // check for arm/disarm command based on rudder stick position:
     void rudder_arm_disarm_check();
-
+    virtual void rudder_10_second_callback() { }
 };
 
 RC_Channels &rc();
