@@ -210,7 +210,7 @@ bool RC_Channel_Copter::do_aux_function(const AUX_FUNC ch_option, const AuxSwitc
             if ((ch_flag == AuxSwitchPos::HIGH) &&
                 (copter.flightmode->allows_save_trim()) &&
                 (copter.channel_throttle->get_control_in() == 0)) {
-                copter.save_trim();
+                copter.g2.rc_channels.save_trim();
             }
             break;
 
@@ -703,27 +703,48 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
     }
 }
 
+void RC_Channels_Copter::rudder_10_second_callback()
+{
+    // if the user holds right-rudder for 10 seconds in stabilize then
+    // we enter auto-trim for 25 seconds
+
+    if (!copter.motors->armed()) {
+        return;
+    }
+
+    if (copter.flightmode != &copter.mode_stabilize) {
+        return;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
+    auto_trim_counter = 250;
+    auto_trim_started = false;
+    // ensure auto-disarm doesn't trigger immediately
+    copter.auto_disarm_begin = millis();
+}
+
+
 // save_trim - adds roll and pitch trims from the radio to ahrs
-void Copter::save_trim()
+void RC_Channels_Copter::save_trim()
 {
     // save roll and pitch trim
     float roll_trim = ToRad((float)channel_roll->get_control_in()/100.0f);
     float pitch_trim = ToRad((float)channel_pitch->get_control_in()/100.0f);
-    ahrs.add_trim(roll_trim, pitch_trim);
+    AP::ahrs().add_trim(roll_trim, pitch_trim);
     LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
 // meant to be called continuously while the pilot attempts to keep the copter level
-void Copter::auto_trim_cancel()
+void RC_Channels_Copter::auto_trim_cancel()
 {
     auto_trim_counter = 0;
     AP_Notify::flags.save_trim = false;
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
 }
 
-void Copter::auto_trim()
+void RC_Channels_Copter::auto_trim()
 {
     if (auto_trim_counter > 0) {
         if (copter.flightmode != &copter.mode_stabilize ||
@@ -736,14 +757,14 @@ void Copter::auto_trim()
         AP_Notify::flags.save_trim = true;
 
         if (!auto_trim_started) {
-            if (ap.land_complete) {
+            if (copter.ap.land_complete) {
                 // haven't taken off yet
                 return;
             }
             auto_trim_started = true;
         }
 
-        if (ap.land_complete) {
+        if (copter.ap.land_complete) {
             // landed again.
             auto_trim_cancel();
             return;
@@ -752,14 +773,14 @@ void Copter::auto_trim()
         auto_trim_counter--;
 
         // calculate roll trim adjustment
-        float roll_trim_adjustment = ToRad((float)channel_roll->get_control_in() / 4000.0f);
+        float roll_trim_adjustment = ToRad((float)copter.channel_roll->get_control_in() / 4000.0f);
 
         // calculate pitch trim adjustment
-        float pitch_trim_adjustment = ToRad((float)channel_pitch->get_control_in() / 4000.0f);
+        float pitch_trim_adjustment = ToRad((float)copter.channel_pitch->get_control_in() / 4000.0f);
 
         // add trim to ahrs object
         // save to eeprom on last iteration
-        ahrs.add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
+        AP::ahrs().add_trim(roll_trim_adjustment, pitch_trim_adjustment, (auto_trim_counter == 0));
 
         // on last iteration restore leds and accel gains to normal
         if (auto_trim_counter == 0) {
