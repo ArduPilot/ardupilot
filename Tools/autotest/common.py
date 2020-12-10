@@ -4470,7 +4470,7 @@ Also, ignores heartbeats not from our target system'''
     def wait_text(self, *args, **kwargs):
         self.wait_statustext(*args, **kwargs)
 
-    def wait_statustext(self, text, timeout=20, the_function=None, check_context=False):
+    def wait_statustext(self, text, timeout=20, the_function=None, check_context=False, regex=False):
         """Wait for a specific STATUSTEXT."""
 
         # Statustexts are often triggered by something we've just
@@ -4485,7 +4485,11 @@ Also, ignores heartbeats not from our target system'''
             if "STATUSTEXT" not in c.collections:
                 raise NotAchievedException("Asked to check context but it isn't collecting!")
             for statustext in [x.text for x in c.collections["STATUSTEXT"]]:
-                if text.lower() in statustext.lower():
+                if regex:
+                    if re.match(text, statustext):
+                        self.progress("Found expected text in collection: %s" % text.lower())
+                        return
+                elif text.lower() in statustext.lower():
                     self.progress("Found expected text in collection: %s" % text.lower())
                     return
 
@@ -4495,6 +4499,9 @@ Also, ignores heartbeats not from our target system'''
             global statustext_found
             if m.get_type() != "STATUSTEXT":
                 return
+            if regex:
+                if re.match(text, m.text):
+                    statustext_found = True
             if text.lower() in m.text.lower():
                 self.progress("Received expected text: %s" % m.text.lower())
                 statustext_found = True
