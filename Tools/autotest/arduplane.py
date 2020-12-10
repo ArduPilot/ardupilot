@@ -147,6 +147,26 @@ class AutoTestPlane(AutoTest):
                            timeout=180)
         self.progress("RTL Complete")
 
+    def test_need_ekf_to_arm(self):
+        """Loiter where we are."""
+        self.progress("Ensuring we need EKF to be healthy to arm")
+        self.reboot_sitl()
+        self.context_collect("STATUSTEXT")
+        tstart = self.get_sim_time()
+        success = False
+        while not success:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get correct failure reason")
+            self.send_mavlink_arm_command()
+            try:
+                self.wait_statustext(".*(AHRS not healthy|AHRS: Not healthy).*", timeout=1, check_context=True, regex=True)
+                success = True
+                continue
+            except AutoTestTimeoutException:
+                pass
+            if self.armed():
+                raise NotAchievedException("Armed unexpectedly")
+
     def fly_LOITER(self, num_circles=4):
         """Loiter where we are."""
         self.progress("Testing LOITER for %u turns" % num_circles)
@@ -2023,6 +2043,10 @@ class AutoTestPlane(AutoTest):
             ("ThrottleFailsafe",
              "Fly throttle failsafe",
              self.test_throttle_failsafe),
+
+            ("NeedEKFToArm",
+             "Ensure we need EKF to be healthy to arm",
+             self.test_need_ekf_to_arm),
 
             ("ThrottleFailsafeFence",
              "Fly fence survives throttle failsafe",
