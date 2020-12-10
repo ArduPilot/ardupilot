@@ -836,12 +836,6 @@ private:
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
 
-    // time that rudder arming has been running
-    uint32_t rudder_arm_timer;
-
-    // have we seen neutral rudder since arming with rudder?
-    bool seen_neutral_rudder;
-
 #if HAL_QUADPLANE_ENABLED
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};
@@ -1121,7 +1115,6 @@ private:
     void init_rc_in();
     void init_rc_out_main();
     void init_rc_out_aux();
-    void rudder_arm_disarm_check();
     void read_radio();
     int16_t rudder_input(void);
     void control_failsafe();
