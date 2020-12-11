@@ -1376,8 +1376,8 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
 
     dragFusionEnabled = true;
 
-	// down-sample the drag specific force data by accumulating and calculating the mean when
-	// sufficient samples have been collected
+    // down-sample the drag specific force data by accumulating and calculating the mean when
+    // sufficient samples have been collected
 
     dragSampleCount ++;
 
