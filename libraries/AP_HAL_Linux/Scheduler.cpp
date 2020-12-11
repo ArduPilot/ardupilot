@@ -255,15 +255,9 @@ void Scheduler::_run_io(void)
 void Scheduler::_run_uarts()
 {
     // process any pending serial bytes
-    hal.serial(0)->_timer_tick();
-    hal.serial(3)->_timer_tick();
-    hal.serial(1)->_timer_tick();
-    hal.serial(2)->_timer_tick();
-    hal.serial(4)->_timer_tick();
-    hal.serial(5)->_timer_tick();
-    hal.serial(6)->_timer_tick();
-    hal.serial(7)->_timer_tick();
-    hal.serial(8)->_timer_tick();
+    for (uint8_t i=0;i<hal.num_serial; i++) {
+        hal.serial(i)->_timer_tick();
+    }
 }
 
 void Scheduler::_rcin_task()
