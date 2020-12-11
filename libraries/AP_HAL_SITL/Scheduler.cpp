@@ -167,7 +167,7 @@ void Scheduler::system_initialized() {
 
 void Scheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0) {
-        hal.uartA->printf("NESTED ATOMIC ERROR\n");
+        hal.serial(0)->printf("NESTED ATOMIC ERROR\n");
     } else {
         _nested_atomic_ctr--;
     }
@@ -235,15 +235,9 @@ void Scheduler::_run_io_procs()
 
     _in_io_proc = false;
 
-    hal.uartA->_timer_tick();
-    hal.uartB->_timer_tick();
-    hal.uartC->_timer_tick();
-    hal.uartD->_timer_tick();
-    hal.uartE->_timer_tick();
-    hal.uartF->_timer_tick();
-    hal.uartG->_timer_tick();
-    hal.uartH->_timer_tick();
-    hal.uartI->_timer_tick();
+    for (uint8_t i=0; i<hal.num_serial; i++) {
+        hal.serial(i)->_timer_tick();
+    }
     hal.storage->_timer_tick();
 
 #ifndef HAL_BUILD_AP_PERIPH
