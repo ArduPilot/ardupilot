@@ -53,6 +53,7 @@ known_units = {
              'PWM'     : 'PWM in microseconds'   , # should be microseconds, this is NOT a SI unit, but follows https://github.com/ArduPilot/ardupilot/pull/5538#issuecomment-271943061
              'Hz'      : 'hertz'                 ,
              'kHz'     : 'kilohertz'             ,
+             '1/s'     : 'per second'            , # Not SI but in some situations more user-friendly than hertz
 # distance
              'km'      : 'kilometers'                , # metre is the SI unit name, meter is the american spelling of it
              'm'       : 'meters'                    , # metre is the SI unit name, meter is the american spelling of it
@@ -106,6 +107,7 @@ known_units = {
              'gravities': 'standard acceleration due to gravity' , # g_n would be a more correct unit, but IMHO no one understands what g_n means
              'octal'   : 'octal'                 ,
              'RPM'     : 'Revolutions Per Minute',
+             'kg/m/m'  : 'kilograms per square meter', # metre is the SI unit name, meter is the american spelling of it
              }
 
 required_param_fields = [
