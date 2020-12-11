@@ -73,8 +73,8 @@ void AP_Periph_FW::init()
 
     stm32_watchdog_pat();
 
-    hal.uartA->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
-    hal.uartB->begin(115200, 128, 256);
+    hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
+    hal.serial(3)->begin(115200, 128, 256);
 
     load_parameters();
 
@@ -143,7 +143,7 @@ void AP_Periph_FW::init()
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     if (rangefinder.get_type(0) != RangeFinder::Type::NONE) {
         const uint8_t sernum = 3; // uartB
-        hal.uartB->begin(g.rangefinder_baud);
+        hal.serial(3)->begin(g.rangefinder_baud);
         serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
         rangefinder.init(ROTATION_NONE);
     }
@@ -154,11 +154,11 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
-    hwesc_telem.init(hal.uartB);
+    hwesc_telem.init(hal.serial(3));
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
-    msp_init(hal.uartD);
+    msp_init(hal.serial(2));
 #endif
     
     start_ms = AP_HAL::native_millis();
@@ -251,17 +251,17 @@ void AP_Periph_FW::update()
 #endif
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
-        hal.uartA->printf("GPS status: %u\n", (unsigned)gps.status());
+        hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
         const Vector3f &field = compass.get_field();
-        hal.uartA->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
+        hal.serial(0)->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
 #endif
 #ifdef HAL_PERIPH_ENABLE_BARO
-        hal.uartA->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
+        hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());
 #endif
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-        hal.uartA->printf("RNG %u %ucm\n", rangefinder.num_sensors(), rangefinder.distance_cm_orient(ROTATION_NONE));
+        hal.serial(0)->printf("RNG %u %ucm\n", rangefinder.num_sensors(), rangefinder.distance_cm_orient(ROTATION_NONE));
 #endif
         hal.scheduler->delay(1);
 #endif
