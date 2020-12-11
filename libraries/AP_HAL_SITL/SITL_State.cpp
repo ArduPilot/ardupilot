@@ -216,7 +216,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // conditions.
     if (sitl_model->get_speedup() > 1) {
         while (true) {
-            const int queue_length = ((HALSITL::UARTDriver*)hal.uartA)->get_system_outqueue_length();
+            const int queue_length = ((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length();
             // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
             if (queue_length < 1024) {
                 break;
