@@ -202,8 +202,6 @@ static void main_loop()
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
 
-    hal.serial(3)->begin(38400);
-    hal.serial(1)->begin(57600);
     hal.analogin->init();
     hal.scheduler->init();
 
