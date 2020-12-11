@@ -351,7 +351,7 @@ void AP_SerialManager::init_console()
 {
     // initialise console immediately at default size and baud
 #if SERIALMANAGER_NUM_PORTS > 0
-    state[0].uart = hal.uartA;  // serial0, uartA, always console
+    state[0].uart = hal.serial(0);  // serial0, uartA, always console
     state[0].uart->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
                          AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
@@ -368,28 +368,28 @@ void AP_SerialManager::init()
 
     // initialise pointers to serial ports
 #if SERIALMANAGER_NUM_PORTS > 1
-    state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
+    state[1].uart = hal.serial(1);  // serial1, uartC, normally telem1
 #endif
 #if SERIALMANAGER_NUM_PORTS > 2
-    state[2].uart = hal.uartD;  // serial2, uartD, normally telem2
+    state[2].uart = hal.serial(2);  // serial2, uartD, normally telem2
 #endif
 #if SERIALMANAGER_NUM_PORTS > 3
-    state[3].uart = hal.uartB;  // serial3, uartB, normally 1st GPS
+    state[3].uart = hal.serial(3);  // serial3, uartB, normally 1st GPS
 #endif
 #if SERIALMANAGER_NUM_PORTS > 4
-    state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
+    state[4].uart = hal.serial(4);  // serial4, uartE, normally 2nd GPS
 #endif
 #if SERIALMANAGER_NUM_PORTS > 5
-    state[5].uart = hal.uartF;  // serial5, uartF, User Configurable
+    state[5].uart = hal.serial(5);  // serial5, uartF, User Configurable
 #endif
 #if SERIALMANAGER_NUM_PORTS > 6
-    state[6].uart = hal.uartG;  // serial6, uartG, User Configurable
+    state[6].uart = hal.serial(6);  // serial6, uartG, User Configurable
 #endif
 #if SERIALMANAGER_NUM_PORTS > 7
-    state[7].uart = hal.uartH;  // serial7, uartH, User Configurable
+    state[7].uart = hal.serial(7);  // serial7, uartH, User Configurable
 #endif
 #if SERIALMANAGER_NUM_PORTS > 8
-    state[8].uart = hal.uartI;  // serial8, uartI, User Configurable
+    state[8].uart = hal.serial(8);  // serial8, uartI, User Configurable
 #endif
 
 #ifdef HAL_OTG1_CONFIG
