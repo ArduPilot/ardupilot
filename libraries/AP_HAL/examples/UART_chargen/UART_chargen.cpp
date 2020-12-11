@@ -41,14 +41,14 @@ void setup(void)
     hal.scheduler->delay(1000); //Ensure that the uartA can be initialized
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    uart = hal.uartA;  //  console
+    uart = hal.serial(0);  //  console
 #endif
-    // uart = hal.uartB;   // 1st GPS
+    // uart = hal.serial(3);   // 1st GPS
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    uart = hal.uartC;  // telemetry 1
+    uart = hal.serial(1);  // telemetry 1
 #endif
-    // uart = hal.uartD;  // telemetry 2
-    // uart = hal.uartE;  // 2nd GPS
+    // uart = hal.serial(2);  // telemetry 2
+    // uart = hal.serial(4);  // 2nd GPS
 
 
     if (uart == nullptr) {
