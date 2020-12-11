@@ -101,6 +101,7 @@ public:
 
     virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
+    // the uartX ports must be contiguous in ram for the serial() method to work
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;
     AP_HAL::UARTDriver* uartC;
@@ -128,4 +129,15 @@ public:
 #else
     AP_HAL::CANIface** can;
 #endif
+
+    // access to serial ports using SERIALn_ numbering
+    UARTDriver* serial(uint8_t sernum) const {
+        UARTDriver **uart_array = const_cast<UARTDriver**>(&uartA);
+        // this mapping captures the historical use of uartB as SERIAL3
+        const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8 };
+        if (sernum >= ARRAY_SIZE(mapping)) {
+            return nullptr;
+        }
+        return uart_array[mapping[sernum]];
+    }
 };
