@@ -195,15 +195,15 @@ static void main_loop()
     ChibiOS::Shared_DMA::init();
     peripheral_power_enable();
 
-    hal.uartA->begin(115200);
+    hal.serial(0)->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
 
-    hal.uartB->begin(38400);
-    hal.uartC->begin(57600);
+    hal.serial(3)->begin(38400);
+    hal.serial(1)->begin(57600);
     hal.analogin->init();
     hal.scheduler->init();
 
