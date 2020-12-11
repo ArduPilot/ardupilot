@@ -206,6 +206,19 @@ void NavEKF3_core::setAidingMode()
     // Check that the gyro bias variance has converged
     checkGyroCalStatus();
 
+    // Handle the special case where we are on ground and disarmed without a yaw measurement
+    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
+    // during the previous flight.
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
+        !motorsArmed &&
+        onGround &&
+        PV_AidingMode != AID_NONE)
+    {
+        PV_AidingMode = AID_NONE;
+        yawAlignComplete = false;
+        finalInflightYawInit = false;
+    }
+
     // Determine if we should change aiding mode
     switch (PV_AidingMode) {
         case AID_NONE: {
@@ -284,15 +297,6 @@ void NavEKF3_core::setAidingMode()
                 }
                 posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
                                      (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
-            }
-
-            // This is a special case for when we are a fixed wing aircraft vehicle that has landed and
-            // has no yaw measurement that works when static. Declare the yaw as unaligned (unknown)
-            // and declare attitude aiding loss so that we fall back into a non-aiding mode
-            if (assume_zero_sideslip() && onGround && !use_compass() && !using_external_yaw()) {
-                yawAlignComplete = false;
-                finalInflightYawInit = false;
-                attAidLossCritical = true;
             }
 
             if (attAidLossCritical) {
