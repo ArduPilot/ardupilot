@@ -351,10 +351,12 @@ void AP_SerialManager::init_console()
 {
     // initialise console immediately at default size and baud
 #if SERIALMANAGER_NUM_PORTS > 0
-    state[0].uart = hal.serial(0);  // serial0, uartA, always console
-    state[0].uart->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
-                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
-                         AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
+    if (!init_console_done) {
+        init_console_done = true;
+        hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD,
+                             AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX,
+                             AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX);
+    }
 #endif
 }
 
@@ -365,32 +367,6 @@ void AP_SerialManager::init()
 {
     // always reset passthru port2 on boot
     passthru_port2.set_and_save_ifchanged(-1);
-
-    // initialise pointers to serial ports
-#if SERIALMANAGER_NUM_PORTS > 1
-    state[1].uart = hal.serial(1);  // serial1, uartC, normally telem1
-#endif
-#if SERIALMANAGER_NUM_PORTS > 2
-    state[2].uart = hal.serial(2);  // serial2, uartD, normally telem2
-#endif
-#if SERIALMANAGER_NUM_PORTS > 3
-    state[3].uart = hal.serial(3);  // serial3, uartB, normally 1st GPS
-#endif
-#if SERIALMANAGER_NUM_PORTS > 4
-    state[4].uart = hal.serial(4);  // serial4, uartE, normally 2nd GPS
-#endif
-#if SERIALMANAGER_NUM_PORTS > 5
-    state[5].uart = hal.serial(5);  // serial5, uartF, User Configurable
-#endif
-#if SERIALMANAGER_NUM_PORTS > 6
-    state[6].uart = hal.serial(6);  // serial6, uartG, User Configurable
-#endif
-#if SERIALMANAGER_NUM_PORTS > 7
-    state[7].uart = hal.serial(7);  // serial7, uartH, User Configurable
-#endif
-#if SERIALMANAGER_NUM_PORTS > 8
-    state[8].uart = hal.serial(8);  // serial8, uartI, User Configurable
-#endif
 
 #ifdef HAL_OTG1_CONFIG
     /*
@@ -404,16 +380,13 @@ void AP_SerialManager::init()
     }
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 0
-    if (state[0].uart == nullptr) {
-        init_console();
-    }
-#endif
-    
+    init_console();
+
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
+        auto *uart = hal.serial(i);
 
-        if (state[i].uart != nullptr) {
+        if (uart != nullptr) {
 
             // see if special options have been requested
             if (state[i].protocol != SerialProtocol_None && state[i].options) {
@@ -426,7 +399,7 @@ void AP_SerialManager::init()
                 case SerialProtocol_Console:
                 case SerialProtocol_MAVLink:
                 case SerialProtocol_MAVLink2:
-                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                    uart->begin(map_baudrate(state[i].baud), 
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
@@ -443,21 +416,21 @@ void AP_SerialManager::init()
                     break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
-                    state[i].uart->begin(map_baudrate(state[i].baud), 
+                    uart->begin(map_baudrate(state[i].baud), 
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
                 case SerialProtocol_AlexMos:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud = AP_SERIALMANAGER_ALEXMOS_BAUD / 1000;   // update baud param in case user looks at it
-                    state[i].uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
+                    uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
                     break;
                 case SerialProtocol_SToRM32:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud = AP_SERIALMANAGER_SToRM32_BAUD / 1000;   // update baud param in case user looks at it
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_SToRM32_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SToRM32_BUFSIZE_TX);
                     break;
@@ -467,56 +440,56 @@ void AP_SerialManager::init()
                 case SerialProtocol_Volz:
                                     // Note baudrate is hardcoded to 115200
                                     state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
-                                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                    uart->begin(map_baudrate(state[i].baud),
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
-                                    state[i].uart->set_unbuffered_writes(true);
-                                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                                    uart->set_unbuffered_writes(true);
+                                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
                 case SerialProtocol_Sbus1:
                     state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
-                    state[i].uart->configure_parity(2);    // enable even parity
-                    state[i].uart->set_stop_bits(2);
-                    state[i].uart->set_unbuffered_writes(true);
-                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->configure_parity(2);    // enable even parity
+                    uart->set_stop_bits(2);
+                    uart->set_unbuffered_writes(true);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
                 case SerialProtocol_ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
                     state[i].baud = 115200;
-                    state[i].uart->begin(map_baudrate(state[i].baud), 30, 30);
-                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->begin(map_baudrate(state[i].baud), 30, 30);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
                 case SerialProtocol_Robotis:
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
-                    state[i].uart->set_unbuffered_writes(true);
-                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->set_unbuffered_writes(true);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
                 case SerialProtocol_SLCAN:
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
 
 #ifndef HAL_BUILD_AP_PERIPH
                 case SerialProtocol_RCIN:
-                    AP::RC().add_uart(state[i].uart);
+                    AP::RC().add_uart(uart);
                     break;
 #endif
                     
                 case SerialProtocol_EFI_MS:
                     state[i].baud = AP_SERIALMANAGER_EFI_MS_BAUD;   // update baud param in case user looks at it
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX);
-                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
                 case SerialProtocol_Generator:
@@ -526,15 +499,15 @@ void AP_SerialManager::init()
                 case SerialProtocol_DJI_FPV:
                     // baudrate defaults to 115200
                     state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
-                    state[i].uart->begin(map_baudrate(state[i].baud),
+                    uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_MSP_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MSP_BUFSIZE_TX);
-                    state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     // Note init is handled by AP_MSP
                     break;
 #endif
                 default:
-                    state[i].uart->begin(map_baudrate(state[i].baud));
+                    uart->begin(map_baudrate(state[i].baud));
             }
         }
     }
@@ -568,7 +541,8 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     if (_state == nullptr) {
         return nullptr;
     }
-    return _state->uart;
+    const uint8_t serial_idx = _state - &state[0];
+    return hal.serial(serial_idx);
 }
 
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
@@ -631,7 +605,7 @@ AP_SerialManager::SerialProtocol AP_SerialManager::get_mavlink_protocol(mavlink_
 AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
 {
     if (id < SERIALMANAGER_NUM_PORTS) {
-        return state[id].uart;
+        return hal.serial(id);
     }
     return nullptr;
 }
@@ -641,8 +615,9 @@ void AP_SerialManager::set_blocking_writes_all(bool blocking)
 {
     // set block_writes for all initialised serial ports
     for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (state[i].uart != nullptr) {
-            state[i].uart->set_blocking_writes(blocking);
+        auto *uart = hal.serial(i);
+        if (uart != nullptr) {
+            uart->set_blocking_writes(blocking);
         }
     }
 }
@@ -714,7 +689,7 @@ void AP_SerialManager::set_options(uint16_t i)
 {
     struct UARTState &opt = state[i];
     // pass through to HAL
-    if (!opt.uart->set_options(opt.options)) {
+    if (!hal.serial(i)->set_options(opt.options)) {
         hal.console->printf("Unable to setup options for Serial%u\n", i);
     }
 }
@@ -729,8 +704,8 @@ bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriv
         passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
         return false;
     }
-    port1 = state[passthru_port1].uart;
-    port2 = state[passthru_port2].uart;
+    port1 = hal.serial(passthru_port1);
+    port2 = hal.serial(passthru_port2);
     baud1 = map_baudrate(state[passthru_port1].baud);
     baud2 = map_baudrate(state[passthru_port2].baud);
     timeout_s = MAX(passthru_timeout, 0);

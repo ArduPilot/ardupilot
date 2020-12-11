@@ -213,7 +213,6 @@ private:
     struct UARTState {
         AP_Int8 protocol;
         AP_Int32 baud;
-        AP_HAL::UARTDriver* uart;
         AP_Int16 options;
     } state[SERIALMANAGER_NUM_PORTS];
 
@@ -232,6 +231,8 @@ private:
 
     // setup any special options
     void set_options(uint16_t i);
+
+    bool init_console_done;
 };
 
 namespace AP {
