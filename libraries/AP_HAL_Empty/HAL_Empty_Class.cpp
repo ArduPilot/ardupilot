@@ -56,7 +56,7 @@ void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
     scheduler->init();
-    uartA->begin(115200);
+    serial(0)->begin(115200);
     _member->init();
 
     callbacks->setup();
