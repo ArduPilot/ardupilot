@@ -946,7 +946,7 @@ private:
     // returns false if unsuccessful
     bool EKFGSF_resetMainFilterYaw();
 
-	// Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
+    // Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
     void FuseDragForces();
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
@@ -1269,8 +1269,8 @@ private:
     // drag fusion for multicopter wind estimation
     EKF_obs_buffer_t<drag_elements> storedDrag;
     drag_elements dragSampleDelayed;
-	drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
-	uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
+    drag_elements dragDownSampled;	    // down sampled from filter prediction rate to observation rate
+    uint8_t dragSampleCount;	        // number of drag specific force samples accumulated at the filter prediction rate
     float dragSampleTimeDelta;	        // time integral across all samples used to form _drag_down_sampled (sec)
     Vector2f innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
 	Vector2f innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
