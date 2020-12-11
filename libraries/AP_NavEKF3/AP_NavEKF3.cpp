@@ -657,14 +657,14 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     AP_SUBGROUPINFO(sources, "SRC", 1, NavEKF3, AP_NavEKF_Source),
 
     // @Param: DRAG_BCOEF_X
-    // @DisplayName: Ballistic coefficient measured in X direction
+    // @DisplayName: Ballistic coefficient for X axis drag
     // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
     // @Range: 0.0 1000.0
     // @User: Advanced
     AP_GROUPINFO("DRAG_BCOEF_X", 2, NavEKF3, _ballisticCoef_x, 0.0f),
 
     // @Param: DRAG_BCOEF_Y
-    // @DisplayName: Ballistic coefficient measured in Y direction
+    // @DisplayName: Ballistic coefficient for Y axis drag
     // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
     // @Range: 50.0 1000.0
     // @User: Advanced
@@ -680,7 +680,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     AP_GROUPINFO("DRAG_M_NSE", 4, NavEKF3, _dragObsNoise, 0.5f),
 
     // @Param: DRAG_MCOEF
-    // @DisplayName: Momentum drag coefficient
+    // @DisplayName: Momentum coefficient for propeller drag
     // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. It represents the ratio of rotor drag induced acceleration to airspeed. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on an will change with different propellers. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEFto a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
