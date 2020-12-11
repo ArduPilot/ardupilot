@@ -15,6 +15,7 @@ from pymavlink import mavutil
 from pymavlink import mavextra
 
 from pysim import util, rotmat
+from pysim import vehicleinfo
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
@@ -5071,6 +5072,86 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_wind_baro_compensation(self):
+        self.context_push()
+        ex = None
+        try:
+            self.customise_SITL_commandline([
+                "--defaults", self.model_defaults_filepath('ArduCopter', 'Callisto')
+            ],
+                                            model="octa-quad:@ROMFS/models/Callisto.json",
+                                            wipe=True,
+            )
+            wind_spd_truth = 8.0
+            wind_dir_truth = 90.0
+            self.set_parameter("EK3_ENABLE", 1)
+            self.set_parameter("EK2_ENABLE", 0)
+            self.set_parameter("AHRS_EKF_TYPE", 3)
+            self.set_parameter("BARO1_WCF_ENABLE", 1.000000)
+            self.reboot_sitl()
+            self.set_parameter("EK3_DRAG_BCOEF_X", 361.000000)
+            self.set_parameter("EK3_DRAG_BCOEF_Y", 361.000000)
+            self.set_parameter("EK3_DRAG_MCOEF", 0.082000)
+            self.set_parameter("BARO1_WCF_FWD", -0.300000)
+            self.set_parameter("BARO1_WCF_BCK", -0.300000)
+            self.set_parameter("BARO1_WCF_RGT",  0.300000)
+            self.set_parameter("BARO1_WCF_LFT",  0.300000)
+            self.set_parameter("SIM_BARO_WCF_FWD", -0.300000)
+            self.set_parameter("SIM_BARO_WCF_BAK", -0.300000)
+            self.set_parameter("SIM_BARO_WCF_RGT",  0.300000)
+            self.set_parameter("SIM_BARO_WCF_LFT",  0.300000)
+            self.set_parameter("SIM_WIND_DIR", wind_dir_truth)
+            self.set_parameter("SIM_WIND_SPD", wind_spd_truth)
+            self.set_parameter("SIM_WIND_T", 1.000000)
+            self.reboot_sitl()
+
+            # require_absolute=True infers a GPS is present
+            self.wait_ready_to_arm(require_absolute=False)
+
+            self.progress("Climb to 20m in LOITER and yaw spin for 30 seconds")
+            self.takeoff(10, mode="LOITER")
+            self.set_rc(4, 1400)
+            self.delay_sim_time(30)
+
+
+            # check wind esitmates
+            m = self.mav.recv_match(type='WIND', blocking=True)
+            speed_error = abs(m.speed - wind_spd_truth)
+            angle_error = abs(m.direction - wind_dir_truth)
+            if (speed_error > 1.0):
+                raise NotAchievedException("Wind speed incorrect - want %f +-1 got %f m/s"%(wind_spd_truth,m.speed))
+            if (angle_error > 15.0):
+                raise NotAchievedException("Wind direction incorrect - want %f +-15 got %f deg"%(wind_dir_truth,m.direction))
+            self.progress("Wind estimate is good, now check height variation for 30 seconds")
+
+            # check height stability over another 30 seconds
+            z_min = 1E6
+            z_max = -1E6
+            tstart = self.get_sim_time()
+            while (self.get_sim_time() < tstart + 30):
+                m = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+                if (m.z > z_max):
+                    z_max = m.z
+                if (m.z < z_min):
+                    z_min = m.z
+            if (z_max-z_min > 0.5):
+                raise NotAchievedException("Height variation is excessive")
+            self.progress("Height variation is good")
+
+            self.set_rc(4, 1500)
+            self.land_and_disarm()
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def wait_generator_speed_and_state(self, rpm_min, rpm_max, want_state, timeout=240):
         self.drain_mav()
         tstart = self.get_sim_time()
@@ -5673,6 +5754,10 @@ class AutoTestCopter(AutoTest):
             ("AC_Avoidance_Beacon",
              "Test beacon avoidance slide behaviour", 
              self.fly_beacon_avoidance_test),#28s
+
+            ("BaroWindCorrection",
+             "Test wind estimation and baro position error compensation",
+             self.fly_wind_baro_compensation),
         ])
         return ret
 
