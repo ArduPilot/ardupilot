@@ -182,7 +182,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     _sitl_state->init(argc, argv);
 
     scheduler->init();
-    uartA->begin(115200);
+    serial(0)->begin(115200);
 
     rcin->init();
     rcout->init();
@@ -193,7 +193,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     if (getenv("SITL_WATCHDOG_RESET")) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
         if (watchdog_load((uint32_t *)&utilInstance.persistent_data, (sizeof(utilInstance.persistent_data)+3)/4)) {
-            uartA->printf("Loaded watchdog data");
+            serial(0)->printf("Loaded watchdog data");
             utilInstance.last_persistent_data = utilInstance.persistent_data;
         }
     }
