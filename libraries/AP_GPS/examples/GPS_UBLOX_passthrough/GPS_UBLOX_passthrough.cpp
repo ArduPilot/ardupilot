@@ -18,18 +18,18 @@ void setup()
     hal.console->begin(38400);
 
     // initialise gps uart to 38400 baud
-    hal.uartB->begin(38400);
+    hal.serial(3)->begin(38400);
 }
 
 void loop()
 {
     // send characters received from the console to the GPS
     while (hal.console->available()) {
-        hal.uartB->write(hal.console->read());
+        hal.serial(3)->write(hal.console->read());
     }
     // send GPS characters to the console
-    while (hal.uartB->available()) {
-        hal.console->write(hal.uartB->read());
+    while (hal.serial(3)->available()) {
+        hal.console->write(hal.serial(3)->read());
     }
 }
 
