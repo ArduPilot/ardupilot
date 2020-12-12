@@ -369,6 +369,9 @@ private:
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
 
+    // time before transition that we start motors
+    AP_Float pre_transition_time;
+
     // time we last got an EKF yaw reset
     uint32_t ekfYawReset_ms;
 
@@ -424,6 +427,9 @@ private:
 
     // are we in a guided takeoff?
     bool guided_takeoff:1;
+
+    // true when in pre-transition assist
+    bool in_pre_assist:1;
     
     struct {
         // time when motors reached lower limit
