@@ -297,7 +297,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
     Location origin;
     float posD;
 
-    if(getPosD(posD) && getOriginLLH(origin)) {
+    if(getPosD(posD) && getOriginLLH(origin) && PV_AidingMode != AID_NONE) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
         loc.alt = origin.alt - posD*100;
         loc.relative_alt = 0;
@@ -331,8 +331,8 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
             }
         }
     } else {
-        // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
-        // GPS reading if available and return false
+        // If no origin has been defined for the EKF or it is not estimating position, then we cannot
+        //  use its position states so return a raw GPS reading if available and return false
         if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location(selected_gps);
             loc = gpsloc;
