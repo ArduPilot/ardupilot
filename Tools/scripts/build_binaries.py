@@ -389,7 +389,7 @@ is bob we will attempt to checkout bob-AVR'''
 
                 if self.skip_board_waf(board):
                     continue
-                
+
                 if os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
@@ -570,6 +570,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "KakuteF4",
                 "KakuteF7",
                 "KakuteF7Mini",
+                "MambaF405v2",
                 "MatekF405",
                 "MatekF405-STD",
                 "MatekF405-Wing",
@@ -705,7 +706,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "AP_Periph",
                            "AP_Periph")
 
-        
+
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")
