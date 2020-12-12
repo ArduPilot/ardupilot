@@ -843,6 +843,11 @@ parser.add_option("-v", "--vehicle",
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
+
+parser.add_option("--vehicle-binary",
+                  default=None,
+                  help="vehicle binary path")
+
 parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   action='store_true',
                   default=False,
@@ -1307,7 +1312,9 @@ else:
     if cmd_opts.fresh_params:
         do_build_parameters(cmd_opts.vehicle)
 
-    if cmd_opts.build_system == "waf":
+    if cmd_opts.vehicle_binary is not None:
+        vehicle_binary = cmd_opts.vehicle_binary
+    elif cmd_opts.build_system == "waf":
         binary_basedir = "build/sitl"
         vehicle_binary = os.path.join(root_dir,
                                       binary_basedir,
