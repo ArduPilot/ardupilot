@@ -200,6 +200,12 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --Werror --board mRoX21-777
         $waf clean
         $waf plane
+
+        # test bi-directional dshot build
+        echo "Building KakuteF7Mini"
+        $waf configure --Werror --board KakuteF7Mini
+        $waf clean
+        $waf copter
         continue
     fi
 
