@@ -5,6 +5,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
+#include "SRV_Channel/SRV_Channel.h"
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -127,7 +128,17 @@ public:
     HWESC_Telem hwesc_telem;
     void hwesc_telem_update();
 #endif
-    
+
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+    SRV_Channels servo_channels;
+
+    void rcout_init();
+    void rcout_esc(int16_t *rc, uint8_t num_channels);
+    void rcout_srv(const uint8_t actuator_id, const float command_value);
+    void rcout_update();
+    void rcout_handle_safety_state(uint8_t safety_state);
+#endif
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 
