@@ -113,6 +113,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(esc_number, "ESC_NUMBER", 0),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+    // Servo driver
+    // @Group: OUT
+    // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
+    GOBJECT(servo_channels, "OUT",     SRV_Channels),
+#endif
+
     AP_VAREND
 };
 

@@ -125,9 +125,16 @@ void AP_Periph_FW::init()
     battery.lib.init();
 #endif
 
-#ifdef HAL_PERIPH_NEOPIXEL_COUNT
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_RC_OUT)
     hal.rcout->init();
+#endif
+
+#ifdef HAL_PERIPH_NEOPIXEL_COUNT
     hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, AP_HAL::RCOutput::MODE_NEOPIXEL);
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+    rcout_init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
@@ -271,6 +278,10 @@ void AP_Periph_FW::update()
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
         check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+        SRV_Channels::enable_aux_servos();
 #endif
     }
 
