@@ -61,7 +61,7 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
-    plane.ahrs.setTakeoffExpected(true);
+    plane.ahrs.setTakeoffExpected(arming.is_armed());
 
     // we've reached the acceleration threshold, so start the timer
     if (!takeoff_state.launchTimerStarted) {
