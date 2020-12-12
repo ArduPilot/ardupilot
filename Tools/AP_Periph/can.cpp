@@ -451,10 +451,13 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
 /*
   fix value of a float for canard float16 format
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static void fix_float16(float &f)
 {
     *(uint16_t *)&f = canardConvertNativeFloatToFloat16(f);
 }
+#pragma GCC diagnostic pop
 
 
 #ifdef HAL_PERIPH_ENABLE_BUZZER
