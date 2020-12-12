@@ -969,3 +969,14 @@ void AP_MotorsMatrix::thrust_compensation(void)
         _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
     }
 }
+
+/*
+  disable the use of motor torque to control yaw. Used when an
+  external mechanism such as vectoring is used for yaw control
+*/
+void AP_MotorsMatrix::disable_yaw_torque(void)
+{
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        _yaw_factor[i] = 0;
+    }
+}
