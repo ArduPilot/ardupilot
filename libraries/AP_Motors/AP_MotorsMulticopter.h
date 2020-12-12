@@ -96,6 +96,10 @@ public:
         _thrust_compensation_callback = callback;
     }
     
+    // disable the use of motor torque to control yaw. Used when an external mechanism such
+    // as vectoring is used for yaw control
+    virtual void        disable_yaw_torque(void) {}
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
