@@ -668,13 +668,16 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
         break;
 #endif
 
+#if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+#endif
 
+#if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         ret = EKF3.getWind(-1,wind_vel);
         break;
-
+#endif
     }
 
     // estimate it via nav velocity and wind estimates
