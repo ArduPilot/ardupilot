@@ -550,6 +550,25 @@ static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         dev->transfer(&v, 1, nullptr, 0);
     }
 #endif // HAL_PERIPH_ENABLE_NCP5623_LED
+#ifdef HAL_PERIPH_ENABLE_NCP5623_BGR_LED
+    {
+        const uint8_t i2c_address = 0x38;
+        static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+        if (!dev) {
+            dev = std::move(hal.i2c_mgr->get_device(0, i2c_address));
+        }
+        WITH_SEMAPHORE(dev->get_semaphore());
+        dev->set_retries(0);
+        uint8_t v = 0x3f; // enable LED
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x40 | blue >> 3; // blue
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x60 | green >> 3; // green
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x80 | red >> 3; // red
+        dev->transfer(&v, 1, nullptr, 0);
+    }
+#endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED
 }
 
 /*
