@@ -131,9 +131,6 @@ public:
 
     /// get_vel_z_error_ratio - returns the proportion of error relative to the maximum request
     float get_vel_z_control_ratio() const { return constrain_float(_vel_z_control_ratio, 0.0f, 1.0f); }
-    
-    // returns horizontal error in cm
-    float get_horizontal_error() const;
 
     /// set_target_to_stopping_point_z - sets altitude target to reasonable stopping altitude in cm above home
     void set_target_to_stopping_point_z();
@@ -252,8 +249,11 @@ public:
     ///     set_leash_length() should have been called before this method
     void get_stopping_point_xy(Vector3f &stopping_point) const;
 
-    /// get_distance_to_target - get horizontal distance to position target in cm (used for reporting)
-    float get_distance_to_target() const;
+    /// get_pos_error - get position error vector between the current and target position
+    const Vector3f get_pos_error() const { return _pos_target - _inav.get_position(); }
+
+    /// get_pos_error_xy - get the length of the position error vector in the xy plane
+    float get_pos_error_xy() const { return norm(_pos_target.x - _inav.get_position().x, _pos_target.y - _inav.get_position().y); }
 
     /// get_bearing_to_target - get bearing to target position in centi-degrees
     int32_t get_bearing_to_target() const;
@@ -410,7 +410,6 @@ protected:
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
-    Vector3f    _pos_error;             // error between desired and actual position in cm
     Vector3f    _vel_desired;           // desired velocity in cm/s
     Vector3f    _vel_target;            // velocity target in cm/s calculated by pos_to_rate step
     Vector3f    _vel_error;             // error between desired and actual acceleration in cm/s

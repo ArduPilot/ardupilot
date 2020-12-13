@@ -780,12 +780,6 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     stopping_point.y = curr_pos.y + (stopping_dist * curr_vel.y / vel_total);
 }
 
-/// get_distance_to_target - get horizontal distance to target position in cm
-float AC_PosControl::get_distance_to_target() const
-{
-    return norm(_pos_error.x, _pos_error.y);
-}
-
 /// get_bearing_to_target - get bearing to target position in centi-degrees
 int32_t AC_PosControl::get_bearing_to_target() const
 {
@@ -952,11 +946,6 @@ void AC_PosControl::update_vel_controller_xyz()
 
     // run z-axis position controller
     update_z_controller();
-}
-
-float AC_PosControl::get_horizontal_error() const
-{
-    return norm(_pos_error.x, _pos_error.y);
 }
 
 ///
