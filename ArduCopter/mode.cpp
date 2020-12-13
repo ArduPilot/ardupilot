@@ -564,7 +564,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
             const float precland_min_descent_speed = 10.0f;
 
             float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
+            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy()*(max_descent_speed/precland_acceptable_error));
             cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
         }
 #endif
