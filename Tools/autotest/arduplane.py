@@ -1862,8 +1862,6 @@ class AutoTestPlane(AutoTest):
 
     def fly_terrain_mission(self):
 
-        self.customise_SITL_commandline([], wipe=True)
-
         self.mavproxy.send("wp set 1\n")
         self.wait_ready_to_arm()
         self.arm_vehicle()
