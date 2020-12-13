@@ -789,7 +789,7 @@ uint32_t ModeGuided::wp_distance() const
         return wp_nav->get_wp_distance_to_destination();
         break;
     case Guided_PosVel:
-        return pos_control->get_distance_to_target();
+        return pos_control->get_pos_error_xy();
         break;
     default:
         return 0;

@@ -288,6 +288,6 @@ bool ModeThrow::throw_height_good()
 bool ModeThrow::throw_position_good()
 {
     // check that our horizontal position error is within 50cm
-    return (pos_control->get_horizontal_error() < 50.0f);
+    return (pos_control->get_pos_error_xy() < 50.0f);
 }
 #endif
