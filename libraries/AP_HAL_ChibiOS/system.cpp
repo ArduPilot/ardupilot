@@ -228,6 +228,14 @@ void panic(const char *errormsg, ...)
     while (1) {
         vprintf(errormsg, ap);
         hal.scheduler->delay(500);
+        if (hal.console->available() >= 20) {
+            // allow for reboot for easier loading of new fw
+            char str[20] {};
+            hal.console->read((uint8_t*)str, sizeof(str)-1);
+            if (strstr(str, "reboot") != nullptr) {
+                hal.scheduler->reboot(false);
+            }
+        }
     }
 #else
     // we don't support variable args in bootlaoder
