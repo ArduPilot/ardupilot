@@ -5265,6 +5265,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_rc(1, 1400)
         self.set_rc(3, 1600)
         self.wait_heading(60)
+        self.zero_throttle()
+        self.disarm_vehicle()
 
     def test_slew_rate(self):
         """Test Motor Slew Rate feature."""
