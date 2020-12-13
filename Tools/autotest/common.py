@@ -1916,9 +1916,10 @@ class AutoTest(ABC):
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
-        self.start_SITL(wipe=False)
+        self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
+        self.apply_defaultfile_parameters()
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
@@ -3248,6 +3249,7 @@ class AutoTest(ABC):
         self.cpufailsafe_wait_servo_channel_value(2, 1260)
         self.send_set_rc(2, 1700)
         self.cpufailsafe_wait_servo_channel_value(2, 1660)
+        self.reset_SITL_commandline()
 
     def mavproxy_arm_vehicle(self):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
@@ -4707,8 +4709,7 @@ Also, ignores heartbeats not from our target system'''
                           self.get_exception_stacktrace(e))
             ex = e
         self.test_timings[desc] = time.time() - start_time
-        if self.contexts[-1].sitl_commandline_customised:
-            self.reset_SITL_commandline()
+        reset_needed = self.contexts[-1].sitl_commandline_customised
         self.context_pop()
 
         passed = True
@@ -4753,6 +4754,9 @@ Also, ignores heartbeats not from our target system'''
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
+
+        if reset_needed:
+            self.reset_SITL_commandline()
 
         self.clear_mission_using_mavproxy()
 
