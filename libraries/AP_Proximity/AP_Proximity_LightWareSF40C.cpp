@@ -318,20 +318,20 @@ void AP_Proximity_LightWareSF40C::process_message()
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            // Get location on 3-D boundary based on angle to the object
-            const boundary_location bnd_loc = boundary.get_sector(angle_deg);
-            const uint8_t sector = bnd_loc.sector;
-            // if we've entered a new sector then finish off previous sector
-            if (sector != _last_sector) {
+            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+
+            // if point is on a new face then finish off previous face
+            if (face != _face) {
                 // update boundary used for avoidance
-                if (_last_sector != UINT8_MAX) {
-                    // create a location package
-                    const boundary_location last_loc{_last_sector};
-                    boundary.update_boundary(last_loc);
+                if (_face_distance_valid) {
+                    boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                } else {
+                    // mark previous face invalid
+                    boundary.reset_face(_face);
                 }
-                // init for new sector
-                _last_sector = sector;
-                boundary.reset_sector(bnd_loc);
+                // init for new face
+                _face = face;
+                _face_distance_valid = false;
             }
 
             // check reading is not within an ignore zone
@@ -340,9 +340,10 @@ void AP_Proximity_LightWareSF40C::process_message()
                 if ((dist_cm >= dist_min_cm) && (dist_cm <= dist_max_cm)) {
                     const float dist_m = dist_cm * 0.01f;
 
-                    // update shortest distance for this sector
-                    if (dist_m < boundary.get_distance(bnd_loc)) {
-                        boundary.set_attributes(bnd_loc, angle_deg, dist_m);
+                    // update shortest distance for this face
+                    if (!_face_distance_valid || dist_m < _face_distance) {
+                        _face_distance = dist_m;
+                        _face_distance_valid = true;
                     }
 
                     // calculate shortest of last few readings
