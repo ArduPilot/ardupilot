@@ -22,6 +22,7 @@ extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAV_TIMEOUT_MS    500 // distance messages must arrive within this many milliseconds
 #define PROXIMITY_3D_MSG_TIMEOUT_MS  50  // boundary will be reset if OBSTACLE_DISTANCE_3D message does not arrive within this many milliseconds
+
 // update the state of the sensor
 void AP_Proximity_MAV::update(void)
 {
@@ -54,24 +55,22 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         // store distance to appropriate sector based on orientation field
         if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
             const uint8_t sector = packet.orientation;
-            // create a boundary location object based on this sector
-            const boundary_location bnd_loc{sector};
+            // get the face for this sector
+            const float yaw_angle_deg = sector * 45;
+            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
             // store in meters
             const uint16_t distance = packet.current_distance * 0.01f;
             _distance_min = packet.min_distance * 0.01f;
             _distance_max = packet.max_distance * 0.01f;
-            
-            // reset data on this sector, to be filled with new data
-            boundary.reset_sector(bnd_loc);
             if (distance <= _distance_max && distance >= _distance_max) {
-                boundary.set_attributes(bnd_loc, sector * 45, distance);
+                boundary.set_face_attributes(face, yaw_angle_deg, distance);
                 // update OA database
-                database_push(boundary.get_angle(bnd_loc), distance);
+                database_push(yaw_angle_deg, distance);
+            } else {
+                // reset distance for this face
+                boundary.reset_face(face);
             }
-            
             _last_update_ms = AP_HAL::millis();
-            // update boundary used for Obstacle Avoidance
-            boundary.update_boundary(bnd_loc);
         }
 
         // store upward distance
@@ -117,10 +116,11 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         Matrix3f body_to_ned;
         const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
-        // initialise updated array and proximity sector angles (to closest object) and distances
-        bool sector_updated[PROXIMITY_NUM_SECTORS];
-        memset(sector_updated, 0, sizeof(sector_updated));
-        boundary.reset_all_horizontal_sectors();
+        // variables to calculate closest angle and distance for each face
+        AP_Proximity_Boundary_3D::Face face;
+        float face_distance;
+        float face_yaw_deg;
+        bool face_distance_valid = false;
 
         // iterate over message's sectors
         for (uint8_t j = 0; j < total_distances; j++) {
@@ -137,33 +137,25 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             const float packet_distance_m = distance_cm * 0.01f;
             const float mid_angle = wrap_360((float)j * increment + yaw_correction);
 
-            // iterate over proximity sectors
-            for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-                // update distance array sector with shortest distance from message
-                const float angle_diff = wrap_180(boundary._sector_middle_deg[i] - mid_angle);
-                if (fabsf(angle_diff) > PROXIMITY_SECTOR_WIDTH_DEG*0.5f) {
-                    // not even in this sector
-                    continue;
+            // get face for this latest reading
+            AP_Proximity_Boundary_3D::Face latest_face = boundary.get_face(mid_angle);
+            if (latest_face != face) {
+                // store previous face
+                if (face_distance_valid) {
+                    boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+                } else {
+                    boundary.reset_face(face);
                 }
-                if (is_equal(angle_diff, -PROXIMITY_SECTOR_WIDTH_DEG*0.5f)) {
-                    // on the upper boundary is *out* to avoid
-                    // ambiguity.  The distance is considered to be in
-                    // the next sector.  We should never be within an
-                    // epsilon of the boundary, so is_equal should be
-                    // safe.
-                    continue;
-                }
-                if (packet_distance_m >= boundary.get_distance(i)) {
-                    // this is no closer than a previous distance
-                    // found from the packet
-                    continue;
-                }
+                // init for latest face
+                face = latest_face;
+                face_distance_valid = false;
+            }
 
-                // this is the shortest distance we've found in the packet so far
-                // create a location packet
-                const boundary_location bnd_loc{i};
-                boundary.set_attributes(bnd_loc, mid_angle, packet_distance_m);
-                sector_updated[i] = true;
+            // update minimum distance found so far
+            if (!face_distance_valid || (packet_distance_m < face_distance)) {
+                face_yaw_deg = mid_angle;
+                face_distance = packet_distance_m;
+                face_distance_valid = true;
             }
 
             // update Object Avoidance database with Earth-frame point
@@ -172,13 +164,13 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
             }
         }
 
-        // update proximity sectors validity and boundary point
-        for (uint8_t i = 0; i < PROXIMITY_NUM_SECTORS; i++) {
-            if (sector_updated[i]) {
-                const boundary_location bnd_loc{i};
-                boundary.update_boundary(bnd_loc);
-            }
+        // process the last face
+        if (face_distance_valid) {
+            boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+        } else {
+            boundary.reset_face(face);
         }
+        return;
     }
 
     if (msg.msgid == MAVLINK_MSG_ID_OBSTACLE_DISTANCE_3D) {
@@ -193,7 +185,7 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         const uint32_t previous_msg_timestamp = _last_3d_msg_update_ms;
         _last_3d_msg_update_ms = packet.time_boot_ms;
         bool clear_fence = false;
-        
+
         // we will add on to the last fence if the time stamp is the same
         // provided we got the new obstacle in less than PROXIMITY_3D_MSG_TIMEOUT_MS  
         if ((previous_msg_timestamp != _last_3d_msg_update_ms) || (time_diff > PROXIMITY_3D_MSG_TIMEOUT_MS)) {
@@ -202,14 +194,14 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
         _distance_min = packet.min_distance;
         _distance_max = packet.max_distance;
-        
+
         Vector3f current_pos;
         Matrix3f body_to_ned;
         const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
         if (clear_fence) {
             // cleared fence back to defaults since we have a new timestamp
-            boundary.reset_all_sectors_and_stacks(); 
+            boundary.reset();
         }
 
         const Vector3f obstacle(packet.x, packet.y, packet.z);
@@ -221,16 +213,15 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
         const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
         const float pitch = wrap_180(degrees(M_PI_2 - atan2f(norm(obstacle.x, obstacle.y), obstacle.z))); 
 
-        // allot them correct stack and sector based on calculated pitch and yaw
-        const boundary_location bnd_loc = boundary.get_sector(yaw, pitch);
-
-        if (boundary.get_distance(bnd_loc) < obstacle.length()) {
-            // we already have a shorter distance in this stack and sector
+        // allot them correct layer and sector based on calculated pitch and yaw
+        const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);
+        float face_distance;
+        if (boundary.get_distance(face, face_distance) && (face_distance < obstacle.length())) {
+            // we already have a shorter distance in this layer and sector
             return;
         }
 
-        boundary.set_attributes(bnd_loc, yaw, pitch, obstacle.length());
-        boundary.update_boundary(bnd_loc);
+        boundary.set_face_attributes(face, yaw, pitch, obstacle.length());
 
         if (database_ready) {
             database_push(yaw, obstacle.length(),_last_update_ms, current_pos, body_to_ned, pitch);
