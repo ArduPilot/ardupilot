@@ -1306,7 +1306,9 @@ void QuadPlane::init_qland(void)
 #if LANDING_GEAR_ENABLED == ENABLED
     plane.g2.landing_gear.deploy_for_landing();
 #endif
+#if AC_FENCE == ENABLED
     plane.disable_fence_for_landing();
+#endif
 }
 
 

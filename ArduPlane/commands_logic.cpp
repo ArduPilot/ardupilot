@@ -383,21 +383,8 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     }
 
 #if AC_FENCE == ENABLED
-    switch(fence.auto_enabled()) {
-        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
-            fence.enable(false);
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
-            break;
-        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-            fence.disable_floor();
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
-            break;
-        default:
-            // fence does not auto-disable in other landing conditions
-            break;
-    }
+    disable_fence_for_landing();
 #endif
-
 }
 
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
