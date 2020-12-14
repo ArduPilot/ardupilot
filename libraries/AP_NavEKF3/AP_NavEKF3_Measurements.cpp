@@ -961,7 +961,13 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
 
     yawAngDataNew.yawAng = yawAngle;
     yawAngDataNew.yawAngErr = yawAngleErr;
-    yawAngDataNew.type = type;
+    if (type == 2) {
+        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_321;
+    } else if (type == 1) {
+        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_312;
+    } else {
+        return;
+    }
     yawAngDataNew.time_ms = timeStamp_ms;
 
     storedYawAng.push(yawAngDataNew);
