@@ -312,31 +312,30 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg)) {
-                    const boundary_location bnd_loc = boundary.get_sector(angle_deg);
-                    const uint8_t sector = bnd_loc.sector;
-                    if (distance_m > distance_min()) {
-                        if (_last_sector == sector) {
-                            if (_distance_m_last > distance_m) {
-                                _distance_m_last = distance_m;
-                                _angle_deg_last  = angle_deg;
-                            }
-                        } else {
-                            // a new sector started, the previous one can be updated now
-                            // create a location packet
-                            const boundary_location loc{_last_sector};
-                            boundary.set_attributes(loc, _angle_deg_last, _distance_m_last);
-                            // update boundary used for avoidance
-                            boundary.update_boundary(loc);
-                            // update OA database
-                            database_push(_angle_deg_last, _distance_m_last);
+                    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
 
-                            // initialize the new sector
-                            _last_sector     = sector;
-                            _distance_m_last = distance_m;
-                            _angle_deg_last  = angle_deg;
+                    if (face != _last_face) {
+                        // distance is for a new face, the previous one can be updated now
+                        if (_last_distance_valid) {
+                            boundary.set_face_attributes(face, _last_angle_deg, _last_distance_m);
+                        } else {
+                            // reset distance from last face
+                            boundary.reset_face(face);
                         }
-                    } else {
-                        boundary.reset_sector(bnd_loc);
+
+                        // initialize the new face
+                        _last_face = face;
+                        _last_distance_valid = false;
+                    }
+                    if (distance_m > distance_min()) {
+                        // update shortest distance
+                        if (!_last_distance_valid || (distance_m < _last_distance_m)) {
+                            _last_distance_m = distance_m;
+                            _last_distance_valid = true;
+                            _last_angle_deg = angle_deg;
+                        }
+                        // update OA database
+                        database_push(_last_angle_deg, _last_distance_m);
                     }
                 }
             } else {
