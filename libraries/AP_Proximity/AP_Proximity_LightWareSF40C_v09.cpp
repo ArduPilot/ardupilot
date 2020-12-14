@@ -327,16 +327,15 @@ bool AP_Proximity_LightWareSF40C_v09::process_reply()
                 _last_distance_received_ms = AP_HAL::millis();
                 success = true;
                 // Get location on 3-D boundary based on angle to the object
-                const boundary_location bnd_loc = boundary.get_sector(angle_deg);
-                // reset this sector back to default, so that it can be filled with the fresh sensor data
-                boundary.reset_sector(bnd_loc);
+                const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
                 if (is_positive(distance_m)) {
-                    boundary.set_attributes(bnd_loc, angle_deg, distance_m);
+                    boundary.set_face_attributes(face, angle_deg, distance_m);
                     // update OA database
                     database_push(angle_deg, distance_m);
+                } else {
+                    // invalidate distance of face
+                    boundary.reset_face(face);
                 }
-                // update boundary used for avoidance
-                boundary.update_boundary(bnd_loc);
             }
             break;
         }
