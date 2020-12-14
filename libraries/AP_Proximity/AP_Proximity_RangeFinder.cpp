@@ -42,22 +42,20 @@ void AP_Proximity_RangeFinder::update(void)
             // check for horizontal range finders
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 const uint8_t sector = (uint8_t)sensor->orientation();
-                const boundary_location bnd_loc{sector};
-                boundary.reset_sector(bnd_loc);
+                const float angle = sector * 45;
+                const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle);
                 // distance in meters
                 const float distance_m = sensor->distance_cm() * 0.01f;
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
-
                 if ((distance_m <= _distance_max) && (distance_m >= _distance_min)) {
-                    const float angle = sector * 45;
-                    boundary.set_attributes(bnd_loc, angle, distance_m);
+                    boundary.set_face_attributes(face, angle, distance_m);
                     // update OA database
                     database_push(angle, distance_m);
+                } else {
+                    boundary.reset_face(face);
                 }
-                
                 _last_update_ms = now;
-                boundary.update_boundary(bnd_loc);
             }
             // check upward facing range finder
             if (sensor->orientation() == ROTATION_PITCH_90) {
