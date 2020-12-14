@@ -569,10 +569,16 @@ private:
         float           delTime;    // time interval that the measurement was accumulated over (sec)
     };
         
+    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
+    enum class rotationOrder {
+        TAIT_BRYAN_321=0,
+        TAIT_BRYAN_312=1
+    };
+
     struct yaw_elements : EKF_obs_element_t {
-        float       yawAng;         // yaw angle measurement (rad)
-        float       yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
-        uint8_t     type;           // type specifiying Euler rotation order used, 1 = 312 (ZXY), 2 = 321 (ZYX)
+        float         yawAng;         // yaw angle measurement (rad)
+        float         yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
+        rotationOrder order;          // type specifiying Euler rotation order used, 0 = 321 (ZYX), 1 = 312 (ZXY)
     };
 
     struct ext_nav_elements : EKF_obs_element_t {
@@ -612,10 +618,13 @@ private:
         EXTNAV=7        // Use external nav data
     };
 
-    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
-    enum class rotationOrder {
-        TAIT_BRYAN_321=0,
-        TAIT_BRYAN_312=1
+    // specifies the method to be used when fusing yaw observations
+    enum class yawFusionMethod {
+	    MAGNETOMER=0,
+	    EXTERNAL=1,
+        GSF=2,
+	    STATIC=3,
+        PREDICTED=4,
     };
 
     // update the navigation filter status
@@ -858,8 +867,9 @@ private:
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
 
-    // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
-    void fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor);
+    // Fuse compass measurements using a direct yaw angle observation (doesn't require magnetic field states)
+    // Returns true if the fusion was successful
+    bool fuseEulerYaw(yawFusionMethod method);
 
     // return the best Tait-Bryan rotation order to use
     void bestRotationOrder(rotationOrder &order);
@@ -1215,6 +1225,8 @@ private:
     EKF_obs_buffer_t<yaw_elements> storedYawAng;
     yaw_elements yawAngDataNew;
     yaw_elements yawAngDataDelayed;
+    yaw_elements yawAngDataStatic;
+
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
