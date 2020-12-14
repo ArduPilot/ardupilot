@@ -929,6 +929,7 @@ private:
     // fence.cpp
     void fence_check();
     bool fence_stickmixing() const;
+    void disable_fence_for_landing(void);
 #endif
 
     // ArduPlane.cpp
