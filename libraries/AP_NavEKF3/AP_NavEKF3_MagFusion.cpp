@@ -246,7 +246,7 @@ void NavEKF3_core::SelectMagFusion()
                     if (yawAngDataDelayed.type == 2) {
                         yawAngDataDelayed.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
                     } else if (yawAngDataDelayed.type == 1) {
-                        yawAngDataDelayed.yawAng = atan2f(-prevTnb[0][1], prevTnb[1][1]);
+                        yawAngDataDelayed.yawAng = atan2f(-prevTnb[1][0], prevTnb[1][1]);
                     }
                 }
                 if (onGroundNotMoving) {
@@ -290,7 +290,7 @@ void NavEKF3_core::SelectMagFusion()
             } else {
                 // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
                 if (!onGroundNotMoving) {
-                    yawAngDataDelayed.yawAng = atan2f(-prevTnb[0][1], prevTnb[1][1]);
+                    yawAngDataDelayed.yawAng = atan2f(-prevTnb[1][0], prevTnb[1][1]);
                 }
                 yawAngDataDelayed.type = 1;
             }
