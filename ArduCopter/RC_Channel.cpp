@@ -79,6 +79,11 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::WINCH_ENABLE:
     case AUX_FUNC::STANDBY:
     case AUX_FUNC::SURFACE_TRACKING:
+    case AUX_FUNC::KILL_ALL:
+    case AUX_FUNC::KILL_MOT1:
+    case AUX_FUNC::KILL_MOT2:
+    case AUX_FUNC::KILL_MOT3:
+    case AUX_FUNC::KILL_MOT4:
         do_aux_function(ch_option, ch_flag);
         break;
     // the following functions do not need to be initialised:
