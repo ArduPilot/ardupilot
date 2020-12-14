@@ -24,7 +24,6 @@
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
 #define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
-#define PROXIMITY_NUM_LAYERS 5
 
 class AP_Proximity_Backend;
 
