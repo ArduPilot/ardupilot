@@ -25,8 +25,8 @@
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartH, plus IOMCU
-#define UART_MAX_DRIVERS 9
+// enough for uartA to uartI, plus IOMCU
+#define UART_MAX_DRIVERS 10
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:

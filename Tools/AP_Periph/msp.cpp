@@ -48,6 +48,9 @@ void AP_Periph_FW::msp_sensor_update(void)
 #ifdef HAL_PERIPH_ENABLE_MAG
     send_msp_compass();
 #endif
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+    send_msp_airspeed();
+#endif
 }
 
 
@@ -126,6 +129,10 @@ void AP_Periph_FW::send_msp_baro(void)
         return;
     }
     msp.last_baro_ms = baro.get_last_update(0);
+    if (!baro.healthy()) {
+        // don't send any data
+        return;
+    }
 
     p.instance = 0;
     p.time_ms = msp.last_baro_ms;
@@ -147,6 +154,9 @@ void AP_Periph_FW::send_msp_compass(void)
     if (msp.last_mag_ms == compass.last_update_ms(0)) {
         return;
     }
+    if (!compass.healthy()) {
+        return;
+    }
     msp.last_mag_ms = compass.last_update_ms(0);
 
     const Vector3f &field = compass.get_field(0);
@@ -159,5 +169,39 @@ void AP_Periph_FW::send_msp_compass(void)
     send_msp_packet(MSP2_SENSOR_COMPASS, &p, sizeof(p));
 }
 #endif // HAL_PERIPH_ENABLE_MAG
+
+#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+/*
+  send MSP airspeed packet
+ */
+void AP_Periph_FW::send_msp_airspeed(void)
+{
+    MSP::msp_airspeed_data_message_t p;
+
+    const uint32_t last_update_ms = airspeed.last_update_ms();
+    if (msp.last_airspeed_ms == last_update_ms) {
+        return;
+    }
+    if (!airspeed.healthy()) {
+        // we don't report at all for an unhealthy sensor. This maps
+        // to unhealthy in the flight controller driver
+        return;
+    }
+    msp.last_airspeed_ms = last_update_ms;
+
+    p.instance = 0;
+    p.time_ms = msp.last_airspeed_ms;
+    p.pressure = airspeed.get_corrected_pressure();
+    float temp;
+    if (!airspeed.get_temperature(temp)) {
+        p.temp = INT16_MIN; //invalid temperature
+    } else {
+        p.temp = temp * 100;
+    }
+
+    send_msp_packet(MSP2_SENSOR_AIRSPEED, &p, sizeof(p));
+}
+#endif // HAL_PERIPH_ENABLE_AIRSPEED
+
 
 #endif // HAL_PERIPH_ENABLE_MSP

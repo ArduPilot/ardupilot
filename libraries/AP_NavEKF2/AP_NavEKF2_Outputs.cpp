@@ -51,46 +51,6 @@ float NavEKF2_core::errorScore() const
     return score;
 }
 
-// return data for debugging optical flow fusion
-void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
-{
-    varFlow = MAX(flowTestRatio[0],flowTestRatio[1]);
-    gndOffset = terrainState;
-    flowInnovX = innovOptFlow[0];
-    flowInnovY = innovOptFlow[1];
-    auxInnov = norm(auxFlowObsInnov.x,auxFlowObsInnov.y);
-    HAGL = terrainState - stateStruct.position.z;
-    rngInnov = innovRng;
-    range = rangeDataDelayed.rng;
-    gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
-}
-
-// return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
-bool NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
-{
-    // if the states have not been initialised or we have not received any beacon updates then return zeros
-    if (!statesInitialised || N_beacons == 0) {
-        return false;
-    }
-
-    // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
-    if (rngBcnFuseDataReportIndex >= N_beacons) {
-        rngBcnFuseDataReportIndex = 0;
-    }
-
-    // Output the fusion status data for the specified beacon
-    ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
-    rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
-    innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
-    innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
-    testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
-    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
-    offsetHigh = bcnPosOffsetMax;                                               // beacon system vertical pos offset upper estimate
-    offsetLow = bcnPosOffsetMin;                                                // beacon system vertical pos offset lower estimate
-    rngBcnFuseDataReportIndex++;
-    return true;
-}
-
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -211,6 +171,22 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
 {
     // correct for the IMU position offset (EKF calculations are at the IMU)
     vel = outputDataNew.velocity + velOffsetNED;
+}
+
+// return estimate of true airspeed vector in body frame in m/s
+// returns false if estimate is unavailable
+bool NavEKF2_core::getAirSpdVec(Vector3f &vel) const
+{
+    if (inhibitWindStates || PV_AidingMode == AID_NONE) {
+        return false;
+    }
+    vel = outputDataNew.velocity + velOffsetNED;
+    vel.x -= stateStruct.wind_vel.x;
+    vel.y -= stateStruct.wind_vel.y;
+    Matrix3f Tnb; // rotation from nav to body frame
+    outputDataNew.quat.inverse().rotation_matrix(Tnb);
+    vel = Tnb * vel;
+    return true;
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
@@ -434,12 +410,6 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     }
 }
 
-// return the index for the active magnetometer
-uint8_t NavEKF2_core::getActiveMag() const
-{
-    return (uint8_t)magSelectIndex;
-}
-
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
 void  NavEKF2_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
@@ -622,22 +592,8 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
     return framesSincePredict;
 }
 
-// publish output observer angular, velocity and position tracking error
-void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
-{
-    error = outputTrackError;
-}
-
 // return true when external nav data is also being used as a yaw observation
 bool NavEKF2_core::isExtNavUsedForYaw()
 {
     return extNavUsedForYaw;
-}
-
-bool NavEKF2_core::getDataEKFGSF(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
-{
-    if (yawEstimator != nullptr) {
-        return yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, innov_VN, innov_VE, weight);
-    }
-    return false;
 }

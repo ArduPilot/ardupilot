@@ -382,7 +382,6 @@ void ModeAuto::payload_place_start()
 
     // call location specific place start function
     payload_place_start(stopping_point);
-
 }
 
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
@@ -1024,9 +1023,10 @@ void ModeAuto::payload_place_run()
     case PayloadPlaceStateType_Releasing:
     case PayloadPlaceStateType_Released:
     case PayloadPlaceStateType_Ascending_Start:
+        return payload_place_run_loiter();
     case PayloadPlaceStateType_Ascending:
     case PayloadPlaceStateType_Done:
-        return payload_place_run_loiter();
+        return wp_run();
     }
 }
 
@@ -1056,13 +1056,6 @@ void ModeAuto::payload_place_run_loiter()
 {
     // loiter...
     land_run_horizontal_control();
-
-    // run loiter controller
-    loiter_nav->update();
-
-    // call attitude controller
-    const float target_yaw_rate = 0;
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
 
     // call position controller
     pos_control->update_z_controller();
@@ -1593,7 +1586,7 @@ bool ModeAuto::verify_payload_place()
     const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
 
     const float current_throttle_level = motors->get_throttle();
-    const uint32_t now =  AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // if we discover we've landed then immediately release the load:
     if (copter.ap.land_complete) {
@@ -1603,7 +1596,7 @@ bool ModeAuto::verify_payload_place()
         case PayloadPlaceStateType_Calibrating_Hover:
         case PayloadPlaceStateType_Descending_Start:
         case PayloadPlaceStateType_Descending:
-            gcs().send_text(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
+            gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: landed");
             nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
             break;
         case PayloadPlaceStateType_Releasing_Start:

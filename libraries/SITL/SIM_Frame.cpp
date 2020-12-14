@@ -205,6 +205,34 @@ static Motor dodeca_hexa_motors[] =
     Motor(AP_MOTORS_MOT_12, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  12)
 };
 
+static Motor deca_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
+    Motor(AP_MOTORS_MOT_2,    36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
+    Motor(AP_MOTORS_MOT_3,    72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_4,   108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_5,   144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
+    Motor(AP_MOTORS_MOT_6,   180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
+    Motor(AP_MOTORS_MOT_7,  -144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_8,  -108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_9,   -72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
+    Motor(AP_MOTORS_MOT_10,  -36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10)
+};
+
+static Motor deca_cw_x_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,    18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1),
+    Motor(AP_MOTORS_MOT_2,    54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
+    Motor(AP_MOTORS_MOT_3,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_4,   126, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_5,   162, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
+    Motor(AP_MOTORS_MOT_6,  -162, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
+    Motor(AP_MOTORS_MOT_7,  -126, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_8,   -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_9,   -54, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9),
+    Motor(AP_MOTORS_MOT_10,  -18, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10)
+};
+
 static Motor tri_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
@@ -273,6 +301,8 @@ static Frame supported_frames[] =
     Frame("octa-quad-cwx",8, octa_quad_cw_x_motors),
     Frame("octa-quad", 8, octa_quad_motors),
     Frame("octa",      8, octa_motors),
+    Frame("deca",     10, deca_motors),
+    Frame("deca-cwx", 10, deca_cw_x_motors),
     Frame("dodeca-hexa", 12, dodeca_hexa_motors),
     Frame("tri",       3, tri_motors),
     Frame("tilttrivec",3, tilttri_vectored_motors),
@@ -365,6 +395,8 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(spin_min),
         FRAME_VAR(spin_max),
         FRAME_VAR(slew_max),
+        FRAME_VAR(disc_area),
+        FRAME_VAR(mdrag_coef),
     };
     static_assert(sizeof(model) == sizeof(float)*ARRAY_SIZE(vars), "incorrect model vars");
 
@@ -400,9 +432,21 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));
 
+    const float cos_tilt = cosf(radians(model.refAngle));
+    const float airspeed_bf = model.refSpd * cos_tilt;
+    const float ref_thrust = model.mass * GRAVITY_MSS / cos_tilt;
     float ref_air_density = get_air_density(model.refAlt);
 
-    areaCd = drag_force / (0.5 * ref_air_density * sq(model.refSpd));
+    const float momentum_drag = cos_tilt * model.mdrag_coef * airspeed_bf * sqrtf(ref_thrust * ref_air_density * model.disc_area);
+
+    if (momentum_drag > drag_force) {
+        model.mdrag_coef *= drag_force / momentum_drag;
+        areaCd = 0.0;
+        ::printf("Suggested EK3_BCOEF_* = 0, EK3_MCOEF = %.3f\n", (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+    } else {
+        areaCd = (drag_force - momentum_drag) / (0.5f * ref_air_density * sq(model.refSpd));
+        ::printf("Suggested EK3_BCOEF_* = %.3f, EK3_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+    }
 
     terminal_rotation_rate = model.refRotRate;
 
@@ -504,14 +548,30 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     if (use_drag) {
         // use the model params to calculate drag
-        const Vector3f vel_air_ef = aircraft.get_velocity_air_ef();
-        const float speed = vel_air_ef.length();
-        float drag_force = areaCd * 0.5 * air_density * sq(speed);
-        Vector3f drag_ef;
-        if (is_positive(speed)) {
-            drag_ef = -(vel_air_ef / speed) * drag_force;
+        Vector3f drag_bf;
+        drag_bf.x = areaCd * 0.5f * air_density * sq(vel_air_bf.x) +
+                    model.mdrag_coef * fabsf(vel_air_bf.x) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        if (is_positive(vel_air_bf.x)) {
+            drag_bf.x = -drag_bf.x;
         }
-        body_accel += aircraft.get_dcm().transposed() * drag_ef / mass;
+
+        drag_bf.y = areaCd * 0.5f * air_density * sq(vel_air_bf.y) +
+                    model.mdrag_coef * fabsf(vel_air_bf.y) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        if (is_positive(vel_air_bf.y)) {
+            drag_bf.y = -drag_bf.y;
+        }
+
+        // The application of momentum drag to the Z axis is a 'hack' to compensate for incorrect modelling
+        // of the variation of thust with vel_air_bf.z in SIM_Motor.cpp. If nmot applied, the vehicle will
+        // climb at an unrealistic rate during operation in STABILIZE. TODO replace prop and motor model in
+        // the Motor class with one based on DC motor, mometum disc and blade elemnt theory.
+        drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z) +
+                    model.mdrag_coef * fabsf(vel_air_bf.z) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        if (is_positive(vel_air_bf.z)) {
+            drag_bf.z = -drag_bf.z;
+        }
+
+        body_accel += drag_bf / mass;
     }
 
     // add some noise

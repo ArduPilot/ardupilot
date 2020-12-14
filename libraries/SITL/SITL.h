@@ -19,6 +19,7 @@
 #include "SIM_ToneAlarm.h"
 #include "SIM_EFI_MegaSquirt.h"
 #include "SIM_RichenPower.h"
+#include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include <AP_RangeFinder/AP_RangeFinder.h>
 
@@ -53,6 +54,7 @@ struct sitl_fdm {
     double rollDeg, pitchDeg, yawDeg;    // euler angles, degrees
     Quaternion quaternion;
     double airspeed; // m/s
+    Vector3f velocity_air_bf; // velocity relative to airmass, body frame
     double battery_voltage; // Volts
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
@@ -98,6 +100,9 @@ public:
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
+        for (uint8_t i=0; i<BARO_MAX_INSTANCES; i++) {
+            AP_Param::setup_object_defaults(&baro[i], baro[i].var_info);
+        }
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
         }
@@ -155,10 +160,6 @@ public:
     Matrix3f ahrs_rotation_inv;
 
     // noise levels for simulated sensors
-    AP_Float baro_noise[BARO_MAX_INSTANCES];  // in metres
-    AP_Float baro_drift[BARO_MAX_INSTANCES];  // in metres per second
-    AP_Float baro_glitch[BARO_MAX_INSTANCES]; // glitch in meters
-    AP_Int8  baro_freeze[BARO_MAX_INSTANCES]; // freeze baro to last recorded altitude
     AP_Float gyro_noise;  // in degrees/second
     AP_Vector3f gyro_scale;  // percentage
     AP_Float accel_noise; // in m/s/s
@@ -211,7 +212,6 @@ public:
     AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
-    AP_Int8  baro_disable[BARO_MAX_INSTANCES]; // disable simulated barometers
     AP_Int8  float_exception; // enable floating point exception checks
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
@@ -234,6 +234,25 @@ public:
     AP_Int8 sfml_joystick_id;
     AP_Int8 sfml_joystick_axis[8];
 #endif
+
+    // baro parameters
+    class BaroParm {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+        AP_Float noise;  // in metres
+        AP_Float drift;  // in metres per second
+        AP_Float glitch; // glitch in meters
+        AP_Int8  freeze; // freeze baro to last recorded altitude
+        AP_Int8  disable; // disable simulated barometers
+        AP_Int16 delay;  // barometer data delay in ms
+
+        // wind coefficients
+        AP_Float wcof_xp;
+        AP_Float wcof_xn;
+        AP_Float wcof_yp;
+        AP_Float wcof_yn;
+    };
+    BaroParm baro[BARO_MAX_INSTANCES];
 
     // EFI type
     enum EFIType {
@@ -261,7 +280,6 @@ public:
     AP_Float wind_type_alt;
     AP_Float wind_type_coef;
 
-    AP_Int16  baro_delay; // barometer data delay in ms
     AP_Int16  mag_delay; // magnetometer data delay in ms
     AP_Int16  wind_delay; // windspeed data delay in ms
 
@@ -397,6 +415,7 @@ public:
     ToneAlarm tonealarm_sim;
     SIM_Precland precland_sim;
     RichenPower richenpower_sim;
+    IntelligentEnergy24 ie24_sim;
 
     struct {
         // LED state, for serial LED emulation

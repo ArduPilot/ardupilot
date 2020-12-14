@@ -85,11 +85,12 @@ static struct {
 
 enum {
     FAIL_REASON_NO_APP_SIG = 10,
-    FAIL_REASON_BAD_LENGTH = 11,
+    FAIL_REASON_BAD_LENGTH_APP = 11,
     FAIL_REASON_BAD_BOARD_ID = 12,
     FAIL_REASON_BAD_CRC = 13,
     FAIL_REASON_IN_UPDATE = 14,
     FAIL_REASON_WATCHDOG = 15,
+    FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
 };
 
 /*
@@ -644,7 +645,7 @@ bool can_check_firmware(void)
     }
     // check length
     if (ad->image_size > flash_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_APP;
         printf("Bad fw length %u\n", ad->image_size);
         return false;
     }
@@ -658,8 +659,8 @@ bool can_check_firmware(void)
     const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
     uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
     if ((len1 + desc_len) > ad->image_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
-        printf("Bad fw length %u\n", ad->image_size);
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_DESCRIPTOR;
+        printf("Bad fw descriptor length %u\n", ad->image_size);
         return false;
     }
 

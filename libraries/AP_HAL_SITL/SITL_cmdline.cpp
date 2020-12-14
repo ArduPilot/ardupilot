@@ -90,6 +90,7 @@ void SITL_State::_usage(void)
            "\t--uartF device           set device string for UARTF\n"
            "\t--uartG device           set device string for UARTG\n"
            "\t--uartH device           set device string for UARTH\n"
+           "\t--uartI device           set device string for UARTI\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -97,7 +98,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
-           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
@@ -127,6 +128,8 @@ static const struct {
     { "dodeca-hexa",        MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
+    { "deca",               MultiCopter::create },
+    { "deca-cwx",           MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
@@ -224,6 +227,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTF,
         CMDLINE_UARTG,
         CMDLINE_UARTH,
+        CMDLINE_UARTI,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -261,6 +265,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartF",           true,   0, CMDLINE_UARTF},
         {"uartG",           true,   0, CMDLINE_UARTG},
         {"uartH",           true,   0, CMDLINE_UARTH},
+        {"uartI",           true,   0, CMDLINE_UARTI},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},

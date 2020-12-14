@@ -949,6 +949,7 @@ private:
     void geofence_send_status(mavlink_channel_t chan);
     bool geofence_breached(void);
     void geofence_disable_and_send_error_msg(const char *errorMsg);
+    void disable_fence_for_landing(void);
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
@@ -967,16 +968,15 @@ private:
     void afs_fs_check(void);
 #endif
     void one_second_loop(void);
+#if AP_AIRSPEED_AUTOCAL_ENABLE
     void airspeed_ratio_update(void);
+#endif 
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
     void update_control_mode(void);
     void update_flight_stage();
     void set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs);
-#if OSD_ENABLED || OSD_PARAM_ENABLED
-    void publish_osd_info();
-#endif
 
     // navigation.cpp
     void set_nav_controller(void);
@@ -1078,6 +1078,11 @@ private:
 #if HAL_SOARING_ENABLED
     void update_soaring();
 #endif
+
+    // vehicle specific waypoint info helpers
+    bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_bearing_deg(float &bearing) const override;
+    bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
     // reverse_thrust.cpp
     bool reversed_throttle;

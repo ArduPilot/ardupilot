@@ -33,9 +33,6 @@ void NavEKF2_core::FuseAirspeed()
     Vector24 H_TAS;
     float VtasPred;
 
-    // health is set bad until test passed
-    tasHealth = false;
-
     // copy required states to local variable names
     vn = stateStruct.velocity.x;
     ve = stateStruct.velocity.y;
@@ -113,7 +110,7 @@ void NavEKF2_core::FuseAirspeed()
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (float)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth

@@ -22,6 +22,11 @@ public:
         return _RBCH.get_origin_returncode;
     }
 
+    // return beacon enabled
+    bool enabled(void) const {
+        return _RBCH.enabled;
+    }
+
     // return beacon health
     bool beacon_healthy(uint8_t i) const {
         return _RBCI[i].healthy;
@@ -53,9 +58,6 @@ public:
     AP_DAL_Beacon();
 
     AP_DAL_Beacon *beacon() {
-        if (_RBCH.ptr_is_nullptr) {
-            return nullptr;
-        }
         return this;
     }
 

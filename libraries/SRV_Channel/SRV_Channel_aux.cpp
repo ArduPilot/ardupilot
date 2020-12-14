@@ -197,6 +197,19 @@ void SRV_Channels::enable_aux_servos()
             hal.rcout->enable_ch(c.ch_num);
         }
 
+        // output some servo functions before we fiddle with the
+        // parameter values:
+        if (c.function.get() == SRV_Channel::k_min) {
+            c.set_output_pwm(c.servo_min);
+            c.output_ch();
+        } else if (c.function.get() == SRV_Channel::k_trim) {
+            c.set_output_pwm(c.servo_trim);
+            c.output_ch();
+        } else if (c.function.get() == SRV_Channel::k_max) {
+            c.set_output_pwm(c.servo_max);
+            c.output_ch();
+        }
+
         /*
           for channels which have been marked as digital output then the
           MIN/MAX/TRIM values have no meaning for controlling output, as

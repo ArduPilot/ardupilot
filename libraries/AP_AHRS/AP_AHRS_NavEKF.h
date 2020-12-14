@@ -83,7 +83,7 @@ public:
     bool get_position(struct Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override;
+    bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
 
     // status reporting of estimated error
     float           get_error_rp() const override;
@@ -95,6 +95,10 @@ public:
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_estimate(float &airspeed_ret) const override;
+
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    bool airspeed_vector_true(Vector3f &vec) const override;
 
     // true if compass is being used
     bool use_compass() override;
@@ -188,9 +192,6 @@ public:
     // Write velocity data from an external navigation system
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms) override;
 
-    // inhibit GPS usage
-    uint8_t setInhibitGPS(void);
-
     // get speed limit
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
@@ -266,6 +267,10 @@ public:
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
+    // get a source's velocity innovations
+    // returns true on success and results are placed in innovations and variances arguments
+    bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const override WARN_IF_UNUSED;
+
     // returns the expected NED magnetic field
     bool get_mag_field_NED(Vector3f& ret) const;
 
@@ -298,6 +303,9 @@ public:
 
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     void request_yaw_reset(void) override;
+
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+    void set_posvelyaw_source_set(uint8_t source_set_idx) override;
 
     void Log_Write();
 

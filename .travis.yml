@@ -50,25 +50,5 @@ matrix:
   include:
     - if: type != cron
       compiler: "gcc"
-      env: CI_BUILD_TARGET="stm32f7 stm32h7 fmuv2-plane"
-      name: stm32f7 stm32h7 fmuv2-plane
-    - if: type != cron
-      compiler: "clang"
-      env: CI_BUILD_TARGET="stm32f7 stm32h7 fmuv2-plane"
-      name: stm32f7-clang stm32h7-clang fmuv2-plane-clang
-    - if: type != cron
-      compiler: "gcc"
-      env: CI_BUILD_TARGET="navigator periph-build"
-      name: navigator periph-build replay
-    - if: type != cron
-      compiler: "clang"
-      env: CI_BUILD_TARGET="periph-build"
-      name: periph-build-clang
-    - if: type != cron
-      compiler: "gcc"
-      env: CI_BUILD_TARGET="revo-bootloader CubeOrange-bootloader iofirmware"
-      name: revo-bootloader CubeOrange-bootloader iofirmware
-    - if: type != cron
-      compiler: "clang"
-      env: CI_BUILD_TARGET="revo-bootloader CubeOrange-bootloader iofirmware"
-      name: revo-bootloader-clang CubeOrange-bootloader-clang iofirmware-clang
+      env: CI_BUILD_TARGET="navigator"
+      name: navigator

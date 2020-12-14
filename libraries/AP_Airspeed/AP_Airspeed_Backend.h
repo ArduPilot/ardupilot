@@ -42,6 +42,10 @@ public:
     // return airspeed in m/s if available
     virtual bool get_airspeed(float& airspeed) {return false;}
 
+#if HAL_MSP_AIRSPEED_ENABLED
+    virtual void handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
+#endif 
+
 protected:
     int8_t get_pin(void) const;
     float get_psi_range(void) const;

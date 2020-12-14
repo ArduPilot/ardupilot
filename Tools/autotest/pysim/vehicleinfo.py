@@ -89,6 +89,17 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
+            "deca": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-deca.parm" ],
+            },
+            "deca-cwx": {
+                "make_target": "sitl",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": "default_params/copter.parm",
+            },
             "tri": {
                 "make_target": "sitl",
                 "waf_target": "bin/arducopter",

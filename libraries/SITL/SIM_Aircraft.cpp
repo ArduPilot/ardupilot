@@ -349,6 +349,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.yawDeg   = degrees(y);
     fdm.quaternion.from_rotation_matrix(dcm);
     fdm.airspeed = airspeed_pitot;
+    fdm.velocity_air_bf = velocity_air_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.num_motors = num_motors;
@@ -886,6 +887,11 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
     sitl->shipsim.update();
+
+    // update IntelligentEnergy 2.4kW generator
+    if (ie24) {
+        ie24->update(input);
+    }
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)

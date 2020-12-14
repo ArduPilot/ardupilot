@@ -70,9 +70,6 @@ void Plane::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if GENERATOR_ENABLED
-    generator.init();
-#endif
 
 #if OSD_ENABLED == ENABLED
     osd.init();
@@ -99,9 +96,6 @@ void Plane::init_ardupilot()
 #if EFI_ENABLED
     g2.efi.init();
 #endif
-
-    // give AHRS the airspeed sensor
-    ahrs.set_airspeed(&airspeed);
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
@@ -160,9 +154,6 @@ void Plane::init_ardupilot()
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
-
-    // disable safety if requested
-    BoardConfig.init_safety();
 }
 
 //********************************************************************************

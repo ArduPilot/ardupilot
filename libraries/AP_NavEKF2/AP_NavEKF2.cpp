@@ -943,6 +943,18 @@ void NavEKF2::getVelNED(int8_t instance, Vector3f &vel) const
     }
 }
 
+// return estimate of true airspeed vector in body frame in m/s for the specified instance
+// An out of range instance (eg -1) returns data for the primary instance
+// returns false if estimate is unavailable
+bool NavEKF2::getAirSpdVec(int8_t instance, Vector3f &vel) const
+{
+    if (instance < 0 || instance >= num_cores) instance = primary;
+    if (core) {
+        return core[instance].getAirSpdVec(vel);
+    }
+    return false;
+}
+
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF2::getPosDownDerivative(int8_t instance) const
 {
@@ -1023,34 +1035,6 @@ bool NavEKF2::resetHeightDatum(void)
     return status;
 }
 
-// Commands the EKF to not use GPS.
-// This command must be sent prior to arming as it will only be actioned when the filter is in static mode
-// This command is forgotten by the EKF each time it goes back into static mode (eg the vehicle disarms)
-// Returns 0 if command rejected
-// Returns 1 if attitude, vertical velocity and vertical position will be provided
-// Returns 2 if attitude, 3D-velocity, vertical position and relative horizontal position will be provided
-uint8_t NavEKF2::setInhibitGPS(void)
-{
-    AP::dal().log_event2(AP_DAL::Event::setInhibitGPS);
-
-    if (!core) {
-        return 0;
-    }
-    return core[primary].setInhibitGPS();
-}
-
-// Set the argument to true to prevent the EKF using the GPS vertical velocity
-// This can be used for situations where GPS velocity errors are causing problems with height accuracy
-void NavEKF2::setInhibitGpsVertVelUse(const bool varIn) {
-    if (varIn) {
-        AP::dal().log_event2(AP_DAL::Event::setInhibitGpsVertVelUse);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetInhibitGpsVertVelUse);
-    }
-    inhibitGpsVertVelUse = varIn;
-};
-
-
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
 void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
@@ -1096,17 +1080,6 @@ void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getMagXYZ(magXYZ);
-    }
-}
-
-// return the magnetometer in use for the specified instance
-uint8_t NavEKF2::getActiveMag(int8_t instance) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getActiveMag();
-    } else {
-        return 255;
     }
 }
 
@@ -1236,15 +1209,6 @@ void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posI
     }
 }
 
-// publish output observer angular, velocity and position tracking error
-void NavEKF2::getOutputTrackingError(int8_t instance, Vector3f &error) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getOutputTrackingError(error);
-    }
-}
-
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
 void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
@@ -1279,27 +1243,6 @@ void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &raw
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
         }
-    }
-}
-
-// return data for debugging optical flow fusion
-void NavEKF2::getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov,
-                           float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getFlowDebug(varFlow, gndOffset, flowInnovX, flowInnovY, auxInnov, HAGL, rngInnov, range, gndOffsetErr);
-    }
-}
-
-// return data for debugging range beacon fusion
-bool NavEKF2::getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        return core[instance].getRangeBeaconDebug(ID, rng, innov, innovVar, testRatio, beaconPosNED, offsetHigh, offsetLow);
-    } else {
-        return false;
     }
 }
 
@@ -1646,21 +1589,6 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 }
 
 /*
-  get timing statistics structure
-*/
-void NavEKF2::getTimingStatistics(int8_t instance, struct ekf_timing &timing) const
-{
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
-    if (core) {
-        core[instance].getTimingStatistics(timing);
-    } else {
-        memset(&timing, 0, sizeof(timing));
-    }
-}
-
-/*
  * Write position and quaternion data from an external navigation system
  *
  * pos        : XYZ position (m) in a RH navigation frame with the Z axis pointing down and XY axes horizontal. Frame must be aligned with NED if the magnetomer is being used for yaw.
@@ -1694,6 +1622,13 @@ bool NavEKF2::isExtNavUsedForYaw() const
     return false;
 }
 
+// check if configured to use GPS for horizontal position estimation
+bool NavEKF2::configuredToUseGPSForPosXY(void) const
+{
+    // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
+    return  (_fusionModeGPS.get() != 3);
+}
+
 void NavEKF2::requestYawReset(void)
 {
     AP::dal().log_event2(AP_DAL::Event::requestYawReset);
@@ -1701,19 +1636,6 @@ void NavEKF2::requestYawReset(void)
     for (uint8_t i = 0; i < num_cores; i++) {
         core[i].EKFGSF_requestYawReset();
     }
-}
-
-// return data for debugging EKF-GSF yaw estimator
-// return false if data not available
-bool NavEKF2::getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        if (core[instance].getDataEKFGSF(yaw_composite, yaw_composite_variance, yaw, innov_VN, innov_VE, weight)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.

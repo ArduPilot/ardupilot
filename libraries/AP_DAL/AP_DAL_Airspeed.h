@@ -15,6 +15,10 @@ public:
     bool healthy(uint8_t i) const {
         return _RASI[i].healthy;
     }
+    // return health status of primary sensor
+    bool healthy() const {
+        return healthy(get_primary());
+    }
 
     // return true if airspeed is enabled, and airspeed use is set
     bool use(uint8_t i) const {

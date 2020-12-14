@@ -794,6 +794,10 @@ void QuadPlane::setup_defaults(void)
     if (esc_calibration != 0) {
         esc_calibration.set_and_save(0);
     }
+    // Quadplanes need the same level of GPS error checking as Copters do, Plane is more relaxed
+    AP_Param::set_default_by_name("EK2_CHECK_SCALE",100);
+    AP_Param::set_default_by_name("EK3_CHECK_SCALE",100);
+
 }
 
 // run ESC calibration
@@ -1075,6 +1079,43 @@ float QuadPlane::get_pilot_throttle()
 }
 
 /*
+  get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle.
+  The angle_max_cd and angle_limit_cd are mode dependent
+*/
+void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
+{
+    // failsafe check
+    if (plane.failsafe.rc_failsafe || plane.failsafe.throttle_counter > 0) {
+        roll_out_cd = 0;
+        pitch_out_cd = 0;
+        return;
+    }
+
+    // fetch roll and pitch inputs
+    roll_out_cd = plane.channel_roll->get_control_in();
+    pitch_out_cd = plane.channel_pitch->get_control_in();
+
+    // limit max lean angle, always allow for 10 degrees
+    angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
+
+    // scale roll and pitch inputs to ANGLE_MAX parameter range
+    float scaler = angle_max_cd/4500.0;
+    roll_out_cd *= scaler;
+    pitch_out_cd *= scaler;
+
+    // apply circular limit
+    float total_in = norm(pitch_out_cd, roll_out_cd);
+    if (total_in > angle_limit_cd) {
+        float ratio = angle_limit_cd / total_in;
+        roll_out_cd *= ratio;
+        pitch_out_cd *= ratio;
+    }
+
+    // apply lateral tilt to euler roll conversion
+    roll_out_cd = 100 * degrees(atanf(cosf(radians(pitch_out_cd*0.01))*tanf(radians(roll_out_cd*0.01))));
+}
+
+/*
   control QACRO mode
  */
 void QuadPlane::control_qacro(void)
@@ -1164,6 +1205,7 @@ void QuadPlane::init_qland(void)
 #if LANDING_GEAR_ENABLED == ENABLED
     plane.g2.landing_gear.deploy_for_landing();
 #endif
+    plane.disable_fence_for_landing();
 }
 
 
@@ -1285,10 +1327,10 @@ void QuadPlane::control_loiter()
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // process pilot's roll and pitch input
-    loiter_nav->set_pilot_desired_acceleration(plane.channel_roll->get_control_in(),
-                                               plane.channel_pitch->get_control_in(),
-                                               plane.G_Dt);
-
+    float target_roll_cd, target_pitch_cd;
+    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+    loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd, plane.G_Dt);
+    
     // run loiter controller
     loiter_nav->update();
 
@@ -2892,6 +2934,7 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.state == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
+        plane.disable_fence_for_landing();
 #if LANDING_GEAR_ENABLED == ENABLED
         plane.g2.landing_gear.deploy_for_landing();
 #endif

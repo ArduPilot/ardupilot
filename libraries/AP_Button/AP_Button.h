@@ -51,6 +51,16 @@ private:
 
     AP_Int8 enable;
     AP_Int8 pin[AP_BUTTON_NUM_PINS];
+    AP_Int8 options[AP_BUTTON_NUM_PINS];  // if a pin's bit is set then it uses PWM assertion
+
+    bool is_pwm_input(uint8_t n) const {
+        return ((uint8_t)options[n].get() & (1U<<0)) != 0;
+    }
+    bool is_input_inverted(uint8_t n) const {
+        return ((uint8_t)options[n].get() & (1U<<1)) != 0;
+    }
+
+    AP_Int16 pin_func[AP_BUTTON_NUM_PINS];  // from the RC_Channel functions
 
     // number of seconds to send change notifications
     AP_Int16 report_send_time;
@@ -61,8 +71,34 @@ private:
     // debounced button press mask
     uint8_t debounce_mask;
 
+    // current state of PWM pins:
+    uint8_t pwm_state;
+
+    // mask indicating which action was most recent taken for pins
+    uint8_t state_actioned_mask;
+
+    // pwm sources are used when using PWM on the input
+    AP_HAL::PWMSource pwm_pin_source[AP_BUTTON_NUM_PINS];
+
+    // state from the timer interrupt:
+    HAL_Semaphore last_debounced_change_ms_sem;
+    // last time GPIO pins were debounced:
+    uint64_t last_debounced_change_ms;
+
+    // time at least last debounce changes across both PWM and GPIO
+    // pins was detected:
+    uint64_t last_debounce_ms;
+
     // when the mask last changed
     uint64_t last_change_time_ms;
+
+    // when button change events were last actioned
+    uint64_t last_action_time_ms;
+
+    // true if allocated aux functions have been initialised
+    bool aux_functions_initialised;
+    // call init_aux_function for all used functions
+    void run_aux_functions(bool force);
 
     // time of last report
     uint32_t last_report_ms;

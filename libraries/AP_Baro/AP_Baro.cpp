@@ -77,72 +77,72 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // NOTE: Index numbers 0 and 1 were for the old integer
     // ground temperature and pressure
 
-    // @Param: ABS_PRESS
-    // @DisplayName: Absolute Pressure
+    // @Param: 1_GND_PRESS
+    // @DisplayName: Ground Pressure
     // @Description: calibrated ground pressure in Pascals
     // @Units: Pa
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0),
+    AP_GROUPINFO_FLAGS("1_GND_PRESS", 2, AP_Baro, sensors[0].ground_pressure, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
-    // @Param: TEMP
+    // @Param: _GND_TEMP
     // @DisplayName: ground temperature
     // @Description: User provided ambient ground temperature in degrees Celsius. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. A value of 0 means use the internal measurement ambient temperature.
     // @Units: degC
     // @Increment: 1
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("TEMP", 3, AP_Baro, _user_ground_temperature, 0),
+    AP_GROUPINFO("_GND_TEMP", 3, AP_Baro, _user_ground_temperature, 0),
 
     // index 4 reserved for old AP_Int8 version in legacy FRAM
     //AP_GROUPINFO("ALT_OFFSET", 4, AP_Baro, _alt_offset, 0),
 
-    // @Param: ALT_OFFSET
+    // @Param: _ALT_OFFSET
     // @DisplayName: altitude offset
     // @Description: altitude offset in meters added to barometric altitude. This is used to allow for automatic adjustment of the base barometric altitude by a ground station equipped with a barometer. The value is added to the barometric altitude read by the aircraft. It is automatically reset to 0 when the barometer is calibrated on each reboot or when a preflight calibration is performed.
     // @Units: m
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
+    AP_GROUPINFO("_ALT_OFFSET", 5, AP_Baro, _alt_offset, 0),
 
-    // @Param: PRIMARY
+    // @Param: _PRIMARY
     // @DisplayName: Primary barometer
     // @Description: This selects which barometer will be the primary if multiple barometers are found
     // @Values: 0:FirstBaro,1:2ndBaro,2:3rdBaro
     // @User: Advanced
-    AP_GROUPINFO("PRIMARY", 6, AP_Baro, _primary_baro, 0),
+    AP_GROUPINFO("_PRIMARY", 6, AP_Baro, _primary_baro, 0),
 
-    // @Param: EXT_BUS
+    // @Param: _EXT_BUS
     // @DisplayName: External baro bus
     // @Description: This selects the bus number for looking for an I2C barometer. When set to -1 it will probe all external i2c buses based on the GND_PROBE_EXT parameter.
     // @Values: -1:Disabled,0:Bus0,1:Bus1
     // @User: Advanced
-    AP_GROUPINFO("EXT_BUS", 7, AP_Baro, _ext_bus, -1),
+    AP_GROUPINFO("_EXT_BUS", 7, AP_Baro, _ext_bus, -1),
 
-    // @Param: SPEC_GRAV
+    // @Param: _SPEC_GRAV
     // @DisplayName: Specific Gravity (For water depth measurement)
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
     // @Values: 1.0:Freshwater,1.024:Saltwater
-    AP_GROUPINFO_FRAME("SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
+    AP_GROUPINFO_FRAME("_SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
 
 #if BARO_MAX_INSTANCES > 1
-    // @Param: ABS_PRESS2
-    // @DisplayName: Absolute Pressure
+    // @Param: 2_GND_PRESS
+    // @DisplayName: Ground Pressure
     // @Description: calibrated ground pressure in Pascals
     // @Units: Pa
     // @Increment: 1
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS2", 9, AP_Baro, sensors[1].ground_pressure, 0),
+    AP_GROUPINFO_FLAGS("2_GND_PRESS", 9, AP_Baro, sensors[1].ground_pressure, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
     // Slot 10 used to be TEMP2
 #endif
 
 #if BARO_MAX_INSTANCES > 2
-    // @Param: ABS_PRESS3
+    // @Param: 3_GND_PRESS
     // @DisplayName: Absolute Pressure
     // @Description: calibrated ground pressure in Pascals
     // @Units: Pa
@@ -150,54 +150,72 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @ReadOnly: True
     // @Volatile: True
     // @User: Advanced
-    AP_GROUPINFO("ABS_PRESS3", 11, AP_Baro, sensors[2].ground_pressure, 0),
+    AP_GROUPINFO_FLAGS("3_GND_PRESS", 11, AP_Baro, sensors[2].ground_pressure, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
     // Slot 12 used to be TEMP3
 #endif
 
-    // @Param: FLTR_RNG
+    // @Param: _FLTR_RNG
     // @DisplayName: Range in which sample is accepted
     // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.
     // @Units: %
     // @Range: 0 100
     // @Increment: 1
-    AP_GROUPINFO("FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
+    AP_GROUPINFO("_FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
 #if defined(HAL_PROBE_EXTERNAL_I2C_BAROS) || defined(HAL_MSP_BARO_ENABLED)
-    // @Param: PROBE_EXT
+    // @Param: _PROBE_EXT
     // @DisplayName: External barometers to probe
-    // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on GND_EXT_BUS. If GND_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in GND_EXT_BUS.
+    // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on GND_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in GND_EXT_BUS.
     // @Bitmask: 0:BMP085,1:BMP280,2:MS5611,3:MS5607,4:MS5637,5:FBM320,6:DPS280,7:LPS25H,8:Keller,9:MS5837,10:BMP388,11:SPL06,12:MSP
     // @Values: 1:BMP085,2:BMP280,4:MS5611,8:MS5607,16:MS5637,32:FBM320,64:DPS280,128:LPS25H,256:Keller,512:MS5837,1024:BMP388,2048:SPL06,4096:MSP
     // @User: Advanced
-    AP_GROUPINFO("PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
+    AP_GROUPINFO("_PROBE_EXT", 14, AP_Baro, _baro_probe_ext, HAL_BARO_PROBE_EXT_DEFAULT),
 #endif
 
-    // @Param: BARO_ID
+    // @Param: 1_DEVID
     // @DisplayName: Baro ID
     // @Description: Barometer sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("BARO_ID", 15, AP_Baro, sensors[0].bus_id, 0),
+    AP_GROUPINFO_FLAGS("1_DEVID", 15, AP_Baro, sensors[0].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
 #if BARO_MAX_INSTANCES > 1
-    // @Param: BARO2_ID
+    // @Param: 2_DEVID
     // @DisplayName: Baro ID2
     // @Description: Barometer2 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("BARO2_ID", 16, AP_Baro, sensors[1].bus_id, 0),
+    AP_GROUPINFO_FLAGS("2_DEVID", 16, AP_Baro, sensors[1].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 #endif
 
 #if BARO_MAX_INSTANCES > 2
-    // @Param: BARO3_ID
+    // @Param: 3_DEVID
     // @DisplayName: Baro ID3
     // @Description: Barometer3 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("BARO3_ID", 17, AP_Baro, sensors[2].bus_id, 0),
+    AP_GROUPINFO_FLAGS("3_DEVID", 17, AP_Baro, sensors[2].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 #endif
-    
+
+#if HAL_BARO_WIND_COMP_ENABLED
+    // @Group: 1_WCF_
+    // @Path: AP_Baro_Wind.cpp
+    AP_SUBGROUPINFO(sensors[0].wind_coeff, "1_WCF_", 18, AP_Baro, WindCoeff),
+
+#if BARO_MAX_INSTANCES > 1
+    // @Group: 2_WCF_
+    // @Path: AP_Baro_Wind.cpp
+    AP_SUBGROUPINFO(sensors[1].wind_coeff, "2_WCF_", 19, AP_Baro, WindCoeff),
+#endif
+
+#if BARO_MAX_INSTANCES > 2
+    // @Group: 3_WCF_
+    // @Path: AP_Baro_Wind.cpp
+    AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
+#endif
+#endif
+
     AP_GROUPEND
 };
 
@@ -673,7 +691,7 @@ void AP_Baro::init(void)
 }
 
 /*
-  probe all the i2c barometers enabled with GND_PROBE_EXT. This is
+  probe all the i2c barometers enabled with BARO_PROBE_EXT. This is
   used on boards without a builtin barometer
  */
 void AP_Baro::_probe_i2c_barometers(void)
@@ -826,6 +844,9 @@ void AP_Baro::update(void)
             float altitude = sensors[i].altitude;
             float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;
             if (sensors[i].type == BARO_TYPE_AIR) {
+#if HAL_BARO_WIND_COMP_ENABLED
+                corrected_pressure -= wind_pressure_correction(i);
+#endif
                 altitude = get_altitude_difference(sensors[i].ground_pressure, corrected_pressure);
             } else if (sensors[i].type == BARO_TYPE_WATER) {
                 //101325Pa is sea level air pressure, 9800 Pascal/ m depth in water.
@@ -934,7 +955,6 @@ void AP_Baro::handle_msp(const MSP::msp_baro_data_message_t &pkt)
     }
 }
 #endif 
-
 
 namespace AP {
 

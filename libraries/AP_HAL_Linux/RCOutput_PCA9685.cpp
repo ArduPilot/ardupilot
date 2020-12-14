@@ -48,7 +48,6 @@
  * and https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library/issues/11
  */
 #define PCA9685_INTERNAL_CLOCK (1.04f * 25000000.f)
-#define PCA9685_EXTERNAL_CLOCK 24576000.f
 
 using namespace Linux;
 
@@ -57,7 +56,7 @@ using namespace Linux;
 extern const AP_HAL::HAL& hal;
 
 RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                   bool external_clock,
+                                   uint32_t external_clock,
                                    uint8_t channel_offset,
                                    int16_t oe_pin_number) :
     _dev(std::move(dev)),
@@ -68,10 +67,11 @@ RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
 {
-    if (_external_clock)
-        _osc_clock = PCA9685_EXTERNAL_CLOCK;
-    else
+    if (_external_clock > 0) {
+        _osc_clock = _external_clock;
+    } else {
         _osc_clock = PCA9685_INTERNAL_CLOCK;
+    }
 }
 
 RCOutput_PCA9685::~RCOutput_PCA9685()

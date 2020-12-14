@@ -822,10 +822,12 @@ bool AP_Logger_Block::logging_failed() const
     return false;
 }
 
+// detect whether the IO thread is running, since this is considered a catastrophic failure for the logging system
+// better be really, really sure
 bool AP_Logger_Block::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in 1s it is dead
-    return (AP_HAL::millis() - io_timer_heartbeat) < 1000U;
+    // if the io thread hasn't had a heartbeat in 3s it is dead
+    return (AP_HAL::millis() - io_timer_heartbeat) < 3000U || hal.scheduler->in_expected_delay();
 }
 
 /*
@@ -872,12 +874,14 @@ void AP_Logger_Block::io_timer(void)
         const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_64k) * sectors_in_64k;
         while (next_sector < aligned_sector) {
             Sector4kErase(next_sector);
+            io_timer_heartbeat = AP_HAL::millis();
             next_sector++;
         }
         uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
             blocks_erased++;
             SectorErase(next_sector / sectors_in_64k);
+            io_timer_heartbeat = AP_HAL::millis();
             next_sector += sectors_in_64k;
         }
         status_msg = StatusMessage::RECOVERY_COMPLETE;

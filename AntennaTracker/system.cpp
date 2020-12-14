@@ -92,9 +92,6 @@ void Tracker::init_ardupilot()
         // for some servos)
         prepare_servos();
     }
-
-    // disable safety if requested
-    BoardConfig.init_safety();    
 }
 
 /*

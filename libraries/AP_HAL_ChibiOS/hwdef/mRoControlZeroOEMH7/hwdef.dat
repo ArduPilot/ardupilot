@@ -1,13 +1,17 @@
 ###########################################################################################################################################################
 # mRo Control Zero OEM H7 Flight Controller
-# STM32H753IIK6
-# 8x PWM / IO - DMA capable, buffered and level shiftable - 3.3v (default) / 5v Logic
+# STM32H743IIK6
+# 8x PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
+# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
 # Bottom Connectors: 36pin front and 40pin back Samtec FTM-118-02-F-DV 1.00 mm Surface Mount Micro Low Profile Terminal Strip
 # 3x IMUs (BMI088 6DOF, ICM20602 6DOF, ICM20948 9DOF)
 # DPS310 Baro, FRAM (256Bb), SDCARD Socket, TC2030 JTAG
 # 5x UARTs (2x with hardware flow control), 2x CAN, 1x SPI, 3x I2C
 # Onboard 3 color LED and buzzer
-# 20mm x 34mm / 3.66g
+# Uncased Weight and Dimensions:
+# Weight: 3.66g (13.oz)
+# Width:  20mm (.79in)
+# Length: 34mm (1.34in)
 # M10059C - Initial Release
 ###########################################################################################################################################################
 
@@ -52,7 +56,7 @@ define HAL_GPIO_SPEKTRUM_RC 71
 # Order of I2C buses
 I2C_ORDER I2C1 I2C3 I2C4
 
-# this board only has a single I2C bus so make it external
+# this board has no internal I2C buses so them all external
 define HAL_I2C_INTERNAL_MASK 0
 
 # order of UARTs and suggested uses
@@ -61,6 +65,8 @@ define HAL_I2C_INTERNAL_MASK 0
 # UART4 GPS
 # UART8 FRSKY Telem
 # UART7 DEBUG
+
+# USART6 RC input (Only RX pin is connected)
 
 # OTG1 and OTG2 are USB devices (1x physical USB connection enumerated as 2x logical ports)
 
@@ -101,14 +107,6 @@ PC1 RSSI_IN ADC1
 # Safety Switch Input
 PC4 SAFETY_IN INPUT PULLDOWN
 define HAL_HAVE_SAFETY_SWITCH 1
-
-# Battery Analog Sense Pins
-# PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
-# PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
-
-# Now the VDD sense pin. This is used to sense primary board voltage.
-# PA4 VDD_5V_SENS ADC1 SCALE(2)
-
 
 # Battery Analog Sense Pins
 PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -234,22 +232,20 @@ PB5 VDD_BRICK_VALID INPUT PULLDOWN
 
 SPIDEV dps310      SPI2 DEVID3  BARO_CS           MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron     SPI2 DEVID10 FRAM_CS           MODE3  8*MHZ  8*MHZ
-SPIDEV bmi088_g    SPI5 DEVID1  BMI088_GYRO_CS    MODE3 10*MHZ 10*MHZ
-SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3 10*MHZ 10*MHZ
-SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  8*MHZ
+SPIDEV bmi088_g    SPI5 DEVID1  BMI088_GYRO_CS    MODE3  5*MHZ  5*MHZ
+SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3  5*MHZ  5*MHZ
+SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  4*MHZ
 SPIDEV icm20948    SPI1 DEVID1  ICM_20948_CS      MODE3  2*MHZ  4*MHZ
 
 # Now some defines for logging and terrain data files.
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
-
 # Enable RAMTROM parameter storage.
 define HAL_WITH_RAMTRON 1
 
 # Enable FAT filesystem support (needs a microSD defined via SDMMC).
 define HAL_OS_FATFS_IO 1
-
 
 # Control Zero has a TriColor LED, Red, Green, Blue
 define HAL_HAVE_PIXRACER_LED
@@ -272,6 +268,8 @@ define HAL_GPIO_C_LED_PIN 2
 IMU BMI088       SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
 IMU Invensense   SPI:icm20608 ROTATION_ROLL_180_YAW_90
 IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # 1 baro
 BARO DPS280      SPI:dps310

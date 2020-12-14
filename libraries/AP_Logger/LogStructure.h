@@ -72,7 +72,7 @@ const struct UnitStructure log_Units[] = {
     { 'v', "V" },             // Volt
     { 'P', "Pa" },            // Pascal
     { 'w', "Ohm" },           // Ohm
-//    { 'W', "Watt" },        // Watt
+    { 'W', "Watt" },        // Watt
     { 'Y', "us" },            // pulse width modulation in microseconds
     { 'z', "Hz" },            // Hertz
     { '#', "instance" }       // (e.g.)Sensor instance number
@@ -207,6 +207,7 @@ struct PACKED log_Error {
 struct PACKED log_GPS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     uint8_t  status;
     uint32_t gps_week_ms;
     uint16_t gps_week;
@@ -225,6 +226,7 @@ struct PACKED log_GPS {
 struct PACKED log_GPA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
     uint16_t vdop;
     uint16_t hacc;
     uint16_t vacc;
@@ -404,225 +406,6 @@ struct PACKED log_POWR {
     uint8_t safety_and_arm;
 };
 
-struct PACKED log_EKF1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    float velN;
-    float velE;
-    float velD;
-    float posD_dot;
-    float posN;
-    float posE;
-    float posD;
-    int16_t gyrX;
-    int16_t gyrY;
-    int16_t gyrZ;
-    int32_t originHgt;
-};
-
-struct PACKED log_EKF2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int8_t Ratio;
-    int8_t AZ1bias;
-    int8_t AZ2bias;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-};
-
-struct PACKED log_NKF2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int8_t AZbias;
-    int16_t scaleX;
-    int16_t scaleY;
-    int16_t scaleZ;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-    uint8_t index;
-};
-
-struct PACKED log_XKF2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t accBiasX;
-    int16_t accBiasY;
-    int16_t accBiasZ;
-    int16_t windN;
-    int16_t windE;
-    int16_t magN;
-    int16_t magE;
-    int16_t magD;
-    int16_t magX;
-    int16_t magY;
-    int16_t magZ;
-};
-
-struct PACKED log_EKF3 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t innovVN;
-    int16_t innovVE;
-    int16_t innovVD;
-    int16_t innovPN;
-    int16_t innovPE;
-    int16_t innovPD;
-    int16_t innovMX;
-    int16_t innovMY;
-    int16_t innovMZ;
-    int16_t innovVT;
-};
-
-struct PACKED log_NKF3 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t innovVN;
-    int16_t innovVE;
-    int16_t innovVD;
-    int16_t innovPN;
-    int16_t innovPE;
-    int16_t innovPD;
-    int16_t innovMX;
-    int16_t innovMY;
-    int16_t innovMZ;
-    int16_t innovYaw;
-    int16_t innovVT;
-    float rerr;
-    float errorScore;
-};
-
-struct PACKED log_EKF4 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t sqrtvarV;
-    int16_t sqrtvarP;
-    int16_t sqrtvarH;
-    int16_t sqrtvarMX;
-    int16_t sqrtvarMY;
-    int16_t sqrtvarMZ;
-    int16_t sqrtvarVT;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
-    uint16_t faults;
-    uint8_t timeouts;
-    uint16_t solution;
-    uint16_t gps;
-};
-
-struct PACKED log_NKF4 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    int16_t sqrtvarV;
-    int16_t sqrtvarP;
-    int16_t sqrtvarH;
-    int16_t sqrtvarM;
-    int16_t sqrtvarVT;
-    float   tiltErr;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
-    uint16_t faults;
-    uint8_t timeouts;
-    uint32_t solution;
-    uint16_t gps;
-    int8_t primary;
-};
-
-struct PACKED log_EKF5 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    uint8_t normInnov;
-    int16_t FIX;
-    int16_t FIY;
-    int16_t AFI;
-    int16_t HAGL;
-    int16_t offset;
-    int16_t RI;
-    uint16_t meaRng;
-    uint16_t errHAGL;
-};
-
-struct PACKED log_NKF5 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    uint8_t normInnov;
-    int16_t FIX;
-    int16_t FIY;
-    int16_t AFI;
-    int16_t HAGL;
-    int16_t offset;
-    int16_t RI;
-    uint16_t meaRng;
-    uint16_t errHAGL;
-    float angErr;
-    float velErr;
-    float posErr;
-};
-
-// common sensor selection log message
-struct PACKED log_EKFS {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    uint8_t mag_index;
-    uint8_t baro_index;
-    uint8_t gps_index;
-    uint8_t airspeed_index;
-};
-
-struct PACKED log_Quaternion {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float q1;
-    float q2;
-    float q3;
-    float q4;
-};
-
-struct PACKED log_RngBcnDebug {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    uint8_t ID;             // beacon identifier
-    int16_t rng;            // beacon range (cm)
-    int16_t innov;          // beacon range innovation (cm)
-    uint16_t sqrtInnovVar;  // sqrt of beacon range innovation variance (cm)
-    uint16_t testRatio;     // beacon range innovation consistency test ratio *100
-    int16_t beaconPosN;     // beacon north position (cm)
-    int16_t beaconPosE;     // beacon east position (cm)
-    int16_t beaconPosD;     // beacon down position (cm)
-    int16_t offsetHigh;     // high estimate of vertical position offset of beacons rel to EKF origin (cm)
-    int16_t offsetLow;      // low estimate of vertical position offset of beacons rel to EKF origin (cm)
-    int16_t posN;           // North position of receiver rel to EKF origin (cm)
-    int16_t posE;           // East position of receiver rel to EKF origin (cm)
-    int16_t posD;           // Down position of receiver rel to EKF origin (cm)
-};
-
 // visual odometry sensor data
 struct PACKED log_VisualOdom {
     LOG_PACKET_HEADER;
@@ -666,36 +449,6 @@ struct PACKED log_VisualVelocity {
     float vel_err;
     uint8_t reset_counter;
     uint8_t ignored;
-};
-
-struct PACKED log_ekfBodyOdomDebug {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float velInnovX;
-    float velInnovY;
-    float velInnovZ;
-    float velInnovVarX;
-    float velInnovVarY;
-    float velInnovVarZ;
-};
-
-struct PACKED log_ekfStateVar {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t core;
-    float v00;
-    float v01;
-    float v02;
-    float v03;
-    float v04;
-    float v05;
-    float v06;
-    float v07;
-    float v08;
-    float v09;
-    float v10;
-    float v11;
 };
 
 struct PACKED log_Cmd {
@@ -983,9 +736,10 @@ struct PACKED log_CESC {
     uint8_t power_pct;
 };
 
-struct PACKED log_AIRSPEED {
+struct PACKED log_ARSP {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     float   airspeed;
     float   diffpressure;
     int16_t temperature;
@@ -1304,17 +1058,6 @@ struct PACKED log_PSC {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-#define GPA_LABELS "TimeUS,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta"
-#define GPA_FMT   "QCCCCfBIH"
-#define GPA_UNITS "smmmnd-ss"
-#define GPA_MULTS "FBBBB0-CC"
-
-// see "struct GPS_State" and "Write_GPS":
-#define GPS_LABELS "TimeUS,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U"
-#define GPS_FMT   "QBIHBcLLeffffB"
-#define GPS_UNITS "s---SmDUmnhnh-"
-#define GPS_MULTS "F---0BGGB000--"
-
 #define ISBH_LABELS "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate"
 #define ISBH_FMT    "QHBBHHQf"
 #define ISBH_UNITS  "s-----sz"
@@ -1329,16 +1072,6 @@ struct PACKED log_PSC {
 #define PID_FMT    "Qffffffff"
 #define PID_UNITS  "s--------"
 #define PID_MULTS  "F--------"
-
-#define QUAT_LABELS "TimeUS,C,Q1,Q2,Q3,Q4"
-#define QUAT_FMT    "QBffff"
-#define QUAT_UNITS  "s#????"
-#define QUAT_MULTS  "F-????"
-
-#define ARSP_LABELS "TimeUS,Airspeed,DiffPress,Temp,RawPress,Offset,U,Health,Hfp,Pri"
-#define ARSP_FMT "QffcffBBfB"
-#define ARSP_UNITS "snPOPP----"
-#define ARSP_MULTS "F00B00----"
 
 // @LoggerMessage: ACC
 // @Description: IMU accelerometer data
@@ -1383,16 +1116,17 @@ struct PACKED log_PSC {
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
 
-// @LoggerMessage: ARSP,ASP2
+// @LoggerMessage: ARSP
 // @Description: Airspeed sensor data
 // @Field: TimeUS: Time since system startup
+// @Field: I: Airspeed sensor instance number
 // @Field: Airspeed: Current airspeed
 // @Field: DiffPress: Pressure difference between static and dynamic port
 // @Field: Temp: Temperature used for calculation
 // @Field: RawPress: Raw pressure less offset
 // @Field: Offset: Offset from parameter
 // @Field: U: True if sensor is being used
-// @Field: Health: True if sensor is healthy
+// @Field: H: True if sensor is healthy
 // @Field: Hfp: Probability sensor has failed
 // @Field: Pri: True if sensor is the primary sensor
 
@@ -1595,8 +1329,9 @@ struct PACKED log_PSC {
 // @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
 // @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
 
-// @LoggerMessage: GPA,GPA2
+// @LoggerMessage: GPA
 // @Description: GPS accuracy information
+// @Field: I: GPS instance number
 // @Field: TimeUS: Time since system startup
 // @Field: VDop: vertical degree of procession
 // @Field: HAcc: horizontal position accuracy
@@ -1607,42 +1342,10 @@ struct PACKED log_PSC {
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
 
-//note: GPAB is a copy of GPA and GPA2!
-
-// @LoggerMessage: GPAB
-// @Description: Blended GPS accuracy information
-// @Field: TimeUS: Time since system startup
-// @Field: VDop: vertical degree of procession
-// @Field: HAcc: horizontal position accuracy
-// @Field: VAcc: vertical position accuracy
-// @Field: SAcc: speed accuracy
-// @Field: YAcc: yaw accuracy
-// @Field: VV: true if vertical velocity is available
-// @Field: SMS: time since system startup this sample was taken
-// @Field: Delta: system time delta between the last two reported positions
-
-// @LoggerMessage: GPS,GPS2
+// @LoggerMessage: GPS
 // @Description: Information received from GNSS systems attached to the autopilot
 // @Field: TimeUS: Time since system startup
-// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
-// @Field: GMS: milliseconds since start of GPS Week
-// @Field: GWk: weeks since 5 Jan 1980
-// @Field: NSats: number of satellites visible
-// @Field: HDop: horizontal precision
-// @Field: Lat: latitude
-// @Field: Lng: longitude
-// @Field: Alt: altitude
-// @Field: Spd: ground speed
-// @Field: GCrs: ground course
-// @Field: VZ: vertical speed
-// @Field: Yaw: vehicle yaw
-// @Field: U: boolean value indicating whether this GPS is in use
-
-// Note: GPSB is a copy of GPS!
-
-// @LoggerMessage: GPSB
-// @Description: Information blended from GNSS systems attached to the autopilot
-// @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
 // @Field: GMS: milliseconds since start of GPS Week
 // @Field: GWk: weeks since 5 Jan 1980
@@ -1806,123 +1509,6 @@ struct PACKED log_PSC {
 // @Field: TimeUS: Time since system startup
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
-
-// @LoggerMessage: NKF0
-// @Description: EKF2 beacon sensor diagnostics
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: ID: Beacon sensor ID
-// @Field: rng: Beacon range
-// @Field: innov: Beacon range innovation
-// @Field: SIV: sqrt of beacon range innovation variance
-// @Field: TR: Beacon range innovation consistency test ratio
-// @Field: BPN: Beacon north position
-// @Field: BPE: Beacon east position
-// @Field: BPD: Beacon down position
-// @Field: OFH: High estimate of vertical position offset of beacons rel to EKF origin
-// @Field: OFL: Low estimate of vertical position offset of beacons rel to EKF origin
-// @Field: OFN: always zero
-// @Field: OFE: always zero
-// @Field: OFD: always zero
-
-// @LoggerMessage: NKF1
-// @Description: EKF2 estimator outputs
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: Roll: Estimated roll
-// @Field: Pitch: Estimated pitch
-// @Field: Yaw: Estimated yaw
-// @Field: VN: Estimated velocity (North component)
-// @Field: VE: Estimated velocity (East component)
-// @Field: VD: Estimated velocity (Down component)
-// @Field: dPD: Filtered derivative of vertical position (down)
-// @Field: PN: Estimated distance from origin (North component)
-// @Field: PE: Estimated distance from origin (East component)
-// @Field: PD: Estimated distance from origin (Down component)
-// @Field: GX: Estimated gyro bias, X axis
-// @Field: GY: Estimated gyro bias, Y axis
-// @Field: GZ: Estimated gyro bias, Z axis
-// @Field: OH: Height of origin above WGS-84
-
-// @LoggerMessage: NKF2
-// @Description: EKF2 estimator secondary outputs
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: AZbias: Estimated accelerometer Z bias
-// @Field: GSX: Gyro Scale Factor (X-axis)
-// @Field: GSY: Gyro Scale Factor (Y-axis)
-// @Field: GSZ: Gyro Scale Factor (Z-axis)
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
-// @Field: MN: Magnetic field strength (North component)
-// @Field: ME: Magnetic field strength (East component)
-// @Field: MD: Magnetic field strength (Down component)
-// @Field: MX: Magnetic field strength (body X-axis)
-// @Field: MY: Magnetic field strength (body Y-axis)
-// @Field: MZ: Magnetic field strength (body Z-axis)
-// @Field: MI: Magnetometer used for data
-
-// @LoggerMessage: NKF3
-// @Description: EKF2 innovations
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: IVN: Innovation in velocity (North component)
-// @Field: IVE: Innovation in velocity (East component)
-// @Field: IVD: Innovation in velocity (Down component)
-// @Field: IPN: Innovation in position (North component)
-// @Field: IPE: Innovation in position (East component)
-// @Field: IPD: Innovation in position (Down component)
-// @Field: IMX: Innovation in magnetic field strength (X-axis component)
-// @Field: IMY: Innovation in magnetic field strength (Y-axis component)
-// @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
-// @Field: IYAW: Innovation in vehicle yaw
-// @Field: IVT: Innovation in true-airspeed
-// @Field: RErr: Accumulated relative error of this core with respect to active primary core
-// @Field: ErSc: A consolidated error score where higher numbers are less healthy
-
-// @LoggerMessage: NKF4
-// @Description: EKF2 variances
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: SV: Square root of the velocity variance
-// @Field: SP: Square root of the position variance
-// @Field: SH: Square root of the height variance
-// @Field: SM: Magnetic field variance
-// @Field: SVT: Square root of the total airspeed variance
-// @Field: errRP: Filtered error in roll/pitch estimate
-// @Field: OFN: Most recent position recent magnitude (North component)
-// @Field: OFE: Most recent position recent magnitude (East component)
-// @Field: FS: Filter fault status
-// @Field: TS: Filter timeout status
-// @Field: SS: Filter solution status
-// @Field: GPS: Filter GPS status
-// @Field: PI: Primary core index
-
-// @LoggerMessage: NKF5
-// @Description: EKF2 Sensor innovations (primary core) and general dumping ground
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: NI: Normalised flow variance
-// @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
-// @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
-// @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
-// @Field: HAGL: Height above ground level
-// @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
-// @Field: RI: Range finder innovations
-// @Field: rng: Measured range
-// @Field: Herr: Filter ground offset state error
-// @Field: eAng: Magnitude of angular error
-// @Field: eVel: Magnitude of velocity error
-// @Field: ePos: Magnitude of position error
-
-// @LoggerMessage: NKQ
-// @Description: EKF2 quaternion defining the rotation from NED to XYZ (autopilot) axes
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF2 core this data is for
-// @Field: Q1: Quaternion a term
-// @Field: Q2: Quaternion b term
-// @Field: Q3: Quaternion c term
-// @Field: Q4: Quaternion d term
 
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
@@ -2266,175 +1852,6 @@ struct PACKED log_PSC {
 // @Field: Dist1: Second wheel distance travelled
 // @Field: Qual1: Quality measurement of Dist1
 
-// @LoggerMessage: XKF0
-// @Description: EKF3 beacon sensor diagnostics
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: ID: Beacon sensor ID
-// @Field: rng: Beacon range
-// @Field: innov: Beacon range innovation
-// @Field: SIV: sqrt of beacon range innovation variance
-// @Field: TR: Beacon range innovation consistency test ratio
-// @Field: BPN: Beacon north position
-// @Field: BPE: Beacon east position
-// @Field: BPD: Beacon down position
-// @Field: OFH: High estimate of vertical position offset of beacons rel to EKF origin
-// @Field: OFL: Low estimate of vertical position offset of beacons rel to EKF origin
-// @Field: OFN: North position of receiver rel to EKF origin
-// @Field: OFE: East position of receiver rel to EKF origin
-// @Field: OFD: Down position of receiver rel to EKF origin
-
-// @LoggerMessage: XKF1
-// @Description: EKF3 estimator outputs
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: Roll: Estimated roll
-// @Field: Pitch: Estimated pitch
-// @Field: Yaw: Estimated yaw
-// @Field: VN: Estimated velocity (North component)
-// @Field: VE: Estimated velocity (East component)
-// @Field: VD: Estimated velocity (Down component)
-// @Field: dPD: Filtered derivative of vertical position (down)
-// @Field: PN: Estimated distance from origin (North component)
-// @Field: PE: Estimated distance from origin (East component)
-// @Field: PD: Estimated distance from origin (Down component)
-// @Field: GX: Estimated gyro bias, X axis
-// @Field: GY: Estimated gyro bias, Y axis
-// @Field: GZ: Estimated gyro bias, Z axis
-// @Field: OH: Height of origin above WGS-84
-
-// @LoggerMessage: XKF2
-// @Description: EKF3 estimator secondary outputs
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: AX: Estimated accelerometer X bias
-// @Field: AY: Estimated accelerometer Y bias
-// @Field: AZ: Estimated accelerometer Z bias
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
-// @Field: MN: Magnetic field strength (North component)
-// @Field: ME: Magnetic field strength (East component)
-// @Field: MD: Magnetic field strength (Down component)
-// @Field: MX: Magnetic field strength (body X-axis)
-// @Field: MY: Magnetic field strength (body Y-axis)
-// @Field: MZ: Magnetic field strength (body Z-axis)
-
-// @LoggerMessage: XKF3
-// @Description: EKF3 innovations
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: IVN: Innovation in velocity (North component)
-// @Field: IVE: Innovation in velocity (East component)
-// @Field: IVD: Innovation in velocity (Down component)
-// @Field: IPN: Innovation in position (North component)
-// @Field: IPE: Innovation in position (East component)
-// @Field: IPD: Innovation in position (Down component)
-// @Field: IMX: Innovation in magnetic field strength (X-axis component)
-// @Field: IMY: Innovation in magnetic field strength (Y-axis component)
-// @Field: IMZ: Innovation in magnetic field strength (Z-axis component)
-// @Field: IYAW: Innovation in vehicle yaw
-// @Field: IVT: Innovation in true-airspeed
-// @Field: RErr: Accumulated relative error of this core with respect to active primary core
-// @Field: ErSc: A consolidated error score where higher numbers are less healthy
-
-// @LoggerMessage: XKF4
-// @Description: EKF3 variances
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: SV: Square root of the velocity variance
-// @Field: SP: Square root of the position variance
-// @Field: SH: Square root of the height variance
-// @Field: SM: Magnetic field variance
-// @Field: SVT: Square root of the total airspeed variance
-// @Field: errRP: Filtered error in roll/pitch estimate
-// @Field: OFN: Most recent position recent magnitude (North component)
-// @Field: OFE: Most recent position recent magnitude (East component)
-// @Field: FS: Filter fault status
-// @Field: TS: Filter timeout status
-// @Field: SS: Filter solution status
-// @Field: GPS: Filter GPS status
-// @Field: PI: Primary core index
-
-// @LoggerMessage: XKF5
-// @Description: EKF3 Sensor innovations (primary core) and general dumping ground
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: NI: Normalised flow variance
-// @Field: FIX: Optical flow LOS rate vector innovations from the main nav filter (X-axis)
-// @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
-// @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
-// @Field: HAGL: Height above ground level
-// @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
-// @Field: RI: Range finder innovations
-// @Field: rng: Measured range
-// @Field: Herr: Filter ground offset state error
-// @Field: eAng: Magnitude of angular error
-// @Field: eVel: Magnitude of velocity error
-// @Field: ePos: Magnitude of position error
-
-// @LoggerMessage: XKFS
-// @Description: EKF3 sensor selection
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: MI: compass selection index
-// @Field: BI: barometer selection index
-// @Field: GI: GPS selection index
-// @Field: AI: airspeed selection index
-
-// @LoggerMessage: XKFD
-// @Description: EKF3 Body Frame Odometry errors
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: IX: Innovation in velocity (X-axis)
-// @Field: IY: Innovation in velocity (Y-axis)
-// @Field: IZ: Innovation in velocity (Z-axis)
-// @Field: IVX: Variance in velocity (X-axis)
-// @Field: IVY: Variance in velocity (Y-axis)
-// @Field: IVZ: Variance in velocity (Z-axis)
-
-// @LoggerMessage: XKQ
-// @Description: EKF3 quaternion defining the rotation from NED to XYZ (autopilot) axes
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: Q1: Quaternion a term
-// @Field: Q2: Quaternion b term
-// @Field: Q3: Quaternion c term
-// @Field: Q4: Quaternion d term
-
-// @LoggerMessage: XKV1
-// @Description: EKF3 State variances (primary core)
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: V00: Variance for state 0
-// @Field: V01: Variance for state 1
-// @Field: V02: Variance for state 2
-// @Field: V03: Variance for state 3
-// @Field: V04: Variance for state 4
-// @Field: V05: Variance for state 5
-// @Field: V06: Variance for state 6
-// @Field: V07: Variance for state 7
-// @Field: V08: Variance for state 8
-// @Field: V09: Variance for state 9
-// @Field: V10: Variance for state 10
-// @Field: V11: Variance for state 11
-
-// @LoggerMessage: XKV2
-// @Description: more EKF3 State Variances (primary core)
-// @Field: TimeUS: Time since system startup
-// @Field: C: EKF3 core this data is for
-// @Field: V12: Variance for state 12
-// @Field: V13: Variance for state 13
-// @Field: V14: Variance for state 14
-// @Field: V15: Variance for state 15
-// @Field: V16: Variance for state 16
-// @Field: V17: Variance for state 17
-// @Field: V18: Variance for state 18
-// @Field: V19: Variance for state 19
-// @Field: V20: Variance for state 20
-// @Field: V21: Variance for state 21
-// @Field: V22: Variance for state 22
-// @Field: V23: Variance for state 23
-
 // @LoggerMessage: WINC
 // @Description: Winch
 // @Field: TimeUS: Time since system startup
@@ -2479,17 +1896,9 @@ struct PACKED log_PSC {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--"  },       \
     { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
-    { LOG_GPS2_MSG, sizeof(log_GPS), \
-      "GPS2", GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
-    { LOG_GPSB_MSG, sizeof(log_GPS), \
-      "GPSB", GPS_FMT, GPS_LABELS, GPS_UNITS, GPS_MULTS }, \
+      "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
-    { LOG_GPA2_MSG, sizeof(log_GPA), \
-      "GPA2", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
-    { LOG_GPAB_MSG, sizeof(log_GPA), \
-      "GPAB", GPA_FMT, GPA_LABELS, GPA_UNITS, GPA_MULTS }, \
+      "GPA",  "QBCCCCfBIH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta", "s#mmmnd-ss", "F-BBBB0-CC" }, \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QBffffffIIfBBHH",     "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -2516,8 +1925,7 @@ struct PACKED log_PSC {
       "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
       "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
-    { LOG_ARSP_MSG, sizeof(log_AIRSPEED), "ARSP",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
-    { LOG_ASP2_MSG, sizeof(log_AIRSPEED), "ASP2",  ARSP_FMT, ARSP_LABELS, ARSP_UNITS, ARSP_MULTS }, \
+    { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBfB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hfp,Pri", "s#nPOPP----", "F-00B00----" }, \
     { LOG_CURRENT_MSG, sizeof(log_Current),                     \
       "BAT", "QBfffffcf", "TimeUS,Instance,Volt,VoltR,Curr,CurrTot,EnrgTot,Temp,Res", "s#vvAiJOw", "F-000!/?0" },  \
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
@@ -2552,40 +1960,6 @@ struct PACKED log_PSC {
       "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" }, \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
-    { LOG_NKF1_MSG, sizeof(log_EKF1), \
-      "NKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
-    { LOG_NKF2_MSG, sizeof(log_NKF2), \
-      "NKF2","QBbccccchhhhhhB","TimeUS,C,AZbias,GSX,GSY,GSZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,MI", "s#----nnGGGGGG-", "F-----BBCCCCCC-" }, \
-    { LOG_NKF3_MSG, sizeof(log_NKF3), \
-      "NKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
-    { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
-    { LOG_NKF5_MSG, sizeof(log_NKF5), \
-      "NKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
-    { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
-      "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
-    { LOG_NKQ_MSG, sizeof(log_Quaternion), "NKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_XKF1_MSG, sizeof(log_EKF1), \
-      "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
-    { LOG_XKF2_MSG, sizeof(log_XKF2), \
-      "XKF2","QBccccchhhhhh","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ", "s#---nnGGGGGG", "F----BBCCCCCC" }, \
-    { LOG_XKF3_MSG, sizeof(log_NKF3), \
-      "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
-    { LOG_XKF4_MSG, sizeof(log_NKF4), \
-      "XKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
-    { LOG_XKF5_MSG, sizeof(log_NKF5), \
-      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
-    { LOG_XKF10_MSG, sizeof(log_RngBcnDebug), \
-      "XKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
-    { LOG_XKFS_MSG, sizeof(log_EKFS), \
-      "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
-    { LOG_XKQ_MSG, sizeof(log_Quaternion), "XKQ", QUAT_FMT, QUAT_LABELS, QUAT_UNITS, QUAT_MULTS }, \
-    { LOG_XKFD_MSG, sizeof(log_ekfBodyOdomDebug), \
-      "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" }, \
-    { LOG_XKV1_MSG, sizeof(log_ekfStateVar), \
-      "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" }, \
-    { LOG_XKV2_MSG, sizeof(log_ekfStateVar), \
-      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
@@ -2698,28 +2072,10 @@ LOG_STRUCTURE_FROM_NAVEKF3 \
 
 // message types for common messages
 enum LogMessages : uint8_t {
-    LOG_NKF1_MSG = 64,
-    LOG_NKF2_MSG,
-    LOG_NKF3_MSG,
-    LOG_NKF4_MSG,
-    LOG_NKF5_MSG,
-    LOG_NKF10_MSG,
-    LOG_NKQ_MSG,
-    LOG_XKF1_MSG,
-    LOG_XKF2_MSG,
-    LOG_XKF3_MSG,
-    LOG_XKF4_MSG,
-    LOG_XKF5_MSG,
-    LOG_XKF10_MSG,
-    LOG_XKFS_MSG,
-    LOG_XKQ_MSG,
-    LOG_XKFD_MSG,
-    LOG_XKV1_MSG,
-    LOG_XKV2_MSG,
-    LOG_PARAMETER_MSG,
+    LOG_PARAMETER_MSG = 64,
+    LOG_IDS_FROM_NAVEKF2,
+    LOG_IDS_FROM_NAVEKF3,
     LOG_GPS_MSG,
-    LOG_GPS2_MSG,
-    LOG_GPSB_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
@@ -2755,8 +2111,6 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_IDS_FROM_DAL,
-    LOG_IDS_FROM_NAVEKF2,
-    LOG_IDS_FROM_NAVEKF3,
 
     LOG_GPS_RAWS_MSG,
     LOG_ACC_MSG,
@@ -2772,8 +2126,6 @@ enum LogMessages : uint8_t {
     LOG_ORGN_MSG,
     LOG_RPM_MSG,
     LOG_GPA_MSG,
-    LOG_GPA2_MSG,
-    LOG_GPAB_MSG,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
@@ -2801,7 +2153,6 @@ enum LogMessages : uint8_t {
     LOG_SRTL_MSG,
     LOG_ISBH_MSG,
     LOG_ISBD_MSG,
-    LOG_ASP2_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,

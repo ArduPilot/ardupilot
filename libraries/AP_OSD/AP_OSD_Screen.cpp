@@ -84,17 +84,17 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(altitude, "ALTITUDE", 4, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATVOLT_EN
+    // @Param: BAT_VOLT_EN
     // @DisplayName: BATVOLT_EN
     // @Description: Displays main battery voltage
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BATVOLT_X
+    // @Param: BAT_VOLT_X
     // @DisplayName: BATVOLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BATVOLT_Y
+    // @Param: BAT_VOLT_Y
     // @DisplayName: BATVOLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -631,17 +631,17 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(atemp, "ATEMP", 38, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BAT2VLT_EN
+    // @Param: BAT2_VLT_EN
     // @DisplayName: BAT2VLT_EN
     // @Description: Displays battery2 voltage
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BAT2VLT_X
+    // @Param: BAT2_VLT_X
     // @DisplayName: BAT2VLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BAT2VLT_Y
+    // @Param: BAT2_VLT_Y
     // @DisplayName: BAT2VLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -793,33 +793,33 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(power, "POWER", 48, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: CELL_VOLT_EN
+    // @Param: CELLVOLT_EN
     // @DisplayName: CELL_VOLT_EN
     // @Description: Displays average cell voltage (MSP OSD only)
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: CELL_VOLT_X
+    // @Param: CELLVOLT_X
     // @DisplayName: CELL_VOLT_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: CELL_VOLT_Y
+    // @Param: CELLVOLT_Y
     // @DisplayName: CELL_VOLT_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(cell_volt, "CELLVOLT", 49, AP_OSD_Screen, AP_OSD_Setting),
 
-    // @Param: BATT_BAR_EN
+    // @Param: BATTBAR_EN
     // @DisplayName: BATT_BAR_EN
     // @Description: Displays battery usage bar (MSP OSD only)
     // @Values: 0:Disabled,1:Enabled
 
-    // @Param: BATT_BAR_X
+    // @Param: BATTBAR_X
     // @DisplayName: BATT_BAR_X
     // @Description: Horizontal position on screen
     // @Range: 0 29
 
-    // @Param: BATT_BAR_Y
+    // @Param: BATTBAR_Y
     // @DisplayName: BATT_BAR_Y
     // @Description: Vertical position on screen
     // @Range: 0 15
@@ -877,6 +877,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(callsign, "CALLSIGN", 53, AP_OSD_Screen, AP_OSD_Setting),
 #endif
+
+    // @Param: CURRENT2_EN
+    // @DisplayName: CURRENT2_EN
+    // @Description: Displays 2nd battery current
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: CURRENT2_X
+    // @DisplayName: CURRENT2_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: CURRENT2_Y
+    // @DisplayName: CURRENT2_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(current2, "CURRENT2", 54, AP_OSD_Screen, AP_OSD_Setting),
 
     AP_GROUPEND
 };
@@ -1118,11 +1134,10 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
     }
 }
 
-void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
-    AP_BattMonitor &battery = AP::battery();
     float amps;
-    if (!battery.current_amps(amps)) {
+    if (!AP::battery().current_amps(amps, instance)) {
         osd->avg_current_a = 0;
     }
     //filter current and display with autoranging for low values
@@ -1133,6 +1148,11 @@ void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
     else {
         backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYM_AMP);
     }
+}
+
+void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
+{
+    draw_current(0, x, y);
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1457,10 +1477,11 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
         sym = SYM_DOWN_DOWN;
     }
     vs_scaled = u_scale(VSPEED, fabsf(vspd));
-    if (vs_scaled < 10.0f) {
-        backend->write(x, y, false, "%c%2.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
+    if ((osd->units != AP_OSD::UNITS_AVIATION) && (vs_scaled < 9.95f)) {
+        backend->write(x, y, false, "%c%.1f%c", sym, (float)vs_scaled, u_icon(VSPEED));
     } else {
-        backend->write(x, y, false, "%c%3d%c", sym, (int)vs_scaled, u_icon(VSPEED));
+        const char *fmt = osd->units == AP_OSD::UNITS_AVIATION ? "%c%4d%c" : "%c%2d%c";
+        backend->write(x, y, false, fmt, sym, (int)roundf(vs_scaled), u_icon(VSPEED));
     }
 }
 
@@ -1794,6 +1815,11 @@ void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
 #endif
 }
 
+void AP_OSD_Screen::draw_current2(uint8_t x, uint8_t y)
+{
+    draw_current(1, x, y);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1854,6 +1880,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(climbeff);
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
+    DRAW_SETTING(current2);
 }
 #endif
 #endif // OSD_ENABLED

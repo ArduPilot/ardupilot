@@ -385,21 +385,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
     }
 
-#if GEOFENCE_ENABLED == ENABLED 
-    if (g.fence_autoenable == 1) {
-        if (! geofence_set_enabled(false)) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence failed (autodisable)");
-        } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (autodisable)");
-        }
-    } else if (g.fence_autoenable == 2) {
-        if (! geofence_set_floor_enabled(false)) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Disable fence floor failed (autodisable)");
-        } else {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
-        }
-    }
-#endif
+    disable_fence_for_landing();
 }
 
 void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)

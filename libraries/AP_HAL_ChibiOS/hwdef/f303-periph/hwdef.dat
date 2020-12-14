@@ -22,7 +22,7 @@ define HAL_WATCHDOG_ENABLED_DEFAULT true
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-define CH_CFG_ST_FREQUENCY 100000
+define CH_CFG_ST_FREQUENCY 1000
 define CH_CFG_ST_TIMEDELTA 0
 
 # assume the 256k flash part for now
@@ -77,8 +77,8 @@ define DMA_RESERVE_SIZE 0
 
 define PERIPH_FW TRUE
 
-# MAIN_STACK is stack of initial thread
-MAIN_STACK 0x80
+# MAIN_STACK is stack of initial thread and of ISRs
+MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0x800
@@ -100,14 +100,13 @@ define STM32_I2C_USE_I2C1 TRUE
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
-define HAL_UART_STACK_SIZE 256
+define HAL_UART_STACK_SIZE 0x300
 
-define STORAGE_THD_WA_SIZE 256
-define IO_THD_WA_SIZE      256
+define STORAGE_THD_WA_SIZE 512
+define IO_THD_WA_SIZE      512
 
 define HAL_NO_GCS
 define HAL_NO_LOGGING
-define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
@@ -118,7 +117,7 @@ I2C_ORDER I2C1
 
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
-define HAL_DEVICE_THREAD_STACK 256
+define HAL_DEVICE_THREAD_STACK 0x200
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 0
 
@@ -128,6 +127,7 @@ define HAL_I2C_INTERNAL_MASK 0
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
+define RANGEFINDER_MAX_INSTANCES 1
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner
@@ -140,4 +140,4 @@ RAM_RESERVE_START 256
 env ROMFS_UNCOMPRESSED True
 
 # reduce the number of CAN RX Buffer
-define HAL_CAN_RX_QUEUE_SIZE 32
+define HAL_CAN_RX_QUEUE_SIZE 64

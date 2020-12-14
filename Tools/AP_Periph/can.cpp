@@ -42,6 +42,7 @@
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
 #include <uavcan/equipment/gnss/RTCMStream.h>
+#include <uavcan/equipment/power/BatteryInfo.h>
 #include <uavcan/protocol/debug/LogMessage.h>
 #include <stdio.h>
 #include <drivers/stm32/canard_stm32.h>
@@ -79,6 +80,10 @@ static uint8_t transfer_id;
 
 #ifndef CAN_APP_NODE_NAME
 #define CAN_APP_NODE_NAME                                               "org.ardupilot.ap_periph"
+#endif
+
+#ifndef AP_PERIPH_BATTERY_MODEL_NAME
+#define AP_PERIPH_BATTERY_MODEL_NAME CAN_APP_NODE_NAME
 #endif
 
 #ifndef CAN_PROBE_CONTINUOUS
@@ -291,6 +296,9 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
         AP_Param::setup_sketch_defaults();
 #ifdef HAL_PERIPH_ENABLE_GPS
         AP_Param::setup_object_defaults(&periph.gps, periph.gps.var_info);
+#endif
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+        AP_Param::setup_object_defaults(&periph.battery, periph.battery.lib.var_info);
 #endif
 #ifdef HAL_PERIPH_ENABLE_MAG
         AP_Param::setup_object_defaults(&periph.compass, periph.compass.var_info);
@@ -542,6 +550,25 @@ static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         dev->transfer(&v, 1, nullptr, 0);
     }
 #endif // HAL_PERIPH_ENABLE_NCP5623_LED
+#ifdef HAL_PERIPH_ENABLE_NCP5623_BGR_LED
+    {
+        const uint8_t i2c_address = 0x38;
+        static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+        if (!dev) {
+            dev = std::move(hal.i2c_mgr->get_device(0, i2c_address));
+        }
+        WITH_SEMAPHORE(dev->get_semaphore());
+        dev->set_retries(0);
+        uint8_t v = 0x3f; // enable LED
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x40 | blue >> 3; // blue
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x60 | green >> 3; // green
+        dev->transfer(&v, 1, nullptr, 0);
+        v = 0x80 | red >> 3; // red
+        dev->transfer(&v, 1, nullptr, 0);
+    }
+#endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED
 }
 
 /*
@@ -848,6 +875,30 @@ static uint16_t pool_peak_percent(void)
     return peak_percent;
 }
 
+static void node_status_send(void)
+{
+    uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
+    node_status.uptime_sec = AP_HAL::millis() / 1000U;
+
+    node_status.vendor_specific_status_code = hal.util->available_memory();
+
+    uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer);
+
+    const int16_t bc_res = canardBroadcast(&canard,
+                                           UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+                                           UAVCAN_PROTOCOL_NODESTATUS_ID,
+                                           &transfer_id,
+                                           CANARD_TRANSFER_PRIORITY_LOW,
+                                           buffer,
+                                           len);
+    if (bc_res <= 0) {
+        printf("broadcast fail %d\n", bc_res);
+    } else {
+        //printf("broadcast node status OK\n");
+    }
+}
+
+
 /**
  * This function is called at 1 Hz rate from the main loop.
  */
@@ -874,31 +925,28 @@ static void process1HzTasks(uint64_t timestamp_usec)
     /*
      * Transmitting the node status message periodically.
      */
-    {
-        uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE] {};
-        node_status.uptime_sec = AP_HAL::native_millis() / 1000U;
-
-        node_status.vendor_specific_status_code = hal.util->available_memory();
-
-        uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer);
-
-        const int16_t bc_res = canardBroadcast(&canard,
-                                               UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                                               UAVCAN_PROTOCOL_NODESTATUS_ID,
-                                               &transfer_id,
-                                               CANARD_TRANSFER_PRIORITY_LOW,
-                                               buffer,
-                                               len);
-        if (bc_res <= 0) {
-            printf("broadcast fail %d\n", bc_res);
-        } else {
-            //printf("broadcast node status OK\n");
-        }
-    }
+    node_status_send();
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     if (periph.g.flash_bootloader.get()) {
+        const uint8_t flash_bl = periph.g.flash_bootloader.get();
         periph.g.flash_bootloader.set_and_save_ifchanged(0);
+        if (flash_bl == 42) {
+            // magic developer value to test watchdog support with main loop lockup
+            while (true) {
+                can_printf("entering lockup\n");
+                hal.scheduler->delay(100);
+            }
+        }
+        if (flash_bl == 43) {
+            // magic developer value to test watchdog support with hard fault
+            can_printf("entering fault\n");
+            void *foo = (void*)0xE000ED38;
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *) foo;
+            gptr();
+        }
+        EXPECT_DELAY_MS(2000);
         hal.scheduler->delay(1000);
         AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
         switch (res) {
@@ -1040,6 +1088,8 @@ void AP_Periph_FW::can_start()
         PreferredNodeID = g.can_node;
     }
 
+    periph.g.flash_bootloader.set_and_save_ifchanged(0);
+
     can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
 
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
@@ -1153,6 +1203,7 @@ void AP_Periph_FW::can_update()
     }
     can_mag_update();
     can_gps_update();
+    can_battery_update();
     can_baro_update();
     can_airspeed_update();
     can_rangefinder_update();
@@ -1203,6 +1254,9 @@ void AP_Periph_FW::can_mag_update(void)
     if (last_mag_update_ms == compass.last_update_ms()) {
         return;
     }
+    if (!compass.healthy()) {
+        return;
+    }
 
     last_mag_update_ms = compass.last_update_ms();
     const Vector3f &field = compass.get_field();
@@ -1225,6 +1279,69 @@ void AP_Periph_FW::can_mag_update(void)
                     &buffer[0],
                     total_size);
 #endif // HAL_PERIPH_ENABLE_MAG
+}
+
+/*
+  update CAN battery monitor
+ */
+void AP_Periph_FW::can_battery_update(void)
+{
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    const uint32_t now_ms = AP_HAL::native_millis();
+    if (now_ms - battery.last_can_send_ms < 100) {
+        return;
+    }
+    battery.last_can_send_ms = now_ms;
+
+    const uint8_t battery_instances = battery.lib.num_instances();
+    for (uint8_t i=0; i<battery_instances; i++) {
+        if (!battery.lib.healthy(i)) {
+            continue;
+        }
+
+        uavcan_equipment_power_BatteryInfo pkt {};
+
+        // if a battery serial number is assigned, use that as the ID. Else, use the index.
+        const int32_t serial_number = battery.lib.get_serial_number(i);
+        pkt.battery_id = (serial_number >= 0) ? serial_number : i+1;
+
+        pkt.voltage = battery.lib.voltage(i);
+
+        float current;
+        if (battery.lib.current_amps(current, i)) {
+            pkt.current = current;
+        }
+        float temperature;
+        if (battery.lib.get_temperature(temperature, i)) {
+            pkt.temperature = temperature;
+        }
+
+        fix_float16(pkt.voltage);
+        fix_float16(pkt.current);
+        fix_float16(pkt.temperature);
+
+        pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
+        pkt.state_of_charge_pct = battery.lib.capacity_remaining_pct(i);
+        pkt.model_instance_id = i+1;
+
+        // example model_name: "org.ardupilot.ap_periph SN 123"
+        char text[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MODEL_NAME_MAX_LENGTH+1] {};
+        hal.util->snprintf(text, sizeof(text), "%s %d", AP_PERIPH_BATTERY_MODEL_NAME, serial_number);
+        pkt.model_name.len = strlen(text);
+        pkt.model_name.data = (uint8_t *)text;
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE] {};
+        const uint16_t total_size = uavcan_equipment_power_BatteryInfo_encode(&pkt, buffer);
+
+        canardBroadcast(&canard,
+                        UAVCAN_EQUIPMENT_POWER_BATTERYINFO_SIGNATURE,
+                        UAVCAN_EQUIPMENT_POWER_BATTERYINFO_ID,
+                        &transfer_id,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+    }
+#endif
 }
 
 /*

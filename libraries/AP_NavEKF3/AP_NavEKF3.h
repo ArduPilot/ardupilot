@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include <AP_NavEKF/AP_NavEKF_Source.h>
 
 class NavEKF3_core;
 
@@ -38,6 +39,7 @@ public:
     NavEKF3 &operator=(const NavEKF3&) = delete;
 
     static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info2[];
 
     // allow logging to determine the number of active cores
     uint8_t activeCores(void) const {
@@ -80,6 +82,11 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getVelNED(int8_t instance, Vector3f &vel) const;
 
+    // return estimate of true airspeed vector in body frame in m/s for the specified instance
+    // An out of range instance (eg -1) returns data for the primary instance
+    // returns false if estimate is unavailable
+    bool getAirSpdVec(int8_t instance, Vector3f &vel) const;
+
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -111,16 +118,6 @@ public:
     // If using a range finder for height no reset is performed and it returns false
     bool resetHeightDatum(void);
 
-    // Commands the EKF to not use GPS.
-    // This command must be sent prior to vehicle arming and EKF commencement of GPS usage
-    // Returns 0 if command rejected
-    // Returns 1 if command accepted
-    uint8_t setInhibitGPS(void);
-
-    // Set the argument to true to prevent the EKF using the GPS vertical velocity
-    // This can be used for situations where GPS velocity errors are causing problems with height accuracy
-    void setInhibitGpsVertVelUse(const bool varIn) { inhibitGpsVertVelUse = varIn; };
-
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
@@ -139,9 +136,6 @@ public:
 
     // return the sensor in use for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    uint8_t getActiveMag(int8_t instance) const;
-    uint8_t getActiveBaro(int8_t instance) const;
-    uint8_t getActiveGPS(int8_t instance) const;
     uint8_t getActiveAirspeed(int8_t instance) const;
 
     // Return estimated magnetometer offsets
@@ -187,15 +181,13 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
-    // publish output observer angular, velocity and position tracking error
-    void getOutputTrackingError(int8_t instance, Vector3f &error) const;
-
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
-    // return the diagonals from the covariance matrix for the specified instance
-    void getStateVariances(int8_t instance, float stateVar[24]) const;
+    // get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
+    // returns true on success and results are placed in innovations and variances arguments
+    bool getVelInnovationsAndVariancesForSource(int8_t instance, AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -244,27 +236,6 @@ public:
      * Return the system time stamp of the last update (msec)
      */
     uint32_t getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const;
-
-    // return data for debugging optical flow fusion for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getFlowDebug(int8_t instance, float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const;
-
-    /*
-        Returns the following data for debugging range beacon fusion
-        ID : beacon identifier
-        rng : measured range to beacon (m)
-        innov : range innovation (m)
-        innovVar : innovation variance (m^2)
-        testRatio : innovation consistency test ratio
-        beaconPosNED : beacon NED position (m)
-        offsetHigh : high hypothesis for range beacons system vertical offset (m)
-        offsetLow : low hypothesis for range beacons system vertical offset (m)
-        posNED : North,East,Down position estimate of receiver from 3-state filter
-
-        returns true if data could be found, false if it could not
-    */
-    bool getRangeBeaconDebug(int8_t instance, uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED,
-                             float &offsetHigh, float &offsetLow, Vector3f &posNED) const;
 
     /*
      * Writes the measurement from a yaw angle sensor
@@ -389,9 +360,6 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
-    // get timing statistics structure
-    void getTimingStatistics(int8_t instance, struct ekf_timing &timing) const;
-
     /*
       check if switching lanes will reduce the normalised
       innovations. This is called when the vehicle code is about to
@@ -406,18 +374,23 @@ public:
      */
     void requestYawReset(void);
 
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+    void setPosVelYawSourceSet(uint8_t source_set_idx);
+
     // write EKF information to on-board logs
     void Log_Write();
 
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
     bool using_external_yaw(void) const;
-    
+
+    // check if configured to use GPS for horizontal position estimation
+    bool configuredToUseGPSForPosXY(void) const;
+
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
-    // log debug data for yaw estimator
-    // return false if data not available
-    bool getDataEKFGSF(int8_t instance, float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
+    // parameter conversion
+    void convert_parameters();
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -444,7 +417,6 @@ private:
     AP_Float _gyroBiasProcessNoise; // gyro bias state process noise : rad/s
     AP_Float _accelBiasProcessNoise;// accel bias state process noise : m/s^2
     AP_Int16 _hgtDelay_ms;          // effective average delay of Height measurements relative to inertial measurements (msec)
-    AP_Int8  _fusionModeGPS;        // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     AP_Int16  _gpsVelInnovGate;     // Percentage number of standard deviations applied to GPS velocity innovation consistency check
     AP_Int16  _gpsPosInnovGate;     // Percentage number of standard deviations applied to GPS position innovation consistency check
     AP_Int16  _hgtInnovGate;        // Percentage number of standard deviations applied to height innovation consistency check
@@ -457,7 +429,6 @@ private:
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
-    AP_Int8 _altSource;             // Primary alt source. 0 = Baro, 1 = range finder, 2 = GPS, 3 = range beacons, 4 = external nav
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
@@ -487,6 +458,10 @@ private:
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
+    AP_Float _dragObsNoise;         // drag specific force observatoin noise (m/s/s)**2
+    AP_Float _ballisticCoef_x;      // ballistic coefficient measured for flow in X body frame directions
+    AP_Float _ballisticCoef_y;      // ballistic coefficient measured for flow in Y body frame directions
+    AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -567,8 +542,6 @@ private:
     float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
     uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
 
-    bool inhibitGpsVertVelUse;  // true when GPS vertical velocity use is prohibited
-
     // origin set by one of the cores
     struct Location common_EKF_origin;
     bool common_origin_valid;
@@ -601,18 +574,6 @@ private:
     // checks for alignment
     bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
 
-    // logging functions shared by cores:
-    void Log_Write_XKF1(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF2(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF3(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF4(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKF5(uint8_t core, uint64_t time_us) const;
-    void Log_Write_XKFS(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Quaternion(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Beacon(uint8_t core, uint64_t time_us) const;
-    void Log_Write_BodyOdom(uint8_t core, uint64_t time_us) const;
-    void Log_Write_State_Variances(uint8_t core, uint64_t time_us) const;
-    void Log_Write_Timing(uint8_t core, uint64_t time_us) const;
-    void Log_Write_GSF(uint8_t core, uint64_t time_us) const;
-
+    // position, velocity and yaw source control
+    AP_NavEKF_Source sources;
 };

@@ -58,10 +58,10 @@ class AP_BattMonitor
 public:
 
     // battery failsafes must be defined in levels of severity so that vehicles wont fall backwards
-    enum BatteryFailsafe {
-        BatteryFailsafe_None = 0,
-        BatteryFailsafe_Low,
-        BatteryFailsafe_Critical
+    enum class Failsafe : uint8_t {
+        None = 0,
+        Low,
+        Critical
     };
 
     // Battery monitor driver types
@@ -81,7 +81,8 @@ public:
         SUI6                       = 14,
         NeoDesign                  = 15,
         MAXELL                     = 16,
-        Generator                  = 17,
+        GENERATOR_ELEC             = 17,
+        GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
     };
 
@@ -116,7 +117,7 @@ public:
         uint32_t    temperature_time;          // timestamp of the last received temperature message
         float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate in Volt
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
-        BatteryFailsafe failsafe;              // stage failsafe the battery is in
+        Failsafe failsafe;                     // stage failsafe the battery is in
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
@@ -173,6 +174,12 @@ public:
         return (Type)_params[instance]._type.get();
     }
 
+    /// get_serial_number - returns battery serial number
+    int32_t get_serial_number() const { return get_serial_number(AP_BATT_PRIMARY_INSTANCE); }
+    int32_t get_serial_number(uint8_t instance) const {
+        return _params[instance]._serial_number;
+    }
+
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
@@ -221,7 +228,7 @@ private:
     void convert_params(void);
 
     /// returns the failsafe state of the battery
-    BatteryFailsafe check_failsafe(const uint8_t instance);
+    Failsafe check_failsafe(const uint8_t instance);
     void check_failsafes(void); // checks all batteries failsafes
 
     battery_failsafe_handler_fn_t _battery_failsafe_handler_fn;

@@ -121,6 +121,10 @@ void AP_Periph_FW::init()
     baro.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    battery.lib.init();
+#endif
+
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
     hal.rcout->init();
     hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, AP_HAL::RCOutput::MODE_NEOPIXEL);
@@ -213,6 +217,28 @@ static void update_rainbow()
 #endif
 
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
+void AP_Periph_FW::show_stack_free()
+{
+    const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+    can_printf("ISR %u/%u", stack_free(&__main_stack_base__), isr_stack_size);
+
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        uint32_t total_stack;
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            total_stack = uint32_t(tp) - uint32_t(tp->wabase);
+        }
+        can_printf("%s STACK=%u/%u\n", tp->name, stack_free(tp->wabase), total_stack);
+    }
+}
+#endif
+
+
 
 void AP_Periph_FW::update()
 {
@@ -238,12 +264,36 @@ void AP_Periph_FW::update()
         hal.uartA->printf("RNG %u %ucm\n", rangefinder.num_sensors(), rangefinder.distance_cm_orient(ROTATION_NONE));
 #endif
         hal.scheduler->delay(1);
-        show_stack_usage();
 #endif
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
         hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
     }
+
+    static uint32_t last_error_ms;
+    const auto &ierr = AP::internalerror();
+    if (now - last_error_ms > 5000 && ierr.errors()) {
+        // display internal errors as DEBUG every 5s
+        last_error_ms = now;
+        can_printf("IERR 0x%x %u", ierr.errors(), ierr.last_error_line());
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
+    static uint32_t last_debug_ms;
+    if (g.debug==1 && now - last_debug_ms > 5000) {
+        last_debug_ms = now;
+        show_stack_free();
+    }
+#endif
+    
+#ifdef HAL_PERIPH_ENABLE_BATTERY
+    if (now - battery.last_read_ms >= 100) {
+        // update battery at 10Hz
+        battery.last_read_ms = now;
+        battery.lib.read();
+    }
+#endif
+
     can_update();
     hal.scheduler->delay(1);
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT) && HAL_PERIPH_NEOPIXEL_COUNT == 8

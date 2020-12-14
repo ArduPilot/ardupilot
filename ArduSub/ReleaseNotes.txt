@@ -1,6 +1,37 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.0.2 21-September-2020
+
+ - Fix critical error on preflight calibration
+ - Fix CI build
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.0.1 17-March-2020
+
+ - Do not report battery level percentage.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.0.0 4-March-2020
+
+ - Over 10000 new commits, catching up with other vehicles 4.0 releases
+ - The Real Time Operating System (RTOS) is now ChibiOs instead of NuttX
+ - Added a new option for automatic detection of the thrusters directions, making setup easier
+ - Heavy frames can now roll/tilt to arbitrary attitudes (even upside down)
+ - Depth Hold is now working with arbitrary attitudes
+ - Depth Hold and Stabilize modes now hold the attitude at which they were enabled
+ - Roll-Pitch toggle mode now used the inputs as rate targets instead of position targets
+ - In Roll-Pitch Toggle mode, the Center Mount button now levels the ROV
+ - Support depth setpoints via MAVlink in Depth-Hold mode
+ - Support attitude setpoints via MAVlink in Depth-Hold and Stabilize modes
+ - Support for setting MAVLink message intervals
+ - Navigator board support
+ - Frame SimpleROV-4 now has Roll factor for thrusters 4 and 5
+ - Barometers is now recalibrated if disarmed and reading a depth above water level
+ - Added thrusters matrix for Frame SimpleROV-3
+ - Many improvements to SITL (Software In The Loop simulator for developers) so its behavior better resembles that of a real ROV
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 3.5.4 5-April-2019
 
 - major depth hold performance improvement: remove overshoot and bounce-back

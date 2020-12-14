@@ -60,6 +60,10 @@
 #define BLEND_MASK_USE_SPD_ACC      4
 #define BLEND_COUNTER_FAILURE_INCREMENT 10
 
+#ifndef HAL_GPS_COM_PORT_DEFAULT
+#define HAL_GPS_COM_PORT_DEFAULT 1
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 // baudrates to try to detect GPSes with
@@ -76,7 +80,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -85,7 +89,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -186,7 +190,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -196,7 +200,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -309,7 +313,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("COM_PORT", 23, AP_GPS, _com_port[0], 1),
+    AP_GROUPINFO("COM_PORT", 23, AP_GPS, _com_port[0], HAL_GPS_COM_PORT_DEFAULT),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Param: COM_PORT2
@@ -319,7 +323,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], 1),
+    AP_GROUPINFO("COM_PORT2", 24, AP_GPS, _com_port[1], HAL_GPS_COM_PORT_DEFAULT),
 #endif
 
 #if GPS_MOVING_BASELINE
@@ -566,7 +570,8 @@ void AP_GPS::detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
-#ifndef HAL_BUILD_AP_PERIPH
+    // don't build the less common GPS drivers on F1 AP_Periph
+#if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
@@ -676,7 +681,8 @@ void AP_GPS::detect_instance(uint8_t instance)
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         } else if ((_type[instance] == GPS_TYPE_NMEA ||
-                    _type[instance] == GPS_TYPE_HEMI) &&
+                    _type[instance] == GPS_TYPE_HEMI ||
+                    _type[instance] == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
@@ -1497,6 +1503,11 @@ bool AP_GPS::calc_blend_weights(void)
         if (get_rate_ms(i) > max_rate_ms) {
             max_rate_ms = get_rate_ms(i);
         }
+        if (isinf(state[i].speed_accuracy) ||
+            isinf(state[i].horizontal_accuracy) ||
+            isinf(state[i].vertical_accuracy)) {
+            return false;
+        }
     }
     if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
@@ -1623,6 +1634,10 @@ bool AP_GPS::calc_blend_weights(void)
         }
     }
 
+    if (!is_positive(sum_of_all_weights)) {
+        return false;
+    }
+
     // calculate an overall weight
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         _blend_weights[i] = (hpos_blend_weights[i] + vpos_blend_weights[i] + spd_blend_weights[i]) / sum_of_all_weights;
@@ -1659,6 +1674,9 @@ void AP_GPS::calc_blended_state(void)
     _blended_antenna_offset.zero();
     _blended_lag_sec = 0;
 
+#ifndef HAL_BUILD_AP_PERIPH
+    const uint32_t last_blended_message_time_ms = timing[GPS_BLENDED_INSTANCE].last_message_time_ms;
+#endif
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = 0;
 
@@ -1717,7 +1735,6 @@ void AP_GPS::calc_blended_state(void)
         if (timing[i].last_message_time_ms > timing[GPS_BLENDED_INSTANCE].last_message_time_ms) {
             timing[GPS_BLENDED_INSTANCE].last_message_time_ms = timing[i].last_message_time_ms;
         }
-
     }
 
     /*
@@ -1801,6 +1818,13 @@ void AP_GPS::calc_blended_state(void)
     }
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = (uint32_t)temp_time_1;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = (uint32_t)temp_time_2;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    if (timing[GPS_BLENDED_INSTANCE].last_message_time_ms > last_blended_message_time_ms &&
+        should_log()) {
+        AP::logger().Write_GPS(GPS_BLENDED_INSTANCE);
+    }
+#endif
 }
 #endif // GPS_BLENDED_INSTANCE
 

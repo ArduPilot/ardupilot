@@ -26,7 +26,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Generator/AP_Generator_RichenPower.h>
+#include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
@@ -214,6 +214,24 @@ public:
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
 
+    /*
+      get the distance to next wp in meters
+      return false if failed or n/a
+     */
+    virtual bool get_wp_distance_m(float &distance) const { return false; }
+
+    /*
+      get the current wp bearing in degrees
+      return false if failed or n/a
+     */
+    virtual bool get_wp_bearing_deg(float &bearing) const { return false; }
+
+    /*
+      get the current wp crosstrack error in meters
+      return false if failed or n/a
+     */
+    virtual bool get_wp_crosstrack_error_m(float &xtrack_error) const { return false; }
+
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     AP_Frsky_Parameters frsky_parameters;
 #endif
@@ -288,11 +306,15 @@ protected:
 #endif
 
 #if GENERATOR_ENABLED
-    AP_Generator_RichenPower generator;
+    AP_Generator generator;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
+
+#if OSD_ENABLED
+    void publish_osd_info();
+#endif
 
 private:
 
@@ -307,6 +329,8 @@ private:
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 
     static AP_Vehicle *_singleton;
+
+    bool done_safety_init;
 };
 
 namespace AP {

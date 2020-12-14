@@ -226,23 +226,16 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     // @Path: ./SIM_RichenPower.cpp
     AP_SUBGROUPINFO(richenpower_sim, "RICH_", 31, SITL, RichenPower),
 
-    // user settable parameters for the 1st barometer
-    AP_GROUPINFO("BARO_RND",      35, SITL,  baro_noise[0], 0.2f),
-    AP_GROUPINFO("BARO_DRIFT",    36, SITL,  baro_drift[0], 0),
-    AP_GROUPINFO("BARO_DISABLE",  37, SITL,  baro_disable[0], 0),
-    AP_GROUPINFO("BARO_GLITCH",   38, SITL,  baro_glitch[0], 0),
-    AP_GROUPINFO("BARO_FREEZE",   39, SITL,  baro_freeze[0], 0),
+    // @Path: ./SIM_IntelligentEnergy24.cpp
+    AP_SUBGROUPINFO(ie24_sim, "IE24_", 32, SITL, IntelligentEnergy24),
 
-    // user settable parameters for the 2nd barometer
-    AP_GROUPINFO("BARO2_RND",     41, SITL,  baro_noise[1], 0.1f),
-    AP_GROUPINFO("BARO2_DRIFT",   42, SITL,  baro_drift[1], 0),
-    AP_GROUPINFO("BARO2_DISABL",  43, SITL,  baro_disable[1], 0),
-    AP_GROUPINFO("BARO2_GLITCH",  44, SITL,  baro_glitch[1], 0),
-    AP_GROUPINFO("BARO2_FREEZE",  45, SITL,  baro_freeze[1], 0),
+    // user settable barometer parameters
+    AP_GROUPINFO("BARO_COUNT",    33, SITL,  baro_count, 2),
 
-    // user settable common barometer parameters
-    AP_GROUPINFO("BARO_DELAY",    47, SITL,  baro_delay, 0),
-    AP_GROUPINFO("BARO_COUNT",    48, SITL,  baro_count, 1),
+    AP_SUBGROUPINFO(baro[0], "BARO_", 34, SITL, SITL::BaroParm),
+    AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SITL, SITL::BaroParm),
+    AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SITL, SITL::BaroParm),
+
 
     // user settable parameters for the 1st airspeed sensor
     AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
@@ -268,6 +261,23 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_GROUPEND
 };
 
+// user settable parameters for the barometers
+const AP_Param::GroupInfo SITL::BaroParm::var_info[] = {
+    AP_GROUPINFO("RND",      1, SITL::BaroParm,  noise, 0.2f),
+    AP_GROUPINFO("DRIFT",    2, SITL::BaroParm,  drift, 0),
+    AP_GROUPINFO("DISABLE",  3, SITL::BaroParm,  disable, 0),
+    AP_GROUPINFO("GLITCH",   4, SITL::BaroParm,  glitch, 0),
+    AP_GROUPINFO("FREEZE",   5, SITL::BaroParm,  freeze, 0),
+    AP_GROUPINFO("DELAY",    6, SITL::BaroParm,  delay, 0),
+
+    // wind coeffients
+    AP_GROUPINFO("WCF_FWD", 7,  SITL::BaroParm, wcof_xp, 0.0),
+    AP_GROUPINFO("WCF_BAK", 8,  SITL::BaroParm, wcof_xn, 0.0),
+    AP_GROUPINFO("WCF_RGT", 9,  SITL::BaroParm, wcof_yp, 0.0),
+    AP_GROUPINFO("WCF_LFT", 10, SITL::BaroParm, wcof_yn, 0.0),
+    AP_GROUPEND
+};
+    
 // GPS SITL parameters
 const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS_DISABLE",    1, SITL,  gps_disable[0], 0),
@@ -278,7 +288,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS_GLITCH",     6, SITL,  gps_glitch[0],  0),
     AP_GROUPINFO("GPS_HZ",         7, SITL,  gps_hertz[0],  5),
     AP_GROUPINFO("GPS_DRIFTALT",   8, SITL,  gps_drift_alt[0], 0),
-    AP_GROUPINFO("GPS_POS1",       9, SITL,  gps_pos_offset[0], 0),
+    AP_GROUPINFO("GPS_POS",        9, SITL,  gps_pos_offset[0], 0),
     AP_GROUPINFO("GPS_NOISE",     10, SITL,  gps_noise[0], 0),
     AP_GROUPINFO("GPS_LOCKTIME",  11, SITL,  gps_lock_time[0], 0),
     AP_GROUPINFO("GPS_ALT_OFS",   12, SITL,  gps_alt_offset[0], 0),
@@ -294,7 +304,7 @@ const AP_Param::GroupInfo SITL::var_gps[] = {
     AP_GROUPINFO("GPS2_GLTCH",    35, SITL,  gps_glitch[1],  0),
     AP_GROUPINFO("GPS2_HZ",       36, SITL,  gps_hertz[1],  5),
     AP_GROUPINFO("GPS2_DRFTALT",  37, SITL,  gps_drift_alt[1], 0),
-    AP_GROUPINFO("GPS2_POS1",     38, SITL,  gps_pos_offset[1], 0),
+    AP_GROUPINFO("GPS2_POS",      38, SITL,  gps_pos_offset[1], 0),
     AP_GROUPINFO("GPS2_NOISE",    39, SITL,  gps_noise[1], 0),
     AP_GROUPINFO("GPS2_LCKTIME",  40, SITL,  gps_lock_time[1], 0),
     AP_GROUPINFO("GPS2_ALT_OFS",  41, SITL,  gps_alt_offset[1], 0),

@@ -17,7 +17,7 @@ void Copter::update_precland()
 
     // use range finder altitude if it is valid, otherwise use home alt
     if (rangefinder_alt_ok()) {
-        height_above_ground_cm = rangefinder_state.alt_cm;
+        height_above_ground_cm = rangefinder_state.alt_cm_glitch_protected;
     }
 
     precland.update(height_above_ground_cm, rangefinder_alt_ok());

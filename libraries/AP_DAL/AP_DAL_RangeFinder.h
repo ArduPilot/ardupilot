@@ -23,6 +23,9 @@ public:
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
 
+    // return true if we have a range finder with the specified orientation
+    bool has_orientation(enum Rotation orientation) const;
+
     // DAL methods:
     AP_DAL_RangeFinder();
 
@@ -30,19 +33,14 @@ public:
 
     class AP_DAL_RangeFinder_Backend *get_backend(uint8_t id) const;
 
-    void handle_message(const log_RRNH &msg) {
-        _RRNH = msg;
-    }
-    void handle_message(const log_RRNI &msg) {
-        _RRNI[msg.instance] = msg;
-    }
+    void handle_message(const log_RRNH &msg);
+    void handle_message(const log_RRNI &msg);
 
 private:
 
     struct log_RRNH _RRNH;
-    struct log_RRNI _RRNI[RANGEFINDER_MAX_INSTANCES];
-
-    AP_DAL_RangeFinder_Backend *_backend[RANGEFINDER_MAX_INSTANCES];
+    struct log_RRNI *_RRNI;
+    AP_DAL_RangeFinder_Backend **_backend;
 };
 
 

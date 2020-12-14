@@ -5,7 +5,7 @@ The QioTek Zealot F427 flight controller is sold by a range of resellers listed 
 ## Features
 •	STM32F427VIT6 microcontroller
 
-•	Three IMUs, one ICM20689(SPI), one ICM20608(SPI), one BMI055(SPI)
+•	Three IMUs, one ICM20689(SPI), one ICM20602(SPI), one BMI088(SPI)
 
 •	internal heater for IMUs temperature control
 
@@ -13,7 +13,7 @@ The QioTek Zealot F427 flight controller is sold by a range of resellers listed 
 
 •	Two barometers, one DPS310(SPI), one MS5611(interna I2C)
 
-•	builtin SPI IST8310 magnetometer(interna I2C)
+•	builtin IST8310 or QMC5883L magnetometer(interna I2C)
 
 •	builtin analog OSD(SPI)
 

@@ -131,20 +131,19 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
 }
 
 // Write an GPS packet
-void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
+void AP_Logger::Write_GPS(uint8_t i)
 {
     const AP_GPS &gps = AP::gps();
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const struct Location &loc = gps.location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
     gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
 
-    const struct log_GPS pkt = {
-        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPS_MSG+i)),
+    const struct log_GPS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
         time_us       : time_us,
+        instance      : i,
         status        : (uint8_t)gps.status(i),
         gps_week_ms   : gps.time_week_ms(i),
         gps_week      : gps.time_week(i),
@@ -167,8 +166,9 @@ void AP_Logger::Write_GPS(uint8_t i, uint64_t time_us)
     gps.vertical_accuracy(i, vacc);
     gps.speed_accuracy(i, sacc);
     struct log_GPA pkt2{
-        LOG_PACKET_HEADER_INIT((uint8_t)(LOG_GPA_MSG+i)),
+        LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
+        instance      : i,
         vdop          : gps.get_vdop(i),
         hacc          : (uint16_t)MIN((hacc*100), UINT16_MAX),
         vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
@@ -288,11 +288,9 @@ void AP_Logger::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)
 }
 
 // Write a BARO packet
-void AP_Logger::Write_Baro(uint64_t time_us)
+void AP_Logger::Write_Baro()
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const AP_Baro &baro = AP::baro();
     for (uint8_t i=0; i< baro.num_instances(); i++) {
         Write_Baro_instance(time_us, i);
@@ -328,7 +326,7 @@ void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_ins
 // Write an raw accel/gyro data packet
 void AP_Logger::Write_IMU()
 {
-    uint64_t time_us = AP_HAL::micros64();
+    const uint64_t time_us = AP_HAL::micros64();
 
     const AP_InertialSensor &ins = AP::ins();
 
@@ -690,11 +688,9 @@ void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag
 }
 
 // Write a Compass packet
-void AP_Logger::Write_Compass(uint64_t time_us)
+void AP_Logger::Write_Compass()
 {
-    if (time_us == 0) {
-        time_us = AP_HAL::micros64();
-    }
+    const uint64_t time_us = AP_HAL::micros64();
     const Compass &compass = AP::compass();
     for (uint8_t i=0; i<compass.get_count(); i++) {
         Write_Compass_instance(time_us, i);

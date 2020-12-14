@@ -58,7 +58,7 @@ define DMA_RESERVE_SIZE 0
 define PERIPH_FW TRUE
 
 # MAIN_STACK is stack of initial thread
-MAIN_STACK 0x80
+MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0x800
@@ -76,10 +76,10 @@ define STM32_I2C_USE_I2C1 TRUE
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
-define HAL_UART_STACK_SIZE 256
+define HAL_UART_STACK_SIZE 512
 
-define STORAGE_THD_WA_SIZE 256
-define IO_THD_WA_SIZE      256
+define STORAGE_THD_WA_SIZE 512
+define IO_THD_WA_SIZE      512
 
 define HAL_NO_GCS
 define HAL_NO_LOGGING
@@ -94,7 +94,7 @@ I2C_ORDER I2C1
 
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
-define HAL_DEVICE_THREAD_STACK 256
+define HAL_DEVICE_THREAD_STACK 512
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 0
 
@@ -151,14 +151,14 @@ define HAL_PERIPH_ENABLE_RANGEFINDER
 define HAL_PERIPH_ENABLE_MSP
 
 # allow for rangefinder to be plugged in on "MSP" port
-define RANGEFINDER_MAX_INSTANCES 1
 define ADSB_PORT hal.uartC
 define HAL_PERIPH_ENABLE_ADSB
 
 define HAL_MSP_ENABLED 1
 
-# the GPS is good at 10Hz
-define GPS_MAX_RATE_MS 100
+# the M8 GPS is good at 10Hz, but the M9 is better at 5Hz,
+# so stick to 5Hz as the firmware is shared
+define GPS_MAX_RATE_MS 200
 
 # 10" DLVR sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 9

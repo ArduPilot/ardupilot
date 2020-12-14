@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 import traceback
+from distutils.dir_util import copy_tree
 
 import rover
 import arducopter
@@ -582,6 +583,7 @@ def write_webresults(results_to_write):
         f.close()
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, buildlogs_path(os.path.basename(f)))
+    copy_tree(util.reltopdir("Tools/autotest/web/css"), buildlogs_path("css"))
     results_to_write.generate_badge()
 
 

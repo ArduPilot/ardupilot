@@ -19,23 +19,6 @@ void Sub::init_ardupilot()
     can_mgr.init();
 #endif
 
-#if AP_FEATURE_BOARD_DETECT
-    // Detection won't work until after BoardConfig.init()
-    switch (AP_BoardConfig::get_board_type()) {
-    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
-        AP_Param::set_by_name("GND_EXT_BUS", 0);
-        celsius.init(0);
-        break;
-    default:
-        AP_Param::set_by_name("GND_EXT_BUS", 1);
-        celsius.init(1);
-        break;
-    }
-#else
-    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
-    celsius.init(1);
-#endif
-
     // init cargo gripper
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
@@ -52,6 +35,24 @@ void Sub::init_ardupilot()
     battery.init();
 
     barometer.init();
+
+#if AP_FEATURE_BOARD_DETECT
+    // Detection won't work until after BoardConfig.init()
+    switch (AP_BoardConfig::get_board_type()) {
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK2:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 0);
+        break;
+    case AP_BoardConfig::PX4_BOARD_PIXHAWK:
+        AP_Param::set_by_name("GND_EXT_BUS", 1);
+        break;
+    default:
+        AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+        break;
+    }
+#else
+    AP_Param::set_default_by_name("GND_EXT_BUS", 1);
+#endif
+    celsius.init(barometer.external_bus());
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
@@ -176,9 +177,6 @@ void Sub::init_ardupilot()
     mainloop_failsafe_enable();
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
-
-    // disable safety if requested
-    BoardConfig.init_safety();
 
     // flag that initialisation has completed
     ap.initialised = true;

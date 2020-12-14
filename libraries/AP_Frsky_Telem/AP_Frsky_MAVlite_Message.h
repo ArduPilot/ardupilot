@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 class AP_Frsky_MAVlite_Message {
 public:
     // helpers
@@ -44,3 +45,4 @@ private:
     bool get_bytes(uint8_t *bytes, const uint8_t offset, const uint8_t count) const WARN_IF_UNUSED;
     bool set_bytes(const uint8_t *bytes,  const uint8_t offset, const uint8_t count) WARN_IF_UNUSED;
 };
+#endif

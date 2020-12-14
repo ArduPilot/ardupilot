@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_MSP/msp.h>
 
 class AP_Airspeed_Backend;
 
@@ -16,6 +17,9 @@ class AP_Airspeed_Backend;
 #define AP_AIRSPEED_AUTOCAL_ENABLE !defined(HAL_BUILD_AP_PERIPH)
 #endif
 
+#ifndef HAL_MSP_AIRSPEED_ENABLED
+#define HAL_MSP_AIRSPEED_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -47,6 +51,11 @@ public:
     AP_Airspeed();
 
     void init(void);
+
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    // inflight ratio calibration
+    void set_calibration_enabled(bool enable) {calibration_enabled = enable;}
+#endif //AP_AIRSPEED_AUTOCAL_ENABLE
 
     // read the analog source and update airspeed
     void update(bool log);
@@ -157,6 +166,7 @@ public:
         TYPE_I2C_DLVR_30IN=11,
         TYPE_I2C_DLVR_60IN=12,
         TYPE_NMEA_WATER=13,
+        TYPE_MSP=14,
     };
 
     // get current primary sensor
@@ -174,6 +184,10 @@ public:
     float get_corrected_pressure(void) const {
         return get_corrected_pressure(primary);
     }
+
+#if HAL_MSP_AIRSPEED_ENABLED
+    void handle_msp(const MSP::msp_airspeed_data_message_t &pkt);
+#endif
     
 private:
     static AP_Airspeed *_singleton;
@@ -229,6 +243,8 @@ private:
             uint32_t last_warn_ms;
         } failures;
     } state[AIRSPEED_MAX_SENSORS];
+
+    bool calibration_enabled = false;
 
     // current primary sensor
     uint8_t primary;

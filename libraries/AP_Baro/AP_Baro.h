@@ -21,6 +21,10 @@
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
+#ifndef HAL_BARO_WIND_COMP_ENABLED
+#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#endif
+
 class AP_Baro_Backend;
 
 class AP_Baro
@@ -91,6 +95,9 @@ public:
     // of the last calibrate() call
     float get_altitude(void) const { return get_altitude(_primary); }
     float get_altitude(uint8_t instance) const { return sensors[instance].altitude; }
+
+    // returns which i2c bus is considered "the" external bus
+    uint8_t external_bus() const { return _ext_bus; }
 
     // get altitude difference in meters relative given a base
     // pressure in Pascal
@@ -237,6 +244,19 @@ private:
         PROBE_MSP   =(1<<12),
     };
     
+#if HAL_BARO_WIND_COMP_ENABLED
+    class WindCoeff {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+
+        AP_Int8  enable; // enable compensation for this barometer
+        AP_Float xp;     // ratio of static pressure rise to dynamic pressure when flying forwards
+        AP_Float xn;     // ratio of static pressure rise to dynamic pressure when flying backwards
+        AP_Float yp;     // ratio of static pressure rise to dynamic pressure when flying to the right
+        AP_Float yn;     // ratio of static pressure rise to dynamic pressure when flying to the left
+    };
+#endif
+
     struct sensor {
         uint32_t last_update_ms;        // last update time in ms
         uint32_t last_change_ms;        // last update time in ms that included a change in reading from previous readings
@@ -250,6 +270,9 @@ private:
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
         AP_Int32 bus_id;
+#if HAL_BARO_WIND_COMP_ENABLED
+        WindCoeff wind_coeff;
+#endif
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
@@ -276,6 +299,14 @@ private:
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;
+
+#if HAL_BARO_WIND_COMP_ENABLED
+    /*
+      return pressure correction for wind based on GND_WCOEF parameters
+    */
+    float wind_pressure_correction(uint8_t instance);
+#endif
+    
 };
 
 namespace AP {

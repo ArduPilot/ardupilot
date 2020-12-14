@@ -87,16 +87,6 @@ void NavEKF2_core::calcGpsGoodToAlign(void)
         gpsVertVelFilt = 0.1f * gpsDataNew.vel.z + 0.9f * gpsVertVelFilt;
         gpsVertVelFilt = constrain_float(gpsVertVelFilt,-10.0f,10.0f);
         gpsVertVelFail = (fabsf(gpsVertVelFilt) > 0.3f*checkScaler) && (frontend->_gpsCheck & MASK_GPS_VERT_SPD);
-    } else if ((frontend->_fusionModeGPS == 0) && !gps.have_vertical_velocity()) {
-        // If the EKF settings require vertical GPS velocity and the receiver is not outputting it, then fail
-        gpsVertVelFail = true;
-        // if we have a 3D fix with no vertical velocity and
-        // EK2_GPS_TYPE=0 then change it to 1. It means the GPS is not
-        // capable of giving a vertical velocity
-        if (gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D) {
-            frontend->_fusionModeGPS.set(1);
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EK2: Changed EK2_GPS_TYPE to 1");
-        }
     } else {
         gpsVertVelFail = false;
     }

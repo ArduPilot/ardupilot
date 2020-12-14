@@ -435,7 +435,7 @@ void AP_Spektrum_Telem::calc_airspeed()
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    const AP_Airspeed *airspeed = ahrs.get_airspeed();
+    const AP_Airspeed *airspeed = AP::airspeed();
     float speed = 0.0f;
     if (airspeed && airspeed->healthy()) {
         speed = roundf(airspeed->get_airspeed() * 3.6);

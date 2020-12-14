@@ -26,7 +26,7 @@
 #include <AP_OLC/AP_OLC.h>
 
 #ifndef OSD_ENABLED
-#define OSD_ENABLED 0
+#define OSD_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 #ifndef HAL_WITH_OSD_BITMAP
@@ -176,6 +176,7 @@ private:
     AP_OSD_Setting atemp{false, 0, 0};
     AP_OSD_Setting bat2_vlt{false, 0, 0};
     AP_OSD_Setting bat2used{false, 0, 0};
+    AP_OSD_Setting current2{false, 0, 0};
     AP_OSD_Setting clk{false, 0, 0};
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
@@ -196,6 +197,7 @@ private:
     void draw_bat_volt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
+    void draw_current(uint8_t instance, uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
     void draw_batused(uint8_t instance, uint8_t x, uint8_t y);
     void draw_sats(uint8_t x, uint8_t y);
@@ -245,6 +247,7 @@ private:
     void draw_bat2used(uint8_t x, uint8_t y);
     void draw_clk(uint8_t x, uint8_t y);
     void draw_callsign(uint8_t x, uint8_t y);
+    void draw_current2(uint8_t x, uint8_t y);
 
     struct {
         bool load_attempted;

@@ -35,6 +35,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/flash.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
@@ -344,6 +345,11 @@ bool Scheduler::in_expected_delay(void) const
             return true;
         }
     }
+#ifndef HAL_NO_FLASH_SUPPORT
+    if (stm32_flash_recent_erase()) {
+        return true;
+    }
+#endif
     return false;
 }
 
@@ -375,6 +381,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
+#ifndef HAL_NO_LOGGING
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
                 AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
@@ -390,8 +397,9 @@ void Scheduler::_monitor_thread(void *arg)
                                    pd.spi_count,
                                    pd.i2c_count);
                 }
+#endif
         }
-        if (loop_delay >= 500) {
+        if (loop_delay >= 500 && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
@@ -472,21 +480,33 @@ void Scheduler::_io_thread(void* arg)
 #ifndef HAL_NO_LOGGING
     uint32_t last_sd_start_ms = AP_HAL::millis();
 #endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+    uint32_t last_stack_check_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#if !defined(HAL_NO_LOGGING) || CH_DBG_ENABLE_STACK_CHECK == TRUE
+        uint32_t now = AP_HAL::millis();
+#endif
+
 #ifndef HAL_NO_LOGGING
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
-            uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
                 AP::FS().retry_mount();
             }
+        }
+#endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+        if (now - last_stack_check_ms > 1000) {
+            last_stack_check_ms = now;
+            sched->check_stack_free();
         }
 #endif
     }
@@ -690,5 +710,38 @@ void Scheduler::watchdog_pat(void)
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  check we have enough stack free on all threads and the ISR stack
+ */
+void Scheduler::check_stack_free(void)
+{
+    // we raise an internal error stack_overflow when the available
+    // stack on any thread or the ISR stack drops below this
+    // threshold. This means we get an overflow error when we haven't
+    // yet completely run out of stack. This gives us a good
+    // pre-warning when we are getting too close
+#if defined(STM32F1)
+    const uint32_t min_stack = 32;
+#else
+    const uint32_t min_stack = 64;
+#endif
+
+    if (stack_free(&__main_stack_base__) < min_stack) {
+        // use "line number" of 0xFFFF for ISR stack low
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
+    }
+
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (stack_free(tp->wabase) < min_stack) {
+            // use task priority for line number. This allows us to
+            // identify the task fairly reliably
+            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->prio);
+        }
+    }
+}
+#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
 
 #endif // CH_CFG_USE_DYNAMIC

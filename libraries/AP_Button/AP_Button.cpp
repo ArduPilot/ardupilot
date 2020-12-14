@@ -69,6 +69,58 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @Range: 0 3600
     AP_GROUPINFO("REPORT_SEND", 5, AP_Button, report_send_time, 10),
 
+    // @Param: OPTIONS1
+    // @DisplayName: Button Pin 1 Options
+    // @Description: Options for Pin 1
+    // @User: Standard
+    // @Bitmask: 0:PWM Input,1:InvertInput
+    AP_GROUPINFO("OPTIONS1",  6, AP_Button, options[0], 0),
+
+    // @Param: OPTIONS2
+    // @DisplayName: Button Pin 2 Options
+    // @Description: Options for Pin 2
+    // @User: Standard
+    // @Bitmask: 0:PWM Input,1:InvertInput
+    AP_GROUPINFO("OPTIONS2",  7, AP_Button, options[1], 0),
+
+    // @Param: OPTIONS3
+    // @DisplayName: Button Pin 3 Options
+    // @Description: Options for Pin 3
+    // @User: Standard
+    // @Bitmask: 0:PWM Input,1:InvertInput
+    AP_GROUPINFO("OPTIONS3",  8, AP_Button, options[2], 0),
+
+    // @Param: OPTIONS4
+    // @DisplayName: Button Pin 4 Options
+    // @Description: Options for Pin 4
+    // @User: Standard
+    // @Bitmask: 0:PWM Input,1:InvertInput
+    AP_GROUPINFO("OPTIONS4",  9, AP_Button, options[3], 0),
+
+    // @Param: FUNC1
+    // @DisplayName: Button Pin 1 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC1",  10, AP_Button, pin_func[0], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC2
+    // @DisplayName: Button Pin 2 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC2",  11, AP_Button, pin_func[1], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC3
+    // @DisplayName: Button Pin 3 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC3",  12, AP_Button, pin_func[2], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
+    // @Param: FUNC4
+    // @DisplayName: Button Pin 4 RC Channel function
+    // @Description: Function executed on pin change
+    // @User: Standard
+    AP_GROUPINFO("FUNC4",  13, AP_Button, pin_func[3], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
+
     AP_GROUPEND    
 };
 
@@ -107,14 +159,107 @@ void AP_Button::update(void)
         hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
     }
 
-    if (last_change_time_ms != 0 &&
+    // act on any changes in state
+    {
+        WITH_SEMAPHORE(last_debounced_change_ms_sem);
+        if (last_debounced_change_ms > last_debounce_ms) {
+            last_debounce_ms = last_debounced_change_ms;
+        }
+    }
+
+    // update the PWM state:
+    uint8_t new_pwm_state = pwm_state;
+    for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
+        const uint8_t mask = (1U << i);
+        if (!is_pwm_input(i)) {
+            // not a PWM input
+            new_pwm_state &= ~mask;
+            continue;
+        }
+        const uint16_t pwm_us = pwm_pin_source[i].get_pwm_us();
+        // these values are the same as used in RC_Channel:
+        if (pwm_state & mask) {
+            // currently asserted; check to see if we should de-assert
+            if (pwm_us < RC_Channel::AUX_PWM_TRIGGER_LOW) {
+                new_pwm_state &= ~mask;
+            }
+        } else {
+            // currently not asserted; check to see if we should assert
+            if (pwm_us > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+                new_pwm_state |= mask;
+            }
+        }
+    }
+    if (new_pwm_state != pwm_state) {
+        pwm_state = new_pwm_state;
+        last_debounce_ms = AP_HAL::millis64();
+    }
+
+    if (last_debounce_ms != 0 &&
         (AP_HAL::millis() - last_report_ms) > AP_BUTTON_REPORT_PERIOD_MS &&
-        (AP_HAL::millis64() - last_change_time_ms) < report_send_time*1000ULL) {
+        (AP_HAL::millis64() - last_debounce_ms) < report_send_time*1000ULL) {
         // send a change report
         last_report_ms = AP_HAL::millis();
 
         // send a report to GCS
         send_report();
+    }
+
+    if (!aux_functions_initialised) {
+        run_aux_functions(true);
+        aux_functions_initialised = true;
+    }
+
+    if (last_debounce_ms != 0 &&
+        last_debounce_ms != last_action_time_ms) {
+        last_action_time_ms = last_debounce_ms;
+        run_aux_functions(false);
+    }
+}
+
+void AP_Button::run_aux_functions(bool force)
+{
+    RC_Channel *rc_channel = rc().channel(1);
+    if (rc_channel == nullptr) {
+        return;
+    }
+
+    for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
+        const RC_Channel::AUX_FUNC func = RC_Channel::AUX_FUNC(pin_func[i].get());
+        if (func == RC_Channel::AUX_FUNC::DO_NOTHING) {
+            continue;
+        }
+        const uint8_t value_mask = (1U<<i);
+        bool value;
+        if (is_pwm_input(i)) {
+            value = (pwm_state & value_mask) != 0;
+        } else {
+            value = (debounce_mask & value_mask) != 0;
+        }
+        if (is_input_inverted(i)) {
+            value = !value;
+        }
+        const bool actioned = ((state_actioned_mask & value_mask) != 0);
+        if (!force && value == actioned) {
+            // no change on this pin
+            continue;
+        }
+        // mark action as done:
+        if (value) {
+            state_actioned_mask |= value_mask;
+        } else {
+            state_actioned_mask &= ~value_mask;
+        }
+
+        const RC_Channel::AuxSwitchPos pos = value ? RC_Channel::AuxSwitchPos::HIGH : RC_Channel::AuxSwitchPos::LOW;
+        // I wonder if we can do better here:
+#if !HAL_MINIMIZE_FEATURES
+        const char *str = rc_channel->string_for_aux_function(func);
+        if (str != nullptr) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Button: executing (%s)", str);
+        }
+#endif
+        rc_channel->do_aux_function(func, pos);
     }
 }
 
@@ -126,7 +271,11 @@ bool AP_Button::get_button_state(uint8_t number)
     if (number == 0 || number > AP_BUTTON_NUM_PINS) {
         return false;
     }
-    
+
+    if (is_pwm_input(number-1)) {
+        return (pwm_state & (1U<<(number-1)));
+    }
+
     return ( ((1 << (number - 1)) & debounce_mask) != 0);
 };
 
@@ -140,8 +289,12 @@ uint8_t AP_Button::get_mask(void)
         if (pin[i] == -1) {
             continue;
         }
+        if (is_pwm_input(i)) {
+            continue;
+        }
         mask |= hal.gpio->read(pin[i]) << i;
     }
+
     return mask;
 }
 
@@ -159,9 +312,12 @@ void AP_Button::timer_update(void)
         last_mask = mask;
         last_change_time_ms = now;
     }
-    if ((now - last_change_time_ms) > DEBOUNCE_MS) {
+    if (debounce_mask != last_mask &&
+        (now - last_change_time_ms) > DEBOUNCE_MS) {
         // crude de-bouncing, debounces all buttons as one, not individually
         debounce_mask = last_mask;
+        WITH_SEMAPHORE(last_debounced_change_ms_sem);
+        last_debounced_change_ms = now;
     }
 }
 
@@ -170,10 +326,11 @@ void AP_Button::timer_update(void)
  */
 void AP_Button::send_report(void)
 {
+    const uint8_t mask = last_mask | pwm_state;
     const mavlink_button_change_t packet{
             time_boot_ms: AP_HAL::millis(),
-            last_change_ms: uint32_t(last_change_time_ms),
-            state: last_mask
+            last_change_ms: uint32_t(last_debounce_ms),
+            state: mask,
     };
     gcs().send_to_active_channels(MAVLINK_MSG_ID_BUTTON_CHANGE,
                                   (const char *)&packet);
@@ -186,9 +343,14 @@ void AP_Button::send_report(void)
 void AP_Button::setup_pins(void)
 {
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
+        if (is_pwm_input(i)) {
+            pwm_pin_source[i].set_pin(pin[i], "Button");
+            continue;
+        }
         if (pin[i] == -1) {
             continue;
         }
+
         hal.gpio->pinMode(pin[i], HAL_GPIO_INPUT);
         // setup pullup
         hal.gpio->write(pin[i], 1);

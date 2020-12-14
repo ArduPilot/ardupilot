@@ -4,6 +4,8 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_OSD/AP_OSD.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros)
 
@@ -42,6 +44,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: FRSKY_
     // @Path: ../AP_Frsky_Telem/AP_Frsky_Parameters.cpp
     AP_SUBGROUPINFO(frsky_parameters, "FRSKY_", 6, AP_Vehicle, AP_Frsky_Parameters),
+#endif
+
+#if GENERATOR_ENABLED
+    // @Group: GEN_
+    // @Path: ../AP_Generator/AP_Generator.cpp
+    AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
 #endif
 
     AP_GROUPEND
@@ -132,12 +140,28 @@ void AP_Vehicle::setup()
 #endif
 
     send_watchdog_reset_statustext();
+
+#if GENERATOR_ENABLED
+    generator.init();
+#endif
 }
 
 void AP_Vehicle::loop()
 {
     scheduler.loop();
     G_Dt = scheduler.get_loop_period_s();
+
+    if (!done_safety_init) {
+        /*
+          disable safety if requested. This is delayed till after the
+          first loop has run to ensure that all servos have received
+          an update for their initial values. Otherwise we may end up
+          briefly driving a servo to a position out of the configured
+          range which could damage hardware
+        */
+        done_safety_init = true;
+        BoardConfig.init_safety();
+    }
 }
 
 /*
@@ -166,6 +190,12 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(update_dynamic_notch,                   200,    200),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
+#if GENERATOR_ENABLED
+    SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50),
+#endif
+#if OSD_ENABLED
+    SCHED_TASK(publish_osd_info, 1, 10),
+#endif
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -294,6 +324,34 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 
     hal.scheduler->reboot(hold_in_bootloader);
 }
+
+#if OSD_ENABLED
+void AP_Vehicle::publish_osd_info()
+{
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return;
+    }
+    AP_OSD *osd = AP::osd();
+    if (osd == nullptr) {
+        return;
+    }
+    AP_OSD::NavInfo nav_info;
+    if(!get_wp_distance_m(nav_info.wp_distance)) {
+        return;
+    }
+    float wp_bearing_deg;
+    if (!get_wp_bearing_deg(wp_bearing_deg)) {
+        return;
+    }
+    nav_info.wp_bearing = (int32_t)wp_bearing_deg * 100; // OSD expects cd
+    if (!get_wp_crosstrack_error_m(nav_info.wp_xtrack_error)) {
+        return;
+    }
+    nav_info.wp_number = mission->get_current_nav_index();
+    osd->set_nav_info(nav_info);
+}
+#endif
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

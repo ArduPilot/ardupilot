@@ -62,11 +62,11 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t rangefinder_ptr_is_null:1;
     uint8_t get_compass_is_null:1;
-    uint8_t airspeed_ptr_is_null:1;
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
+    uint8_t opticalflow_enabled:1;
+    uint8_t wheelencoder_enabled:1;
     uint8_t _end;
 };
 
@@ -157,7 +157,7 @@ struct log_RRNH {
     // this is rotation-pitch-270!
     int16_t ground_clearance_cm;
     int16_t max_distance_cm;
-    uint16_t backend_mask;
+    uint8_t num_sensors;
     uint8_t _end;
 };
 
@@ -265,10 +265,10 @@ struct log_RBCH {
     int32_t origin_lat;
     int32_t origin_lng;
     int32_t origin_alt;
-    bool get_vehicle_position_ned_returncode;
+    uint8_t get_vehicle_position_ned_returncode:1;
+    uint8_t get_origin_returncode:1;
+    uint8_t enabled:1;
     uint8_t count;
-    bool get_origin_returncode;
-    uint8_t ptr_is_nullptr;
     uint8_t _end;
 };
 
@@ -290,7 +290,6 @@ struct log_RVOH {
     uint32_t delay_ms;
     uint8_t healthy;
     bool enabled;
-    uint8_t ptr_is_nullptr;
     uint8_t _end;
 };
 
@@ -388,7 +387,7 @@ struct log_RBOH {
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
       "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
-      "RRNH", "hhH", "GCl,MaxD,BMask", "???", "???" },  \
+      "RRNH", "hhB", "GCl,MaxD,NumSensors", "???", "???" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
       "RRNI", "fffHBBB", "PX,PY,PZ,Dist,Orient,Status,I", "------#", "-------" }, \
     { LOG_RGPH_MSG, RLOG_SIZE(RGPH),                                   \
@@ -402,11 +401,11 @@ struct log_RBOH {
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \
-      "RBCH", "ffffiiiBBBB", "PX,PY,PZ,AE,OLat,OLng,OAlt,GVPR,NumInst,ORet,NPtr", "-----------", "-----------" },  \
+      "RBCH", "ffffiiiBB", "PX,PY,PZ,AE,OLat,OLng,OAlt,Flags,NumInst", "---------", "---------" },  \
     { LOG_RBCI_MSG, RLOG_SIZE(RBCI),                                   \
       "RBCI", "IffffBB", "LU,PX,PY,PZ,Dist,H,I", "smmmm-#", "?0000--" }, \
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
-      "RVOH", "fffIBBB", "OX,OY,OZ,Del,H,Ena,NPtr", "-------", "-------" }, \
+      "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
       "ROFH", "ffffIfffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,Qual", "---------", "---------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \

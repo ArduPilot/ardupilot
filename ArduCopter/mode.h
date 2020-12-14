@@ -1335,9 +1335,14 @@ public:
     bool is_autopilot() const override { return false; }
 
     // Throw types
-    enum ThrowModeType {
-        ThrowType_Upward = 0,
-        ThrowType_Drop = 1
+    enum class ThrowType {
+        Upward = 0,
+        Drop = 1
+    };
+
+    enum class PreThrowMotorState {
+        STOPPED = 0,
+        RUNNING = 1,
     };
 
 protected:

@@ -32,7 +32,7 @@ void NavEKF3_core::SelectFlowFusion()
     // Check if the optical flow data is still valid
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
-    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == HGT_SOURCE_RNG);
+    gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground
@@ -52,7 +52,7 @@ void NavEKF3_core::SelectFlowFusion()
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        if (frontend->_flowUse == FLOW_USE_NAV) {
+        if ((frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
             // Set the flow noise used by the fusion processes
             R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
             // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -80,7 +80,7 @@ void NavEKF3_core::EstimateTerrainOffset()
     || velHorizSq < 25.0f 
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
 
-    if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
+    if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         // skip update
         inhibitGndState = true;
     } else {

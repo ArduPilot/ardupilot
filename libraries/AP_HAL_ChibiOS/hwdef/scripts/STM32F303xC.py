@@ -410,7 +410,7 @@ AltFunction_map = {
     
 ADC1_map = {
 	# format is PIN : ADC1_CHAN
-	# extracted from tabula-addfunc-F405.csv
+	# extracted from tabula-addfunc-F303.csv
     "PA0"	:	1,
     "PA1"	:	2,
     "PA2"	:	3,

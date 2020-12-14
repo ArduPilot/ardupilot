@@ -12,6 +12,7 @@ userdata Location field loiter_xtrack boolean read write
 
 userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+userdata Location method offset_bearing void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
@@ -41,6 +42,8 @@ singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
 singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
+singleton AP_AHRS method set_posvelyaw_source_set void uint8_t 0 2
+singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
 
 include AP_Arming/AP_Arming.h
 
@@ -185,6 +188,9 @@ singleton AP_Vehicle method get_target_location boolean Location'Null
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
+singleton AP_Vehicle method get_wp_distance_m boolean float'Null
+singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
+singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED

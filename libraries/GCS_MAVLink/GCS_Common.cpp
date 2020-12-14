@@ -207,16 +207,20 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     float temp;
     bool got_temperature = battery.get_temperature(temp, instance);
 
-    // prepare array of individual cell voltage
+    // prepare arrays of individual cell voltages
     uint16_t cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
+    uint16_t cell_volts_ext[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN];
     if (battery.has_cell_voltages(instance)) {
         const AP_BattMonitor::cells& batt_cells = battery.get_cell_voltages(instance);
         // copy the first 10 cells
         memcpy(cell_volts, batt_cells.cells, sizeof(cell_volts));
-        // 10th cell reports the lowest voltage of the last 3 cells
-        for (uint8_t i = MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i < ARRAY_SIZE(batt_cells.cells); i++) {
-            cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1] = MIN(cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1],
-                                                                              batt_cells.cells[i]);
+        // 11 ... 14 use a second cell_volts_ext array
+        for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN; i++) {
+            if (MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i < uint8_t(ARRAY_SIZE(batt_cells.cells))) {
+                cell_volts_ext[i] = batt_cells.cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i];
+            } else {
+                cell_volts_ext[i] = 0;
+            }
         }
     } else {
         // for battery monitors that cannot provide voltages for individual cells the battery's total voltage is put into the first cell
@@ -231,6 +235,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
               cell_volts[i] = MIN(voltage, 65534.0f); // Can't send more then UINT16_MAX - 1 in a cell
               voltage -= 65534.0f;
           }
+        }
+        for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN; i++) {
+            cell_volts_ext[i] = 0;
         }
     }
 
@@ -259,7 +266,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
-                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED);
+                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED,
+                                    cell_volts_ext); // Cell 11..14 voltages
 }
 
 // returns true if all battery instances were reported
@@ -2169,27 +2177,36 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 */
 MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32_t _custom_mode)
 {
-    MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
     if (uint32_t(_base_mode) & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-        if (AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
-            result = MAV_RESULT_ACCEPTED;
+        if (!AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
+            // often we should be returning DENIED rather than FAILED
+            // here.  Perhaps a "has_mode" callback on AP_::vehicle()
+            // would do?
+            return MAV_RESULT_FAILED;
         }
-    } else if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
         if (_custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
             hal.rcout->force_safety_off();
-            result = MAV_RESULT_ACCEPTED;
-        } else if (_custom_mode == 1) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (_custom_mode == 1) {
             // turn safety on (no pwm outputs to the motors)
             if (hal.rcout->force_safety_on()) {
-                result = MAV_RESULT_ACCEPTED;
+                return MAV_RESULT_ACCEPTED;
             }
+            return MAV_RESULT_FAILED;
         }
+        return MAV_RESULT_DENIED;
     }
 
-    return result;
+    // Command is invalid (is supported but has invalid parameters)
+    return MAV_RESULT_DENIED;
 }
 
 /*
@@ -4440,7 +4457,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 void GCS_MAVLINK::send_generator_status() const
 {
 #if GENERATOR_ENABLED
-    AP_Generator_RichenPower *generator = AP::generator();
+    AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return;
     }

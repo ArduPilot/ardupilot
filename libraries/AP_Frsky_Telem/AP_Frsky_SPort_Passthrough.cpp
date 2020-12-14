@@ -516,7 +516,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
-    const AP_Airspeed *aspeed = _ahrs.get_airspeed();
+    const AP_Airspeed *aspeed = AP::airspeed();
     if (aspeed && aspeed->enabled()) {
         velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else { // otherwise send groundspeed estimate from ahrs
@@ -543,27 +543,6 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     // rangefinder measurement in cm
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
-}
-
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-/*
-  allow external transports (e.g. FPort), to supply telemetry data
- */
-bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
-{
-    // queue only Uplink packets
-    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
-        const AP_Frsky_SPort::sport_packet_t sp {
-            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
-            frame,
-            appid,
-            data
-        };
-
-        _SPort_bidir.rx_packet_queue.push_force(sp);
-        return true;
-    }
-    return false;
 }
 
 /*
@@ -647,8 +626,26 @@ uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits,
     return res;
 }
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+/*
+  allow external transports (e.g. FPort), to supply telemetry data
+ */
+bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+{
+    // queue only Uplink packets
+    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
+        const AP_Frsky_SPort::sport_packet_t sp {
+            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
+            frame,
+            appid,
+            data
+        };
 
-
+        _SPort_bidir.rx_packet_queue.push_force(sp);
+        return true;
+    }
+    return false;
+}
 
 /*
  * Queue uplink packets in the sport rx queue

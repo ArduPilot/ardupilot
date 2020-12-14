@@ -23,8 +23,10 @@
 #if CH_CFG_USE_SEMAPHORES == TRUE
 
 using namespace ChibiOS;
+extern const AP_HAL::HAL& hal;
 
 Shared_DMA::dma_lock Shared_DMA::locks[SHARED_DMA_MAX_STREAM_ID+1];
+volatile Shared_DMA::dma_stats* Shared_DMA::_contention_stats;
 
 void Shared_DMA::init(void)
 {
@@ -148,22 +150,36 @@ bool Shared_DMA::lock_nonblock(void)
         chSysDisable();
         if (locks[stream_id1].obj != nullptr && locks[stream_id1].obj != this) {
             locks[stream_id1].obj->contention = true;
+            if (_contention_stats != nullptr) {
+                _contention_stats[stream_id1].contended_locks++;
+            }
         }
         chSysEnable();
         contention = true;
         return false;
     }
+
+    if (_contention_stats != nullptr) {
+        _contention_stats[stream_id1].uncontended_locks++;
+    }
+
     if (!lock_stream_nonblocking(stream_id2)) {
         unlock_stream(stream_id1);
         chSysDisable();
         if (locks[stream_id2].obj != nullptr && locks[stream_id2].obj != this) {
             locks[stream_id2].obj->contention = true;
+            if (_contention_stats != nullptr) {
+                _contention_stats[stream_id2].contended_locks++;
+            }
         }
         chSysEnable();
         contention = true;
         return false;
     }
     lock_core();
+    if (_contention_stats != nullptr) {
+        _contention_stats[stream_id2].uncontended_locks++;
+    }
     return true;
 }
 
@@ -209,6 +225,53 @@ void Shared_DMA::lock_all(void)
     for (uint8_t i=0; i<SHARED_DMA_MAX_STREAM_ID; i++) {
         lock_stream(i);
     }
+}
+
+// display dma contention statistics as text buffer for @SYS/dma.txt
+size_t Shared_DMA::dma_info(char *buf, size_t bufsize)
+{
+    size_t total = 0;
+
+    // no buffer allocated, start counting
+    if (_contention_stats == nullptr) {
+        _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
+        return 0;
+    }
+
+    // a header to allow for machine parsers to determine format
+    int n = hal.util->snprintf(buf, bufsize, "DMAV1\n");
+
+    if (n <= 0) {
+        return 0;
+    }
+
+    buf += n;
+    bufsize -= n;
+    total += n;
+
+    for (uint8_t i = 0; i < SHARED_DMA_MAX_STREAM_ID + 1; i++) {
+        if (locks[i].obj == nullptr) {
+            continue;
+        }
+
+        const char* fmt = "DMA=%1u STRM=%1u ULCK=%8u CLCK=%8u CONT=%4.1f%%\n";
+        float cond_per = 100.0f * float(_contention_stats[i].contended_locks)
+            / (1 + _contention_stats[i].contended_locks + _contention_stats[i].uncontended_locks);
+        n = hal.util->snprintf(buf, bufsize, fmt, i / 8 + 1, i % 8,
+            _contention_stats[i].uncontended_locks, _contention_stats[i].contended_locks, cond_per);
+
+        if (n <= 0) {
+            break;
+        }
+        buf += n;
+        bufsize -= n;
+        total += n;
+
+        _contention_stats[i].contended_locks = 0;
+        _contention_stats[i].uncontended_locks = 0;
+    }
+
+    return total;
 }
 
 #endif // CH_CFG_USE_SEMAPHORES

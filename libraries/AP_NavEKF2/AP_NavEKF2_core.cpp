@@ -133,8 +133,6 @@ void NavEKF2_core::InitialiseVariables()
     lastTasPassTime_ms = 0;
     lastYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
-    secondLastGpsTime_ms = 0;
-    lastDecayTime_ms = imuSampleTime_ms;
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
@@ -246,7 +244,6 @@ void NavEKF2_core::InitialiseVariables()
     quatAtLastMagReset = stateStruct.quat;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
-    gpsInhibit = false;
     activeHgtSource = 0;
     memset(&rngMeasIndex, 0, sizeof(rngMeasIndex));
     memset(&storedRngMeasTime_ms, 0, sizeof(storedRngMeasTime_ms));
@@ -350,7 +347,6 @@ void NavEKF2_core::InitialiseVariablesMag()
     magYawResetTimer_ms = imuSampleTime_ms;
     magTimeout = false;
     allMagSensorsFailed = false;
-    badMagYaw = false;
     finalInflightYawInit = false;
     finalInflightMagInit = false;
 
@@ -671,7 +667,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     delVelNav  = prevTnb.mul_transpose(delVelCorrected);
     delVelNav.z += GRAVITY_MSS*imuDataDelayed.delVelDT;
 
-    // calculate the body to nav cosine matrix
+    // calculate the nav to body cosine matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
 
     // calculate the rate of change of velocity (used for launch detect and other functions)

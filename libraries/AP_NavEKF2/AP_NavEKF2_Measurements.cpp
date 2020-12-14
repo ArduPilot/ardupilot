@@ -447,7 +447,7 @@ void NavEKF2_core::readIMUData()
         runUpdates = true;
 
         // extract the oldest available data from the FIFO buffer
-        imuDataDelayed = storedIMU.pop_oldest_element();
+        imuDataDelayed = storedIMU.get_oldest_element();
 
         // protect against delta time going to zero
         // TODO - check if calculations can tolerate 0
@@ -504,7 +504,7 @@ void NavEKF2_core::readGpsData()
             gpsCheckStatus.bad_fix = false;
 
             // store fix time from previous read
-            secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+            const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
             // get current fix time
             lastTimeGpsReceived_ms = gps.last_message_time_ms(gps.primary_sensor());
@@ -569,7 +569,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, if it is allowed to be used, and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -755,8 +755,9 @@ void NavEKF2_core::readAirSpdData()
     // know a new measurement is available
     const auto *aspeed = dal.airspeed();
     if (aspeed &&
-            aspeed->use() &&
-            aspeed->last_update_ms() != timeTasReceived_ms) {
+        aspeed->use() &&
+        aspeed->healthy() &&
+        aspeed->last_update_ms() != timeTasReceived_ms) {
         tasDataNew.tas = aspeed->get_airspeed() * dal.get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
@@ -902,13 +903,6 @@ void NavEKF2_core::updateTimingStatistics(void)
         timing.delVelDT_min = MIN(timing.delVelDT_min, imuDataDelayed.delVelDT);
     }
     timing.count++;
-}
-
-// get timing statistics structure
-void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
-{
-    _timing = timing;
-    memset(&timing, 0, sizeof(timing));
 }
 
 void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)

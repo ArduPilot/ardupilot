@@ -561,6 +561,31 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
     return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
 }
 
+// return estimate of true airspeed vector in body frame in m/s
+// returns false if estimate is unavailable
+bool AP_AHRS_NavEKF::airspeed_vector_true(Vector3f &vec) const
+{
+    switch (active_EKF_type()) {
+    case EKFType::NONE:
+        break;
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.getAirSpdVec(-1, vec);
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getAirSpdVec(-1, vec);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        break;
+#endif
+    }
+    return false;
+}
+
 // true if compass is being used
 bool AP_AHRS_NavEKF::use_compass(void)
 {
@@ -1254,15 +1279,18 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         (_vehicle_class == AHRS_VEHICLE_FIXED_WING ||
          _vehicle_class == AHRS_VEHICLE_GROUND) &&
         (_flags.fly_forward || !hal.util->get_soft_armed())) {
+        bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
         if (ret == EKFType::TWO) {
             EKF2.getFilterStatus(-1,filt_state);
+            should_use_gps = EKF2.configuredToUseGPSForPosXY();
         }
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         if (ret == EKFType::THREE) {
             EKF3.getFilterStatus(-1,filt_state);
+            should_use_gps = EKF3.configuredToUseGPSForPosXY();
         }
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -1273,6 +1301,7 @@ AP_AHRS_NavEKF::EKFType AP_AHRS_NavEKF::active_EKF_type(void) const
         if (hal.util->get_soft_armed() &&
             (!filt_state.flags.using_gps ||
              !filt_state.flags.horiz_pos_abs) &&
+            should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
             // and we have a 3D lock, then plane and rover would
@@ -1368,16 +1397,20 @@ bool AP_AHRS_NavEKF::healthy(void) const
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
+    bool ret = true;
+    if (!healthy()) {
+        // this rather generic failure might be overwritten by
+        // something more specific in the "backend"
+        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
+        ret = false;
+    }
+
     switch (ekf_type()) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case EKFType::SITL:
 #endif
     case EKFType::NONE:
-        if (!healthy()) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
-            return false;
-        }
-        return true;
+        return ret;
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1385,7 +1418,7 @@ bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 not started");
             return false;
         }
-        return EKF2.pre_arm_check(failure_msg, failure_msg_len);
+        return EKF2.pre_arm_check(failure_msg, failure_msg_len) && ret;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
@@ -1394,7 +1427,7 @@ bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
             return false;
         }
-        return EKF3.pre_arm_check(failure_msg, failure_msg_len);
+        return EKF3.pre_arm_check(failure_msg, failure_msg_len) && ret;
 #endif
     }
 
@@ -1523,32 +1556,6 @@ void AP_AHRS_NavEKF::writeExtNavVelData(const Vector3f &vel, float err, uint32_t
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
 #endif
-}
-
-// inhibit GPS usage
-uint8_t AP_AHRS_NavEKF::setInhibitGPS(void)
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        return 0;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.setInhibitGPS();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.setInhibitGPS();
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        return 0;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return 0;
 }
 
 // get speed limit
@@ -2129,6 +2136,37 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     return false;
 }
 
+// get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
+// returns true on success and results are placed in innovations and variances arguments
+bool AP_AHRS_NavEKF::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
+{
+    switch (ekf_type()) {
+    case EKFType::NONE:
+        // We are not using an EKF so no data
+        return false;
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        // EKF2 does not support source level variances
+        return false;
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        // use EKF to get variance
+        return EKF3.getVelInnovationsAndVariancesForSource(-1, (AP_NavEKF_Source::SourceXY)source, innovations, variances);
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        // SITL does not support source level variances
+        return false;
+#endif
+    }
+
+    return false;
+}
+
 void AP_AHRS_NavEKF::setTakeoffExpected(bool val)
 {
     switch (takeoffExpectedState) {
@@ -2200,6 +2238,7 @@ uint8_t AP_AHRS_NavEKF::get_active_airspeed_index() const
     }
 #endif
     // for the rest, let the primary airspeed sensor be used
+    const AP_Airspeed * _airspeed = AP::airspeed();
     if (_airspeed != nullptr) {
         return _airspeed->get_primary();
     }
@@ -2337,6 +2376,14 @@ void AP_AHRS_NavEKF::request_yaw_reset(void)
         break;
 #endif
     }
+}
+
+// set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+void AP_AHRS_NavEKF::set_posvelyaw_source_set(uint8_t source_set_idx)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    EKF3.setPosVelYawSourceSet(source_set_idx);
+#endif
 }
 
 void AP_AHRS_NavEKF::Log_Write()

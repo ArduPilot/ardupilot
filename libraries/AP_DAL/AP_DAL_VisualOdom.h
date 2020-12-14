@@ -29,18 +29,15 @@ public:
         return RVOH.pos_offset;
     }
 
-    AP_DAL_VisualOdom *visualodom() {
-        if (RVOH.ptr_is_nullptr) {
-            return nullptr;
-        }
-        return this;
-    }
+    // update position offsets to align to AHRS position
+    // should only be called when this library is not being used as the position source
+    void align_position_to_ahrs(bool align_xy, bool align_z);
 
     void start_frame();
 
     void handle_message(const log_RVOH &msg) {
         RVOH = msg;
-   }
+    }
 
 private:
 

@@ -28,6 +28,8 @@ public:
         k_param_hardpoint_rate,
         k_param_baro_enable,
         k_param_esc_number,
+        k_param_battery,
+        k_param_debug,
     };
 
     AP_Int16 format_version;
@@ -62,7 +64,9 @@ public:
 #ifdef HAL_PERIPH_ENABLE_HWESC
     AP_Int8 esc_number;
 #endif
-    
+
+    AP_Int8 debug;
+
     Parameters() {}
 };
 
