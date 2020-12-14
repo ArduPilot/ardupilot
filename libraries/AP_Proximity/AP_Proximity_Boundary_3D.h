@@ -16,13 +16,12 @@
 #pragma once
 
 #define PROXIMITY_NUM_SECTORS         8       // number of sectors
-#define PROXIMITY_NUM_LAYERS          5       // num of stacks in a sector
-#define PROXIMITY_MIDDLE_LAYER        2       // middle stack 
-#define PROXIMITY_PITCH_WIDTH_DEG     30      // width between each stack in degrees
+#define PROXIMITY_NUM_LAYERS          5       // num of layers in a sector
+#define PROXIMITY_MIDDLE_LAYER        2       // middle layer
+#define PROXIMITY_PITCH_WIDTH_DEG     30      // width between each layer in degrees
 #define PROXIMITY_SECTOR_WIDTH_DEG    45.0f   // width of sectors in degrees
 #define PROXIMITY_BOUNDARY_DIST_MIN   0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
-#define DISTANCE_MAX               999999.0f  // arbritary "large" distance 
 
 class AP_Proximity_Boundary_3D 
 { 
@@ -30,69 +29,75 @@ public:
     // constructor. This incorporates initialisation as well.
 	AP_Proximity_Boundary_3D();
 
-    // This class is used to store the stack and sector as a single packet to access and modify the 3-D boundary 
-    class Boundary_Location
-    {   
+    // stores the layer and sector as a single object to access and modify the 3-D boundary
+    class Face
+    {
     public:
-        // constructor when both stack and sector are passed
-        Boundary_Location(uint8_t Sector, uint8_t Stack) { sector = Sector; stack = Stack; }
-        // constructor defaults to "middle(horizontal) layer" if only sector is passed
-        Boundary_Location(uint8_t Sector) { sector = Sector; stack = PROXIMITY_MIDDLE_LAYER; }
-        
-        uint8_t stack; // vertical "steps" on the 3D Boundary 
+
+	    // constructor, invalidate id and distance
+	    Face() { layer = sector = UINT8_MAX; }
+	    Face(uint8_t _layer, uint8_t _sector) { layer = _layer; sector = _sector; }
+
+	    // return true if face has valid layer and sector values
+	    bool valid() const { return ((layer < PROXIMITY_NUM_LAYERS) && (sector < PROXIMITY_NUM_SECTORS)); }
+
+	    // comparison operator
+	    bool operator ==(const Face &other) const { return ((layer == other.layer) && (sector == other.sector)); }
+	    bool operator !=(const Face &other) const { return ((layer != other.layer) || (sector != other.sector)); }
+
+        uint8_t layer;  // vertical "steps" on the 3D Boundary
         uint8_t sector; // horizontal "steps" on the 3D Boundary
-    }; 
-    
-    // returns Boundary_Location object consisting of appropriate stack and sector
-    // corresponding to the yaw and pitch.
-    // Pitch defaults to zero if only yaw is passed to this method
-    // Yaw is the horizontal body-frame angle the detected object makes with the vehicle
-    // Pitch is the vertical body-frame angle the detected object makes with the vehicle 
-    Boundary_Location get_sector(float yaw, float pitch = 0.0f);
+    };
+
+    // returns face corresponding to the provided yaw and (optionally) pitch
+    // pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle?)
+    // yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
+    Face get_face(float pitch, float yaw) const;
+    Face get_face(float yaw) const { return get_face(0, yaw); }
 
     // Set the actual body-frame angle(yaw), pitch, and distance of the detected object.
-    // This method will also mark the sector and stack to be "valid"
+    // This method will also mark the sector and layer to be "valid",
     // This distance can then be used for Obstacle Avoidance
-    void set_attributes(const Boundary_Location& bnd_loc, float angle, float pitch, float distance);
-    
-    // Set the actual body-frame angle(yaw), pitch, and distance of the detected object.
-    // This method will also mark the sector and stack to be "valid", 
-    // This distance can then be used for Obstacle Avoidance
-    // Assume detected obstacle is horizontal (zero pitch), if no pitch is passed 
-    void set_attributes(const Boundary_Location& bnd_loc, float angle, float distance) { set_attributes(bnd_loc, angle, 0.0f, distance); }
+    // Assume detected obstacle is horizontal (zero pitch), if no pitch is passed
+    void set_face_attributes(Face face, float pitch, float yaw, float distance);
+    void set_face_attributes(Face face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
 
-    // update boundary points used for object avoidance based on a single sector and pitch distance changing
+    // add a distance to the boundary if it is shorter than any other provided distance since the last time the boundary was reset
+    // pitch and yaw are in degrees, distance is in meters
+    void add_distance(float pitch, float yaw, float distance);
+    void add_distance(float yaw, float distance) { add_distance(0, yaw, distance); }
+
+    // update boundary points used for simple avoidance based on a single sector and pitch distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary(const Boundary_Location& bnd_loc);
+    void update_boundary(Face face);
 
-    // Reset this location, specified by Boundary_Location object, back to default
+    // update middle layer boundary points
+    void update_middle_boundary();
+
+    // reset boundary.  marks all distances as invalid
+    void reset();
+
+    // Reset this location, specified by Face object, back to default
     // i.e Distance is marked as not-valid, and set to a large number.
-    void reset_sector(const Boundary_Location& bnd_loc);
-    // Reset all horizontal sectors
-    void reset_all_horizontal_sectors();
-    // Reset all stacks and sectors
-    void reset_all_sectors_and_stacks();
+    void reset_face(Face face);
 
-    // Get values given the stack and sector as a Boundary_Location object
-    float get_angle(const Boundary_Location& bnd_loc) const { return _angle[bnd_loc.sector][bnd_loc.stack]; }
-    float get_pitch(const Boundary_Location& bnd_loc) const { return _pitch[bnd_loc.sector][bnd_loc.stack]; }
-    float get_distance(const Boundary_Location& bnd_loc) const { return _distance[bnd_loc.sector][bnd_loc.stack]; }
-    bool check_distance_valid(const Boundary_Location& bnd_loc) const { return _distance_valid[bnd_loc.sector][bnd_loc.stack]; }
-   
+    // get distance for a face.  returns true on success and fills in distance argument with distance in meters
+    bool get_distance(Face face, float &distance) const;
+
     // Get the total number of obstacles 
-    // This method iterates through the entire 3-D boundary and checks which layer has atleast one valid distance
+    // This method iterates through the entire 3-D boundary and checks which layer has at least one valid distance
     uint8_t get_obstacle_count();
 
     // WARNING: This requires get_obstacle_count() to be called before calling this method
-    // Appropriate stack and sector are found from the passed obstacle_num
-    // This function then draws a line between this sector, and sector + 1 at the given stack 
+    // Appropriate layer and sector are found from the passed obstacle_num
+    // This function then draws a line between this sector, and sector + 1 at the given layer
     // Then returns the closest point on this line from vehicle, in body-frame. 
     void get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_boundary) const;
 
     // WARNING: This requires get_obstacle_count() to be called before calling this method
-    // Appropriate stack and sector are found from the passed obstacle_num
-    // This function then draws a line between this sector, and sector + 1 at the given stack  
+    // Appropriate layer and sector are found from the passed obstacle_num
+    // This function then draws a line between this sector, and sector + 1 at the given layer
     // Then returns the closest point on this line from the segment that was passed, in body-frame.
     // Used by GPS based Simple Avoidance  - for "brake mode" 
     float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
@@ -111,22 +116,20 @@ public:
     const int16_t _pitch_middle_deg[PROXIMITY_NUM_LAYERS] {-60, -30, 0, 30, 60};
 
 private:
+
     // initialise the boundary and sector_edge_vector array used for object avoidance
-    void init_boundary();
+    void init();
 
-    // Converts obstacle_num passed from avoidance library into appropriate stack and sector
-    // This is packed into a Boundary Location object and returned 
-    Boundary_Location convert_obstacle_num_to_boundary_loc(uint8_t obstacle_num) const;
+    // Converts obstacle_num passed from avoidance library into appropriate face
+    Face convert_obstacle_num_to_face(uint8_t obstacle_num) const;
 
-    Vector3f _sector_edge_vector[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];
-    Vector3f _boundary_points[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];
-    
-    // sensor data
-    float _angle[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];            // angle to closest object within each sector and stack
-    float _pitch[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];            // pitch to the closest object within each sector and stack
-    float _distance[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];         // distance to closest object within each sector and stack
-    bool _distance_valid[PROXIMITY_NUM_SECTORS][PROXIMITY_NUM_LAYERS];    // true if a valid distance received for each sector and stack
-    bool _active_layer[PROXIMITY_NUM_LAYERS];                             // layers which have atleast one valid distance are marked true
+    Vector3f _sector_edge_vector[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
+    Vector3f _boundary_points[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
+
+    float _angle[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
+    float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
+    float _distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];       // distance to closest object within each sector and layer
+    bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
+    bool _active_layer[PROXIMITY_NUM_LAYERS];                           // layers which have at least one valid distance are marked true
 };
 
-typedef AP_Proximity_Boundary_3D::Boundary_Location boundary_location;
