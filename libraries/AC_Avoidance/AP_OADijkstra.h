@@ -161,7 +161,7 @@ private:
         AP_OAVisGraph::OAItemID id;     // unique id for node (combination of type and id number)
         bool visited;                   // true if all this node's neighbour's distances have been updated
         node_index distance_from_idx;   // index into _short_path_data from where distance was updated (or 255 if not set)
-        float distance_cm;              // distance from source (number is tentative until this node is the current node and/or visited = true)
+        float distance;              	// distance from source (in m) (number is tentative until this node is the current node and/or visited = true)
     };
     AP_ExpandingArray<ShortPathNode> _short_path_data;
     node_index _short_path_data_numpoints;  // number of elements in _short_path_data array
