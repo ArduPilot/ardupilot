@@ -481,6 +481,7 @@ private:
         float current_throttle;
         bool motors_active:1;
         float transition_yaw;
+        bool is_vectored;
     } tilt;
 
     // bit 0 enables plane mode and bit 1 enables body-frame roll mode
