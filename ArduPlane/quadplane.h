@@ -236,6 +236,9 @@ private:
 
     // use multicopter rate controller
     void multicopter_attitude_rate_update(float yaw_rate_cds);
+
+    // update yaw target for tiltrotor transition
+    void update_yaw_target();
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -480,7 +483,8 @@ private:
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
-        float transition_yaw;
+        float transition_yaw_cd;
+        uint32_t transition_yaw_set_ms;
         bool is_vectored;
     } tilt;
 

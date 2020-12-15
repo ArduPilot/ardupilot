@@ -840,6 +840,38 @@ void QuadPlane::init_stabilize(void)
     throttle_wait = false;
 }
 
+/*
+  when doing a forward transition of a tilt-vectored quadplane we use
+  euler angle control to maintain good yaw. This updates the yaw
+  target based on pilot input and target roll
+ */
+void QuadPlane::update_yaw_target(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - tilt.transition_yaw_set_ms > 100 ||
+        !is_zero(get_pilot_input_yaw_rate_cds())) {
+        // lock initial yaw when transition is started or when
+        // pilot commands a yaw change. This allows us to track
+        // straight in transitions for tilt-vectored planes, but
+        // allows for turns when level transition is not wanted
+        tilt.transition_yaw_cd = ahrs.yaw_sensor;
+    }
+
+    /*
+      now calculate the equivalent yaw rate for a coordinated turn for
+      the desired bank angle given the airspeed
+     */
+    float aspeed;
+    bool have_airspeed = ahrs.airspeed_estimate(aspeed);
+    if (have_airspeed) {
+        float dt = (now - tilt.transition_yaw_set_ms) * 0.001;
+        // calculate the yaw rate to achieve the desired turn rate
+        const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
+        const float yaw_rate_cds = degrees(GRAVITY_MSS/MAX(aspeed,airspeed_min) * sinf(radians(plane.nav_roll_cd*0.01)))*100;
+        tilt.transition_yaw_cd += yaw_rate_cds * dt;
+    }
+    tilt.transition_yaw_set_ms = now;
+}
 
 /*
   ask the multicopter attitude control to match the roll and pitch rates being demanded by the
@@ -849,9 +881,20 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 {
     check_attitude_relax();
 
+    bool use_multicopter_control = in_vtol_mode() && !in_tailsitter_vtol_transition();
+    bool use_multicopter_eulers = false;
+
+    if (!use_multicopter_control &&
+        tilt.is_vectored &&
+        transition_state <= TRANSITION_TIMER) {
+        update_yaw_target();
+        use_multicopter_control = true;
+        use_multicopter_eulers = true;
+    }
+
     // normal control modes for VTOL and FW flight
     // tailsitter in transition to VTOL flight is not really in a VTOL mode yet
-    if (in_vtol_mode() && !in_tailsitter_vtol_transition()) {
+    if (use_multicopter_control) {
 
         // tailsitter-only body-frame roll control options
         // Angle mode attitude control for pitch and body-frame roll, rate control for euler yaw.
@@ -897,10 +940,17 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
             }
         }
 
-        // use euler angle attitude control
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                      plane.nav_pitch_cd,
-                                                                      yaw_rate_cds);
+        if (use_multicopter_eulers) {
+            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+                                                               plane.nav_pitch_cd,
+                                                               tilt.transition_yaw_cd,
+                                                               true);
+        } else {
+            // use euler angle attitude control
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                          plane.nav_pitch_cd,
+                                                                          yaw_rate_cds);
+        }
     } else {
         // use the fixed wing desired rates
         float roll_rate = plane.rollController.get_pid_info().target;
@@ -1689,6 +1739,9 @@ void QuadPlane::update_transition(void)
     // unless we are waiting for airspeed to increase (in which case
     // the tilt will decrease rapidly)
     if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
+        if (transition_state == TRANSITION_TIMER) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done");
+        }
         transition_state = TRANSITION_DONE;
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
@@ -1737,7 +1790,7 @@ void QuadPlane::update_transition(void)
         }
         hold_hover(climb_rate_cms);
 
-        if (!tilt.is_vectored || now - transition_start_ms < 100) {
+        if (!tilt.is_vectored) {
             // set desired yaw to current yaw in both desired angle
             // and rate request. This reduces wing twist in transition
             // due to multicopter yaw demands. This is disabled when
@@ -3471,6 +3524,11 @@ bool QuadPlane::show_vtol_view() const
             // not in VTOL mode but still transitioning from VTOL
             return true;
         }
+    }
+    if (!show_vtol && tilt.is_vectored && transition_state <= TRANSITION_TIMER) {
+        // we use multirotor controls during fwd transition for
+        // vectored yaw vehicles
+        return true;
     }
 
     return show_vtol;
