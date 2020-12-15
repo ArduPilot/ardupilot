@@ -414,7 +414,7 @@ float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, flo
     if (is_zero(kP)) {
         return safe_sqrt(2.0f * distance_cm * accel_cmss);
     } else {
-        return AC_AttitudeControl::sqrt_controller(distance_cm, kP, accel_cmss, dt);
+        return sqrt_controller(distance_cm, kP, accel_cmss, dt);
     }
 }
 
