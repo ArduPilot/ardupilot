@@ -623,7 +623,7 @@ private:
 	    MAGNETOMETER=0,
 	    EXTERNAL=1,
         GSF=2,
-	    STATIC=3,
+        STATIC=3,
         PREDICTED=4,
     };
 
