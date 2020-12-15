@@ -231,15 +231,10 @@ void NavEKF3_core::SelectMagFusion()
         }
 
         if (imuSampleTime_ms - lastSynthYawTime_ms > 140) {
-            float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
-            bool canUseEKFGSF = yawEstimator != nullptr &&
-                                yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
-                                is_positive(yawVarianceEKFGSF) &&
-                                yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
-                                (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
             // use the EKF-GSF yaw estimator output as this is more robust than the EKF can achieve without a yaw measurement
             // for non fixed wing platform types
-            const bool didUseEKFGSF = yawAlignComplete && canUseEKFGSF && !assume_zero_sideslip() && fuseEulerYaw(yawFusionMethod::GSF);
+            float gsfYaw, gsfYawVariance;
+            const bool didUseEKFGSF = yawAlignComplete && EKFGSF_getYaw(gsfYaw, gsfYawVariance) && !assume_zero_sideslip() && fuseEulerYaw(yawFusionMethod::GSF);
 
             // fallback methods
             if (!didUseEKFGSF) {
@@ -853,17 +848,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
     float gsfYaw, gsfYawVariance;
     if (method == yawFusionMethod::GSF) {
-        bool canUseGsfYaw;
-        if (yawEstimator != nullptr) {
-            float velInnovLength;
-            canUseGsfYaw = yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
-                        is_positive(gsfYawVariance) &&
-                        gsfYawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
-                        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
-        } else {
-            canUseGsfYaw = false;
-        }
-        if (!canUseGsfYaw) {
+        if (!EKFGSF_getYaw(gsfYaw, gsfYawVariance)) {
             return false;
         }
     }
@@ -1521,6 +1506,25 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 
     return false;
 
+}
+
+// returns true on success and populates yaw (in radians) and yawVariance (rad^2)
+bool NavEKF3_core::EKFGSF_getYaw(float& yaw, float& yawVariance)
+{
+    // return immediately if no yaw estimator
+    if (yawEstimator == nullptr) {
+        return false;
+    }
+
+    float velInnovLength;
+    if (yawEstimator->getYawData(yaw, yawVariance) &&
+        is_positive(yawVariance) &&
+        yawVariance < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
+        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
+        return true;
+    }
+
+    return false;
 }
 
 void NavEKF3_core::resetQuatStateYawOnly(float yaw, float yawVariance, rotationOrder order)
