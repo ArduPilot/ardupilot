@@ -872,7 +872,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     case yawFusionMethod::PREDICTED:
     default:
         R_YAW = sq(frontend->_yawNoise);
-
+        break;
     }
 
     // determine if a 321 or 312 Euler sequence is best
@@ -892,7 +892,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     default:
         // determined automatically
         order = (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) ? rotationOrder::TAIT_BRYAN_321 : rotationOrder::TAIT_BRYAN_312;
-
+        break;
     }
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
