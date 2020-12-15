@@ -68,7 +68,7 @@ GCS_MAVLINK::queued_param_send()
         return;
     }
 
-    while (count && _queued_parameter != nullptr) {
+    while (count && _queued_parameter != nullptr && get_last_txbuf() > 50) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 

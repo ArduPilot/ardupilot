@@ -274,6 +274,7 @@ public:
 
     virtual uint64_t capabilities() const;
     uint8_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
+    uint8_t get_last_txbuf() const { return last_txbuf; }
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
@@ -490,6 +491,8 @@ private:
 
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
+    // last reported radio buffer percent available
+    uint8_t          last_txbuf = 100;
 
     // perf counters
     AP_HAL::Util::perf_counter_t _perf_packet;
