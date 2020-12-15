@@ -357,7 +357,7 @@ void NavEKF3_core::SelectMagFusion()
     if (dataReady) {
         // use the simple method of declination to maintain heading if we cannot use the magnetic field states
         if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
-            fuseEulerYaw(yawFusionMethod::MAGNETOMER);
+            fuseEulerYaw(yawFusionMethod::MAGNETOMETER);
 
             // zero the test ratio output from the inactive 3-axis magnetometer fusion
             magTestRatio.zero();
@@ -868,7 +868,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         R_YAW = sq(yawAngDataStatic.yawAngErr);
         break;
 
-    case yawFusionMethod::MAGNETOMER:
+    case yawFusionMethod::MAGNETOMETER:
     case yawFusionMethod::PREDICTED:
     default:
         R_YAW = sq(frontend->_yawNoise);
@@ -886,7 +886,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         order = yawAngDataStatic.order;
         break;
 
-    case yawFusionMethod::MAGNETOMER:
+    case yawFusionMethod::MAGNETOMETER:
     case yawFusionMethod::GSF:
     case yawFusionMethod::PREDICTED:
     default:
@@ -1025,7 +1025,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 
     // Calculate the innovation
     switch (method) {
-    case yawFusionMethod::MAGNETOMER:
+    case yawFusionMethod::MAGNETOMETER:
     {
         // Use the difference between the horizontal projection and declination to give the measured yaw
         // rotate measured mag components into earth frame
