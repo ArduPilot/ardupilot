@@ -166,7 +166,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
         return;
     }
     const QuadPlane &quadplane = plane.quadplane;
-    if (quadplane.in_vtol_mode()) {
+    if (quadplane.show_vtol_view()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
         bool wp_nav_valid = quadplane.using_wp_nav();
 
