@@ -956,6 +956,9 @@ private:
     // returns false if unsuccessful
     bool EKFGSF_resetMainFilterYaw();
 
+    // returns true on success and populates yaw (in radians) and yawVariance (rad^2)
+    bool EKFGSF_getYaw(float &yaw, float &yawVariance);
+
     // Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
     void FuseDragForces();
     void SelectDragFusion();
