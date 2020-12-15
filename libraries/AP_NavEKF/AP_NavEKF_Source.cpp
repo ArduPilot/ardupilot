@@ -159,6 +159,15 @@ void AP_NavEKF_Source::init()
     _active_source_set.velz = _source_set[0].velz;
     _active_source_set.yaw = _source_set[0].yaw;
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    if (_active_source_set.yaw == SourceYaw::COMPASS &&
+        AP::dal().compass().get_num_enabled() == 0) {
+        // special case for planes with COMPASS_USE=0 for all
+        // compasses
+        _active_source_set.yaw = SourceYaw::NONE;
+    }
+#endif
+    
     initialised = true;
 }
 
