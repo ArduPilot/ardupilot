@@ -1509,7 +1509,7 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
 }
 
 // returns true on success and populates yaw (in radians) and yawVariance (rad^2)
-bool NavEKF3_core::EKFGSF_getYaw(float& yaw, float& yawVariance)
+bool NavEKF3_core::EKFGSF_getYaw(float &yaw, float &yawVariance) const
 {
     // return immediately if no yaw estimator
     if (yawEstimator == nullptr) {
