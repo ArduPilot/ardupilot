@@ -205,20 +205,20 @@ void NavEKF3_core::SelectMagFusion()
 
     // Store yaw angle when moving for use as a static reference when not moving
     if (!onGroundNotMoving) {
-            if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
-                // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
-                yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
-            } else {
-                // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
-                yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_312;
-            }
-            if (yawAngDataStatic.order == rotationOrder::TAIT_BRYAN_321) {
-                yawAngDataStatic.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
-            } else if (yawAngDataStatic.order == rotationOrder::TAIT_BRYAN_312) {
-                yawAngDataStatic.yawAng = atan2f(-prevTnb[1][0], prevTnb[1][1]);
-            }
-            yawAngDataStatic.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
-            yawAngDataStatic.time_ms = imuDataDelayed.time_ms;
+        if (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) {
+            // A 321 rotation order is best conditioned because the X axis is closer to horizontal than the Y axis
+            yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
+        } else {
+            // A 312 rotation order is best conditioned because the Y axis is closer to horizontal than the X axis
+            yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_312;
+        }
+        if (yawAngDataStatic.order == rotationOrder::TAIT_BRYAN_321) {
+            yawAngDataStatic.yawAng = atan2f(prevTnb[0][1], prevTnb[0][0]);
+        } else if (yawAngDataStatic.order == rotationOrder::TAIT_BRYAN_312) {
+            yawAngDataStatic.yawAng = atan2f(-prevTnb[1][0], prevTnb[1][1]);
+        }
+        yawAngDataStatic.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+        yawAngDataStatic.time_ms = imuDataDelayed.time_ms;
     }
 
     // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
