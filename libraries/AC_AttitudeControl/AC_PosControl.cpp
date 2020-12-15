@@ -1200,23 +1200,6 @@ void AC_PosControl::check_for_ekf_z_reset()
     }
 }
 
-/// Proportional controller with piecewise sqrt sections to constrain second derivative
-Vector3f AC_PosControl::sqrt_controller_3D(const Vector3f& error, float p, float second_ord_lim)
-{
-    if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
-        return Vector3f(error.x * p, error.y * p, error.z);
-    }
-
-    float linear_dist = second_ord_lim / sq(p);
-    float error_length = norm(error.x, error.y);
-    if (error_length > linear_dist) {
-        float first_order_scale = safe_sqrt(2.0f * second_ord_lim * (error_length - (linear_dist * 0.5f))) / error_length;
-        return Vector3f(error.x * first_order_scale, error.y * first_order_scale, error.z);
-    } else {
-        return Vector3f(error.x * p, error.y * p, error.z);
-    }
-}
-
 bool AC_PosControl::pre_arm_checks(const char *param_prefix,
                                    char *failure_msg,
                                    const uint8_t failure_msg_len)
