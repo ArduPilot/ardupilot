@@ -153,11 +153,11 @@ void AP_NavEKF_Source::init()
     }
 
     // initialise active sources
-    _active_source_set.posxy = (SourceXY)_source_set[0].posxy.get();
-    _active_source_set.velxy = (SourceXY)_source_set[0].velxy.get();
-    _active_source_set.posz = (SourceZ)_source_set[0].posz.get();
-    _active_source_set.velz = (SourceZ)_source_set[0].velz.get();
-    _active_source_set.yaw = (SourceYaw)_source_set[0].yaw.get();
+    _active_source_set.posxy = _source_set[0].posxy;
+    _active_source_set.velxy = _source_set[0].velxy;
+    _active_source_set.posz = _source_set[0].posz;
+    _active_source_set.velz = _source_set[0].velz;
+    _active_source_set.yaw = _source_set[0].yaw;
 
     initialised = true;
 }
@@ -173,11 +173,11 @@ void AP_NavEKF_Source::setPosVelYawSourceSet(uint8_t source_set_idx)
         return;
     }
 
-    _active_source_set.posxy = (SourceXY)_source_set[source_set_idx].posxy.get();
-    _active_source_set.velxy = (SourceXY)_source_set[source_set_idx].velxy.get();
-    _active_source_set.posz = (SourceZ)_source_set[source_set_idx].posz.get();
-    _active_source_set.velz = (SourceZ)_source_set[source_set_idx].velz.get();
-    _active_source_set.yaw = (SourceYaw)_source_set[source_set_idx].yaw.get();
+    _active_source_set.posxy = _source_set[source_set_idx].posxy;
+    _active_source_set.velxy = _source_set[source_set_idx].velxy;
+    _active_source_set.posz = _source_set[source_set_idx].posz;
+    _active_source_set.velz = _source_set[source_set_idx].velz;
+    _active_source_set.yaw = _source_set[source_set_idx].yaw;
 }
 
 // true/false of whether velocity source should be used
@@ -190,7 +190,7 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceXY)_source_set[i].velxy.get() == velxy_source) {
+            if (_source_set[i].velxy == velxy_source) {
                 return true;
             }
         }
@@ -209,7 +209,7 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].velz.get() == velz_source) {
+            if (_source_set[i].velz == velz_source) {
                 return true;
             }
         }
@@ -229,7 +229,7 @@ bool AP_NavEKF_Source::haveVelZSource() const
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].velz.get() != SourceZ::NONE) {
+            if (_source_set[i].velz != SourceZ::NONE) {
                 return true;
             }
         }
@@ -256,7 +256,7 @@ void AP_NavEKF_Source::align_inactive_sources()
         (getPosXYSource() == SourceXY::BEACON)) {
         // only align position if active source is GPS or Beacon
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceXY)_source_set[i].posxy.get() == SourceXY::EXTNAV) {
+            if (_source_set[i].posxy == SourceXY::EXTNAV) {
                 // ExtNav could potentially be used, so align it
                 align_posxy = true;
                 break;
@@ -272,7 +272,7 @@ void AP_NavEKF_Source::align_inactive_sources()
         (getPosZSource() == SourceZ::BEACON)) {
         // ExtNav is not the active source; we do not want to align active source!
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].posz.get() == SourceZ::EXTNAV) {
+            if (_source_set[i].posz == SourceZ::EXTNAV) {
                 // ExtNav could potentially be used, so align it
                 align_posz = true;
                 break;
@@ -489,16 +489,16 @@ bool AP_NavEKF_Source::ext_nav_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
         const auto &src = _source_set[i];
-        if (SourceXY(src.posxy.get()) == SourceXY::EXTNAV) {
+        if (src.posxy == SourceXY::EXTNAV) {
             return true;
         }
-        if (SourceZ(src.posz.get()) == SourceZ::EXTNAV) {
+        if (src.posz == SourceZ::EXTNAV) {
             return true;
         }
-        if (SourceXY(src.velxy.get()) == SourceXY::EXTNAV) {
+        if (src.velxy == SourceXY::EXTNAV) {
             return true;
         }
-        if (SourceZ(src.velz.get()) == SourceZ::EXTNAV) {
+        if (src.velz == SourceZ::EXTNAV) {
             return true;
         }
     }
@@ -510,7 +510,7 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
         const auto &src = _source_set[i];
-        if (SourceXY(src.velxy.get()) == SourceXY::WHEEL_ENCODER) {
+        if (src.velxy == SourceXY::WHEEL_ENCODER) {
             return true;
         }
     }
