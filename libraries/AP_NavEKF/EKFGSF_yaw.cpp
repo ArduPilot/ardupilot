@@ -577,7 +577,7 @@ float EKFGSF_yaw::gaussianDensity(const uint8_t mdl_idx) const
     return normDist;
 }
 
-bool EKFGSF_yaw::getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
+bool EKFGSF_yaw::getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const
 {
     if (vel_fuse_running) {
         yaw_composite = GSF.yaw;
@@ -604,7 +604,7 @@ void EKFGSF_yaw::forceSymmetry(const uint8_t mdl_idx)
 }
 
 // Apply a body frame delta angle to the body to earth frame rotation matrix using a small angle approximation
-Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
+Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g) const
 {
     Matrix3f ret = R;
     ret[0][0] += R[0][1] * g[2] - R[0][2] * g[1];
@@ -632,7 +632,7 @@ Matrix3f EKFGSF_yaw::updateRotMat(const Matrix3f &R, const Vector3f &g)
     return ret;
 }
 
-bool EKFGSF_yaw::getYawData(float &yaw, float &yawVariance)
+bool EKFGSF_yaw::getYawData(float &yaw, float &yawVariance) const
 {
     if (!vel_fuse_running) {
         return false;
@@ -642,7 +642,7 @@ bool EKFGSF_yaw::getYawData(float &yaw, float &yawVariance)
     return true;
 }
 
-bool EKFGSF_yaw::getVelInnovLength(float &velInnovLength)
+bool EKFGSF_yaw::getVelInnovLength(float &velInnovLength) const
 {
     if (!vel_fuse_running) {
         return false;
