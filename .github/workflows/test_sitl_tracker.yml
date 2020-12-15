@@ -1,6 +1,6 @@
 name: test tracker
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
