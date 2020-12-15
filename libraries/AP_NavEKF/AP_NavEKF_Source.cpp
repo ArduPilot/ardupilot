@@ -145,45 +145,19 @@ AP_NavEKF_Source::AP_NavEKF_Source()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AP_NavEKF_Source::init()
-{
-    // ensure init is only run once
-    if (initialised) {
-        return;
-    }
-
-    // initialise active sources
-    _active_source_set.posxy = _source_set[0].posxy;
-    _active_source_set.velxy = _source_set[0].velxy;
-    _active_source_set.posz = _source_set[0].posz;
-    _active_source_set.velz = _source_set[0].velz;
-    _active_source_set.yaw = _source_set[0].yaw;
-
-    initialised = true;
-}
-
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void AP_NavEKF_Source::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
-    // ensure init has been run
-    init();
-
     // sanity check source idx
-    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
-        return;
+    if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
+        active_source_set = source_set_idx;
     }
-
-    _active_source_set.posxy = _source_set[source_set_idx].posxy;
-    _active_source_set.velxy = _source_set[source_set_idx].velxy;
-    _active_source_set.posz = _source_set[source_set_idx].posz;
-    _active_source_set.velz = _source_set[source_set_idx].velz;
-    _active_source_set.yaw = _source_set[source_set_idx].yaw;
 }
 
 // true/false of whether velocity source should be used
 bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
 {
-    if (velxy_source == _active_source_set.velxy) {
+    if (velxy_source == _source_set[active_source_set].velxy) {
         return true;
     }
 
@@ -202,7 +176,7 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
 
 bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 {
-    if (velz_source == _active_source_set.velz) {
+    if (velz_source == _source_set[active_source_set].velz) {
         return true;
     }
 
@@ -222,7 +196,7 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 // true if a velocity source is configured
 bool AP_NavEKF_Source::haveVelZSource() const
 {
-    if (_active_source_set.velz != SourceZ::NONE) {
+    if (_source_set[active_source_set].velz != SourceZ::NONE) {
         return true;
     }
 

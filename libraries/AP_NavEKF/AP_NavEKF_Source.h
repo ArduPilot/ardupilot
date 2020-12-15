@@ -53,15 +53,15 @@ public:
     void init();
 
     // get current position source
-    SourceXY getPosXYSource() const { return _active_source_set.posxy; }
-    SourceZ getPosZSource() const { return _active_source_set.posz; }
+    SourceXY getPosXYSource() const { return _source_set[active_source_set].posxy; }
+    SourceZ getPosZSource() const { return _source_set[active_source_set].posz; }
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void setPosVelYawSourceSet(uint8_t source_set_idx);
 
     // get/set velocity source
-    SourceXY getVelXYSource() const { return _active_source_set.velxy; }
-    SourceZ getVelZSource() const { return _active_source_set.velz; }
+    SourceXY getVelXYSource() const { return _source_set[active_source_set].velxy; }
+    SourceZ getVelZSource() const { return _source_set[active_source_set].velz; }
 
     // true/false of whether velocity source should be used
     bool useVelXYSource(SourceXY velxy_source) const;
@@ -71,7 +71,7 @@ public:
     bool haveVelZSource() const;
 
     // get yaw source
-    SourceYaw getYawSource() const { return _active_source_set.yaw; }
+    SourceYaw getYawSource() const { return _source_set[active_source_set].yaw; }
 
     // align position of inactive sources to ahrs
     void align_inactive_sources();
@@ -114,14 +114,6 @@ private:
 
     AP_Int16 _options;      // source options bitmask
 
-    // active sources
-    struct {
-        SourceXY posxy;     // current xy position source
-        SourceZ posz;       // current z position source
-        SourceXY velxy;     // current xy velocity source
-        SourceZ velz;       // current z velocity source
-        SourceYaw yaw;      // current yaw source
-    } _active_source_set;
-    bool initialised;       // true once init has been run
+    uint8_t active_source_set; // index of active source set
     bool config_in_storage; // true once configured in storage has returned true
 };
