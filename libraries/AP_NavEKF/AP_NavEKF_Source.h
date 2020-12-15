@@ -15,7 +15,7 @@ public:
     AP_NavEKF_Source(const AP_NavEKF_Source &other) = delete;
     AP_NavEKF_Source &operator=(const AP_NavEKF_Source&) = delete;
 
-    enum class SourceXY {
+    enum class SourceXY : uint8_t {
         NONE = 0,
         // BARO = 1 (not applicable)
         // RANGEFINDER = 2 (not applicable)
@@ -26,7 +26,7 @@ public:
         WHEEL_ENCODER = 7
     };
 
-    enum class SourceZ {
+    enum class SourceZ : uint8_t {
         NONE = 0,
         BARO = 1,
         RANGEFINDER = 2,
@@ -37,7 +37,7 @@ public:
         // WHEEL_ENCODER = 7 (not applicable)
     };
 
-    enum class SourceYaw {
+    enum class SourceYaw : uint8_t {
         NONE = 0,
         COMPASS = 1,
         EXTERNAL = 2,
@@ -105,11 +105,11 @@ private:
 
     // Parameters
     struct SourceSet {
-        AP_Int8 posxy;  // xy position source
-        AP_Int8 velxy;  // xy velocity source
-        AP_Int8 posz;   // position z (aka altitude or height) source
-        AP_Int8 velz;   // velocity z source
-        AP_Int8 yaw;    // yaw source
+        AP_Enum<SourceXY>  posxy;  // xy position source
+        AP_Enum<SourceXY>  velxy;  // xy velocity source
+        AP_Enum<SourceZ>   posz;   // position z (aka altitude or height) source
+        AP_Enum<SourceZ>   velz;   // velocity z source
+        AP_Enum<SourceYaw> yaw;    // yaw source
     } _source_set[AP_NAKEKF_SOURCE_SET_MAX];
 
     AP_Int16 _options;      // source options bitmask
