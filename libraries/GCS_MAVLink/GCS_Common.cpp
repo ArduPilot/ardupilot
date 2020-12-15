@@ -615,6 +615,8 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
         last_radio_status_remrssi_ms = AP_HAL::millis();
     }
 
+    last_txbuf = packet.txbuf;
+
     // use the state of the transmit buffer in the radio to
     // control the stream rate, giving us adaptive software
     // flow control
