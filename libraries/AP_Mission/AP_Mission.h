@@ -12,6 +12,10 @@
  */
 #pragma once
 
+#ifndef ENABLED
+    #define ENABLED 1
+#endif
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
@@ -19,7 +23,12 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
-
+#include <AP_Vehicle/ModeReason.h>
+#ifdef MISSION_RELATIVE
+    #if MISSION_RELATIVE == ENABLED
+        #include <AP_Mission/AP_Mission_Relative.h>
+    #endif
+#endif
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
 #define AP_MISSION_EEPROM_COMMAND_SIZE      15      // size in bytes of all mission commands
@@ -48,6 +57,13 @@
 /// @brief    Object managing Mission
 class AP_Mission
 {
+
+#ifdef MISSION_RELATIVE
+    #if MISSION_RELATIVE == ENABLED
+        friend class AP_Mission_Relative;
+        AP_Mission_Relative mission_relative;
+    #endif
+#endif
 
 public:
     // jump command structure
@@ -385,6 +401,18 @@ public:
     ///     should be called at 10hz or higher
     void update();
 
+    /// set_mode_reason - sets the reason for the mode change to auto (delivered by the specific vehicle code)
+    void set_mode_reason(const ModeReason reason)
+    {
+        _mode_change_reason = reason;
+    }
+
+    /// get_mode_reason - returns the reason for the last mode change to auto (necessary for relative mission or scripting)
+    ModeReason get_mode_reason() const
+    {
+        return _mode_change_reason;
+    }
+
     ///
     /// public command methods
     ///
@@ -587,6 +615,9 @@ private:
 
     // mission WP resume history
     uint16_t _wp_index_history[AP_MISSION_MAX_WP_HISTORY]; // storing the nav_cmd index for the last 6 WPs
+
+    // reason for last mode change.
+    ModeReason _mode_change_reason = ModeReason::UNKNOWN;
 
     ///
     /// private methods
