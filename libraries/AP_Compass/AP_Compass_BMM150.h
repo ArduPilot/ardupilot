@@ -24,6 +24,9 @@
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
+#define BMM150_I2C_ADDR_MIN 0x10
+#define BMM150_I2C_ADDR_MAX 0x13
+
 class AP_Compass_BMM150 : public AP_Compass_Backend
 {
 public:
