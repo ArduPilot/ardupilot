@@ -1853,6 +1853,13 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Mission OK")
 
+    def test_airspeed_drivers(self):
+        self.set_parameter("ARSPD2_TYPE", 7)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.fly_mission("ap1.txt")
+
     def fly_terrain_mission(self):
 
         self.customise_SITL_commandline([], wipe=True)
@@ -2156,6 +2163,10 @@ class AutoTestPlane(AutoTest):
             ("EKFlaneswitch",
              "Test EKF3 Affinity and Lane Switching",
              self.ekf_lane_switch),
+
+            ("AirspeedDrivers",
+             "Test AirSpeed drivers",
+             self.test_airspeed_drivers),
 
             ("LogUpload",
              "Log upload",
