@@ -74,6 +74,7 @@ struct sitl_fdm {
     } scanner;
 
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+    float airspeed_raw_pressure[2];
 
     struct {
         float speed;
