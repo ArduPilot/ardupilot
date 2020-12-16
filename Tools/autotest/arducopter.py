@@ -300,8 +300,53 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("SIM_SPEEDUP",4)
             self.set_parameter("FS_GCS_ENABLE", paramValue)
 
-        
+    def test_checked_disarm(self):
+        self.start_subtest("Checking CHECKED_ARMDISARM")
+        self.set_parameter("RC9_OPTION", 106)
+        self.reboot_sitl()
+        self.progress("Arm/disarm without takeoff")
+        self.wait_ready_to_arm()
+        self.set_rc(9, 2000)
+        self.wait_armed()
+        self.set_rc(9, 1000)
+        self.wait_disarmed()
 
+        self.progress("Ensure no mid-air disarming")
+        self.set_rc(9, 2000)
+        self.wait_armed()
+        self.takeoff(10, mode="ALT_HOLD")
+        good = False
+        try:
+            self.set_rc(9, 1000)
+            self.wait_disarmed(timeout=1)
+        except AutoTestTimeoutException:
+            good = True
+        if not good:
+            raise NotAchievedException("Disarmed when we shouldn't have")
+        self.do_RTL()
+        self.zero_throttle()
+
+        self.start_subtest("Checking CHECKED_DISARM")
+        self.set_parameter("RC9_OPTION", 107)
+        self.reboot_sitl()
+        self.progress("Disarm without takeoff")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(9, 2000)
+        self.wait_disarmed()
+        self.set_rc(9, 1000)
+
+        self.progress("Ensure no mid-air disarming")
+        self.takeoff(10, mode="ALT_HOLD")
+        good = False
+        try:
+            self.set_rc(9, 2000)
+            self.wait_disarmed(timeout=1)
+        except AutoTestTimeoutException:
+            good = True
+        if not good:
+            raise NotAchievedException("Disarmed when we shouldn't have")
+        self.do_RTL()
 
     #################################################
     #   TESTS FLY
@@ -6033,6 +6078,10 @@ class AutoTestCopter(AutoTest):
             ("Callisto",
              "Test Callisto",
              self.test_callisto),
+
+            ("CheckedDisarm",
+             "Test RC Channel options for checked disarm",
+             self.test_checked_disarm),
 
             ("Replay",
              "Test Replay",

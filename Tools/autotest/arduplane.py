@@ -1877,6 +1877,52 @@ class AutoTestPlane(AutoTest):
 
         self.fly_mission("ap-terrain.txt", mission_timeout=600)
 
+    def test_checked_disarm(self):
+        self.start_subtest("Checking CHECKED_ARMDISARM")
+        self.set_parameter("RC9_OPTION", 106)
+        self.reboot_sitl()
+        self.progress("Arm/disarm without takeoff")
+        self.wait_ready_to_arm()
+        self.set_rc(9, 2000)
+        self.wait_armed()
+        self.set_rc(9, 1000)
+        self.wait_disarmed()
+
+        self.progress("Ensure no mid-air disarming")
+        self.takeoff()
+        good = False
+        try:
+            self.set_rc(9, 1000)
+            self.wait_disarmed(timeout=1)
+        except AutoTestTimeoutException:
+            good = True
+        if not good:
+            raise NotAchievedException("Disarmed when we shouldn't have")
+        self.fly_home_land_and_disarm()
+        self.zero_throttle()
+
+        self.start_subtest("Checking CHECKED_DISARM")
+        self.set_parameter("RC9_OPTION", 107)
+        self.reboot_sitl()
+        self.progress("Disarm without takeoff")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(9, 2000)
+        self.wait_disarmed()
+        self.set_rc(9, 1000)
+
+        self.progress("Ensure no mid-air disarming")
+        self.takeoff()
+        good = False
+        try:
+            self.set_rc(9, 2000)
+            self.wait_disarmed(timeout=1)
+        except AutoTestTimeoutException:
+            good = True
+        if not good:
+            raise NotAchievedException("Disarmed when we shouldn't have")
+        self.fly_home_land_and_disarm()
+
     def ekf_lane_switch(self):
 
         self.context_push()
@@ -2174,6 +2220,10 @@ class AutoTestPlane(AutoTest):
             ("AirspeedDrivers",
              "Test AirSpeed drivers",
              self.test_airspeed_drivers),
+
+            ("CheckedDisarm",
+             "Test RC Channel options for checked disarm",
+             self.test_checked_disarm),
 
             ("LogUpload",
              "Log upload",
