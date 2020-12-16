@@ -1161,6 +1161,16 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif
+
+#if !defined(HAL_DISABLE_I2C_MAGS_BY_DEFAULT) && !defined(STM32F1)
+    // BMM150 on I2C, not on F1 to save flash
+    FOREACH_I2C_EXTERNAL(i) {
+        for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
+            ADD_BACKEND(DRIVER_BMM150,
+                        AP_Compass_BMM150::probe(GET_I2C_DEVICE(i, addr), ROTATION_NONE));
+        }
+    }
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 /*
