@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: DCP_YAW
     // @DisplayName: Differential-Collective-Pitch Yaw Mixing
-    // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
+    // @Description: Feed-forward compensation to automatically add yaw input when differential collective pitch is applied.  Disabled for intermeshing mode.
     // @Range: -10 10
     // @Increment: 0.1
     // @User: Standard
@@ -586,11 +586,14 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED) {
         // add differential collective pitch yaw compensation
         float yaw_compensation = 0.0f;
-        if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING && _yaw_rev_expo > 0.01f) {
+
+        if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING) {
             // for intermeshing, reverse yaw in negative collective region and smoothen transition near zero collective
-            // yaw_compensation range: (-1,1) S-shaped curve (Logistic Model) 1/(1 + e^kt)
-            yaw_compensation = 1.0f - (2.0f / (1.0f + powf(2.7182818f , _yaw_rev_expo * (collective_out-_collective_mid_pct))));
-            yaw_out = yaw_out * yaw_compensation;
+            if (_yaw_rev_expo > 0.01f) {
+                // yaw_compensation range: (-1,1) S-shaped curve (Logistic Model) 1/(1 + e^kt)
+                yaw_compensation = 1.0f - (2.0f / (1.0f + powf(2.7182818f , _yaw_rev_expo * (collective_out-_collective_mid_pct))));
+                yaw_out = yaw_out * yaw_compensation;
+            }
         } else {
             if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE) {
                 yaw_compensation = _dcp_yaw_effect * roll_out;
