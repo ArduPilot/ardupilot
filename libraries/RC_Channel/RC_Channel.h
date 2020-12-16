@@ -199,6 +199,8 @@ public:
         EKF_LANE_SWITCH =    103, // trigger lane switch attempt
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
+        CHECKED_ARMDISARM =  106, // as ARMDISARM but disarm checks are done
+        CHECKED_DISARM =     107, // as DISARM but disarm checks are done
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -250,6 +252,7 @@ protected:
 
     virtual void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
     void do_aux_function_disarm(const AuxSwitchPos ch_flag);
+    virtual bool permit_CHECKED_DISARM() const { return true; }
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
@@ -309,6 +312,9 @@ private:
     void reset_mode_switch();
     void read_mode_switch();
     bool debounce_completed(int8_t position);
+
+    void do_aux_function_checked_armdisarm(const AuxSwitchPos ch_flag);
+    void do_aux_function_checked_disarm(const AuxSwitchPos ch_flag);
 
 #if !HAL_MINIMIZE_FEATURES
     // Structure to lookup switch change announcements
