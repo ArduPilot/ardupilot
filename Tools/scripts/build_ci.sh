@@ -123,6 +123,8 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-can" ]; then
+        echo "SKIPPING SITL Periph GPS"
+        continue
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
