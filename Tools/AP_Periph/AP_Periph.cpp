@@ -268,6 +268,10 @@ void AP_Periph_FW::update()
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT
         hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN, HAL_PERIPH_NEOPIXEL_COUNT, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
+
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
+        check_for_serial_reboot_cmd(HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT);
+#endif
     }
 
     static uint32_t last_error_ms;
@@ -304,4 +308,79 @@ void AP_Periph_FW::update()
 #endif
 }
 
+// check for uploader.py reboot command
+void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
+{
+    // These are the string definitions in uploader.py
+    //            NSH_INIT        = bytearray(b'\x0d\x0d\x0d')
+    //            NSH_REBOOT_BL   = b"reboot -b\n"
+    //            NSH_REBOOT      = b"reboot\n"
+
+    // This is the command sequence that is sent from uploader.py
+    //            self.__send(uploader.NSH_INIT)
+    //            self.__send(uploader.NSH_REBOOT_BL)
+    //            self.__send(uploader.NSH_INIT)
+    //            self.__send(uploader.NSH_REBOOT)
+
+    for (uint8_t i=0; i<hal.num_serial; i++) {
+        if (serial_index >= 0 && serial_index != i) {
+            // a specific serial port was selected but this is not it
+            continue;
+        }
+
+        auto *uart = hal.serial(i);
+        if (uart == nullptr || !uart->is_initialized()) {
+            continue;
+        }
+
+        uint32_t available = MIN(uart->available(), 1000U);
+        while (available-- > 0) {
+            const char reboot_string[] = "\r\r\rreboot -b\n\r\r\rreboot\n";
+            const char reboot_string_len = sizeof(reboot_string)-1; // -1 is to remove the null termination
+            static uint16_t index[hal.num_serial];
+
+            const int16_t data = uart->read();
+            if (data < 0 || data > 0xff) {
+                // read error
+                continue;
+            }
+            if (index[i] >= reboot_string_len || (uint8_t)data != reboot_string[index[i]]) {
+                // don't have a perfect match, start over
+                index[i] = 0;
+                continue;
+            }
+            index[i]++;
+            if (index[i] == reboot_string_len) {
+                // received reboot msg
+                reboot(true);
+            }
+        }
+    }
+}
+
+// trigger a safe reboot where PWMs and params are gracefully disabled
+// This is copied from AP_Vehicle::reboot(bool hold_in_bootloader)
+void AP_Periph_FW::reboot(bool hold_in_bootloader)
+{
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+        // Notify might want to blink some LEDs:
+        AP_Notify::flags.firmware_update = 1;
+        notify.update();
+#endif
+
+        // force safety on
+        hal.rcout->force_safety_on();
+
+        // flush pending parameter writes
+        AP_Param::flush();
+
+        // do not process incoming mavlink messages while we delay:
+        hal.scheduler->register_delay_callback(nullptr, 5);
+
+        // delay to give the ACK a chance to get out, the LEDs to flash,
+        // the IO board safety to be forced on, the parameters to flush, ...
+        hal.scheduler->delay(200);
+
+        hal.scheduler->reboot(hold_in_bootloader);
+}
 AP_HAL_MAIN();

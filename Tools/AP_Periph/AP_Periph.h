@@ -46,6 +46,9 @@ public:
 
     void load_parameters();
 
+    void check_for_serial_reboot_cmd(const int8_t serial_index);
+    void reboot(bool hold_in_bootloader);
+
     AP_SerialManager serial_manager;
 
 #ifdef HAL_PERIPH_ENABLE_GPS
