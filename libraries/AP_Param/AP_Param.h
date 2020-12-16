@@ -62,7 +62,7 @@
 
 // don't shift index 0 to index 63. Use this when you know there will be
 // no conflict with the parent
-#define AP_PARAM_NO_SHIFT           (1<<3)
+#define AP_PARAM_FLAG_NO_SHIFT      (1<<3)
 
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
 #define AP_PARAM_FLAG_INFO_POINTER  (1<<4)

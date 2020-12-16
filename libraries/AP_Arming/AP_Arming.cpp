@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require,                 1,
-                             AP_PARAM_NO_SHIFT,
+                             AP_PARAM_FLAG_NO_SHIFT,
                              AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 
     // 2 was the CHECK paramter stored in a AP_Int16
