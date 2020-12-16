@@ -114,7 +114,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 // failsafe_gcs_check - check for ground station failsafe
 void Copter::failsafe_gcs_check()
 {
-    bool planck_ok = planck_interface.get_commbox_state();
+    bool planck_ok = true; //No commbox GPS failsafe for AVEMIndago
 
     // Bypass GCS failsafe checks if disabled or GCS never connected
     if (g.failsafe_gcs == FS_GCS_DISABLED || failsafe.last_heartbeat_ms == 0) {
