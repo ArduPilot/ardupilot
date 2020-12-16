@@ -762,3 +762,14 @@
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// translate/rotate Mission
+//
+#ifndef MISSION_RELATIVE
+  #define MISSION_RELATIVE !HAL_MINIMIZE_FEATURES
+#endif
+
+#ifndef AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT
+    #define AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT 20
+#endif

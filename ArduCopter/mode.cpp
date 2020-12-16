@@ -187,6 +187,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // return immediately if we are already in the desired mode
     if (mode == control_mode) {
         control_mode_reason = reason;
+#if MODE_AUTO_ENABLED == ENABLED
+        mode_auto.mission.set_mode_reason(control_mode_reason);
+#endif
         return true;
     }
 
@@ -277,6 +280,9 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;
+#if MODE_AUTO_ENABLED == ENABLED
+    mode_auto.mission.set_mode_reason(control_mode_reason);
+#endif
     logger.Write_Mode((uint8_t)control_mode, reason);
     gcs().send_message(MSG_HEARTBEAT);
 
