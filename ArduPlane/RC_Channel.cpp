@@ -135,6 +135,16 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         }    
 }
 
+bool RC_Channel_Plane::permit_CHECKED_DISARM() const
+{
+    if (plane.is_flying()) {
+        // do not permit disarm if we are considered flying
+        gcs().send_text(MAV_SEVERITY_WARNING, "Switch disarm denied; flying");
+        return false;
+    }
+    return true;
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {

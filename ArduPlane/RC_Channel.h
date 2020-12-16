@@ -26,6 +26,9 @@ private:
 
     void do_aux_function_flare(AuxSwitchPos ch_flag);
 
+    // returns false if we shouldn't allow the user to disarm the
+    // vehicle using an RC channel option
+    bool permit_CHECKED_DISARM() const override;
 };
 
 class RC_Channels_Plane : public RC_Channels
