@@ -631,6 +631,13 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
     }
 }
 
+void RC_Channel::do_aux_function_disarm(const AuxSwitchPos ch_flag)
+{
+    if (ch_flag == AuxSwitchPos::HIGH) {
+        AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
+    }
+}
+
 void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
 #if HAL_ADSB_ENABLED
@@ -946,9 +953,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 
     case AUX_FUNC::DISARM:
-        if (ch_flag == AuxSwitchPos::HIGH) {
-            AP::arming().disarm(AP_Arming::Method::AUXSWITCH);
-        }
+        do_aux_function_disarm(ch_flag);
         break;
 
     case AUX_FUNC::COMPASS_LEARN:
