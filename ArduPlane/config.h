@@ -294,6 +294,10 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+#ifndef SOARING_ENABLED
+ #define SOARING_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
 #ifndef OFFBOARD_GUIDED
  #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
 #endif
@@ -306,4 +310,14 @@
 //  EKF Failsafe
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
+#endif
+
+// translate/rotate Mission
+//
+#ifndef MISSION_RELATIVE
+  #define MISSION_RELATIVE !HAL_MINIMIZE_FEATURES
+#endif
+
+#ifndef AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT
+    #define AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT 100
 #endif

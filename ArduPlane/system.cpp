@@ -230,6 +230,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     control_mode = &new_mode;
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
+    mission.set_mode_reason(control_mode_reason);
 
     // attempt to enter new mode
     if (!new_mode.enter()) {
@@ -241,6 +242,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         control_mode = &old_mode;
 
         control_mode_reason = previous_mode_reason;
+        mission.set_mode_reason(control_mode_reason);
         previous_mode_reason = previous_mode_reason_backup;
 
         // currently, only Q modes can fail enter(). This will likely change in the future and all modes
@@ -263,6 +265,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     // record reasons
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
+    mission.set_mode_reason(control_mode_reason);
 
     // log and notify mode change
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
