@@ -345,7 +345,7 @@ bool Scheduler::in_expected_delay(void) const
             return true;
         }
     }
-#ifndef HAL_NO_FLASH_SUPPORT
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_BOOTLOADER_BUILD)
     if (stm32_flash_recent_erase()) {
         return true;
     }
