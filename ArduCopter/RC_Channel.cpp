@@ -161,6 +161,16 @@ void RC_Channel_Copter::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
     }
 }
 
+bool RC_Channel_Copter::permit_CHECKED_DISARM() const
+{
+    if (!copter.ap.land_complete) {
+        // do not permit disarm if we are considered flying
+        gcs().send_text(MAV_SEVERITY_WARNING, "Switch disarm denied; not landed");
+        return false;
+    }
+    return true;
+}
+
 // do_aux_function - implement the function invoked by auxiliary switches
 void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
