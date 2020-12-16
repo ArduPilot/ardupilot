@@ -223,7 +223,8 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     old_mode.exit();
 
-    control_mode_reason = reason;
+    control_mode_reason  = reason;
+    mode_auto.mission.set_mode_reason(control_mode_reason);
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     gcs().send_message(MSG_HEARTBEAT);
 

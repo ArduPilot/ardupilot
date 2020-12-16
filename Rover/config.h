@@ -128,3 +128,13 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+//////////////////////////////////////////////////////////////////////////////
+// translate/rotate Mission
+//
+#ifndef MISSION_RELATIVE
+  #define MISSION_RELATIVE !HAL_MINIMIZE_FEATURES
+#endif
+
+#ifndef AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT
+    #define AP_MISSION_RELATIVE_NO_TRANSLATION_RADIUS_DEFAULT 5
+#endif
