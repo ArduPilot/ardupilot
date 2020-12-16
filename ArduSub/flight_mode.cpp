@@ -13,6 +13,7 @@ bool Sub::set_mode(control_mode_t mode, ModeReason reason)
         prev_control_mode_reason = control_mode_reason;
 
         control_mode_reason = reason;
+        mission.set_mode_reason(control_mode_reason);
         return true;
     }
 
@@ -74,6 +75,7 @@ bool Sub::set_mode(control_mode_t mode, ModeReason reason)
 
         control_mode = mode;
         control_mode_reason = reason;
+        mission.set_mode_reason(control_mode_reason);
         logger.Write_Mode(control_mode, control_mode_reason);
         gcs().send_message(MSG_HEARTBEAT);
 
