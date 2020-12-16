@@ -66,6 +66,9 @@ void SITL_State::_update_airspeed(float airspeed)
     float airspeed_raw = airspeed_pressure + _sitl->arspd_offset[0];
     float airspeed2_raw = airspeed2_pressure + _sitl->arspd_offset[1];
 
+    _sitl->state.airspeed_raw_pressure[0] = airspeed_pressure;
+    _sitl->state.airspeed_raw_pressure[1] = airspeed2_pressure;
+
     if (airspeed_raw / 4 > 0xFFFF) {
         airspeed_pin_value = 0xFFFF;
         return;
