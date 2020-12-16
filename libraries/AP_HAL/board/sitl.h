@@ -1,5 +1,13 @@
 #pragma once
 
+//### test of conditional compiling
+#ifndef ENABLED
+    #define ENABLED 1
+#endif
+#define MISSION_RELATIVE ENABLED
+//#define MISSION_RELATIVE 0
+// ###
+
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
