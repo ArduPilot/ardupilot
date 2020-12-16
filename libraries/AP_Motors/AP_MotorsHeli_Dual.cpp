@@ -196,6 +196,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Increment: 1
     AP_SUBGROUPINFO(_swashplate2, "SW2_", 21, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
+    // @Param: DCP_TRIM
+    // @DisplayName: Differential Collective Pitch Trim
+    // @Description: Removes I term bias due to center of gravity offsets or discrepancies between rotors in swashplate setup. If DCP axis has I term bias while hovering in calm winds, use value of bias in DCP_TRIM to re-center I term.
+    // @Range: -0.2 0.2
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("DCP_TRIM", 22, AP_MotorsHeli_Dual, _dcp_trim, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -395,9 +403,9 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
         } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
         // collective
             if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * roll_input + coll_input;
+                swash_tilt = 0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
             } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * roll_input + coll_input;
+                swash_tilt = -0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
             }
         }
     } else { // AP_MOTORS_HELI_DUAL_MODE_TANDEM
@@ -418,9 +426,9 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
         } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
         // collective
             if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * pitch_input + coll_input;
+                swash_tilt = 0.45f * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
             } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * pitch_input + coll_input;
+                swash_tilt = -0.45f * _dcp_scaler * (pitch_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
             }
         }
     }
