@@ -96,6 +96,8 @@ jobs:
           sudo apt-get install -y gcc-multilib g++-multilib
       - name: setup can-utils
         run: |
+          kernel_ver=`uname -r`
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           sudo apt-get update
           sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
           sudo modprobe vcan
@@ -106,5 +108,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          kernel_ver=`uname -r`
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
