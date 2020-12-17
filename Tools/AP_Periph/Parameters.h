@@ -30,6 +30,7 @@ public:
         k_param_esc_number,
         k_param_battery,
         k_param_debug,
+        k_param_serial_number,
     };
 
     AP_Int16 format_version;
@@ -66,6 +67,8 @@ public:
 #endif
 
     AP_Int8 debug;
+
+    AP_Int32 serial_number;
 
     Parameters() {}
 };
