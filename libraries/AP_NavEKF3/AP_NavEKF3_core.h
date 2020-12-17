@@ -125,9 +125,6 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(void) const;
 
-    // This returns the specific forces in the NED frame
-    void getAccelNED(Vector3f &accelNED) const;
-
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
