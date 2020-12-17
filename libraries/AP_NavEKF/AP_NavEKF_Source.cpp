@@ -407,6 +407,8 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
             // valid yaw value
             break;
         case SourceYaw::COMPASS:
+            // skip compass check for easier user setup of compass-less operation
+            break;
         case SourceYaw::EXTERNAL_COMPASS_FALLBACK:
             compass_required = true;
             break;
