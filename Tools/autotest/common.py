@@ -2056,7 +2056,7 @@ class AutoTest(ABC):
 
     def log_filepath(self, lognum):
         '''return filepath to lognum (where lognum comes from LOG_ENTRY'''
-        log_list = sorted(self.log_list())
+        log_list = self.log_list()
         return log_list[lognum-1]
 
     def assert_bytes_equal(self, bytes1, bytes2):
@@ -2353,7 +2353,7 @@ class AutoTest(ABC):
 
     def log_list(self):
         '''return a list of log files present in POSIX-style loging dir'''
-        ret = glob.glob("logs/*.BIN")
+        ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
 
@@ -6784,8 +6784,11 @@ switch value'''
         return num_log
 
     def current_onboard_log_filepath(self):
-        '''return filepath to currently open dataflash log'''
-        return os.path.join("logs/%08u.BIN" % self.last_onboard_log())
+        '''return filepath to currently open dataflash log.  We assume that's
+        the latest log...'''
+        logs = self.log_list()
+        latest = logs[-1]
+        return latest
 
     def dfreader_for_current_onboard_log(self):
         return DFReader.DFReader_binary(self.current_onboard_log_filepath(),
