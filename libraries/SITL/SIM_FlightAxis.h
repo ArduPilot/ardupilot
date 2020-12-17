@@ -160,7 +160,6 @@ private:
     void exchange_data(const struct sitl_input &input);
     void parse_reply(const char *reply);
 
-    static void *update_thread(void *arg);
     void update_loop(void);
     void report_FPS(void);
 
@@ -183,9 +182,6 @@ private:
 
     const char *controller_ip = "127.0.0.1";
     uint16_t controller_port = 18083;
-
-    pthread_t thread;
-    HAL_Semaphore mutex;
 };
 
 
