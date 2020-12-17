@@ -2059,8 +2059,12 @@ class AutoTest(ABC):
         log_list = self.log_list()
         return log_list[lognum-1]
 
-    def assert_bytes_equal(self, bytes1, bytes2):
-        for i in range(0,len(bytes1)):
+    def assert_bytes_equal(self, bytes1, bytes2, maxlen=None):
+        tocheck = len(bytes1)
+        if maxlen is not None:
+            if tocheck > maxlen:
+                tocheck = maxlen
+        for i in range(0, tocheck):
             if bytes1[i] != bytes2[i]:
                 raise NotAchievedException("differ at offset %u" % i)
 
@@ -2184,7 +2188,7 @@ class AutoTest(ABC):
             raise NotAchievedException("Incorrect log id received")
 
         # download the log file in the normal way:
-        bytes_to_fetch = 10000000
+        bytes_to_fetch = 100000
         self.progress("Sending request for %u bytes at offset 0" % (bytes_to_fetch,))
         tstart = self.get_sim_time()
         self.mav.mav.log_request_data_send(
@@ -2194,7 +2198,9 @@ class AutoTest(ABC):
             0,
             bytes_to_fetch
         )
-        bytes_to_read = log_entry.size
+        bytes_to_read = bytes_to_fetch
+        if log_entry.size < bytes_to_read:
+            bytes_to_read = log_entry.size
         data_downloaded = []
         bytes_read = 0
         last_print = 0
@@ -2221,7 +2227,7 @@ class AutoTest(ABC):
 
         self.progress("actual_bytes_len=%u data_downloaded_len=%u" %
                       (len(actual_bytes), len(data_downloaded)))
-        self.assert_bytes_equal(actual_bytes, data_downloaded)
+        self.assert_bytes_equal(actual_bytes, data_downloaded, maxlen=bytes_to_read)
 
         if False:
             bytes_to_read = log_entry.size
@@ -2259,7 +2265,7 @@ class AutoTest(ABC):
             self.assert_bytes_equal(actual_bytes, data_downloaded)
 
         # ... and now download it reading backwards...
-        bytes_to_read = log_entry.size
+        bytes_to_read = bytes_to_fetch
         bytes_read = 0
         backwards_data_downloaded = []
         last_print = 0
@@ -2292,10 +2298,10 @@ class AutoTest(ABC):
                 last_print = time.time()
                 self.progress("Read %u/%u" % (bytes_read, bytes_to_read))
 
-        self.assert_bytes_equal(actual_bytes, backwards_data_downloaded)
-        if len(actual_bytes) != len(backwards_data_downloaded):
-            raise NotAchievedException("Size delta: actual=%u vs downloaded=%u" %
-                                       (len(actual_bytes), len(backwards_data_downloaded)))
+        self.assert_bytes_equal(actual_bytes, backwards_data_downloaded, maxlen=bytes_to_read)
+        # if len(actual_bytes) != len(backwards_data_downloaded):
+        #     raise NotAchievedException("Size delta: actual=%u vs downloaded=%u" %
+        #                                (len(actual_bytes), len(backwards_data_downloaded)))
 
 
     #################################################
