@@ -5533,7 +5533,7 @@ class AutoTestCopter(AutoTest):
 
             self.context_push()
             self.start_subtest("missing required yaw source")
-            self.set_parameter("EK3_SRC3_YAW", 1)
+            self.set_parameter("EK3_SRC3_YAW", 3) # External Yaw with Compass Fallback
             self.set_parameter("COMPASS_USE", 0)
             self.set_parameter("COMPASS_USE2", 0)
             self.set_parameter("COMPASS_USE3", 0)
