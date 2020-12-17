@@ -155,10 +155,14 @@ static void handle_get_node_info(CanardInstance* ins,
     pkt.hardware_version.major = APJ_BOARD_ID >> 8;
     pkt.hardware_version.minor = APJ_BOARD_ID & 0xFF;
 
-    char name[strlen(CAN_APP_NODE_NAME)+1];
-    strcpy(name, CAN_APP_NODE_NAME);
-    pkt.name.len = strlen(CAN_APP_NODE_NAME);
-    pkt.name.data = (uint8_t *)name;
+    char text[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_NAME_MAX_LENGTH+1];
+    if (periph.g.serial_number > 0) {
+        hal.util->snprintf(text, sizeof(text), "%s(%u)", CAN_APP_NODE_NAME, (unsigned)periph.g.serial_number);
+    } else {
+        hal.util->snprintf(text, sizeof(text), "%s", CAN_APP_NODE_NAME);
+    }
+    pkt.name.len = strlen(text);
+    pkt.name.data = (uint8_t *)text;
 
     uint16_t total_size = uavcan_protocol_GetNodeInfoResponse_encode(&pkt, buffer);
 

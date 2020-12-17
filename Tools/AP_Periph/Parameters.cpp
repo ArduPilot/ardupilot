@@ -41,6 +41,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     GSCALAR(debug, "DEBUG", 0),
 
+    GSCALAR(serial_number, "BRD_SERIAL_NUM", 0),
+
 #ifdef HAL_PERIPH_ENABLE_BUZZER
     GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
 #endif
