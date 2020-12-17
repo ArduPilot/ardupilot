@@ -30,7 +30,7 @@ void AP_BattMonitor_Analog_GPIO::timer() {
     return;
   }
 
-  bool new_is_using_battery = (bool)((buf & 0x01) == 0);
+  bool new_is_using_battery = (bool)((buf & 0x04) == 0);
   if(!_is_using_battery && new_is_using_battery) {
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Using battery power");
   } else if (_is_using_battery && !new_is_using_battery) {
