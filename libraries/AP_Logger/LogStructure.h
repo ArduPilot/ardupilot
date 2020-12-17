@@ -1005,14 +1005,14 @@ struct PACKED log_PSC {
 // @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: BCN
-// @Description: Beacon informtaion
+// @Description: Beacon information
 // @Field: TimeUS: Time since system startup
 // @Field: Health: True if beacon sensor is healthy
 // @Field: Cnt: Number of beacons being used
 // @Field: D0: Distance to first beacon
 // @Field: D1: Distance to second beacon
 // @Field: D2: Distance to third beacon
-// @Field: D3: Distance to fouth beacon
+// @Field: D3: Distance to fourth beacon
 // @Field: PosX: Calculated beacon position, x-axis
 // @Field: PosY: Calculated beacon position, y-axis
 // @Field: PosZ: Calculated beacon position, z-axis
@@ -1358,7 +1358,7 @@ struct PACKED log_PSC {
 // @Description: parameter value
 // @Field: TimeUS: Time since system startup
 // @Field: Name: parameter name
-// @Field: Value: parameter vlaue
+// @Field: Value: parameter value
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
 // @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Altitude/Steering
