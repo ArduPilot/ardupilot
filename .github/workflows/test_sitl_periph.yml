@@ -97,10 +97,7 @@ jobs:
       - name: setup can-utils
         run: |
           sudo apt-get update
-          echo "Kernel Version: $(uname -r)"
-          kernel_ver=`uname -r`; if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then sudo apt-get -y install linux-modules-extra-5.4.0-1031-azure;else sudo apt-get -y install linux-modules-extra-$(uname -r) ;fi;
-          kernel_ver=`uname -r`; if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then sudo cp -r /lib/modules/5.4.0-1031-azure /lib/modules/5.4.0-1032-azure;fi;
-          sudo apt-get -y install can-utils iproute2
+          sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
           sudo modprobe vcan
           sudo ip link add dev vcan0 type vcan
           sudo ip link set up vcan0
