@@ -90,17 +90,17 @@ public:
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
-    static const struct AP_Param::GroupInfo var_info[];
-
     // return true if ext nav is enabled on any source
     bool ext_nav_enabled(void) const;
 
     // return true if ext yaw is enabled on any source
     bool ext_yaw_enabled(void) const;
-    
+
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;
-    
+
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
 
     // Parameters
