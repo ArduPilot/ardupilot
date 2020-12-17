@@ -723,9 +723,6 @@ bool NavEKF3::InitialiseFilter(void)
     convert_parameters();
 #endif
 
-    // initialise sources
-    sources.init();
-
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
         return false;
