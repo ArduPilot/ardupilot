@@ -101,10 +101,6 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
-    // return estimated 1-sigma tilt error for the specified instance in radians
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getTiltError(int8_t instance, float &ang) const;
-
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
