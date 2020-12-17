@@ -105,12 +105,6 @@ void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
     gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
-// return tilt error convergence metric
-void NavEKF2_core::getTiltError(float &ang) const
-{
-    ang = tiltErrFilt;
-}
-
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {

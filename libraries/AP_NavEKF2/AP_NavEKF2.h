@@ -102,10 +102,6 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const;
 
-    // return tilt error convergence metric for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getTiltError(int8_t instance, float &ang) const;
-
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 

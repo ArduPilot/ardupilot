@@ -128,8 +128,6 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
     getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
-    float tiltError;
-    getTiltError(tiltError);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,
@@ -139,7 +137,7 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : (float)tiltError,
+        tiltErr : tiltErrFilt,  // tilt error convergence metric
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : _faultStatus,

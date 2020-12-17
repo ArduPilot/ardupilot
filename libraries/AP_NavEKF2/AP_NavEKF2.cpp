@@ -988,15 +988,6 @@ void NavEKF2::getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) 
     }
 }
 
-// return tilt error convergence metric for the specified instance
-void NavEKF2::getTiltError(int8_t instance, float &ang) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getTiltError(ang);
-    }
-}
-
 // reset body axis gyro bias estimates
 void NavEKF2::resetGyroBias(void)
 {
