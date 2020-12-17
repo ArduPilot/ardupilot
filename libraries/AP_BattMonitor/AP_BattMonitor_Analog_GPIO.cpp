@@ -8,7 +8,7 @@ AP_BattMonitor_Analog_GPIO::AP_BattMonitor_Analog_GPIO(AP_BattMonitor &mon,
                                                        AP_BattMonitor_Params &params,
                                                        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_Analog(mon, mon_state, params), _dev(std::move(dev)) {
-
+  _state.on_tether_power = false;
 }
 
 void AP_BattMonitor_Analog_GPIO::init(void) {
@@ -39,4 +39,5 @@ void AP_BattMonitor_Analog_GPIO::timer() {
 
   //The state of the battery discharging is on GPIO 0
   _is_using_battery = new_is_using_battery;
+  _state.on_tether_power = !_is_using_battery;
 }

@@ -82,6 +82,7 @@ public:
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
+        bool        on_tether_power;           // Using tether power
     };
 
     // Return the number of battery monitor instances
@@ -159,6 +160,8 @@ public:
 
     // reset battery remaining percentage
     bool reset_remaining(uint16_t battery_mask, float percentage);
+
+    bool on_tether_power(const uint8_t instance) const { return state[instance].on_tether_power; };
 
     static const struct AP_Param::GroupInfo var_info[];
 
