@@ -64,7 +64,7 @@ def _depends_on_vehicle(bld, source_node):
 
     if not bld.env.BUILDROOT:
         bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
-    if path.startswith(bld.env.BUILDROOT) or path.startswith("build/"):
+    if path.startswith(bld.env.BUILDROOT) or path.startswith("build/") or path.startswith("build.tmp.binaries/"):
         _depends_on_vehicle_cache[path] = False
 
     if path not in _depends_on_vehicle_cache:
