@@ -131,9 +131,6 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
-    // return estimated 1-sigma tilt error in radians
-    void getTiltError(float &ang) const;
-
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
