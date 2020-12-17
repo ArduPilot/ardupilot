@@ -173,7 +173,7 @@ struct PACKED log_NKF3 {
 // @Field: SP: Square root of the position variance
 // @Field: SH: Square root of the height variance
 // @Field: SM: Magnetic field variance
-// @Field: SVT: Square root of the total airspeed variance
+// @Field: SVT: tilt error convergence metric
 // @Field: errRP: Filtered error in roll/pitch estimate
 // @Field: OFN: Most recent position recent magnitude (North component)
 // @Field: OFE: Most recent position recent magnitude (East component)
