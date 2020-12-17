@@ -55,7 +55,7 @@ extern const AP_HAL::HAL& hal;
 #include "AP_InertialSensor_Invensense_registers.h"
 
 #define MPU_SAMPLE_SIZE 14
-#define MPU_FIFO_BUFFER_LEN 16
+#define MPU_FIFO_BUFFER_LEN 8
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
