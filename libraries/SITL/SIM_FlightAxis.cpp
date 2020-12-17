@@ -28,7 +28,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
-#include "pthread.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -106,47 +105,8 @@ FlightAxis::FlightAxis(const char *frame_str) :
             }
         }
     }
-
-    int ret = pthread_create(&thread, NULL, update_thread, this);
-    if (ret != 0) {
-        AP_HAL::panic("SIM_FlightAxis: failed to create thread");
-    }
 }
     
-/*
-  update thread trampoline
- */
-void *FlightAxis::update_thread(void *arg)
-{
-    FlightAxis *flightaxis = (FlightAxis *)arg;
-
-#if defined(__CYGWIN__) || defined(__CYGWIN64__)
-    //Cygwin doesn't support pthread_setname_np
-#elif defined(__APPLE__) && defined(__MACH__)
-    pthread_setname_np("ardupilot-flightaxis");
-#else
-    pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
-#endif
-    
-    flightaxis->update_loop();
-    return nullptr;
-}
-
-/*
-  main update loop
- */
-void FlightAxis::update_loop(void)
-{
-    while (true) {
-        struct sitl_input new_input;
-        {
-            WITH_SEMAPHORE(mutex);
-            new_input = last_input;
-        }
-        exchange_data(new_input);
-    }
-}
-
 /*
   extremely primitive SOAP parser that assumes the format used by FlightAxis
 */
@@ -349,7 +309,6 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
                                scaled_servos[11]);
 
     if (reply) {
-        WITH_SEMAPHORE(mutex);
         double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
         double dt = state.m_currentPhysicsTime_SEC - lastt_s;
@@ -370,10 +329,9 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    WITH_SEMAPHORE(mutex);
-    
     last_input = input;
-    
+    exchange_data(input);
+
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
     if (dt_seconds < 0) {
         // cope with restarting RealFlight while connected
