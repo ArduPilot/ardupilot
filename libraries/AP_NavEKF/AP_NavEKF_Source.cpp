@@ -213,6 +213,17 @@ bool AP_NavEKF_Source::haveVelZSource() const
     return false;
 }
 
+// get yaw source
+AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
+{
+    // check for special case of disabled compasses
+    if ((_source_set[active_source_set].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+        return SourceYaw::NONE;
+    }
+
+    return _source_set[active_source_set].yaw;
+}
+
 // align position of inactive sources to ahrs
 void AP_NavEKF_Source::align_inactive_sources()
 {

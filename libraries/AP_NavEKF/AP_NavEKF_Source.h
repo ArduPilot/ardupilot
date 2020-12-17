@@ -71,7 +71,7 @@ public:
     bool haveVelZSource() const;
 
     // get yaw source
-    SourceYaw getYawSource() const { return _source_set[active_source_set].yaw; }
+    SourceYaw getYawSource() const;
 
     // align position of inactive sources to ahrs
     void align_inactive_sources();
