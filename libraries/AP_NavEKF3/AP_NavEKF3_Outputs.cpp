@@ -216,12 +216,6 @@ float NavEKF3_core::getPosDownDerivative(void) const
     return vertCompFiltState.vel + velOffsetNED.z;
 }
 
-// This returns the specific forces in the NED frame
-void NavEKF3_core::getAccelNED(Vector3f &accelNED) const {
-    accelNED = velDotNED;
-    accelNED.z -= GRAVITY_MSS;
-}
-
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosNE(Vector2f &posNE) const
