@@ -41,3 +41,9 @@ void AP_BattMonitor_Analog_GPIO::timer() {
   _is_using_battery = new_is_using_battery;
   _state.on_tether_power = !_is_using_battery;
 }
+
+/// return true if battery provides current info
+bool AP_BattMonitor_Analog_GPIO::has_current() const
+{
+    return (_params.type() == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO);
+}

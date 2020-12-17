@@ -20,6 +20,9 @@ public:
 
     bool get_is_using_battery() { return _is_using_battery; };
 
+    /// returns true if battery monitor provides current info
+    bool has_current() const override;
+
 private:
   AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
   bool _is_using_battery = false;
