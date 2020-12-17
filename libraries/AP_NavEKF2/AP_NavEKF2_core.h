@@ -117,9 +117,6 @@ public:
     // return body axis gyro scale factor error as a percentage
     void getGyroScaleErrorPercentage(Vector3f &gyroScale) const;
 
-    // return tilt error convergence metric
-    void getTiltError(float &ang) const;
-
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
