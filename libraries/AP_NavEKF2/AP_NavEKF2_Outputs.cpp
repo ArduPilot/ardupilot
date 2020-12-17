@@ -197,12 +197,6 @@ float NavEKF2_core::getPosDownDerivative(void) const
     return vertCompFiltState.vel + velOffsetNED.z;
 }
 
-// This returns the specific forces in the NED frame
-void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
-    accelNED = velDotNED;
-    accelNED.z -= GRAVITY_MSS;
-}
-
 // return the Z-accel bias estimate in m/s^2
 void NavEKF2_core::getAccelZBias(float &zbias) const {
     if (dtEkfAvg > 0) {
