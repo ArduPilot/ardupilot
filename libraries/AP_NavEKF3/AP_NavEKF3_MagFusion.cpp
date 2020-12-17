@@ -1464,12 +1464,8 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         return false;
     };
 
-    float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
-        is_positive(yawVarianceEKFGSF) &&
-        yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
-        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
-
+    float yawEKFGSF, yawVarianceEKFGSF;
+    if (EKFGSF_getYaw(yawEKFGSF, yawVarianceEKFGSF)) {
         // keep roll and pitch and reset yaw
         rotationOrder order;
         bestRotationOrder(order);
