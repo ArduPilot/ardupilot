@@ -114,12 +114,9 @@ void AP_Baro_SITL::_timer()
     }
 
 #if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    float sigma, delta, theta;
-
-    AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN;
-
+    float p, T;
+    AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T);
+    T -= C_TO_KELVIN;
     temperature_adjustment(p, T);
 #else
     float rho, delta, theta;

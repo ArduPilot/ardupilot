@@ -361,54 +361,6 @@ void AP_Baro::update_calibration()
 
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
-
-    // force EAS2TAS to recalculate
-    _EAS2TAS = 0;
-}
-
-// return altitude difference in meters between current pressure and a
-// given base_pressure in Pascal
-float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
-{
-    float ret;
-    float temp    = get_ground_temperature() + C_TO_KELVIN;
-    float scaling = pressure / base_pressure;
-
-    // This is an exact calculation that is within +-2.5m of the standard
-    // atmosphere tables in the troposphere (up to 11,000 m amsl).
-    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
-
-    return ret;
-}
-
-
-// return current scale factor that converts from equivalent to true airspeed
-// valid for altitudes up to 10km AMSL
-// assumes standard atmosphere lapse rate
-float AP_Baro::get_EAS2TAS(void)
-{
-    float altitude = get_altitude();
-    if ((fabsf(altitude - _last_altitude_EAS2TAS) < 25.0f) && !is_zero(_EAS2TAS)) {
-        // not enough change to require re-calculating
-        return _EAS2TAS;
-    }
-
-    float pressure = get_pressure();
-    if (is_zero(pressure)) {
-        return 1.0f;
-    }
-
-    // only estimate lapse rate for the difference from the ground location
-    // provides a more consistent reading then trying to estimate a complete
-    // ISA model atmosphere
-    float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
-    const float eas2tas_squared = SSL_AIR_DENSITY / (pressure / (ISA_GAS_CONSTANT * tempK));
-    if (!is_positive(eas2tas_squared)) {
-        return 1.0f;
-    }
-    _EAS2TAS = sqrtf(eas2tas_squared);
-    _last_altitude_EAS2TAS = altitude;
-    return _EAS2TAS;
 }
 
 // return air density / sea level density - decreases as altitude climbs

@@ -111,9 +111,17 @@ public:
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
 
-    // get scale factor required to convert equivalent to true airspeed
+    // get scale factor required to convert equivalent to true
+    // airspeed. This should only be used to update the AHRS value
+    // once per loop. Please use AP::ahrs().get_EAS2TAS()
     float get_EAS2TAS(void);
 
+    // EAS2TAS for SITL
+    static float get_EAS2TAS_for_alt_amsl(float alt_amsl);
+
+    // get air densityfor SITL
+    static float get_air_density_for_alt_amsl(float alt_amsl);
+    
     // get air density / sea level density - decreases as altitude climbs
     float get_air_density_ratio(void);
 
@@ -167,9 +175,6 @@ public:
     // get baro drift amount
     float get_baro_drift_offset(void) const { return _alt_offset_active; }
 
-    // simple atmospheric model
-    static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
-
     // simple underwater atmospheric model
     static void SimpleUnderWaterAtmosphere(float alt, float &rho, float &delta, float &theta);
 
@@ -195,6 +200,9 @@ public:
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
     
+    // lookup expected pressure for a given altitude. Used for SITL backend
+    static void get_pressure_temperature_for_alt_amsl(float alt_amsl, float &pressure, float &temperature_K);
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -269,8 +277,6 @@ private:
     float                               _alt_offset_active;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
-    float                               _last_altitude_EAS2TAS;
-    float                               _EAS2TAS;
     float                               _external_temperature;
     uint32_t                            _last_external_temperature_ms;
     DerivativeFilterFloat_Size7         _climb_rate_filter;
@@ -300,6 +306,11 @@ private:
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     
+    // two different atomspheric models
+    float get_altitude_difference_function(float base_pressure, float pressure) const;
+    float get_altitude_difference_table(float base_pressure, float pressure) const;
+    float get_EAS2TAS_table(float pressure);
+    float get_EAS2TAS_function(float altitude, float pressure);
 };
 
 namespace AP {
