@@ -1003,7 +1003,7 @@ bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full seconds then it is dead
     // this is enough time for a sdcard remount
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 bool AP_Logger_File::logging_failed() const

@@ -827,7 +827,7 @@ bool AP_Logger_Block::logging_failed() const
 bool AP_Logger_Block::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in 3s it is dead
-    return (AP_HAL::millis() - io_timer_heartbeat) < 3000U || hal.scheduler->in_expected_delay();
+    return (AP_HAL::millis() - io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 /*
