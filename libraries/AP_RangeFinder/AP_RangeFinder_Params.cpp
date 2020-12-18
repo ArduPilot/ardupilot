@@ -129,6 +129,24 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
 
+    // @Param: FLT_COEF
+    // @DisplayName: Coefficient for running average filter on rangefinder measurements
+    // @Description: This parameter sets the weight of the measurement moving average versus the current measurement in the filter. 0.7 is usually a good value, 0 disables
+    // @Range: 0 .95
+    // @Increment: .01
+    // @User: Advanced
+    AP_GROUPINFO("FLT_COEF", 54, AP_RangeFinder_Params, flt_coeff, 0),
+
+
+    // @Param: GLTCH_CNT
+    // @DisplayName: Number of measurement glitches in a row to ignore
+    // @Description: This parameter sets the number of glitches (>25% delta in a measurement from running average) to ignore. If the FLT_COEF =0, both glitch detection and running average is disabled and raw measurements are passed, but status is updated if out of range. A value of 0 disables the glitch filter.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("GLCH_CNT", 55, AP_RangeFinder_Params, glitchcount, 4),
+
+
     AP_GROUPEND
 };
 

@@ -24,7 +24,11 @@ public:
     AP_Int16 min_distance_cm;
     AP_Int16 max_distance_cm;
     AP_Int8  ground_clearance_cm;
+    AP_Int8  glitch_count;
+    AP_Int16 glitch_distance_cm;
     AP_Int8  address;
     AP_Vector3f pos_offset; // position offset in body frame
     AP_Int8  orientation;
+    AP_Float flt_coeff;
+    AP_Int8  glitchcount;
 };

@@ -55,7 +55,22 @@ bool AP_RangeFinder_Backend::has_data() const {
 // update status based on distance measurement
 void AP_RangeFinder_Backend::update_status()
 {
-    // check distance
+    const float koeff = 1 - MIN(params.flt_coeff,.95); 
+    int glitchcount = params.glitchcount; 
+    if ( koeff > .95){
+       glitchcount = 0;   //disable glitch filter if filter coeff param is 0, which also disables running average
+    }
+    // glitch remover: if measurement is greater than 25% from running average, use running average instead unless it has been greater for more than gltch_cnt measurements,then use it
+    if (labs(state.distance_cm - avrgd_distance_cm) > (0.25 * avrgd_distance_cm) && glitch_count++ < glitchcount) { 
+        state.distance_cm = avrgd_distance_cm;            
+        } else {
+       glitch_count = 0;
+    }
+    //running average of valid values
+    avrgd_distance_cm = avrgd_distance_cm * (1-koeff) + (koeff) * state.distance_cm;
+    state.distance_cm = avrgd_distance_cm;
+
+    // check distance within range of finder
     if ((int16_t)state.distance_cm > params.max_distance_cm) {
         set_status(RangeFinder::Status::OutOfRangeHigh);
     } else if ((int16_t)state.distance_cm < params.min_distance_cm) {
