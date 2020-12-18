@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Description: Allows you to enable (1) or disable (0) the fence functionality
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
+    //AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
 
     // @Param: TYPE
     // @DisplayName: Fence Type
@@ -159,11 +159,18 @@ void AC_Fence::disable_floor()
 
 bool AC_Fence::present() const
 {
-    // A fence is present if it is enabled and there are points present
-    if (_poly_loader.total_fence_count() == 0) {
-        return false;
+    // A fence is present if any of the conditions are true.
+    //   * tin can (circle) is enabled
+    //   * min or max alt is enabled
+    //   * polygon fences are enabled and any fence has been uploaded
+    if (_enabled_fences.get() & AC_FENCE_TYPE_CIRCLE ||
+        _enabled_fences.get() & AC_FENCE_TYPE_ALT_MIN ||
+        _enabled_fences.get() & AC_FENCE_TYPE_ALT_MAX ||
+        ((_enabled_fences.get() & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
+        return true;
     }
-    return true;
+
+    return false;
 }
 
 /// get_enabled_fences - returns bitmask of enabled fences
@@ -591,7 +598,8 @@ bool AC_Fence::sys_status_enabled() const
     if (_action == AC_FENCE_ACTION_REPORT_ONLY) {
         return false;
     }
-    return true;
+    // Fence is only enabled when the flag is enabled
+    return _enabled;
 }
 
 bool AC_Fence::sys_status_failed() const
