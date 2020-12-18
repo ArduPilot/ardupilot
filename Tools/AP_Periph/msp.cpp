@@ -128,12 +128,12 @@ void AP_Periph_FW::send_msp_baro(void)
     if (msp.last_baro_ms == baro.get_last_update(0)) {
         return;
     }
-    msp.last_baro_ms = baro.get_last_update(0);
     if (!baro.healthy()) {
         // don't send any data
         return;
     }
-
+    msp.last_baro_ms = baro.get_last_update(0);
+    
     p.instance = 0;
     p.time_ms = msp.last_baro_ms;
     p.pressure_pa = baro.get_pressure();
