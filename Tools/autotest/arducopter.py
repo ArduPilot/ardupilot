@@ -1102,7 +1102,7 @@ class AutoTestCopter(AutoTest):
     def fly_fence_avoid_test_radius_check(self, timeout=180, avoid_behave=avoid_behave_slide):
         using_mode = "LOITER" # must be something which adjusts velocity!
         self.change_mode(using_mode)
-        self.set_parameter("FENCE_ENABLE", 1) # fence
+        self.set_parameter("FENCE_AUTOENABLE", 1) # fence
         self.set_parameter("FENCE_TYPE", 2) # circle
         fence_radius = 15
         self.set_parameter("FENCE_RADIUS", fence_radius)
@@ -1306,7 +1306,7 @@ class AutoTestCopter(AutoTest):
         """Hold loiter position."""
 
         # enable fence, disable avoidance
-        self.set_parameter("FENCE_ENABLE", 1)
+        self.set_parameter("FENCE_AUTOENABLE", 1)
         self.set_parameter("AVOID_ENABLE", 0)
         self.set_parameter("FENCE_TYPE", 1)
 
@@ -1334,6 +1334,42 @@ class AutoTestCopter(AutoTest):
         self.wait_rtl_complete()
 
         self.zero_throttle()
+
+    # fly_alt_fence_test - fly up until you hit the fence
+    def fly_alt_min_fence_test(self):
+        self.takeoff(50, mode="LOITER", timeout=120)
+        """Hold loiter position."""
+        self.mavproxy.send('switch 5\n')  # loiter mode
+        self.wait_mode('LOITER')
+
+        # enable fence, disable avoidance
+        self.set_parameter("FENCE_AUTOENABLE", 1)
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.set_parameter("FENCE_TYPE", 8)
+
+        self.change_alt(10)
+
+        # first east
+        self.progress("turn east")
+        self.set_rc(4, 1580)
+        self.wait_heading(160)
+        self.set_rc(4, 1500)
+
+        # fly forward (east) at least 20m
+        self.set_rc(2, 1100)
+        self.wait_distance(20)
+
+        # stop flying forward and start flying based on input:
+        self.set_rc(2, 1500)
+        self.set_rc(3, 1200)
+
+        # wait for fence to trigger
+        self.wait_mode('RTL', timeout=120)
+
+        self.wait_rtl_complete()
+
+        self.zero_throttle()
+
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
@@ -5032,7 +5068,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.load_fence("copter-avoidance-fence.txt")
-            self.set_parameter("FENCE_ENABLE", 0)
+            self.set_parameter("FENCE_AUTOENABLE", 1)
             self.set_parameter("PRX_TYPE", 10)
             self.set_parameter("RC10_OPTION", 40) # proximity-enable
             self.reboot_sitl()
@@ -5135,7 +5171,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.load_fence("copter-avoidance-fence.txt")
-            self.set_parameter("FENCE_ENABLE", 1)
+            self.set_parameter("FENCE_AUTOENABLE", 1)
             self.check_avoidance_corners()
         except Exception as e:
             self.print_exception_caught(e)
@@ -6478,6 +6514,10 @@ class AutoTestCopter(AutoTest):
             ("MaxAltFence",
              "Test Max Alt Fence",
              self.fly_alt_max_fence_test),  # 26s
+
+            ("MinAltFence",
+             "Test Max Alt Fence",
+             self.fly_alt_min_fence_test), #26s
 
             ("AutoTuneSwitch",
              "Fly AUTOTUNE on a switch",

@@ -969,16 +969,14 @@ class AutoTestPlane(AutoTest):
 
         self.set_parameter("RC7_OPTION", 11) # AC_Fence uses Aux switch functionality
         self.set_parameter("FENCE_ACTION", 4) # Fence action Brake
-        self.set_parameter("FENCE_ENABLE", 1)
-
-        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
-                               present=True,
-                               enabled=False,
-                               healthy=True)
         self.set_rc_from_map({
             3: 1000,
             7: 2000,
-        })
+        }) # Turn fence on with aux function
+
+
+        self.mavproxy.expect("fence enabled")
+        self.delay_sim_time(1)  # This is needed else the SYS_STATUS may not have updated
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -1108,6 +1106,7 @@ class AutoTestPlane(AutoTest):
         ex = None
         try:
             self.progress("Checking for bizarre healthy-when-not-present-or-enabled")
+            self.set_parameter("FENCE_TYPE", 4) # Start by only setting polygon fences, otherwise fence will report present
             self.assert_fence_sys_status(False, False, True)
             self.load_fence("CMAC-fence.txt")
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
@@ -1149,6 +1148,19 @@ class AutoTestPlane(AutoTest):
             self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, False, False, True)
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
+            self.assert_fence_sys_status(False, False, True)
+            self.do_fence_disable()
+
+            # ensure that a fence is present if it is tin can, min alt or max alt
+            self.progress("Test other fence types (tin-can, min alt, max alt")
+            self.set_parameter("FENCE_TYPE", 1) # max alt
+            self.assert_fence_sys_status(True, False, True)
+            self.set_parameter("FENCE_TYPE", 8) # min alt
+            self.assert_fence_sys_status(True, False, True)
+            self.set_parameter("FENCE_TYPE", 2) # tin can
+            self.assert_fence_sys_status(True, False, True)
+
+
 
         except Exception as e:
             self.print_exception_caught(e)
@@ -1334,8 +1346,8 @@ class AutoTestPlane(AutoTest):
 
         self.change_mode('MANUAL')
 
-        self.progress("Asserting we don't support transfer of fence via mission item protocol")
-        self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_MISSION_FENCE)
+        self.progress("Asserting we do support transfer of fence via mission item protocol")
+        self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_MISSION_FENCE)
 
         # grab home position:
         self.mav.recv_match(type='HOME_POSITION', blocking=True)
@@ -2333,76 +2345,51 @@ class AutoTestPlane(AutoTest):
             raise ex
 
     def test_fence_alt_ceil_floor(self):
-        ex = None
-        target_system = 1
-        target_component = 1
-        try:
-            self.progress("Testing Fence Enable")
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+        self.set_parameter("FENCE_TYPE", 9)     # Set fence type to max and min alt
+        self.set_parameter("FENCE_ACTION", 0)   # Set action to report
+        self.set_parameter("FENCE_ALT_MAX", 200)
+        self.set_parameter("FENCE_ALT_MIN", 100)
 
-            # Load Fence
-            self.load_fence("CMAC-fence.txt")
-            if self.get_parameter("FENCE_TOTAL") == 0:
-                raise NotAchievedException("Expected fence to be present")
-            
-            # Load Mission
-            self.load_mission("CMAC-mission.txt")
-            
-            # Set up fence parameters
-            self.set_parameter("FENCE_AUTOENABLE", 1) # Enable/Disable on Takeoff/Landing
-            self.set_parameter("FENCE_ACTION", 1)     # RTL
-            self.set_parameter("FENCE_TYPE", 13)      # Set Fence Type to Alt Max/Min and Polygon
-            self.set_parameter("FENCE_ALT_MIN", 80)
-            self.set_parameter("FENCE_ALT_MAX", 120)
+        # Grab Home Position
+        self.mav.recv_match(type='HOME_POSITION', blocking=True)
+        self.homeloc = self.mav.location()
 
-            # Now we can arm the vehicle and kick off the flight
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.change_mode("AUTO")
+        cruise_alt = 150
+        self.takeoff(cruise_alt)
 
-            # On takeoff complete, check fence is enabled
-            self.progress("Looking for takeoff complete")
-            self.mavproxy.expect("APM: Takeoff complete at [0-9]+\.[0-9]+m")
-            #self.progress("Looking for fence enable")
-            #self.mavproxy.expect("fence enabled")
+        self.do_fence_enable()
 
-            # Fly until we breach fence floor where we enter RTL
-            self.progress("Looking for fence breach")
-            self.mavproxy.expect("fence breach")
-            
-            # As we RTL, we should re-enter fence zone. Wait until we're inside
-            self.progress("Waiting for return to altitude")
-            self.wait_altitude(altitude_min=100, altitude_max=110, timeout=30, relative=True)
+        self.progress("Fly above ceiling and check for breach")
+        self.change_altitude(self.homeloc.alt + cruise_alt + 80)
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if ((m.onboard_control_sensors_health & fence_bit)):
+            raise NotAchievedException("Fence Ceiling did not breach")
 
-            # Skip the waypoint outside fence, continue mission
-            self.progress("Skipping to next waypoint")
-            self.mav.waypoint_set_current_send(4)
-            self.change_mode("AUTO")
-            self.drain_mav()
+        self.progress("Return to cruise alt and check for breach clear")
+        self.change_altitude(self.homeloc.alt + cruise_alt)
 
-            # Fly until we breach fence ceiling where we enter RTL
-            self.mavproxy.expect("fence breach")
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if (not (m.onboard_control_sensors_health & fence_bit)):
+            raise NotAchievedException("Fence breach did not clear")
 
-            # As we RTL, we should re-enter fence zone. Wait until we're inside
-            self.wait_altitude(altitude_min=100, altitude_max=110, timeout=60, relative=True)
 
-            # Skip the waypoint outside fence, continue mission
-            self.progress("Skipping to next waypoint")
-            self.mav.waypoint_set_current_send(6)
-            self.change_mode("AUTO")
-            self.drain_mav()
+        self.progress("Fly below floor and check for breach")
+        self.change_altitude(self.homeloc.alt + cruise_alt - 80)
 
-            # Continue through to landing sequence, which disables the fence
-            self.progress("Continuing mission to land")
-            self.mavproxy.expect("APM: Fence disabled \(auto disable\)")
+        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        print("%s" % str(m))
+        if ((m.onboard_control_sensors_health & fence_bit)):
+            raise NotAchievedException("Fence Floor did not breach")
 
-            # Once landed, wait till disarmed
-            self.wait_disarmed(timeout=120)
-        except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
-            ex = e
-        if ex is not None:
-            raise ex
+        self.do_fence_disable()
+        
+        self.fly_home_land_and_disarm(timeout=150)
+
+
+        
 
     def tests(self):
         '''return list of all tests'''
