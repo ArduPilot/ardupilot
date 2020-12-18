@@ -3482,6 +3482,16 @@ void GCS_MAVLINK::send_banner()
             send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
         }
     }
+
+    // send smart battery cycle count
+    const AP_BattMonitor &battery = AP::battery();
+    for(uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+        uint16_t cycles = 0;  
+        if (battery.get_cycle_count(i, cycles)) {
+            send_text(MAV_SEVERITY_INFO, "BATT%u_MONITOR: Cycles %u",
+                    i + 1, cycles);
+        } 
+    }
 }
 
 
