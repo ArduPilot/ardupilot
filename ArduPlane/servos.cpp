@@ -737,6 +737,9 @@ void Plane::force_flare(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, tilt);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear, tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft, tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, tilt);
         float throttle_min = MAX(aparm.throttle_min.get(),0); //allows ICE to run if used but accounts for reverse thrust setups
         if (arming.is_armed()) {  //prevent running motors if unarmed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle_min);
