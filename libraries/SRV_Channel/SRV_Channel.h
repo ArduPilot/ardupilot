@@ -84,6 +84,9 @@ public:
         k_motor8                = 40,
         k_motor_tilt            = 41,            ///< tiltrotor motor tilt control
         k_generator_control     = 42,            ///< state control for generator
+        k_tiltMotorRear         = 45,            ///<vectored thrust, rear tilt
+        k_tiltMotorRearLeft     = 46,            ///<vectored thrust, rear left tilt
+        k_tiltMotorRearRight    = 47,            ///<vectored thrust, rear right tilt
         k_rcin1                 = 51,            ///< these are for pass-thru from arbitrary rc inputs
         k_rcin2                 = 52,
         k_rcin3                 = 53,
