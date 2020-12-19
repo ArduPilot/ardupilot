@@ -31,7 +31,11 @@ struct SysFileList {
 };
 
 static const SysFileList sysfs_file_list[] = {
+#if HAL_ENABLE_THREAD_STATISTICS
+    {"threads.txt", 2048},
+#else
     {"threads.txt", 1024},
+#endif
     {"tasks.txt", 6500},
     {"dma.txt", 1024},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
