@@ -325,9 +325,18 @@ size_t Util::thread_info(char *buf, size_t bufsize)
           total_stack = uint32_t(tp) - uint32_t(tp->wabase);
       }
       if (bufsize > 0) {
+#if HAL_ENABLE_THREAD_STATISTICS
+          n = snprintf(buf, bufsize, "%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
+                        tp->name, unsigned(tp->prio), tp->wabase,
+                        stack_free(tp->wabase), total_stack, RTC2US(STM32_HSECLK, tp->stats.best),
+                        RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n))),
+                        RTC2US(STM32_HSECLK, tp->stats.worst));
+          chTMObjectInit(&tp->stats); // reset counters to zero
+#else
           n = snprintf(buf, bufsize, "%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
                        tp->name, unsigned(tp->prio), tp->wabase,
                        stack_free(tp->wabase), total_stack);
+#endif
           if (n > bufsize) {
               n = bufsize;
           }
