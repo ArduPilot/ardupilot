@@ -69,11 +69,11 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
     const uint8_t CMD_SYSTEM_RESET[] =       { 0x5A, 0x04, 0x04, 0x62 };
     const uint8_t CMD_OUTPUT_FORMAT_CM[] =   { 0x5A, 0x05, 0x05, 0x01, 0x65 };
     const uint8_t CMD_ENABLE_DATA_OUTPUT[] = { 0x5A, 0x05, 0x07, 0x01, 0x67 };
-    const uint8_t CMD_FRAME_RATE_100HZ[] =   { 0x5A, 0x06, 0x03, 0x64, 0x00, 0xC7 };
+    const uint8_t CMD_FRAME_RATE_250HZ[] =   { 0x5A, 0x06, 0x03, 0xFA, 0x00, 0x5D };
     const uint8_t CMD_SAVE_SETTINGS[] =      { 0x5A, 0x04, 0x11, 0x6F };
     const uint8_t *cmds[] = {
         CMD_OUTPUT_FORMAT_CM,
-        CMD_FRAME_RATE_100HZ,
+        CMD_FRAME_RATE_250HZ,
         CMD_ENABLE_DATA_OUTPUT,
         CMD_SAVE_SETTINGS,
     };
