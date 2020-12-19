@@ -55,6 +55,12 @@
 #define CH_DBG_ENABLE_STACK_CHECK TRUE
 #endif
 
+#if HAL_ENABLE_THREAD_STATISTICS
+#define CH_DBG_STATISTICS TRUE
+#else
+#define CH_DBG_STATISTICS FALSE
+#endif
+
 /**
  * @brief   System time counter resolution.
  * @note    Allowed values are 16 or 32 bits.
@@ -509,7 +515,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_STATISTICS)
-#define CH_DBG_STATISTICS                   TRUE
+#define CH_DBG_STATISTICS                   FALSE
 #endif
 
 /**
