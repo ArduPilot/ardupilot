@@ -34,7 +34,7 @@ void ModeAcro::run()
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->set_attitude_target_to_current_attitude();
-        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->reset_rate_controller_I_terms_smoothly();
         break;
 
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
