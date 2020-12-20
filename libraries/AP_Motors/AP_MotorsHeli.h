@@ -130,6 +130,9 @@ public:
     // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
     bool get_takeoff_collective() const { return _heliflags.takeoff_collective; }
 
+    // accessor to get the takeoff collective flag signifying that current collective is greater than collective required to indicate takeoff
+    bool get_below_mid_collective() const { return _heliflags.below_mid_collective; }
+
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
 
@@ -241,6 +244,7 @@ protected:
         uint8_t servo_test_running      : 1;    // true if servo_test is running
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
+        uint8_t below_mid_collective    : 1;    // true if collective is below H_COL_MID
     } _heliflags;
 
     // parameters
