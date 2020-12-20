@@ -13,10 +13,7 @@
 #include "AP_Frsky_MAVlite_MAVliteToSPort.h"
 #include "AP_Frsky_MAVliteMsgHandler.h"
 
-#define FRSKY_WFQ_TIME_SLOT_MAX     12U
 #define SPORT_TX_PACKET_DUPLICATES          1   // number of duplicates packets we send (fport only)
-#else
-#define FRSKY_WFQ_TIME_SLOT_MAX     11U
 #endif
 
 class AP_Frsky_SPort_Passthrough : public AP_Frsky_SPort, public AP_RCTelemetry
@@ -25,7 +22,7 @@ public:
 
     AP_Frsky_SPort_Passthrough(AP_HAL::UARTDriver *port, bool use_external_data, AP_Frsky_Parameters *&frsky_parameters) :
         AP_Frsky_SPort(port),
-        AP_RCTelemetry(FRSKY_WFQ_TIME_SLOT_MAX),
+        AP_RCTelemetry(WFQ_LAST_ITEM),
         _use_external_data(use_external_data),
         _frsky_parameters(frsky_parameters)
     {
@@ -70,8 +67,9 @@ public:
         BATT_2 =        8,  // 0x5008 Battery 2 status
         BATT_1 =        9,  // 0x5008 Battery 1 status
         PARAM =         10, // 0x5007 parameters
+        UDATA =         11, // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        MAV =           11,  // mavlite
+        MAV =           12, // mavlite
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         WFQ_LAST_ITEM       // must be last
     };
@@ -151,7 +149,6 @@ private:
     uint8_t _paramID;
 
     uint32_t calc_gps_status(void);
-    uint16_t prep_number(int32_t number, uint8_t digits, uint8_t power);
 
     static AP_Frsky_SPort_Passthrough *singleton;
 };
