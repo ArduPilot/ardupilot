@@ -141,7 +141,7 @@ void ModeSystemId::run()
         // init_targets_on_arming is always set true for multicopter.
         if (motors->init_targets_on_arming()) {
             attitude_control->set_yaw_target_to_current_heading();
-            attitude_control->reset_rate_controller_I_terms();
+            attitude_control->reset_rate_controller_I_terms_smoothly();
         }
         break;
 

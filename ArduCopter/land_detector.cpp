@@ -60,8 +60,8 @@ void Copter::update_land_detector()
     } else {
 
 #if FRAME_CONFIG == HELI_FRAME
-        // check that collective pitch is on lower limit (should be constrained by LAND_COL_MIN)
-        bool motor_at_lower_limit = motors->limit.throttle_lower;
+        // check that collective pitch is below mid collective (zero thrust) position
+        bool motor_at_lower_limit = (motors->get_below_mid_collective() && fabsf(ahrs.get_roll()) < M_PI/2.0f);
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
         bool motor_at_lower_limit = motors->limit.throttle_lower && attitude_control->is_throttle_mix_min();
