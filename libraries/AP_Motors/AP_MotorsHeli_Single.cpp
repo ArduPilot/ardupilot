@@ -417,6 +417,14 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     if (_heliflags.landing_collective && collective_out < _collective_mid_pct && !_heliflags.in_autorotation) {
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
+
+    }
+
+    // updates below mid collective flag
+    if (collective_out <= _collective_mid_pct) {
+        _heliflags.below_mid_collective = true;
+    } else {
+        _heliflags.below_mid_collective = false;
     }
 
     // updates takeoff collective flag based on 50% hover collective
