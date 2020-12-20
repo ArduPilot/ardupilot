@@ -1083,22 +1083,21 @@ void Aircraft::update_eas_airspeed()
     /*
       airspeed as seen by a fwd pitot tube (limited to 120m/s)
     */
-    airspeed_pitot = velocity_air_bf.x/eas2tas;
+    airspeed_pitot = airspeed;
 
-    // calculate angle of attack
-    const float alpharad = atan2f(velocity_air_bf.z, velocity_air_bf.x);
-    const float betarad = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+    // calculate angle between the local flow vector and a pitot tube aligned with the X body axis
+    const float pitot_aoa =  atan2f(sqrtf(sq(velocity_air_bf.y) + sq(velocity_air_bf.z)), velocity_air_bf.x);
 
     /*
-      assume the pitot can correctly capture airspeed up to 10 degrees off the nose
-     */
-    const float pitot_angle = alpharad+betarad;
-    const float max_pitot_angle = 10.0;
-    if (pitot_angle > radians(90)) {
+      assume the pitot can correctly capture airspeed up to 20 degrees off the nose
+      and follows a cose law outside that range
+    */
+    const float max_pitot_aoa = radians(20);
+    if (pitot_aoa > radians(90)) {
         airspeed_pitot = 0;
-    } else if (pitot_angle > radians(max_pitot_angle)) {
-        // compressed cosine beyong the max angle
-        airspeed_pitot *= cos((pitot_angle-max_pitot_angle)*90/(90-max_pitot_angle));
+    } else if (pitot_aoa > max_pitot_aoa) {
+        const float gain_factor = M_PI_2 / (radians(90) - max_pitot_aoa);
+        airspeed_pitot *= cosf((pitot_aoa - max_pitot_aoa) * gain_factor);
     }
     
     // limit to speed common pitot setups can measure
