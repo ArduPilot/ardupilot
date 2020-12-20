@@ -110,6 +110,7 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(BATT_2, 1300, 500);     // 0x5008 Battery 2 status
     set_scheduler_entry(BATT_1, 1300, 500);     // 0x5003 Battery 1 status
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
+    set_scheduler_entry(UDATA, 5000, 200);      // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
     // initialize sport sensor IDs
@@ -160,6 +161,12 @@ void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
         _scheduler.packet_weight[ATTITUDE] = 45;     // attitude
     }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    // when using fport raise user data priority if any packets are pending
+    if (_use_external_data && _sport_push_buffer.pending) {
+        _scheduler.packet_weight[UDATA] = 250;
+    } else {
+        _scheduler.packet_weight[UDATA] = 5000;   // user data
+    }
 }
 
 // WFQ scheduler
@@ -181,10 +188,15 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case BATT_2:
         packet_ready = AP::battery().num_instances() > 1;
         break;
+    case UDATA:
+        // when using fport user data is sent by scheduler
+        // when using sport user data is sent responding to custom polling
+        packet_ready = _use_external_data && _sport_push_buffer.pending;
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        case MAV:
-            packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
-            break;
+    case MAV:
+        packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
+        break;
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     default:
         packet_ready = true;
@@ -242,6 +254,15 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case PARAM: // 0x5007 parameters
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
         break;
+    case UDATA: // user data
+        {
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_use_external_data && _sport_push_buffer.pending) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     case MAV: // mavlite
         process_tx_queue();
@@ -276,8 +297,17 @@ void AP_Frsky_SPort_Passthrough::send(void)
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     }
     // check if we should respond to this polling byte
-    if (prev_byte == FRAME_HEAD && is_passthrough_byte(_passthrough.new_byte)) {
-        run_wfq_scheduler();
+    if (prev_byte == FRAME_HEAD) {
+        if (is_passthrough_byte(_passthrough.new_byte)) {
+            run_wfq_scheduler();
+        } else {
+            // respond to custom user data polling
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_sport_push_buffer.pending && _passthrough.new_byte == _sport_push_buffer.packet.sensor) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
     }
 }
 
@@ -595,71 +625,6 @@ bool AP_Frsky_SPort_Passthrough::get_telem_data(sport_packet_t* packet_array, ui
     }
     packet_count = idx;
     return idx > 0;
-}
-
-/*
- * prepare value for transmission through FrSky link
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits, uint8_t power)
-{
-    uint16_t res = 0;
-    uint32_t abs_number = abs(number);
-
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<1;
-        } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
-        }
-    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<2;
-        } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
-        }
-    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<1;
-        } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
-            res = 0x7FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
-        }
-    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<2;
-        } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
-            res = 0xFFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
-        }
-    }
-    return res;
 }
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
