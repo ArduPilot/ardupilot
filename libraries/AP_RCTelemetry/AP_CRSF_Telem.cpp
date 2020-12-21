@@ -147,10 +147,15 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
 void AP_CRSF_Telem::process_rf_mode_changes()
 {
     const AP_RCProtocol_CRSF::RFMode current_rf_mode = get_rf_mode();
-    if ( _telem_rf_mode != current_rf_mode) {
+    uint32_t now = AP_HAL::millis();
+    if ( _telem_rf_mode != current_rf_mode
+        // report a change of more than 10Hz if we haven't done so in the last 5s
+        || (now - _telem_last_report_ms > 5000 && abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 10)) {
         gcs().send_text(MAV_SEVERITY_INFO, "CRSF: rf mode change %d->%d, rate is %dHz", (uint8_t)_telem_rf_mode, (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
         update_custom_telemetry_rates(current_rf_mode);
         _telem_rf_mode = current_rf_mode;
+        _telem_last_avg_rate = _scheduler.avg_packet_rate;
+        _telem_last_report_ms = now;
     }
 }
 
@@ -172,6 +177,8 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
 
     if (!_crsf_version.pending && _crsf_version.use_rf_mode) {
         return crsf->get_link_status().rf_mode;
+    } else if (_crsf_version.is_tracer) {
+        return AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_250HZ;
     }
 
     /*
@@ -196,7 +203,7 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
 
 bool AP_CRSF_Telem::is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_mode) const
 {
-    return rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_150HZ;
+    return rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_150HZ || rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_250HZ;
 }
 
 void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
@@ -462,7 +469,7 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
 // request for device info
 void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
 {
-    debug("process_device_info_frame: %d -> %d", info->origin, info->destination);
+    debug("process_device_info_frame: 0x%x -> 0x%x", info->origin, info->destination);
     if (info->destination != 0 && info->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
@@ -482,6 +489,9 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     */
     // get the terminator of the device name string
     const uint8_t offset = strnlen((char*)info->payload,42U);
+    if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
+        _crsf_version.is_tracer = true;
+    }
     /*
         fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
         fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
@@ -490,7 +500,7 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     _crsf_version.minor = info->payload[offset+12];
 
     // should we use rf_mode reported by link statistics?
-    if (_crsf_version.major >= 3 && _crsf_version.minor >= 72) {
+    if (!_crsf_version.is_tracer && (_crsf_version.major > 3 || (_crsf_version.major == 3 && _crsf_version.minor >= 72))) {
         _crsf_version.use_rf_mode = true;
     }
 

@@ -307,6 +307,9 @@ private:
     uint8_t _telem_size;
     uint8_t _telem_type;
     AP_RCProtocol_CRSF::RFMode _telem_rf_mode;
+    // reporting telemetry rate
+    uint32_t _telem_last_report_ms;
+    uint16_t _telem_last_avg_rate;
 
     bool _telem_pending;
     bool _enable_telemetry;
@@ -321,6 +324,7 @@ private:
         uint8_t major;
         uint8_t retry_count;
         bool use_rf_mode;
+        bool is_tracer;
         bool pending = true;
     } _crsf_version;
 
