@@ -481,6 +481,9 @@ private:
         // are we headed to the land approach waypoint? Works for any nav type
         bool wp_is_land_approach;
 
+        // are we headed to the vtol land approach waypoint?
+        bool wp_is_vtol_land_approach;
+        
         // should we fly inverted?
         bool inverted_flight;
 
