@@ -175,6 +175,7 @@ public:
         CRSF_RF_MODE_4HZ = 0,
         CRSF_RF_MODE_50HZ,
         CRSF_RF_MODE_150HZ,
+        CRSF_RF_MODE_250HZ,
         CRSF_RF_MODE_UNKNOWN,
     };
 
