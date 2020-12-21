@@ -85,6 +85,13 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
             break;
         }
 
+        case MAV_MOUNT_MODE_HOME_LOCATION: {
+            // set the target gps location
+            _state._roi_target = AP::ahrs().get_home();
+            _state._roi_target_set = true;
+            break;
+        }
+
         default:
             // do nothing
             break;
