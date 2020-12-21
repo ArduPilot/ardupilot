@@ -98,7 +98,8 @@ static const char* get_frame_type(uint8_t byte)
 #endif
 
 #define CRSF_MAX_FRAME_TIME_US      1100U // 700us + 400us for potential ad-hoc request
-#define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At fastest, frames are sent by the transmitter every 6.667 ms, 150 Hz
+#define CRSF_INTER_FRAME_TIME_US_250HZ    4000U // At fastest, frames are sent by the transmitter every 4 ms, 250 Hz
+#define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At medium, frames are sent by the transmitter every 6.667 ms, 150 Hz
 #define CRSF_INTER_FRAME_TIME_US_50HZ    20000U // At slowest, frames are sent by the transmitter every 20ms, 50 Hz
 #define CSRF_HEADER_LEN     2
 
@@ -230,7 +231,7 @@ void AP_RCProtocol_CRSF::update(void)
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
     uint32_t now = AP_HAL::micros();
-    if (_last_frame_time_us > 0 && !get_rc_frame_count() && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_150HZ) {
+    if (_last_frame_time_us > 0 && !get_rc_frame_count() && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
         process_telemetry(false);
         _last_frame_time_us = now;
     }
