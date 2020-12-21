@@ -131,6 +131,10 @@ protected:
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
     AP_Int32                 _required_mission_items;
+    AP_Int8                 _arm_auth_enabled;
+    AP_Int8                 _arm_auth_sysid;
+    AP_Int16                _arm_auth_request_interval;
+    AP_Int32                _arm_auth_response_window;
 
     // internal members
     bool                    armed;
@@ -235,6 +239,9 @@ private:
     // method that was last used for disarm; invalid unless the
     // vehicle has been disarmed at least once.
     Method _last_disarm_method = Method::UNKNOWN;
+
+    bool arm_authorization_check(bool display_failure);
+    bool arm_authorization_logic(bool display_failure);
 };
 
 namespace AP {
