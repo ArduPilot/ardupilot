@@ -25,6 +25,19 @@ local vote_counter_max = 20         -- when a vote counter reaches this number (
 local gps_vs_nongps_vote = 0        -- vote counter for GPS vs NonGPS (-20 = GPS, +20 = NonGPS)
 local extnav_vs_opticalflow_vote = 0 -- vote counter for extnav vs optical flow (-20 = extnav, +20 = opticalflow)
 
+-- play tune on buzzer to alert user to change in active source set
+function play_source_tune(source)
+  if (source) then
+    if (source == 0) then
+      notify:play_tune("L8C")       -- one long lower tone
+    elseif (source == 1) then
+      notify:play_tune("L12DD")     -- two fast medium tones
+    elseif (source == 2) then
+      notify:play_tune("L16FFF")    -- three very fast, high tones
+    end
+  end
+end
+
 -- the main update function
 function update()
 
@@ -123,6 +136,7 @@ function update()
     else
       gcs:send_text(0, "Pilot switched but already Source " .. string.format("%d", source_prev+1))
     end
+    play_source_tune(source_prev)                -- alert user of source whether changed or not
   end
 
   -- read auto source switch position from RCx_FUNCTION = 300 (Scripting1)
@@ -150,6 +164,7 @@ function update()
         gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
       end
     end
+    play_source_tune(source_prev)
   end
 
   -- auto switching
@@ -157,6 +172,7 @@ function update()
     source_prev = auto_source                  -- record selected source
     ahrs:set_posvelyaw_source_set(source_prev)     -- switch to pilot's selected source
     gcs:send_text(0, "Auto switched to Source " .. string.format("%d", source_prev+1))
+    play_source_tune(source_prev)
   end
 
   return update, 100
