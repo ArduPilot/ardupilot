@@ -418,6 +418,7 @@ protected:
     void handle_setup_signing(const mavlink_message_t &msg);
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
 
+    void  handle_arm_authorization_response(const mavlink_message_t &msg);
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_get_message_interval(const mavlink_command_long_t &packet);
@@ -919,6 +920,14 @@ public:
     void setup_console();
     void setup_uarts();
 
+    uint32_t arm_authorization_valid_time() const { return _arm_authorization_valid_time; }
+    uint32_t last_arm_authorization_received_time() const {return _last_arm_authorization_received_time; }
+    uint32_t last_arm_authorization_request_time() const {return _last_arm_authorization_request_time; }
+    uint8_t  arm_authorization_denial_reason() const {return _arm_authorization_denial_reason; }
+
+    void request_arm_authorization(uint8_t auth_system_id, uint16_t auth_window_time);
+    void received_arm_authorization(MAV_RESULT result, uint8_t param1, uint8_t param2);
+
     bool out_of_time() const;
 
     // frsky backend
@@ -1025,6 +1034,12 @@ private:
 
     // timer called to implement pass-thru
     void passthru_timer();
+
+    //All times in ms
+    uint32_t _arm_authorization_valid_time;
+    uint32_t _last_arm_authorization_received_time;
+    uint32_t _last_arm_authorization_request_time;
+    MAV_ARM_AUTH_DENIED_REASON _arm_authorization_denial_reason;
 
     // this contains the index of the GCS_MAVLINK backend we will
     // first call update_send on.  It is incremented each time

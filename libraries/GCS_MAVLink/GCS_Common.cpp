@@ -3145,6 +3145,12 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
     optflow->handle_msg(msg);
 }
 
+void GCS_MAVLINK::handle_arm_authorization_response(const mavlink_message_t &msg)
+{
+    mavlink_arm_authorization_response_t packet;
+    mavlink_msg_arm_authorization_response_decode(&msg, &packet);
+    gcs().received_arm_authorization( (MAV_RESULT)packet.result, packet.result_param1, packet.result_param2); 
+}
 
 /*
   handle MAV_CMD_FIXED_MAG_CAL_YAW
@@ -3379,6 +3385,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
         break;
+
+    case MAVLINK_MSG_ID_ARM_AUTHORIZATION_RESPONSE:
+        handle_arm_authorization_response(msg);
+        break; 
+
     }
 
 }

@@ -126,6 +126,46 @@ bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protoco
     return true;
 }
 
+void GCS::request_arm_authorization(uint8_t auth_system_id, uint16_t auth_window_time)
+{
+
+    mavlink_arm_authorization_request_t packet {};
+    packet.auth_window = auth_window_time;
+    packet.target_system = auth_system_id;
+
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_ARM_AUTHORIZATION_REQUEST, (const char*)&packet);
+    _last_arm_authorization_request_time = AP_HAL::millis();
+    
+    //Invalidate any pervious authorizations
+    _last_arm_authorization_received_time = 0;
+
+}
+
+void GCS::received_arm_authorization( MAV_RESULT result, uint8_t param1, uint8_t param2)
+{
+    switch(result) {
+        case MAV_RESULT_ACCEPTED:
+            _last_arm_authorization_received_time = AP_HAL::millis();
+            //Param2 contains the validity of authorization in seconds
+            if (param2 == 0) {
+                //0 means that the authorization has no time limit, it is valid till the next reboot of the flight controller
+                //This is a deviation from the current command/ack based method, but can be usefull for preauthorisations without requests
+                _arm_authorization_valid_time = UINT32_MAX;        
+            } else {
+                _arm_authorization_valid_time = AP_HAL::millis() + param2 * 1000;
+            }
+            break;
+        case MAV_RESULT_DENIED:
+        case MAV_RESULT_TEMPORARILY_REJECTED:
+            _arm_authorization_valid_time = 0; //not valid
+            _arm_authorization_denial_reason =  (MAV_ARM_AUTH_DENIED_REASON)param1;
+            break;
+        default:
+            _arm_authorization_valid_time = 0;
+    }
+
+}
+
 void GCS::update_sensor_status_flags()
 {
     control_sensors_present = 0;
