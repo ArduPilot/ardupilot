@@ -2261,7 +2261,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("EK3_SRC2_POSZ", 6)  # External Nav
             self.set_parameter("EK3_SRC2_VELXY", 6) # External Nav
             self.set_parameter("EK3_SRC2_VELZ", 6)  # External Nav
-            self.set_parameter("EK3_SRC2_YAW", 2)   # External Nav
+            self.set_parameter("EK3_SRC2_YAW", 6)   # External Nav
             self.set_parameter("RC7_OPTION", 80)    # RC aux switch 7 set to Viso Align
             self.set_parameter("RC8_OPTION", 90)    # RC aux switch 8 set to EKF source selector
             self.reboot_sitl()
