@@ -42,7 +42,8 @@ public:
         COMPASS = 1,
         EXTERNAL = 2,
         EXTERNAL_COMPASS_FALLBACK = 3,
-        EXTNAV = 6
+        EXTNAV = 6,
+        GSF = 8
     };
 
     // enum for OPTIONS parameter
