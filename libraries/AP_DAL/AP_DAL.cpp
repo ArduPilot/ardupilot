@@ -58,7 +58,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
+    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
