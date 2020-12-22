@@ -1291,7 +1291,7 @@ void NavEKF3_core::updateMovementCheck(void)
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK ||
-                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || !use_compass());
+                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
     if (!runCheck)
     {
         onGroundNotMoving = false;

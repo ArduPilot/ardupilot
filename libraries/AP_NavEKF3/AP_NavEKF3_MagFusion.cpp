@@ -219,12 +219,13 @@ void NavEKF3_core::SelectMagFusion()
         yawAngDataStatic.time_ms = imuDataDelayed.time_ms;
     }
 
-    // Handle case where we are not using a yaw sensor of any type and and attempt to reset the yaw in
+    // Handle case where we are not using a yaw sensor of any type and attempt to reset the yaw in
     // flight using the output from the GSF yaw estimator.
-    if (!use_compass() &&
-        yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL &&
-        yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK &&
-        yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV) {
+    if ((yaw_source == AP_NavEKF_Source::SourceYaw::GSF) ||
+        (!use_compass() &&
+         yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL &&
+         yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK &&
+         yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
 
         // because this type of reset event is not as time critical, require a continuous history of valid estimates
         if ((!yawAlignComplete || yaw_source_reset) && EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD) {
@@ -1518,7 +1519,8 @@ bool NavEKF3_core::EKFGSF_resetMainFilterYaw()
         EKFGSF_yaw_reset_ms = imuSampleTime_ms;
         EKFGSF_yaw_reset_count++;
 
-        if (!use_compass() || dal.compass().get_num_enabled() == 0) {
+        if ((frontend->sources.getYawSource() == AP_NavEKF_Source::SourceYaw::GSF) ||
+            !use_compass() || (dal.compass().get_num_enabled() == 0)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u emergency yaw reset",(unsigned)imu_index);
