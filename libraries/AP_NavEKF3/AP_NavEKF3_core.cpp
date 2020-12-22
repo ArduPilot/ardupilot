@@ -123,7 +123,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
-    if(frontend->sources.ext_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
+    if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
     // Note: the use of dual range finders potentially doubles the amount of data to be stored
