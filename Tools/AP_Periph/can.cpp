@@ -1175,7 +1175,9 @@ void AP_Periph_FW::can_start()
         PreferredNodeID = g.can_node;
     }
 
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     periph.g.flash_bootloader.set_and_save_ifchanged(0);
+#endif
 
     can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
 
