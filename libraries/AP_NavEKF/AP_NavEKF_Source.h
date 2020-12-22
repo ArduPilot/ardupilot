@@ -40,8 +40,8 @@ public:
     enum class SourceYaw : uint8_t {
         NONE = 0,
         COMPASS = 1,
-        EXTERNAL = 2,
-        EXTERNAL_COMPASS_FALLBACK = 3,
+        GPS = 2,
+        GPS_COMPASS_FALLBACK = 3,
         EXTNAV = 6,
         GSF = 8
     };
@@ -95,8 +95,8 @@ public:
     // return true if ext nav is enabled on any source
     bool ext_nav_enabled(void) const;
 
-    // return true if ext yaw is enabled on any source
-    bool ext_yaw_enabled(void) const;
+    // return true if GPS yaw is enabled on any source
+    bool gps_yaw_enabled(void) const;
 
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;
