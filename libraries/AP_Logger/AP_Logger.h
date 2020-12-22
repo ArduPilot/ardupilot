@@ -493,6 +493,12 @@ private:
     // remember formats for replay
     void save_format_Replay(const void *pBuffer);
 
+    // io thread support
+    bool _io_thread_started;
+
+    void start_io_thread(void);
+    void io_thread();
+
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {

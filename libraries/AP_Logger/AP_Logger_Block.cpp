@@ -57,8 +57,6 @@ void AP_Logger_Block::Init(void)
     }
 
     WITH_SEMAPHORE(sem);
-
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_Block::io_timer, void));
 }
 
 uint32_t AP_Logger_Block::bufferspace_available()
