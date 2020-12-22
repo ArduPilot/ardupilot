@@ -34,6 +34,9 @@ extern const AP_HAL::HAL &hal;
 
 void AP_Periph_FW::rcout_init()
 {
+    // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
+    hal.rcout->force_safety_on();
+
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
     }
@@ -43,6 +46,19 @@ void AP_Periph_FW::rcout_init()
     }
     for (uint8_t i=0; i<SERVO_OUT_MOTOR_MAX; i++) {
         SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), UAVCAN_ESC_MAX_VALUE);
+    }
+
+    // run this once and at 1Hz to configure aux and esc ranges
+    rcout_init_1Hz();
+}
+
+void AP_Periph_FW::rcout_init_1Hz()
+{
+    // this runs at 1Hz to allow for run-time param changes
+    SRV_Channels::enable_aux_servos();
+
+    for (uint8_t i=0; i<SERVO_OUT_MOTOR_MAX; i++) {
+        servo_channels.set_esc_scaling_for(SRV_Channels::get_motor_function(i));
     }
 }
 

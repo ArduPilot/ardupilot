@@ -389,6 +389,7 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
 
     // instant reboot, with backup register used to give bootloader
     // the node_id
+    periph.prepare_reboot();
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     set_fast_reboot((rtc_boot_magic)(RTC_BOOT_CANBL | canardGetLocalNodeID(ins)));
     NVIC_SystemReset();
@@ -772,6 +773,7 @@ static void onTransferReceived(CanardInstance* ins,
     case UAVCAN_PROTOCOL_RESTARTNODE_ID:
         printf("RestartNode\n");
         hal.scheduler->delay(10);
+        periph.prepare_reboot();
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         NVIC_SystemReset();
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
