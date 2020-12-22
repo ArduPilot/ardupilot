@@ -223,8 +223,8 @@ void NavEKF3_core::SelectMagFusion()
     // flight using the output from the GSF yaw estimator.
     if ((yaw_source == AP_NavEKF_Source::SourceYaw::GSF) ||
         (!use_compass() &&
-         yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL &&
-         yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK &&
+         yaw_source != AP_NavEKF_Source::SourceYaw::GPS &&
+         yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK &&
          yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
 
         // because this type of reset event is not as time critical, require a continuous history of valid estimates
@@ -259,14 +259,14 @@ void NavEKF3_core::SelectMagFusion()
     }
 
     // Handle case where we are using GPS yaw sensor instead of a magnetomer
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK) {
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
         bool have_fused_gps_yaw = false;
         if (storedYawAng.recall(yawAngDataDelayed,imuDataDelayed.time_ms)) {
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
                 alignYawAngle(yawAngDataDelayed);
                 yaw_source_reset = false;
             } else if (tiltAlignComplete && yawAlignComplete) {
-                fuseEulerYaw(yawFusionMethod::EXTERNAL);
+                fuseEulerYaw(yawFusionMethod::GPS);
             }
             have_fused_gps_yaw = true;
             last_gps_yaw_fusion_ms = imuSampleTime_ms;
@@ -286,7 +286,7 @@ void NavEKF3_core::SelectMagFusion()
                 lastSynthYawTime_ms = imuSampleTime_ms;
             }
         }
-        if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL) {
+        if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS) {
             // no fallback
             return;
         }
@@ -362,9 +362,9 @@ void NavEKF3_core::SelectMagFusion()
         magTimeout = true;
     }
 
-    if (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK) {
+    if (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
         // check for and read new magnetometer measurements. We don't
-        // read for EXTERNAL_COMPASS_FALLBACK as it has already been read
+        // read for GPS_COMPASS_FALLBACK as it has already been read
         // above
         readMagData();
     }
@@ -375,7 +375,7 @@ void NavEKF3_core::SelectMagFusion()
     // Control reset of yaw and magnetic field states if we are using compass data
     if (magDataToFuse) {
         if (yaw_source_reset && (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS ||
-                                 yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
+                                 yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
             magYawResetRequest = true;
             yaw_source_reset = false;
         }
@@ -887,7 +887,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     // yaw measurement error variance (rad^2)
     float R_YAW;
     switch (method) {
-    case yawFusionMethod::EXTERNAL:
+    case yawFusionMethod::GPS:
         R_YAW = sq(yawAngDataDelayed.yawAngErr);
         break;
 
@@ -913,7 +913,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     // determine if a 321 or 312 Euler sequence is best
     rotationOrder order;
     switch (method) {
-    case yawFusionMethod::EXTERNAL:
+    case yawFusionMethod::GPS:
         order = yawAngDataDelayed.order;
         break;
 
@@ -1074,7 +1074,7 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         break;
     }
 
-    case yawFusionMethod::EXTERNAL:
+    case yawFusionMethod::GPS:
         // both external sensor yaw and last yaw when static are stored in yawAngDataDelayed.yawAng
         innovYaw = wrap_PI(yawAngPredicted - yawAngDataDelayed.yawAng);
         break;
