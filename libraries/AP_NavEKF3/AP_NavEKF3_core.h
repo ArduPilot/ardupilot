@@ -621,7 +621,7 @@ private:
     // specifies the method to be used when fusing yaw observations
     enum class yawFusionMethod {
 	    MAGNETOMETER=0,
-	    EXTERNAL=1,
+	    GPS=1,
         GSF=2,
         STATIC=3,
         PREDICTED=4,
