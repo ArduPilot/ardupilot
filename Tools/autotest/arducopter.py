@@ -2147,6 +2147,8 @@ class AutoTestCopter(AutoTest):
 
         self.context_pop()
 
+        self.reboot_sitl()
+
         if ex is not None:
             raise ex
 
