@@ -141,7 +141,7 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
 
-    // handle RGB from Scripting
+    // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
 
     // handle a PLAY_TUNE message
@@ -165,7 +165,8 @@ public:
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
-    uint8_t get_led_len() const {return _led_len; }
+    uint8_t get_led_len() const { return _led_len; }
+    int8_t get_rgb_led_brightness_percent() const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HAL_Semaphore sf_window_mutex;
