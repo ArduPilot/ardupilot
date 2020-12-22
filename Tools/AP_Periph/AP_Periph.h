@@ -46,9 +46,11 @@ public:
     void can_battery_update();
 
     void load_parameters();
+    void prepare_reboot();
 
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);
-    void reboot(bool hold_in_bootloader);
+#endif
 
     AP_SerialManager serial_manager;
 
@@ -133,6 +135,7 @@ public:
     SRV_Channels servo_channels;
 
     void rcout_init();
+    void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
     void rcout_srv(const uint8_t actuator_id, const float command_value);
     void rcout_update();

@@ -281,7 +281,7 @@ void AP_Periph_FW::update()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
-        SRV_Channels::enable_aux_servos();
+        rcout_init_1Hz();
 #endif
     }
 
@@ -319,6 +319,7 @@ void AP_Periph_FW::update()
 #endif
 }
 
+#ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
 // check for uploader.py reboot command
 void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
 {
@@ -362,16 +363,18 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
             }
             index[i]++;
             if (index[i] == reboot_string_len) {
-                // received reboot msg
-                reboot(true);
+                // received reboot msg. Trigger a reboot and stay in the bootloader
+                prepare_reboot();
+                hal.scheduler->reboot(true);
             }
         }
     }
 }
+#endif // HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
 
-// trigger a safe reboot where PWMs and params are gracefully disabled
-// This is copied from AP_Vehicle::reboot(bool hold_in_bootloader)
-void AP_Periph_FW::reboot(bool hold_in_bootloader)
+// prepare for a safe reboot where PWMs and params are gracefully disabled
+// This is copied from AP_Vehicle::reboot(bool hold_in_bootloader) minus the actual reboot
+void AP_Periph_FW::prepare_reboot()
 {
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
         // Notify might want to blink some LEDs:
@@ -379,8 +382,10 @@ void AP_Periph_FW::reboot(bool hold_in_bootloader)
         notify.update();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
         // force safety on
         hal.rcout->force_safety_on();
+#endif
 
         // flush pending parameter writes
         AP_Param::flush();
@@ -389,9 +394,8 @@ void AP_Periph_FW::reboot(bool hold_in_bootloader)
         hal.scheduler->register_delay_callback(nullptr, 5);
 
         // delay to give the ACK a chance to get out, the LEDs to flash,
-        // the IO board safety to be forced on, the parameters to flush, ...
-        hal.scheduler->delay(200);
-
-        hal.scheduler->reboot(hold_in_bootloader);
+        // the IO board safety to be forced on, the parameters to flush,
+        hal.scheduler->delay(40);
 }
+
 AP_HAL_MAIN();
