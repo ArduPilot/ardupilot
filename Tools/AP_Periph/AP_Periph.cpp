@@ -107,6 +107,7 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+        serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
         gps.init(serial_manager);
     }
 #endif
@@ -149,10 +150,12 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     if (rangefinder.get_type(0) != RangeFinder::Type::NONE) {
-        const uint8_t sernum = 3; // uartB
-        hal.serial(3)->begin(g.rangefinder_baud);
-        serial_manager.set_protocol_and_baud(sernum, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
-        rangefinder.init(ROTATION_NONE);
+        auto *uart = hal.serial(g.rangefinder_port);
+        if (uart != nullptr) {
+            uart->begin(g.rangefinder_baud);
+            serial_manager.set_protocol_and_baud(g.rangefinder_port, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
+            rangefinder.init(ROTATION_NONE);
+        }
     }
 #endif
 

@@ -33,6 +33,8 @@ public:
         k_param_serial_number,
         k_param_adsb_port,
         k_param_servo_channels,
+        k_param_rangefinder_port,
+        k_param_gps_port,
     };
 
     AP_Int16 format_version;
@@ -53,6 +55,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     AP_Int32 rangefinder_baud;
+    AP_Int8 rangefinder_port;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
@@ -67,6 +70,10 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
     AP_Int8 esc_number;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_GPS
+    AP_Int8 gps_port;
 #endif
 
     AP_Int8 debug;
