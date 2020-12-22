@@ -73,6 +73,8 @@ public:
         _last_trim = _trim.get();
         _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, 0.0f);
         _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+
+        _EAS2TAS = 1.0;
     }
 
     // empty virtual destructor
@@ -723,6 +725,9 @@ protected:
     // AOA and SSA
     float _AOA, _SSA;
     uint32_t _last_AOA_update_ms;
+
+    // EAS to TAS calculated on each loop
+    float _EAS2TAS;
 
 private:
     static AP_AHRS *_singleton;
