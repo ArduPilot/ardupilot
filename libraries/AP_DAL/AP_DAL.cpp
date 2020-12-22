@@ -59,7 +59,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
     _RFRN.get_compass_is_null = AP::ahrs().get_compass() == nullptr;
-    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
+    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
     _RFRN.vehicle_class = ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
