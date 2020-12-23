@@ -60,7 +60,7 @@ void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
     _member->init();
 
     callbacks->setup();
-    scheduler->system_initialized();
+    scheduler->set_system_initialized();
 
     for (;;) {
         callbacks->loop();
