@@ -204,7 +204,7 @@ void Plane::calc_airspeed_errors()
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (auto_throttle_mode &&
+    if (control_mode->does_auto_throttle() &&
     	aparm.min_gndspeed_cm > 0 &&
     	control_mode != &mode_circle) {
         int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;

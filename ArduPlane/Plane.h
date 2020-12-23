@@ -572,10 +572,6 @@ private:
         uint32_t impact_timer_ms;
     } crash_state;
 
-    // true if we are in an auto-throttle mode, which means
-    // we need to run the speed/height controller
-    bool auto_throttle_mode:1;
-
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 	

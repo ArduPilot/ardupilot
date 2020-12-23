@@ -1482,7 +1482,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
     if (!manual_air_mode &&
-        plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode &&
+        plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() &&
         plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED) {
         // the user may be trying to disarm
         return 0;
@@ -1516,7 +1516,7 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
         yaw_cds += desired_auto_yaw_rate_cds();
     }
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && (air_mode == AirMode::ON);
-    if (plane.get_throttle_input() <= 0 && !plane.auto_throttle_mode && !manual_air_mode) {
+    if (plane.get_throttle_input() <= 0 && !plane.control_mode->does_auto_throttle() && !manual_air_mode) {
         // the user may be trying to disarm
         return 0;
     }
@@ -1571,7 +1571,7 @@ void QuadPlane::set_armed(bool armed)
 float QuadPlane::assist_climb_rate_cms(void) const
 {
     float climb_rate;
-    if (plane.auto_throttle_mode) {
+    if (plane.control_mode->does_auto_throttle()) {
         // use altitude_error_cm, spread over 10s interval
         climb_rate = plane.altitude_error_cm * 0.1f;
     } else {
@@ -1698,7 +1698,7 @@ bool QuadPlane::assistance_needed(float aspeed, bool have_airspeed)
 // return true if it is safe to provide assistance
 bool QuadPlane::assistance_safe()
 {
-    return hal.util->get_soft_armed() && ( (plane.auto_throttle_mode && !plane.throttle_suppressed)
+    return hal.util->get_soft_armed() && ( (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed)
                                                                       || plane.get_throttle_input()>0 
                                                                       || plane.is_flying() );
 }
@@ -2084,7 +2084,7 @@ void QuadPlane::update_throttle_suppression(void)
 
     // if we are in a fixed wing auto throttle mode and we have
     // unsuppressed the throttle then allow motors to run
-    if (plane.auto_throttle_mode && !plane.throttle_suppressed) {
+    if (plane.control_mode->does_auto_throttle() && !plane.throttle_suppressed) {
         return;
     }
 

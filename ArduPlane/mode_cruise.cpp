@@ -3,7 +3,6 @@
 
 bool ModeCruise::_enter()
 {
-    plane.auto_throttle_mode = true;
     locked_heading = false;
     lock_timer_ms = 0;
 

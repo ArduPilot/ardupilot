@@ -54,7 +54,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 bool Plane::suppress_throttle(void)
 {
 #if PARACHUTE == ENABLED
-    if (auto_throttle_mode && parachute.release_initiated()) {
+    if (control_mode->does_auto_throttle() && parachute.release_initiated()) {
         // throttle always suppressed in auto-throttle modes after parachute release initiated
         throttle_suppressed = true;
         return true;
@@ -69,7 +69,7 @@ bool Plane::suppress_throttle(void)
         // we've previously met a condition for unsupressing the throttle
         return false;
     }
-    if (!auto_throttle_mode) {
+    if (!control_mode->does_auto_throttle()) {
         // the user controls the throttle
         throttle_suppressed = false;
         return false;
@@ -579,7 +579,7 @@ void Plane::set_servos_flaps(void)
         manual_flap_percent = channel_flap->percent_input();
     }
 
-    if (auto_throttle_mode) {
+    if (control_mode->does_auto_throttle()) {
         int16_t flapSpeedSource = 0;
         if (ahrs.airspeed_sensor_enabled()) {
             flapSpeedSource = target_airspeed_cm * 0.01f;
@@ -726,7 +726,7 @@ void Plane::servos_twin_engine_mix(void)
 */
 void Plane::force_flare(void)
 {
-    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && !auto_throttle_mode && channel_throttle->in_trim_dz() && flare_mode != FlareMode::FLARE_DISABLED) {
+    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && !control_mode->does_auto_throttle() && channel_throttle->in_trim_dz() && flare_mode != FlareMode::FLARE_DISABLED) {
         int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor
         if (quadplane.tilt.tilt_type == QuadPlane::TILT_TYPE_BICOPTER) {
             tilt = 0; // this is tilts up for a Bicopter
@@ -830,8 +830,8 @@ void Plane::set_servos(void)
 
     // set airbrake outputs
     airbrake_update();
-    
-    if (auto_throttle_mode ||
+
+    if (control_mode->does_auto_throttle() ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
@@ -956,7 +956,7 @@ void Plane::update_throttle_hover() {
 void Plane::servos_auto_trim(void)
 {
     // only in auto modes and FBWA
-    if (!auto_throttle_mode && control_mode != &mode_fbwa) {
+    if (!control_mode->does_auto_throttle() && control_mode != &mode_fbwa) {
         return;
     }
     if (!hal.util->get_soft_armed()) {
