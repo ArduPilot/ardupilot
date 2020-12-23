@@ -143,7 +143,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::system_initialized() {
+void Scheduler::set_system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");
