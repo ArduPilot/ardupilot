@@ -87,6 +87,10 @@ public:
     // depending on airspeed_nudge_cm
     virtual bool allows_throttle_nudging() const { return false; }
 
+    // true if the mode sets the vehicle destination, which controls
+    // whether control input is ignored with STICK_MIXING=0
+    virtual bool does_auto_navigation() const { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -127,6 +131,8 @@ public:
     void navigate() override;
 
     bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
 
 protected:
 
@@ -169,6 +175,8 @@ public:
 
     bool allows_throttle_nudging() const override { return true; }
 
+    bool does_auto_navigation() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -184,6 +192,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool does_auto_navigation() const override { return true; }
 
 protected:
 
@@ -205,6 +215,8 @@ public:
 
     bool isHeadingLinedUp(const Location loiterCenterLoc, const Location targetLoc);
     bool isHeadingLinedUp_cd(const int32_t bearing_cd);
+
+    bool does_auto_navigation() const override { return true; }
 
 protected:
 
@@ -243,6 +255,8 @@ public:
     void navigate() override;
 
     bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
 
 protected:
 
@@ -536,6 +550,8 @@ public:
 
     bool allows_throttle_nudging() const override { return true; }
 
+    bool does_auto_navigation() const override { return true; }
+
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -570,6 +586,8 @@ public:
     void navigate() override;
 
     bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
 
 protected:
 

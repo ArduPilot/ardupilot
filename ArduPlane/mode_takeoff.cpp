@@ -53,7 +53,6 @@ bool ModeTakeoff::_enter()
 {
     // the altitude to circle at is taken from the current altitude
     plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
 
     takeoff_started = false;
 

@@ -10,7 +10,6 @@ bool ModeThermal::_enter()
     }
 
     plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
     plane.do_loiter_at_location();
     plane.loiter_angle_reset();
 
