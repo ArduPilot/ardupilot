@@ -236,7 +236,7 @@ static void main_loop()
 
     schedulerInstance.watchdog_pat();
 
-    hal.scheduler->system_initialized();
+    hal.scheduler->set_system_initialized();
 
     thread_running = true;
     chRegSetThreadName(SKETCHNAME);
