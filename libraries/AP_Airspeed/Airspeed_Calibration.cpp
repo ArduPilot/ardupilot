@@ -123,7 +123,7 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
     // very useful both for testing and to force a reasonable value.
-    float ratio = constrain_float(param[i].ratio, 1.0f, 4.0f);
+    float ratio = constrain_float(param[i].pcorrect*correction_to_ratio, 1.0f, 4.0f);
 
     state[i].calibration.state.z = 1.0f / sqrtf(ratio);
 
@@ -139,14 +139,14 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
 
     // this constrains the resulting ratio to between 1.0 and 4.0
     zratio = constrain_float(zratio, 0.5f, 1.0f);
-    param[i].ratio.set(1/sq(zratio));
+    param[i].pcorrect.set(ratio_to_correction/sq(zratio));
     if (state[i].counter > 60) {
-        if (state[i].last_saved_ratio > 1.05f*param[i].ratio ||
-            state[i].last_saved_ratio < 0.95f*param[i].ratio) {
-            param[i].ratio.save();
-            state[i].last_saved_ratio = param[i].ratio;
+        if (state[i].last_saved_pcorrect > 1.05f*param[i].pcorrect ||
+            state[i].last_saved_pcorrect < 0.95f*param[i].pcorrect) {
+            param[i].pcorrect.save();
+            state[i].last_saved_pcorrect = param[i].pcorrect;
             state[i].counter = 0;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u ratio reset: %f", i , static_cast<double> (param[i].ratio));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u correction reset: %f", i , static_cast<double> (param[i].pcorrect));
         }
     } else {
         state[i].counter++;
@@ -175,7 +175,7 @@ void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
         vz: vground.z,
         diff_pressure: get_differential_pressure(primary),
         EAS2TAS: AP::ahrs().get_EAS2TAS(),
-        ratio: param[primary].ratio.get(),
+        ratio: param[primary].pcorrect.get(),
         state_x: state[primary].calibration.state.x,
         state_y: state[primary].calibration.state.y,
         state_z: state[primary].calibration.state.z,

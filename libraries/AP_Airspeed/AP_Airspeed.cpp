@@ -103,12 +103,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_OFFSET", 2, AP_Airspeed, param[0].offset, 0),
 
-    // @Param: _RATIO
-    // @DisplayName: Airspeed ratio
-    // @Description: Calibrates pitot tube pressure to velocity. Increasing this value will indicate a higher airspeed at any given dynamic pressure.
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("_RATIO",  3, AP_Airspeed, param[0].ratio, 1.9936f),
+    // 3 was used by ratio
 
     // @Param: _PIN
     // @DisplayName: Airspeed pin
@@ -187,6 +182,13 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("_WIND_WARN", 23, AP_Airspeed, _wind_warn, 0),
 #endif
 
+    // @Param: _PCORRECT
+    // @DisplayName: Pitot pressure correction
+    // @Description: Calibrates pitot tube pressure to velocity. Increasing this value will indicate a higher airspeed at any given dynamic pressure. A value of 1.0 is correct for an ideal pitot tube.
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_PCORRECT", 26, AP_Airspeed, param[0].pcorrect, 1.0),
+
 #if AIRSPEED_MAX_SENSORS > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
@@ -209,12 +211,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2_OFFSET", 13, AP_Airspeed, param[1].offset, 0),
 
-    // @Param: 2_RATIO
-    // @DisplayName: Airspeed ratio for 2nd airspeed sensor
-    // @Description: Airspeed calibration ratio
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("2_RATIO",  14, AP_Airspeed, param[1].ratio, 2),
+    // 14 was used by 2_RATIO
 
     // @Param: 2_PIN
     // @DisplayName: Airspeed pin for 2nd airspeed sensor
@@ -273,7 +270,15 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO_FLAGS("2_DEVID", 25, AP_Airspeed, param[1].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 #endif
     
-    
+#if AIRSPEED_MAX_SENSORS > 1
+    // @Param: 2_PCORRECT
+    // @DisplayName: Pitot pressure correction for 2nd sensor
+    // @Description: Calibrates pitot tube pressure to velocity. Increasing this value will indicate a higher airspeed at any given dynamic pressure. A value of 1.0 is correct for an ideal pitot tube.
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("2_PCORRECT", 27, AP_Airspeed, param[1].pcorrect, 1.0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -300,9 +305,30 @@ void AP_Airspeed::init()
         // already initialised
         return;
     }
+
     // cope with upgrade from old system
     if (param[0].pin.load() && param[0].pin.get() != 65) {
         param[0].type.set_default(TYPE_ANALOG);
+    }
+
+    /*
+      convert old ratios to pressure correction factors
+     */
+    for (uint8_t i=0; i<ARRAY_SIZE(param); i++) {
+        const uint8_t old_idx[2] = { 3, 14 };
+        if (param[i].pcorrect.configured_in_storage()) {
+            continue;
+        }
+        uint16_t k_param_airspeed;
+        if (!AP_Param::find_top_level_key_by_pointer(this, k_param_airspeed)) {
+            continue;
+        }
+        const AP_Param::ConversionInfo ratio_info = {k_param_airspeed, old_idx[i], AP_PARAM_FLOAT, "ARSPD_RATIO"};
+        AP_Float ratio;
+        if (!AP_Param::find_old_parameter(&ratio_info, &ratio)) {
+            continue;
+        }
+        param[i].pcorrect.set_and_save(ratio.get() * ratio_to_correction);
     }
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -320,8 +346,8 @@ void AP_Airspeed::init()
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
-        state[i].calibration.init(param[i].ratio);
-        state[i].last_saved_ratio = param[i].ratio;
+        state[i].calibration.init(param[i].pcorrect);
+        state[i].last_saved_pcorrect = param[i].pcorrect;
 #endif
 
         // Set the enable automatically to false and set the probability that the airspeed is healhy to start with
@@ -488,6 +514,25 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     state[i].cal.read_count++;
 }
 
+/*
+  convert a pitot differential pressure to EAS
+*/
+float AP_Airspeed::calc_EAS(float diff_pressure, float static_pressure)
+{
+    diff_pressure = MAX(diff_pressure,0);
+    return sqrtf((1.0/SSL_AIR_DENSITY) * 7 * static_pressure * (powf(diff_pressure/static_pressure+1,2.0/7.0)-1));
+}
+
+/*
+  convert a pitot differential pressure to EAS, applying corrections
+*/
+float AP_Airspeed::calc_corrected_EAS(uint8_t i, float diff_pressure)
+{
+    diff_pressure = MAX(diff_pressure, 0);
+    const float static_pressure = MAX(0.1, AP::baro().get_pressure());
+    return calc_EAS(diff_pressure*param[i].pcorrect, static_pressure);
+}
+
 // read one airspeed sensor
 void AP_Airspeed::read(uint8_t i)
 {
@@ -528,25 +573,27 @@ void AP_Airspeed::read(uint8_t i)
       we support different pitot tube setups so user can choose if
       they want to be able to detect pressure on the static port
      */
+    float p1 = airspeed_pressure;
+    float p2 = state[i].filtered_pressure;
+
     switch ((enum pitot_tube_order)param[i].tube_order.get()) {
     case PITOT_TUBE_ORDER_NEGATIVE:
-        state[i].last_pressure  = -airspeed_pressure;
-        state[i].raw_airspeed   = sqrtf(MAX(-airspeed_pressure, 0) * param[i].ratio);
-        state[i].airspeed       = sqrtf(MAX(-state[i].filtered_pressure, 0) * param[i].ratio);
+        p1 = -p1;
+        p2 = -p2;
         break;
     case PITOT_TUBE_ORDER_POSITIVE:
-        state[i].last_pressure  = airspeed_pressure;
-        state[i].raw_airspeed   = sqrtf(MAX(airspeed_pressure, 0) * param[i].ratio);
-        state[i].airspeed       = sqrtf(MAX(state[i].filtered_pressure, 0) * param[i].ratio);
         break;
     case PITOT_TUBE_ORDER_AUTO:
     default:
-        state[i].last_pressure  = fabsf(airspeed_pressure);
-        state[i].raw_airspeed   = sqrtf(fabsf(airspeed_pressure) * param[i].ratio);
-        state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
+        p1 = fabsf(p1);
+        p2 = fabsf(p2);
         break;
     }
 
+    state[i].last_pressure  = p1;
+    state[i].raw_airspeed   = calc_corrected_EAS(i, p1);
+    state[i].airspeed       = calc_corrected_EAS(i, p2);
+    
     if (state[i].last_pressure < -32) {
         // we're reading more than about -8m/s. The user probably has
         // the ports the wrong way around
