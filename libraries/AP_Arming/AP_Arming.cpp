@@ -124,6 +124,28 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    // @Param: AUTH
+    // @DisplayName: Enables arm authorization. If enabled, vehicle will arm only if a valid arm authorization response is received.
+    // @Values: 0:Disable,1:Enable
+    AP_GROUPINFO("AUTH",      9,     AP_Arming,  _arm_auth_enabled, 0),
+
+    // @Param: AUTHSID
+    // @DisplayName: Contains the system_id of remote system where the authorization request is meant to go, you can leave it 0 in simple environments
+    // @Range: 0 255
+    AP_GROUPINFO("AUTHSID",      10,     AP_Arming,  _arm_auth_sysid, 0),
+
+    // @Param: AUTHINT
+    // @DisplayName: Seconds between arming auth requests sent out by the vehicle. 0 means no request is send (but incoming authorizations are processed if ARMAUTH is 1)
+    // @Units: sec
+    // @Range: 0 3600
+    AP_GROUPINFO("AUTHINT",      11,     AP_Arming,  _arm_auth_request_interval, 0),
+
+    // @Param: AUTHWIND
+    // @DisplayName: Time window for autorization response, authorization responses after this time will not accepted, 0 means there is no time window, authorizations are accepted at any time.
+    // @Units: millisec
+    // @Range: 0 3600000
+    AP_GROUPINFO("AUTHWIND",      12,     AP_Arming,  _arm_auth_response_window, 0),
+    
     AP_GROUPEND
 };
 
@@ -1133,7 +1155,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  osd_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
-        &  disarm_switch_checks(report);
+        &  disarm_switch_checks(report)
+        &  arm_authorization_check(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1314,6 +1337,72 @@ bool AP_Arming::disarm_switch_checks(bool display_failure) const
     }
 
     return true;
+}
+
+bool AP_Arming::arm_authorization_check(bool display_failure)
+{
+    // if disabled, do nothing
+    if (_arm_auth_enabled == 0) {
+        return true;
+    }
+
+    const uint32_t last_auth_sent = gcs().last_arm_authorization_request_time();
+    const uint32_t now = AP_HAL::millis();
+
+    // The authorization logic is separated to make possible suspend sending auth requests while we have a valid authorisation
+
+    const bool logic_result = arm_authorization_logic(display_failure);
+    if (logic_result) {
+        // we have a valid authorization, no need to send out authorization requests
+        return true;
+    } else {
+        // the authorization is either denied, expired or never received, if AUTHINT>0 then send out requests
+        if (_arm_auth_request_interval > 0) {
+           const int32_t time_since_last_auth_ms = now - last_auth_sent;
+           if ( (time_since_last_auth_ms) > _arm_auth_request_interval*1000) {
+                gcs().request_arm_authorization(_arm_auth_sysid, _arm_auth_response_window);
+           }
+        }
+        return false;
+    }
+}
+
+bool AP_Arming::arm_authorization_logic(bool display_failure)
+{
+    
+    const uint32_t last_auth_sent = gcs().last_arm_authorization_request_time();
+    const uint32_t now = AP_HAL::millis();
+
+    //if we did not received any response, do not allow arm
+    const uint32_t last_auth_received = gcs().last_arm_authorization_received_time();
+    if (last_auth_received == 0) {
+        check_failed(display_failure, "ARM Authorization not yet received");
+        return false;
+    }
+
+    //if we received but outside the time window, do not allow arm
+    if (_arm_auth_response_window > 0) {
+        const int32_t time_last_auth_rec_ms = last_auth_received - last_auth_sent;
+        if ( (time_last_auth_rec_ms) > _arm_auth_response_window ) {
+            check_failed(display_failure,"ARM Authorization late");
+            return false;
+        }
+    }
+
+    //At this point we sure received at least one authorization reponse.
+    const uint32_t last_auth_valid_ms = gcs().arm_authorization_valid_time();
+    
+    //zero means denied
+    if (last_auth_valid_ms == 0 ) {
+        check_failed(display_failure, "ARM Authorization denied (reason %u)", gcs().arm_authorization_denial_reason()); 
+        return false;
+    }    
+    if (now > last_auth_valid_ms) {
+        check_failed(display_failure,"ARM authorization expired");
+        return false;
+    }
+
+ return true;
 }
 
 void AP_Arming::Log_Write_Arm(const bool forced, const AP_Arming::Method method)
