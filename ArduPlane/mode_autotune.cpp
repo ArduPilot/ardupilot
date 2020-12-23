@@ -3,7 +3,6 @@
 
 bool ModeAutoTune::_enter()
 {
-    plane.auto_throttle_mode = false;
     plane.autotune_start();
 
     return true;

@@ -3,7 +3,6 @@
 
 bool ModeGuided::_enter()
 {
-    plane.auto_throttle_mode = true;
     plane.guided_throttle_passthru = false;
     /*
       when entering guided mode we set the target as the current

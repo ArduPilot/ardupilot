@@ -1,13 +1,6 @@
 #include "mode.h"
 #include "Plane.h"
 
-bool ModeTraining::_enter()
-{
-    plane.auto_throttle_mode = false;
-
-    return true;
-}
-
 void ModeTraining::update()
 {
     plane.training_manual_roll = false;
