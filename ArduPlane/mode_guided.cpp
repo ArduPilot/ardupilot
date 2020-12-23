@@ -3,7 +3,6 @@
 
 bool ModeGuided::_enter()
 {
-    plane.throttle_allows_nudging = true;
     plane.auto_throttle_mode = true;
     plane.auto_navigation_mode = true;
     plane.guided_throttle_passthru = false;
