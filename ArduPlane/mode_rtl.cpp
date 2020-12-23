@@ -3,7 +3,6 @@
 
 bool ModeRTL::_enter()
 {
-    plane.auto_throttle_mode = true;
     plane.prev_WP_loc = plane.current_loc;
     plane.do_RTL(plane.get_RTL_altitude());
     plane.rtl.done_climb = false;
