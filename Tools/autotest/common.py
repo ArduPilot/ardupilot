@@ -42,14 +42,14 @@ MAVLINK_SET_POS_TYPE_MASK_FORCE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_FORCE
 MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE
 MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE = mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE
 
-MAV_FRAMES = {
-    "MAV_FRAME_GLOBAL":                  mavutil.mavlink.MAV_FRAME_GLOBAL,
-    "MAV_FRAME_GLOBAL_INT":              mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-    "MAV_FRAME_GLOBAL_RELATIVE_ALT":     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-    "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-    "MAV_FRAME_GLOBAL_TERRAIN_ALT":      mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
-    "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT":  mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
-}
+MAV_FRAMES_TO_TEST = [
+    mavutil.mavlink.MAV_FRAME_GLOBAL,
+    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+    mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+    mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
+]
 
 # a list of pexpect objects to read while waiting for
 # messages. This keeps the output to stdout flowing
@@ -6785,7 +6785,8 @@ Also, ignores heartbeats not from our target system'''
                 0,  # yawrate
             )
 
-        for frame_name, frame in MAV_FRAMES.items():
+        for frame in MAV_FRAMES_TO_TEST:
+            frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
             self.start_test("Testing Set Position in %s" % frame_name)
             self.start_subtest("Changing Latitude")
             targetpos.lat += 0.0001
@@ -6998,7 +6999,8 @@ Also, ignores heartbeats not from our target system'''
                 0,  # yawrate
             )
 
-        for frame_name, frame in MAV_FRAMES.items():
+        for frame in MAV_FRAMES_TO_TEST:
+            frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
             self.start_test("Testing Set Velocity in %s" % frame_name)
             self.start_subtest("Changing Vx speed")
             self.wait_speed_vector(target_speed, timeout=timeout,
