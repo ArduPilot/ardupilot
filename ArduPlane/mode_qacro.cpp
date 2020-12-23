@@ -3,7 +3,6 @@
 
 bool ModeQAcro::_enter()
 {
-    plane.auto_navigation_mode = false;
     if (!plane.quadplane.init_mode() && plane.previous_mode != nullptr) {
         plane.control_mode = plane.previous_mode;
     } else {

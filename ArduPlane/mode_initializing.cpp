@@ -4,7 +4,6 @@
 bool ModeInitializing::_enter()
 {
     plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = false;
 
     return true;
 }
