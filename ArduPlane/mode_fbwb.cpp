@@ -4,7 +4,6 @@
 bool ModeFBWB::_enter()
 {
     plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = false;
 
 #if HAL_SOARING_ENABLED
     // for ArduSoar soaring_controller

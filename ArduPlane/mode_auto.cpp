@@ -4,7 +4,6 @@
 bool ModeAuto::_enter()
 {
     plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
     } else {
