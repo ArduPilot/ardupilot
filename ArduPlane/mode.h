@@ -83,6 +83,10 @@ public:
     // subclasses override this if they require navigation.
     virtual void navigate() { return; }
 
+    // this allows certain flight modes to mix RC input with throttle
+    // depending on airspeed_nudge_cm
+    virtual bool allows_throttle_nudging() const { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -122,6 +126,8 @@ public:
 
     void navigate() override;
 
+    bool allows_throttle_nudging() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -160,6 +166,8 @@ public:
     void navigate() override;
 
     virtual bool is_guided_mode() const override { return true; }
+
+    bool allows_throttle_nudging() const override { return true; }
 
 protected:
 
@@ -234,6 +242,8 @@ public:
 
     void navigate() override;
 
+    bool allows_throttle_nudging() const override { return true; }
+
 protected:
 
     bool _enter() override;
@@ -281,6 +291,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override { }
+
+    bool allows_throttle_nudging() const override { return true; }
 
 protected:
 
@@ -381,6 +393,7 @@ public:
     bool is_vtol_mode() const override { return true; }
     bool is_vtol_man_throttle() const override { return true; }
     virtual bool is_vtol_man_mode() const override { return true; }
+    bool allows_throttle_nudging() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -521,6 +534,8 @@ public:
 
     void navigate() override;
 
+    bool allows_throttle_nudging() const override { return true; }
+
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -553,6 +568,8 @@ public:
     void update_soaring();
 
     void navigate() override;
+
+    bool allows_throttle_nudging() const override { return true; }
 
 protected:
 
