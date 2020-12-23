@@ -384,7 +384,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     // NOTE: See commit 9f5b4ffca ("AP_HAL_Linux_Class: Correct
     // deadlock, and infinite loop in setup()") for details about the
     // order of scheduler initialize and setup on Linux.
-    scheduler->system_initialized();
+    scheduler->set_system_initialized();
 
     // possibly load external modules
 #if AP_MODULE_SUPPORTED
