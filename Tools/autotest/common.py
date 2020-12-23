@@ -6182,8 +6182,8 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     self.progress("SITL is NOT running")
                 raise NotAchievedException("Received %s" % str(e))
-            if int(self.mavproxy.match.group(2)) != 2:
-                raise NotAchievedException("Expected 2 logs")
+            if int(self.mavproxy.match.group(2)) != 3:
+                raise NotAchievedException("Expected 3 logs got %s" % (self.mavproxy.match.group(2)))
 
             self.mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
             self.mavproxy.expect("Finished downloading", timeout=120)
