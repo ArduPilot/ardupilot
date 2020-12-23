@@ -292,10 +292,10 @@ void Scheduler::_wait_all_threads()
     }
 }
 
-void Scheduler::system_initialized()
+void Scheduler::set_system_initialized()
 {
     if (_initialized) {
-        AP_HAL::panic("PANIC: scheduler::system_initialized called more than once");
+        AP_HAL::panic("PANIC: scheduler::set_system_initialized called more than once");
     }
 
     _initialized = true;
