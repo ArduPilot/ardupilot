@@ -16,7 +16,7 @@ The KakuteF7 AIO is a flight controller produced by [Holybro](http://www.holybro
 
 ## Pinout
 
-The KakuteF7 comes in two varients. One is an AIO (All-In-One) board,
+The KakuteF7 comes in two variants. One is an AIO (All-In-One) board,
 with OSD. The other is a smaller board without OSD.
 
 ### KakuteF7 Pinout
