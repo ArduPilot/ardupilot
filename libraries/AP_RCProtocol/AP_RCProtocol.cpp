@@ -40,17 +40,17 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true);
-    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #ifndef IOMCU_FW
+    backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
-    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 }
 
 AP_RCProtocol::~AP_RCProtocol()
