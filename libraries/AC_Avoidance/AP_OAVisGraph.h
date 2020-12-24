@@ -7,6 +7,7 @@
 /*
  * Visibility graph used by Dijkstra's algorithm for path planning around fence, stay-out zones and moving obstacles
  */
+
 class AP_OAVisGraph {
 public:
     AP_OAVisGraph();
@@ -36,7 +37,7 @@ public:
     struct VisGraphItem {
         OAItemID id1;       // first item's id
         OAItemID id2;       // second item's id
-        float distance_cm;  // distance between the items
+        float distance_m;  // distance between the items(in meters)
     };
 
     // clear all elements from graph
@@ -46,7 +47,7 @@ public:
     uint16_t num_items() const { return _num_items; }
 
     // add item to visiblity graph, returns true on success, false if graph is full
-    bool add_item(const OAItemID &id1, const OAItemID &id2, float distance_cm);
+    bool add_item(const OAItemID &id1, const OAItemID &id2, float distance_m);
 
     // allow accessing graph as an array, 0 indexed
     // Note: no protection against out-of-bounds accesses so use with num_items()
