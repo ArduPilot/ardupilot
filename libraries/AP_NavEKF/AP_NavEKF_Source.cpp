@@ -436,9 +436,11 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
         return false;
     }
 
-    if (gps_required && (dal.gps().num_sensors() == 0)) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "GPS");
-        return false;
+    if (gps_required) {
+        if (dal.gps().num_sensors() == 0) {
+    		hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "GPS");
+        	return false;
+    	}
     }
 
     if (optflow_required && !dal.opticalflow_enabled()) {
