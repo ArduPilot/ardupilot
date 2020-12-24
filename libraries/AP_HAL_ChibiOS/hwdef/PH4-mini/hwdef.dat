@@ -1,6 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 # for Holybro PH4-mini hardware.
-# This is a varient of fmuv5 without the IOMCU
+# This is a variant of fmuv5 without the IOMCU
 
 include ../fmuv5/hwdef.dat
 
