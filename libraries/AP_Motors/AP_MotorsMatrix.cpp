@@ -492,6 +492,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     switch (frame_class) {
 
         case MOTOR_FRAME_QUAD:
+            _mav_type = MAV_TYPE_QUADROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,  90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2);
@@ -618,6 +619,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;  // quad
 
         case MOTOR_FRAME_HEXA:
+            _mav_type = MAV_TYPE_HEXAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
@@ -668,6 +670,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
 
         case MOTOR_FRAME_OCTA:
+            _mav_type = MAV_TYPE_OCTOROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,    0,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1);
@@ -747,6 +750,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
 
         case MOTOR_FRAME_OCTAQUAD:
+            _mav_type = MAV_TYPE_OCTOROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,    0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);
@@ -807,6 +811,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
 
         case MOTOR_FRAME_DODECAHEXA: {
+            _mav_type = MAV_TYPE_DODECAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1);  // forward-top
@@ -844,6 +849,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
 
         case MOTOR_FRAME_Y6:
+            _mav_type = MAV_TYPE_HEXAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_Y6B:
                     // Y6 motor definition with all top motors spinning clockwise, all bottom motors counter clockwise
@@ -875,6 +881,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             break;
 
         case MOTOR_FRAME_DECA:
+            _mav_type = MAV_TYPE_DECAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
                     add_motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
@@ -910,6 +917,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
         default:
             // matrix doesn't support the configured class
             success = false;
+            _mav_type = MAV_TYPE_GENERIC;
             break;
     } // switch frame_class
 
