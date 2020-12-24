@@ -147,7 +147,7 @@ SPIDEV sdcard SPI3 DEVID3 SDCARD_CS MODE0 400*KHZ 25*MHZ
 # one IMU
 IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
-# one baro, multiple possible choices for different board varients
+# one baro, multiple possible choices for different board variants
 BARO BMP280 I2C:0:0x76
 BARO DPS280 I2C:0:0x76
 
