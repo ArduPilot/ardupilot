@@ -19,7 +19,7 @@
 //
 //    GPS configuration : Custom protocol per "DIYDrones Custom Binary Sentence Specification V1.6, v1.7, v1.8, v1.9"
 //
-//   Note that this driver supports both the 1.6 and 1.9 protocol varients
+//   Note that this driver supports both the 1.6 and 1.9 protocol variants
 //
 
 #include "AP_GPS_MTK.h"
