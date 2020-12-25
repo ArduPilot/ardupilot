@@ -122,11 +122,11 @@ const extern AP_HAL::HAL& hal;
 
 // constructor
 AP_InertialSensor_L3G4200D::AP_InertialSensor_L3G4200D(AP_InertialSensor &imu,
-                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_gyro,
-                                                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_accel)
+                                                    AP_HAL::I2CDevice* dev_gyro,
+                                                    AP_HAL::I2CDevice* dev_accel)
     : AP_InertialSensor_Backend(imu)
-    , _dev_gyro(std::move(dev_gyro))
-    , _dev_accel(std::move(dev_accel))
+    , _dev_gyro(dev_gyro)
+    , _dev_accel(dev_accel)
 {
 }
 
@@ -139,14 +139,14 @@ AP_InertialSensor_L3G4200D::~AP_InertialSensor_L3G4200D()
   detect the sensor
  */
 AP_InertialSensor_Backend *AP_InertialSensor_L3G4200D::probe(AP_InertialSensor &imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_accel)
+                                                            AP_HAL::I2CDevice* dev_gyro,
+                                                            AP_HAL::I2CDevice* dev_accel)
 {
     if ((!dev_accel) || (!dev_gyro)){
         return nullptr;
     }
     AP_InertialSensor_L3G4200D *sensor
-        = new AP_InertialSensor_L3G4200D(imu, std::move(dev_gyro), std::move(dev_accel));
+        = new AP_InertialSensor_L3G4200D(imu, dev_gyro, dev_accel);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;

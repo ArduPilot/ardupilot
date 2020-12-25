@@ -15,8 +15,8 @@ class AP_InertialSensor_RST : public AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_RST(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                              AP_HAL::SPIDevice* dev_gyro,
+                              AP_HAL::SPIDevice* dev_accel,
                               enum Rotation rotation_a,
                               enum Rotation rotation_g);
 
@@ -24,8 +24,8 @@ public:
 
     // probe the sensor on SPI bus
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                              AP_HAL::SPIDevice* dev_gyro,
+                                              AP_HAL::SPIDevice* dev_accel,
                                               enum Rotation rotation_a,
                                               enum Rotation rotation_g);
 
@@ -41,8 +41,8 @@ private:
     void gyro_measure();
     void accel_measure();
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_gyro;//i3g4250d
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_accel;//iis328dq
+    AP_HAL::SPIDevice* _dev_gyro;//i3g4250d
+    AP_HAL::SPIDevice* _dev_accel;//iis328dq
 
     float _gyro_scale;
     float _accel_scale;

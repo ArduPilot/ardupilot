@@ -26,7 +26,7 @@
 class AP_InertialSensor_BMI160 : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev);
+                                            AP_HAL::SPIDevice* dev);
 
     /**
      * Configure the sensors and start reading routine.
@@ -37,7 +37,7 @@ public:
 
 private:
     AP_InertialSensor_BMI160(AP_InertialSensor &imu,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev);
+                             AP_HAL::Device* dev);
 
     /**
      * If the macro BMI160_DEBUG is defined, check if there are errors reported
@@ -105,7 +105,7 @@ private:
      */
     void _read_fifo();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
     uint8_t _accel_instance;
     float _accel_scale;

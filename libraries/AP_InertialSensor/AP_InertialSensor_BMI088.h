@@ -26,8 +26,8 @@
 class AP_InertialSensor_BMI088 : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                            AP_HAL::Device* dev_accel,
+                                            AP_HAL::Device* dev_gyro,
                                             enum Rotation rotation);
 
     /**
@@ -38,8 +38,8 @@ public:
 
 private:
     AP_InertialSensor_BMI088(AP_InertialSensor &imu,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                             AP_HAL::Device* dev_accel,
+                             AP_HAL::Device* dev_gyro,
                              enum Rotation rotation);
 
     /*
@@ -74,8 +74,8 @@ private:
      */
     bool setup_accel_config(void);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
+    AP_HAL::Device* dev_accel;
+    AP_HAL::Device* dev_gyro;
 
     uint8_t accel_instance;
     uint8_t gyro_instance;

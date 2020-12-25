@@ -177,13 +177,13 @@ const extern AP_HAL::HAL &hal;
 
 // constructor
 AP_InertialSensor_RST::AP_InertialSensor_RST(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                              AP_HAL::SPIDevice* dev_gyro,
+                              AP_HAL::SPIDevice* dev_accel,
                               enum Rotation rotation_g,
                               enum Rotation rotation_a)
     : AP_InertialSensor_Backend(imu)
-    , _dev_gyro(std::move(dev_gyro))
-    , _dev_accel(std::move(dev_accel))
+    , _dev_gyro(dev_gyro)
+    , _dev_accel(dev_accel)
     , _rotation_g(rotation_g)
     , _rotation_a(rotation_a)
 {
@@ -197,8 +197,8 @@ AP_InertialSensor_RST::~AP_InertialSensor_RST()
   detect the sensor
  */
 AP_InertialSensor_Backend *AP_InertialSensor_RST::probe(AP_InertialSensor &imu,
-                                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                              AP_HAL::SPIDevice* dev_gyro,
+                                              AP_HAL::SPIDevice* dev_accel,
                                               enum Rotation rotation_g,
                                               enum Rotation rotation_a)
 {
@@ -206,7 +206,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_RST::probe(AP_InertialSensor &imu,
         return nullptr;
     }
     AP_InertialSensor_RST *sensor
-        = new AP_InertialSensor_RST(imu, std::move(dev_gyro), std::move(dev_accel), rotation_g, rotation_a);
+        = new AP_InertialSensor_RST(imu, dev_gyro, dev_accel, rotation_g, rotation_a);
     if (!sensor || !sensor->_init_sensor()) {
         delete sensor;
         return nullptr;

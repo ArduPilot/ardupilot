@@ -69,12 +69,12 @@ extern const AP_HAL::HAL& hal;
  */
 
 AP_InertialSensor_Invensense::AP_InertialSensor_Invensense(AP_InertialSensor &imu,
-                                                           AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                           AP_HAL::Device* dev,
                                                            enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _temp_filter(1000, 1)
     , _rotation(rotation)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
@@ -87,14 +87,14 @@ AP_InertialSensor_Invensense::~AP_InertialSensor_Invensense()
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor &imu,
-                                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                               AP_HAL::I2CDevice* dev,
                                                                enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
     AP_InertialSensor_Invensense *sensor =
-        new AP_InertialSensor_Invensense(imu, std::move(dev), rotation);
+        new AP_InertialSensor_Invensense(imu, dev, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -110,7 +110,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
 
 
 AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor &imu,
-                                                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                               AP_HAL::SPIDevice* dev,
                                                                enum Rotation rotation)
 {
     if (!dev) {
@@ -120,7 +120,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensense::probe(AP_InertialSensor
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_Invensense(imu, std::move(dev), rotation);
+    sensor = new AP_InertialSensor_Invensense(imu, dev, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

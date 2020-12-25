@@ -26,7 +26,7 @@
 class AP_InertialSensor_ADIS1647x : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                            AP_HAL::Device* dev,
                                             enum Rotation rotation,
                                             uint8_t drdy_gpio);
 
@@ -38,7 +38,7 @@ public:
 
 private:
     AP_InertialSensor_ADIS1647x(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                AP_HAL::Device* dev,
                                 enum Rotation rotation,
                                 uint8_t drdy_gpio);
 
@@ -56,7 +56,7 @@ private:
     // write a 16 bit register
     void write_reg16(uint8_t regnum, uint16_t value) const;
     
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
 
     uint8_t accel_instance;
     uint8_t gyro_instance;

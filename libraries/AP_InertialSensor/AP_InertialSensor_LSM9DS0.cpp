@@ -372,16 +372,16 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                                                     AP_HAL::Device* dev_gyro,
+                                                     AP_HAL::Device* dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
                                                      enum Rotation rotation_g,
                                                      enum Rotation rotation_gH)
     : AP_InertialSensor_Backend(imu)
-    , _dev_gyro(std::move(dev_gyro))
-    , _dev_accel(std::move(dev_accel))
+    , _dev_gyro(dev_gyro)
+    , _dev_accel(dev_accel)
     , _drdy_pin_num_a(drdy_pin_num_a)
     , _drdy_pin_num_g(drdy_pin_num_g)
     , _rotation_a(rotation_a)
@@ -391,8 +391,8 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                                                            AP_HAL::Device* dev_gyro,
+                                                            AP_HAL::Device* dev_accel,
                                                             enum Rotation rotation_a,
                                                             enum Rotation rotation_g,
                                                             enum Rotation rotation_gH)
@@ -401,7 +401,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_
         return nullptr;
     }
     AP_InertialSensor_LSM9DS0 *sensor =
-        new AP_InertialSensor_LSM9DS0(_imu, std::move(dev_gyro), std::move(dev_accel),
+        new AP_InertialSensor_LSM9DS0(_imu, dev_gyro, dev_accel,
                                       LSM9DS0_DRY_X_PIN, LSM9DS0_DRY_G_PIN,
                                       rotation_a, rotation_g, rotation_gH);
     if (!sensor || !sensor->_init_sensor()) {

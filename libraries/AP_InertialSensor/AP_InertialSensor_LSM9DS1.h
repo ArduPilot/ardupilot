@@ -17,11 +17,11 @@ public:
     bool update() override;
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            AP_HAL::SPIDevice* dev,
                                             enum Rotation rotation);
 private:
     AP_InertialSensor_LSM9DS1(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                              AP_HAL::SPIDevice* dev,
                               int drdy_pin_num_xg,
                               enum Rotation rotation);
 
@@ -62,7 +62,7 @@ private:
     void        _dump_registers();
     #endif
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
+    AP_HAL::SPIDevice* _dev;
     AP_HAL::Semaphore *_spi_sem;
     AP_HAL::DigitalSource * _drdy_pin_xg;
     float _gyro_scale;

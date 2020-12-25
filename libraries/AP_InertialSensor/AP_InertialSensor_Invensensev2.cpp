@@ -58,12 +58,12 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 
 AP_InertialSensor_Invensensev2::AP_InertialSensor_Invensensev2(AP_InertialSensor &imu,
-                                                           AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                           AP_HAL::Device* dev,
                                                            enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
     , _temp_filter(1125, 1)
     , _rotation(rotation)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
@@ -77,14 +77,14 @@ AP_InertialSensor_Invensensev2::~AP_InertialSensor_Invensensev2()
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_Invensensev2::probe(AP_InertialSensor &imu,
-                                                               AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                                               AP_HAL::I2CDevice* dev,
                                                                enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
     AP_InertialSensor_Invensensev2 *sensor =
-        new AP_InertialSensor_Invensensev2(imu, std::move(dev), rotation);
+        new AP_InertialSensor_Invensensev2(imu, dev, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -96,7 +96,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev2::probe(AP_InertialSens
 
 
 AP_InertialSensor_Backend *AP_InertialSensor_Invensensev2::probe(AP_InertialSensor &imu,
-                                                               AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                               AP_HAL::SPIDevice* dev,
                                                                enum Rotation rotation)
 {
     if (!dev) {
@@ -106,7 +106,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev2::probe(AP_InertialSens
 
     dev->set_read_flag(0x80);
 
-    sensor = new AP_InertialSensor_Invensensev2(imu, std::move(dev), rotation);
+    sensor = new AP_InertialSensor_Invensensev2(imu, dev, rotation);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

@@ -194,11 +194,11 @@ extern const AP_HAL::HAL& hal;
 #   define LSM9DS1XG_INT_GEN_DUR_G_WAIT_G         (0x1 << 7)
 
 AP_InertialSensor_LSM9DS1::AP_InertialSensor_LSM9DS1(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                     AP_HAL::SPIDevice* dev,
                                                      int drdy_pin_num_xg,
                                                      enum Rotation rotation)
     : AP_InertialSensor_Backend(imu)
-    , _dev(std::move(dev))
+    , _dev(dev)
     , _drdy_pin_num_xg(drdy_pin_num_xg)
     , _rotation(rotation)
 
@@ -206,7 +206,7 @@ AP_InertialSensor_LSM9DS1::AP_InertialSensor_LSM9DS1(AP_InertialSensor &imu,
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS1::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                                            AP_HAL::SPIDevice* dev,
                                                             enum Rotation rotation)
 {
     if (!dev) {
@@ -214,7 +214,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS1::probe(AP_InertialSensor &_
     }
 
     AP_InertialSensor_LSM9DS1 *sensor =
-        new AP_InertialSensor_LSM9DS1(_imu,std::move(dev),
+        new AP_InertialSensor_LSM9DS1(_imu,dev,
                                       LSM9DS1_DRY_XG_PIN,
                                       rotation);
     if (!sensor || !sensor->_init_sensor()) {

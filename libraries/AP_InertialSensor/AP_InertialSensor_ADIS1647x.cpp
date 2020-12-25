@@ -54,11 +54,11 @@
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_ADIS1647x::AP_InertialSensor_ADIS1647x(AP_InertialSensor &imu,
-                                                         AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                                                         AP_HAL::Device* _dev,
                                                          enum Rotation _rotation,
                                                          uint8_t drdy_gpio)
     : AP_InertialSensor_Backend(imu)
-    , dev(std::move(_dev))
+    , dev(_dev)
     , rotation(_rotation)
     , drdy_pin(drdy_gpio)
 {
@@ -66,14 +66,14 @@ AP_InertialSensor_ADIS1647x::AP_InertialSensor_ADIS1647x(AP_InertialSensor &imu,
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_ADIS1647x::probe(AP_InertialSensor &imu,
-                                   AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                   AP_HAL::Device* dev,
                                    enum Rotation rotation,
                                    uint8_t drdy_gpio)
 {
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_ADIS1647x(imu, std::move(dev), rotation, drdy_gpio);
+    auto sensor = new AP_InertialSensor_ADIS1647x(imu, dev, rotation, drdy_gpio);
 
     if (!sensor) {
         return nullptr;

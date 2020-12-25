@@ -66,26 +66,26 @@ extern const AP_HAL::HAL& hal;
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 
 AP_InertialSensor_BMI055::AP_InertialSensor_BMI055(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev_accel,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev_gyro,
+                                                   AP_HAL::Device* _dev_accel,
+                                                   AP_HAL::Device* _dev_gyro,
                                                    enum Rotation _rotation)
     : AP_InertialSensor_Backend(imu)
-    , dev_accel(std::move(_dev_accel))
-    , dev_gyro(std::move(_dev_gyro))
+    , dev_accel(_dev_accel)
+    , dev_gyro(_dev_gyro)
     , rotation(_rotation)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_BMI055::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
-                                AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
+                                AP_HAL::SPIDevice* dev_accel,
+                                AP_HAL::SPIDevice* dev_gyro,
                                 enum Rotation rotation)
 {
     if (!dev_accel || !dev_gyro) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI055(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
+    auto sensor = new AP_InertialSensor_BMI055(imu, dev_accel, dev_gyro, rotation);
 
     if (!sensor) {
         return nullptr;

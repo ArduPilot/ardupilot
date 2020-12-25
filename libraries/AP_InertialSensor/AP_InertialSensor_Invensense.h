@@ -12,7 +12,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter.h>
@@ -38,11 +37,11 @@ public:
     }
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                            AP_HAL::I2CDevice* dev,
                                             enum Rotation rotation);
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
+                                            AP_HAL::SPIDevice* dev,
                                             enum Rotation rotation);
 
     /* update accel and gyro state */
@@ -77,7 +76,7 @@ public:
 
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                              AP_HAL::Device* dev,
                               enum Rotation rotation);
 
     /* Initialize sensor*/
@@ -131,7 +130,7 @@ private:
     enum Rotation _rotation;
 
     AP_HAL::DigitalSource *_drdy_pin;
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
     AP_Invensense_AuxiliaryBus *_auxiliary_bus;
 
     // which sensor type this is

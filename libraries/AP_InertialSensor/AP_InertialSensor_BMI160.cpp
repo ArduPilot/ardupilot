@@ -121,20 +121,20 @@ struct PACKED RawData {
 };
 
 AP_InertialSensor_BMI160::AP_InertialSensor_BMI160(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                                   AP_HAL::Device* dev)
     : AP_InertialSensor_Backend(imu)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_BMI160::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev)
+                                AP_HAL::SPIDevice* dev)
 {
     if (!dev) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI160(imu, std::move(dev));
+    auto sensor = new AP_InertialSensor_BMI160(imu, dev);
 
     if (!sensor) {
         return nullptr;

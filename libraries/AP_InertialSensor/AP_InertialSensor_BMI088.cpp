@@ -62,26 +62,26 @@
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_BMI088::AP_InertialSensor_BMI088(AP_InertialSensor &imu,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev_accel,
-                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev_gyro,
+                                                   AP_HAL::Device* _dev_accel,
+                                                   AP_HAL::Device* _dev_gyro,
                                                    enum Rotation _rotation)
     : AP_InertialSensor_Backend(imu)
-    , dev_accel(std::move(_dev_accel))
-    , dev_gyro(std::move(_dev_gyro))
+    , dev_accel(_dev_accel)
+    , dev_gyro(_dev_gyro)
     , rotation(_rotation)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_BMI088::probe(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                                AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                AP_HAL::Device* dev_accel,
+                                AP_HAL::Device* dev_gyro,
                                 enum Rotation rotation)
 {
     if (!dev_accel || !dev_gyro) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_BMI088(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
+    auto sensor = new AP_InertialSensor_BMI088(imu, dev_accel, dev_gyro, rotation);
 
     if (!sensor) {
         return nullptr;
