@@ -249,13 +249,15 @@ private:
 
     void init_loiter(void);
     void init_qland(void);
-    void control_loiter(bool is_auto_mode = false);
+    void control_loiter(bool stabilize_transition = false);
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
 
     void init_qrtl(void);
     void control_qrtl(void);
+    
+    bool run_stabilize_transition(void);
     
     float assist_climb_rate_cms(void) const;
 
@@ -416,6 +418,16 @@ private:
     // are we in a guided takeoff?
     bool guided_takeoff:1;
     
+    // transition stabilization helper, initialized in QuadPlane::setup
+    struct {
+        // has the transition stabilizing hover been initialized?
+        bool is_initialized;
+        // has the transition been stabilized yet?
+        bool is_stabilized;
+        // when were we still waiting for the transition to stabilize
+        uint32_t last_wait_at;
+    } transition_stabilization;
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;

@@ -788,6 +788,10 @@ bool QuadPlane::setup(void)
     // param count will have changed
     AP_Param::invalidate_count();
 
+    transition_stabilization.last_wait_at = 0;
+    transition_stabilization.is_stabilized = true;
+    transition_stabilization.is_initialized = false;
+
     gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised");
     initialised = true;
     return true;
@@ -1155,6 +1159,7 @@ void QuadPlane::init_loiter(void)
     // initialise position and desired velocity
     set_alt_target_current();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "init loiter target velocity: %f", inertial_nav.get_velocity_z());
 
     init_throttle_wait();
 
@@ -1264,7 +1269,7 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground) const
 
 
 // run quadplane loiter controller
-void QuadPlane::control_loiter(bool is_auto_mode)
+void QuadPlane::control_loiter(bool stabilize_transition)
 {
     if (throttle_wait) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
@@ -1337,7 +1342,7 @@ void QuadPlane::control_loiter(bool is_auto_mode)
         float descent_rate = (poscontrol.state == QPOS_LAND_FINAL)? land_speed_cms:landing_descent_rate_cms(height_above_ground);
         pos_control->set_alt_target_from_climb_rate(-descent_rate, plane.G_Dt, true);
         check_land_complete();
-    } else if (is_auto_mode || (plane.control_mode == &plane.mode_guided && guided_takeoff)) {
+    } else if (stabilize_transition || (plane.control_mode == &plane.mode_guided && guided_takeoff)) {
         pos_control->set_alt_target_from_climb_rate_ff(0, plane.G_Dt, false);
     } else {
         // update altitude target and call position controller
@@ -1649,13 +1654,13 @@ void QuadPlane::update_transition(void)
     // if rotors are fully forward then we are not transitioning,
     // unless we are waiting for airspeed to increase (in which case
     // the tilt will decrease rapidly)
-    // if (tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
-    //     transition_state = TRANSITION_DONE;
-    //     transition_start_ms = 0;
-    //     transition_low_airspeed_ms = 0;
-    // }
-    
-    if (transition_state < TRANSITION_TIMER) {
+    if (!is_tailsitter() && tiltrotor_fully_fwd() && transition_state != TRANSITION_AIRSPEED_WAIT) {
+        transition_state = TRANSITION_DONE;
+        transition_start_ms = 0;
+        transition_low_airspeed_ms = 0;
+    }
+
+        if (transition_state < TRANSITION_TIMER) {
         // set a single loop pitch limit in TECS
         if (plane.ahrs.groundspeed() < 3) {
             // until we have some ground speed limit to zero pitch
@@ -1879,6 +1884,9 @@ void QuadPlane::update(void)
                 transition_state = TRANSITION_ANGLE_WAIT_FW;
                 transition_start_ms = now;
                 vtol_transition_finished_ms = now;
+                transition_stabilization.last_wait_at = now;
+                transition_stabilization.is_initialized = false;
+                transition_stabilization.is_stabilized = false;
                 init_mode();
             }
         } else {
@@ -2289,6 +2297,41 @@ bool QuadPlane::in_vtol_posvel_mode(void) const
             in_vtol_auto());
 }
 
+/**
+ * hover around for a while after transition from fw to vtol to stabilize the aircraft.
+ * @returns true if we are stabilizing the plane, otherwise false.
+ */
+bool QuadPlane::run_stabilize_transition(void) {
+    uint32_t now = AP_HAL::millis();
+
+    // Transition must be finished before any stabilization is done
+    if (transition_stabilization.is_stabilized || in_tailsitter_vtol_transition(now)) {
+        return false;
+    }
+
+    if (fabsf(inertial_nav.get_velocity_z()) > 75.0f) {
+        transition_stabilization.last_wait_at = now;
+    }
+
+    // We have stabilized the aircraft if the z velocity has stayed within limits for a second or we try to stabilize too long
+    if (now - vtol_transition_finished_ms > 8000 || now - transition_stabilization.last_wait_at > 1000) {
+        transition_stabilization.is_stabilized = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "stabilization took: %d ms", now - vtol_transition_finished_ms);
+        return false;
+    }
+
+    if (!transition_stabilization.is_initialized) {
+        init_loiter();
+        // init_loiter sets target altitude to where it was initiated by default, so we override it to keep the plane climbing up
+        pos_control->set_target_to_stopping_point_z();
+        transition_stabilization.is_initialized = true;
+    }
+
+    control_loiter(true);
+
+    return true;
+}
+
 /*
   main landing controller. Used for landing and RTL.
  */
@@ -2298,9 +2341,8 @@ void QuadPlane::vtol_position_controller(void)
         return;
     }
 
-    // Loiter for 5 seconds after transition to stabilize the aircraft before starting to move
-    if (AP_HAL::millis() - vtol_transition_finished_ms < 5000) {
-        control_loiter(true);
+    // if we are tailsitter transitioning from fw to vtol, we must first stabilize the plane
+    if (is_tailsitter() && run_stabilize_transition()) {
         return;
     }
 
@@ -2578,6 +2620,11 @@ void QuadPlane::takeoff_controller(void)
  */
 void QuadPlane::waypoint_controller(void)
 {
+    // if we are tailsitter transitioning from fw to vtol, we must first stabilize the plane
+    if (is_tailsitter() && run_stabilize_transition()) {
+        return;
+    }
+
     setup_target_position();
 
     check_attitude_relax();
@@ -2608,7 +2655,7 @@ void QuadPlane::waypoint_controller(void)
  */
 void QuadPlane::control_auto(void)
 {
-    if (!setup()) {
+    if (!setup() || in_tailsitter_vtol_transition(AP_HAL::millis())) {
         return;
     }
 
@@ -2666,7 +2713,6 @@ void QuadPlane::init_qrtl(void)
     poscontrol.speed_scale = 0;
     pos_control->set_desired_accel_xy(0.0f, 0.0f);
     pos_control->init_xy_controller();
-    init_loiter();
 }
 
 /*
