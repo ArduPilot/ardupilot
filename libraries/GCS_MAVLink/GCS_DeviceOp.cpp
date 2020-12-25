@@ -30,7 +30,7 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
 {
     mavlink_device_op_read_t packet;
     mavlink_msg_device_op_read_decode(&msg, &packet);
-    AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
+    AP_HAL::Device* dev = nullptr;
     uint8_t retcode = 0;
     uint8_t data[sizeof(mavlink_device_op_read_reply_t::data)] {};
     bool ret = false;
@@ -93,7 +93,7 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
 {
     mavlink_device_op_write_t packet;
     mavlink_msg_device_op_write_decode(&msg, &packet);
-    AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
+    AP_HAL::Device* dev = nullptr;
     uint8_t retcode = 0;
     
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
