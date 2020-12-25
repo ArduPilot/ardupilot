@@ -122,9 +122,6 @@ public:
     // return true when flying a control surface only tailsitter
     bool is_control_surface_tailsitter(void) const;
 
-    // true when flying a tilt-vectored tailsitter
-    bool _is_vectored;
-
     // return true when flying a tailsitter in VTOL
     bool tailsitter_active(void);
     
@@ -536,6 +533,7 @@ private:
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
         AP_Float disk_loading;
+        bool is_vectored;    // true when flying a tilt-vectored tailsitter
     } tailsitter;
 
     // tailsitter speed scaler
@@ -608,7 +606,7 @@ private:
 
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
-    // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
+    // ignored unless OPTION_DELAY_ARMING or OPTION_DISARMED_TILT is set
     bool delay_arming;
 
     /*

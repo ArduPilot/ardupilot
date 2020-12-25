@@ -781,7 +781,7 @@ bool QuadPlane::setup(void)
 
     // TODO: update this if servo function assignments change
     // used by relax_attitude_control() to control special behavior for vectored tailsitters
-    _is_vectored = (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
+    tailsitter.is_vectored = (frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) &&
                    (!is_zero(tailsitter.vectored_hover_gain) &&
                     (SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorLeft) ||
                      SRV_Channels::function_assigned(SRV_Channel::k_tiltMotorRight)));
@@ -1079,7 +1079,7 @@ void QuadPlane::relax_attitude_control()
 {
     // disable roll and yaw control for vectored tailsitters
     // if not a vectored tailsitter completely disable attitude control
-    attitude_control->relax_attitude_controllers(_is_vectored);
+    attitude_control->relax_attitude_controllers(tailsitter.is_vectored);
 }
 
 /*
@@ -1402,7 +1402,7 @@ void QuadPlane::control_loiter()
         relax_attitude_control();
         pos_control->relax_alt_hold_controllers(0);
         loiter_nav->clear_pilot_desired_acceleration();
-        bool init_I_terms = !_is_vectored;
+        bool init_I_terms = !tailsitter.is_vectored;
         loiter_nav->init_target(init_I_terms);
         return;
     }
@@ -1416,7 +1416,7 @@ void QuadPlane::control_loiter()
     const uint32_t now = AP_HAL::millis();
     if (now - last_loiter_ms > 500) {
         loiter_nav->clear_pilot_desired_acceleration();
-        bool init_I_terms = !_is_vectored;
+        bool init_I_terms = !tailsitter.is_vectored;
         loiter_nav->init_target(init_I_terms);
     }
     last_loiter_ms = now;
