@@ -370,7 +370,7 @@ class Radio_Beken
 {
 public:
     // Generic functions
-    Radio_Beken(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev);
+    Radio_Beken(AP_HAL::SPIDevice* _dev);
     bool lock_bus(void)
     {
         dev->get_semaphore()->take_blocking();
@@ -426,7 +426,7 @@ public:
     uint8_t TX_Address[5]; // For sending telemetry and DFU
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+    AP_HAL::SPIDevice* dev;
     uint8_t bFreshData; // Have we received a packet since we last processed one
     uint32_t numTxPackets;
     packetFormatRx pktDataRx; // Last valid packet that has been received

@@ -145,8 +145,8 @@ const uint8_t RegPower[8][2] = {
 
 // --------------------------------------------------------------------
 // constructor
-Radio_Beken::Radio_Beken(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev) :
-    dev(std::move(_dev))
+Radio_Beken::Radio_Beken(AP_HAL::SPIDevice* _dev) :
+    dev(_dev)
 {
     ResetAddress();
 }

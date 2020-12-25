@@ -218,7 +218,7 @@ private:
     static uint32_t bind_time_ms; // Rough time in ms (milliseconds) when the last BIND command was received
 
     // Class data
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev; // Low level support of SPI device
+    AP_HAL::SPIDevice* dev; // Low level support of SPI device
     HAL_Semaphore sem;  // semaphore between ISR and main thread to protect fwupload
 
     AP_Radio::stats stats; // Radio stats (live) for the current time-period

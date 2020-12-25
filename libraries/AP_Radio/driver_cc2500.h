@@ -140,7 +140,7 @@ enum {
 class Radio_CC2500
 {
 public:
-    Radio_CC2500(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev);
+    Radio_CC2500(AP_HAL::SPIDevice* _dev);
 
     void ReadFifo(uint8_t *dpbuffer, uint8_t len);
     void WriteFifo(const uint8_t *dpbuffer, uint8_t len);
@@ -169,6 +169,6 @@ public:
     }
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+    AP_HAL::SPIDevice* dev;
     uint8_t last_power;
 };

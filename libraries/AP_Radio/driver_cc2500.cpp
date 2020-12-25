@@ -12,8 +12,8 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-Radio_CC2500::Radio_CC2500(AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev) :
-    dev(std::move(_dev))
+Radio_CC2500::Radio_CC2500(AP_HAL::SPIDevice* _dev) :
+    dev(_dev)
 {}
 
 void Radio_CC2500::ReadFifo(uint8_t *dpbuffer, uint8_t len)

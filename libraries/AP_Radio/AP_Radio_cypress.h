@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+    AP_HAL::SPIDevice* dev;
     static AP_Radio_cypress *radio_singleton;
 
     void radio_init(void);
