@@ -118,7 +118,7 @@ private:
     int _search_local_maxima(void);
     int _search_maximum_with_max_amplitude(void);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _spi;
+    AP_HAL::Device* _spi;
     AP_HAL::GPIO *_gpio;
 
     struct adc_capture _adc;

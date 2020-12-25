@@ -29,7 +29,7 @@ public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                          AP_HAL::I2CDevice* dev);
 
     // update state
     void update(void) override;
@@ -43,7 +43,7 @@ protected:
 private:
     AP_RangeFinder_Benewake_TFMiniPlus(RangeFinder::RangeFinder_State &_state,
                                        AP_RangeFinder_Params &_params,
-                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                       AP_HAL::I2CDevice* dev);
 
     bool init();
     void timer();
@@ -53,7 +53,7 @@ private:
 
     bool check_checksum(uint8_t *arr, int pkt_len);
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
 
     struct {
         uint32_t sum;

@@ -60,9 +60,9 @@ static const uint8_t numStreamSequenceIndexes = sizeof(streamSequence)/sizeof(st
 
 AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        AP_HAL::I2CDevice* dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , _dev(std::move(dev)) {}
+    , _dev(dev) {}
 
 /*
    Detects if a Lightware rangefinder is connected. We'll detect by
@@ -71,14 +71,14 @@ AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinde
 */
 AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        AP_HAL::I2CDevice* dev)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_LightWareI2C *sensor
-        = new AP_RangeFinder_LightWareI2C(_state, _params, std::move(dev));
+        = new AP_RangeFinder_LightWareI2C(_state, _params, dev);
 
     if (!sensor) {
         return nullptr;

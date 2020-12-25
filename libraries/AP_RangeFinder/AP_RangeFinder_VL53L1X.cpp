@@ -28,23 +28,23 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev)
+AP_RangeFinder_VL53L1X::AP_RangeFinder_VL53L1X(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::I2CDevice* _dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , dev(std::move(_dev)) {}
+    , dev(_dev) {}
 
 /*
    detect if a VL53L1X rangefinder is connected. We'll detect by
    trying to take a reading on I2C. If we get a result the sensor is
    there.
 */
-AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, DistanceMode mode)
+AP_RangeFinder_Backend *AP_RangeFinder_VL53L1X::detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, AP_HAL::I2CDevice* dev, DistanceMode mode)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_VL53L1X *sensor
-        = new AP_RangeFinder_VL53L1X(_state, _params, std::move(dev));
+        = new AP_RangeFinder_VL53L1X(_state, _params, dev);
 
     if (!sensor) {
         delete sensor;

@@ -39,22 +39,22 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_Benewake_TFMiniPlus::AP_RangeFinder_Benewake_TFMiniPlus(
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        AP_HAL::I2CDevice* dev)
     : AP_RangeFinder_Backend(_state, _params)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
 AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFMiniPlus::detect(
         RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+        AP_HAL::I2CDevice* dev)
 {
     if (!dev) {
         return nullptr;
     }
 
     AP_RangeFinder_Benewake_TFMiniPlus *sensor
-        = new AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, std::move(dev));
+        = new AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, dev);
 
     if (!sensor || !sensor->init()) {
         delete sensor;

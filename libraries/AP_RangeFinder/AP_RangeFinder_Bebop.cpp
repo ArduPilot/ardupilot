@@ -396,7 +396,7 @@ error_destroy_context:
 
 void AP_RangeFinder_Bebop::_init()
 {
-    _spi = std::move(hal.spi->get_device("bebop"));
+    _spi = hal.spi->get_device("bebop");
 
     _gpio = AP_HAL::get_HAL().gpio;
     if (_gpio == nullptr) {

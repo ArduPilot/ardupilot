@@ -13,7 +13,7 @@ public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                          AP_HAL::I2CDevice* dev);
 
     // update state
     void update(void) override;
@@ -33,7 +33,7 @@ private:
     // constructor
     AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state,
                                 AP_RangeFinder_Params &_params,
-                                AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                AP_HAL::I2CDevice* dev);
 
     bool write_bytes(uint8_t *write_buf_u8, uint32_t len_u8);
     void sf20_disable_address_tagging();
@@ -56,5 +56,5 @@ private:
                            const char *string_identifier,
                            uint16_t &val);
     void data_log(uint16_t *val);
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
 };

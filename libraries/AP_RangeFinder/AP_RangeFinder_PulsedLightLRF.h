@@ -45,7 +45,7 @@ private:
     void timer(void);
     bool lidar_transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len);
     
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
 
     uint8_t sw_version;
     uint8_t hw_version;
