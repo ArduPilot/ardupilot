@@ -17,7 +17,7 @@ public:
     bool update() override;
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
 
     struct PACKED frame {
         uint16_t checksum;
