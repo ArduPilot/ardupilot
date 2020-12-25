@@ -28,7 +28,6 @@
 #include <vector>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "GPIO.h"
 #include "PollerThread.h"
@@ -440,7 +439,7 @@ bool SPIDevice::adjust_periodic_callback(
 }
 
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
+AP_HAL::SPIDevice*
 SPIDeviceManager::get_device(const char *name)
 {
     SPIDesc *desc = nullptr;
@@ -454,7 +453,7 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     if (!desc) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     /* Find if bus already exists */
@@ -465,7 +464,7 @@ SPIDeviceManager::get_device(const char *name)
     }
 
     /* Bus not found for this device, create a new one */
-    AP_HAL::OwnPtr<SPIBus> b{new SPIBus(desc->bus)};
+    SPIBus* b{new SPIBus(desc->bus)};
     if (!b) {
         return nullptr;
     }
@@ -475,7 +474,7 @@ SPIDeviceManager::get_device(const char *name)
         return nullptr;
     }
 
-    _buses.push_back(b.leak());
+    _buses.push_back(b);
 
     return dev;
 }
@@ -491,13 +490,13 @@ const char* SPIDeviceManager::get_device_name(uint8_t idx)
 }
 
 /* Create a new device increasing the bus reference */
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
+AP_HAL::SPIDevice*
 SPIDeviceManager::_create_device(SPIBus &b, SPIDesc &desc) const
 {
     // Ensure bus is open
     b.open(desc.subdev);
 
-    auto dev = AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(b, desc));
+    auto dev = new SPIDevice(b, desc);
     if (!dev) {
         return nullptr;
     }

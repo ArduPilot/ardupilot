@@ -83,8 +83,8 @@ using namespace Linux;
 
 extern const AP_HAL::HAL& hal;
 
-RCOutput_Bebop::RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : _dev(std::move(dev))
+RCOutput_Bebop::RCOutput_Bebop(AP_HAL::I2CDevice* dev)
+    : _dev(dev)
     , _min_pwm(BEBOP_BLDC_MIN_PERIOD_US)
     , _max_pwm(BEBOP_BLDC_MAX_PERIOD_US)
     , _state(BEBOP_BLDC_STOPPED)

@@ -16,7 +16,7 @@ protected:
     int _write_fd(const uint8_t *buf, uint16_t n) override;
     int _read_fd(uint8_t *buf, uint16_t n) override;
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
+    AP_HAL::SPIDevice* _dev;
 
     uint8_t *_buffer;
 

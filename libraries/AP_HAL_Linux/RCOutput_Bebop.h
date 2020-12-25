@@ -55,7 +55,7 @@ public:
 
 class RCOutput_Bebop : public AP_HAL::RCOutput {
 public:
-    RCOutput_Bebop(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    RCOutput_Bebop(AP_HAL::I2CDevice* dev);
 
     static RCOutput_Bebop *from(AP_HAL::RCOutput *rcout) {
         return static_cast<RCOutput_Bebop*>(rcout);
@@ -76,7 +76,7 @@ public:
     void     play_note(uint8_t pwm, uint16_t period_us, uint16_t duration_ms);
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     uint16_t _request_period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _period_us[BEBOP_BLDC_MOTORS_NUM];
     uint16_t _rpm[BEBOP_BLDC_MOTORS_NUM];

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
 #include "AP_HAL_Linux.h"
@@ -70,7 +69,7 @@ public:
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
 private:
-    AP_HAL::OwnPtr<SerialDevice> _device;
+    SerialDevice* _device;
     bool _nonblocking_writes;
     bool _console;
     volatile bool _in_timer;
@@ -84,7 +83,7 @@ private:
     void _allocate_buffers(uint16_t rxS, uint16_t txS);
     void _deallocate_buffers();
 
-    AP_HAL::OwnPtr<SerialDevice> _parseDevicePath(const char *arg);
+    SerialDevice* _parseDevicePath(const char *arg);
 
     // timestamp for receiving data on the UART, avoiding a lock
     uint64_t _receive_timestamp[2];

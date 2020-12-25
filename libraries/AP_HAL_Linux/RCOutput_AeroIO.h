@@ -121,7 +121,7 @@ private:
      */
     uint16_t _hw_read(uint16_t address);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _spi;
+    AP_HAL::Device* _spi;
 
     /**
      * Frequency buffer of last written values

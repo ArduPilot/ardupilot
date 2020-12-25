@@ -108,11 +108,11 @@ extern const AP_HAL::HAL& hal;
 using namespace Linux;
 
 CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
-                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                           AP_HAL::I2CDevice* dev,
                                            enum mt9v117_res res,
                                            uint16_t nrst_gpio, uint32_t clock_freq)
     : CameraSensor(device_path)
-    , _dev(std::move(dev))
+    , _dev(dev)
     , _nrst_gpio(nrst_gpio)
     , _clock_freq(clock_freq)
 {

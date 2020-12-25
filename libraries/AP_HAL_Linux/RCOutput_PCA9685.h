@@ -14,7 +14,7 @@ namespace Linux {
 
 class RCOutput_PCA9685 : public AP_HAL::RCOutput {
 public:
-    RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+    RCOutput_PCA9685(AP_HAL::I2CDevice* dev,
                      uint32_t external_clock,
                      uint8_t channel_offset,
                      int16_t oe_pin_number);
@@ -36,7 +36,7 @@ private:
     void reset();
 
     AP_HAL::DigitalSource *_enable_pin;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     uint16_t _frequency;
     float _osc_clock;
 

@@ -282,7 +282,7 @@ I2CDeviceManager::I2CDeviceManager()
     _buses.reserve(4);
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice*
 I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address)
 {
     const char *dirname = "/sys/class/i2c-dev/";
@@ -343,7 +343,7 @@ I2CDeviceManager::get_device(std::vector<const char *> devpaths, uint8_t address
     return nullptr;
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice*
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t bus_clock,
                              bool use_smbus,
@@ -356,7 +356,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     }
 
     /* Bus not found for this device, create a new one */
-    AP_HAL::OwnPtr<I2CBus> b{new I2CBus()};
+    I2CBus* b{new I2CBus()};
     if (!b) {
         return nullptr;
     }
@@ -370,16 +370,16 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
         return nullptr;
     }
 
-    _buses.push_back(b.leak());
+    _buses.push_back(b);
 
     return dev;
 }
 
 /* Create a new device increasing the bus reference */
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice*
 I2CDeviceManager::_create_device(I2CBus &b, uint8_t address) const
 {
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(b, address));
+    auto dev = new I2CDevice(b, address);
     if (!dev) {
         return nullptr;
     }

@@ -35,7 +35,7 @@ struct mt9v117_patch {
 class CameraSensor_Mt9v117 : public CameraSensor {
 public:
     CameraSensor_Mt9v117(const char *device_path,
-                         AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                         AP_HAL::I2CDevice* dev,
                          enum mt9v117_res res,
                          uint16_t nrst_gpio, uint32_t clock_freq);
 
@@ -61,7 +61,7 @@ private:
     void _configure_sensor_qvga();
     void _init_sensor();
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     uint32_t _clock_freq;
     uint16_t _nrst_gpio = 0xFFFF;
     uint8_t _addr;

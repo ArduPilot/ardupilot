@@ -21,7 +21,6 @@
 
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "Semaphores.h"
 
@@ -94,11 +93,11 @@ public:
 
     I2CDeviceManager();
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(
+    AP_HAL::I2CDevice* get_device(
             std::vector<const char *> devpaths, uint8_t address) override;
 
     /* AP_HAL::I2CDeviceManager implementation */
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+    AP_HAL::I2CDevice* get_device(uint8_t bus, uint8_t address,
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) override;
@@ -127,7 +126,7 @@ public:
     
 protected:
     void _unregister(I2CBus &b);
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _create_device(I2CBus &b, uint8_t address) const;
+    AP_HAL::I2CDevice* _create_device(I2CBus &b, uint8_t address) const;
 
     std::vector<I2CBus*> _buses;
 };

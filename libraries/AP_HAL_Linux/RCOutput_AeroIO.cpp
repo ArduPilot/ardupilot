@@ -107,7 +107,7 @@ RCOutput_AeroIO::~RCOutput_AeroIO()
 
 void RCOutput_AeroIO::init()
 {
-    _spi = std::move(hal.spi->get_device(DEVICE_NAME));
+    _spi = hal.spi->get_device(DEVICE_NAME);
     if (!_spi) {
         AP_HAL::panic("Could not initialize AeroIO");
     }

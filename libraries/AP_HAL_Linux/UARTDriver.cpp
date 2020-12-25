@@ -69,7 +69,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
             _device = _parseDevicePath(device_path);
 
-            if (!_device.get()) {
+            if (!_device) {
                 ::fprintf(stderr, "Argument is not valid. Fallback to console.\n"
                           "Launch with --help to see an example.\n");
                 _device = new ConsoleDevice();
@@ -136,12 +136,12 @@ void UARTDriver::_deallocate_buffers()
         - tcp:*:1243:wait
         - udp:192.168.2.15:1243
 */
-AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
+SerialDevice* UARTDriver::_parseDevicePath(const char *arg)
 {
     struct stat st;
 
     if (stat(arg, &st) == 0 && S_ISCHR(st.st_mode)) {
-        return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
+        return new UARTDevice(arg);
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
                strncmp(arg, "udpin:", 6)) {
@@ -185,7 +185,7 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
         _flag = strdup(flag);
     }
 
-    AP_HAL::OwnPtr<SerialDevice> device = nullptr;
+    SerialDevice* device = nullptr;
 
     if (strcmp(protocol, "udp") == 0 || strcmp(protocol, "udpin") == 0) {
         bool bcast = (_flag && strcmp(_flag, "bcast") == 0);

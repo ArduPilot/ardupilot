@@ -18,10 +18,10 @@ static struct {
     { "lsm9ds0_g",  0x0F | 0x80 },
 };
 
-AP_HAL::OwnPtr<AP_HAL::Device>
+AP_HAL::Device*
 get_device(const char *name)
 {
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev = nullptr;
 
     const char *spi_name = hal.spi->get_device_name(0);
     /* Dummy is the default device at index 0 
@@ -59,7 +59,7 @@ void setup(void)
 
 void loop(void)
 {
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
     AP_HAL::Semaphore *spi_sem;
     const char *bus_type = new char;
 
