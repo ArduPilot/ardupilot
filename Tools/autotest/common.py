@@ -4221,7 +4221,7 @@ class AutoTest(ABC):
             if comparator(m_value, value):
                 return m_value
 
-    def wait_rc_channel_value(self, channel, value, timeout=2):
+    def get_rc_channel_value(self, channel, timeout=2):
         """wait for channel to hit value"""
         channel_field = "chan%u_raw" % channel
         tstart = self.get_sim_time()
@@ -4235,12 +4235,22 @@ class AutoTest(ABC):
             if m is None:
                 continue
             m_value = getattr(m, channel_field)
-            self.progress("RC_CHANNELS.%s=%u want=%u time_boot_ms=%u" %
-                          (channel_field, m_value, value, m.time_boot_ms))
             if m_value is None:
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
-            if m_value == value:
+            return m_value
+
+    def wait_rc_channel_value(self, channel, value, timeout=2):
+        channel_field = "chan%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException("Channel never achieved value")
+            m_value = self.get_rc_channel_value(channel, timeout=timeout)
+            self.progress("RC_CHANNELS.%s=%u want=%u" %
+                          (channel_field, m_value, value))
+            if value == m_value:
                 return
 
     def wait_location(self,
