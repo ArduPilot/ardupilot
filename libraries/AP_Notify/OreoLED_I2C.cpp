@@ -56,7 +56,7 @@ OreoLED_I2C::OreoLED_I2C(uint8_t bus, uint8_t theme):
 bool OreoLED_I2C::init()
 {
     // first look for led on external bus
-    _dev = std::move(hal.i2c_mgr->get_device(_bus, OREOLED_BASE_I2C_ADDR));
+    _dev = hal.i2c_mgr->get_device(_bus, OREOLED_BASE_I2C_ADDR);
     if (!_dev) {
         return false;
     }

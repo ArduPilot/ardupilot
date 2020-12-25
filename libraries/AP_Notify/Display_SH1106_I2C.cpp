@@ -20,8 +20,8 @@
 #include <AP_HAL/I2CDevice.h>
 
 // constructor
-Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
-    _dev(std::move(dev))
+Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::Device* dev) :
+    _dev(dev)
 {
 }
 
@@ -29,9 +29,9 @@ Display_SH1106_I2C::~Display_SH1106_I2C()
 {
 }
 
-Display_SH1106_I2C *Display_SH1106_I2C::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev)
+Display_SH1106_I2C *Display_SH1106_I2C::probe(AP_HAL::Device* dev)
 {
-    Display_SH1106_I2C *driver = new Display_SH1106_I2C(std::move(dev));
+    Display_SH1106_I2C *driver = new Display_SH1106_I2C(dev);
     if (!driver || !driver->hw_init()) {
         delete driver;
         return nullptr;

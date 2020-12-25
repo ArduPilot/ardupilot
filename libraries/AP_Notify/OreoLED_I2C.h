@@ -181,7 +181,7 @@ private:
     // private members
     uint8_t _bus;
     HAL_Semaphore _sem;
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     bool    _send_required;                         // true when we need to send an update to at least one led
     oreo_state _state_desired[OREOLED_NUM_LEDS];    // desired state
     oreo_state _state_sent[OREOLED_NUM_LEDS];       // last state sent to led

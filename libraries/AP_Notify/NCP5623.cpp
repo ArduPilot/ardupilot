@@ -66,7 +66,7 @@ bool NCP5623::hw_init(void)
     uint8_t addrs[] = { NCP5623_LED_I2C_ADDR, NCP5623_C_LED_I2C_ADDR };
     for (uint8_t i=0; i<ARRAY_SIZE(addrs); i++) {
         // first look for led on external bus
-        _dev = std::move(hal.i2c_mgr->get_device(_bus, addrs[i]));
+        _dev = hal.i2c_mgr->get_device(_bus, addrs[i]);
         if (!_dev) {
             continue;
         }

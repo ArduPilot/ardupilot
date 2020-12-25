@@ -27,7 +27,7 @@ protected:
     bool hw_init(void) override;
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     void _timer(void);
     bool write(uint8_t reg, uint8_t data);
     bool write_pwm(uint8_t rgb[3]);
