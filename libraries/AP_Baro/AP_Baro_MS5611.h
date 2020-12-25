@@ -38,7 +38,7 @@ public:
         BARO_MS5837 = 3
     };
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device* dev, enum MS56XX_TYPE ms56xx_type = BARO_MS5611);
 
 private:
     /*
@@ -49,7 +49,7 @@ private:
     static void _update_and_wrap_accumulator(uint32_t *accum, uint32_t val,
                                              uint8_t *count, uint8_t max_count);
 
-    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type);
+    AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::Device* dev, enum MS56XX_TYPE ms56xx_type);
 
     bool _init();
 
@@ -65,7 +65,7 @@ private:
 
     void _timer();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
     /* Shared values between thread sampling the HW and main thread */
     struct {

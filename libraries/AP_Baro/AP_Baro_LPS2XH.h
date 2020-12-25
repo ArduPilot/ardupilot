@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_Baro_Backend.h"
 
@@ -21,13 +20,13 @@ public:
         BARO_LPS25H = 1,
     };
 
-    AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::Device* dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
-    static AP_Baro_Backend *probe_InvensenseIMU(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint8_t imu_address);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device* dev);
+    static AP_Baro_Backend *probe_InvensenseIMU(AP_Baro &baro, AP_HAL::Device* dev, uint8_t imu_address);
 
 private:
     virtual ~AP_Baro_LPS2XH(void) {};
@@ -40,7 +39,7 @@ private:
 
     bool _check_whoami(void);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
     bool _has_sample;
     uint8_t _instance;

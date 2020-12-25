@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_Baro_Backend.h"
 
@@ -15,12 +14,12 @@
 
 class AP_Baro_DPS280 : public AP_Baro_Backend {
 public:
-    AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_DPS280(AP_Baro &baro, AP_HAL::Device* dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device* dev);
 
 private:
     bool init(void);
@@ -33,7 +32,7 @@ private:
     void set_config_registers(void);
     void check_health();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
 
     uint8_t instance;
 

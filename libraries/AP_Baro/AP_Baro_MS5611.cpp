@@ -54,21 +54,21 @@ static const uint8_t ADDR_CMD_CONVERT_TEMPERATURE = ADDR_CMD_CONVERT_D2_OSR1024;
 /*
   constructor
  */
-AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, enum MS56XX_TYPE ms56xx_type)
+AP_Baro_MS56XX::AP_Baro_MS56XX(AP_Baro &baro, AP_HAL::Device* dev, enum MS56XX_TYPE ms56xx_type)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(dev)
     , _ms56xx_type(ms56xx_type)
 {
 }
 
 AP_Baro_Backend *AP_Baro_MS56XX::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                       AP_HAL::Device* dev,
                                        enum MS56XX_TYPE ms56xx_type)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Baro_MS56XX *sensor = new AP_Baro_MS56XX(baro, std::move(dev), ms56xx_type);
+    AP_Baro_MS56XX *sensor = new AP_Baro_MS56XX(baro, dev, ms56xx_type);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

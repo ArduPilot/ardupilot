@@ -65,22 +65,22 @@ extern const AP_HAL::HAL &hal;
 /*
   constructor
  */
-AP_Baro_ICM20789::AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, AP_HAL::OwnPtr<AP_HAL::Device> _dev_imu)
+AP_Baro_ICM20789::AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::I2CDevice* _dev, AP_HAL::Device* _dev_imu)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
-    , dev_imu(std::move(_dev_imu))
+    , dev(_dev)
+    , dev_imu(_dev_imu)
 {
 }
 
 AP_Baro_Backend *AP_Baro_ICM20789::probe(AP_Baro &baro,
-                                         AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                         AP_HAL::OwnPtr<AP_HAL::Device> dev_imu)
+                                         AP_HAL::I2CDevice* dev,
+                                         AP_HAL::Device* dev_imu)
 {
     debug("Probing for ICM20789 baro\n");
     if (!dev || !dev_imu) {
         return nullptr;
     }
-    AP_Baro_ICM20789 *sensor = new AP_Baro_ICM20789(baro, std::move(dev), std::move(dev_imu));
+    AP_Baro_ICM20789 *sensor = new AP_Baro_ICM20789(baro, dev, dev_imu);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

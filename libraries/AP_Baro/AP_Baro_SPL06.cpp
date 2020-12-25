@@ -66,14 +66,14 @@ extern const AP_HAL::HAL &hal;
 
 #define SPL06_OVERSAMPLING_TO_REG_VALUE(n)     (ffs(n)-1)
 
-AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device* dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(dev)
 {
 }
 
 AP_Baro_Backend *AP_Baro_SPL06::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+                                       AP_HAL::Device* dev)
 {
     if (!dev) {
         return nullptr;
@@ -83,7 +83,7 @@ AP_Baro_Backend *AP_Baro_SPL06::probe(AP_Baro &baro,
         dev->set_read_flag(0x80);
     }
 
-    AP_Baro_SPL06 *sensor = new AP_Baro_SPL06(baro, std::move(dev));
+    AP_Baro_SPL06 *sensor = new AP_Baro_SPL06(baro, dev);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

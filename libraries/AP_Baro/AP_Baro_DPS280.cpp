@@ -40,20 +40,20 @@ extern const AP_HAL::HAL &hal;
 
 #define TEMPERATURE_LIMIT_C 120
 
-AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::Device* _dev)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
+    , dev(_dev)
 {
 }
 
 AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+                                       AP_HAL::Device* _dev)
 {
     if (!_dev) {
         return nullptr;
     }
 
-    AP_Baro_DPS280 *sensor = new AP_Baro_DPS280(baro, std::move(_dev));
+    AP_Baro_DPS280 *sensor = new AP_Baro_DPS280(baro, _dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

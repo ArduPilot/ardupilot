@@ -2,7 +2,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #include "AP_Baro_Backend.h"
 
@@ -16,12 +15,12 @@
 
 class AP_Baro_FBM320 : public AP_Baro_Backend {
 public:
-    AP_Baro_FBM320(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_FBM320(AP_Baro &baro, AP_HAL::Device* _dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device* dev);
 
 private:
     bool init(void);
@@ -29,7 +28,7 @@ private:
     void timer(void);
     void calculate_PT(int32_t UT, int32_t UP, int32_t &pressure, int32_t &temperature);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
 
     uint8_t instance;
 
