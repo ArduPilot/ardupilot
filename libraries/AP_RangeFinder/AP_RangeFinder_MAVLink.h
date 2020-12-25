@@ -23,8 +23,8 @@ public:
     // Get update from mavlink
     void handle_msg(const mavlink_message_t &msg) override;
 
-    int16_t max_distance_cm() const override { return _max_distance_cm; }
-    int16_t min_distance_cm() const override { return _min_distance_cm; }
+    int16_t max_distance_cm() const override;
+    int16_t min_distance_cm() const override;
 
 protected:
 
