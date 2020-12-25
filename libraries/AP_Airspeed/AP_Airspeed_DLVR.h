@@ -18,7 +18,6 @@
 // currently assumes a 5" of water, noise reduced, sensor
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
@@ -53,5 +52,5 @@ private:
     uint32_t last_sample_time_ms;
     const float range_inH2O;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice* dev;
 };

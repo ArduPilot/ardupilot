@@ -20,7 +20,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
@@ -74,5 +73,5 @@ private:
     uint8_t cmd_sent;
     MS5525_ADDR _address;
     
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::I2CDevice* dev;
 };
