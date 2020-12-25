@@ -908,6 +908,73 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, ch_override_value))
             self.set_parameter("RC_OVERRIDE_TIME", old)
 
+
+            self.delay_sim_time(10)
+
+            self.start_subtest("Checking higher-channel semantics")
+            self.context_push()
+            self.set_parameter("RC_OVERRIDE_TIME", 30)
+
+            ch = 11
+            rc_value = 1010
+            self.set_rc(ch, rc_value)
+
+            channels = [65535] * 18
+            ch_override_value = 1234
+            channels[ch-1] = ch_override_value
+            self.progress("Sending override message ch%u=%u" % (ch, ch_override_value))
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.progress("Wait for override value")
+            self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
+
+            self.progress("Sending return-to-RC-input value")
+            channels[ch-1] = 65534
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, rc_value, timeout=10)
+
+
+            channels[ch-1] = ch_override_value
+            self.progress("Sending override message ch%u=%u" % (ch, ch_override_value))
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.progress("Wait for override value")
+            self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
+
+            # make we keep the override vaue for at least 10 seconds:
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    break
+                # try both ignore values:
+                ignore_value = 0
+                if self.get_sim_time_cached() - tstart > 5:
+                    ignore_value = 65535
+                self.progress("Sending ignore value %u" % ignore_value)
+                channels[ch-1] = ignore_value
+                self.mav.mav.rc_channels_override_send(
+                    1, # target system
+                    1, # targe component
+                    *channels
+                )
+                if self.get_rc_channel_value(ch) != ch_override_value:
+                    raise NotAchievedException("Did not maintain value")
+
+            self.context_pop()
+
+            self.end_subtest("Checking higher-channel semantics")
+
+
         except Exception as e:
             self.progress("Exception caught: %s" %
                           self.get_exception_stacktrace(e))
