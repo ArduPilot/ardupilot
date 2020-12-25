@@ -353,7 +353,7 @@ bool I2CDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice*
 I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
                              uint32_t bus_clock,
                              bool use_smbus,
@@ -361,9 +361,9 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
 {
     bus -= HAL_I2C_BUS_BASE;
     if (bus >= ARRAY_SIZE(I2CD)) {
-        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
+        return nullptr;
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    auto dev = new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms);
     return dev;
 }
 

@@ -16,7 +16,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include "Util.h"
 #include "Scheduler.h"
@@ -381,7 +380,7 @@ bool SPIDevice::set_chip_select(bool set) {
 /*
   return a SPIDevice given a string device name
  */
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
+AP_HAL::SPIDevice*
 SPIDeviceManager::get_device(const char *name)
 {
     /* Find the bus description in the table */
@@ -392,7 +391,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -416,7 +415,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
+    return new SPIDevice(*busp, desc);
 }
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ

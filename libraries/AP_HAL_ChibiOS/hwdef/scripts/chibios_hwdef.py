@@ -1079,7 +1079,7 @@ def write_BARO_config(f):
             elif dev[i].startswith("I2C:"):
                 (wrapper, dev[i]) = parse_i2c_device(dev[i])
                 if dev[i].startswith('hal.i2c_mgr'):
-                    dev[i] = 'std::move(%s)' % dev[i]
+                    dev[i] = '%s' % dev[i]
         n = len(devlist)+1
         devlist.append('HAL_BARO_PROBE%u' % n)
         args = ['*this'] + dev[1:]

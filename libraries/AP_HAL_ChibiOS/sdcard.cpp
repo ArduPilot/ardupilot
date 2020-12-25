@@ -36,7 +36,7 @@ static SDCConfig sdcconfig = {
 };
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
-static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
+static AP_HAL::SPIDevice* device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
@@ -100,8 +100,7 @@ bool sdcard_init()
 
     mmcObjectInit(&MMCD1);
 
-    mmcconfig.spip =
-            static_cast<ChibiOS::SPIDevice*>(device.get())->get_driver();
+    mmcconfig.spip = static_cast<ChibiOS::SPIDevice*>(device)->get_driver();
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 

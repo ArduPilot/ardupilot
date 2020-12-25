@@ -158,7 +158,7 @@ public:
         return static_cast<SPIDeviceManager*>(spi_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice* get_device(const char *name) override;
 
 private:
     static SPIDesc device_table[];
