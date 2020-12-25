@@ -1358,8 +1358,108 @@ class AutoTest(ABC):
                 break
             self.delay_sim_time(1)
 
+    def get_fence_point(self, idx, target_system=1, target_component=1):
+        self.mav.mav.fence_fetch_point_send(target_system,
+                                            target_component,
+                                            idx)
+        m = self.mav.recv_match(type="FENCE_POINT", blocking=True, timeout=2)
+        print("m: %s" % str(m))
+        if m is None:
+            raise NotAchievedException("Did not get fence return point back")
+        if m.idx != idx:
+            raise NotAchievedException("Invalid idx returned (want=%u got=%u)" %
+                                       (idx, m.seq))
+        return m
+
+    def fencepoint_protocol_epsilon(self):
+        return 0.00002
+
+    def roundtrip_fencepoint_protocol(self, offset, count, lat, lng, target_system=1, target_component=1):
+        self.progress("Sending FENCE_POINT offs=%u count=%u" % (offset, count))
+        self.mav.mav.fence_point_send(target_system,
+                                      target_component,
+                                      offset,
+                                      count,
+                                      lat,
+                                      lng)
+
+        self.progress("Requesting fence point")
+        m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
+        if abs(m.lat - lat) > self.fencepoint_protocol_epsilon():
+            raise NotAchievedException("Did not get correct lat in fencepoint: got=%f want=%f" % (m.lat, lat))
+        if abs(m.lng - lng) > self.fencepoint_protocol_epsilon():
+            raise NotAchievedException("Did not get correct lng in fencepoint: got=%f want=%f" % (m.lng, lng))
+        self.progress("Roundtrip OK")
+
+    def roundtrip_fence_using_fencepoint_protocol(self, loc_list, target_system=1, target_component=1, ordering=None):
+        count = len(loc_list)
+        offset = 0
+        self.set_parameter("FENCE_TOTAL", count)
+        if ordering is None:
+            ordering = range(count)
+        elif len(ordering) != len(loc_list):
+            raise ValueError("ordering list length mismatch")
+
+        for offset in ordering:
+            loc = loc_list[offset]
+            self.roundtrip_fencepoint_protocol(offset,
+                                               count,
+                                               loc.lat,
+                                               loc.lng,
+                                               target_system,
+                                               target_component)
+
+        self.progress("Validating uploaded fence")
+        returned_count = self.get_parameter("FENCE_TOTAL")
+        if returned_count != count:
+            raise NotAchievedException("Returned count mismatch (want=%u got=%u)" %
+                                       (count, returned_count))
+        for i in range(count):
+            self.progress("Requesting fence point")
+            m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
+            if abs(m.lat-loc.lat) > self.fencepoint_protocol_epsilon():
+                raise NotAchievedException("Returned lat mismatch (want=%f got=%f" %
+                                           (loc.lat, m.lat))
+            if abs(m.lng-loc.lng) > self.fencepoint_protocol_epsilon():
+                raise NotAchievedException("Returned lng mismatch (want=%f got=%f" %
+                                           (loc.lng, m.lng))
+            if m.count != count:
+                raise NotAchievedException("Count mismatch (want=%u got=%u)" %
+                                           (count, m.count))
+
     def load_fence(self, filename):
-        self.load_fence_using_mavproxy(filename)
+        filepath = os.path.join(testdir, self.current_test_name_directory, filename)
+        self.progress("Loading fence from (%s)" % str(filepath))
+        locs = []
+        for line in open(filepath,'rb'):
+            if len(line) == 0:
+                continue
+            m = re.match("([-\d.]+)\s+([-\d.]+)\s*", line.decode('ascii'))
+            if m is None:
+                raise ValueError("Did not match (%s)" % line)
+            locs.append(mavutil.location(float(m.group(1)), float(m.group(2)), 0, 0))
+        if self.is_plane():
+            # create return point as the centroid:
+            total_lat = 0
+            total_lng = 0
+            total_cnt = 0
+            for loc in locs:
+                total_lat += loc.lat
+                total_lng += loc.lng
+                total_cnt += 1
+            locs2 = [mavutil.location(total_lat/total_cnt,
+                                      total_lng/total_cnt,
+                                      0,
+                                      0)]  # return point
+            locs2.extend(locs)
+            locs2.append(copy.copy(locs2[1]))
+            return self.roundtrip_fence_using_fencepoint_protocol(locs2)
+
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                locs
+            ])
 
     def fetch_parameters(self):
         self.mavproxy.send("param fetch\n")
