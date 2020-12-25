@@ -27,7 +27,7 @@ public:
 private:
     static const uint8_t _channels_number;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
 
     uint16_t            _gain;
     int                 _channel_to_read;
