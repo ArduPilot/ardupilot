@@ -106,7 +106,7 @@ I2CDeviceManager::I2CDeviceManager()
     }
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice*
 I2CDeviceManager::get_device(uint8_t bus,
                              uint8_t address,
                              uint32_t bus_clock,
@@ -114,9 +114,9 @@ I2CDeviceManager::get_device(uint8_t bus,
                              uint32_t timeout_ms)
 {
     if (bus >= ARRAY_SIZE(buses)) {
-        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
+        return nullptr;
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(buses[bus], address));
+    auto dev = new I2CDevice(buses[bus], address);
     return dev;
 }
 
