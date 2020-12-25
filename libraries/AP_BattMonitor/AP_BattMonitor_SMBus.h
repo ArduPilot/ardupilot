@@ -34,7 +34,7 @@ public:
     AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                     AP_BattMonitor::BattMonitor_State &mon_state,
                     AP_BattMonitor_Params &params,
-                    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                    AP_HAL::I2CDevice* dev);
 
     // virtual destructor to reduce compiler warnings
     virtual ~AP_BattMonitor_SMBus() {}
@@ -87,7 +87,7 @@ protected:
     // buff is the data that was read or will be written
     uint8_t get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool reading, const uint8_t buff[], uint8_t len) const;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice* _dev;
     bool _pec_supported; // true if PEC is supported
 
     int32_t _serial_number = -1;    // battery serial number

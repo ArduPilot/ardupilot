@@ -17,9 +17,9 @@ extern const AP_HAL::HAL& hal;
 AP_BattMonitor_SMBus_SUI::AP_BattMonitor_SMBus_SUI(AP_BattMonitor &mon,
         AP_BattMonitor::BattMonitor_State &mon_state,
         AP_BattMonitor_Params &params,
-        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+        AP_HAL::I2CDevice* dev,
         uint8_t _cell_count)
-    : AP_BattMonitor_SMBus(mon, mon_state, params, std::move(dev)),
+    : AP_BattMonitor_SMBus(mon, mon_state, params, dev),
       cell_count(_cell_count)
 {
     _pec_supported = false;

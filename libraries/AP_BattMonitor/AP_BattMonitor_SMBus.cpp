@@ -5,9 +5,9 @@
 AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
                                            AP_BattMonitor::BattMonitor_State &mon_state,
                                            AP_BattMonitor_Params &params,
-                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+                                           AP_HAL::I2CDevice* dev)
         : AP_BattMonitor_Backend(mon, mon_state, params),
-        _dev(std::move(dev))
+        _dev(dev)
 {
     _params._serial_number = AP_BATT_SERIAL_NUMBER_DEFAULT;
     _params._pack_capacity = 0;
