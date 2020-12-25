@@ -93,7 +93,7 @@ int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
                 handled = true;
             }
         }
-        if (!handled) {
+        if (!handled || ret) {
             ::fprintf(stderr, "Unhandled i2c message: bus=%u addr=0x%02x flags=%u len=%u\n", msg.bus, msg.addr, msg.flags, msg.len);
             return -1;  // ?!
         }
