@@ -978,14 +978,23 @@ class AutoTestPlane(AutoTest):
 
         self.set_parameter("FENCE_CHANNEL", 7)
         self.set_parameter("FENCE_ACTION", 4)
-        self.set_rc(3, 1000)
-        self.set_rc(7, 2000)
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True,
+                               enabled=False,
+                               healthy=True)
+        self.set_rc_from_map({
+            3: 1000,
+            7: 2000,
+        })
 
         self.progress("Checking fence is initially OK")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        if (not (m.onboard_control_sensors_enabled & fence_bit)):
-            raise NotAchievedException("Fence not initially enabled")
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True,
+                               enabled=True,
+                               healthy=True,
+                               verbose=True,
+                               timeout=30)
 
         self.set_parameter("THR_FS_VALUE", 960)
         self.progress("Failing receiver (throttle-to-950)")
