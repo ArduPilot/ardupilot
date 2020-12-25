@@ -34,7 +34,7 @@ private:
     bool              getSectorCount(void);
     void              flash_test(void);
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+    AP_HAL::SPIDevice* dev;
     AP_HAL::Semaphore *dev_sem;
 
     bool flash_died;
