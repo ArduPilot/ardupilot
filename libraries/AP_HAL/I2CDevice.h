@@ -21,7 +21,6 @@
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"
-#include "utility/OwnPtr.h"
 
 namespace AP_HAL {
 
@@ -72,7 +71,7 @@ public:
 class I2CDeviceManager {
 public:
     /* Get a device handle */
-    virtual OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
+    virtual AP_HAL::I2CDevice * get_device(uint8_t bus, uint8_t address,
                                                  uint32_t bus_clock=400000,
                                                  bool use_smbus = false,
                                                  uint32_t timeout_ms=4) = 0;
@@ -84,7 +83,7 @@ public:
      * returned by 'udevadm info -q path /dev/i2c-X'. The first I2C bus
      * matching a prefix in @devpaths is used to create a I2CDevice object.
      */
-    virtual OwnPtr<I2CDevice> get_device(std::vector<const char *> devpaths,
+    virtual AP_HAL::I2CDevice * get_device(std::vector<const char *> devpaths,
                                          uint8_t address) {
         // Not implemented
         return nullptr;

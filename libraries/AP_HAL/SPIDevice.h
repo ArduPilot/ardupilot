@@ -20,7 +20,6 @@
 
 #include "AP_HAL_Namespace.h"
 #include "Device.h"
-#include "utility/OwnPtr.h"
 
 namespace AP_HAL {
 
@@ -68,7 +67,7 @@ public:
 
 class SPIDeviceManager {
 public:
-    virtual OwnPtr<SPIDevice> get_device(const char *name)
+    virtual SPIDevice * get_device(const char *name)
     {
         return nullptr;
     }
