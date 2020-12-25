@@ -4398,11 +4398,12 @@ class AutoTest(ABC):
     def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True):
         return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True)
 
-    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False):
+    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=False):
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=5)
         if m is None:
             raise NotAchievedException("Did not receive SYS_STATUS")
-#        self.progress("Status: %s" % str(mavutil.dump_message_verbose(sys.stdout, m)))
+        if verbose:
+            self.progress("Status: %s" % str(mavutil.dump_message_verbose(sys.stdout, m)))
         reported_present = m.onboard_control_sensors_present & sensor
         reported_enabled = m.onboard_control_sensors_enabled & sensor
         reported_healthy = m.onboard_control_sensors_health & sensor
@@ -4439,6 +4440,14 @@ class AutoTest(ABC):
                     raise NotAchievedException("Sensor healthy when it shouldn't be")
                 return False
         return True
+
+    def wait_sensor_state(self, sensor, present=True, enabled=True, healthy=True, timeout=5, verbose=False):
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Sensor did not achieve state")
+            if self.sensor_has_state(sensor, present=present, enabled=enabled, healthy=healthy, verbose=verbose):
+                break
 
     def wait_prearm_sys_status_healthy(self, timeout=60):
         self.do_timesync_roundtrip()
