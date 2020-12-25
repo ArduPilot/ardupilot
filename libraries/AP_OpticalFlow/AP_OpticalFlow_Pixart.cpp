@@ -83,7 +83,7 @@ extern const AP_HAL::HAL& hal;
 AP_OpticalFlow_Pixart::AP_OpticalFlow_Pixart(const char *devname, OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend)
 {
-    _dev = std::move(hal.spi->get_device(devname));
+    _dev = hal.spi->get_device(devname);
 }
 
 // detect the device

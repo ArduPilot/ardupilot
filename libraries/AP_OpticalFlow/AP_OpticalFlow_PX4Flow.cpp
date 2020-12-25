@@ -70,7 +70,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
                 continue;
             }
     #endif
-            AP_HAL::OwnPtr<AP_HAL::Device> tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_address());
+            AP_HAL::Device* tdev = hal.i2c_mgr->get_device(bus, PX4FLOW_BASE_I2C_ADDR + get_address());
             if (!tdev) {
                 continue;
             }
@@ -80,7 +80,7 @@ bool AP_OpticalFlow_PX4Flow::scan_buses(void)
             success = tdev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame));
             if (success) {
                 printf("Found PX4Flow on bus %u\n", bus);
-                dev = std::move(tdev);
+                dev = tdev;
                 break;
             }
         }

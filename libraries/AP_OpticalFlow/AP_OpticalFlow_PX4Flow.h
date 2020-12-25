@@ -1,7 +1,6 @@
 #pragma once
 
 #include "OpticalFlow.h"
-#include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_PX4Flow : public OpticalFlow_backend
 {
@@ -19,7 +18,7 @@ public:
     static AP_OpticalFlow_PX4Flow *detect(OpticalFlow &_frontend);
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device* dev;
 
     static const uint8_t REG_INTEGRAL_FRAME = 0x16;
     

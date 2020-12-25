@@ -1,7 +1,6 @@
 #pragma once
 
 #include "OpticalFlow.h"
-#include <AP_HAL/utility/OwnPtr.h>
 
 #if HAL_MSP_OPTICALFLOW_ENABLED
 

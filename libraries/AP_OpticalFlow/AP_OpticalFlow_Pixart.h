@@ -1,7 +1,6 @@
 #pragma once
 
 #include "OpticalFlow.h"
-#include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_Pixart : public OpticalFlow_backend
 {
@@ -19,7 +18,7 @@ public:
     static AP_OpticalFlow_Pixart *detect(const char *devname, OpticalFlow &_frontend);
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;
+    AP_HAL::SPIDevice* _dev;
 
     enum {
         PIXART_3900=0,
