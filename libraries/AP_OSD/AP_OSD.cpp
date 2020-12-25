@@ -219,11 +219,11 @@ void AP_OSD::init()
 
     case OSD_MAX7456: {
 #ifdef HAL_WITH_SPI_OSD
-        AP_HAL::OwnPtr<AP_HAL::Device> spi_dev = std::move(hal.spi->get_device("osd"));
+        AP_HAL::Device* spi_dev = hal.spi->get_device("osd");
         if (!spi_dev) {
             break;
         }
-        backend = AP_OSD_MAX7456::probe(*this, std::move(spi_dev));
+        backend = AP_OSD_MAX7456::probe(*this, spi_dev);
         if (backend == nullptr) {
             break;
         }

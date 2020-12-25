@@ -134,8 +134,8 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev):
-    AP_OSD_Backend(osd), _dev(std::move(dev))
+AP_OSD_MAX7456::AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::Device* dev):
+    AP_OSD_Backend(osd), _dev(dev)
 {
     video_signal_reg = VIDEO_MODE_PAL | OSD_ENABLE;
     video_lines = video_lines_pal;
@@ -247,13 +247,13 @@ bool AP_OSD_MAX7456::update_font_char(uint8_t chr, const uint8_t* font_data)
     return retry != MAX_NVM_WAIT;
 }
 
-AP_OSD_Backend *AP_OSD_MAX7456::probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_OSD_Backend *AP_OSD_MAX7456::probe(AP_OSD &osd, AP_HAL::Device* dev)
 {
     if (!dev) {
         return nullptr;
     }
 
-    AP_OSD_MAX7456 *backend = new AP_OSD_MAX7456(osd, std::move(dev));
+    AP_OSD_MAX7456 *backend = new AP_OSD_MAX7456(osd, dev);
     if (!backend) {
         return nullptr;
     }

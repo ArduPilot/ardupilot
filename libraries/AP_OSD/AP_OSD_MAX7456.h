@@ -24,7 +24,7 @@ class AP_OSD_MAX7456 : public AP_OSD_Backend
 
 public:
 
-    static AP_OSD_Backend *probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_OSD_Backend *probe(AP_OSD &osd, AP_HAL::Device* dev);
 
     //draw given text to framebuffer
     void write(uint8_t x, uint8_t y, const char* text) override;
@@ -44,7 +44,7 @@ public:
 private:
 
     //constructor
-    AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_OSD_MAX7456(AP_OSD &osd, AP_HAL::Device* dev);
 
     void buffer_add_cmd(uint8_t reg, uint8_t arg);
 
@@ -62,7 +62,7 @@ private:
 
     bool is_dirty(uint8_t x, uint8_t y);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
     uint8_t  video_signal_reg;
     bool initialized;
