@@ -57,7 +57,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::I2CDevice* dev,
                                                bool force_external,
                                                enum Rotation rotation)
 {
@@ -65,7 +65,7 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice>
         return nullptr;
     }
 
-    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(std::move(dev),force_external,rotation);
+    AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(dev,force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -74,10 +74,10 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice>
     return sensor;
 }
 
-AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_QMC5883L::AP_Compass_QMC5883L(AP_HAL::Device* dev,
                                          bool force_external,
                                          enum Rotation rotation)
-    : _dev(std::move(dev))
+    : _dev(dev)
     , _rotation(rotation)
 	, _force_external(force_external)
 {

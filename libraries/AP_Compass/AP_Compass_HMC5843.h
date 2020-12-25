@@ -16,7 +16,7 @@ class AP_HMC5843_BusDriver;
 class AP_Compass_HMC5843 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device* dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
@@ -90,7 +90,7 @@ public:
 class AP_HMC5843_BusDriver_HALDevice : public AP_HMC5843_BusDriver
 {
 public:
-    AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_HMC5843_BusDriver_HALDevice(AP_HAL::Device* dev);
 
     bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     bool register_read(uint8_t reg, uint8_t *val) override;
@@ -115,7 +115,7 @@ public:
     }
     
 private:
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 };
 
 class AP_HMC5843_BusDriver_Auxiliary : public AP_HMC5843_BusDriver

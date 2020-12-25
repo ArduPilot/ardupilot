@@ -11,7 +11,7 @@
 class AP_Compass_LSM9DS1 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device* dev,
                                      enum Rotation rotation);
 
     static constexpr const char *name = "LSM9DS1";
@@ -21,7 +21,7 @@ public:
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:
-    AP_Compass_LSM9DS1(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    AP_Compass_LSM9DS1(AP_HAL::Device* dev,
                        enum Rotation rotation);
     bool init();
     bool _check_id(void);
@@ -35,7 +35,7 @@ private:
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
     void _dump_registers();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
     uint8_t _compass_instance;
     float _scaling;
     enum Rotation _rotation;

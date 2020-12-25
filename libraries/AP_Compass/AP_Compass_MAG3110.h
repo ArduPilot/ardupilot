@@ -16,7 +16,7 @@
 class AP_Compass_MAG3110 : public AP_Compass_Backend
 {
 public:
-    static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+    static AP_Compass_Backend *probe(AP_HAL::Device* dev,
                                      enum Rotation rotation);
 
     static constexpr const char *name = "MAG3110";
@@ -26,7 +26,7 @@ public:
     ~AP_Compass_MAG3110() { }
 
 private:
-    AP_Compass_MAG3110(AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Compass_MAG3110(AP_HAL::Device* dev);
 
     bool init(enum Rotation rotation);
 
@@ -35,7 +35,7 @@ private:
     bool _hardware_init();
     void _update();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
     int32_t _mag_x;
     int32_t _mag_y;

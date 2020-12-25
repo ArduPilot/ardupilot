@@ -74,14 +74,14 @@ AP_Compass_AK09916::~AP_Compass_AK09916()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::I2CDevice* dev,
                                              bool force_external,
                                              enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_AK09916_BusDriver *bus = new AP_AK09916_BusDriver_HALDevice(std::move(dev));
+    AP_AK09916_BusDriver *bus = new AP_AK09916_BusDriver_HALDevice(dev);
     if (!bus) {
         return nullptr;
     }
@@ -95,8 +95,8 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::I2CDevice* dev,
+                                                     AP_HAL::I2CDevice* dev_icm,
                                                      bool force_external,
                                                      enum Rotation rotation)
 {
@@ -160,7 +160,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     dev_icm->write_register(REG_ICM_INT_PIN_CFG, 0x02);
     hal.scheduler->delay(1);
     dev->get_semaphore()->give();
-    return probe(std::move(dev), force_external, rotation);
+    return probe(dev, force_external, rotation);
 fail:
     dev->get_semaphore()->give();
     return nullptr;
@@ -316,8 +316,8 @@ bool AP_Compass_AK09916::_reset()
 }
 
 /* AP_HAL::I2CDevice implementation of the AK09916 */
-AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : _dev(std::move(dev))
+AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::I2CDevice* dev)
+    : _dev(dev)
 {
 }
 

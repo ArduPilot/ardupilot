@@ -107,14 +107,14 @@ AP_Compass_HMC5843::~AP_Compass_HMC5843()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::Device* dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(std::move(dev));
+    AP_HMC5843_BusDriver *bus = new AP_HMC5843_BusDriver_HALDevice(dev);
     if (!bus) {
         return nullptr;
     }
@@ -455,8 +455,8 @@ bool AP_Compass_HMC5843::_calibrate()
 }
 
 /* AP_HAL::Device implementation of the HMC5843 */
-AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-    : _dev(std::move(dev))
+AP_HMC5843_BusDriver_HALDevice::AP_HMC5843_BusDriver_HALDevice(AP_HAL::Device* dev)
+    : _dev(dev)
 {
     // set read and auto-increment flags on SPI
     if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {

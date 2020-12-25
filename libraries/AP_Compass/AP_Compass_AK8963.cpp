@@ -64,13 +64,13 @@ AP_Compass_AK8963::~AP_Compass_AK8963()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::I2CDevice* dev,
                                              enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_AK8963_BusDriver *bus = new AP_AK8963_BusDriver_HALDevice(std::move(dev));
+    AP_AK8963_BusDriver *bus = new AP_AK8963_BusDriver_HALDevice(dev);
     if (!bus) {
         return nullptr;
     }
@@ -84,7 +84,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> d
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::I2CDevice* dev,
                                                      enum Rotation rotation)
 {
     if (!dev) {
@@ -95,7 +95,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CD
     /* Allow MPU9250 to shortcut auxiliary bus and host bus */
     ins.detect_backends();
 
-    return probe(std::move(dev), rotation);
+    return probe(dev, rotation);
 }
 
 AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
@@ -267,8 +267,8 @@ bool AP_Compass_AK8963::_calibrate()
 }
 
 /* AP_HAL::I2CDevice implementation of the AK8963 */
-AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : _dev(std::move(dev))
+AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::I2CDevice* dev)
+    : _dev(dev)
 {
 }
 
