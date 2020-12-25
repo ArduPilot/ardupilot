@@ -22,7 +22,7 @@ public:
         return _healthy;
     }
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device* _dev;
 
 private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

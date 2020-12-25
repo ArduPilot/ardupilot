@@ -18,7 +18,7 @@ bool TSYS01::init(uint8_t bus)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     return false;
 #endif
-    _dev = std::move(hal.i2c_mgr->get_device(bus, TSYS01_ADDR));
+    _dev = hal.i2c_mgr->get_device(bus, TSYS01_ADDR);
     if (!_dev) {
         printf("TSYS01 device is null!");
         return false;
