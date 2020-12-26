@@ -431,7 +431,7 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
         return false;
     }
 
-    if (compass_required && dal.compass().get_num_enabled() == 0) {
+    if (compass_required && (dal.compass().get_num_enabled() == 0)) {
         hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Compass");
         return false;
     }
