@@ -8751,10 +8751,7 @@ switch value'''
             ])
             crsf = CRSF(("127.0.0.1", 6735))
             crsf.connect()
-            self.wait_ready_to_arm()
-            self.drain_mav_unparsed()
 
-            prev = self.get_parameter("LOG_BITMASK")
             self.progress("Writing vtx_frame")
             crsf.write_data_id(crsf.dataid_vtx_frame)
             self.delay_sim_time(5)
