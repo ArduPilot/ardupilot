@@ -3881,7 +3881,15 @@ class AutoTest(ABC):
         '''change vehicle flightmode'''
         self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
-        self.mavproxy.send('mode %s\n' % mode)
+        self.send_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                     mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                     self.get_mode_from_mode_mapping(mode),
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+        )
         tstart = self.get_sim_time()
         while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
