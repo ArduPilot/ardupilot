@@ -39,6 +39,9 @@ void AP_Periph_FW::send_msp_packet(uint16_t cmd, void *p, uint16_t size)
  */
 void AP_Periph_FW::msp_sensor_update(void)
 {
+    if (msp.port.uart == nullptr) {
+        return;
+    }
 #ifdef HAL_PERIPH_ENABLE_GPS
     send_msp_GPS();
 #endif
