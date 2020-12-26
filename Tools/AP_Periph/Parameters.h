@@ -35,6 +35,7 @@ public:
         k_param_servo_channels,
         k_param_rangefinder_port,
         k_param_gps_port,
+        k_param_msp_port,
     };
 
     AP_Int16 format_version;
@@ -76,6 +77,10 @@ public:
     AP_Int8 gps_port;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_MSP
+    AP_Int8 msp_port;
+#endif
+    
     AP_Int8 debug;
 
     AP_Int32 serial_number;

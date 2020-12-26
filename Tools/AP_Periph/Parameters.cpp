@@ -25,6 +25,10 @@ extern const AP_HAL::HAL &hal;
 #define HAL_PERIPH_ADSB_PORT_DEFAULT 1
 #endif
 
+#ifndef AP_PERIPH_MSP_PORT_DEFAULT
+#define AP_PERIPH_MSP_PORT_DEFAULT 1
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -140,6 +144,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(servo_channels, "OUT",     SRV_Channels),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_MSP
+    GSCALAR(msp_port, "MSP_PORT", AP_PERIPH_MSP_PORT_DEFAULT),
+#endif
+    
     AP_VAREND
 };
 
