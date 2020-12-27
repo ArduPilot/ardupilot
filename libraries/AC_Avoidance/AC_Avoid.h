@@ -22,8 +22,7 @@
 #define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
 
 /*
- * This class prevents the vehicle from leaving a polygon fence in
- * 2 dimensions by limiting velocity (adjust_velocity).
+ * This class prevents the vehicle from leaving a polygon fence or avoiding proximity based obstacles
  * Additionally the vehicle may back up if the margin to obstacle is breached
  */
 class AC_Avoid {
