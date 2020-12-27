@@ -78,10 +78,7 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face face)
     const uint8_t sector = face.sector;
 
     // find adjacent sector (clockwise)
-    uint8_t next_sector = sector + 1;
-    if (next_sector >= PROXIMITY_NUM_SECTORS) {
-        next_sector = 0;
-    }
+    const uint8_t next_sector = get_next_sector(sector);
 
     // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
     float shortest_distance = PROXIMITY_BOUNDARY_DIST_DEFAULT;
@@ -103,7 +100,7 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face face)
     }
 
     // repeat for edge between sector and previous sector
-    uint8_t prev_sector = (sector == 0) ? PROXIMITY_NUM_SECTORS-1 : sector-1;
+    const uint8_t prev_sector = get_prev_sector(sector);
     shortest_distance = PROXIMITY_BOUNDARY_DIST_DEFAULT;
     if (_distance_valid[layer][prev_sector] && _distance_valid[layer][sector]) {
         shortest_distance = MIN(_distance[layer][prev_sector], _distance[layer][sector]);
@@ -115,7 +112,7 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face face)
     _boundary_points[layer][prev_sector] = _sector_edge_vector[layer][prev_sector] * shortest_distance;
 
     // if the sector counter-clockwise from the previous sector has an invalid distance, set boundary to create a cup like boundary
-    uint8_t prev_sector_ccw = (prev_sector == 0) ? PROXIMITY_NUM_SECTORS - 1 : prev_sector - 1;
+    const uint8_t prev_sector_ccw = get_prev_sector(prev_sector);
     if (!_distance_valid[layer][prev_sector_ccw]) {
         _boundary_points[layer][prev_sector_ccw] = _sector_edge_vector[layer][prev_sector_ccw] * shortest_distance;
     }
@@ -168,77 +165,81 @@ bool AP_Proximity_Boundary_3D::get_distance(Face face, float &distance) const
 }
 
 // get the total number of obstacles 
-// this method iterates through the entire 3-D boundary and checks which layer has at least one valid distance
-uint8_t AP_Proximity_Boundary_3D::get_obstacle_count()
+uint8_t AP_Proximity_Boundary_3D::get_obstacle_count() const
 {
-    uint8_t obstacle_count = 0;
-    // reset entire array to false
-    memset(_active_layer, 0, sizeof(_active_layer));
-    // check if this layer has atleast one valid sector
-    for (uint8_t layer=0; layer<PROXIMITY_NUM_LAYERS; layer++) {
-        for (uint8_t sector=0; sector<PROXIMITY_NUM_SECTORS; sector++ ) {
-            if (_distance_valid[layer][sector]) {
-                _active_layer[layer] = true;
-                obstacle_count += PROXIMITY_NUM_SECTORS;
-                break;
-            }
-        }
-    }
-    return obstacle_count;
+    return PROXIMITY_NUM_LAYERS * PROXIMITY_NUM_SECTORS;
 }
 
-// Converts obstacle_num passed from avoidance library into appropriate layer and sector
-// This is packed into a Boundary Location object and returned 
-AP_Proximity_Boundary_3D::Face AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num) const
+// Converts obstacle_num passed from avoidance library into appropriate face of the boundary
+// Returns false if the face is invalid
+// "update_boundary" method manipulates two sectors ccw and one sector cw from any valid face.
+// Any boundary that does not fall into these manipulated faces are useless, and will be marked as false
+// The resultant is packed into a Boundary Location object and returned by reference as "face"
+bool AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const
 {
-    const uint8_t active_layer = obstacle_num / PROXIMITY_NUM_SECTORS;
-    uint8_t layer_count = 0;
-    uint8_t layer = 0;
-    for (uint8_t i=0; i < PROXIMITY_NUM_LAYERS; i++) {
-        if (_active_layer[i]) {
-            layer_count++;
-        }
-        if (layer_count == (active_layer + 1)) {
-            layer = i;
-            break;
-        }
-    }
+    // obstacle num is just "flattened layers, and sectors"
+    const uint8_t layer = obstacle_num / PROXIMITY_NUM_SECTORS;
     const uint8_t sector = obstacle_num % PROXIMITY_NUM_SECTORS;
+    face.sector = sector;
+    face.layer = layer;
 
-    return AP_Proximity_Boundary_3D::Face(layer, sector);
+    // if this face is valid (sensor is directly pushing values towards this face), return true
+    if (_distance_valid[layer][sector]) {
+        return true;
+    } 
+
+    // if face cw from this face is valid, then "update_boundary" must have manipulated this face also. 
+    // return true
+    const uint8_t next_sector = get_next_sector(sector);
+    if (_distance_valid[layer][next_sector]) {
+        return true;
+    }
+    
+    // if face cw twice from this face is valid, then "update_boundary" must have manipulated this face also.
+    // return true
+    const uint8_t next_to_next_sector = get_next_sector(next_sector);
+    if (_distance_valid[layer][next_to_next_sector]) {
+        return true;
+    }
+
+    // this face was not manipulated by "update_boundary" and is stale. Don't use it
+    return false;
 }
 
-// WARNING: This requires get_obstacle_count() to be called before calling this method
 // Appropriate layer and sector are found from the passed obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from vehicle, in body-frame. 
 // Used by GPS based Simple Avoidance  
-void AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
+bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {
-    const AP_Proximity_Boundary_3D::Face face = convert_obstacle_num_to_face(obstacle_num);
-    const uint8_t sector_end = face.sector;
-    uint8_t sector_start = face.sector + 1;
-    if (sector_start >= PROXIMITY_NUM_SECTORS) {
-        sector_start = 0;
+    Face face;
+    if (!convert_obstacle_num_to_face(obstacle_num, face)) {
+        // not a valid face
+        return false;
     }
+    const uint8_t sector_end = face.sector;
+    const uint8_t sector_start = get_next_sector(face.sector);
+    
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
     vec_to_obstacle = Vector3f::closest_point_between_line_and_point(start, end, Vector3f{0.0f, 0.0f, 0.0f});
+    return true;
 }
 
-// WARNING: This requires get_obstacle_count() to be called before calling this method
 // Appropriate layer and sector are found from the passed obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from the segment that was passed, in body-frame.
 // Used by GPS based Simple Avoidance  - for "brake mode" 
 float AP_Proximity_Boundary_3D::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
 {   
-    const AP_Proximity_Boundary_3D::Face face = convert_obstacle_num_to_face(obstacle_num);
-    const uint8_t sector_end = face.sector;
-    uint8_t sector_start = face.sector + 1;
-    if (sector_start >= PROXIMITY_NUM_SECTORS) {
-        sector_start = 0;
+    Face face; 
+    if (!convert_obstacle_num_to_face(obstacle_num, face)) {
+        // not a valid a face
+        return FLT_MAX;
     }
+
+    const uint8_t sector_end = face.sector;
+    const uint8_t sector_start = get_next_sector(face.sector);
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
     return Vector3f::segment_to_segment_dist(seg_start, seg_end, start, end, closest_point);

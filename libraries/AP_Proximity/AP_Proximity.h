@@ -92,7 +92,7 @@ public:
     uint8_t get_obstacle_count() const;
     
     // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
-    void get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const;
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const;
     
     // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
     float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
