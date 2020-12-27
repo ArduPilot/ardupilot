@@ -4158,7 +4158,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     const Location roi_loc {
         packet.x,
         packet.y,
-        (int32_t)(packet.z * 100.0f),
+        (int32_t)constrain_float(packet.z * 100.0f,INT32_MIN,INT32_MAX),
         frame
     };
     return handle_command_do_set_roi(roi_loc);
@@ -4173,9 +4173,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // support the extra fields).
 
     const Location roi_loc {
-        (int32_t)(packet.param5 * 1.0e7f),
-        (int32_t)(packet.param6 * 1.0e7f),
-        (int32_t)(packet.param7 * 100.0f),
+        (int32_t)constrain_float(packet.param5 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param6 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param7 * 100.0f, INT32_MIN, INT32_MAX),
         Location::AltFrame::ABOVE_HOME
     };
     return handle_command_do_set_roi(roi_loc);
