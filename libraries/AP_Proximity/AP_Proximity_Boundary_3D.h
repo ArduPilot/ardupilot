@@ -86,16 +86,13 @@ public:
     bool get_distance(Face face, float &distance) const;
 
     // Get the total number of obstacles 
-    // This method iterates through the entire 3-D boundary and checks which layer has at least one valid distance
-    uint8_t get_obstacle_count();
+    uint8_t get_obstacle_count() const;
 
-    // WARNING: This requires get_obstacle_count() to be called before calling this method
     // Appropriate layer and sector are found from the passed obstacle_num
     // This function then draws a line between this sector, and sector + 1 at the given layer
     // Then returns the closest point on this line from vehicle, in body-frame. 
-    void get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_boundary) const;
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_boundary) const;
 
-    // WARNING: This requires get_obstacle_count() to be called before calling this method
     // Appropriate layer and sector are found from the passed obstacle_num
     // This function then draws a line between this sector, and sector + 1 at the given layer
     // Then returns the closest point on this line from the segment that was passed, in body-frame.
@@ -120,8 +117,18 @@ private:
     // initialise the boundary and sector_edge_vector array used for object avoidance
     void init();
 
-    // Converts obstacle_num passed from avoidance library into appropriate face
-    Face convert_obstacle_num_to_face(uint8_t obstacle_num) const;
+    // get the next sector which is CW to the passed sector
+    uint8_t get_next_sector(uint8_t sector) const {return ((sector >= PROXIMITY_NUM_SECTORS-1) ? 0 : sector+1); }
+    
+    // get the prev sector which is CCW to the passed sector 
+    uint8_t get_prev_sector(uint8_t sector) const {return ((sector <= 0) ? PROXIMITY_NUM_SECTORS-1 : sector-1); }
+
+    // Converts obstacle_num passed from avoidance library into appropriate face of the boundary
+    // Returns false if the face is invalid
+    // "update_boundary" method manipulates two sectors ccw and one sector cw from any valid face.
+    // Any boundary that does not fall into these manipulated faces are useless, and will be marked as false
+    // The resultant is packed into a Boundary Location object and returned by reference as "face"
+    bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const;
 
     Vector3f _sector_edge_vector[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
     Vector3f _boundary_points[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
@@ -130,6 +137,5 @@ private:
     float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
     float _distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];       // distance to closest object within each sector and layer
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
-    bool _active_layer[PROXIMITY_NUM_LAYERS];                           // layers which have at least one valid distance are marked true
 };
 

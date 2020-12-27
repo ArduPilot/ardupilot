@@ -369,10 +369,10 @@ uint8_t AP_Proximity::get_obstacle_count() const
 }
 
 // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
-void AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
+bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {
     if (!valid_instance(primary_instance)) {
-        return;
+        return false;
     }
     return drivers[primary_instance]->get_obstacle(obstacle_num, vec_to_obstacle);
 }
