@@ -169,8 +169,8 @@ void Plane::takeoff_calc_pitch(void)
         }
     } else {
         if (is_positive(g.takeoff_throttle_min_speed) || is_positive(g.takeoff_throttle_min_accel)) {
-            // Doing hand launch so don't lower pitch when low ground speed
-            nav_pitch_cd = MIN(auto_state.takeoff_pitch_cd, 500);
+            // Doing hand launch so need at least 5 deg pitch to prevent initial height loss
+            nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);
         } else {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
             nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
