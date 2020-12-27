@@ -47,7 +47,7 @@ public:
     uint8_t get_obstacle_count() { return boundary.get_obstacle_count(); }
     
     // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
-    void get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const { return boundary.get_obstacle(obstacle_num, vec_to_obstacle); }
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const { return boundary.get_obstacle(obstacle_num, vec_to_obstacle); }
     
     // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
     // used in GPS based Simple Avoidance
