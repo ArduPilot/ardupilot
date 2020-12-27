@@ -19,6 +19,7 @@
 #define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
+#define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
 
 /*
  * This class prevents the vehicle from leaving a polygon fence in

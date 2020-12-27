@@ -1078,13 +1078,17 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         // back away if vehicle has breached margin
         if (is_negative(dist_to_boundary - margin_cm)) {
             const float breach_dist = margin_cm - dist_to_boundary;
-            // this vector will help us divide how much we have to back away horizontally and vertically
-            const Vector3f margin_vector = vector_to_obstacle.normalized() * breach_dist;
-            const float xy_back_dist = norm(margin_vector.x, margin_vector.y);
-            const float z_back_dist = margin_vector.z;
-            calc_backup_velocity_3D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, xy_back_dist, vector_to_obstacle, kP_z, accel_cmss_z, z_back_dist, min_back_vel_z, max_back_vel_z, dt);
+            // add a deadzone so that the vehicle doesn't backup and go forward again and again
+            // the deadzone is hardcoded to be 10cm
+            if (breach_dist > AC_AVOID_MIN_BACKUP_BREACH_DIST) {
+                // this vector will help us divide how much we have to back away horizontally and vertically
+                const Vector3f margin_vector = vector_to_obstacle.normalized() * breach_dist;
+                const float xy_back_dist = norm(margin_vector.x, margin_vector.y);
+                const float z_back_dist = margin_vector.z;
+                calc_backup_velocity_3D(kP, accel_cmss, quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel, xy_back_dist, vector_to_obstacle, kP_z, accel_cmss_z, z_back_dist, min_back_vel_z, max_back_vel_z, dt);
+            }        
         }
-        
+
         if (desired_vel_cms.is_zero()) {
             // cannot limit velocity if there is nothing to limit
             // backing up (if needed) has already been done
