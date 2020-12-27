@@ -1072,7 +1072,10 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     for (uint8_t i = 0; i<obstacle_num; i++) {
         // get obstacle from proximity library
         Vector3f vector_to_obstacle;
-        _proximity.get_obstacle(i, vector_to_obstacle);
+        if (!_proximity.get_obstacle(i, vector_to_obstacle)) {
+            // this one is not valid
+            continue;
+        }
         const float dist_to_boundary = vector_to_obstacle.length();
         if (is_zero(dist_to_boundary)) {
             continue;
