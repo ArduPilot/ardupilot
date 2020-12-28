@@ -66,15 +66,17 @@ ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 /*
   setup GPS input pipe
  */
-const char * gps_fifo[2] = {"/tmp/ap_gps0", "/tmp/ap_gps1"}; 
 int SITL_State::gps_pipe(uint8_t idx)
 {
     int fd[2];
+    if (_gps_fifo[idx] == nullptr) {
+        UNUSED_RESULT(asprintf(&_gps_fifo[idx], "/tmp/gps_fifo%d", (int)(ARRAY_SIZE(_gps_fifo)*_instance + idx)));
+    }
     if (gps_state[idx].client_fd != 0) {
         return gps_state[idx].client_fd;
     }
     pipe(fd);
-    if (mkfifo(gps_fifo[idx], 0666) < 0) {
+    if (mkfifo(_gps_fifo[idx], 0666) < 0) {
         printf("MKFIFO failed with %s\n", strerror(errno));
     }
     
@@ -96,8 +98,12 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
     if (instance == 1 && _sitl->gps_disable[instance]) {
         return;
     }
+    if (_gps_fifo[instance] == nullptr) {
+        printf("GPS FIFO path not set\n");
+        return;
+    }
     // also write to external fifo
-    int fd = open(gps_fifo[instance], O_WRONLY | O_NONBLOCK);
+    int fd = open(_gps_fifo[instance], O_WRONLY | O_NONBLOCK);
     if (fd >= 0) {
         write(fd, p, size);
         close(fd);
