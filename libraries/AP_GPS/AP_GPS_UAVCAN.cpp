@@ -23,6 +23,7 @@
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -109,30 +110,116 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
 {
     WITH_SEMAPHORE(_sem_registry);
-
+    int8_t found_match = -1, last_match = -1;
     AP_GPS_UAVCAN* backend = nullptr;
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    bool bad_override_config = false;
+    for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
-            backend = new AP_GPS_UAVCAN(_gps, _state);
-            if (backend == nullptr) {
-                AP::can().log_text(AP_CANManager::LOG_ERROR,
-                                 LOG_TAG,
-                                 "Failed to register UAVCAN GPS Node %d on Bus %d\n",
-                                 _detected_modules[i].node_id,
-                                 _detected_modules[i].ap_uavcan->get_driver_index());
-            } else {
-                _detected_modules[i].driver = backend;
-                backend->_detected_module = i;
-                AP::can().log_text(AP_CANManager::LOG_INFO,
-                                 LOG_TAG,
-                                 "Registered UAVCAN GPS Node %d on Bus %d\n",
-                                 _detected_modules[i].node_id,
-                                 _detected_modules[i].ap_uavcan->get_driver_index());
+            if (_gps._override_node_id[_state.instance] != 0 &&
+                _gps._override_node_id[_state.instance] != _detected_modules[i].node_id) {
+                continue; // This device doesn't match the correct node
+            }
+            last_match = found_match;
+            for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+                if (_detected_modules[i].node_id == _gps._override_node_id[j] &&
+                    (j != _state.instance)) {
+                    //wrong instance
+                    found_match = -1;
+                    break;
+                }
+                found_match = i;
+            }
+
+            // Handle Duplicate overrides
+            for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+                if (_gps._override_node_id[i] != 0 && (i != j) &&
+                    _gps._override_node_id[i] == _gps._override_node_id[j]) {
+                    bad_override_config = true;
+                }
+            }
+            if (bad_override_config) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Same Node Id %lu set for multiple GPS", (unsigned long int)_gps._override_node_id[i].get());
+                last_match = i;
+            }
+
+            if (found_match == -1) {
+                found_match = last_match;
+                continue;
             }
             break;
         }
     }
+
+    if (found_match == -1) {
+        return NULL;
+    }
+    backend = new AP_GPS_UAVCAN(_gps, _state);
+    if (backend == nullptr) {
+        AP::can().log_text(AP_CANManager::LOG_ERROR,
+                            LOG_TAG,
+                            "Failed to register UAVCAN GPS Node %d on Bus %d\n",
+                            _detected_modules[found_match].node_id,
+                            _detected_modules[found_match].ap_uavcan->get_driver_index());
+    } else {
+        _detected_modules[found_match].driver = backend;
+        backend->_detected_module = found_match;
+        AP::can().log_text(AP_CANManager::LOG_INFO,
+                            LOG_TAG,
+                            "Registered UAVCAN GPS Node %d on Bus %d as instance %d\n",
+                            _detected_modules[found_match].node_id,
+                            _detected_modules[found_match].ap_uavcan->get_driver_index(),
+                            _state.instance);
+        snprintf(backend->_name, ARRAY_SIZE(backend->_name), "UAVCAN%u-%u", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
+        _detected_modules[found_match].instance = _state.instance;
+        for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
+            if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
+                if (i == _state.instance) {
+                    // Nothing to do here
+                    break;
+                }
+                // else swap
+                uint8_t tmp = AP::gps()._node_id[_state.instance].get();
+                AP::gps()._node_id[_state.instance].set_and_notify(_detected_modules[found_match].node_id);
+                AP::gps()._node_id[i].set_and_notify(tmp);
+            }
+        }
+    }
     return backend;
+}
+
+bool AP_GPS_UAVCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_len)
+{
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        bool overriden_node_found = false;
+        bool bad_override_config = false;
+        if (AP::gps()._override_node_id[i] == 0) {
+            //anything goes
+            continue;
+        }
+        for (uint8_t j = 0; j < GPS_MAX_RECEIVERS; j++) {
+            if (AP::gps()._override_node_id[i] == AP::gps()._override_node_id[j] && (i != j)) {
+                bad_override_config = true;
+                break;
+            }
+            if (i == _detected_modules[j].instance && _detected_modules[j].driver) {
+                if (AP::gps()._override_node_id[i] == _detected_modules[j].node_id) {
+                    overriden_node_found = true;
+                    break;
+                }
+            }
+        }
+        if (bad_override_config) {
+            snprintf(failure_msg, failure_msg_len, "Same Node Id %lu set for multiple GPS", (unsigned long int)AP::gps()._override_node_id[i].get());
+            return false;
+        }
+
+        if (!overriden_node_found) {
+            snprintf(failure_msg, failure_msg_len, "Selected GPS Node %lu not set as instance %d", (unsigned long int)AP::gps()._override_node_id[i].get(), i + 1);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id)
@@ -163,7 +250,23 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
             if (_detected_modules[i].ap_uavcan == nullptr) {
                 _detected_modules[i].ap_uavcan = ap_uavcan;
                 _detected_modules[i].node_id = node_id;
+                // Just set the Node ID in order of appearance
+                // This will be used to set select ids
+                AP::gps()._node_id[i].set_and_notify(node_id);
                 break;
+            }
+        }
+    }
+    struct DetectedModules tempslot;
+    // Sort based on the node_id, larger values first
+    // we do this, so that we have repeatable GPS
+    // registration
+    for (uint8_t i = 1; i < GPS_MAX_RECEIVERS; i++) {
+        for (uint8_t j = i; j > 0; j--) {
+            if (_detected_modules[j].node_id > _detected_modules[j-1].node_id) {
+                tempslot = _detected_modules[j];
+                _detected_modules[j] = _detected_modules[j-1];
+                _detected_modules[j-1] = tempslot;
             }
         }
     }

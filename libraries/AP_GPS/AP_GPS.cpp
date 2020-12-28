@@ -351,6 +351,34 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("PRIMARY", 27, AP_GPS, _primary, 0),
 #endif
 
+#if GPS_MAX_RECEIVERS > 1 && HAL_ENABLE_LIBUAVCAN_DRIVERS
+    // @Param: _CAN_NODEID1
+    // @DisplayName: GPS Node ID 1
+    // @Description: GPS Node id for discovered first.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("_CAN_NODEID1", 28, AP_GPS, _node_id[0], 0),
+
+    // @Param: _CAN_NODEID2
+    // @DisplayName: GPS Node ID 2
+    // @Description: GPS Node id for discovered second.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("_CAN_NODEID2", 29, AP_GPS, _node_id[1], 0),
+
+    // @Param: 1_CAN_OVRIDE
+    // @DisplayName: First UAVCAN GPS NODE ID
+    // @Description: GPS Node id for first GPS. If 0 the gps will be automatically selected on first come basis.
+    // @User: Advanced
+    AP_GROUPINFO("1_CAN_OVRIDE", 30, AP_GPS, _override_node_id[0], 0),
+
+    // @Param: 2_CAN_OVRIDE
+    // @DisplayName: Second UAVCAN GPS NODE ID
+    // @Description: GPS Node id for second GPS. If 0 the gps will be automatically selected on first come basis.
+    // @User: Advanced
+    AP_GROUPINFO("2_CAN_OVRIDE", 31, AP_GPS, _override_node_id[1], 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1892,6 +1920,19 @@ bool AP_GPS::prepare_for_arming(void) {
         }
     }
     return all_passed;
+}
+
+bool AP_GPS::backends_healthy(char failure_msg[], uint16_t failure_msg_len) {
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        if (_type[i] == GPS_TYPE_UAVCAN) {
+            if (!AP_GPS_UAVCAN::backends_healthy(failure_msg, failure_msg_len)) {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
 }
 
 bool AP_GPS::logging_failed(void) const {
