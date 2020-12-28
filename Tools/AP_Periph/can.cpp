@@ -583,6 +583,32 @@ static void set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         dev->transfer(&v, 1, nullptr, 0);
     }
 #endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED
+#ifdef HAL_PERIPH_ENABLE_TOSHIBA_LED
+    {
+#define TOSHIBA_LED_PWM0    0x01    // pwm0 register
+#define TOSHIBA_LED_ENABLE  0x04    // enable register
+#define TOSHIBA_LED_I2C_ADDR 0x55   // default I2C bus address
+
+        static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_toshiba;
+        if (!dev_toshiba) {
+            dev_toshiba = std::move(hal.i2c_mgr->get_device(0, TOSHIBA_LED_I2C_ADDR));
+        }
+        WITH_SEMAPHORE(dev_toshiba->get_semaphore());
+        dev_toshiba->set_retries(0); // use 0 because this is running on main thread.
+
+        // enable the led
+        dev_toshiba->write_register(TOSHIBA_LED_ENABLE, 0x03);
+
+        /* 4-bit for each color */
+        uint8_t val[4] = { 
+            TOSHIBA_LED_PWM0, 
+            (uint8_t)(blue >> 4),
+            (uint8_t)(green / 16), 
+            (uint8_t)(red / 16) 
+        };
+        dev_toshiba->transfer(val, sizeof(val), nullptr, 0);
+    }
+#endif // HAL_PERIPH_ENABLE_TOSHIBA_LED
 }
 
 /*
