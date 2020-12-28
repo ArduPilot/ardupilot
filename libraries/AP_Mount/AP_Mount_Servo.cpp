@@ -56,6 +56,13 @@ void AP_Mount_Servo::update()
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's rc inputs or go to neutral or retracted targets if no rc
+            if (rc().in_rc_failsafe()) {
+                if (option_set(Options::NEUTRAL_ON_RC_FS)) {
+                    mnt_target.angle_rad.set(_angle_bf_output_rad, false);
+                    mnt_target.target_type = MountTargetType::ANGLE;
+                }
+            } else {
             // update targets using pilot's RC inputs
             MountTarget rc_target;
             get_rc_target(mnt_target.target_type, rc_target);
@@ -66,6 +73,7 @@ void AP_Mount_Servo::update()
             case MountTargetType::RATE:
                 mnt_target.rate_rads = rc_target;
                 break;
+            }
             }
             break;
         }

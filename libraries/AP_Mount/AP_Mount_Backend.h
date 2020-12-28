@@ -249,6 +249,7 @@ protected:
     // options parameter bitmask handling
     enum class Options : uint8_t {
         RCTARGETING_LOCK_FROM_PREVMODE = (1U << 0), // RC_TARGETING mode's lock/follow state maintained from previous mode
+        NEUTRAL_ON_RC_FS               = (1U << 1), // move mount to netral position on RC failsafe
     };
     bool option_set(Options opt) const { return (_params.options.get() & (uint8_t)opt) != 0; }
 
