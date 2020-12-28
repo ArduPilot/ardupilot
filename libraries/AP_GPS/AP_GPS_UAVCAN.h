@@ -44,7 +44,7 @@ public:
 
     bool is_configured(void) const override;
 
-    const char *name() const override { return "UAVCAN"; }
+    const char *name() const override { return _name; }
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
@@ -55,6 +55,7 @@ public:
     static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
     static void handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const StatusCb &cb);
 
+    static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
 
     bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
@@ -84,11 +85,13 @@ private:
     bool healthy;
     uint32_t status_flags;
     uint32_t error_code;
+    char _name[15];
 
     // Module Detection Registry
     static struct DetectedModules {
         AP_UAVCAN* ap_uavcan;
         uint8_t node_id;
+        uint8_t instance;
         AP_GPS_UAVCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 
