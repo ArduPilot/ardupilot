@@ -52,6 +52,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // @Group: EAHRS
+    // @Path: ../AP_ExternalAHRS/AP_ExternalAHRS.cpp
+    AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -115,6 +121,11 @@ void AP_Vehicle::setup()
     msp.init();
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // call externalAHRS init before init_ardupilot to allow for external sensors
+    externalAHRS.init();
+#endif
+    
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
