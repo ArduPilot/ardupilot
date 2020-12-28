@@ -33,6 +33,7 @@ public:
         BUS_TYPE_UAVCAN  = 3,
         BUS_TYPE_SITL    = 4,
         BUS_TYPE_MSP     = 5,
+        BUS_TYPE_SERIAL  = 6,
     };
 
     enum Speed {
