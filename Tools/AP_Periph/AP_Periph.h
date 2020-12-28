@@ -14,7 +14,7 @@
 #include "../AP_Bootloader/app_comms.h"
 #include "hwing_esc.h"
 
-#if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED)
+#if defined(HAL_PERIPH_NEOPIXEL_COUNT) || defined(HAL_PERIPH_ENABLE_NCP5623_LED) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED)
 #define AP_PERIPH_HAVE_LED
 #endif
 
