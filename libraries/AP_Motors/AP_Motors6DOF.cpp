@@ -141,10 +141,11 @@ void AP_Motors6DOF::setup_motors(motor_frame_class frame_class, motor_frame_type
         add_motor_raw_6dof(AP_MOTORS_MOT_5,     1.0f,           0,              0,              -1.0f,              0,                  0,              5);
         add_motor_raw_6dof(AP_MOTORS_MOT_6,     -1.0f,          0,              0,              -1.0f,              0,                  0,              6);
         break;
-
+        //                 Motor #              Roll Factor     Pitch Factor    Yaw Factor      Throttle Factor     Forward Factor      Lateral Factor  Testing Order
     case SUB_FRAME_CUSTOM:
-        // Put your custom motor setup here
-        //break;
+        add_motor_raw_6dof(AP_MOTORS_MOT_1,     0,              1.0f,           1.0f,           1.0f,                  0,                  0,              1);
+        add_motor_raw_6dof(AP_MOTORS_MOT_2,     0,              1.0f,           1.0f,           1.0f,                  0,                  0,              2);
+      break;
 
     case SUB_FRAME_SIMPLEROV_3:
     case SUB_FRAME_SIMPLEROV_4:
@@ -195,6 +196,12 @@ void AP_Motors6DOF::output_min()
 int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
 {
     return constrain_int16(1500 + thrust_in * 400, _throttle_radio_min, _throttle_radio_max);
+}
+
+void AP_Motors6DOF::send_roll_rad(float roll_rad)
+{
+     _roll_angle_rad = roll_rad;
+     return;
 }
 
 void AP_Motors6DOF::output_to_motors()
@@ -266,9 +273,10 @@ void AP_Motors6DOF::output_armed_stabilizing()
         float   forward_thrust;             // forward thrust input value, +/- 1.0
         float   lateral_thrust;             // lateral thrust input value, +/- 1.0
 
+
         roll_thrust = _roll_in;
-        pitch_thrust = _pitch_in;
-        yaw_thrust = _yaw_in;
+        pitch_thrust = _pitch_in; // * cosf(_roll_angle_rad) + _yaw_in * sin(_roll_angle_rad); // convert from body fixed to earth fixed
+        yaw_thrust = _yaw_in; // * cosf(_roll_angle_rad) - _pitch_in * sinf(_roll_angle_rad); //earth-fixed
         throttle_thrust = get_throttle_bidirectional();
         forward_thrust = _forward_in;
         lateral_thrust = _lateral_in;
@@ -292,18 +300,52 @@ void AP_Motors6DOF::output_armed_stabilizing()
             limit.throttle_upper = true;
         }
 
-        // calculate roll, pitch and yaw for each motor
-        for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motor_enabled[i]) {
-                rpy_out[i] = roll_thrust * _roll_factor[i] +
-                             pitch_thrust * _pitch_factor[i] +
-                             yaw_thrust * _yaw_factor[i];
+       // calculate roll, pitch and yaw for each motor
+       // for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
+          if (motor_enabled[0]) {
+                rpy_out[0] = roll_thrust  * _roll_factor[0] +
+                             pitch_thrust * _pitch_factor[0] * sinf(1.0f * _roll_angle_rad + _fin_angle_rad) +
+                             yaw_thrust   * _yaw_factor[0]   * cosf(1.0f * _roll_angle_rad + _fin_angle_rad);
 
-            }
-        }
+	      }
+          if (motor_enabled[1]) {
+                rpy_out[1] =  roll_thrust  * _roll_factor[1] +
+                             -pitch_thrust * _pitch_factor[1] * cosf(1.0f * _roll_angle_rad + _fin_angle_rad) +
+                              yaw_thrust   * _yaw_factor[1]   * sinf(1.0f * _roll_angle_rad + _fin_angle_rad);
+
+          }
+
+
+         // print to console at a throttled rate
+         if(AP_HAL::millis() - 50 > tnow) {
+        
+            //::printf("0pf: %.2f\t\t0yf: %.2f\t\t", _pitch_factor[0] * sinf(1.0f * _roll_angle_rad + _fin_angle_rad),
+            //                                       _yaw_factor[0]   * cosf(1.0f * _roll_angle_rad + _fin_angle_rad));
+            //::printf("1pf: %.2f\t\t1yf: %.2f\t\t", _pitch_factor[1] * cosf(1.0f * _roll_angle_rad + _fin_angle_rad),
+            //                                       _yaw_factor[1]   * sinf(1.0f * _roll_angle_rad + _fin_angle_rad));
+            //::printf("pt: %.2f\tyt: %.2f\ttt: %.2f\n\n", pitch_thrust, yaw_thrust, throttle_thrust);
+        
+             tnow = AP_HAL::millis();
+
+         }
+
+     //   }
 
         // calculate linear command for each motor
         // linear factors should be 0.0 or 1.0 for now
+        
+            if (motor_enabled[0]) {
+                linear_out[0] = throttle_thrust * _throttle_factor[0] * sinf(1.0f * _roll_angle_rad + _fin_angle_rad) +
+                                forward_thrust  * _forward_factor[0] +
+                                lateral_thrust  * _lateral_factor[0];
+            }
+            if (motor_enabled[1]) {
+                linear_out[1] = -throttle_thrust * _throttle_factor[1] * cosf(1.0f * _roll_angle_rad + _fin_angle_rad) +
+                                 forward_thrust  * _forward_factor[1] +
+                                 lateral_thrust  * _lateral_factor[1];
+            }
+
+        /*
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
                 linear_out[i] = throttle_thrust * _throttle_factor[i] +
@@ -311,6 +353,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
                                 lateral_thrust * _lateral_factor[i];
             }
         }
+       */
 
         // Calculate final output for each motor
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {

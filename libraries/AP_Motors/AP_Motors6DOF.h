@@ -38,6 +38,8 @@ public:
     // Map thrust input -1~1 to pwm output 1100~1900
     int16_t calc_thrust_to_pwm(float thrust_in) const;
 
+    void send_roll_rad(float roll_rad);
+
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
@@ -62,4 +64,9 @@ protected:
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
     float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+
+    float               _roll_angle_rad;
+    const float         _fin_angle_rad = 0.7854; // constant for fin angles on the hull, this unit is 45deg down vee = pi/4
+
+    uint32_t tnow;       // current time for throttled printf JKG
 };

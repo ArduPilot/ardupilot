@@ -234,7 +234,7 @@ public:
     void thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot);
 
     // Calculates the body frame angular velocities to follow the target attitude
-    void attitude_controller_run_quat();
+    void attitude_controller_run_quat(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd);
 
     // sanity check parameters.  should be called once before take-off
     virtual void parameter_sanity_check() {}
@@ -374,6 +374,8 @@ protected:
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
 
+    uint32_t tnow;      // current time for throttled printf JKG
+    
 protected:
     /*
       state of control monitoring

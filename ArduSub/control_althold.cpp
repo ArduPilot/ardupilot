@@ -51,17 +51,20 @@ void Sub::althold_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(0, 0, target_roll, target_pitch, attitude_control.get_althold_lean_angle_max()); // zero roll, pitch
 
     // get pilot's desired yaw rate
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-
+     
+    //target_yaw_rate = 0; //JKG Test hard set heading command while testing yaw angle controller
+    // TODO get desired heading angle
     // call attitude controller
+
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw_rate, false, get_smoothing_gain());
         last_pilot_heading = ahrs.yaw_sensor;
         last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
-
+        
     } else { // hold current heading
 
         // this check is required to prevent bounce back after very fast yaw maneuvers
@@ -70,7 +73,7 @@ void Sub::althold_run()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+            attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw_rate, false, get_smoothing_gain());
             last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute absolute bearing
@@ -94,6 +97,10 @@ void Sub::althold_run()
         if (ap.at_bottom) {
             pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
             pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+        } else if (rangefinder_alt_ok()) {
+            // if rangefinder is ok, use surface tracking
+            float target_climb_rate = get_surface_tracking_climb_rate(0, pos_control.get_alt_target(), G_Dt);
+            pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
         }
 
         // Detects a zero derivative
@@ -107,6 +114,8 @@ void Sub::althold_run()
 
         pos_control.update_z_controller();
     }
+
+    motors.send_roll_rad(radians(wrap_180_cd(ahrs.roll_sensor)*0.01f));
 
     motors.set_forward(channel_forward->norm_input());
     motors.set_lateral(channel_lateral->norm_input());
