@@ -758,7 +758,7 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=3600,
+                      default=5400,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--frame",
