@@ -243,6 +243,14 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
             gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
             return false;
         }
+
+        // if not in a manual throttle mode and not in CRUISE or FBWB
+        // modes then disallow rudder arming/disarming
+        if (plane.auto_throttle_mode &&
+            (plane.control_mode != &plane.mode_cruise && plane.control_mode != &plane.mode_fbwb)) {
+            check_failed(true, "Mode not rudder-disarmable");
+            return false;
+        }
     }
 
     if (!AP_Arming::disarm(method)) {
