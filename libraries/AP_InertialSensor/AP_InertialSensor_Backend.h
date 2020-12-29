@@ -25,6 +25,7 @@
 #include <inttypes.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include "AP_InertialSensor.h"
 
@@ -79,6 +80,10 @@ public:
     // get a startup banner to output to the GCS
     virtual bool get_output_banner(char* banner, uint8_t banner_len) { return false; }
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) {}
+#endif
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -112,6 +117,7 @@ public:
         DEVTYPE_INS_ICM20602 = 0x2F,
         DEVTYPE_INS_ICM20601 = 0x30,
         DEVTYPE_INS_ADIS1647X = 0x31,
+        DEVTYPE_SERIAL       = 0x32,
     };
 
 protected:
