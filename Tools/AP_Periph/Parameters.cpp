@@ -62,7 +62,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     GSCALAR(serial_number, "BRD_SERIAL_NUM", 0),
 
-#ifdef HAL_PERIPH_ENABLE_BUZZER
+#ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
     GSCALAR(buzz_volume,     "BUZZER_VOLUME", 100),
 #endif
 
@@ -102,7 +102,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(baro_enable, "BARO_ENABLE", 1),
 #endif
 
-#ifdef AP_PERIPH_HAVE_LED
+#ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
     GSCALAR(led_brightness, "LED_BRIGHTNESS", HAL_PERIPH_LED_BRIGHT_DEFAULT),
 #endif
 
@@ -148,6 +148,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(msp_port, "MSP_PORT", AP_PERIPH_MSP_PORT_DEFAULT),
 #endif
     
+#ifdef HAL_PERIPH_ENABLE_NOTIFY
+    // @Group: NTF_
+    // @Path: ../libraries/AP_Notify/AP_Notify.cpp
+    GOBJECT(notify, "NTF_",  AP_Notify),
+#endif
+
     AP_VAREND
 };
 
