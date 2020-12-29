@@ -1523,6 +1523,10 @@ check_sample:
         uint8_t gyro_available_mask = 0;
         uint8_t accel_available_mask = 0;
         uint32_t wait_counter = 0;
+        // allow to wait for up to 1/3 of the loop time for samples from all
+        // IMUs to come in
+        const uint8_t wait_per_loop = 100;
+        const uint8_t wait_counter_limit = uint32_t(_loop_delta_t * 1.0e6) / (3*wait_per_loop);
 
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
@@ -1554,10 +1558,10 @@ check_sample:
                 }
             }
 
-            // we wait for up to 800us to get all of the required
+            // we wait for up to 1/3 of the loop time to get all of the required
             // accel and gyro samples. After that we accept at least
             // one of each
-            if (wait_counter < 7) {
+            if (wait_counter < wait_counter_limit) {
                 if (gyro_available_mask &&
                     ((gyro_available_mask & _gyro_wait_mask) == _gyro_wait_mask) &&
                     accel_available_mask &&
@@ -1575,7 +1579,7 @@ check_sample:
                 }
             }
 
-            hal.scheduler->delay_microseconds_boost(100);
+            hal.scheduler->delay_microseconds_boost(wait_per_loop);
             wait_counter++;
         }
     }
