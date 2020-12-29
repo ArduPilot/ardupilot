@@ -16,6 +16,7 @@ import subprocess
 import sys
 import time
 import traceback
+import threading
 from distutils.dir_util import copy_tree
 
 import rover
@@ -31,6 +32,7 @@ from pysim import util
 from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
 
+tester = None
 
 def buildlogs_dirpath():
     return os.getenv("BUILDLOGS", util.reltopdir("../buildlogs"))
@@ -237,9 +239,14 @@ def test_prerequisites():
 
 def alarm_handler(signum, frame):
     """Handle test timeout."""
-    global results, opts
+    global results, opts, tester
     try:
         print("Alarm handler called")
+        if tester is not None:
+            if tester.rc_thread is not None:
+                tester.rc_thread_should_quit = True
+                tester.rc_thread.join()
+                tester.rc_thread = None
         results.add('TIMEOUT',
                     '<span class="failed-text">FAILED</span>',
                     opts.timeout)
@@ -360,6 +367,7 @@ def run_specific_test(step, *args, **kwargs):
     (testname, test) = t
 
     tester_class = tester_class_map[testname]
+    global tester
     tester = tester_class(*args, **kwargs)
 
     print("Got %s" % str(tester))
@@ -460,9 +468,13 @@ def run_step(step):
 
     # handle "test.Copter" etc:
     if step in tester_class_map:
-        t = tester_class_map[step](binary, **fly_opts)
-        return (t.autotest(), t)
+        # create an instance of the tester class:
+        global tester
+        tester = tester_class_map[step](binary, **fly_opts)
+        # run the test and return its result and the tester itself
+        return (tester.autotest(), tester)
 
+    # handle "test.Copter.CPUFailsafe" etc:
     specific_test_to_run = find_specific_test_to_run(step)
     if specific_test_to_run is not None:
         return run_specific_test(specific_test_to_run, binary, **fly_opts)
@@ -677,6 +689,14 @@ def run_tests(steps):
                     print("    %s (%s) (see %s)" % (desc, exception, debug_filename))
 
         print("FAILED %u tests: %s" % (len(failed), failed))
+
+    global tester
+    if tester is not None and tester.rc_thread is not None:
+        if passed:
+            print("BAD: RC Thread still alive after tests passed")
+        tester.rc_thread_should_quit = True
+        tester.rc_thread.join()
+        tester.rc_thread = None
 
     util.pexpect_close_all()
 
