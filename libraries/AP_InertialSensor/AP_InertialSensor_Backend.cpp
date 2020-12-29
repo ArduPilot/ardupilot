@@ -170,8 +170,8 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         dt = (sample_us - _imu._gyro_last_sample_us[instance]) * 1.0e-6f;
         _imu._gyro_last_sample_us[instance] = sample_us;
     } else {
-        // don't accept below 100Hz
-        if (_imu._gyro_raw_sample_rates[instance] < 100) {
+        // don't accept below 40Hz
+        if (_imu._gyro_raw_sample_rates[instance] < 40) {
             return;
         }
 
@@ -358,8 +358,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         dt = (sample_us - _imu._accel_last_sample_us[instance]) * 1.0e-6f;
         _imu._accel_last_sample_us[instance] = sample_us;
     } else {
-        // don't accept below 100Hz
-        if (_imu._accel_raw_sample_rates[instance] < 100) {
+        // don't accept below 40Hz
+        if (_imu._accel_raw_sample_rates[instance] < 40) {
             return;
         }
 
