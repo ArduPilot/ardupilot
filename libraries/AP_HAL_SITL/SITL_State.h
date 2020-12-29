@@ -43,6 +43,7 @@
 #include <SITL/SIM_RF_NMEA.h>
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
+#include <SITL/SIM_VectorNav.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -300,6 +301,9 @@ private:
     // simulated CRSF devices
     SITL::CRSF *crsf;
 
+    // simulated VectorNav system:
+    SITL::VectorNav *vectornav;
+    
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     
