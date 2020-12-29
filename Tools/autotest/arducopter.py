@@ -178,10 +178,12 @@ class AutoTestCopter(AutoTest):
     # Takeoff, climb to given altitude, and fly east for 10 seconds
     def takeoffAndMoveAway(self, dAlt=50, dDist=50):
         self.progress("Centering sticks")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(3, 1000)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({
+            1: 1500,
+            2: 1500,
+            3: 1000,
+            4: 1500,
+        })
         self.takeoff(alt_min=dAlt)
         self.change_mode("ALT_HOLD")
 
@@ -265,11 +267,15 @@ class AutoTestCopter(AutoTest):
         self.watch_altitude_maintained(9, 11, timeout=5)
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
-        self.set_rc(1, 1000)
-        self.set_rc(2, 1000)
+        self.set_rc_from_map({
+            1: 1000,
+            2: 1000,
+        })
         self.watch_altitude_maintained(9, 11, timeout=5)
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({
+            1: 1500,
+            2: 1500,
+        })
         self.do_RTL()
 
     def fly_to_origin(self, final_alt=10):
@@ -318,10 +324,12 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
 
         # ensure all sticks in the middle
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(3, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({
+            1: 1500,
+            2: 1500,
+            3: 1500,
+            4: 1500,
+        })
 
         # switch to loiter mode temporarily to stop us from rising
         self.change_mode('LOITER')
@@ -384,8 +392,7 @@ class AutoTestCopter(AutoTest):
 
         # descend to 10m
         self.progress("Descend to 10m in Loiter")
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.change_mode('LOITER')
         self.set_rc(3, 1300)
         time_left = timeout - (self.get_sim_time() - tstart)
         self.progress("timeleft = %u" % time_left)
@@ -462,15 +469,13 @@ class AutoTestCopter(AutoTest):
 
             num_wp = self.load_mission("copter_loiter_to_alt.txt")
 
-            self.mavproxy.send('switch 5\n')
-            self.wait_mode('LOITER')
+            self.change_mode('LOITER')
 
             self.wait_ready_to_arm()
 
             self.arm_vehicle()
 
-            self.mavproxy.send('mode auto\n')
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
 
             self.set_rc(3, 1550)
 
@@ -1273,8 +1278,6 @@ class AutoTestCopter(AutoTest):
     def fly_alt_max_fence_test(self):
         self.takeoff(10, mode="LOITER")
         """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
         self.set_parameter("FENCE_ENABLE", 1)
@@ -1294,8 +1297,10 @@ class AutoTestCopter(AutoTest):
         self.wait_distance(20)
 
         # stop flying forward and start flying up:
-        self.set_rc(2, 1500)
-        self.set_rc(3, 1800)
+        self.set_rc_from_map({
+            2: 1500,
+            3: 1800,
+        })
 
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
@@ -1451,8 +1456,7 @@ class AutoTestCopter(AutoTest):
         self.arm_vehicle()
 
         # switch into AUTO mode and raise throttle
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.wait_mode('AUTO')
+        self.change_mode('AUTO')
         self.set_rc(3, 1500)
 
         # wait until 100m from home
@@ -1512,15 +1516,13 @@ class AutoTestCopter(AutoTest):
     def fly_simple(self, side=50):
         self.takeoff(10, mode="LOITER")
         # hold position in loiter
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
+        self.change_mode('LOITER')
 
         # set SIMPLE mode for all flight modes
         self.set_parameter("SIMPLE", 63)
 
         # switch to stabilize mode
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('STABILIZE')
+        self.change_mode('STABILIZE')
         self.set_rc(3, 1545)
 
         # fly south 50m
@@ -1621,8 +1623,7 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
 
         # set CIRCLE mode
-        self.mavproxy.send('switch 1\n')  # circle mode
-        self.wait_mode('CIRCLE')
+        self.change_mode('CIRCLE')
 
         # wait
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
@@ -2180,9 +2181,7 @@ class AutoTestCopter(AutoTest):
 
         self.customise_SITL_commandline(["--uartF=sim:vicon:"])
         self.progress("Waiting for location")
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_heartbeat()
-        self.wait_mode('STABILIZE')
+        self.change_mode('LOITER')
         self.wait_ready_to_arm()
 
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -2235,7 +2234,7 @@ class AutoTestCopter(AutoTest):
             # recenter controls:
             self.set_rc(1, 1500)
             self.progress("# Enter RTL")
-            self.mavproxy.send('switch 3\n')
+            self.change_mode('RTL')
             self.set_rc(3, 1500)
             tstart = self.get_sim_time()
             while True:
@@ -3126,11 +3125,6 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(fltmode_ch, pwm)
                 self.wait_mode(name)
 
-            self.mavproxy.send('switch 6\n')
-            self.wait_mode("BRAKE")
-            self.mavproxy.send('switch 5\n')
-            self.wait_mode("ACRO")
-
         except Exception as e:
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))
@@ -3464,16 +3458,12 @@ class AutoTestCopter(AutoTest):
             self.progress("Waiting for location")
             self.mav.location()
             self.zero_throttle()
-            self.mavproxy.send('switch 6\n')  # stabilize mode
-            self.wait_heartbeat()
-            self.wait_mode('STABILIZE')
+            self.change_mode('STABILIZE')
             self.wait_ready_to_arm()
 
             self.arm_vehicle()
 
-            self.mavproxy.send('switch 4\n')  # auto mode
-            self.wait_heartbeat()
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
 
             self.set_rc(3, 1500)
             self.wait_text("Gripper load releas", timeout=90)
@@ -3812,17 +3802,19 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter('MNT_RC_IN_PAN', 13)
                 self.progress("Testing RC angular control")
                 # default RC min=1100 max=1900
-                self.set_rc(11, 1500)
-                self.set_rc(12, 1500)
-                self.set_rc(13, 1500)
+                self.set_rc_from_map({
+                    11: 1500,
+                    12: 1500,
+                    13: 1500,
+                })
                 self.test_mount_pitch(0, 1)
                 self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
-                rc12_in = 1400.0
-                rc12_min = 1100.0 # default
-                rc12_max = 1900.0 # default
+                rc12_in = 1400
+                rc12_min = 1100 # default
+                rc12_max = 1900 # default
                 angmin_tilt = -45.0 # default
                 angmax_tilt = 45.0 # default
-                expected_pitch = ((rc12_in-rc12_min)/(rc12_max-rc12_min) * (angmax_tilt-angmin_tilt)) + angmin_tilt
+                expected_pitch = (float(rc12_in-rc12_min)/float(rc12_max-rc12_min) * (angmax_tilt-angmin_tilt)) + angmin_tilt
                 self.progress("expected mount pitch: %f" % expected_pitch)
                 if expected_pitch != -11.25:
                     raise NotAchievedException("Calculation wrong - defaults changed?!")
@@ -3830,9 +3822,11 @@ class AutoTestCopter(AutoTest):
                 self.test_mount_pitch(-11.25, 0.01)
                 self.set_rc(12, 1800)
                 self.test_mount_pitch(33.75, 0.01)
-                self.set_rc(11, 1500)
-                self.set_rc(12, 1500)
-                self.set_rc(13, 1500)
+                self.set_rc_from_map({
+                    11: 1500,
+                    12: 1500,
+                    13: 1500,
+                })
 
                 try:
                     self.progress("Issue https://discuss.ardupilot.org/t/gimbal-limits-with-storm32-backend-mavlink-not-applied-correctly/51438")
@@ -4672,9 +4666,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Waiting for location")
             self.mav.location()
             self.zero_throttle()
-            self.mavproxy.send('switch 6\n')  # stabilize mode
-            self.wait_heartbeat()
-            self.wait_mode('STABILIZE')
+            self.change_mode('STABILIZE')
             self.wait_ready_to_arm()
 
             # we should be doing precision loiter at this point
@@ -6296,8 +6288,7 @@ class AutoTestHeli(AutoTestCopter):
     # fly_avc_test - fly AVC mission
     def fly_avc_test(self):
         # Arm
-        self.mavproxy.send('switch 6\n')  # stabilize mode
-        self.wait_mode('STABILIZE')
+        self.change_mode('STABILIZE')
         self.wait_ready_to_arm()
 
         self.arm_vehicle()
@@ -6318,8 +6309,7 @@ class AutoTestHeli(AutoTestCopter):
         self.delay_sim_time(20)
 
         # switch into AUTO mode and raise throttle
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.wait_mode('AUTO')
+        self.change_mode('AUTO')
         self.set_rc(3, 1500)
 
         # fly the mission
