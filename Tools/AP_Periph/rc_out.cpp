@@ -28,8 +28,6 @@
     #error "You must define a PWM output in your hwdef.dat"
 #endif
 
-static bool has_new_data_to_update;
-
 extern const AP_HAL::HAL &hal;
 
 void AP_Periph_FW::rcout_init()
@@ -73,7 +71,7 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
         SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), rc[i]);
     }
 
-    has_new_data_to_update = true;
+    rcout_has_new_data_to_update = true;
 }
 
 void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
@@ -86,7 +84,7 @@ void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
     const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
-    has_new_data_to_update = true;
+    rcout_has_new_data_to_update = true;
 }
 
 void AP_Periph_FW::rcout_handle_safety_state(uint8_t safety_state)
@@ -96,15 +94,15 @@ void AP_Periph_FW::rcout_handle_safety_state(uint8_t safety_state)
     } else {
         hal.rcout->force_safety_on();
     }
-    has_new_data_to_update = true;
+    rcout_has_new_data_to_update = true;
 }
 
 void AP_Periph_FW::rcout_update()
 {
-    if (!has_new_data_to_update) {
+    if (!rcout_has_new_data_to_update) {
         return;
     }
-    has_new_data_to_update = false;
+    rcout_has_new_data_to_update = false;
 
     SRV_Channels::calc_pwm();
     SRV_Channels::cork();
