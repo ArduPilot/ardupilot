@@ -18,6 +18,7 @@ import numpy
 import socket
 import struct
 import random
+import threading
 
 from MAVProxy.modules.lib import mp_util
 
@@ -28,6 +29,11 @@ from pymavlink.rotmat import Vector3
 
 from pysim import util, vehicleinfo
 from io import StringIO
+
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
 
 MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_X_IGNORE |
                                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_Y_IGNORE |
@@ -1164,6 +1170,17 @@ class AutoTest(ABC):
         self.timesync_number = 137
         self.last_progress_sent_as_statustext = None
 
+        self.rc_thread = None
+        self.rc_thread_should_quit = False
+        self.rc_queue = Queue.Queue()
+
+    def __del__(self):
+        if self.rc_thread is not None:
+            self.progress("Joining thread in __del__")
+            self.rc_thread_should_quit = True
+            self.rc_thread.join()
+            self.rc_thread = None
+
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
         global __autotest__
@@ -1236,7 +1253,7 @@ class AutoTest(ABC):
 
     def mavproxy_options(self):
         """Returns options to be passed to MAVProxy."""
-        ret = ['--sitl=127.0.0.1:5501',
+        ret = ['--sitl=127.0.0.1:5502',
                '--out=' + self.autotest_connection_string_from_mavproxy(),
                '--streamrate=%u' % self.sitl_streamrate(),
                '--cmd="set heartbeat %u"' % self.speedup]
@@ -2998,23 +3015,69 @@ class AutoTest(ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=2000):
+    def set_rc_from_map(self, _map, timeout=20):
         map_copy = _map.copy()
+        self.rc_queue.put(map_copy)
+
+        if self.rc_thread is None:
+            self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
+            if self.rc_thread is None:
+                raise NotAchievedException("Could not create thread")
+            self.rc_thread.start()
+
         tstart = self.get_sim_time()
-        while len(map_copy.keys()):
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise SetRCTimeout("Failed to set RC channels")
-            for chan in map_copy:
-                value = map_copy[chan]
-                self.send_set_rc(chan, value)
-            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
-            self.progress("m: %s" % m)
-            new = dict()
+        while True:
+            if tstart - self.get_sim_time_cached() > timeout:
+                raise NotAchievedException("Failed to set RC values")
+            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=1)
+            if m is None:
+                continue
+            bad_channels = ""
             for chan in map_copy:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
                 if chan_pwm != map_copy[chan]:
-                    new[chan] = map_copy[chan]
-            map_copy = new
+                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
+                    break
+            if len(bad_channels) == 0:
+                break
+            self.progress("RC values bad:%s" % bad_channels)
+            if not self.rc_thread.is_alive():
+                self.rc_thread = None
+                raise ValueError("RC thread is dead")  # FIXME: type
+
+    def rc_thread_main(self):
+        chan16 = [1000] * 16
+        last_sent_ms = 0
+
+        sitl_output = mavutil.mavudp("127.0.0.1:5501", input=False)
+        buf = None
+
+        while True:
+            if self.rc_thread_should_quit:
+                break
+
+            # the 0.05 here means we're updating the RC values into
+            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
+            # the autopilot's simulated 20Hz, so if speedup is 10 the
+            # autopilot will see ~2Hz.
+            try:
+                map_copy = self.rc_queue.get(timeout=0.02)
+
+                # 16 packed entries:
+                values = []
+                for i in range(1,17):
+                    if i in map_copy:
+                        chan16[i-1] = map_copy[i]
+
+            except Queue.Empty:
+                pass
+
+            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
+
+            if buf is None:
+                continue
+
+            sitl_output.write(buf)
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
@@ -3037,37 +3100,9 @@ class AutoTest(ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def send_set_rc(self, chan, pwm):
-        self.mavproxy.send('rc %u %u\n' % (chan, pwm))
-
-    def set_rc(self, chan, pwm, timeout=2000):
+    def set_rc(self, chan, pwm, timeout=20):
         """Setup a simulated RC control to a PWM value"""
-        self.drain_mav()
-        tstart = self.get_sim_time()
-        wclock = time.time()
-        while self.get_sim_time_cached() < tstart + timeout:
-            self.send_set_rc(chan, pwm)
-            m = self.mav.recv_match(type='RC_CHANNELS', blocking=True)
-            chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-            wclock_delta = time.time() - wclock
-            sim_time_delta = self.get_sim_time_cached()-tstart
-            if sim_time_delta == 0:
-                time_ratio = None
-            else:
-                time_ratio = wclock_delta / sim_time_delta
-            self.progress("set_rc (wc=%s st=%s r=%s): ch=%u want=%u got=%u" %
-                          (wclock_delta,
-                           sim_time_delta,
-                           time_ratio,
-                           chan,
-                           pwm,
-                           chan_pwm))
-            if chan_pwm == pwm:
-                delta = self.get_sim_time_cached() - tstart
-                if delta > self.max_set_rc_timeout:
-                    self.max_set_rc_timeout = delta
-                return True
-        raise SetRCTimeout("Failed to send RC commands to channel %s" % str(chan))
+        self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
     def location_offset_ne(self, location, north, east):
         '''move location in metres'''
@@ -3329,10 +3364,10 @@ class AutoTest(ABC):
         # Different scaling for RC input and servo output means the
         # servo output value isn't the rc input value:
         self.progress("Setting RC to 1200")
-        self.send_set_rc(2, 1200)
+        self.rc_queue.put({2: 1200})
         self.progress("Waiting for servo of 1260")
         self.cpufailsafe_wait_servo_channel_value(2, 1260)
-        self.send_set_rc(2, 1700)
+        self.rc_queue.put({2: 1700})
         self.cpufailsafe_wait_servo_channel_value(2, 1660)
         self.reset_SITL_commandline()
 
@@ -5004,6 +5039,8 @@ Also, ignores heartbeats not from our target system'''
             self.sup_prog = None
 
     def sitl_is_running(self):
+        if self.sitl is None:
+            return False
         return self.sitl.isalive()
 
     def init(self):
@@ -6849,13 +6886,19 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Test gripper with RC9_OPTION")
         self.progress("Releasing load")
         # non strict string matching because of catching text issue....
-        self.wait_text("Gripper load releas", the_function=lambda: self.send_set_rc(9, 1000))
+        self.context_collect('STATUSTEXT')
+        self.set_rc(9, 1000)
+        self.wait_text("Gripper load releas", check_context=True)
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb", the_function=lambda: self.send_set_rc(9, 2000))
+        self.set_rc(9, 2000)
+        self.wait_text("Gripper load grabb", check_context=True)
+        self.context_clear_collection('STATUSTEXT')
         self.progress("Releasing load")
-        self.wait_text("Gripper load releas", the_function=lambda: self.send_set_rc(9, 1000))
+        self.set_rc(9, 1000)
+        self.wait_text("Gripper load releas", check_context=True)
         self.progress("Grabbing load")
-        self.wait_text("Gripper load grabb", the_function=lambda: self.send_set_rc(9, 2000))
+        self.set_rc(9, 2000)
+        self.wait_text("Gripper load grabb", check_context=True)
         self.progress("Test gripper with Mavlink cmd")
         self.progress("Releasing load")
         self.wait_text("Gripper load releas",
@@ -7620,6 +7663,12 @@ switch value'''
             if self.logs_dir:
                 if glob.glob("core*"):
                     self.check_logs("FRAMEWORK")
+
+        if self.rc_thread is not None:
+            self.progress("Joining thread")
+            self.rc_thread_should_quit = True
+            self.rc_thread.join()
+            self.rc_thread = None
         self.close()
 
         if len(self.skip_list):

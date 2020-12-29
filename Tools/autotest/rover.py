@@ -351,9 +351,7 @@ class AutoTestRover(AutoTest):
         self.load_mission(filename)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.set_rc(3, 1500)
-        self.wait_mode('AUTO')
+        self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
         self.mavproxy.expect("Mission Complete")
         self.disarm_vehicle()
@@ -575,6 +573,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Pin mask changed after relay command")
 
     def test_setting_modes_via_mavproxy_switch(self):
+        self.customise_SITL_commandline([
+            "--rc-in-port", "5502",
+        ])
         self.load_mission(self.arming_test_mission())
         self.wait_ready_to_arm()
         fnoo = [(1, 'MANUAL'),
@@ -635,12 +636,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         ex = None
         try:
-            self.set_parameter("MODE5", 1)
-            self.mavproxy.send('switch 1\n')  # random mode
-            self.wait_heartbeat()
-            self.change_mode('MANUAL')
-            self.mavproxy.send('switch 5\n')  # acro mode
-            self.wait_mode("ACRO")
+            # from mavproxy_rc.py
+            mapping = [ 0, 1165, 1295, 1425, 1555, 1685, 1815 ]
+            self.set_parameter("MODE1", 1)  # acro
+            self.set_rc(8, mapping[1])
+            self.wait_mode('ACRO')
+
             self.set_rc(9, 1000)
             self.set_rc(10, 1000)
             self.set_parameter("RC9_OPTION", 53) # steering
