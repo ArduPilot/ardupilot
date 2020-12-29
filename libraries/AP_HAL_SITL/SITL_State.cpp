@@ -376,6 +376,12 @@ int SITL_State::sim_fd(const char *name, const char *arg)
         }
         gyus42v2 = new SITL::RF_GYUS42v2();
         return gyus42v2->fd();
+    } else if (streq(name, "VectorNav")) {
+        if (vectornav != nullptr) {
+            AP_HAL::panic("Only one VectorNav at a time");
+        }
+        vectornav = new SITL::VectorNav();
+        return vectornav->fd();
     }
 
     AP_HAL::panic("unknown simulated device: %s", name);
@@ -491,6 +497,11 @@ int SITL_State::sim_fd_write(const char *name)
             AP_HAL::panic("No gyus42v2 created");
         }
         return gyus42v2->write_fd();
+    } else if (streq(name, "VectorNav")) {
+        if (vectornav == nullptr) {
+            AP_HAL::panic("No VectorNav created");
+        }
+        return vectornav->write_fd();
     }
     AP_HAL::panic("unknown simulated device: %s", name);
 }
@@ -699,6 +710,9 @@ void SITL_State::_fdm_input_local(void)
 
     if (sf45b != nullptr) {
         sf45b->update(sitl_model->get_location());
+    }
+    if (vectornav != nullptr) {
+        vectornav->update();
     }
 
     if (_sitl) {
