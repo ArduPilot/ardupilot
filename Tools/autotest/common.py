@@ -2252,6 +2252,8 @@ class AutoTest(ABC):
                 raise NotAchievedException("Unexpected offset")
             if m.id != log_id:
                 raise NotAchievedException("Unexpected id")
+            if m.count == 0:
+                raise NotAchievedException("Zero bytes read")
             data_downloaded.extend(m.data[0:m.count])
             bytes_read += m.count
             #self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
@@ -2304,7 +2306,7 @@ class AutoTest(ABC):
         backwards_data_downloaded = []
         last_print = 0
         while bytes_read < bytes_to_read:
-            bytes_to_fetch = int(random.random() * 100)
+            bytes_to_fetch = int(random.random() * 99) + 1
             if bytes_to_fetch > 90:
                 bytes_to_fetch = 90
             if bytes_to_fetch > bytes_to_read - bytes_read:
@@ -2323,6 +2325,8 @@ class AutoTest(ABC):
                                     timeout=2)
             if m is None:
                 raise NotAchievedException("Did not get reply")
+            if m.count == 0:
+                raise NotAchievedException("xZero bytes read")
             stuff = m.data[0:m.count]
             stuff.extend(backwards_data_downloaded)
             backwards_data_downloaded = stuff
@@ -2330,7 +2334,7 @@ class AutoTest(ABC):
             # self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
             if time.time() - last_print > 10:
                 last_print = time.time()
-                self.progress("Read %u/%u" % (bytes_read, bytes_to_read))
+                self.progress("xRead %u/%u" % (bytes_read, bytes_to_read))
 
         self.assert_bytes_equal(actual_bytes, backwards_data_downloaded, maxlen=bytes_to_read)
         # if len(actual_bytes) != len(backwards_data_downloaded):
