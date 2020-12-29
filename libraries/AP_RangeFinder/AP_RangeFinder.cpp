@@ -47,7 +47,7 @@
 #include "AP_RangeFinder_LeddarVu8.h"
 #include "AP_RangeFinder_SITL.h"
 #include "AP_RangeFinder_MSP.h"
-
+#include "AP_RangeFinder_GP2Y0E03.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -563,7 +563,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         }
 #endif // HAL_MSP_RANGEFINDER_ENABLED
         break;
-
+    case Type::GP2Y0E03:
+	if (params[instance].address) {
+            FOREACH_I2C(i) {
+                if (_add_backend(AP_RangeFinder_GP2Y0E03::detect(state[instance], params[instance],
+                                                                        hal.i2c_mgr->get_device(i, params[instance].address)),
+                    instance)) {
+                    break;
+                }
+            }
+        }
+        break;
     case Type::NONE:
         break;
     }
