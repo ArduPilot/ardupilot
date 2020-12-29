@@ -39,6 +39,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
@@ -335,6 +337,9 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
 #endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+        ,EXTERNAL = 11
+#endif
     };
     EKFType active_EKF_type(void) const;
 
@@ -383,5 +388,9 @@ private:
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
+#endif    
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void update_external(void);
 #endif    
 };
