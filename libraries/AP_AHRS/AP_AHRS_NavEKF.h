@@ -317,6 +317,11 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise) override;
 
+    // active EKF type for logging
+    uint8_t get_active_EKF_type(void) const override {
+        return uint8_t(active_EKF_type());
+    }
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
