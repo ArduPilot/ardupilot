@@ -389,6 +389,8 @@ private:
     TriState takeoffExpectedState = TriState::UNKNOWN;
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
+    EKFType last_active_ekf_type;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms;
