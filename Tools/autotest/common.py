@@ -7660,24 +7660,14 @@ switch value'''
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_TERM_ACTION", 42)
             self.load_sample_mission()
-            messages = []
-            def my_message_hook(mav, m):
-                if m.get_type() != 'STATUSTEXT':
-                    return
-                messages.append(m)
-            self.install_message_hook(my_message_hook)
-            try:
-                self.change_mode("AUTO") # must go to auto for AFS to latch on
-            finally:
-                self.remove_message_hook(my_message_hook)
-
-            if "AFS State: AFS_AUTO" not in [x.text for x in messages]:
-                self.wait_statustext("AFS State: AFS_AUTO")
+            self.context_collect("STATUSTEXT")
+            self.change_mode("AUTO") # must go to auto for AFS to latch on
+            self.wait_statustext("AFS State: AFS_AUTO", check_context=True)
             self.change_mode("MANUAL")
             self.start_subtest("RC Failure")
             self.set_parameter("AFS_RC_FAIL_TIME", 1)
             self.set_parameter("SIM_RC_FAIL", 1)
-            self.wait_statustext("Terminating due to RC failure")
+            self.wait_statustext("Terminating due to RC failure", check_context=True)
             self.set_parameter("AFS_RC_FAIL_TIME", 0)
             self.set_parameter("SIM_RC_FAIL", 0)
             self.set_parameter("AFS_TERMINATE", 0)
@@ -7687,7 +7677,7 @@ switch value'''
                 self.start_subtest("Altitude Limit breach")
                 self.set_parameter("AFS_AMSL_LIMIT", 100)
                 self.mavproxy.send("fence enable\n")
-                self.wait_statustext("Terminating due to fence breach")
+                self.wait_statustext("Terminating due to fence breach", check_context=True)
                 self.set_parameter("AFS_AMSL_LIMIT", 0)
                 self.set_parameter("AFS_TERMINATE", 0)
                 self.mavproxy.send("fence disable\n")
@@ -7695,12 +7685,12 @@ switch value'''
             self.start_subtest("GPS Failure")
             self.set_parameter("AFS_MAX_GPS_LOSS", 1)
             self.set_parameter("SIM_GPS_DISABLE", 1)
-            self.wait_statustext("AFS State: GPS_LOSS")
+            self.wait_statustext("AFS State: GPS_LOSS", check_context=True)
             self.set_parameter("SIM_GPS_DISABLE", 0)
             self.set_parameter("AFS_MAX_GPS_LOSS", 0)
             self.set_parameter("AFS_TERMINATE", 0)
 
-            self.send_cmd(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
                           1,  # terminate
                           0,
                           0,
@@ -7709,7 +7699,7 @@ switch value'''
                           0,
                           0,
             )
-            self.wait_statustext("Terminating due to GCS request")
+            self.wait_statustext("Terminating due to GCS request", check_context=True)
 
         except Exception as e:
             ex = e
