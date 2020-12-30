@@ -20,20 +20,16 @@ void Plane::update_soaring() {
     g2.soaring_controller.update_vario();
 
     // Check for throttle suppression change.
-    switch (control_mode->mode_number()) {
-    case Mode::Number::AUTO:
-    case Mode::Number::FLY_BY_WIRE_B:
-    case Mode::Number::CRUISE:
+    if (control_mode->does_automatic_thermal_switch()) {
         g2.soaring_controller.suppress_throttle();
-        break;
-    case Mode::Number::THERMAL:
+    }
+    else if (control_mode == &mode_thermal) {
         // Never use throttle in THERMAL with soaring active.
         g2.soaring_controller.set_throttle_suppressed(true);
-        break;
-    default:
+    }
+    else {
         // In any other mode allow throttle.
         g2.soaring_controller.set_throttle_suppressed(false);
-        break;
     }
 
     // Nothing to do if we are in powered flight
@@ -41,13 +37,7 @@ void Plane::update_soaring() {
         return;
     }
 
-    switch (control_mode->mode_number()) {
-    default:
-        // nothing to do
-        break;
-    case Mode::Number::AUTO:
-    case Mode::Number::FLY_BY_WIRE_B:
-    case Mode::Number::CRUISE:
+    if (control_mode->does_automatic_thermal_switch()) {
         // Test for switch into thermalling mode
         g2.soaring_controller.update_cruising();
 
@@ -55,12 +45,10 @@ void Plane::update_soaring() {
             gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Thermal detected, entering %s", mode_thermal.name());
             set_mode(mode_thermal, ModeReason::SOARING_THERMAL_DETECTED);
         }
-        break;
-    case Mode::Number::THERMAL:
+    } else if (control_mode == &mode_thermal) {
         // Update thermal mode soaring logic.
         mode_thermal.update_soaring();
-        break;
-    } // switch control_mode
+    }
 }
 
 #endif // SOARING_ENABLED
