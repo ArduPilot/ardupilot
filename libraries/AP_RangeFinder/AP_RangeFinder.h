@@ -87,7 +87,7 @@ public:
         HC_SR04 = 30,
         GYUS42v2 = 31,
         MSP = 32,
-	GP2Y0E03 = 33,
+        GP2Y0E03 = 33,
         SITL = 100,
     };
 
