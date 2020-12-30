@@ -118,6 +118,11 @@ public:
                            Location &loc,
                            float &yaw_degrees);
 
+    /* lookup a location in locations.txt */
+    static bool lookup_location(const char *home_str,
+                                Location &loc,
+                                float &yaw_degrees);
+    
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
