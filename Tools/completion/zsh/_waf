@@ -31,6 +31,7 @@ _waf() {
           '--sitl-flash-storage[Building SITL with flash storage emulation.]' \
           '--upload[Upload applicable targets to a connected device]' \
           '--board[Board name]:board:_waf_boards' \
+          '--target=[Target name]:target:_waf_targets' \
           '*:: :->args' \
         && ret=0
       ;;
@@ -41,6 +42,13 @@ _waf() {
 _waf_boards() {
   local boards; boards=( $(./waf list_boards | sed -e '$d'))
   _describe -t boards 'board' boards "$@" && ret=0
+}
+
+(( $+functions[_waf_targets] )) ||
+_waf_targets() {
+  # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+  local targets; targets=( $(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' '))
+  _describe -t targets 'target' targets "$@" && ret=0
 }
 
 # TODO generate with regex from waf help
