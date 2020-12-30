@@ -156,7 +156,7 @@ public:
 
     HAL_Semaphore &get_semaphore(void) { return _rsem; }
 
-    size_t task_info(char *buf, size_t bufsize);
+    void task_info(ExpandingString &str);
 
     static const struct AP_Param::GroupInfo var_info[];
 

@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Common/ExpandingString.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
@@ -409,30 +411,20 @@ void AP_Scheduler::Log_Write_Performance()
 }
 
 // display task statistics as text buffer for @SYS/tasks.txt
-size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
+void AP_Scheduler::task_info(ExpandingString &str)
 {
-    size_t total = 0;
-
     // a header to allow for machine parsers to determine format
-    int n = hal.util->snprintf(buf, bufsize, "TasksV1\n");
-
-    if (n <= 0) {
-        return 0;
-    }
+    str.printf("TasksV1\n");
 
     // dynamically enable statistics collection
     if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
         _options |= uint8_t(Options::RECORD_TASK_INFO);
-        return n;
+        return;
     }
 
     if (perf_info.get_task_info(0) == nullptr) {
-        return n;
+        return;
     }
-
-    buf += n;
-    bufsize -= n;
-    total += n;
 
     // baseline the total time taken by all tasks
     float total_time = 1.0f;
@@ -459,19 +451,10 @@ size_t AP_Scheduler::task_info(char *buf, size_t bufsize)
 #else
         const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
 #endif
-        n = hal.util->snprintf(buf, bufsize, fmt, task_name,
-            unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
-            unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
-
-        if (n <= 0) {
-            break;
-        }
-        buf += n;
-        bufsize -= n;
-        total += n;
+        str.printf(fmt, task_name,
+                   unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
+                   unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
     }
-
-    return total;
 }
 
 namespace AP {
