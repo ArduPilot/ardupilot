@@ -61,6 +61,8 @@ void Copter::init_ardupilot()
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
+#else
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No log function is built in.");
 #endif
 
     // update motor interlock state
