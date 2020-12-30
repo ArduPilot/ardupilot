@@ -112,7 +112,7 @@ public:
     bool set_event_handle(AP_HAL::EventHandle* evt_handle) override;
     uint16_t getNumFilters() const override;
     uint32_t getErrorCount() const override;
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &) override;
     bool is_busoff() const override;
     bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs) override;
     void flush_tx() override;
