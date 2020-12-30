@@ -29,6 +29,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if AP_AHRS_NAVEKF_AVAILABLE
 
@@ -67,6 +68,9 @@ void AP_AHRS_NavEKF::init()
         EKF2.set_enable(true);
     }
 #endif
+
+    last_active_ekf_type = (EKFType)_ekf_type.get();
+
     // init parent class
     AP_AHRS_DCM::init();
 }
@@ -173,6 +177,12 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     // update NMEA output
     update_nmea_out();
 #endif
+
+    EKFType active = active_EKF_type();
+    if (active != last_active_ekf_type) {
+        last_active_ekf_type = active;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: EKF%u active", unsigned(active));
+    }
 }
 
 void AP_AHRS_NavEKF::update_DCM(bool skip_ins_update)
