@@ -39,6 +39,8 @@
 #include <AP_HAL_ChibiOS/CANIface.h>
 #endif
 
+#include <AP_Common/ExpandingString.h>
+
 #define LOG_TAG "CANMGR"
 #define LOG_BUFFER_SIZE 1024
 
@@ -373,15 +375,13 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
 }
 
 // log retrieve method used by file sys method to report can log
-uint32_t AP_CANManager::log_retrieve(char* data, uint32_t max_size) const
+void AP_CANManager::log_retrieve(ExpandingString &str) const
 {
     if (_log_buf == nullptr) {
         gcs().send_text(MAV_SEVERITY_ERROR, "Log buffer not available");
-        return 0;
+        return;
     }
-    uint32_t read_len = MIN(max_size, _log_pos);
-    memcpy(data, _log_buf, read_len);
-    return read_len;
+    str.append(_log_buf, _log_pos);
 }
 
 AP_CANManager& AP::can()

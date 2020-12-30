@@ -90,7 +90,7 @@ public:
     // Method to log status and debug information for review while debugging
     void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...);
 
-    uint32_t log_retrieve(char* data, uint32_t max_size) const;
+    void log_retrieve(ExpandingString &str) const;
 
     // return driver type index i
     Driver_Type get_driver_type(uint8_t i) const
