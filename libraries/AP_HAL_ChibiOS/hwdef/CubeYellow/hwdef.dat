@@ -474,3 +474,4 @@ define STORAGE_FLASH_PAGE 1
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
