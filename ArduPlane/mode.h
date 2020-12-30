@@ -80,6 +80,9 @@ public:
     // true if mode can have terrain following disabled by switch
     virtual bool allows_terrain_disable() const { return false; }
 
+    // true if automatic switch to thermal mode is supported.
+    virtual bool does_automatic_thermal_switch() const {return false; }
+
     // subclasses override this if they require navigation.
     virtual void navigate() { return; }
 
@@ -116,6 +119,8 @@ public:
     Number mode_number() const override { return Number::AUTO; }
     const char *name() const override { return "AUTO"; }
     const char *name4() const override { return "AUTO"; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -314,6 +319,8 @@ public:
 
     bool allows_terrain_disable() const override { return true; }
 
+    bool does_automatic_thermal_switch() const override { return true; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -331,6 +338,8 @@ public:
     const char *name4() const override { return "CRUS"; }
 
     bool allows_terrain_disable() const override { return true; }
+
+    bool does_automatic_thermal_switch() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
