@@ -525,6 +525,7 @@ struct PACKED log_Attitude {
     uint16_t yaw;
     uint16_t error_rp;
     uint16_t error_yaw;
+    uint8_t  active;
 };
 
 struct PACKED log_PID {
@@ -1143,6 +1144,7 @@ struct PACKED log_PSC {
 // @Field: Yaw: achieved vehicle yaw
 // @Field: ErrRP: lowest estimated gyro drift error
 // @Field: ErrYaw: difference between measured yaw and DCM yaw estimate
+// @Field: AEKF: active EKF type
 
 // @LoggerMessage: BARO
 // @Description: Gathered Barometer data
@@ -1935,7 +1937,7 @@ struct PACKED log_PSC {
     { LOG_CURRENT_CELLS_MSG, sizeof(log_Current_Cells), \
       "BCL", "QBfHHHHHHHHHHHH", "TimeUS,Instance,Volt,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12", "s#vvvvvvvvvvvvv", "F-0CCCCCCCCCCCC" }, \
 	{ LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-      "ATT", "QccccCCCC", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw", "sddddhhdh", "FBBBBBBBB" }, \
+      "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" }, \
     { LOG_MAG_MSG, sizeof(log_MAG), \
       "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F" }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
