@@ -577,7 +577,8 @@ void AP_Logger::Write_Attitude(const Vector3f &targets)
         control_yaw     : (uint16_t)wrap_360_cd(targets.z),
         yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
         error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
-        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
+        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100),
+        active          : ahrs.get_active_AHRS_type(),
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
