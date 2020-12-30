@@ -66,7 +66,7 @@ public:
     static void lock_all(void);
 
     // display dma contention statistics as text buffer for @SYS/dma.txt
-    static size_t dma_info(char *buf, size_t bufsize);
+    static void dma_info(ExpandingString &str);
 
 private:
     dma_allocate_fn_t allocate;
