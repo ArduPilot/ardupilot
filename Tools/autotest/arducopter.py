@@ -1640,38 +1640,43 @@ class AutoTestCopter(AutoTest):
 
         self.takeoff(10, mode="LOITER")
 
-        self.mavproxy.send('mode CIRCLE\n')
-        self.wait_mode('CIRCLE')
+        self.change_mode('CIRCLE')
 
         self.delay_sim_time(20)
+
+        self.context_collect("STATUSTEXT")
 
         self.progress("Failing first compass")
         self.set_parameter("SIM_MAG1_FAIL", 1)
 
         # we want for the message twice, one for EK2 and again for EK3
-        self.wait_statustext("IMU0 switching to compass 1")
-        self.wait_statustext("IMU0 switching to compass 1")
+        self.wait_statustext("EKF2 IMU0 switching to compass 1", check_context=True)
+        self.wait_statustext("EKF3 IMU0 switching to compass 1", check_context=True)
         self.progress("compass switch 1 OK")
 
         self.delay_sim_time(2)
 
+        self.context_clear_collection("STATUSTEXT")
+
         self.progress("Failing 2nd compass")
         self.set_parameter("SIM_MAG2_FAIL", 1)
 
-        self.wait_statustext("IMU0 switching to compass 2")
-        self.wait_statustext("IMU0 switching to compass 2")
+        self.wait_statustext("EKF2 IMU0 switching to compass 2", check_context=True)
+        self.wait_statustext("EKF3 IMU0 switching to compass 2", check_context=True)
 
         self.progress("compass switch 2 OK")
 
         self.delay_sim_time(2)
+
+        self.context_clear_collection("STATUSTEXT")
 
         self.progress("Failing 3rd compass")
         self.set_parameter("SIM_MAG3_FAIL", 1)
         self.delay_sim_time(2)
         self.set_parameter("SIM_MAG1_FAIL", 0)
 
-        self.wait_statustext("IMU0 switching to compass 0")
-        self.wait_statustext("IMU0 switching to compass 0")
+        self.wait_statustext("EKF2 IMU0 switching to compass 0", check_context=True)
+        self.wait_statustext("EKF3 IMU0 switching to compass 0", check_context=True)
         self.progress("compass switch 0 OK")
 
         self.do_RTL()
