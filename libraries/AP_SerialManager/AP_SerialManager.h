@@ -174,6 +174,9 @@ public:
     //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found
     uint32_t find_baudrate(enum SerialProtocol protocol, uint8_t instance) const;
 
+    // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
+    int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
+    
     // get_mavlink_channel - provides the mavlink channel associated with a given protocol (and instance)
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns true if a channel is found, false if not
