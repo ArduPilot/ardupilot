@@ -60,11 +60,11 @@ public:
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     // request information on running threads
-    size_t thread_info(char *buf, size_t bufsize) override;
+    void thread_info(ExpandingString &str) override;
 #endif
 #if CH_CFG_USE_SEMAPHORES
     // request information on dma contention
-    size_t dma_info(char *buf, size_t bufsize) override;
+    void dma_info(ExpandingString &str) override;
 #endif
     
 private:
