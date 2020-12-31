@@ -61,7 +61,8 @@
 
 
 
-class AC_AutoTune {
+class AC_AutoTune
+{
 public:
     // constructor
     AC_AutoTune();
@@ -77,7 +78,8 @@ public:
     void stop();
 
     // reset Autotune so that gains are not saved again and autotune can be run again.
-    void reset() {
+    void reset()
+    {
         mode = UNINITIALISED;
         axes_completed = 0;
     }
@@ -100,7 +102,7 @@ protected:
 
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
-    
+
     // start tune - virtual so that vehicle code can add additional pre-conditions
     virtual bool start(void);
 
