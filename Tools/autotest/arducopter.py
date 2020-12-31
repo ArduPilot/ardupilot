@@ -2165,6 +2165,7 @@ class AutoTestCopter(AutoTest):
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
+            self.disarm_vehicle(force=True)
 
         self.context_pop()
 
