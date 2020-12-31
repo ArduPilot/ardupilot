@@ -110,6 +110,8 @@ AP_CANManager::AP_CANManager()
 
 void AP_CANManager::init()
 {
+    WITH_SEMAPHORE(_sem);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (AP::sitl() != nullptr) {
         if (AP::sitl()->speedup > 1) {
@@ -272,6 +274,57 @@ void AP_CANManager::init()
         // to find and reference protocol drivers
         _driver_type_cache[drv_num] = drv_type[drv_num];
     }
+}
+
+/*
+  register a new CAN driver
+ */
+bool AP_CANManager::register_driver(Driver_Type dtype, AP_CANDriver *driver)
+{
+    WITH_SEMAPHORE(_sem);
+
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        uint8_t drv_num = _interfaces[i]._driver_number;
+        if (drv_num == 0 || drv_num > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
+            continue;
+        }
+        // from 1 based to 0 based
+        drv_num--;
+
+        if (dtype != (Driver_Type)_drv_param[drv_num]._driver_type.get()) {
+            continue;
+        }
+        if (_drivers[drv_num] != nullptr) {
+            continue;
+        }
+        if (_num_drivers >= HAL_MAX_CAN_PROTOCOL_DRIVERS) {
+            continue;
+        }
+
+        if (hal.can[i] == nullptr) {
+            // if this interface is not allocated allocate it here,
+            // also pass the index of the CANBus
+            const_cast <AP_HAL::HAL&> (hal).can[i] = new HAL_CANIface(i);
+        }
+
+        // Initialise the interface we just allocated
+        if (hal.can[i] == nullptr) {
+            continue;
+        }
+        AP_HAL::CANIface* iface = hal.can[i];
+
+        _drivers[drv_num] = driver;
+        _drivers[drv_num]->add_interface(iface);
+        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
+
+        _drivers[drv_num]->init(drv_num, false);
+        _driver_type_cache[drv_num] = dtype;
+
+        _num_drivers++;
+
+        return true;
+    }
+    return false;
 }
 
 // Method used by CAN related library methods to report status and debug info
