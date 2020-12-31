@@ -28,6 +28,7 @@
 #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
+#include <AP_EFI/AP_EFI_NWPMU.h>
 #include "AP_CANTester.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
