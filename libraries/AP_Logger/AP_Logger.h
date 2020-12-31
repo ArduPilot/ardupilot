@@ -408,6 +408,11 @@ public:
     // output a FMT message for each backend if not already done so
     void Safe_Write_Emit_FMT(log_write_fmt *f);
 
+    // get count of number of times we have started logging
+    uint8_t get_log_start_count(void) const {
+        return _log_start_count;
+    }
+
 protected:
 
     const struct LogStructure *_structures;
@@ -530,6 +535,10 @@ private:
 
     // last time arming failed, for backends
     uint32_t _last_arming_failure_ms;
+
+    // count of number of times we've started logging
+    // can be used by other subsystems to detect if they should log data
+    uint8_t _log_start_count;
 
     bool should_handle_log_message();
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);

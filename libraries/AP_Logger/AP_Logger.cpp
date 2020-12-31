@@ -580,6 +580,8 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
 
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
+    _log_start_count++;
+
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i] == backend) { // pointer comparison!
             // reset sent masks
