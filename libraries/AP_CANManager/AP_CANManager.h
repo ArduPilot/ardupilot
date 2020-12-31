@@ -62,6 +62,9 @@ public:
 
     void init(void);
 
+    // register a new driver
+    bool register_driver(Driver_Type dtype, AP_CANDriver *driver);
+
     // returns number of active CAN Drivers
     uint8_t get_num_drivers(void) const
     {
@@ -140,7 +143,7 @@ private:
     };
 
     CANIface_Params _interfaces[HAL_NUM_CAN_IFACES];
-    AP_CANDriver* _drivers[HAL_MAX_CAN_PROTOCOL_DRIVERS] {};
+    AP_CANDriver* _drivers[HAL_MAX_CAN_PROTOCOL_DRIVERS];
     CANDriver_Params _drv_param[HAL_MAX_CAN_PROTOCOL_DRIVERS];
     Driver_Type _driver_type_cache[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
@@ -151,6 +154,8 @@ private:
 
     char* _log_buf;
     uint32_t _log_pos;
+
+    HAL_Semaphore _sem;
 };
 
 namespace AP
