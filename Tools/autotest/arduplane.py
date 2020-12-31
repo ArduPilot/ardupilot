@@ -791,6 +791,8 @@ class AutoTestPlane(AutoTest):
 
             self.progress("Flaps OK")
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         if ex:
@@ -1620,6 +1622,8 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Got collision message when I shouldn't have")
 
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         self.reboot_sitl()

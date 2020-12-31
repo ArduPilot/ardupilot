@@ -482,6 +482,8 @@ class AutoTestCopter(AutoTest):
 
             self.wait_disarmed()
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.context_pop()
@@ -866,6 +868,8 @@ class AutoTestCopter(AutoTest):
         try:
             self.test_battery_failsafe(timeout=timeout)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.set_parameter('BATT_LOW_VOLT', 0)
@@ -1741,6 +1745,8 @@ class AutoTestCopter(AutoTest):
             self.set_parameter('SIM_SPEEDUP', old_speedup)
             self.do_RTL()
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
         sr = self.sitl_streamrate()
@@ -1794,6 +1800,8 @@ class AutoTestCopter(AutoTest):
 
             self.wait_groundspeed(10, 100, timeout=60)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.set_rc(2, 1500)
@@ -2154,6 +2162,8 @@ class AutoTestCopter(AutoTest):
             else:
                 raise NotAchievedException("Detected peak %.1f Hz %.2f dB" % (freq, peakdB))
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.context_pop()
@@ -4049,6 +4059,8 @@ class AutoTestCopter(AutoTest):
                 raise
 
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
 
@@ -4775,6 +4787,8 @@ class AutoTestCopter(AutoTest):
                     raise NotAchievedException("Failed to maintain takeoff alt")
             self.progress("takeoff OK")
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.land_and_disarm()
@@ -5689,6 +5703,8 @@ class AutoTestCopter(AutoTest):
 
         except Exception as e:
             self.disarm_vehicle(force=True)
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.context_pop()
         if ex is not None:
@@ -6408,6 +6424,8 @@ class AutoTestHeli(AutoTestCopter):
 
             self.progress("takeoff OK")
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.land_and_disarm()
