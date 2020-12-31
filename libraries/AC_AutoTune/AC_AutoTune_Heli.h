@@ -21,20 +21,21 @@
 
 #include "AC_AutoTune.h"
 
-class AC_AutoTune_Heli : public AC_AutoTune {
+class AC_AutoTune_Heli : public AC_AutoTune
+{
 public:
     // constructor
     AC_AutoTune_Heli()
-        {
-//            tune_seq[0] = 4;  // RFF_UP
-//            tune_seq[1] = 8;   // MAX_GAINS
-//            tune_seq[2] = 0; // RD_UP
-//            tune_seq[3] = 2; // RP_UP
-//            tune_seq[2] = 6; // SP_UP
-//            tune_seq[3] = 9; // tune complete
-            tune_seq[0] = 6; // SP_UP
-            tune_seq[1] = 9; // tune complete
-        };
+    {
+        //            tune_seq[0] = 4;  // RFF_UP
+        //            tune_seq[1] = 8;   // MAX_GAINS
+        //            tune_seq[2] = 0; // RD_UP
+        //            tune_seq[3] = 2; // RP_UP
+        //            tune_seq[2] = 6; // SP_UP
+        //            tune_seq[3] = 9; // tune complete
+        tune_seq[0] = 6; // SP_UP
+        tune_seq[1] = 9; // tune complete
+    };
     // save gained, called on disarm
     void save_tuning_gains() override;
 
@@ -64,10 +65,16 @@ protected:
     void Log_AutoTuneDetails() override;
     void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp);
     void Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads);
-    bool allow_zero_rate_p() override {return true;}
+    bool allow_zero_rate_p() override
+    {
+        return true;
+    }
     float get_intra_test_ri() override;
     float get_load_tuned_ri() override;
-    float get_load_tuned_yaw_rd() override {return tune_yaw_rd;}
+    float get_load_tuned_yaw_rd() override
+    {
+        return tune_yaw_rd;
+    }
     float get_rp_min() const override;
     float get_sp_min() const override;
     float get_rlpf_min() const override;

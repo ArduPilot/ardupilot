@@ -135,23 +135,23 @@ void AC_AutoTune_Heli::do_gcs_announcements()
     send_step_string();
     switch (tune_type) {
     case RD_UP:
-//        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f d=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]), (double)tune_rd);
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f d=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]), (double)tune_rd);
         break;
     case RD_DOWN:
     case RP_DOWN:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
     case RP_UP:
-//        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f p=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)tune_rp);
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f p=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)tune_rp);
         break;
     case RFF_UP:
         if (!is_zero(test_rate_filt)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: target=%f rotation=%f command=%f", (double)(test_tgt_rate_filt*57.3f), (double)(test_rate_filt*57.3f), (double)(test_command_filt));
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f" , (double)tune_rff);
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
         break;
     case RFF_DOWN:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f" , (double)tune_rff);
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
         break;
     case SP_DOWN:
     case SP_UP:
@@ -161,7 +161,7 @@ void AC_AutoTune_Heli::do_gcs_announcements()
     case TUNE_COMPLETE:
         break;
     }
-//    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", counter, AUTOTUNE_SUCCESS_COUNT);
+    //    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", counter, AUTOTUNE_SUCCESS_COUNT);
 
     announce_time = now;
 }
@@ -450,13 +450,13 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
             curr_test_freq = freq[frq_cnt];
         }
     } else {
-/*        if (!is_zero(phase[prev_good_frq_cnt + 1])) {
-            freq_cnt_max = prev_good_frq_cnt + 2;
-        } else {
-            freq_cnt_max = prev_good_frq_cnt + 1;
-        }
-        float phase_freq = (180.0f - phase[prev_good_frq_cnt]) / (phase[freq_cnt_max] - phase[prev_good_frq_cnt]);
-        phase_freq = freq[prev_good_frq_cnt] + phase_freq * (freq[freq_cnt_max] - freq[prev_good_frq_cnt]); */
+        /*        if (!is_zero(phase[prev_good_frq_cnt + 1])) {
+                    freq_cnt_max = prev_good_frq_cnt + 2;
+                } else {
+                    freq_cnt_max = prev_good_frq_cnt + 1;
+                }
+                float phase_freq = (180.0f - phase[prev_good_frq_cnt]) / (phase[freq_cnt_max] - phase[prev_good_frq_cnt]);
+                phase_freq = freq[prev_good_frq_cnt] + phase_freq * (freq[freq_cnt_max] - freq[prev_good_frq_cnt]); */
         if (gain[frq_cnt] < max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f && tune_d < 0.8f * max_gain_d.max_allowed) {
             tune_d += 0.1f * max_gain_d.max_allowed;
         } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] > 180.0f) {
@@ -492,8 +492,8 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             if (phase[frq_cnt] - 360.0f < 180.0f) {
                 prev_good_frq_cnt = frq_cnt;
             }
-//        } else if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
-//            frq_cnt = 11;
+            //        } else if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
+            //            frq_cnt = 11;
         }
         frq_cnt++;
         if (frq_cnt == 12) {
@@ -529,25 +529,25 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
     static uint8_t find_max_p = 0;
     static uint8_t find_max_d = 0;
     if (frq_cnt < 12) {
-        if (frq_cnt > 1 && phase[frq_cnt] > 161.0f && phase[frq_cnt] < 200.0f && 
-            phase[frq_cnt-1] > 90.0f && phase[frq_cnt-1] < 161.0f && 
+        if (frq_cnt > 1 && phase[frq_cnt] > 161.0f && phase[frq_cnt] < 200.0f &&
+            phase[frq_cnt-1] > 90.0f && phase[frq_cnt-1] < 161.0f &&
             !is_zero(phase[frq_cnt]) && find_max_p == 0) {
             max_gain_p.freq = linear_interpolate(freq[frq_cnt-1],freq[frq_cnt],161.0f,phase[frq_cnt-1],phase[frq_cnt]);
             max_gain_p.gain = linear_interpolate(gain[frq_cnt-1],gain[frq_cnt],161.0f,phase[frq_cnt-1],phase[frq_cnt]);
             max_gain_p.phase = 161.0f;
             max_gain_p.max_allowed = powf(10.0f,-1 * (log10f(max_gain_p.gain) * 20.0f + 2.42) / 20.0f);
             find_max_p = 1;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max rate P freq=%f gain=%f ph=%f rate_d=%f", (double)(max_gain_p.freq), (double)(max_gain_p.gain), (double)(max_gain_p.phase), (double)(max_gain_p.max_allowed));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max rate P freq=%f gain=%f ph=%f rate_d=%f", (double)(max_gain_p.freq), (double)(max_gain_p.gain), (double)(max_gain_p.phase), (double)(max_gain_p.max_allowed));
         }
-        if (frq_cnt > 1 && phase[frq_cnt] > 251.0f && phase[frq_cnt] < 300.0f && 
-            phase[frq_cnt-1] > 180.0f && phase[frq_cnt-1] < 251.0f &&  
+        if (frq_cnt > 1 && phase[frq_cnt] > 251.0f && phase[frq_cnt] < 300.0f &&
+            phase[frq_cnt-1] > 180.0f && phase[frq_cnt-1] < 251.0f &&
             !is_zero(phase[frq_cnt]) && find_max_d == 0) {
             max_gain_d.freq = linear_interpolate(freq[frq_cnt-1],freq[frq_cnt],251.0f,phase[frq_cnt-1],phase[frq_cnt]);
             max_gain_d.gain = linear_interpolate(gain[frq_cnt-1],gain[frq_cnt],251.0f,phase[frq_cnt-1],phase[frq_cnt]);
             max_gain_d.phase = 251.0f;
             max_gain_d.max_allowed = powf(10.0f,-1 * (log10f(max_gain_d.freq * max_gain_d.gain) * 20.0f + 2.42) / 20.0f);
             find_max_d = 1;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Rate D freq=%f gain=%f ph=%f rate_d=%f", (double)(max_gain_d.freq), (double)(max_gain_d.gain), (double)(max_gain_d.phase), (double)(max_gain_d.max_allowed));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Rate D freq=%f gain=%f ph=%f rate_d=%f", (double)(max_gain_d.freq), (double)(max_gain_d.gain), (double)(max_gain_d.phase), (double)(max_gain_d.max_allowed));
         }
         if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
             frq_cnt = 11;
@@ -601,7 +601,7 @@ void AC_AutoTune_Heli::Log_AutoTune()
 void AC_AutoTune_Heli::Log_AutoTuneDetails()
 {
     Log_Write_AutoTuneDetails(command_out, filt_target_rate, rotation_rate);
-} 
+}
 
 // @LoggerMessage: ATUN
 // @Description: Copter/QuadPlane AutoTune
@@ -641,12 +641,12 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, floa
 // Write an Autotune data packet
 void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads)
 {
-// @LoggerMessage: ATDE
-// @Description: AutoTune data packet
-// @Field: TimeUS: Time since system startup
-// @Field: Cmd: current motor command
-// @Field: TRate: current target angular rate
-// @Field: Rate: current angular rate
+    // @LoggerMessage: ATDE
+    // @Description: AutoTune data packet
+    // @Field: TimeUS: Time since system startup
+    // @Field: Cmd: current motor command
+    // @Field: TRate: current target angular rate
+    // @Field: Rate: current angular rate
     AP::logger().Write(
         "ATDE",
         "TimeUS,Cmd,TRate,Rate",

@@ -21,18 +21,19 @@
 
 #include "AC_AutoTune.h"
 
-class AC_AutoTune_Multi : public AC_AutoTune {
+class AC_AutoTune_Multi : public AC_AutoTune
+{
 public:
     // constructor
     AC_AutoTune_Multi()
-        {
-            tune_seq[0] = 0;  // RD_UP
-            tune_seq[1] = 1; // RD_DOWN
-            tune_seq[2] = 2; // RP_UP
-            tune_seq[3] = 7; // SP_DOWN
-            tune_seq[4] = 6; // SP_UP
-            tune_seq[5] = 9; // tune complete
-        };
+    {
+        tune_seq[0] = 0;  // RD_UP
+        tune_seq[1] = 1; // RD_DOWN
+        tune_seq[2] = 2; // RP_UP
+        tune_seq[3] = 7; // SP_DOWN
+        tune_seq[4] = 6; // SP_UP
+        tune_seq[5] = 9; // tune complete
+    };
     // save gained, called on disarm
     void save_tuning_gains() override;
 
@@ -61,10 +62,16 @@ protected:
     void Log_AutoTuneDetails() override;
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
-    bool allow_zero_rate_p() override {return false;}
+    bool allow_zero_rate_p() override
+    {
+        return false;
+    }
     float get_intra_test_ri() override;
     float get_load_tuned_ri() override;
-    float get_load_tuned_yaw_rd() override {return 0.0f;}
+    float get_load_tuned_yaw_rd() override
+    {
+        return 0.0f;
+    }
     float get_rp_min() const override;
     float get_sp_min() const override;
     float get_rlpf_min() const override;
