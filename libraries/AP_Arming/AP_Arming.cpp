@@ -898,6 +898,7 @@ bool AP_Arming::can_checks(bool report)
                     check_failed(ARMING_CHECK_SYSTEM, report, "TestCAN: No Arming with TestCAN enabled");
                     break;
                 }
+                case AP_CANManager::Driver_Type_EFI_NWPMU:
                 case AP_CANManager::Driver_Type_None:
                     break;
             }
