@@ -57,6 +57,7 @@ public:
         Driver_Type_ToshibaCAN = 3,
         Driver_Type_PiccoloCAN = 4,
         Driver_Type_CANTester = 5,
+        Driver_Type_EFI_NWPMU = 6,
     };
 
     void init(void);
