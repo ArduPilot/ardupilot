@@ -6,22 +6,13 @@ _waf()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
+    # don't complet =
+    _init_completion -n = || return
 
     # TODO: generate for waf help
-    opts="--help -h"
-    opts+=" -j --jobs"
-    opts+=" -v --verbose"
-    opts+=" --debug"
-    opts+=" --bootloader"
-    opts+=" --default-parameters"
-    opts+=" --enable-sfml"
-    opts+=" --enable-sfml-audio"
-    opts+=" --sitl-osd"
-    opts+=" --sitl-rgbled"
-    opts+=" --build-dates"
-    opts+=" --sitl-flash-storage"
-    opts+=" --upload"
-    opts+=" --board"
+    opts="-h"
+    opts+=" -j "
+    opts+=" -v "
 
     opts+=" AP_Periph"
     opts+=" copter"
@@ -59,7 +50,18 @@ _waf()
         ;;
     esac
 
-    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    case $cur in
+      --targets=*)
+        cur=${cur#*=}
+        # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+        opts=$(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
+        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        return 0
+        ;;
+    esac
+
+    COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+    [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }
 
 
