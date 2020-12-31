@@ -27,6 +27,7 @@
 #include <AP_Math/AP_Math.h>
 #include <uavcan/protocol/dynamic_node_id/Allocation.hpp>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 #include "AP_UAVCAN_Clock.h"
 extern const AP_HAL::HAL& hal;
 
@@ -427,6 +428,12 @@ void AP_UAVCAN_DNA_Server::verify_nodes(AP_UAVCAN *ap_uavcan)
         return;
     }
 
+    uint8_t log_count = AP::logger().get_log_start_count();
+    if (log_count != last_logging_count) {
+        last_logging_count = log_count;
+        logged.clearall();
+    }
+    
     //Check if we got acknowledgement from previous request
     //except for requests using our own node_id
     for (uint8_t i = 0; i < HAL_MAX_CAN_PROTOCOL_DRIVERS; i++) {
@@ -502,12 +509,31 @@ Handle responses from GetNodeInfo Request. We verify the node info
 against our records. Marks Verification mask if already recorded,
 Or register if the node id is available and not recorded for the
 received Unique ID */
-void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], char name[])
+void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], char name[], uint8_t major, uint8_t minor, uint32_t vcs_commit)
 {
     if (node_id > MAX_NODE_ID) {
         return;
     }
     WITH_SEMAPHORE(sem);
+
+    /*
+      if we haven't logged this node then log it now
+     */
+    if (!logged.get(node_id) && AP::logger().logging_started()) {
+        logged.set(node_id);
+        uint64_t uid[2];
+        memcpy(uid, unique_id, sizeof(uid));
+        AP::logger().Write("CAND", "TimeUS,NodeId,UID1,UID2,Name,Major,Minor,Version",
+                           "s#------", "F-------", "QBQQZBBI",
+                           AP_HAL::micros64(),
+                           node_id,
+                           uid[0], uid[1],
+                           name,
+                           major,
+                           minor,
+                           vcs_commit);
+    }
+
     if (isNodeIDOccupied(node_id)) {
         //if node_id already registered, just verify if Unique ID matches as well
         if (node_id == getNodeIDForUniqueID(unique_id, 16)) {
@@ -544,16 +570,23 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
 void trampoline_handleNodeInfo(const uavcan::ServiceCallResult<uavcan::protocol::GetNodeInfo>& resp)
 {
     uint8_t node_id, unique_id[16] = {0};
-    char name[15] = {0};
+    char name[50] = {0};
 
     node_id = resp.getResponse().getSrcNodeID().get();
 
     //copy the unique id from message to uint8_t array
-    uavcan::copy(resp.getResponse().hardware_version.unique_id.begin(),
-                 resp.getResponse().hardware_version.unique_id.end(),
+    auto &r = resp.getResponse();
+    uavcan::copy(r.hardware_version.unique_id.begin(),
+                 r.hardware_version.unique_id.end(),
                  unique_id);
-    strncpy_noterm(name, resp.getResponse().name.c_str(), sizeof(name)-1);
-    AP::uavcan_dna_server().handleNodeInfo(node_id, unique_id, name);
+    strncpy_noterm(name, r.name.c_str(), sizeof(name)-1);
+
+    auto &dna_server = AP::uavcan_dna_server();
+
+    dna_server.handleNodeInfo(node_id, unique_id, name,
+                              r.software_version.major,
+                              r.software_version.minor,
+                              r.software_version.vcs_commit);
 }
 
 /* Handle the allocation message from the devices supporting
