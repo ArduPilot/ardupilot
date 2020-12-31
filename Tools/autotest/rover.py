@@ -4893,6 +4893,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.reboot_sitl()
             self.delay_sim_time(10)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.remove_example_script(example_script)
         self.reboot_sitl()
@@ -4935,6 +4937,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.remove_example_script(script)
 
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.reboot_sitl()
 
@@ -4969,6 +4973,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.reboot_sitl()
             self.wait_statustext('hello, world', check_context=True, timeout=30)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
 
         self.remove_example_script(example_script)
