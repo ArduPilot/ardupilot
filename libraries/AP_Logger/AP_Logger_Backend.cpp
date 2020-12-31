@@ -323,7 +323,9 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
         if (charlen != 0) {
             char *tmp = va_arg(arg_list, char*);
-            memcpy(&buffer[offset], tmp, charlen);
+            uint8_t len = strnlen(tmp, charlen);
+            memcpy(&buffer[offset], tmp, len);
+            memset(&buffer[offset+len], 0, charlen-len);
             offset += charlen;
         }
     }
