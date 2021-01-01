@@ -117,7 +117,7 @@ void ModeAuto::run()
     }
 }
 
-bool ModeAuto::allows_arming(bool from_gcs) const
+bool ModeAuto::allows_arming(AP_Arming::Method method) const
 {
     return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
 };

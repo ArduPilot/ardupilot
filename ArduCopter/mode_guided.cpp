@@ -86,10 +86,10 @@ void ModeGuided::run()
     }
  }
 
-bool ModeGuided::allows_arming(bool from_gcs) const
+bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
     // always allow arming from the ground station
-    if (from_gcs) {
+    if (method == AP_Arming::Method::MAVLINK) {
         return true;
     }
 

@@ -653,7 +653,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 #endif
 
     // always check if the current mode allows arming
-    if (!copter.flightmode->allows_arming(method == AP_Arming::Method::MAVLINK)) {
+    if (!copter.flightmode->allows_arming(method)) {
         check_failed(true, "Mode not armable");
         return false;
     }
