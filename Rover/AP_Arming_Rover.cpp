@@ -100,20 +100,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 {
     if (method == AP_Arming::Method::RUDDER) {
-        // In Rover we need to check that its set to the throttle trim
-        // and within the DZ if throttle is not within trim dz, then
-        // pilot cannot rudder arm/disarm
-        if (!rover.channel_throttle->in_trim_dz()) {
-            check_failed(true, "Non-zero throttle");
-            return false;
-        }
-
         // check if arming/disarming allowed from this mode
         if (!rover.control_mode->allows_arming_from_transmitter()) {
             check_failed(true, "Mode not rudder-armable");
             return false;
         }
-
     }
 
     //are arming checks disabled?
