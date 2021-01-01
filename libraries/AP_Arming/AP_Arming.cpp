@@ -1714,6 +1714,14 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             //parameter disallows rudder arming/disabling
             return false;
         }
+
+        // only permit arming if the vehicle isn't being commanded to
+        // move via RC input
+        const auto c = rc().get_throttle_channel();
+        if (c.get_control_in() != 0) {
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
     }
 
     if (check_enabled(Check::RC)) {
