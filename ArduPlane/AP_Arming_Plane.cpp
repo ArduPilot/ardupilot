@@ -257,15 +257,6 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
     if (method == AP_Arming::Method::RUDDER) {
         const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
 
-        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-            //parameter disallows rudder arming/disabling
-
-            // if we emit a message here then someone doing surface
-            // checks may be bothered by the message being emitted.
-            // check_failed(true, "Rudder arming disabled");
-            return false;
-        }
-
         // if throttle is not down, then pilot cannot rudder arm/disarm
         if (!is_zero(plane.get_throttle_input())){
             check_failed(true, "Non-zero throttle");
