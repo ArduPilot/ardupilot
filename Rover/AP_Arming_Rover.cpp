@@ -100,12 +100,6 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 {
     if (method == AP_Arming::Method::RUDDER) {
-        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
-
-        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-            return false;
-        }
-
         // In Rover we need to check that its set to the throttle trim
         // and within the DZ if throttle is not within trim dz, then
         // pilot cannot rudder arm/disarm
