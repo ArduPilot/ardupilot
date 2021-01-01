@@ -1652,6 +1652,24 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             //parameter disallows rudder arming/disabling
             return false;
         }
+
+        // only permit arming if the vehicle isn't being commanded to
+        // move via RC input
+        const RCMapper * rcmap = AP::rcmap();
+        if (rcmap == nullptr) {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return false;
+        }
+        RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+        if (c == nullptr) {
+            // vehicles will segfault well before we get here
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return false;
+        }
+        if (c->get_control_in() != 0) {
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
     }
 
     if (check_enabled(ARMING_CHECK_RC)) {
