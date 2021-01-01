@@ -2144,10 +2144,10 @@ void AP_AHRS_NavEKF::send_ekf_status_report(mavlink_channel_t chan) const
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL:
-        // send zero status report
-        mavlink_msg_ekf_status_report_send(chan, 0, 0, 0, 0, 0, 0, 0);
+    case EKFType::EXTERNAL: {
+        AP::externalAHRS().send_status_report(chan);
         break;
+    }
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
