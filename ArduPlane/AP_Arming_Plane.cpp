@@ -254,15 +254,6 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
-    if (method == AP_Arming::Method::RUDDER) {
-        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
-
-        // if throttle is not down, then pilot cannot rudder arm/disarm
-        if (!is_zero(plane.get_throttle_input())){
-            check_failed(true, "Non-zero throttle");
-            return false;
-        }
-    }
 
     //are arming checks disabled?
     if (checks_to_perform == 0) {
