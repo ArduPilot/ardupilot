@@ -186,8 +186,7 @@ void AP_CANManager::init()
             continue;
         }
 
-        _num_drivers++;
-        if (_num_drivers > HAL_MAX_CAN_PROTOCOL_DRIVERS) {
+        if (_num_drivers >= HAL_MAX_CAN_PROTOCOL_DRIVERS) {
             // We are exceeding number of drivers,
             // this can't be happening time to panic
             AP_BoardConfig::config_error("Max number of CAN Drivers exceeded\n\r");
@@ -246,6 +245,8 @@ void AP_CANManager::init()
         } else {
             continue;
         }
+
+        _num_drivers++;
 
         // Hook this interface to the selected Driver Type
         _drivers[drv_num]->add_interface(iface);
