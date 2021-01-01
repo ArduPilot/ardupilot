@@ -567,13 +567,6 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
     if (method == AP_Arming::Method::RUDDER) {
-        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
-
-        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-            //parameter disallows rudder arming/disabling
-            return false;
-        }
-
 #if TOY_MODE_ENABLED
         if (g2.toy_mode.enabled()) {
             // not armed with sticks in toy mode
