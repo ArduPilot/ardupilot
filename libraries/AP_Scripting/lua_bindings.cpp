@@ -250,10 +250,110 @@ const luaL_Reg AP_Logger_functions[] = {
     {NULL, NULL}
 };
 
+
+static int add_param(lua_State *L) {
+    const int args = lua_gettop(L);
+    if (args < 5) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    if ((args-2) % 3 != 0) {
+        return luaL_argerror(L, args, "incorrect number of arguments");
+    }
+
+    uint16_t index = static_cast<uint16_t>(luaL_checkinteger(L, 1));
+    //const uint16_t magic = static_cast<uint16_t>(luaL_checkinteger(L, 2));
+
+    uint8_t num_params = (args-2) / 3;
+    AP_Param::Info *info = new  AP_Param::Info[num_params+1]{};
+
+    for (uint8_t i=0; i<num_params; i++) {
+        const char * name = luaL_checkstring(L, (i*3)+3);
+        if (strlen(name) > 16) {
+            delete info;
+            // should also delete the params from inside the table
+            return luaL_error(L, "param name %s must be 16 chars or fewer",name);
+        }
+
+        const lua_Integer tmp1 = luaL_checkinteger(L, (i*3)+4);
+        ap_var_type type = static_cast<ap_var_type>(tmp1);
+
+        const float default_val = luaL_checknumber(L, (i*3)+5);
+
+        void *param = nullptr;
+        switch (type) {
+            case AP_PARAM_INT8:
+                param = new AP_Int8;
+                break;
+            case AP_PARAM_INT16:
+                param = new AP_Int16;
+                break;
+            case AP_PARAM_INT32:
+                param = new AP_Int32;
+                break;
+            case AP_PARAM_FLOAT:
+                param = new AP_Float;
+                break;
+            default:
+                delete info;
+                // should also delete the params from inside the table
+                return luaL_error(L, "param type error");
+        }
+
+        AP_Param::Info tmp_info = {type, name, index, param, {def_value:default_val}, 0};
+
+        memcpy(&info[i], &tmp_info, sizeof(tmp_info));
+
+        index++;
+    }
+
+    AP_Param::Info tmp_info = {AP_PARAM_NONE, "", index, nullptr, {group_info:nullptr}, 0 };
+    memcpy(&info[num_params], &tmp_info, sizeof(tmp_info));
+
+    struct AP_Param::var_table *table = new AP_Param::var_table;
+    table->var_info = info;
+
+    if (!AP_Param::load_param_info(table)) {
+        delete info;
+        delete table;
+        // should also delete the params from inside the table
+        return luaL_error(L, "Failed to load param var_table");
+    }
+
+    return 0;
+}
+
+struct userdata_enum {
+    const char *name;
+    uint8_t value;
+};
+
+struct userdata_enum AP_Param_enums[] = {
+    {"AP_PARAM_FLOAT", AP_PARAM_FLOAT},
+    {"AP_PARAM_INT32", AP_PARAM_INT32},
+    {"AP_PARAM_INT16", AP_PARAM_INT16},
+    {"AP_PARAM_INT8", AP_PARAM_INT8},
+};
+
+const luaL_Reg AP_param_functions[] = {
+    {"add", add_param},
+    {NULL, NULL}
+};
+
 void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "logger");
     luaL_newlib(L, AP_Logger_functions);
     lua_settable(L, -3);
+
+    lua_pushstring(L, "params");
+    luaL_newlib(L, AP_param_functions);
+    lua_settable(L, -3);
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(AP_Param_enums); i++) {
+        lua_pushstring(L, AP_Param_enums[i].name);
+        lua_pushinteger(L, AP_Param_enums[i].value);
+        lua_settable(L, -3);
+    }
 
     luaL_setfuncs(L, global_functions, 0);
 }
