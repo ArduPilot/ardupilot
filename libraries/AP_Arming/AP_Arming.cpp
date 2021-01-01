@@ -1709,6 +1709,13 @@ bool AP_Arming::pre_arm_checks(bool report)
 bool AP_Arming::arm_checks(AP_Arming::Method method)
 {
 #if AP_RC_CHANNEL_ENABLED
+    if (method == AP_Arming::Method::RUDDER) {
+        if (get_rudder_arming_type() == AP_Arming::RudderArming::IS_DISABLED) {
+            //parameter disallows rudder arming/disabling
+            return false;
+        }
+    }
+
     if (check_enabled(Check::RC)) {
         if (!rc_arm_checks(method)) {
             return false;
