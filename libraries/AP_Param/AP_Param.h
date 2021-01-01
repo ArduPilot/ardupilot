@@ -185,6 +185,13 @@ public:
         float value;        // parameter value
     };
 
+    struct var_table {
+        const struct Info *var_info;
+        uint16_t num_vars;
+        uint16_t offset; // offset between var_info indexes and param token key 
+        var_table *next;
+    };
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -193,10 +200,11 @@ public:
     // constructor with var_info
     AP_Param(const struct Info *info)
     {
-        _var_info = info;
+        _list.var_info = info;
         uint16_t i;
-        for (i=0; info[i].type != AP_PARAM_NONE; i++) ;
-        _num_vars = i;
+        for (i=0; _list.var_info[i].type != AP_PARAM_NONE; i++) ;
+        _list.num_vars = i;
+
 
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_Param must be singleton");
@@ -207,12 +215,15 @@ public:
     // empty constructor
     AP_Param() {}
 
+    static bool load_param_info(struct var_table* table);
+
     // a token used for first()/next() state
     typedef struct {
         uint32_t key : 9;
         uint32_t idx : 4; // offset into array types
         uint32_t group_element : 18;
         uint32_t last_disabled : 1;
+        var_table *list;
     } ParamToken;
 
 
@@ -323,7 +334,7 @@ public:
     ///
     /// @param  p               Pointer to variable
     /// @return                 key for variable
-    static bool find_key_by_pointer_group(const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
+    static bool find_key_by_pointer_group(var_table *list, const void *ptr, uint16_t vindex, const struct GroupInfo *group_info,
                                           ptrdiff_t offset, uint16_t &key);
     static bool find_key_by_pointer(const void *ptr, uint16_t &key);
 
@@ -448,7 +459,7 @@ public:
     /// @return             The first variable in _var_info, or nullptr if
     ///                     there are none.
     ///
-    static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype);
+    static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype, bool init = true);
 
     /// Returns the next variable in _var_info, recursing into groups
     /// as needed
@@ -480,7 +491,7 @@ public:
     bool is_read_only(void) const;
 
     // return the persistent top level key for the ParamToken key
-    static uint16_t get_persistent_key(uint16_t key) { return _var_info[key].key; }
+    static uint16_t get_persistent_key(uint16_t key) { return _list.var_info[key].key; }
     
     // count of parameters in tree
     static uint16_t count_parameters(void);
@@ -585,7 +596,7 @@ private:
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
-    static bool adjust_group_offset(uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
+    static bool adjust_group_offset(var_table *list, uint16_t vindex, const struct GroupInfo &group_info, ptrdiff_t &new_offset);
     static bool get_base(const struct Info &info, ptrdiff_t &base);
 
     /// get group_info pointer based on flags
@@ -595,6 +606,7 @@ private:
     static const struct GroupInfo *get_group_info(const struct Info &ginfo);
 
     const struct Info *         find_var_info_group(
+                                    var_table *list,
                                     const struct GroupInfo *    group_info,
                                     uint16_t                    vindex,
                                     uint32_t                    group_base,
@@ -615,6 +627,7 @@ private:
                                                     struct GroupNesting       &group_nesting,
                                                     uint8_t *                  idx) const;
     static const struct Info *  find_by_header_group(
+                                    var_table *list,
                                     struct Param_header phdr, void **ptr,
                                     uint16_t vindex,
                                     const struct GroupInfo *group_info,
@@ -629,6 +642,7 @@ private:
                                     size_t buffer_size,
                                     uint8_t idx) const;
     static AP_Param *           find_group(
+                                    var_table *list,
                                     const char *name,
                                     uint16_t vindex,
                                     ptrdiff_t group_offset,
@@ -681,12 +695,11 @@ private:
 
     static StorageAccess        _storage;
     static StorageAccess        _storage_bak;
-    static uint16_t             _num_vars;
+    static var_table            _list;
     static uint16_t             _parameter_count;
     static uint16_t             _count_marker;
     static uint16_t             _count_marker_done;
     static HAL_Semaphore        _count_sem;
-    static const struct Info *  _var_info;
 
     /*
       list of overridden values from load_defaults_file()
@@ -718,6 +731,8 @@ private:
 
     // background function for saving parameters
     void save_io_handler(void);
+
+    static bool check_list(var_table *list, uint16_t &total_size);
 };
 
 namespace AP {
