@@ -230,9 +230,6 @@ private:
     static const LogStructure log_structure[];
 #endif
 
-    // time that rudder/steering arming has been running
-    uint32_t rudder_arm_timer;
-
     // latest wheel encoder values
     float wheel_encoder_last_distance_m[WHEELENCODER_MAX_INSTANCES];    // total distance recorded by wheel encoder (for reporting to GCS)
     bool wheel_encoder_initialised;                                     // true once arrays below have been initialised to sensors initial values
