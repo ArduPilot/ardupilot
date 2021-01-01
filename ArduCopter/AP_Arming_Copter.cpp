@@ -812,11 +812,6 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     }
 
     if (method == AP_Arming::Method::RUDDER) {
-        // option must be enabled:
-        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
-            return false;
-        }
         if (!copter.flightmode->has_manual_throttle() && !copter.ap.land_complete) {
             return false;
         }
