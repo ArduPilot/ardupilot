@@ -158,11 +158,6 @@ bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_chec
             // is not uncommon
             return false;
         }
-        // option must be enabled:
-        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
-            return false;
-        }
     }
 
     if (!AP_Arming::disarm(method, do_disarm_checks)) {
