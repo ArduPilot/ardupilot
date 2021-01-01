@@ -574,12 +574,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             return false;
         }
 #endif
-
-        // ensure throttle is down
-        if (copter.channel_throttle->get_control_in() > 0) {
-            check_failed(true, "Non-zero throttle");
-            return false;
-        }
     }
 
     const auto &ahrs = AP::ahrs();
