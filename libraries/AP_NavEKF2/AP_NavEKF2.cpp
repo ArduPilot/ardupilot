@@ -634,7 +634,11 @@ bool NavEKF2::InitialiseFilter(void)
     imuSampleTime_us = AP::dal().micros64();
 
     // remember expected frame time
-    _frameTimeUsec = 1e6 / ins.get_loop_rate_hz();
+    const float loop_rate = ins.get_loop_rate_hz();
+    if (!is_positive(loop_rate)) {
+        return false;
+    }
+    _frameTimeUsec = 1e6 / loop_rate;
 
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
