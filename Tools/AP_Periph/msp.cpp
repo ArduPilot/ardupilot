@@ -9,9 +9,11 @@
 
 void AP_Periph_FW::msp_init(AP_HAL::UARTDriver *_uart)
 {
-    msp.port.uart = _uart;
-    msp.port.msp_version = MSP::MSP_V2_NATIVE;
-    _uart->begin(115200, 512, 512);
+    if (_uart) {
+        msp.port.uart = _uart;
+        msp.port.msp_version = MSP::MSP_V2_NATIVE;
+        _uart->begin(115200, 512, 512);
+    }
 }
 
 
