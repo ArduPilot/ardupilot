@@ -535,10 +535,10 @@ class AutoTestPlane(AutoTest):
     def fly_mission(self, filename, mission_timeout=60.0):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        self.load_mission(filename)
+        num_wp = self.load_mission(filename)-1
         self.mavproxy.send('switch 1\n')  # auto mode
         self.wait_mode('AUTO')
-        self.wait_waypoint(1, 7, max_dist=60)
+        self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         self.mavproxy.expect("Auto disarmed")
         self.progress("Mission OK")
@@ -1877,6 +1877,26 @@ class AutoTestPlane(AutoTest):
 
         self.fly_mission("ap-terrain.txt", mission_timeout=600)
 
+    def fly_external_AHRS(self):
+        """Fly with external AHRS (VectorNav)"""
+        self.customise_SITL_commandline(["--uartE=sim:VectorNav"])
+
+        self.set_parameter("EAHRS_TYPE", 1)
+        self.set_parameter("SERIAL4_PROTOCOL", 36)
+        self.set_parameter("SERIAL4_BAUD", 230400)
+        self.set_parameter("GPS_TYPE", 21)
+        self.set_parameter("AHRS_EKF_TYPE", 11)
+        self.set_parameter("INS_GYR_CAL", 1)
+        self.reboot_sitl()
+        self.progress("Running accelcal")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0,0,0,0,4,0,0,
+                     timeout=5)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.fly_mission("ap1.txt")
+
     def ekf_lane_switch(self):
 
         self.context_push()
@@ -2163,6 +2183,10 @@ class AutoTestPlane(AutoTest):
              "Test terrain following in mission",
              self.fly_terrain_mission),
 
+            ("ExternalAHRS",
+             "Test external AHRS support",
+             self.fly_external_AHRS),
+             
             ("Deadreckoning",
              "Test deadreckoning support",
              self.deadreckoning),
