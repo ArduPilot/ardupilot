@@ -427,6 +427,8 @@ void AP_AHRS_NavEKF::update_SITL(void)
 #if HAL_EXTERNAL_AHRS_ENABLED
 void AP_AHRS_NavEKF::update_external(void)
 {
+    AP::externalAHRS().update();
+
     if (active_EKF_type() == EKFType::EXTERNAL) {
         Quaternion quat;
         if (!AP::externalAHRS().get_quaternion(quat)) {
