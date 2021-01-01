@@ -39,7 +39,8 @@ bustypes = {
     2: "SPI",
     3: "UAVCAN",
     4: "SITL",
-    5: "MSP"
+    5: "MSP",
+    6: "SERIAL",
 }
 
 compass_types = {
