@@ -87,6 +87,7 @@ public:
         HC_SR04 = 30,
         GYUS42v2 = 31,
         MSP = 32,
+        USD1_CAN = 33,
         SITL = 100,
     };
 
