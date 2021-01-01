@@ -58,6 +58,7 @@ public:
         Driver_Type_PiccoloCAN = 4,
         Driver_Type_CANTester = 5,
         Driver_Type_EFI_NWPMU = 6,
+        Driver_Type_USD1 = 7,
     };
 
     void init(void);
