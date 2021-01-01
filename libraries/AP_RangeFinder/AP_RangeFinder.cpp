@@ -47,6 +47,7 @@
 #include "AP_RangeFinder_LeddarVu8.h"
 #include "AP_RangeFinder_SITL.h"
 #include "AP_RangeFinder_MSP.h"
+#include "AP_RangeFinder_USD1_CAN.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -564,7 +565,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #endif // HAL_MSP_RANGEFINDER_ENABLED
         break;
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    case Type::USD1_CAN:
+        _add_backend(new AP_RangeFinder_USD1_CAN(state[instance], params[instance]), instance);
+        break;
+#endif
     case Type::NONE:
+    default:
         break;
     }
 
