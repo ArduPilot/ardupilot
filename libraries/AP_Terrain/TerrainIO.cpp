@@ -175,7 +175,7 @@ void AP_Terrain::open_file(void)
     if (lon_tmp > 999U) {
         lon_tmp = 999;
     }
-    snprintf(p, 13, "/%c%02u%c%03u.DAT",
+    hal.util->snprintf(p, 13, "/%c%02u%c%03u.DAT",
              block.lat_degrees<0?'S':'N',
              (unsigned)lat_tmp,
              block.lon_degrees<0?'W':'E',
