@@ -102,7 +102,7 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
         _motor_fast_mask |= mask;
     }
 
-    mask = rc_map_mask(mask);
+    mask = motor_mask_to_srv_channel_mask(mask);
     hal.rcout->set_freq(mask, freq_hz);
 
     switch (pwm_type(_pwm_type.get())) {
@@ -142,7 +142,7 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
   SERVOn_FUNCTION mappings, and allowing for multiple outputs per
   motor number
  */
-uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
+uint32_t AP_Motors::motor_mask_to_srv_channel_mask(uint32_t mask) const
 {
     uint32_t mask2 = 0;
     for (uint8_t i = 0; i < 32; i++) {
