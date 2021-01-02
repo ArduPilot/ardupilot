@@ -309,6 +309,7 @@ public:
         float D;
         float FF;
         float Dmod;
+        bool  limit;
     };
 
     void Write_PID(uint8_t msg_type, const PID_Info &info);
