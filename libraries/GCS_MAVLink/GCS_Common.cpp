@@ -261,7 +261,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
-                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED,
+                                    battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_volts_ext); // Cell 11..14 voltages
 }
 
