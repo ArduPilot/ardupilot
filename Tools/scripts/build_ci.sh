@@ -253,7 +253,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
-        ./Tools/scripts/configure_all.py
+        ./Tools/scripts/configure_all.py --python=python3 --python2=python2
         continue
     fi
 

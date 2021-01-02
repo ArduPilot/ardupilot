@@ -19,7 +19,8 @@ parser.add_argument('--no-bl', action='store_true', default=False, help="don't c
 parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
 parser.add_argument('--pattern', default='*')
 parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
-parser.add_argument('--python', default='python')
+parser.add_argument('--python', default='python', help='python version to use')
+parser.add_argument('--python2', default=None, help='2nd python version to check hwdef.h against')
 args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -68,6 +69,18 @@ for board in board_list:
     if args.Werror:
         config_opts += ["--Werror"]
     run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
+    if args.python2 is not None:
+        hwdef_h_1 = open(os.path.join('build', board, 'hwdef.h')).read()
+        run_program([args.python2, "waf", "configure"] + config_opts, "configure: " + board)
+        hwdef_h_2 = open(os.path.join('build', board, 'hwdef.h')).read()
+        if hwdef_h_1 != hwdef_h_2:
+            print("ERROR: hwdef.h differs for board %s" % board)
+            open("hwdef_1.h", "w").write(hwdef_h_1)
+            open("hwdef_2.h", "w").write(hwdef_h_2)
+            run_program(["diff", "-u", "hwdef_1.h", "hwdef_2.h"], board)
+            failures.append(board)
+            if args.stop:
+                sys.exit(1)
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
