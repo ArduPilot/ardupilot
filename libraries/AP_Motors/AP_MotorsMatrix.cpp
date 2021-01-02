@@ -117,7 +117,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
             motor_mask |= 1U << i;
         }
     }
-    uint16_t mask = rc_map_mask(motor_mask);
+    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
