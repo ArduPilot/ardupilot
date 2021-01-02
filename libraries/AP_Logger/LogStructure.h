@@ -538,6 +538,7 @@ struct PACKED log_PID {
     float   D;
     float   FF;
     float   Dmod;
+    uint8_t limit;
 };
 
 struct PACKED log_Current {
@@ -1069,10 +1070,10 @@ struct PACKED log_PSC {
 #define ISBD_UNITS  "s--ooo"
 #define ISBD_MULTS  "F--???"
 
-#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod"
-#define PID_FMT    "Qffffffff"
-#define PID_UNITS  "s--------"
-#define PID_MULTS  "F--------"
+#define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod,Limit"
+#define PID_FMT    "QffffffffB"
+#define PID_UNITS  "s---------"
+#define PID_MULTS  "F---------"
 
 // @LoggerMessage: ACC
 // @Description: IMU accelerometer data
@@ -1575,6 +1576,7 @@ struct PACKED log_PSC {
 // @Field: D: derivative part of PID
 // @Field: FF: controller feed-forward portion of response
 // @Field: Dmod: scaler applied to D gain to reduce limit cycling
+// @Field: Limit: 1 if I term is limited due to output saturation 
 
 // @LoggerMessage: PM
 // @Description: autopilot system performance and general data dumping ground
