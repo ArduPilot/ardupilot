@@ -236,6 +236,7 @@ void AC_PID::update_i(bool limit)
         _integrator = 0.0f;
     }
     _pid_info.I = _integrator;
+    _pid_info.limit = limit;
 }
 
 float AC_PID::get_p() const
