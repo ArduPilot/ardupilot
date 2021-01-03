@@ -1607,7 +1607,7 @@ void NavEKF2::requestYawReset(void)
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
 void NavEKF2::writeDefaultAirSpeed(float airspeed)
 {
-    AP::dal().log_writeDefaultAirSpeed2(airspeed);
+    AP::dal().log_writeDefaultAirSpeed2(airspeed,0.0f);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
