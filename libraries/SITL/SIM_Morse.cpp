@@ -622,7 +622,7 @@ void Morse::send_report(void)
         packet.min_distance = 1;
         // the simulated rangefinder has an imposed 18m limit in
         // e.g. rover_scanner.py
-        packet.max_distance = 1800;
+        packet.max_distance = 5000;
         packet.sensor_type = MAV_DISTANCE_SENSOR_LASER;
         packet.increment = 0; // use increment_f
 
