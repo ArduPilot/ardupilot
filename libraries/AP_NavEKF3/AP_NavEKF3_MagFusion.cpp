@@ -1075,12 +1075,10 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     }
 
     case yawFusionMethod::GPS:
-        // both external sensor yaw and last yaw when static are stored in yawAngDataDelayed.yawAng
         innovYaw = wrap_PI(yawAngPredicted - yawAngDataDelayed.yawAng);
         break;
 
     case yawFusionMethod::STATIC:
-        // both external sensor yaw and last yaw when static are stored in yawAngDataDelayed.yawAng
         innovYaw = wrap_PI(yawAngPredicted - yawAngDataStatic.yawAng);
         break;
 
@@ -1094,7 +1092,6 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         break;
 
     case yawFusionMethod::EXTNAV:
-        // both external sensor yaw and last yaw when static are stored in yawAngDataDelayed.yawAng
         innovYaw = wrap_PI(yawAngPredicted - extNavYawAngDataDelayed.yawAng);
         break;
     }
