@@ -1,6 +1,6 @@
 # ArduPilot Project
 
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/ArduPilot/ardupilot?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+<a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
 
 ![Test Copter](https://github.com/ArduPilot/ardupilot/workflows/test%20copter/badge.svg?branch=master) ![Test Plane](https://github.com/ArduPilot/ardupilot/workflows/test%20plane/badge.svg?branch=master) ![Test Rover](https://github.com/ArduPilot/ardupilot/workflows/test%20rover/badge.svg?branch=master) ![Test Sub](https://github.com/ArduPilot/ardupilot/workflows/test%20sub/badge.svg?branch=master) ![Test Tracker](https://github.com/ArduPilot/ardupilot/workflows/test%20tracker/badge.svg?branch=master)
 
@@ -15,20 +15,20 @@
 [![Autotest Status](https://autotest.ardupilot.org/autotest-badge.svg)](https://autotest.ardupilot.org/)
 
 Ardupilot is the most advanced, full-featured and reliable open source autopilot software available. It has
-been under development since 2010 by a team of diverse professional engineers and computer scientists. It is
-the only autopilot software capable of controlling almost any vehicle system imaginable, from conventional
-airplanes, quadplanes, multirotors, and helicopters, to rovers, boats,balancebots and even submarines. It is now being expanded to provide
-support for new emerging vehicle types such as compound helicopters.
+been under development since 2010 by a diverse team of professional engineers, computer scientists and community contributors.
+Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional
+airplanes, quadplanes, multirotors, and helicopters, to rovers, boats, balancebots and even submarines. It is continually being expanded to provide
+support for new emerging vehicle types.
 
 ## The ArduPilot project is made up of: ##
 
-- ArduCopter (or APM:Copter) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
+- ArduCopter: [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
 
-- ArduPlane (or APM:Plane) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
+- ArduPlane: [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduPlane), [wiki](https://ardupilot.org/plane/index.html)
 
-- ArduRover (or Rover) : [code](https://github.com/ArduPilot/ardupilot/tree/master/Rover), [wiki](https://ardupilot.org/rover/index.html)
+- Rover: [code](https://github.com/ArduPilot/ardupilot/tree/master/Rover), [wiki](https://ardupilot.org/rover/index.html)
 
-- ArduSub (or APM:Sub) : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
+- ArduSub : [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduSub), [wiki](http://ardusub.com/)
 
 - Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](https://ardupilot.org/antennatracker/index.html)
 
@@ -46,7 +46,7 @@ support for new emerging vehicle types such as compound helicopters.
 
 - Developer discussion: <https://discuss.ardupilot.org>
 
-- Developer chat: <https://gitter.im/ArduPilot/ardupilot>
+- Developer chat: <https://discord.com/channels/ardupilot>
 
 ## Top Contributors ##
 
@@ -59,7 +59,7 @@ support for new emerging vehicle types such as compound helicopters.
 
 - The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
 
-- We have an active group of Beta Testers especially for ArduCopter to help us find bugs: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
+- We have an active group of Beta Testers to help us improve our code: [release procedures](https://dev.ardupilot.org/wiki/release-procedures)
 
 - Desired Enhancements and Bugs can be posted to the [issues list](https://github.com/ArduPilot/ardupilot/issues).
 
@@ -80,7 +80,7 @@ License, version 3.
 
 ## Maintainers ##
 
-Ardupilot is comprised of several parts, vehicles and boards. The list below
+ArduPilot is comprised of several parts, vehicles and boards. The list below
 contains the people that regularly contribute to the project and are responsible
 for reviewing patches on their specific area.
 
