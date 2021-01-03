@@ -55,11 +55,11 @@ struct i2c_device_at_address {
     uint8_t addr;
     I2CDevice &device;
 } i2c_devices[] {
+    { 0, 0x70, maxsonari2cxl },
     { 1, 0x55, toshibaled },
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
-    { 1, 0x70, maxsonari2cxl },
     { 1, 0x76, ignored }, // MS56XX
     { 2, 0x0B, rotoye },
     { 2, 0x28, airspeed_dlvr },
