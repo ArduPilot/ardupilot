@@ -920,6 +920,11 @@ void NavEKF3::UpdateFilter(void)
                     // if this core has a significantly lower relative error to the active primary, we consider it as a 
                     // better core and would like to switch to it even if the current primary is healthy
                     betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
+                    // handle the case where the secondary core is faster to complete yaw alignment which can happen
+                    // in flight when oeprating without a magnetomer
+                    const NavEKF3_core &newCore = core[coreIndex];
+                    const NavEKF3_core &oldCore = core[primary];
+                    betterCore |= newCore.have_aligned_yaw() && !oldCore.have_aligned_yaw();
                     newPrimaryIndex = coreIndex;
                 }
             }
