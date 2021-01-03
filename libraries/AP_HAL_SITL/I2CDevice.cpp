@@ -85,7 +85,7 @@ void I2CBus::_timer_tick()
 {
     const uint64_t now = AP_HAL::micros64();
     for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
-        if (ci->next_usec >= now) {
+        if (ci->next_usec < now) {
             WITH_SEMAPHORE(sem);
             ci->cb();
             ci->next_usec += ci->period_usec;
