@@ -509,6 +509,22 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("TAILSIT_DSKLD", 21, QuadPlane, tailsitter.disk_loading, 0),
 
+    // @Param: TILT_FIX_ANGLE
+    // @DisplayName: Fixed wing tiltrotor angle
+    // @Description: This is the angle the motors tilt down when at maximum output for forward flight. Set this to a non-zero value to enable vectoring for roll/pitch in forward flight on tilt-vectored aircraft
+    // @Units: deg
+    // @Range: 0 30
+    // @User: Standard
+    AP_GROUPINFO("TILT_FIX_ANGLE", 22, QuadPlane, tilt.fixed_angle, 0),
+
+    // @Param: TILT_FIX_GAIN
+    // @DisplayName: Fixed wing tiltrotor gain
+    // @Description: This is the gain for use of tilting motors in fixed wing flight for tilt vectored quadplanes
+    // @Range: 0 1
+    // @User: Standard
+    AP_GROUPINFO("TILT_FIX_GAIN", 23, QuadPlane, tilt.fixed_gain, 0),
+
+
     AP_GROUPEND
 };
 
