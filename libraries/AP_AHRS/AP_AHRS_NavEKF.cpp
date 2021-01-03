@@ -1161,10 +1161,10 @@ bool AP_AHRS_NavEKF::get_relative_position_NED_origin(Vector3f &vec) const
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL: {
-        auto &serahrs = AP::externalAHRS();
+        auto &extahrs = AP::externalAHRS();
         Location loc, orgn;
-        if (serahrs.get_origin(orgn) &&
-            serahrs.get_location(loc)) {
+        if (extahrs.get_origin(orgn) &&
+            extahrs.get_location(loc)) {
             const Vector2f diff2d = orgn.get_distance_NE(loc);
             vec = Vector3f(diff2d.x, diff2d.y,
                            -(loc.alt - orgn.alt)*0.01);
