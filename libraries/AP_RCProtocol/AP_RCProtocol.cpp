@@ -274,7 +274,9 @@ void AP_RCProtocol::check_added_uart(void)
         added.uart->begin(added.baudrate, 128, 128);
         added.last_baud_change_ms = AP_HAL::millis();
     }
-
+#ifndef IOMCU_FW
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
     process_handshake(added.baudrate);
 
     uint32_t n = added.uart->available();
