@@ -56,7 +56,7 @@ report() {
     d="$1"
     old="$2"
     new="$3"
-    cat <<EOF | mail -s 'build failed' drones-discuss@googlegroups.com
+    cat <<EOF | mail -s 'build failed' ardupilot.devel@google.com
 A build of $d failed at `date`
 
 You can view the build logs at https://autotest.ardupilot.org/
@@ -69,7 +69,7 @@ EOF
 
 report_pull_failure() {
     d="$1"
-    git show origin/master | mail -s 'APM pull failed' drones-discuss@googlegroups.com
+    git show origin/master | mail -s 'APM pull failed' ardupilot.devel@google.com
     exit 1
 }
 
