@@ -79,6 +79,24 @@ int SITL::I2CRegisters_16Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 
 
 
+void SITL::I2CRegisters_8Bit::set_register(uint8_t reg, uint8_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    // ::fprintf(stderr, "Setting %u (0x%02x) (%s) to 0x%02x (%c)\n", (unsigned)reg, (unsigned)reg, regname[reg], (unsigned)value, value);
+    byte[reg] = value;
+}
+
+void SITL::I2CRegisters_8Bit::set_register(uint8_t reg, int8_t value)
+{
+    if (regname[reg] == nullptr) {
+        AP_HAL::panic("Setting un-named register %u", reg);
+    }
+    // ::fprintf(stderr, "Setting %s (%u) to 0x%02x (%c)\n", regname[reg], (unsigned)reg, (signed)value, value);
+    byte[reg] = value;
+}
+
 int SITL::I2CRegisters_8Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 {
     if (data->nmsgs == 2) {
