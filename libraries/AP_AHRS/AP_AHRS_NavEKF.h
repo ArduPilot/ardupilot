@@ -318,7 +318,7 @@ public:
     void set_alt_measurement_noise(float noise) override;
 
     // active EKF type for logging
-    uint8_t get_active_EKF_type(void) const override {
+    uint8_t get_active_AHRS_type(void) const override {
         return uint8_t(active_EKF_type());
     }
 
