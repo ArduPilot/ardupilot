@@ -70,6 +70,19 @@ void I2C::init()
     for (auto &i : i2c_devices) {
         i.device.init();
     }
+
+    // sanity check the i2c_devices structure to ensure we don't have
+    // two devices at the same address on the same bus:
+    for (uint8_t i=0; i<ARRAY_SIZE(i2c_devices)-1; i++) {
+        const auto &dev_i = i2c_devices[i];
+        for (uint8_t j=i+1; j<ARRAY_SIZE(i2c_devices); j++) {
+            const auto &dev_j = i2c_devices[j];
+            if (dev_i.bus == dev_j.bus &&
+                dev_i.addr == dev_j.addr) {
+                AP_HAL::panic("Two devices at the same address on the same bus");
+            }
+        }
+    }
 }
 
 void I2C::update(const class Aircraft &aircraft)
