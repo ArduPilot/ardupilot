@@ -2686,6 +2686,15 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 
             return MAV_RESULT_FAILED;
         }
+        if (is_equal(packet.param4, 95.0f)) {
+            // the following text is unlikely to make it out...
+            send_text(MAV_SEVERITY_WARNING,"calling AP_HAL::panic(...)");
+
+            AP_HAL::panic("panicing");
+
+            // keep calm and carry on
+            return MAV_RESULT_FAILED;
+        }
     }
 
     if (hal.util->get_soft_armed()) {
