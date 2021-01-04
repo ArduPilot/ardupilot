@@ -94,26 +94,19 @@ void I2C::update(const class Aircraft &aircraft)
 
 int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
 {
-    int ret = 0;
-    for (uint8_t i=0; i<data->nmsgs; i++) {
-        const i2c_msg &msg = data->msgs[i];
-        const uint8_t addr = msg.addr;
-        const uint8_t bus = msg.bus;
-        bool handled = false;
-        for (auto &dev_at_address : i2c_devices) {
-            if (dev_at_address.addr == addr &&
-                dev_at_address.bus == bus) {
-                handled = true;
-                ret = dev_at_address.device.rdwr(data);
-                break;  // uniqueness of addr/bus device is ensured in init()
-            }
+    const uint8_t addr = data->msgs[0].addr;
+    const uint8_t bus = data->msgs[0].bus;
+    for (auto &dev_at_address : i2c_devices) {
+        if (dev_at_address.addr != addr) {
+            continue;
         }
-        if (!handled) {
-//            ::fprintf(stderr, "Unhandled i2c message: bus=%u addr=0x%02x flags=%u len=%u\n", msg.bus, msg.addr, msg.flags, msg.len);
-            return -1;  // ?!
+        if (dev_at_address.bus != bus) {
+            continue;
         }
+        return dev_at_address.device.rdwr(data);
     }
-    return ret;
+//            ::fprintf(stderr, "Unhandled i2c message: bus=%u addr=0x%02x flags=%u len=%u\n", msg.bus, msg.addr, msg.flags, msg.len);
+    return -1;  // ?!
 }
 
 int I2C::ioctl(uint8_t ioctl_type, void *data)
