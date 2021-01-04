@@ -743,16 +743,52 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
+        handle_manual_control(msg);
+        break;
+    case MAVLINK_MSG_ID_HEARTBEAT:
+        handle_heartbeat(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
+        handle_set_attitude_target(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
+        handle_set_position_target_local_ned(msg);
+        break;
+
+    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
+        handle_set_position_target_global_int(msg);
+        break;
+
+#if HIL_MODE != HIL_MODE_DISABLED
+    case MAVLINK_MSG_ID_HIL_STATE:
+        handle_hil_state(msg);
+        break;
+#endif
+
+    case MAVLINK_MSG_ID_RADIO:
+    case MAVLINK_MSG_ID_RADIO_STATUS:
+        handle_radio(msg);
+        break;
+
+    default:
+        handle_common_message(msg);
+        break;
+    }
+}
+
+void GCS_MAVLINK_Rover::handle_manual_control(const mavlink_message_t &msg)
     {
         if (msg.sysid != rover.g.sysid_my_gcs) {  // Only accept control from our gcs
-            break;
+            return;
         }
 
         mavlink_manual_control_t packet;
         mavlink_msg_manual_control_decode(&msg, &packet);
 
         if (packet.target != rover.g.sysid_this_mav) {
-            break; // only accept control aimed at us
+            return; // only accept control aimed at us
         }
 
         uint32_t tnow = AP_HAL::millis();
@@ -762,20 +798,18 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 
         // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
         rover.failsafe.last_heartbeat_ms = tnow;
-        break;
     }
 
-    case MAVLINK_MSG_ID_HEARTBEAT:
+void GCS_MAVLINK_Rover::handle_heartbeat(const mavlink_message_t &msg)
         {
             // we keep track of the last time we received a heartbeat from our GCS for failsafe purposes
             if (msg.sysid != rover.g.sysid_my_gcs) {
-                break;
+                return;
             }
             rover.failsafe.last_heartbeat_ms = AP_HAL::millis();
-            break;
         }
 
-    case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
+void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
         {
             // decode packet
             mavlink_set_attitude_target_t packet;
@@ -783,12 +817,12 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 
             // exit if vehicle is not in Guided mode
             if (!rover.control_mode->in_guided_mode()) {
-                break;
+                return;
             }
 
             // ensure type_mask specifies to use thrust
             if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE) != 0) {
-                break;
+                return;
             }
 
             // convert thrust to ground speed
@@ -804,10 +838,9 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 // use body_yaw_rate field
                 rover.mode_guided.set_desired_turn_rate_and_speed((RAD_TO_DEG * packet.body_yaw_rate) * 100.0f, target_speed);
             }
-            break;
         }
 
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:     // MAV ID: 84
+void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_message_t &msg)
         {
             // decode packet
             mavlink_set_position_target_local_ned_t packet;
@@ -815,13 +848,13 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 
             // exit if vehicle is not in Guided mode
             if (!rover.control_mode->in_guided_mode()) {
-                break;
+                return;
             }
 
             // need ekf origin
             Location ekf_origin;
             if (!rover.ahrs.get_origin(ekf_origin)) {
-                break;
+                return;
             }
 
             // check for supported coordinate frames
@@ -829,7 +862,7 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
                 packet.coordinate_frame != MAV_FRAME_BODY_NED &&
                 packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
-                break;
+                return;
             }
 
             bool pos_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
@@ -931,10 +964,9 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 // consume just turn rate (probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
             }
-            break;
         }
 
-    case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:    // MAV ID: 86
+void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_message_t &msg)
         {
             // decode packet
             mavlink_set_position_target_global_int_t packet;
@@ -942,7 +974,7 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
 
             // exit if vehicle is not in Guided mode
             if (!rover.control_mode->in_guided_mode()) {
-                break;
+                return;
             }
             // check for supported coordinate frames
             if (packet.coordinate_frame != MAV_FRAME_GLOBAL &&
@@ -951,7 +983,7 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT &&
                 packet.coordinate_frame != MAV_FRAME_GLOBAL_TERRAIN_ALT_INT) {
-                break;
+                return;
             }
             bool pos_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
             bool vel_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
@@ -965,7 +997,7 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 // sanity check location
                 if (!check_latlng(packet.lat_int, packet.lon_int)) {
                     // result = MAV_RESULT_FAILED;
-                    break;
+                    return;
                 }
                 target_loc.lat = packet.lat_int;
                 target_loc.lng = packet.lon_int;
@@ -1036,18 +1068,17 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
                 // consume just turn rate(probably only skid steering vehicles can do this)
                 rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
             }
-            break;
         }
 
 #if HIL_MODE != HIL_MODE_DISABLED
-    case MAVLINK_MSG_ID_HIL_STATE:
+void GCS_MAVLINK_Rover::handle_hil_state(const mavlink_message_t &msg)
         {
             mavlink_hil_state_t packet;
             mavlink_msg_hil_state_decode(&msg, &packet);
 
             // sanity check location
             if (!check_latlng(packet.lat, packet.lon)) {
-                break;
+                return;
             }
 
             // set gps hil sensor
@@ -1079,22 +1110,14 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
             ins.set_accel(0, accels);
             compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
             compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-            break;
         }
 #endif  // HIL_MODE
 
-    case MAVLINK_MSG_ID_RADIO:
-    case MAVLINK_MSG_ID_RADIO_STATUS:
+void GCS_MAVLINK_Rover::handle_radio(const mavlink_message_t &msg)
         {
             handle_radio_status(msg, rover.should_log(MASK_LOG_PM));
-            break;
         }
 
-    default:
-        handle_common_message(msg);
-        break;
-    }  // end switch
-}  // end handle mavlink
 
 uint64_t GCS_MAVLINK_Rover::capabilities() const
 {
