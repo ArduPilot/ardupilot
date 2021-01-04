@@ -65,8 +65,12 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
 #if STORAGE_NUM_AREAS == 11
     // optimised for lots of parameters for 15k boards with OSD
     { StorageParam,    8192,  7168},
+#elif STORAGE_NUM_AREAS == 12
+    // optimised for lots of parameters for 15k boards with OSD, plus room for CAN DNA
+    { StorageParam,    8192,  6144},
+    { StorageCANDNA,   14336, 1024},
 #endif
-#if STORAGE_NUM_AREAS >= 12
+#if STORAGE_NUM_AREAS >= 13
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
@@ -98,8 +102,12 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
 #if STORAGE_NUM_AREAS == 11
     // optimised for lots of parameters for 15k boards with OSD
     { StorageParam,    8192,  7168},
+#elif STORAGE_NUM_AREAS == 12
+    // optimised for lots of parameters for 15k boards with OSD, plus room for CAN DNA
+    { StorageParam,    8192,  6144},
+    { StorageCANDNA,   14336, 1024},
 #endif
-#if STORAGE_NUM_AREAS >= 12
+#if STORAGE_NUM_AREAS >= 13
     { StorageParam,    8192,  1280},
     { StorageRally,    9472,   300},
     { StorageFence,    9772,   256},
