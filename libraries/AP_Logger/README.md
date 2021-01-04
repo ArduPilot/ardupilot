@@ -35,22 +35,22 @@ Legacy field types - do not use.  These have been replaced by using  the base C 
 
 ## Units
 
-All units here should be base units
-This does mean battery capacity is here as "amp*second"
+All units here should be base units. 
+This means battery capacity uses "amp \* second" not "milliAmp \* hours". 
 Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 
-| Char | Unit Abbrev. | Description |
-|-----|---|---|
-| '-' | "" | no units e.g. Pi | or a string|
+| Char | Unit Abbrev. | Description | Notes |
+|-----|---|---|---|
+| '-' | "" | no units e.g. Pi or a string |
 | '?' | "UNKNOWN" | Units which haven't been worked out yet....|
 | 'A' | "A" | Ampere|
 | 'd' | "deg" | of the angular variety | -180 to 180|
 | 'b' | "B" | bytes|
-| 'k' | "deg/s" | degrees per second. Degrees are NOT SI | but is some situations more user-friendly than radians|
+| 'k' | "deg/s" | degrees per second | Not an SI unit, but in some situations more user-friendly than radians per second|
 | 'D' | "deglatitude" | degrees of latitude|
-| 'e' | "deg/s/s" | degrees per second per second. Degrees are NOT SI | but is some situations more user-friendly than radians|
+| 'e' | "deg/s/s" | degrees per second per second | Not an SI unit, but in some situations more user-friendly than radians per second^2|
 | 'E' | "rad/s" | radians per second|
-| 'G' | "Gauss" | Gauss is not an SI unit | but 1 tesla = 10000 gauss so a simple replacement is not possible here|
+| 'G' | "Gauss" | Gauss | Not an SI unit, but 1 tesla = 10000 gauss so a simple replacement is not possible here|
 | 'h' | "degheading" | 0.? to 359.?|
 | 'i' | "A.s" | Ampere second|
 | 'J' | "W.s" | Joule (Watt second)|
@@ -60,11 +60,11 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 | 'n' | "m/s" | metres per second|
 | 'N' | "N" | Newton|
 | 'o' | "m/s/s" | metres per second per second|
-| 'O' | "degC" | degrees Celsius. Not SI | but Kelvin is too cumbersome for most users|
+| 'O' | "degC" | degrees Celsius | Not an SI unit, but Kelvin is too cumbersome for most users|
 | '%' | "%" | percent|
 | 'S' | "satellites" | number of satellites|
 | 's' | "s" | seconds|
-| 'q' | "rpm" | rounds per minute. Not SI | but sometimes more intuitive than Hertz|
+| 'q' | "rpm" | revolutions per minute|  Not an SI unit, but sometimes more intuitive than Hertz|
 | 'r' | "rad" | radians|
 | 'U' | "deglongitude" | degrees of longitude|
 | 'u' | "ppm" | pulses per minute|
@@ -78,19 +78,19 @@ Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 ## Multipliers
 
 This multiplier information applies to the raw value present in the
-log.  Any adjustment implied by the format field (e.g. the "centi"
+log. Any adjustment implied by the format field (e.g. the "centi"
 in "centidegrees" is *IGNORED* for the purposes of scaling.
 Essentially "format" simply tells you the C-type, and format-type h
 (int16_t) is equivalent to format-type c (int16_t*100)
 tl;dr a GCS shouldn't/mustn't infer any scaling from the unit name
 
-| Char | Multiplier |
-|------|------------|
-| '-' | 0 |       // no multiplier e.g. a string|
-| '?' | 1 |       // multipliers which haven't been worked out yet....|
+| Char | Multiplier | Description |
+|------|------------|---|
+| '-' | 0 | no multiplier e.g. char[4] |
+| '?' | 1 | multipliers which haven't been worked out yet |
 | '2' | 1e2 ||
 | '1' | 1e1 ||
-| '0' | 1e0 ||
+| '0' | 1e0 | x1 |
 | 'A' | 1e-1 ||
 | 'B' | 1e-2 ||
 | 'C' | 1e-3 ||
@@ -98,5 +98,5 @@ tl;dr a GCS shouldn't/mustn't infer any scaling from the unit name
 | 'E' | 1e-5 ||
 | 'F' | 1e-6 ||
 | 'G' | 1e-7 ||
-| '!' | 3.6 | // (ampere*second => milliampere*hour) and (km/h => m/s)|
-| '/' | 3600 | // (ampere*second => ampere*hour)|
+| '!' | 3.6 | (milliampere \* hour => ampere \* second) and (km/h => m/s)|
+| '/' | 3600 | (ampere \* hour => ampere \* second)|
