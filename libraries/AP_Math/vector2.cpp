@@ -200,7 +200,8 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     const float b = 2 * ((seg_end_minus_start.x * seg_start_local.x) + (seg_end_minus_start.y * seg_start_local.y));
     const float c = sq(seg_start_local.x) + sq(seg_start_local.y) - sq(radius);
 
-    if (isnan(a) || isnan(b) || isnan(c)) {
+    // check for invalid data
+    if (::is_zero(a) || isnan(a) || isnan(b) || isnan(c)) {
        return false;
     }
 
@@ -208,11 +209,6 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
 
     if (isnan(delta)) {
        return false;
-    }
-
-    // check for invalid data
-    if (::is_zero(a)) {
-        return false;
     }
 
     // check for invalid delta (i.e. discriminant)
