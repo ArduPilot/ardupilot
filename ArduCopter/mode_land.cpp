@@ -1,11 +1,5 @@
 #include "Copter.h"
 
-// FIXME? why are these static?
-static bool land_with_gps;
-
-static uint32_t land_start_time;
-static bool land_pause;
-
 // land_init - initialise land controller
 bool ModeLand::init(bool ignore_checks)
 {

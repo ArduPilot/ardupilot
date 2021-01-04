@@ -910,6 +910,11 @@ private:
 
     void gps_run();
     void nogps_run();
+
+    bool land_with_gps;
+    uint32_t land_start_time;
+    bool land_pause;
+
 };
 
 
