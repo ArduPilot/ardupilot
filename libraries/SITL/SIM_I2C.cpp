@@ -61,7 +61,7 @@ struct i2c_device_at_address {
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
     { 1, 0x76, ignored }, // MS56XX
-    { 2, 0x0B, rotoye },
+    { 1, 0x0B, rotoye },
     { 2, 0x28, airspeed_dlvr },
 };
 
