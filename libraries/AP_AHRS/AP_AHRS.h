@@ -129,14 +129,6 @@ public:
     // this makes initial config easier
     void update_orientation();
 
-    void set_airspeed(AP_Airspeed *airspeed) {
-        _airspeed = airspeed;
-    }
-
-    const AP_Airspeed *get_airspeed(void) const {
-        return _airspeed;
-    }
-
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
@@ -171,18 +163,11 @@ public:
     // Methods
     virtual void update(bool skip_ins_update=false) = 0;
 
-    // report any reason for why the backend is refusing to initialise
-    virtual const char *prearm_failure_reason(void) const {
-        return nullptr;
-    }
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
 
     // check all cores providing consistent attitudes for prearm checks
     virtual bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const { return true; }
-
-    // is the EKF backend doing its own sensor logging?
-    virtual bool have_ekf_logging(void) const {
-        return false;
-    }
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
@@ -192,6 +177,9 @@ public:
     
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     virtual void request_yaw_reset(void) {}
+
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
+    virtual void set_posvelyaw_source_set(uint8_t source_set_idx) {}
 
     // Euler angles (radians)
     float roll;
@@ -258,7 +246,7 @@ public:
     virtual bool get_position(struct Location &loc) const = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const { return false; }
+    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual Vector3f wind_estimate(void) const = 0;
@@ -277,6 +265,12 @@ public:
         return true;
     }
 
+    // return estimate of true airspeed vector in body frame in m/s
+    // returns false if estimate is unavailable
+    virtual bool airspeed_vector_true(Vector3f &vec) const WARN_IF_UNUSED {
+        return false;
+    }
+
     // return a synthetic airspeed estimate (one derived from sensors
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
@@ -289,12 +283,14 @@ public:
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const {
+        const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
     }
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
+        const AP_Airspeed *_airspeed = AP::airspeed();
         return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
     }
 
@@ -482,8 +478,6 @@ public:
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
 
-    virtual bool prearm_healthy(void) const { return healthy(); }
-
     // true if the AHRS has completed initialisation
     virtual bool initialised(void) const {
         return true;
@@ -532,7 +526,13 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const {
+    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
+        return false;
+    }
+
+    // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
+    // returns true on success and results are placed in innovations and variances arguments
+    virtual bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED {
         return false;
     }
 
@@ -661,7 +661,6 @@ protected:
     const OpticalFlow *_optflow;
 
     // pointer to airspeed object, if available
-    AP_Airspeed     * _airspeed;
 
     // time in microseconds of last compass update
     uint32_t _compass_last_update;
@@ -715,12 +714,6 @@ private:
 
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_NavEKF.h"
-
-#if AP_AHRS_NAVEKF_AVAILABLE
-#define AP_AHRS_TYPE AP_AHRS_NavEKF
-#else
-#define AP_AHRS_TYPE AP_AHRS
-#endif
 
 namespace AP {
     AP_AHRS &ahrs();

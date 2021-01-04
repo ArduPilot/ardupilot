@@ -36,13 +36,12 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if HAL_OS_POSIX_IO
 
 #include "getopt_cpp.h"
 #include <stdio.h>
 #include <string.h>
 
-#define GETOPT_ERROR(...) fprintf(stderr, __VA_ARGS__)
+#define GETOPT_ERROR(...) ::printf(__VA_ARGS__)
 
 
 /*
@@ -206,6 +205,4 @@ int GetOptLong::getoption(void)
     }
     return optopt;
 }
-
-#endif // HAL_OS_POSIX_IO
 

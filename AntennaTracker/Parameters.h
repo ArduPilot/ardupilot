@@ -98,6 +98,9 @@ public:
         k_param_mavlink_update_rate,
         k_param_pitch_min,
         k_param_pitch_max,
+        k_param_gcs4,               // stream rates for fourth MAVLink port
+        k_param_gcs5,               // stream rates for fourth MAVLink port
+        k_param_gcs6,               // stream rates for fourth MAVLink port
 
         //
         // 200 : Radio settings
@@ -123,6 +126,8 @@ public:
         k_param_scan_speed_pitch,
         k_param_initial_mode,
         k_param_disarm_pwm,
+
+        k_param_auto_opts,
 
         k_param_logger = 253, // 253 - Logging Group
 
@@ -164,6 +169,7 @@ public:
     AP_Int16 gcs_pid_mask;
     AP_Int8  initial_mode;
     AP_Int8 disarm_pwm;
+    AP_Int8 auto_opts;
 
     // Waypoints
     //

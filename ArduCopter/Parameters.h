@@ -218,6 +218,9 @@ public:
         k_param_takeoff_trigger_dz_old,
         k_param_gcs3,
         k_param_gcs_pid_mask,    // 126
+        k_param_gcs4,
+        k_param_gcs5,
+        k_param_gcs6,
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -315,6 +318,7 @@ public:
         k_param_flight_mode6,
         k_param_simple_modes,
         k_param_flight_mode_chan,
+        k_param_initial_mode,
 
         //
         // 210: Waypoint data
@@ -431,6 +435,7 @@ public:
     AP_Int8         flight_mode6;
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
+    AP_Int8         initial_mode;
 
     // Misc
     //
@@ -447,7 +452,7 @@ public:
     AP_Int16        gcs_pid_mask;
 
 #if MODE_THROW_ENABLED == ENABLED
-    AP_Int8         throw_motor_start;
+    AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
 #endif
 
     AP_Int8         rtl_alt_type;
@@ -497,7 +502,7 @@ public:
 #if MODE_THROW_ENABLED == ENABLED
     // Throw mode parameters
     AP_Int8 throw_nextmode;
-    AP_Int8 throw_type;
+    AP_Enum<ModeThrow::ThrowType> throw_type;
 #endif
 
     // ground effect compensation enable/disable
@@ -617,6 +622,20 @@ public:
 
 #if MODE_ACRO_ENABLED == ENABLED
     AP_Int8 acro_options;
+#endif
+
+#if MODE_AUTO_ENABLED == ENABLED
+    AP_Int32 auto_options;
+#endif
+
+#if MODE_GUIDED_ENABLED == ENABLED
+    AP_Int32 guided_options;
+#endif
+
+    AP_Float fs_gcs_timeout;
+
+#if MODE_RTL_ENABLED == ENABLED
+    AP_Int32 rtl_options;
 #endif
 
 };

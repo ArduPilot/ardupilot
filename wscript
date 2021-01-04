@@ -96,6 +96,11 @@ def options(opt):
         default=False,
         help='enable OS level asserts.')
 
+    g.add_option('--enable-malloc-guard',
+        action='store_true',
+        default=False,
+        help='enable malloc guard regions.')
+    
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -135,6 +140,10 @@ submodules at specific revisions.
                  default=False,
                  help="Disable onboard scripting engine")
 
+    g.add_option('--no-gcs', action='store_true',
+                 default=False,
+                 help="Disable GCS code")
+    
     g.add_option('--scripting-checks', action='store_true',
                  default=True,
                  help="Enable runtime scripting sanity checks")
@@ -183,6 +192,10 @@ configuration in order to save typing.
     g.add_option('--enable-sfml', action='store_true',
                  default=False,
                  help="Enable SFML graphics library")
+
+    g.add_option('--enable-sfml-joystick', action='store_true',
+                 default=False,
+                 help="Enable SFML joystick input library")
 
     g.add_option('--enable-sfml-audio', action='store_true',
                  default=False,
@@ -269,6 +282,7 @@ def configure(cfg):
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
+    cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
 
     cfg.env.OPTIONS = cfg.options.__dict__
 
@@ -580,7 +594,7 @@ ardupilotwaf.build_command('check-all',
     doc='shortcut for `waf check --alltests`',
 )
 
-for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware','AP_Periph'):
+for name in ('antennatracker', 'copter', 'heli', 'plane', 'rover', 'sub', 'bootloader','iofirmware','AP_Periph','replay'):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,

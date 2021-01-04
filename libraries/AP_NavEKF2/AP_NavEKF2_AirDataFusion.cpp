@@ -2,7 +2,6 @@
 
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
-#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -21,24 +20,18 @@ extern const AP_HAL::HAL& hal;
 */
 void NavEKF2_core::FuseAirspeed()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseAirspeed);
-
     // declarations
     float vn;
     float ve;
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = _ahrs->get_EAS2TAS();
+    float EAS2TAS = dal.get_EAS2TAS();
     const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     Vector3 SH_TAS;
     float SK_TAS;
     Vector24 H_TAS;
     float VtasPred;
-
-    // health is set bad until test passed
-    tasHealth = false;
 
     // copy required states to local variable names
     vn = stateStruct.velocity.x;
@@ -117,7 +110,7 @@ void NavEKF2_core::FuseAirspeed()
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (float)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
@@ -178,9 +171,6 @@ void NavEKF2_core::FuseAirspeed()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop performance timer
-    hal.util->perf_end(_perf_FuseAirspeed);
 }
 
 // select fusion of true airspeed measurements
@@ -247,9 +237,6 @@ void NavEKF2_core::SelectBetaFusion()
 */
 void NavEKF2_core::FuseSideslip()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseSideslip);
-
     // declarations
     float q0;
     float q1;
@@ -425,9 +412,6 @@ void NavEKF2_core::FuseSideslip()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop the performance timer
-    hal.util->perf_end(_perf_FuseSideslip);
 }
 
 /********************************************************

@@ -32,11 +32,15 @@ public:
 
     // get solution data for logging
     // return false if yaw estimation is inactive
-    bool getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]);
+    bool getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const;
 
     // get yaw estimated and corresponding variance
     // return false if yaw estimation is inactive
-    bool getYawData(float &yaw, float &yawVariance);
+    bool getYawData(float &yaw, float &yawVariance) const;
+
+    // get the length of the weighted average velocity innovation vector
+    // return false if not available
+    bool getVelInnovLength(float &velInnovLength) const;
 
 private:
 
@@ -80,14 +84,13 @@ private:
     float accel_gain;               // gain from accel vector tilt error to rate gyro correction used by AHRS calculation
     Vector3f ahrs_accel;            // filtered body frame specific force vector used by AHRS calculation (m/s/s)
     float ahrs_accel_norm;          // length of body frame specific force vector used by AHRS calculation (m/s/s)
-    bool ahrs_turn_comp_enabled;    // true when compensation for centripetal acceleration in coordinated turns using true airspeed is being used.
     float true_airspeed;            // true airspeed used to correct for centripetal acceleratoin in coordinated turns (m/s)
 
     // Runs quaternion prediction for the selected AHRS using IMU (and optionally true airspeed) data
     void predictAHRS(const uint8_t mdl_idx);
 
     // Applies a body frame delta angle to a body to earth frame rotation matrix using a small angle approximation
-    Matrix3f updateRotMat(const Matrix3f &R, const Vector3f &g);
+    Matrix3f updateRotMat(const Matrix3f &R, const Vector3f &g) const;
 
     // Initialises the tilt (roll and pitch) for all AHRS using IMU acceleration data
     void alignTilt();

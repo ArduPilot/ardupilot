@@ -15,6 +15,7 @@
 // tandem modes
 #define AP_MOTORS_HELI_DUAL_MODE_TANDEM                0 // tandem mode (rotors front and aft)
 #define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
+#define AP_MOTORS_HELI_DUAL_MODE_INTERMESHING          2 // intermeshing mode (rotors side by side)
 
 // tandem modes
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH           0 // swashplate pitch tilt axis
@@ -132,6 +133,8 @@ protected:
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     AP_Float        _yaw_scaler;                    // scaling factor applied to the yaw mixing
+    AP_Float        _dcp_trim;                      // used to easily trim dcp axis
+    AP_Float        _yaw_rev_expo;                  // yaw reverser smoothing exponent, for intermeshing mode only.
 
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range

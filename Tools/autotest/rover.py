@@ -571,11 +571,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Pin mask changed after relay command")
 
     def test_setting_modes_via_mavproxy_switch(self):
+        self.load_mission(self.arming_test_mission())
+        self.wait_ready_to_arm()
         fnoo = [(1, 'MANUAL'),
                 (2, 'MANUAL'),
                 (3, 'RTL'),
-                # (4, 'AUTO'),  # no mission, can't set auto
-                (5, 'RTL'),  # non-existant mode, should stay in RTL
+                (4, 'AUTO'),
+                (5, 'AUTO'),  # non-existant mode, should stay in RTL
                 (6, 'MANUAL')]
         for (num, expected) in fnoo:
             self.mavproxy.send('switch %u\n' % num)
@@ -616,7 +618,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_rc(8, 1700) # PWM for mode5
             self.wait_mode("ACRO")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -657,7 +660,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_mode("ACRO")
             self.set_rc(9, 1000)
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -906,6 +910,73 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, ch_override_value))
             self.set_parameter("RC_OVERRIDE_TIME", old)
 
+
+            self.delay_sim_time(10)
+
+            self.start_subtest("Checking higher-channel semantics")
+            self.context_push()
+            self.set_parameter("RC_OVERRIDE_TIME", 30)
+
+            ch = 11
+            rc_value = 1010
+            self.set_rc(ch, rc_value)
+
+            channels = [65535] * 18
+            ch_override_value = 1234
+            channels[ch-1] = ch_override_value
+            self.progress("Sending override message ch%u=%u" % (ch, ch_override_value))
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.progress("Wait for override value")
+            self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
+
+            self.progress("Sending return-to-RC-input value")
+            channels[ch-1] = 65534
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.wait_rc_channel_value(ch, rc_value, timeout=10)
+
+
+            channels[ch-1] = ch_override_value
+            self.progress("Sending override message ch%u=%u" % (ch, ch_override_value))
+            self.mav.mav.rc_channels_override_send(
+                1, # target system
+                1, # targe component
+                *channels
+            )
+            self.progress("Wait for override value")
+            self.wait_rc_channel_value(ch, ch_override_value, timeout=10)
+
+            # make we keep the override vaue for at least 10 seconds:
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 10:
+                    break
+                # try both ignore values:
+                ignore_value = 0
+                if self.get_sim_time_cached() - tstart > 5:
+                    ignore_value = 65535
+                self.progress("Sending ignore value %u" % ignore_value)
+                channels[ch-1] = ignore_value
+                self.mav.mav.rc_channels_override_send(
+                    1, # target system
+                    1, # targe component
+                    *channels
+                )
+                if self.get_rc_channel_value(ch) != ch_override_value:
+                    raise NotAchievedException("Did not maintain value")
+
+            self.context_pop()
+
+            self.end_subtest("Checking higher-channel semantics")
+
+
         except Exception as e:
             self.progress("Exception caught: %s" %
                           self.get_exception_stacktrace(e))
@@ -996,7 +1067,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_rc_channel_value(3, normal_rc_throttle, timeout=10)
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
 
         self.context_pop()
@@ -1046,7 +1118,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.disarm_vehicle()
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1106,7 +1179,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise comp_arm_exception
 
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1608,62 +1682,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Uploaded fence when should not be possible")
         self.progress("Fence rightfully bounced")
 
-    def fencepoint_protocol_epsilon(self):
-        return 0.00002
-
-    def roundtrip_fencepoint_protocol(self, offset, count, lat, lng, target_system=1, target_component=1):
-        self.progress("Sending FENCE_POINT offs=%u count=%u" % (offset, count))
-        self.mav.mav.fence_point_send(target_system,
-                                      target_component,
-                                      offset,
-                                      count,
-                                      lat,
-                                      lng)
-
-        self.progress("Requesting fence point")
-        m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
-        if abs(m.lat - lat) > self.fencepoint_protocol_epsilon():
-            raise NotAchievedException("Did not get correct lat in fencepoint: got=%f want=%f" % (m.lat, lat))
-        if abs(m.lng - lng) > self.fencepoint_protocol_epsilon():
-            raise NotAchievedException("Did not get correct lng in fencepoint: got=%f want=%f" % (m.lng, lng))
-        self.progress("Roundtrip OK")
-
-    def roundtrip_fence_using_fencepoint_protocol(self, loc_list, target_system=1, target_component=1, ordering=None):
-        count = len(loc_list)
-        offset = 0
-        self.set_parameter("FENCE_TOTAL", count)
-        if ordering is None:
-            ordering = range(count)
-        elif len(ordering) != len(loc_list):
-            raise ValueError("ordering list length mismatch")
-
-        for offset in ordering:
-            loc = loc_list[offset]
-            self.roundtrip_fencepoint_protocol(offset,
-                                               count,
-                                               loc.lat,
-                                               loc.lng,
-                                               target_system,
-                                               target_component)
-
-        self.progress("Validating uploaded fence")
-        returned_count = self.get_parameter("FENCE_TOTAL")
-        if returned_count != count:
-            raise NotAchievedException("Returned count mismatch (want=%u got=%u)" %
-                                       (count, returned_count))
-        for i in range(count):
-            self.progress("Requesting fence point")
-            m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
-            if abs(m.lat-loc.lat) > self.fencepoint_protocol_epsilon():
-                raise NotAchievedException("Returned lat mismatch (want=%f got=%f" %
-                                           (loc.lat, m.lat))
-            if abs(m.lng-loc.lng) > self.fencepoint_protocol_epsilon():
-                raise NotAchievedException("Returned lng mismatch (want=%f got=%f" %
-                                           (loc.lng, m.lng))
-            if m.count != count:
-                raise NotAchievedException("Count mismatch (want=%u got=%u)" %
-                                           (count, m.count))
-
     def send_fencepoint_expect_statustext(self, offset, count, lat, lng, statustext_fragment, target_system=1, target_component=1, timeout=10):
         self.mav.mav.fence_point_send(target_system,
                                       target_component,
@@ -1683,19 +1701,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
             if statustext_fragment in m.text:
                 break
-
-    def get_fence_point(self, idx, target_system=1, target_component=1):
-        self.mav.mav.fence_fetch_point_send(target_system,
-                                            target_component,
-                                            idx)
-        m = self.mav.recv_match(type="FENCE_POINT", blocking=True, timeout=2)
-        print("m: %s" % str(m))
-        if m is None:
-            raise NotAchievedException("Did not get fence return point back")
-        if m.idx != idx:
-            raise NotAchievedException("Invalid idx returned (want=%u got=%u)" %
-                                       (idx, m.seq))
-        return m
 
     def test_gcs_fence_centroid(self, target_system=1, target_component=1):
         self.start_subtest("Ensuring if we don't have a centroid it gets calculated")
@@ -4457,7 +4462,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                      0, # p6 - test order (see MOTOR_TEST_ORDER)
                      0, # p7
         )
-        self.mav.motors_armed_wait()
+        self.wait_armed()
         self.progress("Waiting for magic throttle value")
         self.wait_servo_channel_value(3, magic_throttle_value)
         self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
@@ -5263,6 +5268,84 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_rc(1, 1400)
         self.set_rc(3, 1600)
         self.wait_heading(60)
+        self.zero_throttle()
+        self.disarm_vehicle()
+
+    def test_slew_rate(self):
+        """Test Motor Slew Rate feature."""
+        self.context_push()
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.start_subtest("Test no slew behavior")
+        throttle_channel = 3
+        throttle_max = 2000
+        self.set_parameter("MOT_SLEWRATE", 0)
+        self.set_rc(throttle_channel, throttle_max)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(throttle_channel, throttle_max)
+        tstop = self.get_sim_time()
+        achieved_time = tstop - tstart
+        self.progress("achieved_time: %0.1fs" % achieved_time)
+        if achieved_time > 0.5:
+            raise NotAchievedException("Output response should be instant, got %f" % achieved_time)
+        self.zero_throttle()
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
+
+        self.start_subtest("Test 100% slew rate")
+        self.set_parameter("MOT_SLEWRATE", 100)
+        self.set_rc(throttle_channel, throttle_max)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(throttle_channel, throttle_max)
+        tstop = self.get_sim_time()
+        achieved_time = tstop - tstart
+        self.progress("achieved_time: %0.1fs" % achieved_time)
+        if achieved_time < 0.9 or achieved_time > 1.1:
+            raise NotAchievedException("Output response should be 1s, got %f" % achieved_time)
+        self.zero_throttle()
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
+
+        self.start_subtest("Test 50% slew rate")
+        self.set_parameter("MOT_SLEWRATE", 50)
+        self.set_rc(throttle_channel, throttle_max)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(throttle_channel, throttle_max, timeout=10)
+        tstop = self.get_sim_time()
+        achieved_time = tstop - tstart
+        self.progress("achieved_time: %0.1fs" % achieved_time)
+        if achieved_time < 1.8 or achieved_time > 2.2:
+            raise NotAchievedException("Output response should be 2s, got %f" % achieved_time)
+        self.zero_throttle()
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
+
+        self.start_subtest("Test 25% slew rate")
+        self.set_parameter("MOT_SLEWRATE", 25)
+        self.set_rc(throttle_channel, throttle_max)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(throttle_channel, throttle_max, timeout=10)
+        tstop = self.get_sim_time()
+        achieved_time = tstop - tstart
+        self.progress("achieved_time: %0.1fs" % achieved_time)
+        if achieved_time < 3.6 or achieved_time > 4.4:
+            raise NotAchievedException("Output response should be 4s, got %f" % achieved_time)
+        self.zero_throttle()
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
+
+        self.start_subtest("Test 10% slew rate")
+        self.set_parameter("MOT_SLEWRATE", 10)
+        self.set_rc(throttle_channel, throttle_max)
+        tstart = self.get_sim_time()
+        self.wait_servo_channel_value(throttle_channel, throttle_max, timeout=20)
+        tstop = self.get_sim_time()
+        achieved_time = tstop - tstart
+        self.progress("achieved_time: %0.1fs" % achieved_time)
+        if achieved_time < 9 or achieved_time > 11:
+            raise NotAchievedException("Output response should be 10s, got %f" % achieved_time)
+        self.zero_throttle()
+        self.wait_groundspeed(0, 0.5)  # why do we not stop?!
+        self.disarm_vehicle()
+        self.context_pop()
 
     def tests(self):
         '''return list of all tests'''
@@ -5426,6 +5509,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "PolyFence object avoidance tests - easier bendy ruler test",
              self.test_poly_fence_object_avoidance_bendy_ruler_easier),
 
+            ("SlewRate",
+             "Test output slew rate",
+             self.test_slew_rate),
+
             ("Scripting",
              "Scripting test",
              self.test_scripting),
@@ -5437,6 +5524,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("MissionFrames",
              "Upload/Download of items in different frames",
              self.test_mission_frames),
+
+            ("SetpointGlobalPos",
+             "Test setpoint global position",
+             lambda: self.test_set_position_global_int()),
+
+            ("SetpointGlobalVel",
+             "Test setpoint gloabl velocity",
+             lambda: self.test_set_velocity_global_int()),
 
             ("AccelCal",
              "Accelerometer Calibration testing",
@@ -5455,7 +5550,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def disabled_tests(self):
         return {
             "DriveMaxRCIN": "currently triggers Arithmetic Exception",
-            "Button": "See https://github.com/ArduPilot/ardupilot/issues/15259",
+            "SlewRate": "got timing report failure on CI",
         }
 
     def rc_defaults(self):
@@ -5463,6 +5558,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ret[3] = 1500
         ret[8] = 1800
         return ret
+
+    def initial_mode_switch_mode(self):
+        return "MANUAL"
 
     def default_mode(self):
         return 'MANUAL'

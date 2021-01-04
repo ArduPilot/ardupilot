@@ -41,6 +41,7 @@
 #include <ardupilot/indication/Button.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
+#include <uavcan/protocol/debug/LogMessage.hpp>
 
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
@@ -129,6 +130,10 @@ static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb>
 UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
 static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
+// handler DEBUG
+UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
+static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
 AP_UAVCAN::esc_data AP_UAVCAN::_escs_data[];
 HAL_Semaphore AP_UAVCAN::_telem_sem;
 
@@ -177,6 +182,8 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
     return true;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wframe-larger-than=1400"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -202,40 +209,41 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node was already started?\n\r");
         return;
     }
+    {
+        uavcan::NodeID self_node_id(_uavcan_node);
+        _node->setNodeID(self_node_id);
 
-    uavcan::NodeID self_node_id(_uavcan_node);
-    _node->setNodeID(self_node_id);
+        char ndname[20];
+        snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
 
-    char ndname[20];
-    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
-
-    uavcan::NodeStatusProvider::NodeName name(ndname);
-    _node->setName(name);
-
-    uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
-    sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
-    sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
-    _node->setSoftwareVersion(sw_version);
-
-    uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
-
-    hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
-    hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
-
-    const uint8_t uid_buf_len = hw_version.unique_id.capacity();
-    uint8_t uid_len = uid_buf_len;
-    uint8_t unique_id[uid_buf_len];
-
-
-    if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
-        //This is because we are maintaining a common Server Record for all UAVCAN Instances.
-        //In case the node IDs are different, and unique id same, it will create
-        //conflict in the Server Record.
-        unique_id[uid_len - 1] += _uavcan_node;
-        uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+        uavcan::NodeStatusProvider::NodeName name(ndname);
+        _node->setName(name);
     }
-    _node->setHardwareVersion(hw_version);
+    {
+        uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
+        sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
+        sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
+        _node->setSoftwareVersion(sw_version);
 
+        uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
+
+        hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
+        hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+
+        const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+        uint8_t uid_len = uid_buf_len;
+        uint8_t unique_id[uid_buf_len];
+
+
+        if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+            //This is because we are maintaining a common Server Record for all UAVCAN Instances.
+            //In case the node IDs are different, and unique id same, it will create
+            //conflict in the Server Record.
+            unique_id[uid_len - 1] += _uavcan_node;
+            uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+        }
+        _node->setHardwareVersion(hw_version);
+    }
     int start_res = _node->start();
     if (start_res < 0) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node start problem, error %d\n\r", start_res);
@@ -301,6 +309,11 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     if (esc_status_listener[driver_index]) {
         esc_status_listener[driver_index]->start(ESCStatusCb(this, &handle_ESC_status));
     }
+
+    debug_listener[driver_index] = new uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb>(*_node);
+    if (debug_listener[driver_index]) {
+        debug_listener[driver_index]->start(DebugCb(this, &handle_debug));
+    }
     
     _led_conf.devices_count = 0;
     if (enable_filters) {
@@ -327,10 +340,12 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     _initialized = true;
     debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
 }
+#pragma GCC diagnostic pop
 
 // send ESC telemetry messages over MAVLink
 void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
+#ifndef HAL_NO_GCS
     static const uint8_t MAV_ESC_GROUPS = 3;
     static const uint8_t MAV_ESC_PER_GROUP = 4;
 
@@ -397,6 +412,7 @@ void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 break;
         }
     }
+#endif // HAL_NO_GCS
 }
 
 void AP_UAVCAN::loop(void)
@@ -866,6 +882,23 @@ bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
         return false;
     }
     return true;
+}
+
+/*
+  handle LogMessage debug
+ */
+void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb)
+{
+#ifndef HAL_NO_LOGGING
+    const auto &msg = *cb.msg;
+    if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
+        // log to onboard log and mavlink
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CAN[%u] %s", node_id, msg.text.c_str());
+    } else {
+        // only log to onboard log
+        AP::logger().Write_MessageF("CAN[%u] %s", node_id, msg.text.c_str());
+    }
+#endif
 }
 
 #endif // HAL_NUM_CAN_IFACES

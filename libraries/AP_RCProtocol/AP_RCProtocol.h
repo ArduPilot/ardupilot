@@ -41,6 +41,7 @@ public:
         CRSF,
         ST24,
         FPORT,
+        FPORT2,
         NONE    //last enum always is None
     };
     void init();
@@ -51,6 +52,7 @@ public:
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
     bool process_byte(uint8_t byte, uint32_t baudrate);
+    void process_handshake(uint32_t baudrate);
     void update(void);
 
     void disable_for_pulses(enum rcprotocol_t protocol) {
@@ -59,7 +61,7 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT);
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
     }
 
     uint8_t num_channels();

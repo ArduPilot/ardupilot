@@ -51,7 +51,14 @@
 #define CH_DBG_ENABLE_ASSERTS TRUE
 #define CH_DBG_ENABLE_CHECKS TRUE
 #define CH_DBG_SYSTEM_STATE_CHECK TRUE
+#undef CH_DBG_ENABLE_STACK_CHECK
 #define CH_DBG_ENABLE_STACK_CHECK TRUE
+#endif
+
+#if HAL_ENABLE_THREAD_STATISTICS
+#define CH_DBG_STATISTICS TRUE
+#else
+#define CH_DBG_STATISTICS FALSE
 #endif
 
 /**
@@ -508,7 +515,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(CH_DBG_STATISTICS)
-#define CH_DBG_STATISTICS                   TRUE
+#define CH_DBG_STATISTICS                   FALSE
 #endif
 
 /**

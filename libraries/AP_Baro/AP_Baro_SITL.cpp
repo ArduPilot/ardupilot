@@ -55,16 +55,16 @@ void AP_Baro_SITL::_timer()
 
     float sim_alt = _sitl->state.altitude;
 
-    if (_sitl->baro_disable[_instance]) {
+    if (_sitl->baro[_instance].disable) {
         // barometer is disabled
         return;
     }
 
-    sim_alt += _sitl->baro_drift[_instance] * now / 1000.0f;
-    sim_alt += _sitl->baro_noise[_instance] * rand_float();
+    sim_alt += _sitl->baro[_instance].drift * now / 1000.0f;
+    sim_alt += _sitl->baro[_instance].noise * rand_float();
 
     // add baro glitch
-    sim_alt += _sitl->baro_glitch[_instance];
+    sim_alt += _sitl->baro[_instance].glitch;
 
     // add delay
     uint32_t best_time_delta = 200;  // initialise large time representing buffer entry closest to current time - delay.
@@ -78,7 +78,7 @@ void AP_Baro_SITL::_timer()
         }
 
         // if freezed barometer, report altitude to last recorded altitude
-        if (_sitl->baro_freeze[_instance] == 1) {
+        if (_sitl->baro[_instance].freeze == 1) {
             sim_alt = _last_altitude;
         } else {
             _last_altitude = sim_alt;
@@ -90,7 +90,7 @@ void AP_Baro_SITL::_timer()
     }
 
     // return delayed measurement
-    const uint32_t delayed_time = now - _sitl->baro_delay;  // get time corresponding to delay
+    const uint32_t delayed_time = now - _sitl->baro[_instance].delay;  // get time corresponding to delay
 
     // find data corresponding to delayed time in buffer
     for (uint8_t i = 0; i <= _buffer_length - 1; i++) {
@@ -122,6 +122,9 @@ void AP_Baro_SITL::_timer()
     float T = 303.16f * theta - C_TO_KELVIN;  // Assume 30 degrees at sea level - converted to degrees Kelvin
 #endif
 
+    // add in correction for wind effects
+    p += wind_pressure_correction();
+
     _recent_press = p;
     _recent_temp = T;
     _has_sample = true;
@@ -130,7 +133,7 @@ void AP_Baro_SITL::_timer()
 // unhealthy if baro is turned off or beyond supported instances
 bool AP_Baro_SITL::healthy(uint8_t instance) 
 {
-    return !_sitl->baro_disable[instance];
+    return !_sitl->baro[instance].disable;
 }
 
 // Read the sensor
@@ -143,6 +146,34 @@ void AP_Baro_SITL::update(void)
     WITH_SEMAPHORE(_sem);
     _copy_to_frontend(_instance, _recent_press, _recent_temp);
     _has_sample = false;
+}
+
+/*
+  return pressure correction for wind based on SIM_BARO_WCF parameters
+ */
+float AP_Baro_SITL::wind_pressure_correction(void)
+{
+    const auto &bp = _sitl->baro[_instance];
+
+    // correct for static pressure position errors
+    const Vector3f &airspeed_vec_bf = _sitl->state.velocity_air_bf;
+
+    float error = 0.0;
+    const float sqx = sq(airspeed_vec_bf.x);
+    const float sqy = sq(airspeed_vec_bf.y);
+
+    if (is_positive(airspeed_vec_bf.x)) {
+        error += bp.wcof_xp * sqx;
+    } else {
+        error += bp.wcof_xn * sqx;
+    }
+    if (is_positive(airspeed_vec_bf.y)) {
+        error += bp.wcof_yp * sqy;
+    } else {
+        error += bp.wcof_yn * sqy;
+    }
+
+    return error * 0.5 * SSL_AIR_DENSITY * AP::baro().get_air_density_ratio();
 }
 
 #endif  // CONFIG_HAL_BOARD

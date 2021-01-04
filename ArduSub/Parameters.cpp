@@ -452,17 +452,41 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[0],  gcs0,       "SR0_",     GCS_MAVLINK_Parameters),
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 2
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 3
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 4
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 5
+    // @Group: SR4_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 6
+    // @Group: SR5_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 7
+    // @Group: SR6_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
+#endif
 
     // @Group: AHRS_
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
@@ -500,9 +524,9 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SITL),
 #endif
 
-    // @Group: GND_
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
     // @Group: GPS_
@@ -632,13 +656,18 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
 #endif
 
+    // @Group: ARSPD
+    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
+    AP_SUBGROUPINFO(airspeed, "ARSPD", 19, ParametersG2, AP_Airspeed),
+
     AP_GROUPEND
 };
 
 /*
   constructor for g2 object
  */
-ParametersG2::ParametersG2()
+ParametersG2::ParametersG2():
+    airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

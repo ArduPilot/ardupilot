@@ -14,16 +14,16 @@ void NavEKF3_core::SelectRngBcnFusion()
     // Determine if we need to fuse range beacon data on this time step
     if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if (!filterStatus.flags.using_gps && rngBcnAlignmentCompleted) {
+            if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcnAlignmentCompleted) {
                 if (!bcnOriginEstInit) {
                     bcnOriginEstInit = true;
                     bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
                     bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
                 }
-                // If we aren't using GPS, then the beacons are used as the primary means of position reference
+                // beacons are used as the primary means of position reference
                 FuseRngBcn();
             } else {
-                // If we are using GPS, then GPS is the primary reference, but we continue to use the beacon data
+                // If another source (i.e. GPS, ExtNav) is the primary reference, we continue to use the beacon data
                 // to calculate an independent position that is used to update the beacon position offset if we need to
                 // start using beacon data as the primary reference.
                 FuseRngBcnStatic();
@@ -54,7 +54,7 @@ void NavEKF3_core::FuseRngBcn()
     // health is set bad until test passed
     rngBcnHealth = false;
 
-    if (activeHgtSource != HGT_SOURCE_BCN) {
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
         // calculate the vertical offset from EKF datum to beacon datum
         CalcRangeBeaconPosDownOffset(R_BCN, stateStruct.position, false);
     } else {
@@ -96,7 +96,7 @@ void NavEKF3_core::FuseRngBcn()
         // are at the same height as the flight vehicle when calculating the observation derivatives
         // and Kalman gains
         // TODO  - less hacky way of achieving this, preferably using an alternative derivation
-        if (activeHgtSource != HGT_SOURCE_BCN) {
+        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
             t2 = 0.0f;
         }
         H_BCN[9] = -t2*t9;
@@ -158,7 +158,7 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         // only allow the range observations to modify the vertical states if we are using it as a height reference
-        if (activeHgtSource == HGT_SOURCE_BCN) {
+        if (activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) {
             Kfusion[6] = -t26*(P[6][7]*t4*t9+P[6][8]*t3*t9+P[6][9]*t2*t9);
             Kfusion[9] = -t26*(t10+P[9][7]*t4*t9+P[9][8]*t3*t9);
         } else {
@@ -260,11 +260,13 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         // Update the fusion report
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
+        if (rngBcnFusionReport && rngBcnDataDelayed.beacon_ID < dal.beacon()->count()) {
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
+        }
     }
 }
 
@@ -324,7 +326,7 @@ void NavEKF3_core::FuseRngBcnStatic()
         }
 
         if (rngBcnAlignmentCompleted) {
-            if (activeHgtSource != HGT_SOURCE_BCN) {
+            if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
@@ -341,7 +343,7 @@ void NavEKF3_core::FuseRngBcnStatic()
 
             }
         } else {
-            if (activeHgtSource != HGT_SOURCE_BCN) {
+            if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
                 // The position estimate is not yet stable so we cannot run the 1-state EKF to estimate
                 // beacon system vertical position offset. Instead we initialise the dual hypothesis offset states
                 // using the beacon vertical position, vertical position estimate relative to the beacon origin
@@ -496,11 +498,13 @@ void NavEKF3_core::FuseRngBcnStatic()
             rngBcnAlignmentCompleted = true;
         }
         // Update the fusion report
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
-        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
+        if (rngBcnFusionReport && rngBcnDataDelayed.beacon_ID < dal.beacon()->count()) {
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
+        }
     }
 }
 

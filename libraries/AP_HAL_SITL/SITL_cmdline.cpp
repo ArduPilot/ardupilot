@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_Logger/AP_Logger_SITL.h>
+#include <AP_Param/AP_Param.h>
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
@@ -34,6 +35,7 @@
 #include <SITL/SIM_Scrimmage.h>
 #include <SITL/SIM_Webots.h>
 #include <SITL/SIM_JSON.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -73,7 +75,7 @@ void SITL_State::_usage(void)
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
            // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
-           "\t--home|-O HOME           set start location (lat,lng,alt,yaw)\n"
+           "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
@@ -89,6 +91,7 @@ void SITL_State::_usage(void)
            "\t--uartF device           set device string for UARTF\n"
            "\t--uartG device           set device string for UARTG\n"
            "\t--uartH device           set device string for UARTH\n"
+           "\t--uartI device           set device string for UARTI\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -96,7 +99,8 @@ void SITL_State::_usage(void)
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
-           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
+           "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
 
@@ -125,6 +129,8 @@ static const struct {
     { "dodeca-hexa",        MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
+    { "deca",               MultiCopter::create },
+    { "deca-cwx",           MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
@@ -200,12 +206,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     uint16_t simulator_port_in = SIM_IN_PORT;
     uint16_t simulator_port_out = SIM_OUT_PORT;
     _irlock_port = IRLOCK_PORT;
+    struct AP_Param::defaults_table_struct temp_cmdline_param{};
 
     // Set default start time to the real system time.
     // This will be overwritten if argument provided.
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
+    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -220,6 +228,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTF,
         CMDLINE_UARTG,
         CMDLINE_UARTH,
+        CMDLINE_UARTI,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -228,6 +237,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SIM_PORT_OUT,
         CMDLINE_IRLOCK_PORT,
         CMDLINE_START_TIME,
+        CMDLINE_SYSID,
     };
 
     const struct GetOptLong::option options[] = {
@@ -256,6 +266,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartF",           true,   0, CMDLINE_UARTF},
         {"uartG",           true,   0, CMDLINE_UARTG},
         {"uartH",           true,   0, CMDLINE_UARTH},
+        {"uartI",           true,   0, CMDLINE_UARTI},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -264,8 +275,14 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"sim-port-out",    true,   0, CMDLINE_SIM_PORT_OUT},
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
+        {"sysid",           true,   0, CMDLINE_SYSID},
         {0, false, 0, 0}
     };
+
+    if (is_replay) {
+        model_str = "quad";
+        HALSITL::UARTDriver::_console = true;
+    }
 
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
@@ -277,8 +294,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
-
-    while ((opt = gopt.getoption()) != -1) {
+    while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
             AP_Param::erase_all();
@@ -289,9 +305,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
-            char speedup_string[18];
-            snprintf(speedup_string, sizeof(speedup_string), "SIM_SPEEDUP=%s", gopt.optarg);
-            _set_param_default(speedup_string);
+            temp_cmdline_param = {"SIM_SPEEDUP", speedup};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             _framerate = (unsigned)atoi(gopt.optarg);
@@ -385,6 +401,17 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_START_TIME:
             start_time_UTC = atoi(gopt.optarg);
             break;
+        case CMDLINE_SYSID: {
+            const int32_t sysid = atoi(gopt.optarg);
+            if (sysid < 1 || sysid > 255) {
+                fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
+                exit(1);
+            }
+            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            break;
+        }
         default:
             _usage();
             exit(1);
@@ -409,7 +436,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (home_str != nullptr) {
                 Location home;
                 float home_yaw;
-                if (!parse_home(home_str, home, home_yaw)) {
+                if (strchr(home_str,',') == nullptr) {
+                    if (!lookup_location(home_str, home, home_yaw)) {
+                        ::printf("Failed to find location (%s).  Should be in locations.txt or LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
+                        exit(1);
+                    }
+                } else if (!parse_home(home_str, home, home_yaw)) {
                     ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
                     exit(1);
                 }
@@ -519,4 +551,38 @@ bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degr
     return true;
 }
 
+/*
+  lookup a location in locations.txt in ROMFS
+ */
+bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw_degrees)
+{
+    const char *locations = "@ROMFS/locations.txt";
+    FileData *fd = AP::FS().load_file(locations);
+    if (fd == nullptr) {
+        ::printf("Missing %s\n", locations);
+        return false;
+    }
+    char *str = strndup((const char *)fd->data, fd->length);
+    if (!str) {
+        delete fd;
+        return false;
+    }
+    size_t len = strlen(home_str);
+    char *saveptr = nullptr;
+    for (char *s = strtok_r(str, "\r\n", &saveptr);
+         s;
+         s=strtok_r(nullptr, "\r\n", &saveptr)) {
+        if (strncasecmp(s, home_str, len) == 0 && s[len]=='=') {
+            bool ok = parse_home(&s[len+1], loc, yaw_degrees);
+            free(str);
+            delete fd;
+            return ok;
+        }
+    }
+    free(str);
+    delete fd;
+    ::printf("Failed to find location '%s'\n", home_str);
+    return false;
+}
+    
 #endif

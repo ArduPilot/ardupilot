@@ -69,23 +69,21 @@ AP_AHRS_DCM::update(bool skip_ins_update)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
-    float delta_t;
 
     if (_last_startup_ms == 0) {
         _last_startup_ms = AP_HAL::millis();
         load_watchdog_home();
     }
 
+    AP_InertialSensor &_ins = AP::ins();
+
     if (!skip_ins_update) {
         // tell the IMU to grab some data
-        AP::ins().update();
+        _ins.update();
     }
 
-    const AP_InertialSensor &_ins = AP::ins();
-
     // ask the IMU how much time this sensor reading represents
-    delta_t = _ins.get_delta_time();
+    const float delta_t = _ins.get_delta_time();
 
     // if the update call took more than 0.2 seconds then discard it,
     // otherwise we may move too far. This happens when arming motors
@@ -666,12 +664,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
     }
 
     //update _accel_ef_blended
+#if INS_MAX_INSTANCES > 1
     if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
         const float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
         // slew _imu1_weight over one second
         _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
         _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
-    } else {
+    } else
+#endif
+    {
         _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
     }
 
@@ -697,7 +698,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
         float airspeed;
         if (airspeed_sensor_enabled()) {
-            airspeed = _airspeed->get_airspeed();
+            airspeed = AP::airspeed()->get_airspeed();
         } else {
             airspeed = _last_airspeed;
         }
@@ -1006,7 +1007,7 @@ void AP_AHRS_DCM::estimate_wind(void)
         _last_wind_time = now;
     } else if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
-        const Vector3f airspeed = _dcm_matrix.colx() * _airspeed->get_airspeed();
+        const Vector3f airspeed = _dcm_matrix.colx() * AP::airspeed()->get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
     }
@@ -1045,17 +1046,25 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     return _have_position;
 }
 
-// return an airspeed estimate if available
 bool AP_AHRS_DCM::airspeed_estimate(float &airspeed_ret) const
 {
-    return airspeed_estimate(_airspeed?_airspeed->get_primary():0, airspeed_ret);
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr) {
+        // airspeed_estimate will also make this nullptr check and act
+        // appropriately when we call it with a dummy sensor ID.
+        return airspeed_estimate(0, airspeed_ret);
+    }
+    return airspeed_estimate(airspeed->get_primary(), airspeed_ret);
 }
 
-// return an airspeed estimate from a specific airspeed sensor instance if available
+// return an airspeed estimate:
+//  - from a real sensor if available
+//  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
+//  - otherwise from a cached wind-triangle estimate value (but returning false)
 bool AP_AHRS_DCM::airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const
 {
     if (airspeed_sensor_enabled(airspeed_index)) {
-        airspeed_ret = _airspeed->get_airspeed(airspeed_index);
+        airspeed_ret = AP::airspeed()->get_airspeed(airspeed_index);
     } else if (_flags.wind_estimation && have_gps()) {
         // estimate it via GPS speed and wind
         airspeed_ret = _last_airspeed;
@@ -1142,3 +1151,12 @@ bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
     return true;
 }
 
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool AP_AHRS_DCM::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+{
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
+        return false;
+    }
+    return true;
+}

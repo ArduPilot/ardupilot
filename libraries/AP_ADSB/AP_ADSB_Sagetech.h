@@ -17,14 +17,19 @@
 
 #include "AP_ADSB_Backend.h"
 
-#if HAL_ADSB_ENABLED
+#ifndef HAL_ADSB_SAGETECH_ENABLED
+#define HAL_ADSB_SAGETECH_ENABLED HAL_ADSB_ENABLED
+#endif
 
+#if HAL_ADSB_SAGETECH_ENABLED
 class AP_ADSB_Sagetech : public AP_ADSB_Backend {
 public:
-    // constructor
-    AP_ADSB_Sagetech(AP_ADSB &adsb);
+    using AP_ADSB_Backend::AP_ADSB_Backend;
 
-    void init() override;
+    // init - performs any required initialisation for this instance
+    bool init() override;
+
+    // update - should be called periodically
     void update() override;
 
     // static detection function
@@ -32,27 +37,26 @@ public:
 
 private:
 
-    static const uint8_t PAYLOAD_XP_MAX_SIZE  = 52;
-    //static const uint8_t PAYLOAD_MX_MAX_SIZE  = 250;
+    static const uint32_t PAYLOAD_XP_MAX_SIZE  = 52;
 
-    enum SystemStateBits {
-        Error_Transponder       = (1<<0),
-        Altitidue_Source        = (1<<1),
-        Error_GPS               = (1<<2),
-        Error_ICAO              = (1<<3),
-        Error_Over_Temperature  = (1<<4),
-        Error_Extended_Squitter = (1<<5),
-        Mode_Transponder        = (3<<6),   // 2 bit status:
+    enum class SystemStateBits {
+        Error_Transponder       = (1U<<0),
+        Altitidue_Source        = (1U<<1),
+        Error_GPS               = (1U<<2),
+        Error_ICAO              = (1U<<3),
+        Error_Over_Temperature  = (1U<<4),
+        Error_Extended_Squitter = (1U<<5),
+        Mode_Transponder        = (3U<<6),   // 2 bit status:
     };
 
-    enum Transponder_Type {
+    enum class Transponder_Type {
         Mode_C                  = 0x00,
         Mode_S_ADSB_OUT         = 0x01,
         Mode_S_ADSB_OUT_and_IN  = 0x02,
         Unknown                 = 0xFF,
     };
 
-    enum MsgTypes_XP {
+    enum class MsgType_XP {
         INVALID                 = 0,
         Installation_Set        = 0x01,
         Preflight_Set           = 0x02,
@@ -61,7 +65,7 @@ private:
         Request                 = 0x05,
 
         ACK                     = 0x80,
-        Installatioin_Response  = 0x81,
+        Installation_Response   = 0x81,
         Preflight_Response      = 0x82,
         Status_Response         = 0x83,
         ADSB_StateVector_Report = 0x91,
@@ -72,13 +76,7 @@ private:
         TISB_ADSB_Mgr_Report    = 0x96,
     };
 
-    enum Protocol {
-        NONE        = 0,
-        XP          = 1,
-        MX          = 2,
-    } protocol;
-
-    enum ParseState {
+    enum class ParseState {
         WaitingFor_Start,
         WaitingFor_AssmAddr,
         WaitingFor_MsgType,
@@ -93,7 +91,7 @@ private:
     struct Packet_XP {
         const uint8_t   start = 0xA5;
         const uint8_t   assemAddr = 0x01;
-        MsgTypes_XP  type;
+        MsgType_XP     type;
         uint8_t         id;
         uint8_t         payload_length;
         uint8_t         payload[PAYLOAD_XP_MAX_SIZE];
@@ -106,48 +104,58 @@ private:
         ParseState      state;
         uint8_t         index;
         Packet_XP       packet;
-    } message_in_xp;
+    } message_in;
 
-    // protocol XP
-    bool checksum_XP(Packet_XP &msg);
+    // compute Sum and FletcherSum values
+    uint16_t checksum_generate_XP(Packet_XP &msg) const;
+    bool checksum_verify_XP(Packet_XP &msg) const;
+    void checksum_assign_XP(Packet_XP &msg);
+
+
+    // handling inbound byte and process it in the state machine
     bool parse_byte_XP(const uint8_t data);
-    void parse_packet_XP(const Packet_XP &msg);
+
+    // handle inbound packet
+    void handle_packet_XP(const Packet_XP &msg);
+
+    // send message to serial port
     void send_msg(Packet_XP &msg);
 
-    // protocol MX
-    bool parse_byte_MX(const uint8_t data) { return false; }
-    void parse_packet_MX() {}
-
-
+    // handle inbound msgs
     void handle_adsb_in_msg(const Packet_XP &msg);
+    void handle_ack(const Packet_XP &msg);
 
-    void send_Installation();
-    void send_PreFlight();
-    void send_Operating();
-    void send_GPS();
+    // send messages to to transceiver
+    void send_msg_Installation();
+    void send_msg_PreFlight();
+    void send_msg_Operating();
+    void send_msg_GPS();
 
-    void send_packet(const MsgTypes_XP type);
-    void request_packet(const MsgTypes_XP type);
+    // send packet by type
+    void send_packet(const MsgType_XP type);
 
-    const char* type_to_str(const uint8_t type);
-    const char* systemStatsBits_to_str(const SystemStateBits systemStateBits);
+    // send msg to request a packet by type
+    void request_packet(const MsgType_XP type);
 
-    AP_HAL::UARTDriver *uart;
+    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
+    // stored on a GCS as a string field in different format, but then transmitted
+    // over mavlink as a float which is always a decimal.
+    uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
+
+    // timers for each out-bound packet
     uint32_t        last_packet_initialize_ms;
     uint32_t        last_packet_PreFlight_ms;
     uint32_t        last_packet_GPS_ms;
-    uint32_t        last_packet_send_ms;
-    MsgTypes_XP     last_packet_type_sent = MsgTypes_XP::INVALID;
-    uint32_t        response_timeout_count;
-    uint32_t        baudrate;
-
     uint32_t        last_packet_Operating_ms;
+
+    // cached variables to compare against params so we can send msg on param change.
     uint16_t        last_operating_squawk;
     int32_t         last_operating_alt;
     uint8_t         last_operating_rf_select;
-    uint8_t         last_ack_transponder_mode;
 
+    // track status changes in acks
+    uint8_t         last_ack_transponder_mode;
     Transponder_Type transponder_type = Transponder_Type::Unknown;
 };
+#endif // HAL_ADSB_SAGETECH_ENABLED
 
-#endif // HAL_ADSB_ENABLED

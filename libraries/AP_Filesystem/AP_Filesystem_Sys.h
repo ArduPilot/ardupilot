@@ -26,14 +26,23 @@ public:
     int32_t read(int fd, void *buf, uint32_t count) override;
     int32_t lseek(int fd, int32_t offset, int whence) override;
     int stat(const char *pathname, struct stat *stbuf) override;
+    void *opendir(const char *pathname) override;
+    struct dirent *readdir(void *dirp) override;
+    int closedir(void *dirp) override;
 
 private:
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;
+    int8_t file_in_sysfs(const char *fname);
 
     struct file_data {
         char *data;
         size_t length;
+    };
+
+    struct DirReadTracker {
+        size_t file_offset;
+        struct dirent curr_file;
     };
 
     struct rfile {

@@ -68,7 +68,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(rpm_update,             10,    100),
+#if AP_AIRSPEED_AUTOCAL_ENABLE
     SCHED_TASK(airspeed_ratio_update,   1,    100),
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount, &plane.camera_mount, update, 50, 100),
 #endif // HAL_MOUNT_ENABLED
@@ -102,12 +104,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper, &plane.g2.gripper, update, 10, 75),
-#endif
-#if OSD_ENABLED == ENABLED
-    SCHED_TASK(publish_osd_info, 1, 10),
-#endif
-#if GENERATOR_ENABLED
-    SCHED_TASK_CLASS(AP_Generator_RichenPower,          &plane.generator,      update,    10,     50),
 #endif
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
@@ -321,6 +317,7 @@ void Plane::efi_update(void)
 #endif
 }
 
+#if AP_AIRSPEED_AUTOCAL_ENABLE
 /*
   once a second update the airspeed calibration ratio
  */
@@ -349,7 +346,7 @@ void Plane::airspeed_ratio_update(void)
     const Vector3f &vg = gps.velocity();
     airspeed.update_calibration(vg, aparm.airspeed_max);
 }
-
+#endif // AP_AIRSPEED_AUTOCAL_ENABLE
 
 /*
   read the GPS and update position
@@ -601,17 +598,49 @@ float Plane::tecs_hgt_afe(void)
     return hgt_afe;
 }
 
-#if OSD_ENABLED == ENABLED
-void Plane::publish_osd_info()
+// vehicle specific waypoint info helpers
+bool Plane::get_wp_distance_m(float &distance) const
 {
-    AP_OSD::NavInfo nav_info;
-    nav_info.wp_distance = auto_state.wp_distance;
-    nav_info.wp_bearing = nav_controller->target_bearing_cd();
-    nav_info.wp_xtrack_error = nav_controller->crosstrack_error();
-    nav_info.wp_number = mission.get_current_nav_index();
-    osd.set_nav_info(nav_info);
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        distance = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_distance_to_destination() : 0;
+    } else {
+        distance = auto_state.wp_distance;
+    }
+    return true;
 }
-#endif
+
+bool Plane::get_wp_bearing_deg(float &bearing) const
+{
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        bearing = quadplane.using_wp_nav() ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0;
+    } else {
+        bearing = nav_controller->target_bearing_cd() * 0.01;
+    }
+    return true;
+}
+
+bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
+{
+    // see GCS_MAVLINK_Plane::send_nav_controller_output()
+    if (control_mode == &mode_manual) {
+        return false;
+    }
+    if (quadplane.in_vtol_mode()) {
+        xtrack_error = quadplane.using_wp_nav() ? quadplane.wp_nav->crosstrack_error() : 0;
+    } else {
+        xtrack_error = nav_controller->crosstrack_error();
+    }
+    return true;
+}
+
 
 // set target location (for use by scripting)
 bool Plane::set_target_location(const Location& target_loc)

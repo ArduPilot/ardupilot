@@ -120,6 +120,9 @@ public:
 
     bool get_velocity_NED(Vector3f &vec) const override;
 
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
+
 private:
     float _ki;
     float _ki_yaw;

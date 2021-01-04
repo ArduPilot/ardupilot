@@ -158,9 +158,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 0:Disabled,1:Hold
+    // @Values: 0:Disabled,1:Hold,2:ReportOnly
     // @User: Advanced
-    GSCALAR(fs_ekf_action, "FS_EKF_ACTION", 1),
+    GSCALAR(fs_ekf_action, "FS_EKF_ACTION", FS_EKF_HOLD),
 
     // @Param: FS_EKF_THRESH
     // @DisplayName: EKF failsafe variance threshold
@@ -236,11 +236,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-    // barometer ground calibration. The GND_ prefix is chosen for
-    // compatibility with previous releases of ArduPlane
-    // @Group: GND_
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
@@ -254,17 +252,41 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 2
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 3
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 4
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 5
+    // @Group: SR4_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 6
+    // @Group: SR5_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 7
+    // @Group: SR6_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
+#endif
 
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
@@ -369,7 +391,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     // @Group: OSD
     // @Path: ../libraries/AP_OSD/AP_OSD.cpp
     GOBJECT(osd, "OSD", AP_OSD),

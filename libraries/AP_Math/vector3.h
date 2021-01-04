@@ -47,6 +47,10 @@
 ****************************************/
 #pragma once
 
+#ifndef MATH_CHECK_INDEXES
+#define MATH_CHECK_INDEXES 0
+#endif
+
 #include <cmath>
 #include <float.h>
 #include <string.h>

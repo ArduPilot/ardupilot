@@ -159,6 +159,10 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
             }
         }
+        if (copter.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+            // FS_GCS_ENABLE == 2 has been removed
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
+        }
 
         // lean angle parameter check
         if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
@@ -229,6 +233,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         #endif // HELI_FRAME
 
         // checks when using range finder for RTL
+#if MODE_RTL_ENABLED == ENABLED
         if (copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
             // get terrain source from wpnav
             switch (copter.wp_nav->get_terrain_source()) {
@@ -267,6 +272,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 break;
             }
         }
+#endif
 
         // check adsb avoidance failsafe
 #if HAL_ADSB_ENABLED
@@ -492,7 +498,7 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
         // display error if something is within 60cm
         const float tolerance = 0.6f;
         if (distance <= tolerance) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Proximity %d deg, %4.2fm (want <= %0.2fm)", (int)angle_deg, (double)distance, (double)tolerance);
+            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Proximity %d deg, %4.2fm (want > %0.1fm)", (int)angle_deg, (double)distance, (double)tolerance);
             return false;
         }
     }
@@ -507,12 +513,9 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 {
     // always check if inertial nav has started and is ready
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
-    if (!ahrs.prearm_healthy()) {
-        const char *reason = ahrs.prearm_failure_reason();
-        if (reason == nullptr) {
-            reason = "AHRS not healthy";
-        }
-        check_failed(display_failure, "%s", reason);
+    char failure_msg[50] = {};
+    if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
 
@@ -528,7 +531,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 
     if (mode_requires_gps) {
         if (!copter.position_ok()) {
-            // There is no need to call prearm_failure_reason again, because prearm_healthy sure be true if we reach here
+            // vehicle level position estimate checks
             check_failed(display_failure, "Need Position Estimate");
             return false;
         }
@@ -557,8 +560,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     // check EKF compass variance is below failsafe threshold
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
-    Vector2f offset;
-    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance, offset);
+    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
     if (copter.g.fs_ekf_thresh > 0 && mag_variance.length() >= copter.g.fs_ekf_thresh) {
         check_failed(display_failure, "EKF compass variance");
         return false;

@@ -79,33 +79,29 @@ bool AP_MSP::init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_Seri
 void AP_MSP::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    uint8_t backend_instance = 0;
     AP_HAL::UARTDriver *uart = nullptr;
 
     // DJI FPV backends
     for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES; protocol_instance++) {
-        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJI_FPV, backend_instance);
+        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJI_FPV, protocol_instance);
         if (uart != nullptr) {
-            if (!init_backend(protocol_instance, uart, AP_SerialManager::SerialProtocol_DJI_FPV)) {
+            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_DJI_FPV)) {
                 break;
             }
             // initialize osd settings from OSD backend
             if (!_msp_status.osd_initialized) {
                 init_osd();
             }
-            backend_instance++;
             _msp_status.backend_count++;
         }
     }
-    backend_instance = 0;
     // generic MSP backends
     for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES-_msp_status.backend_count; protocol_instance++) {
-        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MSP, backend_instance);
+        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MSP, protocol_instance);
         if (uart != nullptr) {
-            if (!init_backend(protocol_instance, uart, AP_SerialManager::SerialProtocol_MSP)) {
+            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_MSP)) {
                 break;
             }
-            backend_instance++;
             _msp_status.backend_count++;
         }
     }

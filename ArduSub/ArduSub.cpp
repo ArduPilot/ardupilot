@@ -78,6 +78,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #ifdef USERHOOK_SUPERSLOWLOOP
     SCHED_TASK(userhook_SuperSlowLoop, 1,   75),
 #endif
+    SCHED_TASK(read_airspeed,          10,    100),
 };
 
 void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -322,6 +323,30 @@ bool Sub::control_check_barometer()
         return false;
     }
 #endif
+    return true;
+}
+
+// vehicle specific waypoint info helpers
+bool Sub::get_wp_distance_m(float &distance) const
+{
+    // see GCS_MAVLINK_Sub::send_nav_controller_output()
+    distance = sub.wp_nav.get_wp_distance_to_destination() * 0.01;
+    return true;
+}
+
+// vehicle specific waypoint info helpers
+bool Sub::get_wp_bearing_deg(float &bearing) const
+{
+    // see GCS_MAVLINK_Sub::send_nav_controller_output()
+    bearing = sub.wp_nav.get_wp_bearing_to_destination() * 0.01;
+    return true;
+}
+
+// vehicle specific waypoint info helpers
+bool Sub::get_wp_crosstrack_error_m(float &xtrack_error) const
+{
+    // no crosstrack error reported, see GCS_MAVLINK_Sub::send_nav_controller_output()
+    xtrack_error = 0;
     return true;
 }
 

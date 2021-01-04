@@ -37,6 +37,9 @@ function run_autotest() {
     BVEHICLE="$2"
     RVEHICLE="$3"
 
+    # report on what cpu's we have for later log review if needed
+    cat /proc/cpuinfo
+
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
@@ -78,12 +81,52 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Heli" "build.Helicopter" "test.Helicopter"
         continue
     fi
+    # travis-ci
     if [ "$t" == "sitltest-copter-tests1" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests1"
         continue
     fi
+    #github actions ci
+    if [ "$t" == "sitltest-copter-tests1a" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1b" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1d"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests1e" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests1e"
+        continue
+    fi
+
+    # travis-ci
     if [ "$t" == "sitltest-copter-tests2" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests2"
+        continue
+    fi
+    #github actions ci
+    if [ "$t" == "sitltest-copter-tests2a" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2a"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2b" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2b"
+        continue
+    fi
+    if [ "$t" == "sitltest-can" ]; then
+        echo "Building SITL Periph GPS"
+        $waf configure --board sitl
+        $waf copter
+        run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
         continue
     fi
     if [ "$t" == "sitltest-plane" ]; then
@@ -157,6 +200,16 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --Werror --board mRoX21-777
         $waf clean
         $waf plane
+
+        # test bi-directional dshot build
+        echo "Building KakuteF7Mini"
+        $waf configure --Werror --board KakuteF7Mini
+
+        # test bi-directional dshot build and smallest flash
+        echo "Building KakuteF7"
+        $waf configure --Werror --board KakuteF7
+        $waf clean
+        $waf copter
         continue
     fi
 
@@ -188,6 +241,17 @@ for t in $CI_BUILD_TARGET; do
         echo "Building navigator"
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
+        continue
+    fi
+
+    if [ "$t" == "replay" ]; then
+        echo "Building replay"
+        $waf configure --board sitl --debug --disable-scripting
+        $waf replay
+        echo "Building AP_DAL standalone test"
+        $waf configure --board sitl --debug --disable-scripting --no-gcs
+        $waf --target tools/AP_DAL_Standalone
+        $waf clean
         continue
     fi
 

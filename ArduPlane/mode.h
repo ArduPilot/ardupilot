@@ -6,6 +6,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Vehicle/ModeReason.h>
 
 class Mode
 {
@@ -71,7 +72,7 @@ public:
 
     // true for all q modes
     virtual bool is_vtol_mode() const { return false; }
-    virtual bool is_vtol_man_throttle() const { return false; }
+    virtual bool is_vtol_man_throttle() const;
     virtual bool is_vtol_man_mode() const { return false; }
     // guided or adsb mode
     virtual bool is_guided_mode() const { return false; }
@@ -475,6 +476,7 @@ public:
 
     bool is_vtol_mode() const override { return true; }
     bool is_vtol_man_throttle() const override { return true; }
+    virtual bool is_vtol_man_mode() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -521,7 +523,7 @@ public:
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
-    
+
 protected:
     AP_Int16 target_alt;
     AP_Int16 target_dist;
@@ -547,9 +549,15 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    // Update thermal tracking and exiting logic.
+    void update_soaring();
+
     void navigate() override;
 
 protected:
+
+    bool exit_heading_aligned() const;
+    void restore_mode(const char *reason, ModeReason modereason);
 
     bool _enter() override;
 };

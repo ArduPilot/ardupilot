@@ -71,7 +71,6 @@ static uint8_t node_id_allocation_transfer_id;
 static uavcan_protocol_NodeStatus node_status;
 static uint32_t send_next_node_id_allocation_request_at_ms;
 static uint8_t node_id_allocation_unique_id_offset;
-static uint32_t app_first_words[8];
 
 static struct {
     uint64_t ofs;
@@ -85,11 +84,12 @@ static struct {
 
 enum {
     FAIL_REASON_NO_APP_SIG = 10,
-    FAIL_REASON_BAD_LENGTH = 11,
+    FAIL_REASON_BAD_LENGTH_APP = 11,
     FAIL_REASON_BAD_BOARD_ID = 12,
     FAIL_REASON_BAD_CRC = 13,
     FAIL_REASON_IN_UPDATE = 14,
     FAIL_REASON_WATCHDOG = 15,
+    FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
 };
 
 /*
@@ -225,12 +225,7 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         flash_func_erase_sector(fw_update.sector+1);
     }
     for (uint16_t i=0; i<len/4; i++) {
-        if (fw_update.sector == 0 && (fw_update.ofs+i*4) < sizeof(app_first_words)) {
-            // keep first word aside, to be flashed last
-            app_first_words[i] = buf32[i];
-        } else {
-            flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
-        }
+        flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
     }
     fw_update.ofs += len;
     fw_update.sector_ofs += len;
@@ -240,8 +235,6 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
     }
     if (len < UAVCAN_PROTOCOL_FILE_READ_RESPONSE_DATA_MAX_LENGTH) {
         fw_update.node_id = 0;
-        // now flash the first word
-        flash_write_buffer(0, app_first_words, ARRAY_SIZE(app_first_words));
         flash_write_flush();
         if (can_check_firmware()) {
             jump_to_app();
@@ -263,8 +256,6 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
         return;
     }
-
-    memset(app_first_words, 0xff, sizeof(app_first_words));
 
     if (fw_update.node_id == 0) {
         uint32_t offset = 0;
@@ -644,7 +635,7 @@ bool can_check_firmware(void)
     }
     // check length
     if (ad->image_size > flash_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_APP;
         printf("Bad fw length %u\n", ad->image_size);
         return false;
     }
@@ -658,8 +649,8 @@ bool can_check_firmware(void)
     const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
     uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
     if ((len1 + desc_len) > ad->image_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH;
-        printf("Bad fw length %u\n", ad->image_size);
+        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_DESCRIPTOR;
+        printf("Bad fw descriptor length %u\n", ad->image_size);
         return false;
     }
 

@@ -28,7 +28,8 @@ public:
     void register_timer_failsafe(AP_HAL::Proc, uint32_t period_us) override;
 
     bool in_main_thread() const override;
-    void system_initialized() override;
+    bool is_system_initialized() override { return _initialized; };
+    void set_system_initialized() override;
 
     void reboot(bool hold_in_bootloader) override;
 

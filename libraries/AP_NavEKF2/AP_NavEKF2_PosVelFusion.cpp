@@ -2,12 +2,7 @@
 
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-
-#include <stdio.h>
+#include <AP_DAL/AP_DAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -41,24 +36,19 @@ void NavEKF2_core::ResetVelocity(void)
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
             P[4][4] = P[3][3] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
-            // clear the timeout flags and counters
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - extNavVelMeasTime_ms < 250) {
             // use external nav data as the 2nd preference
             stateStruct.velocity = extNavVelDelayed.vel;
             P[5][5] = P[4][4] = P[3][3] = sq(extNavVelDelayed.err);
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         } else {
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
             // set the variances using the likely speed range
             P[4][4] = P[3][3] = sq(25.0f);
-            // clear the timeout flags and counters
-            velTimeout = false;
-            lastVelPassTime_ms = imuSampleTime_ms;
         }
+        // clear the timeout flags and counters
+        velTimeout = false;
+        lastVelPassTime_ms = imuSampleTime_ms;
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].velocity.x = stateStruct.velocity.x;
@@ -224,7 +214,8 @@ void NavEKF2_core::ResetHeight(void)
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
-    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
+    if (inFlight && !gpsNotAvailable && frontend->_fusionModeGPS == 0 &&
+        dal.gps().have_vertical_velocity()) {
         stateStruct.velocity.z =  gpsDataNew.vel.z;
     } else if (inFlight && useExtNavVel) {
         stateStruct.velocity.z = extNavVelNew.vel.z;
@@ -290,7 +281,7 @@ bool NavEKF2_core::resetHeightDatum(void)
     // record the old height estimate
     float oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
-    AP::baro().update_calibration();
+    dal.baro().update_calibration();
     // reset the height state
     stateStruct.position.z = 0.0f;
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
@@ -306,7 +297,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            EKF_origin.alt = AP::gps().location().alt;
+            EKF_origin.alt = dal.gps().location().alt;
         }
         ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
@@ -322,7 +313,7 @@ bool NavEKF2_core::resetHeightDatum(void)
 */
 void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 {
-    const Vector3f &posOffsetBody = AP::gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
+    const Vector3f &posOffsetBody = dal.gps().get_antenna_offset(gpsDataDelayed.sensor_idx) - accelPosOffset;
     if (posOffsetBody.is_zero()) {
         return;
     }
@@ -348,7 +339,7 @@ void NavEKF2_core::CorrectGPSForAntennaOffset(gps_elements &gps_data) const
 void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 {
 #if HAL_VISUALODOM_ENABLED
-    AP_VisualOdom *visual_odom = AP::visualodom();
+    const auto *visual_odom = dal.visualodom();
     if (visual_odom == nullptr) {
         return;
     }
@@ -367,7 +358,7 @@ void NavEKF2_core::CorrectExtNavForSensorOffset(Vector3f &ext_position) const
 void NavEKF2_core::CorrectExtNavVelForSensorOffset(Vector3f &ext_velocity) const
 {
 #if HAL_VISUALODOM_ENABLED
-    AP_VisualOdom *visual_odom = AP::visualodom();
+    const auto *visual_odom = dal.visualodom();
     if (visual_odom == nullptr) {
         return;
     }
@@ -568,13 +559,10 @@ void NavEKF2_core::SelectVelPosFusion()
 // fuse selected position, velocity and height measurements
 void NavEKF2_core::FuseVelPosNED()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseVelPosNED);
-
     // health is set bad until test passed
-    velHealth = false;
-    posHealth = false;
-    hgtHealth = false;
+    bool velHealth = false;                 // boolean true if velocity measurements have passed innovation consistency check
+    bool posHealth = false;                 // boolean true if position measurements have passed innovation consistency check
+    bool hgtHealth = false;                 // boolean true if height measurements have passed innovation consistency check
 
     // declare variables used to check measurement errors
     Vector3f velInnov;
@@ -703,8 +691,6 @@ void NavEKF2_core::FuseVelPosNED()
                     posTestRatio = 0.0f;
                     velTestRatio = 0.0f;
                 }
-            } else {
-                posHealth = false;
             }
         }
 
@@ -713,7 +699,8 @@ void NavEKF2_core::FuseVelPosNED()
             // test velocity measurements
             uint8_t imax = 2;
             // Don't fuse vertical velocity observations if inhibited by the user or if we are using synthetic data
-            if (!useExtNavVel && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE || frontend->inhibitGpsVertVelUse)) {
+            if (!useExtNavVel && (frontend->_fusionModeGPS > 0 || PV_AidingMode != AID_ABSOLUTE ||
+                                  !dal.gps().have_vertical_velocity())) {
                 imax = 1;
             }
             float innovVelSumSq = 0; // sum of squares of velocity innovations
@@ -748,8 +735,6 @@ void NavEKF2_core::FuseVelPosNED()
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     velTestRatio = 0.0f;
                 }
-            } else {
-                velHealth = false;
             }
         }
 
@@ -948,9 +933,6 @@ void NavEKF2_core::FuseVelPosNED()
             }
         }
     }
-
-    // stop performance timer
-    hal.util->perf_end(_perf_FuseVelPosNED);
 }
 
 /********************************************************
@@ -968,9 +950,9 @@ void NavEKF2_core::selectHeightForFusion()
     // correct range data for the body frame position offset relative to the IMU
     // the corrected reading is the reading that would have been taken if the sensor was
     // co-located with the IMU
-    const RangeFinder *_rng = AP::rangefinder();
+    const auto *_rng = dal.rangefinder();
     if (_rng && rangeDataToFuse) {
-        const AP_RangeFinder_Backend *sensor = _rng->get_backend(rangeDataDelayed.sensor_idx);
+        const auto *sensor = _rng->get_backend(rangeDataDelayed.sensor_idx);
         if (sensor != nullptr) {
             Vector3f posOffsetBody = sensor->get_pos_offset() - accelPosOffset;
             if (!posOffsetBody.is_zero()) {

@@ -70,7 +70,8 @@ public:
     // Backend driver types
     enum EFI_Communication_Type {
         EFI_COMMUNICATION_TYPE_NONE      = 0,
-        EFI_COMMUNICATION_TYPE_SERIAL_MS = 1
+        EFI_COMMUNICATION_TYPE_SERIAL_MS = 1,
+        EFI_COMMUNICATION_TYPE_NWPMU     = 2,
     };
 
     static AP_EFI *get_singleton(void) {

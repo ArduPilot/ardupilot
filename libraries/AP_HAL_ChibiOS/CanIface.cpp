@@ -366,6 +366,9 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+    if (mode_ != FilteredMode) {
+        return false;
+    }
     if (num_configs <= NumFilters && filter_configs != nullptr) {
         CriticalSectionLocker lock;
 
@@ -516,7 +519,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
     /*
      * Read the frame contents
      */
-    AP_HAL::CANFrame frame;
+    AP_HAL::CANFrame &frame = isr_rx_frame;
     const bxcan::RxMailboxType& rf = can_->RxMailbox[fifo_index];
 
     if ((rf.RIR & bxcan::RIR_IDE) == 0) {
@@ -546,7 +549,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
     /*
      * Store with timeout into the FIFO buffer and signal update event
      */
-    CanRxItem rx_item;
+    CanRxItem &rx_item = isr_rx_item;
     rx_item.frame = frame;
     rx_item.timestamp_us = timestamp_us;
     rx_item.flags = 0;
@@ -779,6 +782,9 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
         hal.can[self_index_] = this;
 #endif
     }
+
+    bitrate_ = bitrate;
+    mode_ = mode;
 
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = new CANIface(0);

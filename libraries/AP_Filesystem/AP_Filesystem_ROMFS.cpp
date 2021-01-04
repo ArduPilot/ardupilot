@@ -212,4 +212,28 @@ bool AP_Filesystem_ROMFS::set_mtime(const char *filename, const uint32_t mtime_s
     return false;
 }
 
+/*
+  load a full file. Use delete to free the data
+  we override this in ROMFS to avoid taking twice the memory
+*/
+FileData *AP_Filesystem_ROMFS::load_file(const char *filename)
+{
+    FileData *fd = new FileData(this);
+    if (!fd) {
+        return nullptr;
+    }
+    fd->data = AP_ROMFS::find_decompress(filename, fd->length);
+    if (fd->data == nullptr) {
+        delete fd;
+        return nullptr;
+    }
+    return fd;
+}
+
+// unload data from load_file()
+void AP_Filesystem_ROMFS::unload_file(FileData *fd)
+{
+    AP_ROMFS::free(fd->data);
+}
+
 #endif // HAL_HAVE_AP_ROMFS_EMBEDDED_H

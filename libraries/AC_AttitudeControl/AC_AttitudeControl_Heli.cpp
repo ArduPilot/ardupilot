@@ -78,6 +78,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: RAT_RLL_SMAX
+    // @DisplayName: Roll slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 2, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_PIT_P
@@ -144,6 +152,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: RAT_PIT_SMAX
+    // @DisplayName: Pitch slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 3, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: RAT_YAW_P
@@ -210,6 +226,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
+
+    // @Param: RAT_YAW_SMAX
+    // @DisplayName: Yaw slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 4, AC_AttitudeControl_Heli, AC_HELI_PID),
 
     // @Param: PIRO_COMP
@@ -362,13 +386,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     if (_flags_heli.leaky_i) {
         _pid_rate_roll.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
-    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _flags_heli.limit_roll) + _actuator_sysid.x;
+    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x,  _motors.limit.roll) + _actuator_sysid.x;
 
     if (_flags_heli.leaky_i) {
         _pid_rate_pitch.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _flags_heli.limit_pitch) + _actuator_sysid.y;
+    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y,  _motors.limit.pitch) + _actuator_sysid.y;
 
     // use pid library to calculate ff
     float roll_ff = _pid_rate_roll.get_ff();
@@ -424,7 +448,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_ra
         _pid_rate_yaw.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _flags_heli.limit_yaw) + _actuator_sysid.z;
+    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads,  _motors.limit.yaw) + _actuator_sysid.z;
 
     // use pid library to calculate ff
     float vff = _pid_rate_yaw.get_ff()*_feedforward_scalar;

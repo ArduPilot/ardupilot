@@ -6,7 +6,7 @@ TARGET_HW_PX4_FMU_V2                    9
 TARGET_HW_PX4_FMU_V3                    9 # same as FMU_V2
 TARGET_HW_PX4_FMU_V4                   11
 TARGET_HW_PX4_FMU_V4_PRO               13
-TARGET_HW_UVIFY_CORE		       20
+TARGET_HW_UVIFY_CORE		           20
 TARGET_HW_PX4_FMU_V5                   50
 TARGET_HW_PX4_FMU_V5X                  51
 TARGET_HW_PX4_FMU_V6                   52
@@ -28,11 +28,18 @@ TARGET_HW_AV_V1                        29
 TARGET_HW_KAKUTEF7                    123
 TARGET_HW_SMARTAP_PRO                  32
 TARGET_HW_MODALAI_FC_V1             41775
-TARGET_HW_HOLYBRO_PIX32_V5                  78
+TARGET_HW_HOLYBRO_PIX32_V5             78
+TARGET_HW_FMUK66_V3                    28
+TARGET_HW_AV_X_V1                      29
+TARGET_HW_FMUK66_E                     30
+TARGET_HW_FMURT1062-V1                 31
+
 
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
+ 
+Reserved "GUMSTIX [BL] FMU v6"         54
 
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
@@ -92,7 +99,7 @@ AP_HW_CUAV_X7_PRO                    1010
 AP_HW_SUCCEXF4                       1011
 AP_HW_LIGHTSPARKMINI                 1012
 AP_HW_MATEKH743                      1013
-AP_HW_MRO_CONTROL_ZERO_PR            1014
+AP_HW_MRO_MAXXIUM                    1014
 AP_HW_MRO_NEXUS                      1015
 AP_HW_HITEC_MOSAIC                   1016
 AP_HW_MRO_PIXRACER_PRO               1017
@@ -100,3 +107,12 @@ AP_HW_TWD_H7                         1018
 AP_HW_MAMBA405                       1019
 AP_HW_H31_PIXC4                      1020
 AP_HW_QioTekZealotF427               1021
+AP_HW_MRO_CTRL_ZERO_CLASSIC          1022
+AP_HW_MRO_CTRL_ZERO_H7               1023
+AP_HW_MRO_CTRL_ZERO_OEM_H7           1024
+AP_HW_BEASTH7                        1025
+AP_HW_BEASTF7                        1026
+
+AP_HW_CUBEORANGE_PERIPH              1400
+AP_HW_CUBEBLACK_PERIPH               1401
+AP_HW_PIXRACER_PERIPH                1402

@@ -44,6 +44,7 @@ public:
         MOTOR_FRAME_HELI_DUAL = 11,
         MOTOR_FRAME_DODECAHEXA = 12,
         MOTOR_FRAME_HELI_QUAD = 13,
+        MOTOR_FRAME_DECA = 14,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -147,6 +148,9 @@ public:
         uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
+
+    // set limit flag for pitch, roll and yaw
+    void set_limit_flag_pitch_roll_yaw(bool flag);
 
     //
     // virtual functions that should be implemented by child classes

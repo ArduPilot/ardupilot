@@ -31,6 +31,7 @@
 #include "SIM_RichenPower.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
+#include "SIM_Battery.h"
 #include <Filter/Filter.h>
 
 namespace SITL {
@@ -142,6 +143,7 @@ public:
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
+    void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
@@ -170,7 +172,12 @@ protected:
     float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
     float battery_voltage = -1.0f;
     float battery_current;
+
+    // battery model
+    Battery battery;
+
     uint8_t num_motors = 1;
+    uint8_t vtol_motor_start;
     float rpm[12];
     uint8_t rcin_chan_count;
     float rcin[12];
@@ -316,6 +323,7 @@ private:
     Gripper_EPM *gripper_epm;
     Parachute *parachute;
     RichenPower *richenpower;
+    IntelligentEnergy24 *ie24;
     SIM_Precland *precland;
     class I2C *i2c;
 };

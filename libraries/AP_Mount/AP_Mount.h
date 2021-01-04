@@ -193,6 +193,9 @@ protected:
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
+    // Check if instance backend is ok
+    bool check_primary() const;
+    bool check_instance(uint8_t instance) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_mount_configure(const mavlink_message_t &msg);

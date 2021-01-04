@@ -55,19 +55,16 @@ public:
     void toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms) override;
 #endif
 
-#ifdef USE_POSIX
-    /*
-      initialise (or re-initialise) filesystem storage
-     */
-    bool fs_init(void) override;
-#endif
-
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     // request information on running threads
     size_t thread_info(char *buf, size_t bufsize) override;
+#endif
+#if CH_CFG_USE_SEMAPHORES
+    // request information on dma contention
+    size_t dma_info(char *buf, size_t bufsize) override;
 #endif
     
 private:

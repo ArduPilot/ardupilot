@@ -17,31 +17,30 @@
 #include "AP_ADSB.h"
 
 #if HAL_ADSB_ENABLED
-
 class AP_ADSB_Backend
 {
 public:
-    // constructor. This incorporates initialization as well.
-    AP_ADSB_Backend(AP_ADSB &_frontend);
+    // constructor.
+    AP_ADSB_Backend(AP_ADSB &frontend, uint8_t instance);
 
+    // we declare a virtual destructor so that ADSB drivers can
+    // override with a custom destructor if need be
+    virtual ~AP_ADSB_Backend(void) {}
 
-    virtual void init() = 0;
+    // static detection function
+    static bool detect();
 
     virtual void update() = 0;
 
-    // handle mavlink messages
-    virtual void handle_msg(const mavlink_channel_t chan, const mavlink_message_t &msg) {}
+    virtual bool init() { return true; }
+
 protected:
 
+    uint8_t _instance;
+
+    AP_HAL::UARTDriver *_port;
+
     // references
-    AP_ADSB &frontend;
-
-
-    // semaphore for access to shared frontend data
-    //HAL_Semaphore _sem;
-
-private:
-
+    AP_ADSB &_frontend;
 };
-
 #endif // HAL_ADSB_ENABLED

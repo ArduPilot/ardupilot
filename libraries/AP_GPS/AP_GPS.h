@@ -43,13 +43,17 @@
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
 
-#ifndef GPS_UBLOX_MOVING_BASELINE
-#define GPS_UBLOX_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
+#ifndef GPS_MOVING_BASELINE
+#define GPS_MOVING_BASELINE !HAL_MINIMIZE_FEATURES && GPS_MAX_RECEIVERS>1
 #endif
 
 #ifndef HAL_MSP_GPS_ENABLED
 #define HAL_MSP_GPS_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
+
+#if GPS_MOVING_BASELINE
+#include "MovingBase.h"
+#endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
 
@@ -110,6 +114,7 @@ public:
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
         GPS_TYPE_MSP = 19,
+        GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
     };
 
     /// GPS status codes
@@ -518,6 +523,11 @@ protected:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
+    AP_Int8 _primary;
+
+#if GPS_MOVING_BASELINE
+    MovingBase mb_params[GPS_MAX_RECEIVERS];
+#endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
 
@@ -651,7 +661,8 @@ private:
         NONE        = 0,
         USE_BEST    = 1,
         BLEND       = 2,
-        USE_SECOND  = 3,
+        //USE_SECOND  = 3, deprecated for new primary param
+        USE_PRIMARY_IF_3D_FIX = 4,
     };
 
     // used for flight testing with GPS loss
@@ -659,9 +670,6 @@ private:
 
     // used for flight testing with GPS yaw loss
     bool _force_disable_gps_yaw;
-
-    // used to ensure we continue sending status messages if we ever detected the second GPS
-    bool has_had_second_instance;
 };
 
 namespace AP {

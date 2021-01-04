@@ -9,7 +9,8 @@ if not port then
 end
 
 -- begin the serial port
-port:begin(9600)
+-- NMEA is usually 4800 or 9600
+port:begin(4800)
 port:set_flow_control(0)
 
 -- table for strings used in decoding
@@ -17,6 +18,7 @@ local term = {}
 local term_is_checksum = false
 local term_number = 1
 local checksum = 0
+local string_complete = false
 
 -- maximum number of terms we expect in the message
 local max_terms = 15
@@ -26,7 +28,7 @@ local max_term_length = 5
 -- decode a basic NMEA string, only check the checksum
 local function decode_NMEA(byte)
     local char = string.char(byte)
-    if char == ',' or char == '\r' or char == '\n' or char == '*' then
+    if (char == ',' or char == '\r' or char == '\n' or char == '*') and not string_complete then
         if char == ',' then
             -- end of a term, but still counted for checksum
             checksum = checksum ~ byte
@@ -35,6 +37,7 @@ local function decode_NMEA(byte)
         -- null terminate and decode latest term
         if term_is_checksum then
             -- test the checksum
+            string_complete = true
             return checksum == tonumber(term[term_number],16)
         else
             -- we could further decode the message data here
@@ -43,6 +46,11 @@ local function decode_NMEA(byte)
         if char == '*' then
             -- the next characters make up the checksum
             term_is_checksum = true
+        end
+
+        -- nothing in current term, add a space, makes the print work
+        if not term[term_number] then
+            term[term_number] = ' '
         end
 
         -- move onto next term
@@ -57,6 +65,7 @@ local function decode_NMEA(byte)
         term_number = 1
         checksum = 0
         term = {}
+        string_complete = false
         return false
     end
     

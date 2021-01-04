@@ -349,9 +349,11 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.yawDeg   = degrees(y);
     fdm.quaternion.from_rotation_matrix(dcm);
     fdm.airspeed = airspeed_pitot;
+    fdm.velocity_air_bf = velocity_air_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.num_motors = num_motors;
+    fdm.vtol_motor_start = vtol_motor_start;
     memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = range;
@@ -564,7 +566,7 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     // constrain height to the ground
     if (on_ground()) {
         if (!was_on_ground && AP_HAL::millis() - last_ground_contact_ms > 1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "SIM Hit ground at %f m/s", velocity_ef.z);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SIM Hit ground at %f m/s", velocity_ef.z);
             last_ground_contact_ms = AP_HAL::millis();
         }
         position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
@@ -885,6 +887,11 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
     sitl->shipsim.update();
+
+    // update IntelligentEnergy 2.4kW generator
+    if (ie24) {
+        ie24->update(input);
+    }
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)

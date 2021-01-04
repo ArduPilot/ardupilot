@@ -143,7 +143,7 @@ void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_u
     _failsafe = failsafe;
 }
 
-void Scheduler::system_initialized() {
+void Scheduler::set_system_initialized() {
     if (_initialized) {
         AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");
@@ -153,17 +153,21 @@ void Scheduler::system_initialized() {
     // i386 with gcc doesn't work with FE_INVALID
     exceptions |= FE_INVALID;
 #endif
+#if !defined(HAL_BUILD_AP_PERIPH)
     if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
         feenableexcept(exceptions);
     } else {
         feclearexcept(exceptions);
     }
+#else
+    feclearexcept(exceptions);
+#endif
     _initialized = true;
 }
 
 void Scheduler::sitl_end_atomic() {
     if (_nested_atomic_ctr == 0) {
-        hal.uartA->printf("NESTED ATOMIC ERROR\n");
+        hal.serial(0)->printf("NESTED ATOMIC ERROR\n");
     } else {
         _nested_atomic_ctr--;
     }
@@ -231,24 +235,23 @@ void Scheduler::_run_io_procs()
 
     _in_io_proc = false;
 
-    hal.uartA->_timer_tick();
-    hal.uartB->_timer_tick();
-    hal.uartC->_timer_tick();
-    hal.uartD->_timer_tick();
-    hal.uartE->_timer_tick();
-    hal.uartF->_timer_tick();
-    hal.uartG->_timer_tick();
-    hal.uartH->_timer_tick();
+    for (uint8_t i=0; i<hal.num_serial; i++) {
+        hal.serial(i)->_timer_tick();
+    }
     hal.storage->_timer_tick();
 
+#ifndef HAL_BUILD_AP_PERIPH
     // in lieu of a thread-per-bus:
     ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
+#endif
 
 #if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     AP::RC().update();
+#endif
 }
 
 /*

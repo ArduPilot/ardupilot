@@ -92,7 +92,8 @@ public:
 
     bool     in_main_thread() const override { return get_main_thread() == chThdGetSelfX(); }
 
-    void     system_initialized() override;
+    void     set_system_initialized() override;
+    bool     is_system_initialized() override { return _initialized; };
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);
@@ -172,5 +173,12 @@ private:
     void _run_timers();
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);
+
+#if defined STM32H7
+    void check_low_memory_is_zero();
+#endif
+
+    // check for free stack space
+    void check_stack_free(void);
 };
 #endif

@@ -7,7 +7,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #pragma GCC diagnostic ignored "-Wunused-result"
 
@@ -36,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 // state of GPS emulation
 static struct gps_state {
     /* pipe emulating UBLOX GPS serial stream */
-    int gps_fd, client_fd;
+    int gps_fd, client_fd, ext_fifo_fd;
     uint32_t last_update; // milliseconds
 
     uint8_t next_index;
@@ -65,6 +66,7 @@ ssize_t SITL_State::gps_read(int fd, void *buf, size_t count)
 /*
   setup GPS input pipe
  */
+const char * gps_fifo[2] = {"/tmp/ap_gps0", "/tmp/ap_gps1"}; 
 int SITL_State::gps_pipe(uint8_t idx)
 {
     int fd[2];
@@ -72,6 +74,10 @@ int SITL_State::gps_pipe(uint8_t idx)
         return gps_state[idx].client_fd;
     }
     pipe(fd);
+    if (mkfifo(gps_fifo[idx], 0666) < 0) {
+        printf("MKFIFO failed with %s\n", strerror(errno));
+    }
+    
     gps_state[idx].gps_fd    = fd[1];
     gps_state[idx].client_fd = fd[0];
     gps_state[idx].last_update = AP_HAL::millis();
@@ -89,6 +95,12 @@ void SITL_State::_gps_write(const uint8_t *p, uint16_t size, uint8_t instance)
 {
     if (instance == 1 && _sitl->gps_disable[instance]) {
         return;
+    }
+    // also write to external fifo
+    int fd = open(gps_fifo[instance], O_WRONLY | O_NONBLOCK);
+    if (fd >= 0) {
+        write(fd, p, size);
+        close(fd);
     }
     while (size--) {
         if (_sitl->gps_byteloss[instance] > 0.0f) {
@@ -637,9 +649,9 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
 /*
   NMEA checksum
  */
-uint16_t SITL_State::_gps_nmea_checksum(const char *s)
+uint8_t SITL_State::_gps_nmea_checksum(const char *s)
 {
-    uint16_t cs = 0;
+    uint8_t cs = 0;
     const uint8_t *b = (const uint8_t *)s;
     for (uint16_t i=1; s[i]; i++) {
         cs ^= b[i];
@@ -653,7 +665,7 @@ uint16_t SITL_State::_gps_nmea_checksum(const char *s)
 void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 {
     char *s = nullptr;
-    uint16_t csum;
+    uint8_t csum;
     char trailer[6];
 
     va_list ap;

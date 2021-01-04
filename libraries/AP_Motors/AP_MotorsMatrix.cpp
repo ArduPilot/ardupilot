@@ -874,6 +874,39 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             }
             break;
 
+        case MOTOR_FRAME_DECA:
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    add_motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
+                    add_motor(AP_MOTORS_MOT_2,    36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
+                    add_motor(AP_MOTORS_MOT_3,    72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
+                    add_motor(AP_MOTORS_MOT_4,   108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4);
+                    add_motor(AP_MOTORS_MOT_5,   144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5);
+                    add_motor(AP_MOTORS_MOT_6,   180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6);
+                    add_motor(AP_MOTORS_MOT_7,  -144, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7);
+                    add_motor(AP_MOTORS_MOT_8,  -108, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8);
+                    add_motor(AP_MOTORS_MOT_9,   -72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9);
+                    add_motor(AP_MOTORS_MOT_10,  -36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10);
+                    break;
+                case MOTOR_FRAME_TYPE_X:
+                    add_motor(AP_MOTORS_MOT_1,    18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
+                    add_motor(AP_MOTORS_MOT_2,    54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
+                    add_motor(AP_MOTORS_MOT_3,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
+                    add_motor(AP_MOTORS_MOT_4,   126, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4);
+                    add_motor(AP_MOTORS_MOT_5,   162, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5);
+                    add_motor(AP_MOTORS_MOT_6,  -162, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6);
+                    add_motor(AP_MOTORS_MOT_7,  -126, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7);
+                    add_motor(AP_MOTORS_MOT_8,   -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8);
+                    add_motor(AP_MOTORS_MOT_9,   -54, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  9);
+                    add_motor(AP_MOTORS_MOT_10,  -18, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10);
+                    break;
+                default:
+                    // deca frame class does not support this frame type
+                    success = false;
+                    break;
+            }
+            break;
+
         default:
             // matrix doesn't support the configured class
             success = false;
@@ -934,5 +967,16 @@ void AP_MotorsMatrix::thrust_compensation(void)
 {
     if (_thrust_compensation_callback) {
         _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
+    }
+}
+
+/*
+  disable the use of motor torque to control yaw. Used when an
+  external mechanism such as vectoring is used for yaw control
+*/
+void AP_MotorsMatrix::disable_yaw_torque(void)
+{
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        _yaw_factor[i] = 0;
     }
 }

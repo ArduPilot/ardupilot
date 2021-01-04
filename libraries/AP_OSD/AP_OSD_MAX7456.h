@@ -18,6 +18,7 @@
 #include <AP_OSD/AP_OSD_Backend.h>
 #include <AP_Common/Bitmask.h>
 
+#if HAL_WITH_OSD_BITMAP
 class AP_OSD_MAX7456 : public AP_OSD_Backend
 {
 
@@ -88,3 +89,4 @@ private:
 
     uint16_t video_lines;
 };
+#endif // HAL_WITH_OSD_BITMAP

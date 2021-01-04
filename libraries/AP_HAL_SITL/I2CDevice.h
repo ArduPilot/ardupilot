@@ -19,6 +19,8 @@
 #include <inttypes.h>
 
 #include <AP_HAL/HAL.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
@@ -79,6 +81,7 @@ public:
 #define I2C_M_RD 1
 #define I2C_RDWR 0
     struct i2c_msg {
+        uint8_t bus;
         uint8_t addr;
         uint8_t flags;
         uint8_t *buf;
@@ -125,3 +128,4 @@ protected:
     #define NUM_SITL_I2C_BUSES 4
     static I2CBus buses[];
 };
+#endif //#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)

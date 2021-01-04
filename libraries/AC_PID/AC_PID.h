@@ -8,10 +8,12 @@
 #include <stdlib.h>
 #include <cmath>
 #include <AP_Logger/AP_Logger.h>
+#include <Filter/SlewLimiter.h>
 
 #define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_DFILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PID_RESET_TC          0.16f   // Time constant for integrator reset decay to zero
 
 /// @class	AC_PID
 /// @brief	Copter PID control class
@@ -19,7 +21,8 @@ class AC_PID {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
+    AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
+           float dt, float initial_srmax=0, float initial_srtau=1.0);
 
     // set_dt - set time step in seconds
     void set_dt(float dt);
@@ -52,6 +55,9 @@ public:
 
     // reset_I - reset the integrator
     void reset_I();
+
+    // reset_I - reset the integrator smoothly to zero within 0.5 seconds
+    void reset_I_smoothly();
 
     // reset_filter - input filter will be reset to the next value provided to set_input()
     void reset_filter() {
@@ -105,6 +111,12 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    // the time constant tau is not currently configurable, but is set
+    // as an AP_Float to make it easy to make it configurable for a
+    // single user of AC_PID by adding the parameter in the param
+    // table of the parent class. It is made public for this reason
+    AP_Float _slew_rate_tau;
+    
 protected:
 
     // parameters
@@ -116,6 +128,9 @@ protected:
     AP_Float _filt_T_hz;         // PID target filter frequency in Hz
     AP_Float _filt_E_hz;         // PID error filter frequency in Hz
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
+    AP_Float _slew_rate_max;
+
+    SlewLimiter _slew_limiter{_slew_rate_max, _slew_rate_tau};
 
     // flags
     struct ac_pid_flags {
@@ -128,6 +143,8 @@ protected:
     float _target;            // target value to enable filtering
     float _error;             // error value to enable filtering
     float _derivative;        // derivative value to enable filtering
+    uint16_t _reset_counter;  // loop counter for reset decay
+    uint64_t _reset_last_update; //time in microseconds of last update to reset_I
 
     AP_Logger::PID_Info _pid_info;
 };

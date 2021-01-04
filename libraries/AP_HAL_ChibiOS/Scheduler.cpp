@@ -19,6 +19,7 @@
 #include "AP_HAL_ChibiOS.h"
 #include "Scheduler.h"
 #include "Util.h"
+#include "GPIO.h"
 
 #include <AP_HAL_ChibiOS/UARTDriver.h>
 #include <AP_HAL_ChibiOS/AnalogIn.h>
@@ -34,9 +35,10 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include "hwdef/common/flash.h"
 #include "hwdef/common/watchdog.h"
+#include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
-#include "sdcard.h"
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -257,8 +259,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
         AP::logger().StopLogging();
     }
 
-    // stop sdcard driver, if active
-    sdcard_stop();
+    // unmount filesystem, if active
+    AP::FS().unmount();
 #endif
 
 #if !defined(NO_FASTBOOT)
@@ -343,6 +345,11 @@ bool Scheduler::in_expected_delay(void) const
             return true;
         }
     }
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_BOOTLOADER_BUILD)
+    if (stm32_flash_recent_erase()) {
+        return true;
+    }
+#endif
     return false;
 }
 
@@ -365,11 +372,16 @@ void Scheduler::_monitor_thread(void *arg)
         if (using_watchdog) {
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
         }
+
+        // if running memory guard then check all allocations
+        malloc_check(nullptr);
+
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
+#ifndef HAL_NO_LOGGING
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
                 AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
@@ -385,8 +397,9 @@ void Scheduler::_monitor_thread(void *arg)
                                    pd.spi_count,
                                    pd.i2c_count);
                 }
+#endif
         }
-        if (loop_delay >= 500) {
+        if (loop_delay >= 500 && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             INTERNAL_ERROR(AP_InternalError::error_t::main_loop_stuck);
         }
@@ -415,6 +428,10 @@ void Scheduler::_monitor_thread(void *arg)
     }
 #endif // HAL_NO_LOGGING
 
+#ifndef IOMCU_FW
+    // setup GPIO interrupt quotas
+    hal.gpio->timer_tick();
+#endif
     }
 }
 #endif // HAL_NO_MONITOR_THREAD
@@ -460,24 +477,68 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+#ifndef HAL_NO_LOGGING
     uint32_t last_sd_start_ms = AP_HAL::millis();
+#endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+    uint32_t last_stack_check_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#if !defined(HAL_NO_LOGGING) || CH_DBG_ENABLE_STACK_CHECK == TRUE
+        uint32_t now = AP_HAL::millis();
+#endif
+
+#ifndef HAL_NO_LOGGING
         if (!hal.util->get_soft_armed()) {
             // if sdcard hasn't mounted then retry it every 3s in the IO
             // thread when disarmed
-            uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
-                sdcard_retry();
+                AP::FS().retry_mount();
             }
+        }
+#endif
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+        if (now - last_stack_check_ms > 1000) {
+            last_stack_check_ms = now;
+            sched->check_stack_free();
+        }
+#endif
+    }
+}
+
+#if defined(STM32H7)
+/*
+  the H7 has 64k of ITCM memory at address zero. We reserve 1k of it
+  to prevent nullptr being valid. This function checks that memory is
+  always zero
+ */
+void Scheduler::check_low_memory_is_zero()
+{
+    const uint32_t *lowmem = nullptr;
+    // we start at address 0x1 as reading address zero causes a fault
+    for (uint16_t i=1; i<256; i++) {
+        if (lowmem[i] != 0) {
+            // re-use memory guard internal error
+            AP_memory_guard_error(1023);
+            break;
+        }
+    }
+    // we can't do address 0, but can check next 3 bytes
+    const uint8_t *addr0 = (const uint8_t *)0;
+    for (uint8_t i=1; i<4; i++) {
+        if (addr0[i] != 0) {
+            AP_memory_guard_error(1023);
+            break;
         }
     }
 }
+#endif // STM32H7
 
 void Scheduler::_storage_thread(void* arg)
 {
@@ -486,18 +547,28 @@ void Scheduler::_storage_thread(void* arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(10000);
     }
+#if defined STM32H7
+    uint8_t memcheck_counter=0;
+#endif
     while (true) {
         sched->delay_microseconds(10000);
 
         // process any pending storage writes
         hal.storage->_timer_tick();
+
+#if defined STM32H7
+        if (memcheck_counter++ % 50 == 0) {
+            // run check at 2Hz
+            sched->check_low_memory_is_zero();
+        }
+#endif
     }
 }
 
-void Scheduler::system_initialized()
+void Scheduler::set_system_initialized()
 {
     if (_initialized) {
-        AP_HAL::panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::set_system_initialized called"
                       "more than once");
     }
     _initialized = true;
@@ -639,5 +710,38 @@ void Scheduler::watchdog_pat(void)
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  check we have enough stack free on all threads and the ISR stack
+ */
+void Scheduler::check_stack_free(void)
+{
+    // we raise an internal error stack_overflow when the available
+    // stack on any thread or the ISR stack drops below this
+    // threshold. This means we get an overflow error when we haven't
+    // yet completely run out of stack. This gives us a good
+    // pre-warning when we are getting too close
+#if defined(STM32F1)
+    const uint32_t min_stack = 32;
+#else
+    const uint32_t min_stack = 64;
+#endif
+
+    if (stack_free(&__main_stack_base__) < min_stack) {
+        // use "line number" of 0xFFFF for ISR stack low
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
+    }
+
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (stack_free(tp->wabase) < min_stack) {
+            // use task priority for line number. This allows us to
+            // identify the task fairly reliably
+            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->prio);
+        }
+    }
+}
+#endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
 
 #endif // CH_CFG_USE_DYNAMIC

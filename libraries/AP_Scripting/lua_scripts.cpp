@@ -176,6 +176,7 @@ void lua_scripts::run_next_script(lua_State *L) {
         return;
     }
 
+    uint64_t start_time_ms = AP_HAL::millis64();
     // strip the selected script out of the list
     script_info *script = scripts;
     scripts = script->next;
@@ -225,7 +226,7 @@ void lua_scripts::run_next_script(lua_State *L) {
                    }
 
                    // types match the expectations, go ahead and reschedule
-                   script->next_run_ms = AP_HAL::millis64() + (uint64_t)luaL_checknumber(L, -1);
+                   script->next_run_ms = start_time_ms + (uint64_t)luaL_checknumber(L, -1);
                    lua_pop(L, 1);
                    int old_ref = script->lua_ref;
                    script->lua_ref = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -363,8 +364,20 @@ void lua_scripts::run(void) {
     load_generated_bindings(L);
 
     // Scan the filesystem in an appropriate manner and autostart scripts
-    load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
-    load_all_scripts_in_dir(L, "@ROMFS/scripts");
+    // Skip those directores disabled with SCR_DIR_DISABLE param
+    uint16_t dir_disable = AP_Scripting::get_singleton()->get_disabled_dir();
+    bool loaded = false;
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::SCRIPTS)) == 0) {
+        load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+        loaded = true;
+    }
+    if ((dir_disable & uint16_t(AP_Scripting::SCR_DIR::ROMFS)) == 0) {
+        load_all_scripts_in_dir(L, "@ROMFS/scripts");
+        loaded = true;
+    }
+    if (!loaded) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: All directory's disabled see SCR_DIR_DISABLE");
+    }
 
 #ifndef __clang_analyzer__
     succeeded_initial_load = true;

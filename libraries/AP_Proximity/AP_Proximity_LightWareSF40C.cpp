@@ -204,7 +204,7 @@ void AP_Proximity_LightWareSF40C::process_replies()
 void AP_Proximity_LightWareSF40C::parse_byte(uint8_t b)
 {
     // check that payload buffer is large enough
-    static_assert(ARRAY_SIZE(_msg.payload) == PROXIMITY_SF40C_PAYLOAD_LEN_MAX, "AP_Proximity_LightwareSF40C: check _msg.payload array size ");
+    static_assert(ARRAY_SIZE(_msg.payload) == PROXIMITY_SF40C_PAYLOAD_LEN_MAX, "AP_Proximity_LightWareSF40C: check _msg.payload array size");
 
     // process byte depending upon current state
     switch (_msg.state) {

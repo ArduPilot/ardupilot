@@ -620,7 +620,9 @@ void Morse::send_report(void)
         mavlink_obstacle_distance_t packet {};
         packet.time_usec = AP_HAL::micros64();
         packet.min_distance = 1;
-        packet.max_distance = 0;
+        // the simulated rangefinder has an imposed 18m limit in
+        // e.g. rover_scanner.py
+        packet.max_distance = 5000;
         packet.sensor_type = MAV_DISTANCE_SENSOR_LASER;
         packet.increment = 0; // use increment_f
 
@@ -629,25 +631,25 @@ void Morse::send_report(void)
 
         for (uint8_t i=0; i<MAVLINK_MSG_OBSTACLE_DISTANCE_FIELD_DISTANCES_LEN; i++) {
 
-            // default distance unless overwritten
-            packet.distances[i] = 65535;
-
             if (i >= scanner.points.length) {
+                packet.distances[i] = 65535;
                 continue;
             }
 
             // convert m to cm and sanity check
             const Vector2f v = Vector2f(scanner.points.data[i].x, scanner.points.data[i].y);
             const float distance_cm = v.length()*100;
-            if (distance_cm < packet.min_distance || distance_cm >= 65535) {
+            if (distance_cm < packet.min_distance) {
+                packet.distances[i] = packet.max_distance + 1; // "no obstacle"
+                continue;
+            }
+
+            if (distance_cm > packet.max_distance) {
+                packet.distances[i] = packet.max_distance + 1; // "no obstacle"
                 continue;
             }
 
             packet.distances[i] = distance_cm;
-            const float max_cm = scanner.ranges.data[i] * 100.0;
-            if (packet.max_distance < max_cm && max_cm > 0 && max_cm < 65535) {
-                packet.max_distance = max_cm;
-            }
         }
 
         mavlink_message_t msg;

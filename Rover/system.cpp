@@ -122,9 +122,6 @@ void Rover::init_ardupilot()
 
     rover.g2.sailboat.init();
 
-    // disable safety if requested
-    BoardConfig.init_safety();
-
     // flag that initialisation has completed
     initialised = true;
 }

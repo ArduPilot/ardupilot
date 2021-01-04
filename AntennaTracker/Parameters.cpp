@@ -213,11 +213,10 @@ const AP_Param::Info Tracker::var_info[] = {
     // @User: Standard
     GSCALAR(pitch_max,               "PITCH_MAX",	PITCH_MAX_DEFAULT),
 
-    // barometer ground calibration. The GND_ prefix is chosen for
-    // compatibility with previous releases of ArduPlane
-    // @Group: GND_
+    // barometer library
+    // @Group: BARO
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "GND_", AP_Baro),
+    GOBJECT(barometer, "BARO", AP_Baro),
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
@@ -231,17 +230,41 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[0], gcs0,        "SR0_",     GCS_MAVLINK_Parameters),
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 2
     // @Group: SR1_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[1],  gcs1,       "SR1_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 3
     // @Group: SR2_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[2],  gcs2,       "SR2_",     GCS_MAVLINK_Parameters),
+#endif
 
+#if MAVLINK_COMM_NUM_BUFFERS >= 4
     // @Group: SR3_
     // @Path: GCS_Mavlink.cpp
     GOBJECTN(_gcs.chan_parameters[3],  gcs3,       "SR3_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 5
+    // @Group: SR4_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[4],  gcs4,       "SR4_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 6
+    // @Group: SR5_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[5],  gcs5,       "SR5_",     GCS_MAVLINK_Parameters),
+#endif
+
+#if MAVLINK_COMM_NUM_BUFFERS >= 7
+    // @Group: SR6_
+    // @Path: GCS_Mavlink.cpp
+    GOBJECTN(_gcs.chan_parameters[6],  gcs6,       "SR6_",     GCS_MAVLINK_Parameters),
+#endif
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
@@ -355,7 +378,15 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-	GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
+
+    // @Param: PITCH2SRV_SMAX
+    // @DisplayName: Pitch slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
 
     // @Param: YAW2SRV_P
     // @DisplayName: Yaw axis controller P gain
@@ -416,7 +447,15 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
-	GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
+
+    // @Param: YAW2SRV_SMAX
+    // @DisplayName: Yaw slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
 #ifdef ENABLE_SCRIPTING
     // @Group: SCR_
@@ -476,6 +515,14 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: STAT
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     GOBJECT(stats, "STAT",  AP_Stats),
+
+    // @Param: AUTO_OPTIONS
+    // @DisplayName: Auto mode options
+    // @Description: 1: Scan for unknown target
+    // @User: Standard
+    // @Values: 0:None, 1: Scan for unknown target in auto mode
+    // @Bitmask: 0:Scan for unknown target
+    GSCALAR(auto_opts,              "AUTO_OPTIONS",        0),
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp

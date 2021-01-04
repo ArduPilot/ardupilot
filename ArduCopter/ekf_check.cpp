@@ -46,13 +46,15 @@ void Copter::ekf_check()
         return;
     }
 
-    // compare compass and velocity variance vs threshold
-    if (ekf_over_threshold()) {
+    // compare compass and velocity variance vs threshold and also check
+    // if we are still navigating
+    bool is_navigating = ekf_has_relative_position() || ekf_has_absolute_position();
+    if (ekf_over_threshold() || !is_navigating) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
-            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2)) {
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2) && ekf_over_threshold()) {
                 // we are two iterations away from declaring an EKF failsafe, ask the EKF if we can reset
                 // yaw to resolve the issue
                 ahrs.request_yaw_reset();
@@ -108,8 +110,7 @@ bool Copter::ekf_over_threshold()
     // use EKF to get variance
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    Vector2f offset;
-    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset);
+    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
 
     const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
 
@@ -133,11 +134,7 @@ bool Copter::ekf_over_threshold()
         return true;
     }
 
-    // either optflow relative or absolute position estimate OK
-    if (optflow_position_ok() || ekf_position_ok()) {
-        return false;
-    }
-    return true;
+    return false;
 }
 
 
@@ -237,8 +234,7 @@ void Copter::check_vibration()
     // check if vertical velocity variance is at least 1 (NK4.SV >= 1.0)
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    Vector2f offset;
-    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance, offset)) {
+    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
         checks_succeeded = false;
     }
 

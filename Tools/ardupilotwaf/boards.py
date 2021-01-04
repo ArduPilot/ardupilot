@@ -64,6 +64,10 @@ class Board:
         else:
             cfg.options.disable_scripting = True
 
+        # allow GCS disable for AP_DAL example
+        if cfg.options.no_gcs:
+            env.CXXFLAGS += ['-DHAL_NO_GCS=1']
+            
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.
@@ -441,18 +445,34 @@ class sitl(Board):
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
-            'SITL',
         ]
+
+        if not cfg.env.AP_PERIPH:
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
 
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
                 cfg.fatal("Failed to find SFML libraries")
+
+        if cfg.options.enable_sfml_joystick:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
+            env.CXXFLAGS += ['-DSFML_JOYSTICK']
 
         if cfg.options.sitl_osd:
             env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1']
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
+
+        # include locations.txt so SITL on windows can lookup by name
+        env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
 
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
@@ -487,6 +507,39 @@ class sitl(Board):
             env.CXXFLAGS += [
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
+        
+        def srcpath(path):
+            return cfg.srcnode.make_node(path).abspath()
+        env.SRCROOT = srcpath('')
+
+class sitl_periph_gps(sitl):
+    def configure_env(self, cfg, env):
+        cfg.env.AP_PERIPH = 1
+        cfg.env.DISABLE_SCRIPTING = 1
+        super(sitl_periph_gps, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            HAL_BUILD_AP_PERIPH = 1,
+            PERIPH_FW = 1,
+            CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
+            HAL_PERIPH_ENABLE_GPS = 1,
+            HAL_WITH_DSP = 1,
+            HAL_CAN_DEFAULT_NODE_ID = 0,
+            HAL_RAM_RESERVE_START = 0,
+            APJ_BOARD_ID = 100,
+            HAL_NO_GCS = 1,
+            HAL_NO_LOGGING = 1,
+        )
+        # libcanard is written for 32bit platforms
+        env.CXXFLAGS += [
+            '-m32',
+        ]
+        env.CFLAGS += [
+            '-m32',
+        ]
+        env.LDFLAGS += [
+            '-m32',
+        ]
+
 
 class chibios(Board):
     abstract = True
@@ -528,7 +581,6 @@ class chibios(Board):
             '-Wfatal-errors',
             '-Werror=uninitialized',
             '-Werror=init-self',
-            '-Wframe-larger-than=1024',
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
@@ -614,6 +666,13 @@ class chibios(Board):
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
 
+        if cfg.env.ENABLE_MALLOC_GUARD:
+            cfg.msg("Enabling malloc guard", "yes")
+            env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
+            env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
+        else:
+            cfg.msg("Enabling malloc guard", "no")
+            
         env.LIB += ['gcc', 'm']
 
         env.GIT_SUBMODULES += [

@@ -123,7 +123,7 @@ void GCS_MAVLINK_Plane::send_attitude() const
     float p = ahrs.pitch - radians(plane.g.pitch_trim_cd*0.01f);
     float y = ahrs.yaw;
     
-    if (plane.quadplane.in_vtol_mode()) {
+    if (plane.quadplane.show_vtol_view()) {
         r = plane.quadplane.ahrs_view->roll;
         p = plane.quadplane.ahrs_view->pitch;
         y = plane.quadplane.ahrs_view->yaw;
@@ -166,7 +166,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
         return;
     }
     const QuadPlane &quadplane = plane.quadplane;
-    if (quadplane.in_vtol_mode()) {
+    if (quadplane.show_vtol_view()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
         bool wp_nav_valid = quadplane.using_wp_nav();
 
@@ -974,8 +974,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
 
         AP_Mission::Mission_Command cmd;
-        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) == MAV_MISSION_ACCEPTED) {
-            plane.do_change_speed(cmd);
+        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) != MAV_MISSION_ACCEPTED) {
+            return MAV_RESULT_DENIED;
+        }
+        if (plane.do_change_speed(cmd)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;

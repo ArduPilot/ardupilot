@@ -259,6 +259,10 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 
     // airspeed ratio
     float ratio = get_airspeed_ratio();
+    if (!is_positive(ratio)) {
+        // cope with AP_Periph where ratio is 0
+        ratio = 2.0;
+    }
 
     // calculate equivalent pressure correction. This formula comes
     // from turning the dv correction above into an equivalent
@@ -310,7 +314,7 @@ bool AP_Airspeed_SDP3X::get_temperature(float &temperature)
 /*
   check CRC for a set of bytes
  */
-bool AP_Airspeed_SDP3X::_crc(const uint8_t data[], unsigned size, uint8_t checksum)
+bool AP_Airspeed_SDP3X::_crc(const uint8_t data[], uint8_t size, uint8_t checksum)
 {
     uint8_t crc_value = 0xff;
 

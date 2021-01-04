@@ -33,7 +33,6 @@ private:
     uint32_t last_distance_cm;     // last distance reported (used to prevent glitches in measurement)
     uint8_t glitch_count;           // glitch counter
 
-    int8_t last_warn_echo_pin;
     AP_HAL::PWMSource pwm_source;
 
     uint32_t last_ping_ms;

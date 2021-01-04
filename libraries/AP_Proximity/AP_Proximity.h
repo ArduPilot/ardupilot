@@ -47,9 +47,9 @@ public:
         RPLidarA2 = 5,
         TRTOWEREVO = 6,
         SF40C = 7,
+        SF45B = 8,
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         SITL    = 10,
-        MorseSITL = 11,
         AirSimSITL = 12,
 #endif
     };

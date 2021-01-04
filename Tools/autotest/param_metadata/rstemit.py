@@ -3,7 +3,10 @@ from __future__ import print_function
 import re
 from param import known_param_fields, known_units
 from emit import Emit
-import html
+try:
+    from cgi import escape as cescape
+except Exception:
+    from html import escape as cescape
 
 
 # Emit docs in a RST format
@@ -256,9 +259,9 @@ Complete Parameter List
                             # convert the abreviated unit into a full
                             # textual one:
                             units = known_units[abreviated_units]
-                            row.append(html.escape(units))
+                            row.append(cescape(units))
                     else:
-                        row.append(html.escape(param.__dict__[field]))
+                        row.append(cescape(param.__dict__[field]))
             if len(row):
                 ret += "\n\n" + self.tablify([row], headings=headings) + "\n\n"
         self.t += ret + "\n"

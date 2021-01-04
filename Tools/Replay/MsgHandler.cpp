@@ -1,31 +1,4 @@
 #include "MsgHandler.h"
-#include <AP_AHRS/AP_AHRS.h>
-
-void fatal(const char *msg) {
-    ::printf("%s",msg);
-    ::printf("\n");
-    exit(1);
-}
-
-char *xstrdup(const char *string)
-{
-    char *ret = strdup(string);
-    if (ret == NULL) {
-        perror("strdup");
-        fatal("strdup failed");
-    }
-    return ret;
-}
-
-char *xcalloc(uint8_t count, uint32_t len)
-{
-    char *ret = (char*)calloc(count, len);
-    if (ret == nullptr) {
-        perror("calloc");
-        fatal("calloc failed");
-    }
-    return ret;
-}
 
 void MsgHandler::add_field_type(char type, size_t size)
 {
@@ -36,7 +9,7 @@ uint8_t MsgHandler::size_for_type(char type)
 {
     uint8_t ret = size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
     if (ret == 0) {
-        ::fprintf(stderr, "Unknown type (%c)\n", type);
+        ::printf("Unknown type (%c)\n", type);
         abort();
     }
     return ret;
@@ -84,16 +57,16 @@ MsgHandler::MsgHandler(const struct log_Format &_f) : next_field(0), f(_f)
 void MsgHandler::add_field(const char *_label, uint8_t _type, uint8_t _offset,
                           uint8_t _length)
 {
-    field_info[next_field].label = xstrdup(_label);
+    field_info[next_field].label = strdup(_label);
     field_info[next_field].type = _type;
     field_info[next_field].offset = _offset;
     field_info[next_field].length = _length;
     next_field++;
 }
 
-char *get_string_field(char *field, uint8_t fieldlen)
+static char *get_string_field(char *field, uint8_t fieldlen)
 {
-    char *ret = xcalloc(1, fieldlen+1);
+    char *ret = (char *)malloc(fieldlen+1);
     memcpy(ret, field, fieldlen);
     return ret;
 }
@@ -203,15 +176,6 @@ void MsgHandler::string_for_labels(char *buffer, uint32_t bufferlen)
 
             memcpy(pos, field_info[k].label, label_length);
             pos += label_length;
-        }
-    }
-}
-
-MsgHandler::~MsgHandler()
-{
-    for (uint8_t k=0; k<LOGREADER_MAX_FIELDS; k++) {
-        if (field_info[k].label != NULL) {
-            free(field_info[k].label);
         }
     }
 }

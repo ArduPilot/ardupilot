@@ -122,11 +122,17 @@ public:
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const;
+
     virtual void vehicle_was_disarmed();
 
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
+
+    virtual void io_timer(void) {}
 
 protected:
 

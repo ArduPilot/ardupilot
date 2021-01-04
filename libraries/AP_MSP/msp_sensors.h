@@ -54,4 +54,11 @@ typedef struct PACKED {
     int16_t magY; // mGauss, right
     int16_t magZ; // mGauss, down
 } msp_compass_data_message_t;
+
+typedef struct PACKED {
+    uint8_t instance;
+    uint32_t time_ms;
+    float pressure;
+    int16_t temp; // centi-degrees C
+} msp_airspeed_data_message_t;
 }

@@ -36,6 +36,9 @@ extern const AP_HAL::HAL& hal;
 #define MB_to_B 1000000
 #define B_to_MB 0.000001
 
+// time between tries to open log
+#define LOGGER_FILE_REOPEN_MS 5000
+
 /*
   constructor
  */
@@ -62,11 +65,6 @@ void AP_Logger_File::ensure_log_directory_exists()
     int ret;
     struct stat st;
 
-    const char* custom_dir = hal.util->get_custom_log_directory();
-    if (custom_dir != nullptr){
-        _log_directory = custom_dir;
-    }
-
     EXPECT_DELAY_MS(3000);
     ret = AP::FS().stat(_log_directory, &st);
     if (ret == -1) {
@@ -81,9 +79,6 @@ void AP_Logger_File::Init()
 {
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
-    if (bufsize > 64) {
-        bufsize = 64; // PixHawk has DMA limitations.
-    }
     bufsize *= 1024;
 
     const uint32_t desired_bufsize = bufsize;
@@ -104,7 +99,11 @@ void AP_Logger_File::Init()
     hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
+
+    const char* custom_dir = hal.util->get_custom_log_directory();
+    if (custom_dir != nullptr){
+        _log_directory = custom_dir;
+    }
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const
@@ -133,6 +132,17 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 void AP_Logger_File::periodic_1Hz()
 {
     AP_Logger_Backend::periodic_1Hz();
+
+    if (_initialised &&
+        _write_fd == -1 && _read_fd == -1 &&
+        logging_enabled() &&
+        !recent_open_error() &&
+        !hal.util->get_soft_armed()) {
+        // retry logging open. This allows for booting with
+        // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
+        // card is inserted then logging starts
+        start_new_log();
+    }
 
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
@@ -167,10 +177,18 @@ uint32_t AP_Logger_File::bufferspace_available()
     return (space > crit) ? space - crit : 0;
 }
 
+bool AP_Logger_File::recent_open_error(void) const
+{
+    if (_open_error_ms == 0) {
+        return false;
+    }
+    return AP_HAL::millis() - _open_error_ms < LOGGER_FILE_REOPEN_MS;
+}
+
 // return true for CardInserted() if we successfully initialized
 bool AP_Logger_File::CardInserted(void) const
 {
-    return _initialised && !_open_error;
+    return _initialised && !recent_open_error();
 }
 
 // returns the amount of disk space available in _log_directory (in bytes)
@@ -450,7 +468,7 @@ bool AP_Logger_File::WritesOK() const
     if (_write_fd == -1) {
         return false;
     }
-    if (_open_error) {
+    if (recent_open_error()) {
         return false;
     }
     return true;
@@ -459,7 +477,7 @@ bool AP_Logger_File::WritesOK() const
 
 bool AP_Logger_File::StartNewLogOK() const
 {
-    if (_open_error) {
+    if (recent_open_error()) {
         return false;
     }
     return AP_Logger_Backend::StartNewLogOK();
@@ -468,15 +486,21 @@ bool AP_Logger_File::StartNewLogOK() const
 /* Write a block of data at current offset */
 bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
+    WITH_SEMAPHORE(semaphore);
+
     if (! WriteBlockCheckStartupMessages()) {
         _dropped++;
         return false;
     }
 
-    if (!semaphore.take(1)) {
-        return false;
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    if (AP::FS().write(_write_fd, pBuffer, size) != size) {
+        AP_HAL::panic("Short write");
     }
-        
+    return true;
+#endif
+
+
     uint32_t space = _writebuf.space();
 
     if (_writing_startup_messages &&
@@ -490,7 +514,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
             // this message isn't dropped, it will be sent again...
-            semaphore.give();
             return false;
         }
         last_messagewrite_message_sent = now;
@@ -498,7 +521,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // we reserve some amount of space for critical messages:
         if (!is_critical && space < critical_message_reserved_space(_writebuf.get_size())) {
             _dropped++;
-            semaphore.give();
             return false;
         }
     }
@@ -507,13 +529,11 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     if (space < size) {
         hal.util->perf_count(_perf_overruns);
         _dropped++;
-        semaphore.give();
         return false;
     }
 
     _writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, _writebuf.space());
-    semaphore.give();
     return true;
 }
 
@@ -528,15 +548,10 @@ uint16_t AP_Logger_File::find_last_log()
         return ret;
     }
     EXPECT_DELAY_MS(3000);
-    int fd = AP::FS().open(fname, O_RDONLY);
-    free(fname);
-    if (fd != -1) {
-        char buf[10];
-        memset(buf, 0, sizeof(buf));
-        if (AP::FS().read(fd, buf, sizeof(buf)-1) > 0) {
-            ret = strtol(buf, NULL, 10);
-        }
-        AP::FS().close(fd);
+    FileData *fd = AP::FS().load_file(fname);
+    if (fd != nullptr) {
+        ret = strtol((const char *)fd->data, NULL, 10);
+        delete fd;
     }
     return ret;
 }
@@ -559,7 +574,9 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
     struct stat st;
     EXPECT_DELAY_MS(3000);
     if (AP::FS().stat(fname, &st) != 0) {
-        printf("Unable to fetch Log File Size: %s\n", strerror(errno));
+        if (_open_error_ms == 0) {
+            printf("Unable to fetch Log File Size (%s): %s\n", fname, strerror(errno));
+        }
         free(fname);
         return 0;
     }
@@ -618,7 +635,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
  */
 int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || _open_error) {
+    if (!_initialised || recent_open_error()) {
         return -1;
     }
 
@@ -641,7 +658,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         EXPECT_DELAY_MS(3000);
         _read_fd = AP::FS().open(fname, O_RDONLY);
         if (_read_fd == -1) {
-            _open_error = true;
+            _open_error_ms = AP_HAL::millis();
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
@@ -737,11 +754,13 @@ void AP_Logger_File::stop_logging(void)
  */
 void AP_Logger_File::start_new_log(void)
 {
-    if (_open_error) {
+    if (recent_open_error()) {
         // we have previously failed to open a file - don't try again
         // to prevent us trying to open files while in flight
         return;
     }
+
+    const bool open_error_ms_was_zero = (_open_error_ms == 0);
 
     // set _open_error here to avoid infinite recursion.  Simply
     // writing a prioritised block may try to open a log - which means
@@ -749,7 +768,7 @@ void AP_Logger_File::start_new_log(void)
     // (for example), you will end up recursing if we don't take
     // precautions.  We will reset _open_error if we actually manage
     // to open the log...
-    _open_error = true;
+    _open_error_ms = AP_HAL::millis();
 
     stop_logging();
 
@@ -800,16 +819,18 @@ void AP_Logger_File::start_new_log(void)
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
-        _initialised = false;
         write_fd_semaphore.give();
         int saved_errno = errno;
-        ::printf("Log open fail for %s - %s\n",
-                 _write_filename, strerror(saved_errno));
-        hal.console->printf("Log open fail for %s - %s\n",
-                            _write_filename, strerror(saved_errno));
+        if (open_error_ms_was_zero) {
+            ::printf("Log open fail for %s - %s\n",
+                     _write_filename, strerror(saved_errno));
+            hal.console->printf("Log open fail for %s - %s\n",
+                                _write_filename, strerror(saved_errno));
+        }
         return;
     }
     _last_write_ms = AP_HAL::millis();
+    _open_error_ms = 0;
     _write_offset = 0;
     _writebuf.clear();
     write_fd_semaphore.give();
@@ -821,6 +842,7 @@ void AP_Logger_File::start_new_log(void)
     int fd = AP::FS().open(fname, O_WRONLY|O_CREAT);
     free(fname);
     if (fd == -1) {
+        _open_error_ms = AP_HAL::millis();
         return;
     }
 
@@ -831,9 +853,9 @@ void AP_Logger_File::start_new_log(void)
     AP::FS().close(fd);
 
     if (written < to_write) {
+        _open_error_ms = AP_HAL::millis();
         return;
     }
-    _open_error = false;
 
     return;
 }
@@ -844,13 +866,13 @@ void AP_Logger_File::flush(void)
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
-    while (_write_fd != -1 && _initialised && !_open_error && _writebuf.available()) {
+    while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
         if (tnow > 2001) { // avoid resetting _last_write_time to 0
             _last_write_time = tnow - 2001;
         }
-        _io_timer();
+        io_timer();
     }
     if (write_fd_semaphore.take(1)) {
         if (_write_fd != -1) {
@@ -868,11 +890,11 @@ void AP_Logger_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
-void AP_Logger_File::_io_timer(void)
+void AP_Logger_File::io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
-    if (_write_fd == -1 || !_initialised || _open_error) {
+    if (_write_fd == -1 || !_initialised || recent_open_error()) {
         return;
     }
 
@@ -892,7 +914,7 @@ void AP_Logger_File::_io_timer(void)
         if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
             hal.console->printf("Out of space for logging\n");
             stop_logging();
-            _open_error = true; // prevent logging starting again
+            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";
             return;
         }
@@ -939,7 +961,6 @@ void AP_Logger_File::_io_timer(void)
             AP::FS().close(_write_fd);
             last_io_operation = "";
             _write_fd = -1;
-            _initialised = false;
             printf("Failed to write to File: %s\n", strerror(errno));
         }
         _last_write_failed = true;
@@ -981,7 +1002,7 @@ bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full seconds then it is dead
     // this is enough time for a sdcard remount
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 bool AP_Logger_File::logging_failed() const
@@ -989,7 +1010,7 @@ bool AP_Logger_File::logging_failed() const
     if (!_initialised) {
         return true;
     }
-    if (_open_error) {
+    if (recent_open_error()) {
         return true;
     }
     if (!io_thread_alive()) {

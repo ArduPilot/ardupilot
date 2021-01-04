@@ -55,7 +55,6 @@ class SoaringController {
     float McCready(float alt);
 
     float _thermalability;
-    float _expected_sink;
 
     LowPassFilter<float> _position_x_filter;
     LowPassFilter<float> _position_y_filter;

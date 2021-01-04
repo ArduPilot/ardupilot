@@ -353,7 +353,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return false; };
+    bool allows_arming(bool from_gcs) const override;
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == Auto_NavGuided; }
 
@@ -404,6 +404,14 @@ protected:
     void run_autopilot() override;
 
 private:
+
+    enum class Options : int32_t {
+        AllowArming                        = (1 << 0U),
+        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
+        IgnorePilotYaw                     = (1 << 2U),
+    };
+
+    bool use_pilot_yaw(void) const;
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
@@ -515,6 +523,8 @@ private:
         float descend_start_altitude;
         float descend_max; // centimetres
     } nav_payload_place;
+
+    bool waiting_for_origin;    // true if waiting for origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -787,7 +797,7 @@ public:
 
     bool requires_GPS() const override { return true; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; }
+    bool allows_arming(bool from_gcs) const override;
     bool is_autopilot() const override { return true; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool in_guided_mode() const override { return true; }
@@ -826,6 +836,13 @@ protected:
 
 private:
 
+    // enum for GUID_OPTIONS parameter
+    enum class Options : int32_t {
+        AllowArmingFromTX = (1U << 0),
+        // this bit is still available, pilot yaw was mapped to bit 2 for symmetry with auto
+        IgnorePilotYaw    = (1U << 2),
+    };
+
     void pos_control_start();
     void vel_control_start();
     void posvel_control_start();
@@ -835,6 +852,7 @@ private:
     void posvel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
     GuidedMode guided_mode = Guided_TakeOff;
@@ -853,7 +871,6 @@ public:
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return from_gcs; }
     bool is_autopilot() const override { return true; }
 
 protected:
@@ -962,6 +979,7 @@ private:
     void update_pilot_lean_angle(float &lean_angle_filtered, float &lean_angle_raw);
     float mix_controls(float mix_ratio, float first_control, float second_control);
     void update_brake_angle_from_velocity(float &brake_angle, float velocity);
+    void init_wind_comp_estimate();
     void update_wind_comp_estimate();
     void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
     void roll_controller_to_pilot_override();
@@ -1113,6 +1131,15 @@ private:
     uint32_t _loiter_start_time;
 
     bool terrain_following_allowed;
+
+    // enum for RTL_OPTIONS parameter
+    enum class Options : int32_t {
+        // First pair of bits are still available, pilot yaw was mapped to bit 2 for symmetry with auto
+        IgnorePilotYaw    = (1U << 2),
+    };
+
+    bool use_pilot_yaw(void) const;
+
 };
 
 
@@ -1154,6 +1181,10 @@ private:
     void land();
     SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
 
+    // keep track of how long we have failed to get another return
+    // point while following our path home.  If we take too long we
+    // may choose to land the vehicle.
+    uint32_t path_follow_last_pop_fail_ms;
 };
 
 
@@ -1304,9 +1335,14 @@ public:
     bool is_autopilot() const override { return false; }
 
     // Throw types
-    enum ThrowModeType {
-        ThrowType_Upward = 0,
-        ThrowType_Drop = 1
+    enum class ThrowType {
+        Upward = 0,
+        Drop = 1
+    };
+
+    enum class PreThrowMotorState {
+        STOPPED = 0,
+        RUNNING = 1,
     };
 
 protected:

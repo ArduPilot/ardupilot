@@ -349,3 +349,4 @@
 #define MSP2_SENSOR_GPS             0x1F03
 #define MSP2_SENSOR_COMPASS         0x1F04
 #define MSP2_SENSOR_BAROMETER       0x1F05
+#define MSP2_SENSOR_AIRSPEED        0x1F06

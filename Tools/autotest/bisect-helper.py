@@ -7,6 +7,7 @@ Bisect between a commit which builds and one which doesn't,
 finding the first commit which broke the build with a
  specific failure:
 
+git bisect reset
 git bisect good a7647e77d9
 git bisect bad 153ad9539866f8d93a99e9998118bb090d2f747f
 cp -a Tools/autotest/bisect-helper.py /tmp
@@ -16,11 +17,32 @@ git bisect run /tmp/bisect-helper.py --build \
 
 Work out who killed bebop:
 cp -a Tools/autotest/bisect-helper.py /tmp
+git bisect reset
 git bisect good a7647e77d9 &&
   git bisect bad 153ad9539866f8d93a99e9998118bb090d2f747f &&
   git bisect run /tmp/bisect-helper.py --build \
     --waf-configure-arg="--board bebop"
 
+# Use a failing test to work out which commit broke things:
+cp Tools/autotest/bisect-helper.py /tmp
+git bisect reset
+git bisect start
+git bisect bad
+git bisect good HEAD~1024
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test
+
+Work out who overflowed Omnbusf4pro:
+cp -a Tools Tools2
+GOOD=c4ce6fa3851f93df34393c376fee5b37e0a270d2
+BAD=f00bf77af75f828334f735580d6b19698b639a74
+BFS="overflowed by"
+git bisect reset
+git bisect start
+git bisect good $GOOD &&
+  git bisect bad $BAD &&
+  git bisect run Tools2/autotest/bisect-helper.py --build \
+    --waf-configure-arg="--board OmniBusF4Pro" \
+     --build-failure-string="$BFS"
 '''
 
 import optparse
@@ -86,21 +108,21 @@ class Bisect(object):
         self.run_program("WAF-clean", ["./waf", "clean"])
         cmd_configure = ["./waf", "configure"]
         pieces = [shlex.split(x)
-                  for x in opts.waf_configure_args]
+                  for x in self.opts.waf_configure_args]
         for piece in pieces:
             cmd_configure.extend(piece)
         self.run_program("WAF-configure", cmd_configure)
         cmd_build = ["./waf", "build"]
         pieces = [shlex.split(x)
-                  for x in opts.waf_build_args]
+                  for x in self.opts.waf_build_args]
         for piece in pieces:
             cmd_build.extend(piece)
         try:
             self.run_program("WAF-build", cmd_build)
         except subprocess.CalledProcessError as e:
             # well, it definitely failed....
-            if opts.build_failure_string is not None:
-                if opts.build_failure_string in self.program_output:
+            if self.opts.build_failure_string is not None:
+                if self.opts.build_failure_string in self.program_output:
                     self.progress("Found relevant build failure")
                     self.exit_fail()
                 # it failed, but not for the reason we're looking
@@ -125,6 +147,51 @@ class BisectCITest(Bisect):
     def __init__(self, opts):
         super(BisectCITest, self).__init__(opts)
 
+    def autotest_script(self):
+        return os.path.join("Tools", "autotest", "autotest.py")
+
+
+    def run(self):
+
+        if self.opts.autotest_branch is None:
+            raise ValueError("expected autotest branch")
+
+        try:
+            self.run_program("Update submodules",
+                             ["git", "submodule", "update", "--init", "--recursive"])
+        except subprocess.CalledProcessError as e:
+            self.exit_fail()
+
+        try:
+            self.run_program("Check autotest directory out from master",
+                             ["git", "checkout", self.opts.autotest_branch, "Tools/autotest"])
+        except subprocess.CalledProcessError as e:
+            self.exit_fail()
+
+
+        cmd = [self.autotest_script()]
+        cmd.append("build.%s" % self.opts.autotest_vehicle)
+        cmd.append("test.%s.%s" % (self.opts.autotest_vehicle, self.opts.autotest_test))
+
+        print("cmd: %s" % str(cmd))
+
+        failed = False
+
+        try:
+            self.run_program("Run autotest", cmd)
+        except subprocess.CalledProcessError as e:
+            failed = True
+
+        try:
+            self.run_program("Reset autotest directory", ["git", "reset", "--hard"])
+        except subprocess.CalledProcessError as e:
+            self.exit_fail()
+
+        if failed:
+            self.exit_fail()
+
+        self.exit_pass()
+
 
 if __name__ == '__main__':
 
@@ -138,6 +205,26 @@ if __name__ == '__main__':
                       default=None,
                       help="If supplied, must be present in"
                       "build output to count as a failure")
+
+    group_autotest = optparse.OptionGroup(parser, "Run-AutoTest Options")
+    group_autotest.add_option("--autotest",
+                              action='store_true',
+                              default=False,
+                              help="Bisect a failure with an autotest test")
+    group_autotest.add_option("", "--autotest-vehicle",
+                              dest="autotest_vehicle",
+                              type="string",
+                              default="ArduCopter",
+                              help="Which vehicle to run tests for")
+    group_autotest.add_option("", "--autotest-test",
+                              dest="autotest_test",
+                              type="string",
+                              default="NavDelayAbsTime",
+                              help="Test to run to find failure")
+    group_autotest.add_option("", "--autotest-branch",
+                              dest="autotest_branch",
+                              type="string",
+                              help="Branch on which the test exists.  The autotest directory will be reset to this branch")
 
     group_build = optparse.OptionGroup(parser, "Build options")
     group_build.add_option("", "--waf-configure-arg",
@@ -161,8 +248,10 @@ if __name__ == '__main__':
 
     if opts.build:
         bisecter = BisectBuild(opts)
-    else:
+    elif opts.autotest:
         bisecter = BisectCITest(opts)
+    else:
+        raise ValueError("Not told how to bisect")
 
 try:
     bisecter.run()

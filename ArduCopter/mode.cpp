@@ -502,7 +502,7 @@ void Mode::make_safe_spool_down()
     case AP_Motors::SpoolState::SHUT_DOWN:
     case AP_Motors::SpoolState::GROUND_IDLE:
         // relax controllers during idle states
-        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->reset_rate_controller_I_terms_smoothly();
         attitude_control->set_yaw_target_to_current_heading();
         break;
 

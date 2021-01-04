@@ -1,14 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_Compass/AP_Compass.h>
+#include <AP_DAL/AP_DAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -27,7 +22,7 @@ void NavEKF2_core::readRangeFinder(void)
 
     // get theoretical correct range when the vehicle is on the ground
     // don't allow range to go below 5cm because this can cause problems with optical flow processing
-    const RangeFinder *_rng = AP::rangefinder();
+    const auto *_rng = dal.rangefinder();
     if (_rng == nullptr) {
         return;
     }
@@ -45,11 +40,11 @@ void NavEKF2_core::readRangeFinder(void)
         // use data from two range finders if available
 
         for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
-            AP_RangeFinder_Backend *sensor = _rng->get_backend(sensorIndex);
+            auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
             }
-            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == RangeFinder::Status::Good)) {
+            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
                 rngMeasIndex[sensorIndex] ++;
                 if (rngMeasIndex[sensorIndex] > 2) {
                     rngMeasIndex[sensorIndex] = 0;
@@ -168,7 +163,7 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         // note correction for different axis and sign conventions used by the px4flow sensor
         ofDataNew.flowRadXY = - rawFlowRates; // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
-        ofDataNew.body_offset = &posOffset;
+        ofDataNew.body_offset = posOffset;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -195,7 +190,7 @@ void NavEKF2_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
 // try changing to another compass
 void NavEKF2_core::tryChangeCompass(void)
 {
-    const Compass &compass = AP::compass();
+    const auto &compass = dal.compass();
     const uint8_t maxCount = compass.get_count();
 
     // search through the list of magnetometers
@@ -208,7 +203,7 @@ void NavEKF2_core::tryChangeCompass(void)
         // if the magnetometer is allowed to be used for yaw and has a different index, we start using it
         if (compass.healthy(tempIndex) && compass.use_for_yaw(tempIndex) && tempIndex != magSelectIndex) {
             magSelectIndex = tempIndex;
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u switching to compass %u",(unsigned)imu_index,magSelectIndex);
             // reset the timeout flag and timer
             magTimeout = false;
             lastHealthyMagTime_ms = imuSampleTime_ms;
@@ -233,12 +228,12 @@ void NavEKF2_core::tryChangeCompass(void)
 // check for new magnetometer data and update store measurements if available
 void NavEKF2_core::readMagData()
 {
-    if (!_ahrs->get_compass()) {
+    if (!dal.get_compass()) {
         allMagSensorsFailed = true;
         return;        
     }
 
-    const Compass &compass = AP::compass();
+    const auto &compass = dal.compass();
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
     // magnetometer, then declare the magnetometers as failed for this flight
@@ -277,8 +272,6 @@ void NavEKF2_core::readMagData()
     if (use_compass() &&
         compass.healthy(magSelectIndex) &&
         compass.last_update_usec(magSelectIndex) - lastMagUpdate_us > 70000) {
-        frontend->logging.log_compass = true;
-
 
         // detect changes to magnetometer offset parameters and reset states
         Vector3f nowMagOffsets = compass.get_offsets(magSelectIndex);
@@ -335,7 +328,7 @@ void NavEKF2_core::readMagData()
  */
 void NavEKF2_core::readIMUData()
 {
-    const AP_InertialSensor &ins = AP::ins();
+    const auto &ins = dal.ins();
 
     // average IMU sampling rate
     dtIMUavg = ins.get_loop_delta_t();
@@ -454,7 +447,7 @@ void NavEKF2_core::readIMUData()
         runUpdates = true;
 
         // extract the oldest available data from the FIFO buffer
-        imuDataDelayed = storedIMU.pop_oldest_element();
+        imuDataDelayed = storedIMU.get_oldest_element();
 
         // protect against delta time going to zero
         // TODO - check if calculations can tolerate 0
@@ -479,7 +472,7 @@ void NavEKF2_core::readIMUData()
 // read the delta velocity and corresponding time interval from the IMU
 // return false if data is not available
 bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt) {
-    const AP_InertialSensor &ins = AP::ins();
+    const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
         ins.get_delta_velocity(ins_index,dVel);
@@ -504,17 +497,17 @@ void NavEKF2_core::readGpsData()
 
     // check for new GPS data
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    const AP_GPS &gps = AP::gps();
-    if (gps.last_message_time_ms() - lastTimeGpsReceived_ms > 70) {
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    const auto &gps = dal.gps();
+    if (gps.last_message_time_ms(gps.primary_sensor()) - lastTimeGpsReceived_ms > 70) {
+        if (gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D) {
             // report GPS fix status
             gpsCheckStatus.bad_fix = false;
 
             // store fix time from previous read
-            secondLastGpsTime_ms = lastTimeGpsReceived_ms;
+            const uint32_t secondLastGpsTime_ms = lastTimeGpsReceived_ms;
 
             // get current fix time
-            lastTimeGpsReceived_ms = gps.last_message_time_ms();
+            lastTimeGpsReceived_ms = gps.last_message_time_ms(gps.primary_sensor());
 
 
             // estimate when the GPS fix was valid, allowing for GPS processing and other delays
@@ -576,7 +569,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Check if GPS can output vertical velocity, if it is allowed to be used, and set GPS fusion mode accordingly
-            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0 && !frontend->inhibitGpsVertVelUse) {
+            if (gps.have_vertical_velocity() && frontend->_fusionModeGPS == 0) {
                 useGpsVertVel = true;
             } else {
                 useGpsVertVel = false;
@@ -614,7 +607,7 @@ void NavEKF2_core::readGpsData()
             }
 
             if (gpsGoodToAlign && !have_table_earth_field) {
-                const Compass *compass = _ahrs->get_compass();
+                const auto *compass = dal.get_compass();
                 if (compass && compass->have_scale_factor(magSelectIndex) && compass->auto_declination_enabled()) {
                     table_earth_field_ga = AP_Declination::get_earth_field_ga(gpsloc);
                     table_declination = radians(AP_Declination::get_declination(gpsloc.lat*1.0e-7,
@@ -643,7 +636,7 @@ void NavEKF2_core::readGpsData()
         } else {
             // report GPS fix status
             gpsCheckStatus.bad_fix = true;
-            hal.util->snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
+            dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
         }
     }
 }
@@ -651,11 +644,10 @@ void NavEKF2_core::readGpsData()
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
 bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt) {
-    const AP_InertialSensor &ins = AP::ins();
+    const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
         ins.get_delta_angle(ins_index,dAng);
-        frontend->logging.log_imu = true;
         dAng_dt = MAX(ins.get_delta_angle_dt(ins_index),1.0e-4f);
         dAng_dt = MIN(dAng_dt,1.0e-1f);
         return true;
@@ -673,9 +665,8 @@ void NavEKF2_core::readBaroData()
 {
     // check to see if baro measurement has changed so we know if a new measurement has arrived
     // do not accept data at a faster rate than 14Hz to avoid overflowing the FIFO buffer
-    const AP_Baro &baro = AP::baro();
+    const auto &baro = dal.baro();
     if (baro.get_last_update() - lastBaroReceived_ms > 70) {
-        frontend->logging.log_baro = true;
 
         baroDataNew.hgt = baro.get_altitude();
 
@@ -762,11 +753,12 @@ void NavEKF2_core::readAirSpdData()
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
-    const AP_Airspeed *aspeed = _ahrs->get_airspeed();
+    const auto *aspeed = dal.airspeed();
     if (aspeed &&
-            aspeed->use() &&
-            aspeed->last_update_ms() != timeTasReceived_ms) {
-        tasDataNew.tas = aspeed->get_airspeed() * AP::ahrs().get_EAS2TAS();
+        aspeed->use() &&
+        aspeed->healthy() &&
+        aspeed->last_update_ms() != timeTasReceived_ms) {
+        tasDataNew.tas = aspeed->get_airspeed() * dal.get_EAS2TAS();
         timeTasReceived_ms = aspeed->last_update_ms();
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
@@ -788,7 +780,7 @@ void NavEKF2_core::readAirSpdData()
 void NavEKF2_core::readRngBcnData()
 {
     // get the location of the beacon data
-    const AP_Beacon *beacon = AP::beacon();
+    const auto *beacon = dal.beacon();
 
     // exit immediately if no beacon object
     if (beacon == nullptr) {
@@ -913,13 +905,6 @@ void NavEKF2_core::updateTimingStatistics(void)
     timing.count++;
 }
 
-// get timing statistics structure
-void NavEKF2_core::getTimingStatistics(struct ekf_timing &_timing)
-{
-    _timing = timing;
-    memset(&timing, 0, sizeof(timing));
-}
-
 void NavEKF2_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
     // protect against NaN
@@ -970,7 +955,7 @@ float NavEKF2_core::MagDeclination(void) const
     if (!use_compass()) {
         return 0;
     }
-    return _ahrs->get_compass()->get_declination();
+    return dal.get_compass()->get_declination();
 }
 
 /*
@@ -980,7 +965,12 @@ float NavEKF2_core::MagDeclination(void) const
  */
 void NavEKF2_core::learnInactiveBiases(void)
 {
-    const AP_InertialSensor &ins = AP::ins();
+#if INS_MAX_INSTANCES == 1
+    inactiveBias[0].gyro_bias = stateStruct.gyro_bias;
+    inactiveBias[0].gyro_scale = stateStruct.gyro_scale;
+    inactiveBias[0].accel_zbias = stateStruct.accel_zbias;
+#else
+    const auto &ins = dal.ins();
 
     // learn gyro biases
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
@@ -1038,6 +1028,7 @@ void NavEKF2_core::learnInactiveBiases(void)
             inactiveBias[i].accel_zbias -= error * (1.0e-4f * dtEkfAvg);
         }
     }
+#endif
 }
 
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.

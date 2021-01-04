@@ -1,5 +1,6 @@
 #include "Util.h"
 #include <sys/time.h>
+#include <AP_Param/AP_Param.h>
 
 #ifdef WITH_SITL_TONEALARM
 HALSITL::ToneAlarm_SF HALSITL::Util::_toneAlarm;
@@ -130,6 +131,7 @@ void *HALSITL::Util::heap_realloc(void *heap_ptr, void *ptr, size_t new_size)
 
 #endif // ENABLE_HEAP
 
+#if !defined(HAL_BUILD_AP_PERIPH)
 enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
 {
     const SITL::SITL *sitl = AP::sitl();
@@ -138,3 +140,21 @@ enum AP_HAL::Util::safety_state HALSITL::Util::safety_switch_state(void)
     }
     return sitl->safety_switch_state();
 }
+
+void HALSITL::Util::set_cmdline_parameters()
+{
+    for (auto param: sitlState->cmdline_param) {
+        AP_Param::set_default_by_name(param.name, param.value);
+    }
+}
+#endif
+
+/**
+   return commandline arguments, if available
+*/
+void HALSITL::Util::commandline_arguments(uint8_t &argc, char * const *&argv)
+{
+    argc = saved_argc;
+    argv = saved_argv;
+}
+

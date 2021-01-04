@@ -18,6 +18,10 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include <AP_InternalError/AP_InternalError.h>
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 using namespace ChibiOS;
 
@@ -31,6 +35,7 @@ static struct gpio_entry {
     bool is_input;
     uint8_t mode;
     thread_reference_t thd_wait;
+    uint16_t isr_quota;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE(_gpio_tab)
@@ -74,6 +79,9 @@ void GPIO::init()
 }
 
 #ifdef HAL_PIN_ALT_CONFIG
+// chosen alternative config
+uint8_t GPIO::alt_config;
+
 /*
   alternative config table, selected using BRD_ALT_CONFIG
  */
@@ -81,6 +89,8 @@ static const struct alt_config {
     uint8_t alternate;
     uint16_t mode;
     ioline_t line;
+    PERIPH_TYPE periph_type;
+    uint8_t periph_instance;
 } alternate_config[] HAL_PIN_ALT_CONFIG;
 
 /*
@@ -92,21 +102,58 @@ void GPIO::setup_alt_config(void)
     if (!bc) {
         return;
     }
-    const uint8_t alt = bc->get_alt_config();
-    if (alt == 0) {
+    alt_config = bc->get_alt_config();
+    if (alt_config == 0) {
         // use defaults
         return;
     }
     for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
-        if (alt == alternate_config[i].alternate) {
-            const iomode_t mode = alternate_config[i].mode & ~PAL_STM32_HIGH;
-            const uint8_t odr = (alternate_config[i].mode & PAL_STM32_HIGH)?1:0;
-            palSetLineMode(alternate_config[i].line, mode);
-            palWriteLine(alternate_config[i].line, odr);
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
+            const uint8_t odr = (alt.mode & PAL_STM32_HIGH)?1:0;
+            palSetLineMode(alt.line, mode);
+            palWriteLine(alt.line, odr);
         }
     }
 }
 #endif // HAL_PIN_ALT_CONFIG
+
+/*
+  resolve an ioline_t to take account of alternative
+  configurations. This allows drivers to get the right ioline_t for an
+  alternative config. Note that this may return 0, meaning the pin is
+  not mapped to this peripheral in the active config
+*/
+ioline_t GPIO::resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance)
+{
+#ifdef HAL_PIN_ALT_CONFIG
+    if (alt_config == 0) {
+        // unchanged
+        return base;
+    }
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            if (ptype == alt.periph_type && instance == alt.periph_instance) {
+                // we've reconfigured this peripheral with a different line
+                return alt.line;
+            }
+        }
+    }
+    // now search for pins that have been configured off via BRD_ALT_CONFIG
+    for (uint8_t i=0; i<ARRAY_SIZE(alternate_config); i++) {
+        const struct alt_config &alt = alternate_config[i];
+        if (alt_config == alt.alternate) {
+            if (alt.line == base) {
+                // this line is no longer available in this config
+                return 0;
+            }
+        }
+    }
+#endif
+    return base;
+}
 
 
 void GPIO::pinMode(uint8_t pin, uint8_t output)
@@ -313,6 +360,21 @@ static void pal_interrupt_cb_functor(void *arg)
     if (!(g->fn)) {
         return;
     }
+    if (g->isr_quota >= 1) {
+        /*
+          we have an interrupt quota enabled for this pin. If the
+          quota remaining drops to 1 without it being refreshed in
+          timer_tick then we disable the interrupt source. This is to
+          prevent CPU overload due to very high GPIO interrupt counts
+         */
+        if (g->isr_quota == 1) {
+            osalSysLockFromISR();
+            palDisableLineEventI(g->pal_line);
+            osalSysUnlockFromISR();
+            return;
+        }
+        g->isr_quota--;
+    }
     (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
 }
 
@@ -366,3 +428,28 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
 
     return msg == MSG_OK;
 }
+
+#ifndef IOMCU_FW
+/*
+  timer to setup interrupt quotas for a 100ms period from
+  monitor thread
+*/
+void GPIO::timer_tick()
+{
+    // allow 100k interrupts/second max for GPIO interrupt sources, which is
+    // 10k per 100ms call to timer_tick()
+    const uint16_t quota = 10000U;
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (_gpio_tab[i].isr_quota == 1) {
+            // we ran out of ISR quota for this pin since the last
+            // check. This is not really an internal error, but we use
+            // INTERNAL_ERROR() to get the reporting mechanism
+#ifndef HAL_NO_UARTDRIVER
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"ISR flood on pin %u", _gpio_tab[i].pin_num);
+#endif
+            INTERNAL_ERROR(AP_InternalError::error_t::gpio_isr);
+        }
+        _gpio_tab[i].isr_quota = quota;
+    }
+}
+#endif // IOMCU_FW

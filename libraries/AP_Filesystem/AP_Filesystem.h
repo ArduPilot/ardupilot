@@ -83,6 +83,17 @@ public:
     // set modification time on a file
     bool set_mtime(const char *filename, const uint32_t mtime_sec);
 
+    // if filesystem is not running then try a remount. Return true if fs is mounted
+    bool retry_mount(void);
+
+    // unmount filesystem for reboot
+    void unmount(void);
+
+    /*
+      load a full file. Use delete to free the data
+     */
+    FileData *load_file(const char *filename);
+    
 private:
     struct Backend {
         const char *prefix;

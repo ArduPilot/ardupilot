@@ -63,12 +63,6 @@ class AutoTestSub(AutoTest):
     def default_frame(self):
         return 'vectored'
 
-    def init(self):
-        super(AutoTestSub, self).init()
-
-        # FIXME:
-        self.set_parameter("FS_GCS_ENABLE", 0)
-
     def is_sub(self):
         return True
 
@@ -273,7 +267,8 @@ class AutoTestSub(AutoTest):
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         if ex is not None:
             raise ex
@@ -288,31 +283,32 @@ class AutoTestSub(AutoTest):
 
         lat = 5
         lon = 5
-        alt = 10
+        alt = -10
+
+        # send a position-control command
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            lat, # lat
+            lon, # lon
+            alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yawrate
+        )
 
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            # send a position-control command
-            self.mav.mav.set_position_target_global_int_send(
-                0, # timestamp
-                1, # target system_id
-                1, # target component id
-                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                0b1111111111111000, # mask specifying use-only-lat-lon-alt
-                lat, # lat
-                lon, # lon
-                alt, # alt
-                0, # vx
-                0, # vy
-                0, # vz
-                0, # afx
-                0, # afy
-                0, # afz
-                0, # yaw
-                0, # yawrate
-            )
             pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                       blocking=True)
             delta = self.get_distance_int(startpos, pos)
@@ -330,6 +326,11 @@ class AutoTestSub(AutoTest):
         while self.mav.recv_match(blocking=False):
             pass
         self.initialise_after_reboot_sitl()
+
+    def apply_defaultfile_parameters(self):
+        super(AutoTestSub, self).apply_defaultfile_parameters()
+        # FIXME:
+        self.set_parameter("FS_GCS_ENABLE", 0)
 
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()

@@ -8,6 +8,7 @@ This assumes a csv file extracted from the datasheet using tablula:
 '''
 
 import sys, csv, os
+from functools import cmp_to_key
 
 def is_pin(str):
     '''see if a string is a valid pin name'''
@@ -88,7 +89,7 @@ parse_af_table(sys.argv[1], table)
 sys.stdout.write("AltFunction_map = {\n");
 sys.stdout.write('\t# format is PIN:FUNCTION : AFNUM\n')
 sys.stdout.write('\t# extracted from %s\n' % os.path.basename(sys.argv[1]))
-for k in sorted(table.keys(), cmp=pin_compare):
+for k in sorted(table.keys(), key=cmp_to_key(pin_compare)):
     s = '"' + k + '"'
     sys.stdout.write('\t%-20s\t:\t%s,\n' % (s, table[k]))
 sys.stdout.write("}\n");

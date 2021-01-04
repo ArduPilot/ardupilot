@@ -147,6 +147,26 @@ class AutoTestPlane(AutoTest):
                            timeout=180)
         self.progress("RTL Complete")
 
+    def test_need_ekf_to_arm(self):
+        """Loiter where we are."""
+        self.progress("Ensuring we need EKF to be healthy to arm")
+        self.reboot_sitl()
+        self.context_collect("STATUSTEXT")
+        tstart = self.get_sim_time()
+        success = False
+        while not success:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get correct failure reason")
+            self.send_mavlink_arm_command()
+            try:
+                self.wait_statustext(".*(AHRS not healthy|AHRS: Not healthy).*", timeout=1, check_context=True, regex=True)
+                success = True
+                continue
+            except AutoTestTimeoutException:
+                pass
+            if self.armed():
+                raise NotAchievedException("Armed unexpectedly")
+
     def fly_LOITER(self, num_circles=4):
         """Loiter where we are."""
         self.progress("Testing LOITER for %u turns" % num_circles)
@@ -958,14 +978,23 @@ class AutoTestPlane(AutoTest):
 
         self.set_parameter("FENCE_CHANNEL", 7)
         self.set_parameter("FENCE_ACTION", 4)
-        self.set_rc(3, 1000)
-        self.set_rc(7, 2000)
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True,
+                               enabled=False,
+                               healthy=True)
+        self.set_rc_from_map({
+            3: 1000,
+            7: 2000,
+        })
 
         self.progress("Checking fence is initially OK")
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
-        if (not (m.onboard_control_sensors_enabled & fence_bit)):
-            raise NotAchievedException("Fence not initially enabled")
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
+                               present=True,
+                               enabled=True,
+                               healthy=True,
+                               verbose=True,
+                               timeout=30)
 
         self.set_parameter("THR_FS_VALUE", 960)
         self.progress("Failing receiver (throttle-to-950)")
@@ -1462,6 +1491,9 @@ class AutoTestPlane(AutoTest):
         ret[8] = 1800
         return ret
 
+    def initial_mode_switch_mode(self):
+        return "MANUAL"
+
     def default_mode(self):
         return "MANUAL"
 
@@ -1540,7 +1572,7 @@ class AutoTestPlane(AutoTest):
             # message ADSB_VEHICLE 37 -353632614 1491652305 0 584070 0 0 0 "bob" 3 1 255 17
             self.set_parameter("RC12_OPTION", 38) # avoid-adsb
             self.set_rc(12, 2000)
-            self.set_parameter("ADSB_ENABLE", 1)
+            self.set_parameter("ADSB_TYPE", 1)
             self.set_parameter("AVD_ENABLE", 1)
             self.set_parameter("AVD_F_ACTION", mavutil.mavlink.MAV_COLLISION_ACTION_RTL)
             self.reboot_sitl()
@@ -1830,9 +1862,14 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Mission OK")
 
-    def fly_terrain_mission(self):
+    def test_airspeed_drivers(self):
+        self.set_parameter("ARSPD2_TYPE", 7)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.fly_mission("ap1.txt")
 
-        self.customise_SITL_commandline([], wipe=True)
+    def fly_terrain_mission(self):
 
         self.mavproxy.send("wp set 1\n")
         self.wait_ready_to_arm()
@@ -1853,8 +1890,8 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("EK3_IMU_MASK", 3) # use only 2 IMUs
         self.set_parameter("GPS_TYPE2", 1)
         self.set_parameter("SIM_GPS2_DISABLE", 0)
-        self.set_parameter("SIM_BARO2_DISABL", 0)
         self.set_parameter("SIM_BARO_COUNT", 2)
+        self.set_parameter("SIM_BAR2_DISABLE", 0)
         self.set_parameter("ARSPD2_TYPE", 2)
         self.set_parameter("ARSPD2_USE", 1)
         self.set_parameter("ARSPD2_PIN", 2)
@@ -1898,14 +1935,14 @@ class AutoTestPlane(AutoTest):
             self.start_subtest("BAROMETER: Freeze to last measured value")
             self.context_collect("STATUSTEXT")
             # create a barometer error by inhibiting any pressure change while changing altitude
-            old_parameter = self.get_parameter("SIM_BARO2_FREEZE")
-            self.set_parameter("SIM_BARO2_FREEZE", 1)
+            old_parameter = self.get_parameter("SIM_BAR2_FREEZE")
+            self.set_parameter("SIM_BAR2_FREEZE", 1)
             self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=lambda: self.set_rc(2, 2000), check_context=True)
             if self.lane_switches != [1, 0]:
                 raise NotAchievedException("Expected lane switch 0, got %s" % str(self.lane_switches[-1]))
             # Cleanup
             self.set_rc(2, 1500)
-            self.set_parameter("SIM_BARO2_FREEZE", old_parameter)
+            self.set_parameter("SIM_BAR2_FREEZE", old_parameter)
             self.context_clear_collection("STATUSTEXT")
             self.wait_heading(0, accuracy=10, timeout=60)
             self.wait_heading(180, accuracy=10, timeout=60)
@@ -2024,6 +2061,10 @@ class AutoTestPlane(AutoTest):
              "Fly throttle failsafe",
              self.test_throttle_failsafe),
 
+            ("NeedEKFToArm",
+             "Ensure we need EKF to be healthy to arm",
+             self.test_need_ekf_to_arm),
+
             ("ThrottleFailsafeFence",
              "Fly fence survives throttle failsafe",
              self.test_throttle_failsafe_fence),
@@ -2086,6 +2127,10 @@ class AutoTestPlane(AutoTest):
              "Test FrSky PassThrough serial output",
              self.test_frsky_passthrough),
 
+            ("FRSkyMAVlite",
+             "Test FrSky MAVlite serial output",
+             self.test_frsky_mavlite),
+
             ("FRSkyD",
              "Test FrSkyD serial output",
              self.test_frsky_d),
@@ -2126,6 +2171,10 @@ class AutoTestPlane(AutoTest):
              "Test EKF3 Affinity and Lane Switching",
              self.ekf_lane_switch),
 
+            ("AirspeedDrivers",
+             "Test AirSpeed drivers",
+             self.test_airspeed_drivers),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
@@ -2134,5 +2183,4 @@ class AutoTestPlane(AutoTest):
 
     def disabled_tests(self):
         return {
-            "Button": "See https://github.com/ArduPilot/ardupilot/issues/15259",
         }

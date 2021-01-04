@@ -123,6 +123,12 @@ void Plane::stabilize_pitch(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
+
+   // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
+   if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !auto_throttle_mode && flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+       demanded_pitch = landing.get_pitch_cd();
+   }
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, 
                                                                                            speed_scaler, 
                                                                                            disable_integrator));
@@ -371,7 +377,8 @@ void Plane::stabilize()
     }
     float speed_scaler = get_speed_scaler();
 
-    if (quadplane.in_tailsitter_vtol_transition()) {
+    uint32_t now = AP_HAL::millis();
+    if (quadplane.in_tailsitter_vtol_transition(now)) {
         /*
           during transition to vtol in a tailsitter try to raise the
           nose rapidly while keeping the wings level
@@ -380,7 +387,6 @@ void Plane::stabilize()
         nav_roll_cd = 0;
     }
 
-    uint32_t now = AP_HAL::millis();
     if (now - last_stabilize_ms > 2000) {
         // if we haven't run the rate controllers for 2 seconds then
         // reset the integrators
@@ -405,7 +411,7 @@ void Plane::stabilize()
                 control_mode == &mode_qrtl ||
                 control_mode == &mode_qacro ||
                 control_mode == &mode_qautotune) &&
-               !quadplane.in_tailsitter_vtol_transition()) {
+               !quadplane.in_tailsitter_vtol_transition(now)) {
         quadplane.control_run();
     } else {
         if (g.stick_mixing == STICK_MIXING_FBW && control_mode != &mode_stabilize) {

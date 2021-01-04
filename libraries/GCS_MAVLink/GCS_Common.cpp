@@ -207,16 +207,20 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
     float temp;
     bool got_temperature = battery.get_temperature(temp, instance);
 
-    // prepare array of individual cell voltage
+    // prepare arrays of individual cell voltages
     uint16_t cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN];
+    uint16_t cell_volts_ext[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN];
     if (battery.has_cell_voltages(instance)) {
         const AP_BattMonitor::cells& batt_cells = battery.get_cell_voltages(instance);
         // copy the first 10 cells
         memcpy(cell_volts, batt_cells.cells, sizeof(cell_volts));
-        // 10th cell reports the lowest voltage of the last 3 cells
-        for (uint8_t i = MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i < ARRAY_SIZE(batt_cells.cells); i++) {
-            cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1] = MIN(cell_volts[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN-1],
-                                                                              batt_cells.cells[i]);
+        // 11 ... 14 use a second cell_volts_ext array
+        for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN; i++) {
+            if (MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i < uint8_t(ARRAY_SIZE(batt_cells.cells))) {
+                cell_volts_ext[i] = batt_cells.cells[MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN+i];
+            } else {
+                cell_volts_ext[i] = 0;
+            }
         }
     } else {
         // for battery monitors that cannot provide voltages for individual cells the battery's total voltage is put into the first cell
@@ -231,6 +235,9 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
               cell_volts[i] = MIN(voltage, 65534.0f); // Can't send more then UINT16_MAX - 1 in a cell
               voltage -= 65534.0f;
           }
+        }
+        for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_EXT_LEN; i++) {
+            cell_volts_ext[i] = 0;
         }
     }
 
@@ -259,7 +266,8 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
                                     battery.capacity_remaining_pct(instance),
                                     0, // time remaining, seconds (not provided)
-                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED);
+                                    MAV_BATTERY_CHARGE_STATE_UNDEFINED,
+                                    cell_volts_ext); // Cell 11..14 voltages
 }
 
 // returns true if all battery instances were reported
@@ -299,7 +307,8 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         0,                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
         0,                                       // horizontal FOV
         0,                                       // vertical FOV
-        (const float *)nullptr);                 // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
+        (const float *)nullptr,                  // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
+        0);                                      // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
 }
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
@@ -387,7 +396,7 @@ void GCS_MAVLINK::send_proximity() const
                         PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
                         dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
                         0,                                              // Measurement covariance in centimeters, 0 for unknown / invalid readings
-                        0, 0, nullptr);
+                        0, 0, nullptr, 0);
             }
         }
     }
@@ -408,7 +417,7 @@ void GCS_MAVLINK::send_proximity() const
                 PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
                 0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
-                0, 0, nullptr);
+                0, 0, nullptr, 0);
     }
 }
 
@@ -888,14 +897,12 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
 }
 
 // typical runtime on fmuv3: 5 microseconds for 3 buckets
-void GCS_MAVLINK::find_next_bucket_to_send()
+void GCS_MAVLINK::find_next_bucket_to_send(uint16_t now16_ms)
 {
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_us = AP_HAL::micros();
 #endif
-
-    const uint16_t now16_ms{AP_HAL::millis16()};
 
     // all done sending this bucket... find another bucket...
     sending_bucket_id = no_bucket_to_send;
@@ -934,14 +941,13 @@ void GCS_MAVLINK::find_next_bucket_to_send()
 #endif
 }
 
-ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
+ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send(uint16_t now16_ms)
 {
     if (sending_bucket_id == no_bucket_to_send) {
         // could happen if all streamrates are zero?
         return no_message_to_send;
     }
 
-    const uint16_t now16_ms = AP_HAL::millis16();
     const uint16_t ms_since_last_sent = now16_ms - deferred_message_bucket[sending_bucket_id].last_sent_ms;
     if (ms_since_last_sent < get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id])) {
         // not time to send this bucket
@@ -954,7 +960,7 @@ ap_message GCS_MAVLINK::next_deferred_bucket_message_to_send()
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("next_deferred_bucket_message_to_send called on empty bucket");
 #endif
-        find_next_bucket_to_send();
+        find_next_bucket_to_send(now16_ms);
         return no_message_to_send;
     }
     return (ap_message)next;
@@ -1005,9 +1011,8 @@ int8_t GCS_MAVLINK::get_deferred_message_index(const ap_message id) const
     return -1;
 }
 
-int8_t GCS_MAVLINK::deferred_message_to_send_index()
+int8_t GCS_MAVLINK::deferred_message_to_send_index(uint16_t now16_ms)
 {
-    const uint16_t now16_ms = AP_HAL::millis16();
 
     if (next_deferred_message_to_send_cache == -1) {
         uint16_t ms_before_next_message_to_send = UINT16_MAX;
@@ -1066,6 +1071,7 @@ void GCS_MAVLINK::update_send()
 #endif
 
     const uint32_t start = AP_HAL::millis();
+    const uint16_t start16 = start & 0xFFFF;
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
@@ -1080,12 +1086,20 @@ void GCS_MAVLINK::update_send()
 
         // check if any "specially handled" messages should be sent out
         {
-            const int8_t next = deferred_message_to_send_index();
+            const int8_t next = deferred_message_to_send_index(start16);
             if (next != -1) {
                 if (!do_try_send_message(deferred_message[next].id)) {
                     break;
                 }
-                deferred_message[next].last_sent_ms += deferred_message[next].interval_ms;
+                // we try to keep output on a regular clock to avoid
+                // user support questions:
+                const uint16_t interval_ms = deferred_message[next].interval_ms;
+                deferred_message[next].last_sent_ms += interval_ms;
+                // but we do not want to try to catch up too much:
+                if (uint16_t(start16 - deferred_message[next].last_sent_ms) > interval_ms) {
+                    deferred_message[next].last_sent_ms = start16;
+                }
+
                 next_deferred_message_to_send_cache = -1; // deferred_message_to_send will recalculate
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
@@ -1118,7 +1132,7 @@ void GCS_MAVLINK::update_send()
             continue;
         }
 
-        ap_message next = next_deferred_bucket_message_to_send();
+        ap_message next = next_deferred_bucket_message_to_send(start16);
         if (next != no_message_to_send) {
             if (!do_try_send_message(next)) {
                 break;
@@ -1126,9 +1140,15 @@ void GCS_MAVLINK::update_send()
             bucket_message_ids_to_send.clear(next);
             if (bucket_message_ids_to_send.count() == 0) {
                 // we sent everything in the bucket.  Reschedule it.
-                deferred_message_bucket[sending_bucket_id].last_sent_ms +=
-                    get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id]);
-                find_next_bucket_to_send();
+                // we try to keep output on a regular clock to avoid
+                // user support questions:
+                const uint16_t interval_ms = get_reschedule_interval_ms(deferred_message_bucket[sending_bucket_id]);
+                deferred_message_bucket[sending_bucket_id].last_sent_ms += interval_ms;
+                // but we do not want to try to catch up too much:
+                if (uint16_t(start16 - deferred_message_bucket[sending_bucket_id].last_sent_ms) > interval_ms) {
+                    deferred_message_bucket[sending_bucket_id].last_sent_ms = start16;
+                }
+                find_next_bucket_to_send(start16);
             }
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
                 const uint32_t stop = AP_HAL::micros();
@@ -1173,7 +1193,7 @@ void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
     if (bucket == sending_bucket_id) {
         bucket_message_ids_to_send.clear(id);
         if (bucket_message_ids_to_send.count() == 0) {
-            find_next_bucket_to_send();
+            find_next_bucket_to_send(AP_HAL::millis16());
         } else {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (deferred_message_bucket[bucket].interval_ms == 0 &&
@@ -1668,7 +1688,7 @@ void GCS_MAVLINK::send_raw_imu()
 
     mavlink_msg_raw_imu_send(
         chan,
-        AP_HAL::micros(),
+        AP_HAL::micros64(),
         accel.x * 1000.0f / GRAVITY_MSS,
         accel.y * 1000.0f / GRAVITY_MSS,
         accel.z * 1000.0f / GRAVITY_MSS,
@@ -1732,8 +1752,8 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     bool have_data = false;
 
     float press_abs = 0.0f;
-    float temperature = 0.0f; // Absolute pressure temperature
-    float temperature_press_diff = 0.0f; // TODO: Differential pressure temperature
+    int16_t temperature = 0; // Absolute pressure temperature
+    int16_t temperature_press_diff = 0; // Differential pressure temperature
     if (instance < barometer.num_instances()) {
         press_abs = barometer.get_pressure(instance) * 0.01f;
         temperature = barometer.get_temperature(instance)*100;
@@ -1745,6 +1765,14 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
     if (airspeed != nullptr &&
         airspeed->enabled(instance)) {
         press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+        float temp;
+        if (airspeed->get_temperature(instance,temp)) {
+            temperature_press_diff = temp * 100;
+            if (temperature_press_diff == 0) {
+                // don't send zero as that is the value for 'no data'
+                temperature_press_diff = 1;
+            }
+        }
         have_data = true;
     }
 
@@ -2150,27 +2178,36 @@ void GCS_MAVLINK::handle_set_mode(const mavlink_message_t &msg)
 */
 MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32_t _custom_mode)
 {
-    MAV_RESULT result = MAV_RESULT_UNSUPPORTED;
     // only accept custom modes because there is no easy mapping from Mavlink flight modes to AC flight modes
     if (uint32_t(_base_mode) & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) {
-        if (AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
-            result = MAV_RESULT_ACCEPTED;
+        if (!AP::vehicle()->set_mode(_custom_mode, ModeReason::GCS_COMMAND)) {
+            // often we should be returning DENIED rather than FAILED
+            // here.  Perhaps a "has_mode" callback on AP_::vehicle()
+            // would do?
+            return MAV_RESULT_FAILED;
         }
-    } else if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    if (_base_mode == (MAV_MODE)MAV_MODE_FLAG_DECODE_POSITION_SAFETY) {
         // set the safety switch position. Must be in a command by itself
         if (_custom_mode == 0) {
             // turn safety off (pwm outputs flow to the motors)
             hal.rcout->force_safety_off();
-            result = MAV_RESULT_ACCEPTED;
-        } else if (_custom_mode == 1) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (_custom_mode == 1) {
             // turn safety on (no pwm outputs to the motors)
             if (hal.rcout->force_safety_on()) {
-                result = MAV_RESULT_ACCEPTED;
+                return MAV_RESULT_ACCEPTED;
             }
+            return MAV_RESULT_FAILED;
         }
+        return MAV_RESULT_DENIED;
     }
 
-    return result;
+    // Command is invalid (is supported but has invalid parameters)
+    return MAV_RESULT_DENIED;
 }
 
 /*
@@ -2227,6 +2264,11 @@ void GCS_MAVLINK::send_autopilot_version() const
     uint16_t product_id = 0;
     uint64_t uid = 0;
     uint8_t  uid2[MAVLINK_MSG_AUTOPILOT_VERSION_FIELD_UID2_LEN] = {0};
+
+    uint8_t uid_len = sizeof(uid2); // taken as reference and modified
+                                    // by following call:
+    hal.util->get_system_id_unformatted(uid2, uid_len);
+
     const AP_FWVersion &version = AP::fwversion();
 
     flight_sw_version = version.major << (8 * 3) | \
@@ -2610,17 +2652,6 @@ void GCS_MAVLINK::send_vfr_hud()
         vfr_hud_climbrate());
 }
 
-void GCS_MAVLINK::zero_rc_outputs()
-{
-    // Send an invalid signal to the motors to prevent spinning due to neutral (1500) pwm pulse being cut short
-    // For that matter, send an invalid signal to all channels to prevent undesired/unexpected behavior
-    SRV_Channels::cork();
-    for (int i=0; i<NUM_RC_CHANNELS; i++) {
-        hal.rcout->write(i, 0);
-    }
-    SRV_Channels::push();
-}
-
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 
@@ -2667,34 +2698,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    if (should_zero_rc_outputs_on_reboot()) {
-        zero_rc_outputs();
-    }
-
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED);
-    // Notify might want to blink some LEDs:
-    AP_Notify *notify = AP_Notify::get_singleton();
-    if (notify) {
-        AP_Notify::flags.firmware_update = 1;
-        notify->update();
-    }
-    // force safety on
-    hal.rcout->force_safety_on();
-
-    // flush pending parameter writes
-    AP_Param::flush();
-
-    // do not process incoming mavlink messages while we delay:
-    hal.scheduler->register_delay_callback(nullptr, 5);
-
-    // delay to give the ACK a chance to get out, the LEDs to flash,
-    // the IO board safety to be forced on, the parameters to flush, ...
-    hal.scheduler->delay(200);
 
     // when packet.param1 == 3 we reboot to hold in bootloader
     const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
-    hal.scheduler->reboot(hold_in_bootloader);
+
+    AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
 
     return MAV_RESULT_FAILED;
 }
@@ -3116,10 +3126,20 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
         packet.chan16_raw
     };
 
-    for (uint8_t i=0; i<ARRAY_SIZE(override_data); i++) {
+    for (uint8_t i=0; i<8; i++) {
         // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
         if (override_data[i] != UINT16_MAX) {
             RC_Channels::set_override(i, override_data[i], tnow);
+        }
+    }
+    for (uint8_t i=8; i<ARRAY_SIZE(override_data); i++) {
+        // Per MAVLink spec a value of zero or UINT16_MAX means to
+        // ignore this field.
+        if (override_data[i] != 0 && override_data[i] != UINT16_MAX) {
+            // per the mavlink spec, a value of UINT16_MAX-1 means
+            // return the field to RC radio values:
+            const uint16_t value = override_data[i] == (UINT16_MAX-1) ? 0 : override_data[i];
+            RC_Channels::set_override(i, value, tnow);
         }
     }
 }
@@ -3171,7 +3191,7 @@ void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg)
 {
-#if OSD_ENABLED
+#if OSD_PARAM_ENABLED
     AP_OSD *osd = AP::osd();
     if (osd != nullptr) {
         osd->handle_msg(msg, *this);
@@ -4148,7 +4168,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     const Location roi_loc {
         packet.x,
         packet.y,
-        (int32_t)(packet.z * 100.0f),
+        (int32_t)constrain_float(packet.z * 100.0f,INT32_MIN,INT32_MAX),
         frame
     };
     return handle_command_do_set_roi(roi_loc);
@@ -4163,9 +4183,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // support the extra fields).
 
     const Location roi_loc {
-        (int32_t)(packet.param5 * 1.0e7f),
-        (int32_t)(packet.param6 * 1.0e7f),
-        (int32_t)(packet.param7 * 100.0f),
+        (int32_t)constrain_float(packet.param5 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param6 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param7 * 100.0f, INT32_MIN, INT32_MAX),
         Location::AltFrame::ABOVE_HOME
     };
     return handle_command_do_set_roi(roi_loc);
@@ -4448,7 +4468,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 void GCS_MAVLINK::send_generator_status() const
 {
 #if GENERATOR_ENABLED
-    AP_Generator_RichenPower *generator = AP::generator();
+    AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return;
     }
@@ -4945,7 +4965,8 @@ void GCS::update_passthru(void)
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
 
-    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s);
+    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
+                                                    _passthru.baud1, _passthru.baud2);
     if (enabled && !_passthru.enabled) {
         _passthru.start_ms = now;
         _passthru.last_ms = 0;
@@ -4991,6 +5012,8 @@ void GCS::passthru_timer(void)
             return;
         }
         _passthru.start_ms = 0;
+        _passthru.port1->begin(_passthru.baud1);
+        _passthru.port2->begin(_passthru.baud2);
     }
 
     // while pass-thru is enabled lock both ports. They remain
@@ -5070,8 +5093,10 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
-    ret |= MAV_PROTOCOL_CAPABILITY_FTP;
-
+    if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
+        ret |= MAV_PROTOCOL_CAPABILITY_FTP;
+    }
+ 
     return ret;
 }
 

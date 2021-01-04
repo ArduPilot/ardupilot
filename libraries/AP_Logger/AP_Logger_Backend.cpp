@@ -89,6 +89,21 @@ void AP_Logger_Backend::start_new_log_reset_variables()
     _log_file_size_bytes = 0;
 }
 
+// We may need to make sure data is loggable before starting the
+// EKF; when allow_start_ekf we should be able to log that data
+bool AP_Logger_Backend::allow_start_ekf() const
+{
+    if (!_startup_messagewriter->fmt_done()) {
+        return false;
+    }
+    // we need to push all startup messages out, or the code in
+    // WriteBlockCheckStartupMessages bites us.
+    if (!_startup_messagewriter->finished()) {
+        return false;
+    }
+    return true;
+}
+
 // this method can be overridden to do extra things with your buffer.
 // for example, in AP_Logger_MAVLink we may push messages into the UART.
 void AP_Logger_Backend::push_log_blocks() {
@@ -102,6 +117,7 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     return true;
 #endif
+
     if (_startup_messagewriter->fmt_done()) {
         return true;
     }
@@ -133,6 +149,9 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
 // source more messages from the startup message writer:
 void AP_Logger_Backend::WriteMoreStartupMessages()
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    return;
+#endif
 
     if (_startup_messagewriter->finished()) {
         return;
@@ -150,6 +169,11 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
 
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+    // sure, sure we did....
+    return true;
+#endif
+
     // get log structure from front end:
     char ls_name[LS_NAME_SIZE] = {};
     char ls_format[LS_FORMAT_SIZE] = {};
@@ -299,7 +323,9 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
         if (charlen != 0) {
             char *tmp = va_arg(arg_list, char*);
-            memcpy(&buffer[offset], tmp, charlen);
+            uint8_t len = strnlen(tmp, charlen);
+            memcpy(&buffer[offset], tmp, len);
+            memset(&buffer[offset+len], 0, charlen-len);
             offset += charlen;
         }
     }
@@ -373,7 +399,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 
 bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
     validate_WritePrioritisedBlock(pBuffer, size);
 #endif
     if (!ShouldLog(is_critical)) {

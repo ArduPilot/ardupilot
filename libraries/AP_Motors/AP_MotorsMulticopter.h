@@ -87,12 +87,19 @@ public:
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
 
+    // converts desired thrust to linearized actuator output in a range of 0~1
+    float               thrust_to_actuator(float thrust_in);
+
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
         _thrust_compensation_callback = callback;
     }
     
+    // disable the use of motor torque to control yaw. Used when an external mechanism such
+    // as vectoring is used for yaw control
+    virtual void        disable_yaw_torque(void) {}
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -121,9 +128,6 @@ protected:
 
     // convert actuator output (0~1) range to pwm range
     int16_t             output_to_pwm(float _actuator_output);
-
-    // converts desired thrust to linearized actuator output in a range of 0~1
-    float               thrust_to_actuator(float thrust_in);
 
     // adds slew rate limiting to actuator output if MOT_SLEW_TIME > 0 and not shutdown
     void                set_actuator_with_slew(float& actuator_output, float input);

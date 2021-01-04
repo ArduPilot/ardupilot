@@ -44,8 +44,6 @@ protected:
 
 private:
 
-    int8_t last_warn_pin; // last pin used for reading pwm (used to recognise change in pin assignment)
-
     bool check_pin();
     void check_stop_pin();
     bool check_pins();

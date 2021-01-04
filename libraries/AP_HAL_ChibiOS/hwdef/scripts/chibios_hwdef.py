@@ -32,6 +32,9 @@ f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
 af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
 
+default_gpio = ['INPUT', 'FLOATING']
+
+
 vtypes = []
 
 # number of pins in each port
@@ -99,6 +102,9 @@ baro_list = []
 
 all_lines = []
 
+# map from uart names to SERIALn numbers
+uart_serial_num = {}
+
 mcu_type = None
 dual_USB_enabled = False
 
@@ -125,7 +131,6 @@ def get_mcu_lib(mcu):
     except ImportError:
         error("Unable to find module for MCU %s" % mcu)
 
-
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
     global pincount, ports, portmap, vtypes, mcu_type
@@ -141,7 +146,7 @@ def setup_mcu_type_defaults():
     for port in ports:
         portmap[port] = []
         for pin in range(pincount[port]):
-            portmap[port].append(generic_pin(port, pin, None, 'INPUT', []))
+            portmap[port].append(generic_pin(port, pin, None, default_gpio[0], default_gpio[1:]))
 
 
 def get_alt_function(mcu, pin, function):
@@ -522,6 +527,28 @@ class generic_pin(object):
 
         return ret
 
+    def periph_type(self):
+        '''return peripheral type from GPIO_PIN_TYPE class'''
+        patterns = {
+            'USART*RX' : 'PERIPH_TYPE::UART_RX',
+            'UART*RX' : 'PERIPH_TYPE::UART_RX',
+            'USART*TX' : 'PERIPH_TYPE::UART_TX',
+            'UART*TX' : 'PERIPH_TYPE::UART_TX',
+            'I2C*SDA' : 'PERIPH_TYPE::I2C_SDA',
+            'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
+        }
+        for k in patterns.keys():
+            if fnmatch.fnmatch(self.label, k):
+                return patterns[k]
+        return 'PERIPH_TYPE::OTHER'
+
+    def periph_instance(self):
+        '''return peripheral instance'''
+        result = re.match(r'[A-Z]*([0-9]*)', self.type)
+        if result:
+            return int(result.group(1))
+        return 0
+
     def __str__(self):
         str = ''
         if self.af is not None:
@@ -622,12 +649,14 @@ def write_mcu_config(f):
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
         build_flags.append('USE_FATFS=yes')
+        env_vars['WITH_FATFS'] = "1"
     elif have_type_prefix('SDMMC'):
         f.write('// SDMMC available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
         f.write('#define STM32_SDC_USE_SDMMC1 TRUE\n')
         build_flags.append('USE_FATFS=yes')
+        env_vars['WITH_FATFS'] = "1"
     elif has_sdcard_spi():
         f.write('// MMC via SPI available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
@@ -635,6 +664,7 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SDC FALSE\n')
         f.write('#define HAL_SDCARD_SPI_HOOK TRUE\n')
         build_flags.append('USE_FATFS=yes')
+        env_vars['WITH_FATFS'] = "1"
     else:
         f.write('#define HAL_USE_SDC FALSE\n')
         build_flags.append('USE_FATFS=no')
@@ -651,10 +681,13 @@ def write_mcu_config(f):
     else:
         env_vars['PROCESS_STACK'] = "0x2000"
 
+    # MAIN_STACK is location of initial stack on startup and is also the stack
+    # used for slow interrupts. It needs to be big enough for maximum interrupt
+    # nesting
     if get_config('MAIN_STACK', required=False):
         env_vars['MAIN_STACK'] = get_config('MAIN_STACK')
     else:
-        env_vars['MAIN_STACK'] = "0x400"
+        env_vars['MAIN_STACK'] = "0x600"
 
     if get_config('IOMCU_FW', required=False):
         env_vars['IOMCU_FW'] = get_config('IOMCU_FW')
@@ -718,6 +751,12 @@ def write_mcu_config(f):
     f.write('\n// APJ board ID (for bootloaders)\n')
     f.write('#define APJ_BOARD_ID %s\n' % get_config('APJ_BOARD_ID'))
 
+    f.write('''
+#ifndef HAL_ENABLE_THREAD_STATISTICS
+#define HAL_ENABLE_THREAD_STATISTICS FALSE
+#endif
+    ''')
+
     lib = get_mcu_lib(mcu_type)
     build_info = lib.build
 
@@ -764,7 +803,6 @@ def write_mcu_config(f):
 #define HAL_NO_UARTDRIVER
 #define HAL_NO_PRINTF
 #define HAL_NO_CCM
-#define CH_DBG_STATISTICS FALSE
 #define CH_CFG_USE_TM FALSE
 #define CH_CFG_USE_REGISTRY FALSE
 #define CH_CFG_USE_WAITEXIT FALSE
@@ -790,11 +828,8 @@ def write_mcu_config(f):
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
 
-    if 'AP_PERIPH' in env_vars:
-        f.write('''
-#define CH_DBG_ENABLE_STACK_CHECK FALSE
-''')
-
+    if not args.bootloader:
+        f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
 
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
@@ -992,6 +1027,8 @@ def write_IMU_config(f):
             '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
             % (n, wrapper, driver, ','.join(dev[1:])))
     if len(devlist) > 0:
+        if len(devlist) < 3:
+            f.write('#define INS_MAX_INSTANCES %u\n' % len(devlist))
         f.write('#define HAL_INS_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
 
@@ -1109,8 +1146,10 @@ def get_UART_ORDER():
     while len(serial_order) < 4:
         serial_order += ['EMPTY']
     uart_order = []
+    global uart_serial_num
     for i in range(len(serial_order)):
         uart_order.append(serial_order[map[i]])
+        uart_serial_num[serial_order[i]] = i
     return uart_order
 
 def write_UART_config(f):
@@ -1122,7 +1161,7 @@ def write_UART_config(f):
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
-    devnames = "ABCDEFGH"
+    devnames = "ABCDEFGHI"
     sdev = 0
     idx = 0
     num_empty_uarts = 0
@@ -1177,21 +1216,23 @@ def write_UART_config(f):
         rts_line = make_line(dev + '_RTS')
         if rts_line != "0":
             have_rts_cts = True
+            f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % uart_serial_num[dev])
+
         if dev.startswith('OTG2'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
             OTG2_index = uart_list.index(dev)
             dual_USB_enabled = True
         elif dev.startswith('OTG'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0}\n'
                 % dev)
         else:
             need_uart_driver = True
             f.write(
-                "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, false, "
-                % (dev, n))
+                "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, %u, false, "
+                % (dev, n, n))
             if mcu_series.startswith("STM32F1"):
                 f.write("%s, %s, %s, " % (tx_line, rx_line, rts_line))
             else:
@@ -1228,8 +1269,8 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    if num_uarts > 8:
-        error("Exceeded max num UARTs of 8 (%u)" % num_uarts)
+    if num_uarts > 9:
+        error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
     f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
 
 
@@ -1293,12 +1334,12 @@ def write_I2C_config(f):
         scl_line = make_line('I2C%u_SCL' % n)
         f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
-#define HAL_I2C%u_CONFIG { &I2CD%u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
 #else
-#define HAL_I2C%u_CONFIG { &I2CD%u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
 #endif
 '''
-                % (n, n, n, n, n, n, scl_line, sda_line, n, n, scl_line, sda_line))
+                % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
     f.write('\n#define HAL_I2C_DEVICE_LIST %s\n\n' % ','.join(devlist))
 
 
@@ -1321,8 +1362,10 @@ def write_PWM_config(f):
     rc_in = None
     rc_in_int = None
     alarm = None
+    bidir = None
     pwm_out = []
     pwm_timers = []
+    has_bidir = False
     for l in bylabel.keys():
         p = bylabel[l]
         if p.type.startswith('TIM'):
@@ -1335,9 +1378,12 @@ def write_PWM_config(f):
             else:
                 if p.extra_value('PWM', type=int) is not None:
                     pwm_out.append(p)
+                if p.has_extra('BIDIR'):
+                    bidir = p
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
 
+    f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
     if not pwm_out and not alarm:
         print("No PWM output defined")
         f.write('''
@@ -1418,6 +1464,8 @@ def write_PWM_config(f):
     f.write('\n')
 
     f.write('// PWM timer config\n')
+    if bidir is not None:
+        f.write('#define HAL_WITH_BIDIR_DSHOT\n')
     for t in sorted(pwm_timers):
         n = int(t[3:])
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
@@ -1457,11 +1505,27 @@ def write_PWM_config(f):
             advanced_timer = 'false'
         pwm_clock = 1000000
         period = 20000 * pwm_clock / 1000000
+        hal_icu_def = ''
+        hal_icu_cfg = ''
+        if bidir is not None:
+            hal_icu_cfg = '\n          {'
+            hal_icu_def = '\n'
+            for i in range(1,5):
+                hal_icu_cfg += '{HAL_IC%u_CH%u_DMA_CONFIG},' % (n, i)
+                hal_icu_def +='''#if defined(STM32_TIM_TIM%u_CH%u_DMA_STREAM) && defined(STM32_TIM_TIM%u_CH%u_DMA_CHAN)
+# define HAL_IC%u_CH%u_DMA_CONFIG true, STM32_TIM_TIM%u_CH%u_DMA_STREAM, STM32_TIM_TIM%u_CH%u_DMA_CHAN
+#else
+# define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
+#endif
+''' % (n, i, n, i, n, i, n, i, n, i, n, i)
+            hal_icu_cfg += '},  \\'
+
+
         f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
 # define HAL_PWM%u_DMA_CONFIG true, STM32_TIM_TIM%u_UP_DMA_STREAM, STM32_TIM_TIM%u_UP_DMA_CHAN
 #else
 # define HAL_PWM%u_DMA_CONFIG false, 0, 0
-#endif\n''' % (n, n, n, n, n, n))
+#endif\n%s''' % (n, n, n, n, n, n, hal_icu_def))
         f.write('''#define HAL_PWM_GROUP%u { %s, \\
         {%u, %u, %u, %u}, \\
         /* Group Initial Config */ \\
@@ -1476,14 +1540,14 @@ def write_PWM_config(f):
            {%s, NULL}, \\
            {%s, NULL}  \\
           }, 0, 0}, &PWMD%u, \\
-          HAL_PWM%u_DMA_CONFIG, \\
+          HAL_PWM%u_DMA_CONFIG, \\%s
           { %u, %u, %u, %u }, \\
           { %s, %s, %s, %s }}\n''' %
                 (group, advanced_timer,
                  chan_list[0], chan_list[1], chan_list[2], chan_list[3],
                  pwm_clock, period,
                  chan_mode[0], chan_mode[1], chan_mode[2], chan_mode[3],
-                 n, n,
+                 n, n, hal_icu_cfg,
                  alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
                  pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
     f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
@@ -1650,7 +1714,7 @@ def write_alt_config(f):
     for alt in altmap.keys():
         for pp in altmap[alt].keys():
             p = altmap[alt][pp]
-            f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, str(p)))
+            f.write("    { %u, %s, PAL_LINE(GPIO%s,%uU), %s, %u}, /* %s */ \\\n" % (alt, p.pal_modeline(), p.port, p.pin, p.periph_type(), p.periph_instance(), str(p)))
     f.write('}\n\n')
 
 def write_all_lines(hwdat):
@@ -1817,6 +1881,9 @@ def build_peripheral_list():
             periph_pins.append(altmap[alt][p])
     for p in periph_pins:
         type = p.type
+        if type.startswith('TIM'):
+            # we need to independently demand DMA for each channel
+            type = p.label
         if type in done:
             continue
         for prefix in prefixes:
@@ -1847,9 +1914,13 @@ def build_peripheral_list():
                 peripherals.append(label)
             elif not p.has_extra('ALARM') and not p.has_extra('RCININT'):
                 # get the TIMn_UP DMA channels for DShot
-                label = type + '_UP'
+                label = p.type + '_UP'
                 if label not in peripherals and not p.has_extra('NODMA'):
                     peripherals.append(label)
+                ch_label = type
+                (_, _, compl) = parse_timer(ch_label)
+                if ch_label not in peripherals and p.has_extra('BIDIR') and not compl:
+                    peripherals.append(ch_label)
         done.add(type)
     return peripherals
 
@@ -1906,7 +1977,7 @@ def romfs_add_dir(subdirs):
 def process_line(line):
     '''process one line of pin definition file'''
     global allpins, imu_list, compass_list, baro_list
-    global mcu_type, mcu_series
+    global mcu_type, mcu_series, default_gpio
     all_lines.append(line)
     a = shlex.split(line, posix=False)
     # keep all config lines for later use
@@ -1951,6 +2022,10 @@ def process_line(line):
 
     if p is None and line.find('ALT(') != -1:
         error("ALT() invalid for %s" % a[0])
+
+    if a[0] == 'DEFAULTGPIO':
+        default_gpio = a[1:]
+        return
 
     config[a[0]] = a[1:]
     if p is not None:

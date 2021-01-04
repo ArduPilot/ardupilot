@@ -220,9 +220,6 @@ public:
     ///     next_destination should be set to the next segment's destination if the seg_end_type is SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE
     bool set_spline_origin_and_destination(const Vector3f& origin, const Vector3f& destination, bool terrain_alt, bool stopped_at_start, spline_segment_end_type seg_end_type, const Vector3f& next_destination);
 
-    /// reached_spline_destination - true when we have come within RADIUS cm of the waypoint
-    bool reached_spline_destination() const { return _flags.reached_destination; }
-
     /// update_spline - update spline controller
     bool update_spline();
 

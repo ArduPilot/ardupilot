@@ -22,6 +22,21 @@
 
 #include "AP_Filesystem_Available.h"
 
+// returned structure from a load_file() call
+class FileData {
+public:
+    uint32_t length;
+    const uint8_t *data;
+
+    FileData(void *_backend) :
+        backend(_backend) {}
+    
+    // destructor to free data
+    ~FileData();
+private:
+    const void *backend;
+};
+
 class AP_Filesystem_Backend {
 
 public:
@@ -49,4 +64,18 @@ public:
 
     // set modification time on a file
     virtual bool set_mtime(const char *filename, const uint32_t mtime_sec) { return false; }
+
+    // retry mount of filesystem if needed
+    virtual bool retry_mount(void) { return true; }
+
+    // unmount filesystem for reboot
+    virtual void unmount(void) {}
+
+    /*
+      load a full file. Use delete to free the data
+     */
+    virtual FileData *load_file(const char *filename);
+
+    // unload data from load_file()
+    virtual void unload_file(FileData *fd);
 };

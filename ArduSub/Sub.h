@@ -128,6 +128,10 @@ public:
 
     Sub(void);
 
+protected:
+
+    bool should_zero_rc_outputs_on_reboot() const override { return true; }
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -606,6 +610,7 @@ private:
     void auto_spline_start(const Location& destination, bool stopped_at_start, AC_WPNav::spline_segment_end_type seg_end_type, const Location& next_destination);
     void log_init(void);
     void accel_cal_update(void);
+    void read_airspeed();
 
     void failsafe_leak_check();
     void failsafe_internal_pressure_check();
@@ -633,6 +638,11 @@ private:
     uint32_t last_do_motor_test_ms = 0;
 
     bool control_check_barometer();
+
+    // vehicle specific waypoint info helpers
+    bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_bearing_deg(float &bearing) const override;
+    bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
     enum Failsafe_Action {
         Failsafe_Action_None    = 0,

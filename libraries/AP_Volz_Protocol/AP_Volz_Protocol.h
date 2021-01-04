@@ -48,6 +48,9 @@
 #define VOLZ_EXTENDED_POSITION_CENTER 		0x0800	// Extended Position Data Format defines 0 as 0x0800 - decimal 2048
 #define VOLZ_EXTENDED_POSITION_MAX 			0x0F80	// Extended Position Data Format defines +100 as 0x0F80 decimal 3968 -> full range decimal 3840
 
+#define VOLZ_PWM_POSITION_MIN				1000
+#define VOLZ_PWM_POSITION_MAX				2000
+
 class AP_Volz_Protocol {
 public:
     AP_Volz_Protocol();

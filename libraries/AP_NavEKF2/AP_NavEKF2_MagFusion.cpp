@@ -115,7 +115,7 @@ void NavEKF2_core::controlMagYawReset()
 
             // send initial alignment status to console
             if (!yawAlignComplete) {
-                gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u ext nav yaw alignment complete",(unsigned)imu_index);
             }
 
             // record the reset as complete and also record the in-flight reset as complete to stop further resets when height is gained
@@ -148,14 +148,14 @@ void NavEKF2_core::controlMagYawReset()
 
                 // send initial alignment status to console
                 if (!yawAlignComplete) {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u initial yaw alignment complete",(unsigned)imu_index);
                 }
 
                 // send in-flight yaw alignment status to console
                 if (finalResetRequest) {
-                    gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u in-flight yaw alignment complete",(unsigned)imu_index);
                 } else if (interimResetRequest) {
-                    gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 IMU%u ground mag anomaly, yaw re-aligned",(unsigned)imu_index);
                 }
 
                 // update the yaw reset completed status
@@ -194,7 +194,7 @@ void NavEKF2_core::realignYawGPS()
         float yawErr = MAX(fabsf(wrap_PI(gpsYaw - velYaw)),fabsf(wrap_PI(gpsYaw - eulerAngles.z)));
 
         // If the angles disagree by more than 45 degrees and GPS innovations are large or no previous yaw alignment, we declare the magnetic yaw as bad
-        badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
+        bool badMagYaw = ((yawErr > 0.7854f) && (velTestRatio > 1.0f) && (PV_AidingMode == AID_ABSOLUTE)) || !yawAlignComplete;
 
         // correct yaw angle using GPS ground course if compass yaw bad
         if (badMagYaw) {
@@ -206,7 +206,7 @@ void NavEKF2_core::realignYawGPS()
             ResetPosition();
 
             // send yaw alignment information to console
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned to GPS velocity",(unsigned)imu_index);
 
             // zero the attitude covariances because the correlations will now be invalid
             zeroAttCovOnly();
@@ -235,9 +235,6 @@ void NavEKF2_core::realignYawGPS()
 // select fusion of magnetometer data
 void NavEKF2_core::SelectMagFusion()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseMagnetometer);
-
     // clear the flag that lets other processes know that the expensive magnetometer fusion operation has been performed on that time step
     // used for load levelling
     magFusePerformed = false;
@@ -293,9 +290,7 @@ void NavEKF2_core::SelectMagFusion()
             }
 
             // fuse the three magnetometer componenents using sequential fusion of each axis
-            hal.util->perf_begin(_perf_test[0]);
             FuseMagnetometer();
-            hal.util->perf_end(_perf_test[0]);
 
             // zero the test ratio output from the inactive simple magnetometer yaw fusion
             yawTestRatio = 0.0f;
@@ -317,9 +312,6 @@ void NavEKF2_core::SelectMagFusion()
         bodyMagFieldVar.y = P[20][20];
         bodyMagFieldVar.z = P[21][21];
     }
-
-    // stop performance timer
-    hal.util->perf_end(_perf_FuseMagnetometer);
 }
 
 /*
@@ -789,10 +781,11 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler321.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance;
+                float gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
-                    gsfYawVariance < sq(radians(15.0f))) {
+                    gsfYawVariance < sq(radians(15.0f)) &&
+                    (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
                         measured_yaw = gsfYaw;
                         R_YAW = gsfYawVariance;
                 } else {
@@ -849,10 +842,11 @@ void NavEKF2_core::fuseEulerYaw()
             measured_yaw =  euler312.z;
         } else {
             if (imuSampleTime_ms - prevBetaStep_ms > 1000 && yawEstimator != nullptr) {
-                float gsfYaw, gsfYawVariance;
+                float gsfYaw, gsfYawVariance, velInnovLength;
                 if (yawEstimator->getYawData(gsfYaw, gsfYawVariance) &&
                     is_positive(gsfYawVariance) &&
-                    gsfYawVariance < sq(radians(15.0f))) {
+                    gsfYawVariance < sq(radians(15.0f)) &&
+                    (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
                         measured_yaw = gsfYaw;
                         R_YAW = gsfYawVariance;
                 } else {
@@ -1174,8 +1168,11 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         return false;
     };
 
-    float yawEKFGSF, yawVarianceEKFGSF;
-    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) && is_positive(yawVarianceEKFGSF) && yawVarianceEKFGSF < sq(radians(15.0f))) {
+    float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
+    if (yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
+        is_positive(yawVarianceEKFGSF) &&
+        yawVarianceEKFGSF < sq(radians(15.0f)) &&
+        (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov))) {
 
         // keep roll and pitch and reset yaw
         resetQuatStateYawOnly(yawEKFGSF, yawVarianceEKFGSF, false);
@@ -1186,9 +1183,9 @@ bool NavEKF2_core::EKFGSF_resetMainFilterYaw()
         EKFGSF_yaw_reset_count++;
 
         if (!use_compass()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned using GPS",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF2 IMU%u yaw aligned using GPS",(unsigned)imu_index);
         } else {
-            gcs().send_text(MAV_SEVERITY_WARNING, "EKF2 IMU%u emergency yaw reset",(unsigned)imu_index);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 IMU%u emergency yaw reset",(unsigned)imu_index);
         }
 
         // Fail the magnetomer so it doesn't get used and pull the yaw away from the correct value

@@ -39,6 +39,9 @@ public:
     // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
     virtual void align_sensor_to_vehicle() {}
 
+    // handle request to align position with AHRS
+    virtual void align_position_to_ahrs(bool align_xy, bool align_z) {}
+
     // arming check - by default no checks performed
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const { return true; }
 
