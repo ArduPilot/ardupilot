@@ -63,15 +63,18 @@ void AP_OpticalFlow_MSP::update(void)
         const float flow_scale_factor_x = 1.0f + 0.001f * _flowScaler().x;
         const float flow_scale_factor_y = 1.0f + 0.001f * _flowScaler().y;
 
-        // copy flow rates to state structure and invert flow vector (needed for MSP flow message)
-        state.flowRate = { ((float)flow_sum.x / count) * flow_scale_factor_x * dt * -1,
-                           ((float)flow_sum.y / count) * flow_scale_factor_y * dt * -1 };
+        // copy flow rates to state structure
+        state.flowRate = { ((float)flow_sum.x / count) * flow_scale_factor_x * dt,
+                           ((float)flow_sum.y / count) * flow_scale_factor_y * dt};
 
         // copy average body rate to state structure
         state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };
 
+        // invert flow vector to align it with default sensor orientation (required on matek 3901)
+        state.flowRate *= -1;
+
+        // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
-        _applyYaw(state.bodyRate);
     } else {
         // first frame received in some time so cannot calculate flow values
         state.flowRate.zero();
@@ -105,4 +108,3 @@ void AP_OpticalFlow_MSP::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 }
 
 #endif // HAL_MSP_OPTICALFLOW_ENABLED
-
