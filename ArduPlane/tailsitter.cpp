@@ -220,7 +220,7 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     }
 
     // If too much time has elapsed, return true
-    return (uint32_t)(AP_HAL::millis() - transition_start_ms) > uint32_t(transition_time_ms) + (uint32_t)tailsitter.vertical_acceleration_time;
+    return (uint32_t)(AP_HAL::millis() - transition_start_ms) > uint32_t(transition_time_ms);
 }
 
 
@@ -361,8 +361,4 @@ void QuadPlane::tailsitter_speed_scaling(void)
         v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
-}
-
-float QuadPlane::tailsitter_get_transition_throttle() {
-    return constrain_float(tailsitter.transition_throttle, 0.5f, 1.0f);
 }
