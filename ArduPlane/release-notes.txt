@@ -1,3 +1,16 @@
+Release 4.0.8beta1, 6th January 2021
+------------------------------------
+
+This is a minor release with just bug fixes:
+
+ - fixed a bug where an unhealthy airspeed sensor could be fused in EKF2/EKF3
+
+ - fixed FPort RSSI scaling
+
+ - fixed timestamp on RAW_IMU data to be 64 bit
+
+Happy flying!
+
 Release 4.0.7, 3rd November 2020
 --------------------------------
 
