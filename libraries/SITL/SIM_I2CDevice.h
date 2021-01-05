@@ -30,6 +30,10 @@ public:
     void set_register(uint8_t reg, uint16_t value);
     void set_register(uint8_t reg, int16_t value);
 
+    uint16_t get_reg_value(uint8_t reg) {
+        return be16toh(word[reg]);
+    }
+
 protected:
 
     uint16_t word[256];
