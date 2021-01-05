@@ -1,9 +1,24 @@
-Release 4.0.7beta1, 2nd October 2020
+Release 4.0.8beta1, 6th January 2021
 ------------------------------------
 
-This is a minor release with some important bug fixes against 4.0.6.
+This is a minor release with just bug fixes:
 
-The changes are:
+ - fixed a bug where an unhealthy airspeed sensor could be fused in EKF2/EKF3
+
+ - fixed FPort RSSI scaling
+
+ - fixed timestamp on RAW_IMU data to be 64 bit
+
+Happy flying!
+
+Release 4.0.7, 3rd November 2020
+--------------------------------
+
+This is a minor release over 4.0.6. The changes are:
+
+ - enable telem3 on Durandal
+
+ - fixed SBUS output when scanning for FPort on IOMCU
 
  - Fixed F32Lightening board IMU fast sampling issue
 
