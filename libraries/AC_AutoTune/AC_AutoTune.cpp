@@ -2,35 +2,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
-#ifdef HELI_BUILD
-// heli defines
-
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U    // timeout for tuning mode's testing step
-#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
-#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
-#define AUTOTUNE_RP_ACCEL_MIN           4000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN            1000.0f     // Minimum acceleration for Yaw
-
-#else
-
-// Frame specific defaults
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
-#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
-#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
-#define AUTOTUNE_RP_ACCEL_MIN           4000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN            1000.0f     // Minimum acceleration for Yaw
-
-#endif // HELI_BUILD
-
-
 /*
  * autotune support for multicopters
  *
@@ -65,6 +36,46 @@
  *      j) decreases stab P by 25%
  *
  */
+
+#define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ # define AUTOTUNE_LEVEL_ANGLE_CD           500     // angle which qualifies as level (Plane uses more relaxed 5deg)
+ # define AUTOTUNE_LEVEL_RATE_RP_CD        1000     // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
+#else
+ # define AUTOTUNE_LEVEL_ANGLE_CD           250     // angle which qualifies as level
+ # define AUTOTUNE_LEVEL_RATE_RP_CD         500     // rate which qualifies as level for roll and pitch
+#endif
+#define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
+#define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
+#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
+#define AUTOTUNE_RP_ACCEL_MIN           4000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN            1000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
+#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
+#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+
+// roll and pitch axes
+#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_RATE_RLLPIT_CDS     18000   // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+
+// yaw axis
+#define AUTOTUNE_TARGET_ANGLE_YAW_CD        3000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_RATE_YAW_CDS        9000    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // minimum target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
+
+#ifdef HELI_BUILD
+// heli defines
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U    // timeout for tuning mode's testing step
+#else
+// Frame specific defaults
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
+#endif // HELI_BUILD
 
 // second table of user settable parameters for quadplanes, this
 // allows us to go beyond the 64 parameter limit
@@ -605,12 +616,12 @@ void AC_AutoTune::control_attitude()
 
             // increment the tune type to the next one in tune sequence
             tune_seq_curr++;
-            tune_type = TuneType(tune_seq[tune_seq_curr]);
+            tune_type = tune_seq[tune_seq_curr];
 
             if (tune_type == TUNE_COMPLETE) {
                 // we've reached the end of a D-up-down PI-up-down tune type cycle
                 tune_seq_curr = 0;
-                tune_type = TuneType(tune_seq[tune_seq_curr]);
+                tune_type = tune_seq[tune_seq_curr];
 
                 // advance to the next axis
                 bool complete = false;
@@ -688,7 +699,7 @@ void AC_AutoTune::backup_gains_and_initialise()
 
     // start at the beginning of tune sequence
     tune_seq_curr = 0;
-    tune_type = TuneType(tune_seq[tune_seq_curr]);
+    tune_type = tune_seq[tune_seq_curr];
 
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
@@ -753,7 +764,7 @@ void AC_AutoTune::load_orig_gains()
 {
     attitude_control->bf_feedforward(orig_bf_feedforward);
     if (roll_enabled()) {
-        if (!is_zero(orig_roll_rp) || (is_zero(orig_roll_rp) && allow_zero_rate_p())) {
+        if (!is_zero(orig_roll_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_roll_pid().kP(orig_roll_rp);
             attitude_control->get_rate_roll_pid().kI(orig_roll_ri);
             attitude_control->get_rate_roll_pid().kD(orig_roll_rd);
@@ -764,7 +775,7 @@ void AC_AutoTune::load_orig_gains()
         }
     }
     if (pitch_enabled()) {
-        if (!is_zero(orig_pitch_rp) || (is_zero(orig_pitch_rp) && allow_zero_rate_p())) {
+        if (!is_zero(orig_pitch_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_pitch_pid().kP(orig_pitch_rp);
             attitude_control->get_rate_pitch_pid().kI(orig_pitch_ri);
             attitude_control->get_rate_pitch_pid().kD(orig_pitch_rd);
@@ -797,9 +808,9 @@ void AC_AutoTune::load_tuned_gains()
         attitude_control->set_accel_pitch_max(0.0f);
     }
     if (roll_enabled()) {
-        if (!is_zero(tune_roll_rp) || (is_zero(tune_roll_rp) && allow_zero_rate_p())) {
+        if (!is_zero(tune_roll_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-            attitude_control->get_rate_roll_pid().kI(get_load_tuned_ri());
+            attitude_control->get_rate_roll_pid().kI(get_load_tuned_ri(axis));
             attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
             attitude_control->get_rate_roll_pid().ff(tune_roll_rff);
             attitude_control->get_angle_roll_p().kP(tune_roll_sp);
@@ -807,9 +818,9 @@ void AC_AutoTune::load_tuned_gains()
         }
     }
     if (pitch_enabled()) {
-        if (!is_zero(tune_pitch_rp) || (is_zero(tune_pitch_rp) && allow_zero_rate_p())) {
+        if (!is_zero(tune_pitch_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-            attitude_control->get_rate_pitch_pid().kI(get_load_tuned_ri());
+            attitude_control->get_rate_pitch_pid().kI(get_load_tuned_ri(axis));
             attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
             attitude_control->get_rate_pitch_pid().ff(tune_pitch_rff);
             attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
@@ -819,7 +830,7 @@ void AC_AutoTune::load_tuned_gains()
     if (yaw_enabled()) {
         if (!is_zero(tune_yaw_rp)) {
             attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
-            attitude_control->get_rate_yaw_pid().kI(get_load_tuned_ri());
+            attitude_control->get_rate_yaw_pid().kI(get_load_tuned_ri(axis));
             attitude_control->get_rate_yaw_pid().kD(get_load_tuned_yaw_rd());
             attitude_control->get_rate_yaw_pid().ff(tune_yaw_rff);
             attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
@@ -838,7 +849,7 @@ void AC_AutoTune::load_intra_test_gains()
     attitude_control->bf_feedforward(true);
     if (roll_enabled()) {
         attitude_control->get_rate_roll_pid().kP(orig_roll_rp);
-        attitude_control->get_rate_roll_pid().kI(get_intra_test_ri());
+        attitude_control->get_rate_roll_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_roll_pid().kD(orig_roll_rd);
         attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
         attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
@@ -846,7 +857,7 @@ void AC_AutoTune::load_intra_test_gains()
     }
     if (pitch_enabled()) {
         attitude_control->get_rate_pitch_pid().kP(orig_pitch_rp);
-        attitude_control->get_rate_pitch_pid().kI(get_intra_test_ri());
+        attitude_control->get_rate_pitch_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_pitch_pid().kD(orig_pitch_rd);
         attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
         attitude_control->get_rate_pitch_pid().filt_T_hz(orig_pitch_fltt);
@@ -854,7 +865,7 @@ void AC_AutoTune::load_intra_test_gains()
     }
     if (yaw_enabled()) {
         attitude_control->get_rate_yaw_pid().kP(orig_yaw_rp);
-        attitude_control->get_rate_yaw_pid().kI(get_intra_test_ri());
+        attitude_control->get_rate_yaw_pid().kI(get_intra_test_ri(axis));
         attitude_control->get_rate_yaw_pid().kD(orig_yaw_rd);
         attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
         attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
@@ -1009,17 +1020,17 @@ void AC_AutoTune::update_gcs(uint8_t message_id) const
 }
 
 // axis helper functions
-bool AC_AutoTune::roll_enabled()
+bool AC_AutoTune::roll_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_ROLL;
 }
 
-bool AC_AutoTune::pitch_enabled()
+bool AC_AutoTune::pitch_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_PITCH;
 }
 
-bool AC_AutoTune::yaw_enabled()
+bool AC_AutoTune::yaw_enabled() const
 {
     return axis_bitmask & AUTOTUNE_AXIS_BITMASK_YAW;
 }
@@ -1271,7 +1282,7 @@ void AC_AutoTune::twitch_test_init()
 }
 
 //run twitch test
-void AC_AutoTune::twitch_test_run(uint8_t test_axis, const float dir_sign)
+void AC_AutoTune::twitch_test_run(AxisType test_axis, const float dir_sign)
 {
     // disable rate limits
     attitude_control->use_sqrt_controller(false);
