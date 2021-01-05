@@ -104,16 +104,12 @@ void AC_AutoTune_Multi::do_gcs_announcements()
 
 void AC_AutoTune_Multi::test_init()
 {
-
     twitch_test_init();
-
 }
 
-void AC_AutoTune_Multi::test_run(uint8_t test_axis, const float dir_sign)
+void AC_AutoTune_Multi::test_run(AxisType test_axis, const float dir_sign)
 {
-
     twitch_test_run(test_axis, dir_sign);
-
 }
 
 // load_test_gains - load the to-be-tested gains for a single axis
@@ -197,7 +193,8 @@ void AC_AutoTune_Multi::save_tuning_gains()
     reset();
 }
 
-void AC_AutoTune_Multi::updating_rate_p_up_all(uint8_t test_axis)
+// generic method used to update gains for the rate p up tune type
+void AC_AutoTune_Multi::updating_rate_p_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -212,7 +209,8 @@ void AC_AutoTune_Multi::updating_rate_p_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Multi::updating_rate_d_up_all(uint8_t test_axis)
+// generic method used to update gains for the rate d up tune type
+void AC_AutoTune_Multi::updating_rate_d_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -227,7 +225,8 @@ void AC_AutoTune_Multi::updating_rate_d_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Multi::updating_rate_d_down_all(uint8_t test_axis)
+// generic method used to update gains for the rate d down tune type
+void AC_AutoTune_Multi::updating_rate_d_down_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -242,7 +241,8 @@ void AC_AutoTune_Multi::updating_rate_d_down_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Multi::updating_angle_p_up_all(uint8_t test_axis)
+// generic method used to update gains for the angle p up tune type
+void AC_AutoTune_Multi::updating_angle_p_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -257,7 +257,8 @@ void AC_AutoTune_Multi::updating_angle_p_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Multi::updating_angle_p_down_all(uint8_t test_axis)
+// generic method used to update gains for the angle p down tune type
+void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -580,32 +581,36 @@ void AC_AutoTune_Multi::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds
         rate_cds*0.01f);
 }
 
-float AC_AutoTune_Multi::get_intra_test_ri()
+float AC_AutoTune_Multi::get_intra_test_ri(AxisType test_axis)
 {
     float ret = 0.0f;
-    if (roll_enabled()) {
+    switch (test_axis) {
+    case ROLL:
         ret = orig_roll_rp * AUTOTUNE_PI_RATIO_FOR_TESTING;
-    }
-    if (pitch_enabled()) {
+        break;
+    case PITCH:
         ret = orig_pitch_rp * AUTOTUNE_PI_RATIO_FOR_TESTING;
-    }
-    if (yaw_enabled()) {
+        break;
+    case YAW:
         ret = orig_yaw_rp * AUTOTUNE_PI_RATIO_FOR_TESTING;
+        break;
     }
     return ret;
 }
 
-float AC_AutoTune_Multi::get_load_tuned_ri()
+float AC_AutoTune_Multi::get_load_tuned_ri(AxisType test_axis)
 {
     float ret = 0.0f;
-    if (roll_enabled()) {
+    switch (test_axis) {
+    case ROLL:
         ret = tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL;
-    }
-    if (pitch_enabled()) {
+        break;
+    case PITCH:
         ret = tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL;
-    }
-    if (yaw_enabled()) {
+        break;
+    case YAW:
         ret = tune_yaw_rp*AUTOTUNE_PI_RATIO_FINAL;
+        break;
     }
     return ret;
 }

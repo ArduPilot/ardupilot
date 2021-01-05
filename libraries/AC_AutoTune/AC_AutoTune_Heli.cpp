@@ -17,6 +17,7 @@
   Converted to a library by Andrew Tridgell, and rewritten to include helicopters by Bill Geyer
  */
 
+#define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     2000   // target roll/pitch angle during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS     5000   // target roll/pitch rate during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_FFI_RATIO_FOR_TESTING     0.5f     // I is set 2x smaller than VFF during testing
 #define AUTOTUNE_FFI_RATIO_FINAL           0.5f     // I is set 0.5x VFF after testing
@@ -76,13 +77,13 @@ void AC_AutoTune_Heli::test_init()
     start_angles = Vector3f(roll_cd, pitch_cd, desired_yaw_cd);  // heli specific
 }
 
-void AC_AutoTune_Heli::test_run(uint8_t test_axis, const float dir_sign)
+void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
 
     if (tune_type == SP_UP) {
         angle_dwell_test_run(curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
-        rate_ff_test_run(AUTOTUNE_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS);
+        rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS);
     } else if (tune_type == RP_UP || tune_type == RD_UP) {
         dwell_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if (tune_type == MAX_GAINS) {
@@ -252,7 +253,8 @@ void AC_AutoTune_Heli::save_tuning_gains()
     reset();
 }
 
-void AC_AutoTune_Heli::updating_rate_p_up_all(uint8_t test_axis)
+// generic method used to update gains for the rate p up tune type
+void AC_AutoTune_Heli::updating_rate_p_up_all(AxisType test_axis)
 {
     float p_gain = 0.0f;
 
@@ -283,7 +285,8 @@ void AC_AutoTune_Heli::updating_rate_p_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Heli::updating_rate_d_up_all(uint8_t test_axis)
+// generic method used to update gains for the rate d up tune type
+void AC_AutoTune_Heli::updating_rate_d_up_all(AxisType test_axis)
 {
     float d_gain = 0.0f;
 
@@ -314,7 +317,8 @@ void AC_AutoTune_Heli::updating_rate_d_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Heli::updating_rate_ff_up_all(uint8_t test_axis)
+// generic method used to update gains for the rate ff up tune type
+void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 {
     switch (test_axis) {
     case ROLL:
@@ -329,7 +333,8 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Heli::updating_angle_p_up_all(uint8_t test_axis)
+// generic method used to update gains for the angle p up tune type
+void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 {
     // announce results of dwell and update
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]));
@@ -347,7 +352,8 @@ void AC_AutoTune_Heli::updating_angle_p_up_all(uint8_t test_axis)
     }
 }
 
-void AC_AutoTune_Heli::updating_max_gains_all(uint8_t test_axis)
+// generic method used to update gains for the max gain tune type
+void AC_AutoTune_Heli::updating_max_gains_all(AxisType test_axis)
 {
 
     // announce results of dwell and update
@@ -523,6 +529,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     determine_gain(0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], dwell_complete, true);
 }
 
+// updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
 void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d)
 {
     float test_freq_incr = 0.5f * 3.14159f * 2.0f;
@@ -659,32 +666,36 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate
         rate_rads*57.3f);
 }
 
-float AC_AutoTune_Heli::get_intra_test_ri()
+float AC_AutoTune_Heli::get_intra_test_ri(AxisType test_axis)
 {
     float ret = 0.0f;
-    if (roll_enabled()) {
+    switch (test_axis) {
+    case ROLL:
         ret = orig_roll_rff * AUTOTUNE_FFI_RATIO_FOR_TESTING;
-    }
-    if (pitch_enabled()) {
+        break;
+    case PITCH:
         ret = orig_pitch_rff * AUTOTUNE_FFI_RATIO_FOR_TESTING;
-    }
-    if (yaw_enabled()) {
+        break;
+    case YAW:
         ret = orig_yaw_rp*AUTOTUNE_PI_RATIO_FOR_TESTING;
+        break;
     }
     return ret;
 }
 
-float AC_AutoTune_Heli::get_load_tuned_ri()
+float AC_AutoTune_Heli::get_load_tuned_ri(AxisType test_axis)
 {
     float ret = 0.0f;
-    if (roll_enabled()) {
+    switch (test_axis) {
+    case ROLL:
         ret = tune_roll_rff*AUTOTUNE_FFI_RATIO_FINAL;
-    }
-    if (pitch_enabled()) {
+        break;
+    case PITCH:
         ret = tune_pitch_rff*AUTOTUNE_FFI_RATIO_FINAL;
-    }
-    if (yaw_enabled()) {
+        break;
+    case YAW:
         ret = tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL;
+        break;
     }
     return ret;
 }
