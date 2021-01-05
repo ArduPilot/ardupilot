@@ -8,7 +8,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: khancyr/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -58,7 +58,7 @@ jobs:
   autotest:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
-    container: khancyr/ardupilot-dev-base:latest
+    container: ardupilot/ardupilot-dev-base:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
