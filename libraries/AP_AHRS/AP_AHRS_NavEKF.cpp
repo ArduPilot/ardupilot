@@ -678,6 +678,11 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
         ret = EKF3.getWind(-1,wind_vel);
         break;
 #endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
     }
 
     // estimate it via nav velocity and wind estimates
