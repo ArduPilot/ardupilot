@@ -500,21 +500,30 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @RebootRequired: False
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
-    // @Param: TAILSIT_VACCT
-    // @DisplayName: Vertical acceleration time
-    // @Description: Time to accelerate vertically in milliseconds when transitioning from vtol to fw
-    // @Range: 0 10000
-    // @Units: millisecond
-    // @Incerement 1
-    // @User: Standard
-    AP_GROUPINFO("TAILSIT_VACCT", 21, QuadPlane, tailsitter.vertical_acceleration_time, 2000),
-
     // @Param: TAILSIT_THRT
     // @DisplayName: Transition throttle
     // @Description: Throttle to use in transitions from VTOL to FW flight. If less than hover throttle, hover throttle is used
-    // @Range: 0.5 1
+    // @Range: 0.25 1
     // @User: Standard
-    AP_GROUPINFO("TAILSIT_THRT", 22, QuadPlane, tailsitter.transition_throttle, 0.5f),
+    AP_GROUPINFO("TAILSIT_THRT", 21, QuadPlane, tailsitter.transition_throttle, 0.5f),
+
+    // @Param: VELZ_MAX_UP
+    // @DisplayName: Pilot maximum vertical speed up
+    // @Description: The maximum vertical velocity the pilot may request in cm/s going up
+    // @Units: cm/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("VELZ_MAX_UP", 22, QuadPlane, pilot_velocity_z_max_up, 250),
+
+    // @Param: VELZ_MAX_DN
+    // @DisplayName: Pilot maximum vertical speed down
+    // @Description: The maximum vertical velocity the pilot may request in cm/s going down
+    // @Units: cm/s
+    // @Range: 50 500
+    // @Increment: 10
+    // @User: Standard
+    AP_GROUPINFO("VELZ_MAX_DN", 23, QuadPlane, pilot_velocity_z_max_dn, 250),
 
     AP_GROUPEND
 };
@@ -977,7 +986,7 @@ void QuadPlane::run_z_controller(void)
         pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
 
         // initialize vertical speeds and leash lengths
-        pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+        pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
         pos_control->set_max_accel_z(pilot_accel_z);
         
         // it has been two seconds since we last ran the Z
@@ -1023,7 +1032,7 @@ void QuadPlane::init_qacro(void)
 void QuadPlane::init_hover(void)
 {
     // initialize vertical speeds and leash lengths
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
@@ -1059,7 +1068,7 @@ void QuadPlane::hold_hover(float target_climb_rate)
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // initialize vertical speeds and acceleration
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // call attitude controller
@@ -1153,13 +1162,12 @@ void QuadPlane::init_loiter(void)
     loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
     set_alt_target_current();
     pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "init loiter target velocity: %f", inertial_nav.get_velocity_z());
 
     init_throttle_wait();
 
@@ -1298,7 +1306,7 @@ void QuadPlane::control_loiter(bool stabilize_transition)
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // initialize vertical speed and acceleration
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // process pilot's roll and pitch input
@@ -1414,7 +1422,9 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     }
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min())/2;
-    return pilot_velocity_z_max * plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) / 100.0f;
+    float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) / 100.0f;
+    
+    return throttle_request * (throttle_request > 0.0f ? pilot_velocity_z_max_up : pilot_velocity_z_max_dn);
 }
 
 
@@ -1768,18 +1778,15 @@ void QuadPlane::update_transition(void)
         float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
         // set throttle at either hover throttle, transition throttle or current throttle, whichever is higher, through the transition
-        float throttle = MAX(MAX(motors->get_throttle_hover(), attitude_control->get_throttle_in()), tailsitter_get_transition_throttle());
+        float throttle = MAX(MAX(motors->get_throttle_hover(), attitude_control->get_throttle_in()), tailsitter.transition_throttle);
         attitude_control->set_throttle_out(throttle, true, 0);
 
-        if (dt < (uint32_t)tailsitter.vertical_acceleration_time) {
-            plane.nav_pitch_cd = transition_initial_pitch;
-        } else {
-            float pitch_cd;
-            pitch_cd = constrain_float((-transition_rate * (dt - (uint32_t)tailsitter.vertical_acceleration_time)) * 100, -8500, 0);
-            // if already pitched forward at start of transition, wait until curve catches up
-            plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
-        }
+        float pitch_cd;
+        pitch_cd = constrain_float((-transition_rate * dt) * 100, -8500, 0);
+        // if already pitched forward at start of transition, wait until curve catches up
+        plane.nav_pitch_cd = (pitch_cd > transition_initial_pitch) ? transition_initial_pitch : pitch_cd;
         plane.nav_roll_cd = 0;
+
         check_attitude_relax();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
@@ -2575,7 +2582,7 @@ void QuadPlane::setup_target_position(void)
     last_loiter_ms = now;
     
     // setup vertical speed and acceleration
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // setup horizontal speed and acceleration
@@ -2746,7 +2753,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     loiter_nav->init_target();
 
     // initialize vertical speed and acceleration
-    pos_control->set_max_speed_z(-pilot_velocity_z_max, pilot_velocity_z_max);
+    pos_control->set_max_speed_z(-pilot_velocity_z_max_dn, pilot_velocity_z_max_up);
     pos_control->set_max_accel_z(pilot_accel_z);
 
     // initialise position and desired velocity
@@ -2766,7 +2773,7 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     // t = max(t_{accel}, 0) + max(t_{constant}, 0)
     const float d_total = (plane.next_WP_loc.alt - plane.current_loc.alt) * 0.01f;
     const float accel_m_s_s = MAX(10, pilot_accel_z) * 0.01f;
-    const float vel_max = MAX(10, pilot_velocity_z_max) * 0.01f;
+    const float vel_max = MAX(10, pilot_velocity_z_max_up) * 0.01f;
     const float vel_z = inertial_nav.get_velocity_z() * 0.01f;
     const float t_accel = (vel_max - vel_z) / accel_m_s_s;
     const float d_accel = vel_z * t_accel + 0.5f * accel_m_s_s * sq(t_accel);
