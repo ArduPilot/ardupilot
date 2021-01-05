@@ -37,9 +37,13 @@ extern const AP_HAL::HAL& hal;
 #define HAL_STORAGE_FILE "/APM/" SKETCHNAME ".stg"
 #endif
 
-#ifndef HAL_STORAGE_BACKUP_FILE
+#ifndef HAL_STORAGE_BACKUP_FOLDER
 // location of backup file
-#define HAL_STORAGE_BACKUP_FILE "/APM/" SKETCHNAME ".bak"
+#define HAL_STORAGE_BACKUP_FOLDER "/APM/STRG_BAK"
+#endif
+
+#ifndef HAL_STORAGE_BACKUP_COUNT
+#define HAL_STORAGE_BACKUP_COUNT 100
 #endif
 
 #define STORAGE_FLASH_RETRIES 5
@@ -126,12 +130,75 @@ void Storage::_save_backup(void)
 {
 #ifdef USE_POSIX
     // allow for fallback to microSD based storage
-    if (sdcard_retry()) {
-        int fd = AP::FS().open(HAL_STORAGE_BACKUP_FILE, O_WRONLY|O_CREAT|O_TRUNC);
-        if (fd != -1) {
-            AP::FS().write(fd, _buffer, CH_STORAGE_SIZE);
-            AP::FS().close(fd);
+    // create the backup directory if need be
+    int ret;
+    const char* _storage_bak_directory = HAL_STORAGE_BACKUP_FOLDER;
+
+    if (hal.util->was_watchdog_armed()) {
+        // we are under watchdog reset
+        // ain't got no time...
+        return;
+    }
+
+    EXPECT_DELAY_MS(3000);
+
+    // We want to do this desperately,
+    // So we keep trying this for a second
+    uint32_t start_millis = AP_HAL::millis();
+    while(!sdcard_retry() && (AP_HAL::millis() - start_millis) < 1000) {
+        hal.scheduler->delay(1);        
+    }
+
+    ret = AP::FS().mkdir(_storage_bak_directory);
+    if (ret == -1 && errno != EEXIST) {
+        return;
+    }
+
+    char* fname = nullptr;
+    unsigned curr_bak = 0;
+    ret = asprintf(&fname, "%s/last_storage_bak", _storage_bak_directory);
+    if (fname == nullptr && (ret <= 0)) {
+        return;
+    }
+    int fd = AP::FS().open(fname, O_RDONLY);
+    if (fd != -1) {
+        char buf[10];
+        memset(buf, 0, sizeof(buf));
+        if (AP::FS().read(fd, buf, sizeof(buf)-1) > 0) {
+            //only record last HAL_STORAGE_BACKUP_COUNT backups
+            curr_bak = (strtol(buf, NULL, 10) + 1)%HAL_STORAGE_BACKUP_COUNT;
         }
+        AP::FS().close(fd);
+    }
+
+    fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_TRUNC);
+    free(fname);
+    fname = nullptr;
+    if (fd != -1) {
+        char buf[10];
+        snprintf(buf, sizeof(buf), "%u\r\n", (unsigned)curr_bak);
+        const ssize_t to_write = strlen(buf);
+        const ssize_t written = AP::FS().write(fd, buf, to_write);
+        AP::FS().close(fd);
+        if (written < to_write) {
+            return;
+        }
+    } else {
+        return;
+    }
+
+    // create and write fram data to file
+    ret = asprintf(&fname, "%s/STRG%d.bak", _storage_bak_directory, curr_bak);
+    if (fname == nullptr || (ret <= 0)) {
+        return;
+    }
+    fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_TRUNC);
+    free(fname);
+    fname = nullptr;
+    if (fd != -1) {
+        //finally dump the fram data
+        AP::FS().write(fd, _buffer, CH_STORAGE_SIZE);
+        AP::FS().close(fd);
     }
 #endif
 }
