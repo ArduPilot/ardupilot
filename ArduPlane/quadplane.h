@@ -147,9 +147,6 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
-
-    // Return constrained throttle value 0.5 - 1.0 for transition from VTOL to FW
-    float tailsitter_get_transition_throttle();
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -197,6 +194,9 @@ private:
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
 
+    AP_Int16 pilot_velocity_z_max_up;
+    AP_Int16 pilot_velocity_z_max_dn;
+    
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
 
@@ -527,7 +527,6 @@ private:
         AP_Float scaling_speed_min;
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
-        AP_Int16 vertical_acceleration_time; // Time in ms to accelerate vertically when transitioning from vtol mode to normal mode
         AP_Float transition_throttle;
     } tailsitter;
 
