@@ -1,5 +1,5 @@
-Release 1.2.0beta2 19th Dec 2020
---------------------------------
+Release 1.2.0 6th Jan 2020
+--------------------------
 
 This is a major release with several significant bug fixes and
 improvements:
