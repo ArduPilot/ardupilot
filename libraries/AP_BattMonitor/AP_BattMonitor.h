@@ -54,6 +54,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
+    friend class AP_BattMonitor_INA3221;
 
 public:
 
@@ -84,6 +85,9 @@ public:
         GENERATOR_ELEC             = 17,
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
+        INA3221_CH1                = 20,
+        INA3221_CH2                = 21,
+        INA3221_CH3                = 22,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
