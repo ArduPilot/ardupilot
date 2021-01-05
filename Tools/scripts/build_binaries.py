@@ -620,6 +620,8 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeYellow",
                 "R9Pilot",
                 "QioTekZealotF427",
+                "BeastH7",
+                "BeastF7",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",

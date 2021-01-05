@@ -59,6 +59,8 @@ brand_map = {
     'OmnibusNanoV6' : ('Omnibus Nano V6', 'Airbot'),
     'speedybeef4' : ('SpeedyBee F4', 'SpeedyBee'),
     'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
+    'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
+    'BeastF7' : ('Beast F7 45A AIO', 'iFlight'),
 }
 
 class Firmware():
