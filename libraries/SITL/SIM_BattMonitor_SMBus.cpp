@@ -3,7 +3,7 @@
 #include <AP_Stats/AP_Stats.h>
 
 SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
-    I2CRegisters_16Bit()
+    SMBusDevice()
 {
     add_register("Temperature", SMBusBattDevReg::TEMP, O_RDONLY);
     add_register("Voltage", SMBusBattDevReg::VOLTAGE, O_RDONLY);
@@ -13,7 +13,8 @@ SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
     add_register("Cycle_Count", SMBusBattDevReg::CYCLE_COUNT, O_RDONLY);
     add_register("Specification Info", SMBusBattDevReg::SPECIFICATION_INFO, O_RDONLY);
     add_register("Serial", SMBusBattDevReg::SERIAL, O_RDONLY);
-    add_register("Manufacture Name", SMBusBattDevReg::MANUFACTURE_NAME, O_RDONLY);
+    add_block("Manufacture Name", SMBusBattDevReg::MANUFACTURE_NAME, O_RDONLY);
+    add_block("Device Name", SMBusBattDevReg::DEVICE_NAME, O_RDONLY);
     add_register("Manufacture Data", SMBusBattDevReg::MANUFACTURE_DATA, O_RDONLY);
 
     set_register(SMBusBattDevReg::TEMP, (int16_t)((15 + 273.15)*10));
@@ -43,24 +44,14 @@ SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
 
      set_register(SMBusBattDevReg::SERIAL, (uint16_t)12345);
 
-     // Set MANUFACTURE_NAME
      const char *manufacturer_name = "ArduPilot";
-     set_register(SMBusBattDevReg::MANUFACTURE_NAME, uint16_t(manufacturer_name[0]<<8|strlen(manufacturer_name)));
-     uint8_t i = 1;  // already sent the first byte out....
-     while (i < strlen(manufacturer_name)) {
-         const uint8_t a = manufacturer_name[i++];
-         uint8_t b = 0;
-         if (i < strlen(manufacturer_name)) {
-             b = manufacturer_name[i];
-         }
-         i++;
-         const uint16_t value = b<<8 | a;
-         add_register("Name", SMBusBattDevReg::MANUFACTURE_NAME + i/2, O_RDONLY);
-         set_register(SMBusBattDevReg::MANUFACTURE_NAME + i/2, value);
-     }
+     set_block(SMBusBattDevReg::MANUFACTURE_NAME, manufacturer_name);
+
+     const char *device_name = "SITLBatMon_V0.99";
+     set_block(SMBusBattDevReg::DEVICE_NAME, device_name);
+
      // TODO: manufacturer data
 }
-
 
 void SITL::SIM_BattMonitor_SMBus::update(const class Aircraft &aircraft)
 {
