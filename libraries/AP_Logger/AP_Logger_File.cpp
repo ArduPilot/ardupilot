@@ -50,11 +50,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
     _read_fd(-1),
     _log_directory(log_directory),
     _writebuf(0),
-    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE),
-    _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
-    _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
-    _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
-    _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
+    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE)
 {
     df_stats_clear();
 }
@@ -503,7 +499,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 
     // if no room for entire message - drop it:
     if (space < size) {
-        hal.util->perf_count(_perf_overruns);
         _dropped++;
         return false;
     }
@@ -897,8 +892,6 @@ void AP_Logger_File::io_timer(void)
         last_io_operation = "";
     }
 
-    hal.util->perf_begin(_perf_write);
-
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -932,7 +925,6 @@ void AP_Logger_File::io_timer(void)
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
-            hal.util->perf_count(_perf_errors);
             last_io_operation = "close";
             AP::FS().close(_write_fd);
             last_io_operation = "";
@@ -971,7 +963,6 @@ void AP_Logger_File::io_timer(void)
     }
 
     write_fd_semaphore.give();
-    hal.util->perf_end(_perf_write);
 }
 
 bool AP_Logger_File::io_thread_alive() const
