@@ -490,9 +490,6 @@ private:
     bool labels_string_is_good(const char *labels) const;
 #endif
 
-    // possibly expensive calls to start log system:
-    void Prep();
-
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
 
