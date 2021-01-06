@@ -42,14 +42,21 @@ extern const AP_HAL::HAL& hal;
 AP_Logger_File::AP_Logger_File(AP_Logger &front,
                                LoggerMessageWriter_DFLogStart *writer,
                                const char *log_directory) :
-    AP_Logger_Backend(front, writer),
-    _log_directory(log_directory)
+    AP_Logger_Backend(front, writer)
 {
     df_stats_clear();
+
+    const char* custom_dir = hal.util->get_custom_log_directory();
+    if (custom_dir != nullptr){
+        _iothread._log_directory = custom_dir;
+    } else {
+        _iothread._log_directory = log_directory;
+    }
+    _iothread._backend = this;
 }
 
 
-void AP_Logger_File::ensure_log_directory_exists()
+void AP_Logger_File::IOThread::ensure_log_directory_exists()
 {
     int ret;
     struct stat st;
@@ -66,6 +73,8 @@ void AP_Logger_File::ensure_log_directory_exists()
 
 void AP_Logger_File::Init()
 {
+    _iothread.min_bytes_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+
     // determine and limit file backend buffersize
     uint32_t bufsize = _front._params.file_bufsize;
     bufsize *= 1024;
@@ -73,10 +82,10 @@ void AP_Logger_File::Init()
     const uint32_t desired_bufsize = bufsize;
 
     // If we can't allocate the full size, try to reduce it until we can allocate it
-    while (!_writebuf.set_size(bufsize) && bufsize >= _writebuf_chunk) {
+    while (!_writebuf.set_size(bufsize) && bufsize >= HAL_LOGGER_WRITE_CHUNK_SIZE) {
         bufsize *= 0.9;
     }
-    if (bufsize >= _writebuf_chunk && bufsize != desired_bufsize) {
+    if (bufsize >= HAL_LOGGER_WRITE_CHUNK_SIZE && bufsize != desired_bufsize) {
         hal.console->printf("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
     }
 
@@ -91,13 +100,11 @@ void AP_Logger_File::Init()
 
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
-        _log_directory = custom_dir;
+        _iothread._log_directory = custom_dir;
     }
-
-    Prep_MinSpace();
 }
 
-bool AP_Logger_File::file_exists(const char *filename) const
+bool AP_Logger_File::IOThread::file_exists(const char *filename) const
 {
     struct stat st;
     EXPECT_DELAY_MS(3000);
@@ -109,7 +116,7 @@ bool AP_Logger_File::file_exists(const char *filename) const
     return true;
 }
 
-bool AP_Logger_File::log_exists(const uint16_t lognum) const
+bool AP_Logger_File::IOThread::log_exists(const uint16_t lognum) const
 {
     char *filename = _log_file_name(lognum);
     if (filename == nullptr) {
@@ -123,17 +130,6 @@ bool AP_Logger_File::log_exists(const uint16_t lognum) const
 void AP_Logger_File::periodic_1Hz()
 {
     AP_Logger_Backend::periodic_1Hz();
-
-    if (_initialised &&
-        _write_fd == -1 && _read_fd == -1 &&
-        logging_enabled() &&
-        !recent_open_error() &&
-        !hal.util->get_soft_armed()) {
-        // retry logging open. This allows for booting with
-        // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
-        // card is inserted then logging starts
-        start_new_log();
-    }
 
     if (!io_thread_alive()) {
         if (io_thread_warning_decimation_counter == 0 && _initialised) {
@@ -150,7 +146,12 @@ void AP_Logger_File::periodic_1Hz()
 
         // semaphore_write_fd not taken here as if the io thread is
         // dead it may not release lock...
-        _write_fd = -1;
+        static IOThreadRequest request {
+            type: IOThreadRequestType::KillWriteFD,
+            data: nullptr,
+            complete: false,
+        };
+        thread_requests.push(&request);
         _initialised = false;
     }
 }
@@ -168,7 +169,7 @@ uint32_t AP_Logger_File::bufferspace_available()
     return (space > crit) ? space - crit : 0;
 }
 
-bool AP_Logger_File::recent_open_error(void) const
+bool AP_Logger_File::IOThread::recent_open_error(void) const
 {
     if (_open_error_ms == 0) {
         return false;
@@ -179,12 +180,12 @@ bool AP_Logger_File::recent_open_error(void) const
 // return true for CardInserted() if we successfully initialized
 bool AP_Logger_File::CardInserted(void) const
 {
-    return _initialised && !recent_open_error();
+    return _initialised && !_iothread.recent_open_error();
 }
 
 // returns the amount of disk space available in _log_directory (in bytes)
 // returns -1 on error
-int64_t AP_Logger_File::disk_space_avail()
+int64_t AP_Logger_File::IOThread::disk_space_avail()
 {
     return AP::FS().disk_free(_log_directory);
 }
@@ -192,17 +193,17 @@ int64_t AP_Logger_File::disk_space_avail()
 // returns the total amount of disk space (in use + available) in
 // _log_directory (in bytes).
 // returns -1 on error
-int64_t AP_Logger_File::disk_space()
+int64_t AP_Logger_File::IOThread::disk_space()
 {
     return AP::FS().disk_space(_log_directory);
 }
 
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
-uint16_t AP_Logger_File::find_oldest_log()
+uint16_t AP_Logger_File::IOThread::find_oldest_log()
 {
-    if (_cached_oldest_log != 0) {
-        return _cached_oldest_log;
+    if (_backend->_cached_oldest_log != 0) {
+        return _backend->_cached_oldest_log;
     }
 
     uint16_t last_log_num = find_last_log();
@@ -260,19 +261,31 @@ uint16_t AP_Logger_File::find_oldest_log()
         }
     }
     AP::FS().closedir(d);
-    _cached_oldest_log = current_oldest_log;
+
+    _backend->_cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
 }
 
-void AP_Logger_File::Prep_MinSpace()
+uint16_t AP_Logger_File::find_oldest_log()
+{
+    uint16_t current_oldest_log;
+    if (!complete_iothread_request(IOThreadRequestType::FindOldestLog, &current_oldest_log)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "find_oldest_log failed");
+        return 0;
+    }
+
+    return current_oldest_log;
+}
+
+void AP_Logger_File::IOThread::Prep_MinSpace()
 {
     if (hal.util->was_watchdog_reset()) {
         // don't clear space if watchdog reset, it takes too long
         return;
     }
 
-    if (!CardInserted()) {
+    if (recent_open_error()) {
         return;
     }
 
@@ -282,7 +295,7 @@ void AP_Logger_File::Prep_MinSpace()
         return;
     }
 
-    const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+    const int64_t target_free = min_bytes_free;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -310,7 +323,7 @@ void AP_Logger_File::Prep_MinSpace()
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
-                _cached_oldest_log = 0;
+                _backend->_cached_oldest_log = 0;
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -336,7 +349,7 @@ void AP_Logger_File::Prep_MinSpace()
   The number in the log filename will *not* be zero-padded.
   Note: Caller must free.
  */
-char *AP_Logger_File::_log_file_name_short(const uint16_t log_num) const
+char *AP_Logger_File::IOThread::_log_file_name_short(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -350,7 +363,7 @@ char *AP_Logger_File::_log_file_name_short(const uint16_t log_num) const
   The number in the log filename will be zero-padded.
   Note: Caller must free.
  */
-char *AP_Logger_File::_log_file_name_long(const uint16_t log_num) const
+char *AP_Logger_File::IOThread::_log_file_name_long(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -365,7 +378,7 @@ char *AP_Logger_File::_log_file_name_long(const uint16_t log_num) const
   appropirate name, otherwise the long (zero-padded) version is.
   Note: Caller must free.
  */
-char *AP_Logger_File::_log_file_name(const uint16_t log_num) const
+char *AP_Logger_File::IOThread::_log_file_name(const uint16_t log_num) const
 {
     char *filename = _log_file_name_short(log_num);
     if (filename == nullptr) {
@@ -382,7 +395,7 @@ char *AP_Logger_File::_log_file_name(const uint16_t log_num) const
   return path name of the lastlog.txt marker file
   Note: Caller must free.
  */
-char *AP_Logger_File::_lastlog_file_name(void) const
+char *AP_Logger_File::IOThread::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
@@ -392,17 +405,40 @@ char *AP_Logger_File::_lastlog_file_name(void) const
 }
 
 
-// remove all log files
+bool AP_Logger_File::complete_iothread_request(IOThreadRequestType type, void *data)
+{
+    IOThreadRequest request{
+        type: type,
+        data: data,
+        complete: false,
+    };
+    thread_requests.push(&request);
+    uint32_t tstart = AP_HAL::micros();
+    while (!request.complete) {
+        if (AP_HAL::micros() - tstart > 1000) {
+            return false;
+        }
+        hal.scheduler->delay_microseconds(100);
+    }
+    return true;
+}
+
+
+// synchronously erase all logs:
 void AP_Logger_File::EraseAll()
 {
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
     if (!_initialised) {
         return;
     }
 
+    if (!complete_iothread_request(IOThreadRequestType::EraseAll)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "EraseAll failed");
+    }
+}
+
+// remove all log files
+void AP_Logger_File::IOThread::EraseAll()
+{
     const bool was_logging = (_write_fd != -1);
     stop_logging();
 
@@ -421,14 +457,14 @@ void AP_Logger_File::EraseAll()
         free(fname);
     }
 
-    _cached_oldest_log = 0;
+    _backend->_cached_oldest_log = 0;
 
     if (was_logging) {
         start_new_log();
     }
 }
 
-bool AP_Logger_File::WritesOK() const
+bool AP_Logger_File::IOThread::WritesOK() const
 {
     if (_write_fd == -1) {
         return false;
@@ -439,10 +475,15 @@ bool AP_Logger_File::WritesOK() const
     return true;
 }
 
+bool AP_Logger_File::WritesOK() const
+{
+    return _iothread.WritesOK();
+}
+
 
 bool AP_Logger_File::StartNewLogOK() const
 {
-    if (recent_open_error()) {
+    if (_iothread.recent_open_error()) {
         return false;
     }
     return AP_Logger_Backend::StartNewLogOK();
@@ -504,7 +545,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 /*
   find the highest log number
  */
-uint16_t AP_Logger_File::find_last_log()
+uint16_t AP_Logger_File::IOThread::find_last_log()
 {
     unsigned ret = 0;
     char *fname = _lastlog_file_name();
@@ -520,20 +561,28 @@ uint16_t AP_Logger_File::find_last_log()
     return ret;
 }
 
-uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
+uint16_t AP_Logger_File::find_last_log()
+{
+    uint16_t oldest;
+    if (!complete_iothread_request(IOThreadRequestType::FindLastLog, &oldest)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "find_last_log failed");
+        return 0;
+    }
+    return oldest;
+}
+
+uint32_t AP_Logger_File::IOThread::_get_log_size(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
     }
-    if (_write_fd != -1 && write_fd_semaphore.take_nonblocking()) {
+    if (_write_fd != -1) {
         if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
             // it is the file we are currently writing
             free(fname);
-            write_fd_semaphore.give();
             return _write_offset;
         }
-        write_fd_semaphore.give();
     }
     struct stat st;
     EXPECT_DELAY_MS(3000);
@@ -548,24 +597,22 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
     return st.st_size;
 }
 
-uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
+uint32_t AP_Logger_File::IOThread::_get_log_time(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
         return 0;
     }
-    if (_write_fd != -1 && write_fd_semaphore.take_nonblocking()) {
+    if (_write_fd != -1) {
         if (_write_filename != nullptr && strcmp(_write_filename, fname) == 0) {
             // it is the file we are currently writing
             free(fname);
-            write_fd_semaphore.give();
             uint64_t utc_usec;
             if (!AP::rtc().get_utc_usec(utc_usec)) {
                 return 0;
             }
             return utc_usec / 1000000U;
         }
-        write_fd_semaphore.give();
     }
     struct stat st;
     EXPECT_DELAY_MS(3000);
@@ -578,9 +625,31 @@ uint32_t AP_Logger_File::_get_log_time(const uint16_t log_num)
 }
 
 /*
+  convert a list entry number back into a log number (which can then
+  be converted into a filename).  A "list entry number" is a sequence
+  where the oldest log has a number of 1, the second-from-oldest 2,
+  and so on.  Thus the highest list entry number is equal to the
+  number of logs.
+*/
+// FIXME: this is copied in from AP_Logger_Backend
+uint16_t AP_Logger_File::IOThread::log_num_from_list_entry(const uint16_t list_entry)
+{
+    uint16_t oldest_log = find_oldest_log();
+    if (oldest_log == 0) {
+        return 0;
+    }
+
+    uint32_t log_num = oldest_log + list_entry - 1;
+    if (log_num > MAX_LOG_FILES) {
+        log_num -= MAX_LOG_FILES;
+    }
+    return (uint16_t)log_num;
+}
+
+/*
   find the number of pages in a log
  */
-void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
+void AP_Logger_File::IOThread::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
 {
     const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -594,12 +663,32 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
     end_page = _get_log_size(log_num) / LOGGER_PAGE_SIZE;
 }
 
+struct get_log_boundaries_parameters {
+    uint16_t list_entry;
+    uint32_t start_page;
+    uint32_t end_page;
+};
+
+void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
+{
+    get_log_boundaries_parameters params;
+    params.list_entry = list_entry;
+    if (!complete_iothread_request(IOThreadRequestType::GetLogBoundaries, (void*)&params)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "get_log_boundaries failed");
+        start_page = 0;
+        end_page = 0;
+        return;
+    }
+    start_page = params.start_page;
+    end_page = params.end_page;
+}
+
 /*
   retrieve data from a log file
  */
-int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
+int16_t AP_Logger_File::IOThread::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || recent_open_error()) {
+    if (recent_open_error()) {
         return -1;
     }
 
@@ -652,10 +741,41 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
     return ret;
 }
 
+struct get_log_data_parameters {
+    uint16_t list_entry;
+    uint16_t page;
+    uint32_t offset;
+    uint16_t len;
+    uint8_t *data;
+
+    int16_t ret;
+};
+
+int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
+{
+    if (!_initialised) {
+        return -1;
+    }
+
+    get_log_data_parameters params {
+        list_entry: list_entry,
+        page: page,
+        offset: offset,
+        len: len,
+        data: data,
+    };
+    if (!complete_iothread_request(IOThreadRequestType::GetLogData, (void*)&params)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "get_log_data failed");
+        return -1;
+    }
+
+    return params.ret;
+}
+
 /*
   find size and date of a log
  */
-void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
+void AP_Logger_File::IOThread::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
     uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -669,12 +789,29 @@ void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
     time_utc = _get_log_time(log_num);
 }
 
+struct get_log_info_parameters {
+    uint16_t list_entry;
+    uint32_t size;
+    uint32_t time_utc;
+};
+void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
+{
+    get_log_info_parameters params {
+        list_entry: list_entry,
+        size: 0,
+        time_utc: 0,
+    };
+    if (!complete_iothread_request(IOThreadRequestType::GetLogInfo, (void*)&params)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "get_log_info failed");
+        return;
+    }
+}
 
 
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
-uint16_t AP_Logger_File::get_num_logs()
+uint16_t AP_Logger_File::IOThread::get_num_logs()
 {
     uint16_t ret = 0;
     uint16_t high = find_last_log();
@@ -696,27 +833,40 @@ uint16_t AP_Logger_File::get_num_logs()
     return ret;
 }
 
+uint16_t AP_Logger_File::get_num_logs()
+{
+    uint16_t ret;
+    if (!complete_iothread_request(IOThreadRequestType::GetNumLogs, (void*)&ret)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "get_log_info failed");
+        return 0;
+    }
+    return ret;
+}
+
+
 /*
   stop logging
  */
-void AP_Logger_File::stop_logging(void)
+void AP_Logger_File::IOThread::stop_logging(void)
 {
-    // best-case effort to avoid annoying the IO thread
-    const bool have_sem = write_fd_semaphore.take(hal.util->get_soft_armed()?1:20);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
         AP::FS().close(fd);
     }
-    if (have_sem) {
-        write_fd_semaphore.give();
+}
+
+void AP_Logger_File::stop_logging(void)
+{
+    if (!complete_iothread_request(IOThreadRequestType::StopLogging)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "stop_logging failed");
     }
 }
 
 /*
   start writing to a new log file
  */
-void AP_Logger_File::start_new_log(void)
+void AP_Logger_File::IOThread::start_new_log(void)
 {
     if (recent_open_error()) {
         // we have previously failed to open a file - don't try again
@@ -736,7 +886,7 @@ void AP_Logger_File::start_new_log(void)
 
     stop_logging();
 
-    start_new_log_reset_variables();
+    _backend->start_new_log_reset_variables();
 
     if (_read_fd != -1) {
         AP::FS().close(_read_fd);
@@ -756,16 +906,12 @@ void AP_Logger_File::start_new_log(void)
     if (log_num > MAX_LOG_FILES) {
         log_num = 1;
     }
-    if (!write_fd_semaphore.take(1)) {
-        return;
-    }
     if (_write_filename) {
         free(_write_filename);
         _write_filename = nullptr;        
     }
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
-        write_fd_semaphore.give();
         return;
     }
 
@@ -780,10 +926,9 @@ void AP_Logger_File::start_new_log(void)
 
     EXPECT_DELAY_MS(3000);
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
-    _cached_oldest_log = 0;
+    _backend->_cached_oldest_log = 0;
 
     if (_write_fd == -1) {
-        write_fd_semaphore.give();
         int saved_errno = errno;
         if (open_error_ms_was_zero) {
             ::printf("Log open fail for %s - %s\n",
@@ -796,8 +941,7 @@ void AP_Logger_File::start_new_log(void)
     _last_write_ms = AP_HAL::millis();
     _open_error_ms = 0;
     _write_offset = 0;
-    _writebuf.clear();
-    write_fd_semaphore.give();
+    _backend->_writebuf.clear();
 
     // now update lastlog.txt with the new log number
     char *fname = _lastlog_file_name();
@@ -824,27 +968,29 @@ void AP_Logger_File::start_new_log(void)
     return;
 }
 
+void AP_Logger_File::start_new_log(void)
+{
+    if (!complete_iothread_request(IOThreadRequestType::StartNewLog)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "StartNewLog failed");
+    }
+}
+
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-void AP_Logger_File::flush(void)
+void AP_Logger_File::IOThread::flush(void)
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
-        // less than _writebuf_chunk bytes:
+        // less than HAL_LOGGER_WRITE_CHUNK_SIZE bytes:
         if (tnow > 2001) { // avoid resetting _last_write_time to 0
             _last_write_time = tnow - 2001;
         }
         io_timer();
     }
-    if (write_fd_semaphore.take(1)) {
-        if (_write_fd != -1) {
-            ::fsync(_write_fd);
-        }
-        write_fd_semaphore.give();
-    } else {
-        INTERNAL_ERROR(AP_InternalError::error_t::logger_flushing_without_sem);
+    if (_write_fd != -1) {
+        ::fsync(_write_fd);
     }
 }
 #else
@@ -854,45 +1000,137 @@ void AP_Logger_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
-void AP_Logger_File::io_timer(void)
+void AP_Logger_File::flush(void)
 {
+    if (!complete_iothread_request(IOThreadRequestType::Flush)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Flush failed");
+    }
+}
+
+void AP_Logger_File::IOThread::timer(void)
+{
+    if (!space_cleared) {
+        Prep_MinSpace();
+    }
+
     uint32_t tnow = AP_HAL::millis();
-    _io_timer_heartbeat = tnow;
-    if (_write_fd == -1 || !_initialised || recent_open_error()) {
+    _heartbeat = tnow;
+
+    check_message_queue();
+
+    retry_logging_open();
+
+    handle_write_buffer();
+}
+
+void AP_Logger_File::IOThread::retry_logging_open()
+{
+    if (_write_fd == -1 &&
+        _read_fd == -1 &&
+        _backend->logging_enabled() &&   // FIXME: check this!
+        !recent_open_error() &&
+        !hal.util->get_soft_armed()) {
+        // retry logging open. This allows for booting with
+        // LOG_DISARMED=1 with a bad microSD or no microSD. Once a
+        // card is inserted then logging starts
+        start_new_log();
+    }
+}
+
+void AP_Logger_File::IOThread::check_message_queue(void)
+{
+    IOThreadRequest *request;
+    if (!_backend->thread_requests.pop(request)) {
+        return;
+
+    }
+
+    switch (request->type) {
+    case IOThreadRequestType::EraseAll:
+        EraseAll();
+        break;
+    case IOThreadRequestType::KillWriteFD:
+        _write_fd = -1;
+        break;
+    case IOThreadRequestType::StartNewLog:
+        start_new_log();
+        break;
+    case IOThreadRequestType::Flush:
+        flush();
+        break;
+    case IOThreadRequestType::FindOldestLog: {
+        *((uint16_t*)request->data) = find_oldest_log();
+        break;
+    }
+    case IOThreadRequestType::FindLastLog: {
+        *((uint16_t*)request->data) = find_last_log();
+        break;
+    }
+    case IOThreadRequestType::GetLogBoundaries: {
+        get_log_boundaries_parameters *foo = (get_log_boundaries_parameters*)(request->data);
+        get_log_boundaries(foo->list_entry, foo->start_page, foo->end_page);
+        break;
+    }
+    case IOThreadRequestType::GetLogData: {
+        get_log_data_parameters *foo = (get_log_data_parameters*)(request->data);
+        foo->ret = get_log_data(foo->list_entry, foo->page, foo->offset, foo->len, foo->data);
+        break;
+    }
+    case IOThreadRequestType::GetLogInfo: {
+        get_log_info_parameters *foo = (get_log_info_parameters*)(request->data);
+        get_log_info(foo->list_entry, foo->size, foo->time_utc);
+        break;
+    }
+    case IOThreadRequestType::GetNumLogs: {
+        *((uint16_t*)request->data) = get_num_logs();
+        break;
+    }
+    case IOThreadRequestType::StopLogging: {
+        stop_logging();
+        break;
+    }
+    }
+    request->complete = true;
+}
+
+void AP_Logger_File::IOThread::handle_write_buffer(void)
+{
+    if (_write_fd == -1 || recent_open_error()) {
         return;
     }
 
-    uint32_t nbytes = _writebuf.available();
+    uint32_t nbytes = _backend->_writebuf.available();
     if (nbytes == 0) {
         return;
     }
-    if (nbytes < _writebuf_chunk && 
+    uint32_t tnow = AP_HAL::millis();
+    if (nbytes < HAL_LOGGER_WRITE_CHUNK_SIZE && 
         tnow - _last_write_time < 2000UL) {
-        // write in _writebuf_chunk-sized chunks, but always write at
+        // write in HAL_LOGGER_WRITE_CHUNK_SIZE-sized chunks, but always write at
         // least once per 2 seconds if data is available
         return;
     }
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
-        last_io_operation = "disk_space_avail";
+        _backend->last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
             hal.console->printf("Out of space for logging\n");
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
-            last_io_operation = "";
+            _backend->last_io_operation = "";
             return;
         }
-        last_io_operation = "";
+        _backend->last_io_operation = "";
     }
 
     _last_write_time = tnow;
-    if (nbytes > _writebuf_chunk) {
+    if (nbytes > HAL_LOGGER_WRITE_CHUNK_SIZE) {
         // be kind to the filesystem layer
-        nbytes = _writebuf_chunk;
+        nbytes = HAL_LOGGER_WRITE_CHUNK_SIZE;
     }
 
     uint32_t size;
-    const uint8_t *head = _writebuf.readptr(size);
+    const uint8_t *head = _backend->_writebuf.readptr(size);
     nbytes = MIN(nbytes, size);
 
     // try to align writes on a 512 byte boundary to avoid filesystem reads
@@ -903,24 +1141,20 @@ void AP_Logger_File::io_timer(void)
         }
     }
 
-    last_io_operation = "write";
-    if (!write_fd_semaphore.take(1)) {
-        return;
-    }
+    _backend->last_io_operation = "write";
     if (_write_fd == -1) {
-        write_fd_semaphore.give();
         return;
     }
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
-    last_io_operation = "";
+    _backend->last_io_operation = "";
     if (nwritten <= 0) {
-        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        if ((tnow - _last_write_ms)/1000U > unsigned(_backend->_front._params.file_timeout)) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
-            last_io_operation = "close";
+            _backend->last_io_operation = "close";
             AP::FS().close(_write_fd);
-            last_io_operation = "";
+            _backend->last_io_operation = "";
             _write_fd = -1;
             printf("Failed to write to File: %s\n", strerror(errno));
         }
@@ -929,7 +1163,7 @@ void AP_Logger_File::io_timer(void)
         _last_write_failed = false;
         _last_write_ms = tnow;
         _write_offset += nwritten;
-        _writebuf.advance(nwritten);
+        _backend->_writebuf.advance(nwritten);
         /*
           the best strategy for minimizing corruption on microSD cards
           seems to be to write in 4k chunks and fsync the file on each
@@ -937,9 +1171,9 @@ void AP_Logger_File::io_timer(void)
           write.
          */
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-        last_io_operation = "fsync";
+        _backend->last_io_operation = "fsync";
         AP::FS().fsync(_write_fd);
-        last_io_operation = "";
+        _backend->last_io_operation = "";
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -954,8 +1188,6 @@ void AP_Logger_File::io_timer(void)
         }
 #endif
     }
-
-    write_fd_semaphore.give();
 }
 
 bool AP_Logger_File::io_thread_alive() const
@@ -976,7 +1208,7 @@ bool AP_Logger_File::io_thread_alive() const
         timeout_ms *= sitl->speedup;
     }
 #endif
-    return (AP_HAL::millis() - _io_timer_heartbeat) < timeout_ms;
+    return (AP_HAL::millis() - _iothread._heartbeat) < timeout_ms;
 }
 
 bool AP_Logger_File::logging_failed() const
@@ -984,15 +1216,15 @@ bool AP_Logger_File::logging_failed() const
     if (!_initialised) {
         return true;
     }
-    if (recent_open_error()) {
-        return true;
-    }
     if (!io_thread_alive()) {
         // No heartbeat in a second.  IO thread is dead?! Very Not
         // Good.
         return true;
     }
-    if (_last_write_failed) {
+    if (_iothread.recent_open_error()) {
+        return true;
+    }
+    if (_iothread._last_write_failed) {
         return true;
     }
 
