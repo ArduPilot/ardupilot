@@ -21,7 +21,7 @@ public:
         RTL =           6,  // automatic return to launching point
         CIRCLE =        7,  // automatic circular flight with automatic throttle
         LAND =          9,  // automatic landing with horizontal position control
-        DRIFT =        11,  // semi-automous position, yaw and throttle control
+        DRIFT =        11,  // semi-autonomous position, yaw and throttle control
         SPORT =        13,  // manual earth-frame angular rate control with manual throttle
         FLIP =         14,  // automatically flip the vehicle on the roll axis
         AUTOTUNE =     15,  // automatically tune the vehicle's roll and pitch gains
@@ -114,6 +114,8 @@ protected:
 
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
+
+    void autoenable_floor_fence(void);
 
     // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
     enum AltHoldModeState {
