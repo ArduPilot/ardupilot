@@ -371,9 +371,9 @@ void Plane::crow_update(void)
     float crow_inner = flap_inner + airbrake_function_output - flap_inner*airbrake_function_output;
     float crow_outer = flap_outer - airbrake_function_output - flap_outer*airbrake_function_output;
 
-    // Rescale to use -4500 to 4500 (enables trim)
-    crow_inner  = constrain_float(crow_inner*4500, -4500, 4500);
-    crow_outer  = constrain_float(crow_outer*4500, -4500, 4500);
+    // Mix and rescale to use -4500 to 4500 (enables trim)
+    float crow_inner = (flap_inner + airbrake_slewed - flap_inner*airbrake_slewed) * 4500.0f
+    float crow_outer = (flap_outer - airbrake_slewed - flap_outer*airbrake_slewed) * 4500.0f;
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_crow_inner, crow_inner);
     SRV_Channels::set_output_scaled(SRV_Channel::k_crow_outer, crow_outer);
