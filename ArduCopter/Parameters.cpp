@@ -371,6 +371,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
+#if MODE_POSHOLD_ENABLED == ENABLED
     // @Param: PHLD_BRAKE_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec
@@ -386,6 +387,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 2000 4500
     // @User: Advanced
     GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
+#endif
 
     // @Param: LAND_REPOSITION
     // @DisplayName: Land repositioning

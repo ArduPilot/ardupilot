@@ -408,9 +408,11 @@ public:
 
     AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
 
+#if MODE_POSHOLD_ENABLED == ENABLED
     AP_Int16        poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
     AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
-    
+#endif
+
     // Waypoints
     //
     AP_Int32        rtl_loiter_time;
