@@ -365,8 +365,8 @@ void Plane::crow_update(void)
         airbrake_function_output = airbrake;
     }
 
-    float flap_inner = flap_function_output * g2.crow_flap_weight_inner*0.01f;
-    float flap_outer = flap_function_output * g2.crow_flap_weight_outer*0.01f;
+    float flap_inner = flap_function_output * g2.crow_flap_weight_inner*0.01f; // DSPOILER_CROW_W2
+    float flap_outer = flap_function_output * g2.crow_flap_weight_outer*0.01f; // DSPOILER_CROW_W1
 
     float crow_inner = flap_inner + airbrake_function_output - flap_inner*airbrake_function_output;
     float crow_outer = flap_outer - airbrake_function_output - flap_outer*airbrake_function_output;
