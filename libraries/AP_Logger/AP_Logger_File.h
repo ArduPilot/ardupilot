@@ -18,7 +18,7 @@
 #endif
 
 // not actually a thread, but called by the thread created in AP_Logger
-class LoggerFileThread {
+class LoggerThread_File : LoggerThread {
 public:
 
     void timer(void);
@@ -196,7 +196,7 @@ private:
 
     const char *last_io_operation = "";
 
-    LoggerFileThread _iothread;
+    LoggerThread_File _iothread;
 
     ObjectBuffer_TS<LoggerThreadRequest*> thread_requests;
     bool complete_iothread_request(LoggerThreadRequestType request, void *data=nullptr);

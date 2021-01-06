@@ -56,7 +56,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
 }
 
 
-void LoggerFileThread::ensure_log_directory_exists()
+void LoggerThread_File::ensure_log_directory_exists()
 {
     int ret;
     struct stat st;
@@ -104,7 +104,7 @@ void AP_Logger_File::Init()
     }
 }
 
-bool LoggerFileThread::file_exists(const char *filename) const
+bool LoggerThread_File::file_exists(const char *filename) const
 {
     struct stat st;
     EXPECT_DELAY_MS(3000);
@@ -116,7 +116,7 @@ bool LoggerFileThread::file_exists(const char *filename) const
     return true;
 }
 
-bool LoggerFileThread::log_exists(const uint16_t lognum) const
+bool LoggerThread_File::log_exists(const uint16_t lognum) const
 {
     char *filename = _log_file_name(lognum);
     if (filename == nullptr) {
@@ -169,7 +169,7 @@ uint32_t AP_Logger_File::bufferspace_available()
     return (space > crit) ? space - crit : 0;
 }
 
-bool LoggerFileThread::recent_open_error(void) const
+bool LoggerThread_File::recent_open_error(void) const
 {
     if (_open_error_ms == 0) {
         return false;
@@ -185,7 +185,7 @@ bool AP_Logger_File::CardInserted(void) const
 
 // returns the amount of disk space available in _log_directory (in bytes)
 // returns -1 on error
-int64_t LoggerFileThread::disk_space_avail()
+int64_t LoggerThread_File::disk_space_avail()
 {
     return AP::FS().disk_free(_log_directory);
 }
@@ -193,14 +193,14 @@ int64_t LoggerFileThread::disk_space_avail()
 // returns the total amount of disk space (in use + available) in
 // _log_directory (in bytes).
 // returns -1 on error
-int64_t LoggerFileThread::disk_space()
+int64_t LoggerThread_File::disk_space()
 {
     return AP::FS().disk_space(_log_directory);
 }
 
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
-uint16_t LoggerFileThread::find_oldest_log()
+uint16_t LoggerThread_File::find_oldest_log()
 {
     if (_backend->_cached_oldest_log != 0) {
         return _backend->_cached_oldest_log;
@@ -278,7 +278,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     return current_oldest_log;
 }
 
-void LoggerFileThread::Prep_MinSpace()
+void LoggerThread_File::Prep_MinSpace()
 {
     if (hal.util->was_watchdog_reset()) {
         // don't clear space if watchdog reset, it takes too long
@@ -349,7 +349,7 @@ void LoggerFileThread::Prep_MinSpace()
   The number in the log filename will *not* be zero-padded.
   Note: Caller must free.
  */
-char *LoggerFileThread::_log_file_name_short(const uint16_t log_num) const
+char *LoggerThread_File::_log_file_name_short(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -363,7 +363,7 @@ char *LoggerFileThread::_log_file_name_short(const uint16_t log_num) const
   The number in the log filename will be zero-padded.
   Note: Caller must free.
  */
-char *LoggerFileThread::_log_file_name_long(const uint16_t log_num) const
+char *LoggerThread_File::_log_file_name_long(const uint16_t log_num) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/%08u.BIN", _log_directory, (unsigned)log_num) == -1) {
@@ -378,7 +378,7 @@ char *LoggerFileThread::_log_file_name_long(const uint16_t log_num) const
   appropirate name, otherwise the long (zero-padded) version is.
   Note: Caller must free.
  */
-char *LoggerFileThread::_log_file_name(const uint16_t log_num) const
+char *LoggerThread_File::_log_file_name(const uint16_t log_num) const
 {
     char *filename = _log_file_name_short(log_num);
     if (filename == nullptr) {
@@ -395,7 +395,7 @@ char *LoggerFileThread::_log_file_name(const uint16_t log_num) const
   return path name of the lastlog.txt marker file
   Note: Caller must free.
  */
-char *LoggerFileThread::_lastlog_file_name(void) const
+char *LoggerThread_File::_lastlog_file_name(void) const
 {
     char *buf = nullptr;
     if (asprintf(&buf, "%s/LASTLOG.TXT", _log_directory) == -1) {
@@ -437,7 +437,7 @@ void AP_Logger_File::EraseAll()
 }
 
 // remove all log files
-void LoggerFileThread::EraseAll()
+void LoggerThread_File::EraseAll()
 {
     const bool was_logging = (_write_fd != -1);
     stop_logging();
@@ -464,7 +464,7 @@ void LoggerFileThread::EraseAll()
     }
 }
 
-bool LoggerFileThread::WritesOK() const
+bool LoggerThread_File::WritesOK() const
 {
     if (_write_fd == -1) {
         return false;
@@ -545,7 +545,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 /*
   find the highest log number
  */
-uint16_t LoggerFileThread::find_last_log()
+uint16_t LoggerThread_File::find_last_log()
 {
     unsigned ret = 0;
     char *fname = _lastlog_file_name();
@@ -571,7 +571,7 @@ uint16_t AP_Logger_File::find_last_log()
     return oldest;
 }
 
-uint32_t LoggerFileThread::_get_log_size(const uint16_t log_num)
+uint32_t LoggerThread_File::_get_log_size(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
@@ -597,7 +597,7 @@ uint32_t LoggerFileThread::_get_log_size(const uint16_t log_num)
     return st.st_size;
 }
 
-uint32_t LoggerFileThread::_get_log_time(const uint16_t log_num)
+uint32_t LoggerThread_File::_get_log_time(const uint16_t log_num)
 {
     char *fname = _log_file_name(log_num);
     if (fname == nullptr) {
@@ -632,7 +632,7 @@ uint32_t LoggerFileThread::_get_log_time(const uint16_t log_num)
   number of logs.
 */
 // FIXME: this is copied in from AP_Logger_Backend
-uint16_t LoggerFileThread::log_num_from_list_entry(const uint16_t list_entry)
+uint16_t LoggerThread_File::log_num_from_list_entry(const uint16_t list_entry)
 {
     uint16_t oldest_log = find_oldest_log();
     if (oldest_log == 0) {
@@ -649,7 +649,7 @@ uint16_t LoggerFileThread::log_num_from_list_entry(const uint16_t list_entry)
 /*
   find the number of pages in a log
  */
-void LoggerFileThread::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
+void LoggerThread_File::get_log_boundaries(const uint16_t list_entry, uint32_t & start_page, uint32_t & end_page)
 {
     const uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -686,7 +686,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
 /*
   retrieve data from a log file
  */
-int16_t LoggerFileThread::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
+int16_t LoggerThread_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
     if (recent_open_error()) {
         return -1;
@@ -775,7 +775,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
 /*
   find size and date of a log
  */
-void LoggerFileThread::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
+void LoggerThread_File::get_log_info(const uint16_t list_entry, uint32_t &size, uint32_t &time_utc)
 {
     uint16_t log_num = log_num_from_list_entry(list_entry);
     if (log_num == 0) {
@@ -811,7 +811,7 @@ void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
-uint16_t LoggerFileThread::get_num_logs()
+uint16_t LoggerThread_File::get_num_logs()
 {
     uint16_t ret = 0;
     uint16_t high = find_last_log();
@@ -847,7 +847,7 @@ uint16_t AP_Logger_File::get_num_logs()
 /*
   stop logging
  */
-void LoggerFileThread::stop_logging(void)
+void LoggerThread_File::stop_logging(void)
 {
     if (_write_fd != -1) {
         int fd = _write_fd;
@@ -866,7 +866,7 @@ void AP_Logger_File::stop_logging(void)
 /*
   start writing to a new log file
  */
-void LoggerFileThread::start_new_log(void)
+void LoggerThread_File::start_new_log(void)
 {
     if (recent_open_error()) {
         // we have previously failed to open a file - don't try again
@@ -977,7 +977,7 @@ void AP_Logger_File::start_new_log(void)
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-void LoggerFileThread::flush(void)
+void LoggerThread_File::flush(void)
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
     uint32_t tnow = AP_HAL::millis();
@@ -1007,7 +1007,7 @@ void AP_Logger_File::flush(void)
     }
 }
 
-void LoggerFileThread::timer(void)
+void LoggerThread_File::timer(void)
 {
     if (!space_cleared) {
         Prep_MinSpace();
@@ -1023,7 +1023,7 @@ void LoggerFileThread::timer(void)
     handle_write_buffer();
 }
 
-void LoggerFileThread::retry_logging_open()
+void LoggerThread_File::retry_logging_open()
 {
     if (_write_fd == -1 &&
         _read_fd == -1 &&
@@ -1037,7 +1037,7 @@ void LoggerFileThread::retry_logging_open()
     }
 }
 
-void LoggerFileThread::check_message_queue(void)
+void LoggerThread_File::check_message_queue(void)
 {
     LoggerThreadRequest *request;
     if (!_backend->thread_requests.pop(request)) {
@@ -1093,7 +1093,7 @@ void LoggerFileThread::check_message_queue(void)
     request->complete = true;
 }
 
-void LoggerFileThread::handle_write_buffer(void)
+void LoggerThread_File::handle_write_buffer(void)
 {
     if (_write_fd == -1 || recent_open_error()) {
         return;

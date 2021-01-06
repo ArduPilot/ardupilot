@@ -6,6 +6,11 @@ class LoggerMessageWriter_DFLogStart;
 
 #define MAX_LOG_FILES 500
 
+class LoggerThread {
+public:
+    uint16_t _cached_oldest_log;
+}
+
 class AP_Logger_Backend
 {
 
@@ -153,8 +158,6 @@ protected:
 
     LoggerMessageWriter_DFLogStart *_startup_messagewriter;
     bool _writing_startup_messages;
-
-    uint16_t _cached_oldest_log;
 
     uint32_t _dropped;
     uint32_t _log_file_size_bytes;
