@@ -3864,13 +3864,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
         if (!AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
         }
-        // allow vehicle to disallow disarm.  Copter does this if
-        // the vehicle isn't considered landed.
-        if (!allow_disarm() &&
-            !is_equal(packet.param2, magic_force_disarm_value)) {
-            return MAV_RESULT_FAILED;
-        }
-        if (AP::arming().disarm(AP_Arming::Method::MAVLINK)) {
+        const bool forced = is_equal(packet.param2, magic_force_disarm_value);
+        // note disarm()'s second parameter is "do_disarm_checks"
+        if (AP::arming().disarm(AP_Arming::Method::MAVLINK, !forced)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
