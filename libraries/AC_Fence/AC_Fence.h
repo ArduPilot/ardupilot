@@ -176,6 +176,7 @@ private:
     bool pre_arm_check_alt(const char* &fail_msg) const;
 
     // parameters
+    AP_Int8         _enabled;               // fence enable/disable control
     AP_Int8         _auto_enabled;          // top level flag for auto enabling fence
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
@@ -198,7 +199,6 @@ private:
     float           _circle_breach_distance;    // distance beyond the circular fence
 
     // other internal variables
-    bool            _enabled;               // fence enable/disable control
     bool            _floor_enabled;         // fence floor is enabled
     float           _home_distance;         // distance from home in meters (provided by main code)
     float           _curr_alt;
