@@ -135,13 +135,14 @@ void AP_CANTester_KDECAN::loop(void)
                     break;
                 }
                 case UPDATE_NODE_ID_OBJ_ADDR: {
-                    if (_esc_info[i].enum_timeout != 0 && _esc_info[i].enum_timeout >= AP_HAL::micros64()) {
+                    if (_esc_info[i].enum_timeout_ms != 0
+                        && _esc_info[i].enum_timeout_ms >= AP_HAL::millis()) {
                         _esc_info[i].node_id = esc_num;
                         _max_node_id = MAX(_max_node_id, esc_num - 2 + 1);
                         gcs().send_text(MAV_SEVERITY_ALERT, "KDECANTester: Set node ID %d for ESC %d\n", esc_num, i);
                     }
 
-                    _esc_info[i].enum_timeout = 0;
+                    _esc_info[i].enum_timeout_ms = 0;
 
                     res_frame.dlc = 1;
                     memcpy(res_frame.data, &(_esc_info[i].node_id), 1);
@@ -149,8 +150,8 @@ void AP_CANTester_KDECAN::loop(void)
                     break;
                 }
                 case START_ENUM_OBJ_ADDR: {
-                    _esc_info[i].enum_timeout = AP_HAL::micros64() + be16toh(*((be16_t*) &(recv_frame.data[0]))) * 1000;
-                    gcs().send_text(MAV_SEVERITY_ALERT, "KDECANTester: Starting enumeration for ESC %d, timeout %" PRIu64 "\n", i, _esc_info[i].enum_timeout);
+                    _esc_info[i].enum_timeout_ms = AP_HAL::millis() + be16toh(*((be16_t*) &(recv_frame.data[0])));
+                    gcs().send_text(MAV_SEVERITY_ALERT, "KDECANTester: Starting enumeration for ESC %d, timeout %u", i, (unsigned)_esc_info[i].enum_timeout_ms);
                     i++;
                     continue;
                 }
@@ -202,15 +203,16 @@ void AP_CANTester_KDECAN::print_stats(void)
         if (counters[i].frame_id == 0) {
             break;
         }
-        hal.console->printf("0x%08" PRIX32 ": %" PRIu32 "\n", counters[i].frame_id, counters[i].count);
+        hal.console->printf("0x%08x: %u\n", (unsigned)counters[i].frame_id, (unsigned)counters[i].count);
         counters[i].count = 0;
     }
 }
 
 bool AP_CANTester_KDECAN::send_enumeration(uint8_t num)
 {
-    if (_esc_info[num].enum_timeout == 0 || AP_HAL::micros64() > _esc_info[num].enum_timeout) {
-        _esc_info[num].enum_timeout = 0;
+    if (_esc_info[num].enum_timeout_ms == 0 ||
+        AP_HAL::millis() > _esc_info[num].enum_timeout_ms) {
+        _esc_info[num].enum_timeout_ms = 0;
         gcs().send_text(MAV_SEVERITY_ALERT, "KDECANTester: Not running enumeration for ESC %d\n", num);
         return false;
     }
