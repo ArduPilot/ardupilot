@@ -49,9 +49,9 @@ private:
     struct esc_info {
         uint8_t node_id;
         uint64_t mcu_id;
-        uint64_t enum_timeout;
+        uint32_t enum_timeout_ms;
 
-        esc_info() : node_id(1), mcu_id(0), enum_timeout(0) {}
+        esc_info() : node_id(1), mcu_id(0), enum_timeout_ms(0) {}
     } _esc_info[NUM_ESCS];
 
     uint8_t _max_node_id = 0;
