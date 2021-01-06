@@ -872,14 +872,21 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 }
 
 // arming.disarm - disarm motors
-bool AP_Arming_Copter::disarm(const AP_Arming::Method method)
+bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     // return immediately if we are already disarmed
     if (!copter.motors->armed()) {
         return true;
     }
 
-    if (!AP_Arming::disarm(method)) {
+    // do not allow disarm via mavlink if we think we are flying:
+    if (do_disarm_checks &&
+        method == AP_Arming::Method::MAVLINK &&
+        !copter.ap.land_complete) {
+        return false;
+    }
+
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
 
