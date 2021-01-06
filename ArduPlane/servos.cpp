@@ -368,8 +368,8 @@ void Plane::crow_update(void)
     float flap_inner = flap_function_output * g2.crow_flap_weight_inner*0.01f;
     float flap_outer = flap_function_output * g2.crow_flap_weight_outer*0.01f;
 
-    float crow_inner = flap_inner - airbrake_function_output - flap_inner*airbrake_function_output;
-    float crow_outer = flap_outer + airbrake_function_output - flap_outer*airbrake_function_output;
+    float crow_inner = flap_inner + airbrake_function_output - flap_inner*airbrake_function_output;
+    float crow_outer = flap_outer - airbrake_function_output - flap_outer*airbrake_function_output;
 
     // Rescale to use -4500 to 4500 (enables trim)
     crow_inner  = constrain_float(crow_inner*4500, -4500, 4500);
