@@ -121,12 +121,6 @@ private:
     // can open/close files without causing the backend to write to a
     // bad fd
     HAL_Semaphore write_fd_semaphore;
-    
-    // performance counters
-    AP_HAL::Util::perf_counter_t  _perf_write;
-    AP_HAL::Util::perf_counter_t  _perf_fsync;
-    AP_HAL::Util::perf_counter_t  _perf_errors;
-    AP_HAL::Util::perf_counter_t  _perf_overruns;
 
     const char *last_io_operation = "";
 };
