@@ -1947,7 +1947,7 @@ struct PACKED log_PSC {
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
-      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--BBBBBBB" }, \
+      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000" }, \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBfffffffffff", "TimeUS,Health,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s-mmmmmmmmmhm", "F-00000000000" }, \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
