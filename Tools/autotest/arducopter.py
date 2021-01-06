@@ -1352,6 +1352,17 @@ class AutoTestCopter(AutoTest):
 
         self.change_alt(50)
 
+        # Activate the floor fence
+        # TODO this test should run without requiring this
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE,
+                     1,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+
         # first east
         self.progress("turn east")
         self.set_rc(4, 1580)
