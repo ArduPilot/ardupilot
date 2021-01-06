@@ -61,6 +61,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::AUTO:
     case AUX_FUNC::CIRCLE:
     case AUX_FUNC::FLAP:
+    case AUX_FUNC::AIRBRAKE:
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::LOITER:
@@ -133,7 +134,8 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const aux_swi
         break;
 
     case AUX_FUNC::FLAP:
-        break; // flap input label, nothing to do
+    case AUX_FUNC::AIRBRAKE:
+        break; // flap and airbrake input label, nothing to do
 
     default:
         RC_Channel::do_aux_function(ch_option, ch_flag);
