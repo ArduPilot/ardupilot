@@ -64,7 +64,7 @@ public:
     /// enable - allows fence to be enabled/disabled.
     void enable(bool value);
 
-    /// auto_enabled - 
+    /// auto_enabled - automaticaly enable/disable fence depending of flight status
     AutoEnable auto_enabled() { return static_cast<AutoEnable>(_auto_enabled.get()); }
 
     /// enable_floor - allows fence floor to be enabled/disabled. Note this does not update the eeprom saved value

@@ -23,8 +23,10 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Fence Type
     // @Description: Enabled fence types held as bitmask
-    // @Values: 0:None,1:Altitude,2:Circle,3:Altitude and Circle,4:Polygon,5:Altitude and Polygon,6:Circle and Polygon,7:All
-    // @Bitmask: 0:Altitude,1:Circle,2:Polygon
+    // @Values{Rover}: 0:None,1:Altitude,2:Circle,3:Altitude and Circle,4:Polygon,5:Altitude and Polygon,6:Circle and Polygon,7:All
+    // @Values{Copter, Plane, Sub}: 0:None,1:Max altitude,2:Circle,3:Max altitude and Circle,4:Polygon,5:Max altitude and Polygon,6:Circle and Polygon,7:Max altitude circle and Polygon,8:Min altitude
+    // @Bitmask{Rover}: 0:Altitude,1:Circle,2:Polygon
+    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle,2:Polygon,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _enabled_fences,  AC_FENCE_TYPE_DEFAULT),
 
@@ -81,7 +83,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
 
     // @Param{Plane}: RET_RALLY
     // @DisplayName: Fence Return to Rally
-    // @Description: Should the vehichle return to fence return point or rally point
+    // @Description: Should the vehicle return to fence return point or rally point
     // @Values: 0:Fence Return Point,1:Nearest Rally Point
     // @Range: 0 1
     // @Increment: 1
@@ -153,20 +155,21 @@ void AC_Fence::disable_floor()
         // Floor is currently enabled, disable it
         AP::logger().Write_Event(LogEvent::FENCE_FLOOR_DISABLE);
     }
-    _floor_enabled = true;
+    _floor_enabled = false;
     clear_breach(AC_FENCE_TYPE_ALT_MIN);
 }
 
 bool AC_Fence::present() const
 {
+    const auto enabled_fences = _enabled_fences.get();
     // A fence is present if any of the conditions are true.
     //   * tin can (circle) is enabled
     //   * min or max alt is enabled
     //   * polygon fences are enabled and any fence has been uploaded
-    if (_enabled_fences.get() & AC_FENCE_TYPE_CIRCLE ||
-        _enabled_fences.get() & AC_FENCE_TYPE_ALT_MIN ||
-        _enabled_fences.get() & AC_FENCE_TYPE_ALT_MAX ||
-        ((_enabled_fences.get() & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
+    if (enabled_fences & AC_FENCE_TYPE_CIRCLE ||
+        enabled_fences & AC_FENCE_TYPE_ALT_MIN ||
+        enabled_fences & AC_FENCE_TYPE_ALT_MAX ||
+        ((enabled_fences & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
         return true;
     }
 
@@ -306,16 +309,16 @@ bool AC_Fence::check_fence_alt_max()
 
             // create a backup fence 20m higher up
             _alt_max_backup = _curr_alt + AC_FENCE_ALT_MAX_BACKUP_DISTANCE;
-            // new breach:
+            // new breach
             return true;
         }
-        // old breach:
+        // old breach
         return false;
     }
 
     // not breached
 
-    // clear alt breach if present
+    // clear max alt breach if present
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MAX);
         _alt_max_backup = 0.0f;
@@ -332,7 +335,7 @@ bool AC_Fence::check_fence_alt_min()
 {
     // altitude fence check
     if (!(_enabled_fences & AC_FENCE_TYPE_ALT_MIN)) {
-        // not enabled
+        // not enabled; no breach
         return false;
     }
 
@@ -363,7 +366,7 @@ bool AC_Fence::check_fence_alt_min()
 
     // not breached
 
-    // clear alt breach if present
+    // clear min alt breach if present
     if ((_breached_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN);
         _alt_min_backup = 0.0f;
@@ -563,7 +566,7 @@ float AC_Fence::get_breach_distance(uint8_t fence_type) const
         max = MAX(_alt_max_breach_distance, max);
     }
     if (fence_type & AC_FENCE_TYPE_ALT_MIN) {
-        max = MAX(_alt_max_breach_distance, max);
+        max = MAX(_alt_min_breach_distance, max);
     }
     if (fence_type & AC_FENCE_TYPE_CIRCLE) {
         max = MAX(_circle_breach_distance, max);
