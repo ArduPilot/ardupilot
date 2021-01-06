@@ -230,9 +230,10 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 /*
   disarm motors
  */
-bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
+bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    if (method == AP_Arming::Method::RUDDER) {
+    if (do_disarm_checks &&
+        method == AP_Arming::Method::RUDDER) {
         // don't allow rudder-disarming in flight:
         if (plane.is_flying()) {
             // obviously this could happen in-flight so we can't warn about it
@@ -245,7 +246,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
         }
     }
 
-    if (!AP_Arming::disarm(method)) {
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
     if (plane.control_mode != &plane.mode_auto) {
