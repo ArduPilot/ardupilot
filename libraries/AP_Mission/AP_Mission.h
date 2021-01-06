@@ -28,6 +28,8 @@
     #if MISSION_RELATIVE == ENABLED
         #include <AP_Mission/AP_Mission_Relative.h>
     #endif
+#else
+   #define MISSION_RELATIVE 0
 #endif
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
@@ -58,11 +60,9 @@
 class AP_Mission
 {
 
-#ifdef MISSION_RELATIVE
-    #if MISSION_RELATIVE == ENABLED
-        friend class AP_Mission_Relative;
-        AP_Mission_Relative mission_relative;
-    #endif
+#if MISSION_RELATIVE == ENABLED
+    friend class AP_Mission_Relative;
+    AP_Mission_Relative mission_relative;
 #endif
 
 public:
