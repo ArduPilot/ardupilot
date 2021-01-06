@@ -17,8 +17,6 @@ public:
     // erase handling
     void EraseAll() override;
 
-    void Prep() override;
-
     // high level interface
     uint16_t find_last_log() override;
     void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) override;

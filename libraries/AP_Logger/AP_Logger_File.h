@@ -28,9 +28,6 @@ public:
     // erase handling
     void EraseAll() override;
 
-    // possibly time-consuming preparation handling:
-    void Prep() override;
-
     /* Write a block of data at current offset */
     bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) override;
     uint32_t bufferspace_available() override;
@@ -90,7 +87,6 @@ private:
     int64_t disk_space();
 
     void ensure_log_directory_exists();
-    bool NeedPrep();
 
     bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;

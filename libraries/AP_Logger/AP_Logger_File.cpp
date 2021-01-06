@@ -104,6 +104,8 @@ void AP_Logger_File::Init()
     if (custom_dir != nullptr){
         _log_directory = custom_dir;
     }
+
+    Prep_MinSpace();
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const
@@ -280,6 +282,11 @@ void AP_Logger_File::Prep_MinSpace()
         // don't clear space if watchdog reset, it takes too long
         return;
     }
+
+    if (!CardInserted()) {
+        return;
+    }
+
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -287,8 +294,6 @@ void AP_Logger_File::Prep_MinSpace()
     }
 
     const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
-
-    _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -316,6 +321,7 @@ void AP_Logger_File::Prep_MinSpace()
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
+                _cached_oldest_log = 0;
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -334,36 +340,6 @@ void AP_Logger_File::Prep_MinSpace()
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
-}
-
-void AP_Logger_File::Prep() {
-    if (!NeedPrep()) {
-        return;
-    }
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-    Prep_MinSpace();
-}
-
-bool AP_Logger_File::NeedPrep()
-{
-    if (!CardInserted()) {
-        // should not have been called?!
-        return false;
-    }
-
-    const int64_t actual = disk_space_avail();
-    if (actual == -1) {
-        return false;
-    }
-
-    if (actual < (int64_t)_front._params.min_MB_free * MB_to_B) {
-        return true;
-    }
-
-    return false;
 }
 
 /*

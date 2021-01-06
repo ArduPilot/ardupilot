@@ -50,7 +50,6 @@ public:
     void EraseAll() override {}
 
     void PrepForArming() override {}
-    void Prep() override { }
 
     // high level interface
     uint16_t find_last_log(void) override { return 0; }

@@ -233,8 +233,6 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         backends[i]->Init();
     }
 
-    Prep();
-
     start_io_thread();
 
     EnableWrites(true);
@@ -729,10 +727,6 @@ bool AP_Logger::CardInserted(void) {
         }
     }
     return false;
-}
-
-void AP_Logger::Prep() {
-    FOR_EACH_BACKEND(Prep());
 }
 
 void AP_Logger::StopLogging()
