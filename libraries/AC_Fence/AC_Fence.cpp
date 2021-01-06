@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Description: Allows you to enable (1) or disable (0) the fence functionality
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    //AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
+    AP_GROUPINFO("ENABLE",      0,  AC_Fence,   _enabled,   0),
 
     // @Param: TYPE
     // @DisplayName: Fence Type
