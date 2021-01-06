@@ -76,6 +76,7 @@ void Mode::_TakeOff::stop()
 {
     _running = false;
     start_ms = 0;
+    copter.flightmode->autoenable_floor_fence();
 }
 
 // returns pilot and takeoff climb rates
@@ -227,4 +228,20 @@ bool Mode::is_taking_off() const
         return true;
     }
     return false;
+}
+
+//  called when takeoff is complete
+void Mode::autoenable_floor_fence(void)
+{
+#if AC_FENCE == ENABLED
+    switch(copter.fence.auto_enabled()) {
+        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
+        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
+            copter.fence.enable(true);
+            break;
+        default:
+            // fence does not auto-enable in other takeoff conditions
+            break;
+    }
+#endif
 }
