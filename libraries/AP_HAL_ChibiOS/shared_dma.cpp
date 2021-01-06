@@ -22,6 +22,8 @@
 
 #if CH_CFG_USE_SEMAPHORES == TRUE
 
+#include <AP_Common/ExpandingString.h>
+
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
@@ -228,26 +230,16 @@ void Shared_DMA::lock_all(void)
 }
 
 // display dma contention statistics as text buffer for @SYS/dma.txt
-size_t Shared_DMA::dma_info(char *buf, size_t bufsize)
+void Shared_DMA::dma_info(ExpandingString &str)
 {
-    size_t total = 0;
-
     // no buffer allocated, start counting
     if (_contention_stats == nullptr) {
         _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
-        return 0;
+        return;
     }
 
     // a header to allow for machine parsers to determine format
-    int n = hal.util->snprintf(buf, bufsize, "DMAV1\n");
-
-    if (n <= 0) {
-        return 0;
-    }
-
-    buf += n;
-    bufsize -= n;
-    total += n;
+    str.printf("DMAV1\n");
 
     for (uint8_t i = 0; i < SHARED_DMA_MAX_STREAM_ID + 1; i++) {
         if (locks[i].obj == nullptr) {
@@ -257,21 +249,11 @@ size_t Shared_DMA::dma_info(char *buf, size_t bufsize)
         const char* fmt = "DMA=%1u STRM=%1u ULCK=%8u CLCK=%8u CONT=%4.1f%%\n";
         float cond_per = 100.0f * float(_contention_stats[i].contended_locks)
             / (1 + _contention_stats[i].contended_locks + _contention_stats[i].uncontended_locks);
-        n = hal.util->snprintf(buf, bufsize, fmt, i / 8 + 1, i % 8,
-            _contention_stats[i].uncontended_locks, _contention_stats[i].contended_locks, cond_per);
-
-        if (n <= 0) {
-            break;
-        }
-        buf += n;
-        bufsize -= n;
-        total += n;
-
+        str.printf(fmt, i / 8 + 1, i % 8,
+                   _contention_stats[i].uncontended_locks, _contention_stats[i].contended_locks, cond_per);
         _contention_stats[i].contended_locks = 0;
         _contention_stats[i].uncontended_locks = 0;
     }
-
-    return total;
 }
 
 #endif // CH_CFG_USE_SEMAPHORES

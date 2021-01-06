@@ -476,6 +476,7 @@ public:
 
     bool is_vtol_mode() const override { return true; }
     bool is_vtol_man_throttle() const override { return true; }
+    virtual bool is_vtol_man_mode() const override { return true; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -522,7 +523,7 @@ public:
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
-    
+
 protected:
     AP_Int16 target_alt;
     AP_Int16 target_dist;

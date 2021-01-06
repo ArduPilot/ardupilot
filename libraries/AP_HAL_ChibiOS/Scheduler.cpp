@@ -345,7 +345,7 @@ bool Scheduler::in_expected_delay(void) const
             return true;
         }
     }
-#ifndef HAL_NO_FLASH_SUPPORT
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_BOOTLOADER_BUILD)
     if (stm32_flash_recent_erase()) {
         return true;
     }
@@ -565,10 +565,10 @@ void Scheduler::_storage_thread(void* arg)
     }
 }
 
-void Scheduler::system_initialized()
+void Scheduler::set_system_initialized()
 {
     if (_initialized) {
-        AP_HAL::panic("PANIC: scheduler::system_initialized called"
+        AP_HAL::panic("PANIC: scheduler::set_system_initialized called"
                       "more than once");
     }
     _initialized = true;

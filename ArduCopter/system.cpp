@@ -216,6 +216,15 @@ void Copter::init_ardupilot()
         enable_motor_output();
     }
 
+    // attempt to switch to RTL, if this fails then switch to Land
+    if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
+        // set mode to STABILIZE will trigger mode change notification to pilot
+        set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
+    } else {
+        // alert pilot to mode change
+        AP_Notify::events.failsafe_mode_change = 1;
+    }
+
     // flag that initialisation has completed
     ap.initialised = true;
 }

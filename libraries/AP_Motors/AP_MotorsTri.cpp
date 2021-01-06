@@ -129,7 +129,7 @@ uint16_t AP_MotorsTri::get_motor_mask()
                           (1U << AP_MOTORS_MOT_2) |
                           (1U << AP_MOTORS_MOT_4) |
                           (1U << AP_MOTORS_CH_TRI_YAW);
-    uint16_t mask = rc_map_mask(motor_mask);
+    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();

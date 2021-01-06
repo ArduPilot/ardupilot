@@ -27,6 +27,10 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#ifndef HAL_LOGGING_STACK_SIZE
+#define HAL_LOGGING_STACK_SIZE 512
+#endif
+
 #ifndef HAL_LOGGING_MAV_BUFSIZE
 #define HAL_LOGGING_MAV_BUFSIZE  8
 #endif 
@@ -230,6 +234,8 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 
     Prep();
+
+    start_io_thread();
 
     EnableWrites(true);
 }
@@ -580,6 +586,8 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
 
 void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
+    _log_start_count++;
+
     for (uint8_t i=0; i<_next_backend; i++) {
         if (backends[i] == backend) { // pointer comparison!
             // reset sent masks
@@ -1239,6 +1247,45 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
         }
     }
     return len;
+}
+
+// thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
+// and the thread will sleep while this completes preventing other tasks from running, it therefore
+// is necessary to run the IO in it's own thread
+void AP_Logger::io_thread(void)
+{
+    uint32_t last_run_us = AP_HAL::micros();
+
+    while (true) {
+        uint32_t now = AP_HAL::micros();
+
+        uint32_t delay = 250U; // always have some delay
+        if (now - last_run_us < 1000) {
+            delay = MAX(1000 - (now - last_run_us), delay);
+        }
+        hal.scheduler->delay_microseconds(delay);
+
+        last_run_us = AP_HAL::micros();
+
+        FOR_EACH_BACKEND(io_timer());
+    }
+}
+
+// start the update thread
+void AP_Logger::start_io_thread(void)
+{
+    WITH_SEMAPHORE(_log_send_sem);
+
+    if (_io_thread_started) {
+        return;
+    }
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
+        AP_HAL::panic("Failed to start Logger IO thread");
+    }
+
+    _io_thread_started = true;
+    return;
 }
 
 /* End of Write support */

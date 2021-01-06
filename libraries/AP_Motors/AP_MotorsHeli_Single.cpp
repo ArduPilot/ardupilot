@@ -373,7 +373,7 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
         mask |= 1U << AP_MOTORS_HELI_SINGLE_TAILRSC;
     }
 
-    return rc_map_mask(mask);
+    return motor_mask_to_srv_channel_mask(mask);
 }
 
 // update_motor_controls - sends commands to motor controllers
@@ -408,9 +408,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     float yaw_offset = 0.0f;
 
     // initialize limits flag
-    limit.roll = false;
-    limit.pitch = false;
-    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -447,7 +444,18 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     if (_heliflags.landing_collective && collective_out < _collective_mid_pct && !_heliflags.in_autorotation) {
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
+
     }
+
+    // updates below mid collective flag
+    if (collective_out <= _collective_mid_pct) {
+        _heliflags.below_mid_collective = true;
+    } else {
+        _heliflags.below_mid_collective = false;
+    }
+
+    // updates takeoff collective flag based on 50% hover collective
+    update_takeoff_collective_flag(collective_out);
 
     // if servo output not in manual mode and heli is not in autorotation, process pre-compensation factors
     if (_servo_mode == SERVO_CONTROL_MODE_AUTOMATED && !_heliflags.in_autorotation) {

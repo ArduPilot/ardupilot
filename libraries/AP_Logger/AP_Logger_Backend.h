@@ -132,6 +132,8 @@ public:
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
 
+    virtual void io_timer(void) {}
+
 protected:
 
     AP_Logger &_front;

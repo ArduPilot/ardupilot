@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 /// map a function to a servo channel and output it
 void SRV_Channel::output_ch(void)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     int8_t passthrough_from = -1;
 
     // take care of special function cases
@@ -59,6 +60,8 @@ void SRV_Channel::output_ch(void)
             }
         }
     }
+#endif // HAL_BUILD_AP_PERIPH
+
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
         hal.rcout->write(ch_num, output_pwm);
     }
@@ -120,6 +123,9 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_flaperon_right:
     case k_tiltMotorLeft:
     case k_tiltMotorRight:
+    case k_tiltMotorRear:
+    case k_tiltMotorRearLeft:
+    case k_tiltMotorRearRight:
     case k_elevon_left:
     case k_elevon_right:
     case k_vtail_left:
@@ -610,6 +616,9 @@ void SRV_Channels::adjust_trim(SRV_Channel::Aux_servo_function_t function, float
         }
         float change = c.reversed?-v:v;
         uint16_t new_trim = c.servo_trim;
+        if (c.servo_max <= c.servo_min) {
+            continue;
+        }
         float trim_scaled = float(c.servo_trim - c.servo_min) / (c.servo_max - c.servo_min);
         if (change > 0 && trim_scaled < 0.6f) {
             new_trim++;

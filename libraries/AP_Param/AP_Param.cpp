@@ -158,7 +158,7 @@ void AP_Param::erase_all(void)
 */
 uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift)
 {
-    if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_NO_SHIFT)) {
+    if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_FLAG_NO_SHIFT)) {
         /*
           this is a special case for a bug in the original design. An
           idx of 0 shifted by n bits is still zero, which makes it
@@ -202,7 +202,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             return false;
         }
         if (group_shift != 0 && idx == 0) {
-            // great idx 0 as 63 for duplicates. See group_id()
+            // treat idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
         if (used_mask & (1ULL<<idx)) {
@@ -1160,12 +1160,21 @@ void AP_Param::save_sync(bool force_save)
 */
 void AP_Param::save(bool force_save)
 {
-    struct param_save p;
+    struct param_save p, p2;
     p.param = this;
     p.force_save = force_save;
+    if (save_queue.peek(p2) &&
+        p2.param == this &&
+        p2.force_save == force_save) {
+        // this one is already at the head of the list to be
+        // saved. This check is cheap and catches the case where we
+        // are flooding the save queue with one parameter (eg. mission
+        // creation, changing MIS_TOTAL)
+        return;
+    }
     while (!save_queue.push(p)) {
         // if we can't save to the queue
-        if (hal.util->get_soft_armed()) {
+        if (hal.util->get_soft_armed() || !hal.scheduler->in_main_thread()) {
             // if we are armed then don't sleep, instead we lose the
             // parameter save
             return;

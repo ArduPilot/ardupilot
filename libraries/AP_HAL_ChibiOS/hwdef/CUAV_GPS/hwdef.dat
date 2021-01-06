@@ -143,7 +143,8 @@ define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 768
 
-define AP_PARAM_MAX_EMBEDDED_PARAM 0
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1
@@ -154,10 +155,8 @@ define HAL_COMPASS_MAX_SENSORS 1
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_PERIPH_ENABLE_BARO
-define HAL_PERIPH_ENABLE_BUZZER
-define HAL_PERIPH_NEOPIXEL_COUNT 8
-define HAL_PERIPH_NEOPIXEL_CHAN 0
-define AP_PERIPH_LED_BRIGHT_DEFAULT 50
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
 
 # use the app descriptor needed by MissionPlanner for CAN upload
 env APP_DESCRIPTOR MissionPlanner

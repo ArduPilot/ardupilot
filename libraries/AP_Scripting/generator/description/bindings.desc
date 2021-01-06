@@ -146,6 +146,7 @@ singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_
 singleton RangeFinder method max_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method min_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1
 
@@ -247,6 +248,13 @@ singleton AP_Param alias param
 singleton AP_Param method get boolean string float'Null
 singleton AP_Param method set boolean string float -FLT_MAX FLT_MAX
 singleton AP_Param method set_and_save boolean string float -FLT_MAX FLT_MAX
+
+include AP_Scripting/AP_Scripting_helpers.h
+userdata Parameter method init boolean string
+userdata Parameter method get boolean float'Null
+userdata Parameter method set boolean float -FLT_MAX FLT_MAX
+userdata Parameter method set_and_save boolean float -FLT_MAX FLT_MAX
+
 
 include AP_Mission/AP_Mission.h
 singleton AP_Mission alias mission

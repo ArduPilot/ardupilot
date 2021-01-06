@@ -50,6 +50,7 @@ extern "C++" {
 //    VTX = 0x81
 // NOTE: This value is not used internally -- it is passed as a parameter to srxlInit() in the example app
 #define SRXL_DEVICE_ID              0x31
+#define SRXL_DEVICE_ID_BASE_RX      0x30
 
 // Set this to the desired priority level for sending telemetry, ranging from 0 to 100.
 // Generally, this number should be 10 times the number of different telemetry packets to regularly send.

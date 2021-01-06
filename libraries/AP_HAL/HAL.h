@@ -101,6 +101,8 @@ public:
 
     virtual void run(int argc, char * const argv[], Callbacks* callbacks) const = 0;
 
+private:
+    // the uartX ports must be contiguous in ram for the serial() method to work
     AP_HAL::UARTDriver* uartA;
     AP_HAL::UARTDriver* uartB;
     AP_HAL::UARTDriver* uartC;
@@ -110,6 +112,8 @@ public:
     AP_HAL::UARTDriver* uartG;
     AP_HAL::UARTDriver* uartH;
     AP_HAL::UARTDriver* uartI;
+
+public:
     AP_HAL::I2CDeviceManager* i2c_mgr;
     AP_HAL::SPIDeviceManager* spi;
     AP_HAL::AnalogIn*   analogin;
@@ -128,4 +132,9 @@ public:
 #else
     AP_HAL::CANIface** can;
 #endif
+
+    // access to serial ports using SERIALn_ numbering
+    UARTDriver* serial(uint8_t sernum) const;
+
+    static constexpr uint8_t num_serial = 9;
 };

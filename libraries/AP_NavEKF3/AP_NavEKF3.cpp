@@ -660,6 +660,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @DisplayName: Ballistic coefficient for X axis drag
     // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
     // @Range: 0.0 1000.0
+    // @Units: kg/m/m
     // @User: Advanced
     AP_GROUPINFO("DRAG_BCOEF_X", 2, NavEKF3, _ballisticCoef_x, 0.0f),
 
@@ -667,6 +668,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @DisplayName: Ballistic coefficient for Y axis drag
     // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
     // @Range: 50.0 1000.0
+    // @Units: kg/m/m
     // @User: Advanced
     AP_GROUPINFO("DRAG_BCOEF_Y", 3, NavEKF3, _ballisticCoef_y, 0.0f),
 
@@ -684,6 +686,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. It represents the ratio of rotor drag induced acceleration to airspeed. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on an will change with different propellers. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEFto a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
+    // @Units: 1/s
     // @User: Advanced
     AP_GROUPINFO("DRAG_MCOEF", 5, NavEKF3, _momentumDragCoef, 0.0f),
 
@@ -710,7 +713,11 @@ bool NavEKF3::InitialiseFilter(void)
     imuSampleTime_us = AP::dal().micros64();
 
     // remember expected frame time
-    _frameTimeUsec = 1e6 / ins.get_loop_rate_hz();
+    const float loop_rate = ins.get_loop_rate_hz();
+    if (!is_positive(loop_rate)) {
+        return false;
+    }
+    _frameTimeUsec = 1e6 / loop_rate;
 
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
@@ -719,9 +726,6 @@ bool NavEKF3::InitialiseFilter(void)
     // convert parameters if necessary
     convert_parameters();
 #endif
-
-    // initialise sources
-    sources.init();
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
@@ -1066,7 +1070,7 @@ bool NavEKF3::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
     const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
-    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL)) {
+    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
         // yaw source is configured to use compass but MAG_CAL valid is deprecated
         AP::dal().snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
         return false;
@@ -1668,11 +1672,11 @@ void NavEKF3::convert_parameters()
     switch (_magCal.get()) {
     case 5:
         // EK3_MAG_CAL = 5 (External Yaw sensor).  We rely on effective_magCal to interpret old "5" values as "Never"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::EXTERNAL);
+        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS);
         break;
     case 6:
         // EK3_MAG_CAL = 6 (ExtYaw with Compass fallback).  We rely on effective_magCal to interpret old "6" values as "When Flying"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK);
+        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK);
         break;
     default:
         // do nothing

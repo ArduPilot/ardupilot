@@ -44,6 +44,7 @@
 #include <AP_RCTelemetry/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -309,6 +310,10 @@ protected:
     AP_Generator generator;
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_ExternalAHRS externalAHRS;
+#endif
+    
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 

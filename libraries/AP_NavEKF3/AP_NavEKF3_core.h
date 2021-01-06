@@ -569,10 +569,16 @@ private:
         float           delTime;    // time interval that the measurement was accumulated over (sec)
     };
         
+    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
+    enum class rotationOrder {
+        TAIT_BRYAN_321=0,
+        TAIT_BRYAN_312=1
+    };
+
     struct yaw_elements : EKF_obs_element_t {
-        float       yawAng;         // yaw angle measurement (rad)
-        float       yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
-        uint8_t     type;           // type specifiying Euler rotation order used, 1 = 312 (ZXY), 2 = 321 (ZYX)
+        float         yawAng;         // yaw angle measurement (rad)
+        float         yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
+        rotationOrder order;          // type specifiying Euler rotation order used, 0 = 321 (ZYX), 1 = 312 (ZXY)
     };
 
     struct ext_nav_elements : EKF_obs_element_t {
@@ -612,10 +618,14 @@ private:
         EXTNAV=7        // Use external nav data
     };
 
-    // Specifies the rotation order used for the Tait-Bryan or Euler angles where alternative rotation orders are available
-    enum class rotationOrder {
-        TAIT_BRYAN_321=0,
-        TAIT_BRYAN_312=1
+    // specifies the method to be used when fusing yaw observations
+    enum class yawFusionMethod {
+	    MAGNETOMETER=0,
+	    GPS=1,
+        GSF=2,
+        STATIC=3,
+        PREDICTED=4,
+        EXTNAV=5,
     };
 
     // update the navigation filter status
@@ -738,8 +748,8 @@ private:
 
     // initialise the earth magnetic field states using declination and current attitude and magnetometer measurements
 
-    // align the yaw angle for the quaternion states using the external yaw sensor
-    void alignYawAngle();
+    // align the yaw angle for the quaternion states to the given yaw angle which should be at the fusion horizon
+    void alignYawAngle(const yaw_elements &yawAngData);
 
     // update mag field states and associated variances using magnetomer and declination data
     void resetMagFieldStates();
@@ -858,8 +868,9 @@ private:
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
 
-    // Fuse compass measurements using a simple declination observation (doesn't require magnetic field states)
-    void fuseEulerYaw(bool usePredictedYaw, bool useExternalYawSensor);
+    // Fuse compass measurements using a direct yaw angle observation (doesn't require magnetic field states)
+    // Returns true if the fusion was successful
+    bool fuseEulerYaw(yawFusionMethod method);
 
     // return the best Tait-Bryan rotation order to use
     void bestRotationOrder(rotationOrder &order);
@@ -945,6 +956,9 @@ private:
     // attempt to reset the yaw to the EKF-GSF value
     // returns false if unsuccessful
     bool EKFGSF_resetMainFilterYaw();
+
+    // returns true on success and populates yaw (in radians) and yawVariance (rad^2)
+    bool EKFGSF_getYaw(float &yaw, float &yawVariance) const;
 
     // Fusion of body frame X and Y axis drag specific forces for multi-rotor wind estimation
     void FuseDragForces();
@@ -1210,11 +1224,12 @@ private:
     EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
 
-    // yaw sensor fusion
-    uint32_t yawMeasTime_ms;
-    EKF_obs_buffer_t<yaw_elements> storedYawAng;
-    yaw_elements yawAngDataNew;
-    yaw_elements yawAngDataDelayed;
+    // GPS yaw sensor fusion
+    uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer
+    EKF_obs_buffer_t<yaw_elements> storedYawAng;    // GPS yaw angle buffer
+    yaw_elements yawAngDataNew;         // GPS yaw angle at the current time horizon
+    yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
+    yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
@@ -1330,6 +1345,9 @@ private:
     Vector3f extNavVelInnov;            // external nav velocity innovations
     Vector3f extNavVelVarInnov;         // external nav velocity innovation variances
     uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
+    EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
+    yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
+    uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {

@@ -148,7 +148,8 @@ public:
         SerialProtocol_MSP = 32,
         SerialProtocol_DJI_FPV = 33,
         SerialProtocol_AirSpeed = 34,
-
+        SerialProtocol_ADSB = 35,
+        SerialProtocol_AHRS = 36,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -173,6 +174,9 @@ public:
     //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found
     uint32_t find_baudrate(enum SerialProtocol protocol, uint8_t instance) const;
 
+    // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
+    int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
+    
     // get_mavlink_channel - provides the mavlink channel associated with a given protocol (and instance)
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns true if a channel is found, false if not
@@ -213,7 +217,6 @@ private:
     struct UARTState {
         AP_Int8 protocol;
         AP_Int32 baud;
-        AP_HAL::UARTDriver* uart;
         AP_Int16 options;
     } state[SERIALMANAGER_NUM_PORTS];
 
@@ -232,6 +235,8 @@ private:
 
     // setup any special options
     void set_options(uint16_t i);
+
+    bool init_console_done;
 };
 
 namespace AP {

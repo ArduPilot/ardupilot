@@ -6,6 +6,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
@@ -28,6 +29,9 @@
 #include "AP_Compass_RM3100.h"
 #if HAL_MSP_COMPASS_ENABLED
 #include "AP_Compass_MSP.h"
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+#include "AP_Compass_ExternalAHRS.h"
 #endif
 #include "AP_Compass.h"
 #include "Compass_learn.h"
@@ -488,7 +492,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
     // @User: Advanced
     AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
 
@@ -1161,6 +1165,16 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif
+
+#if !defined(HAL_DISABLE_I2C_MAGS_BY_DEFAULT) && !defined(STM32F1)
+    // BMM150 on I2C, not on F1 to save flash
+    FOREACH_I2C_EXTERNAL(i) {
+        for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
+            ADD_BACKEND(DRIVER_BMM150,
+                        AP_Compass_BMM150::probe(GET_I2C_DEVICE(i, addr), true, ROTATION_NONE));
+        }
+    }
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 /*
@@ -1175,6 +1189,12 @@ void Compass::_detect_backends(void)
     }
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+        ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
+    }
+#endif
+    
 #if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
@@ -1184,7 +1204,6 @@ void Compass::_detect_backends(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
-    return;
 #endif
 
 #ifdef HAL_PROBE_EXTERNAL_I2C_COMPASSES
@@ -1225,7 +1244,7 @@ void Compass::_detect_backends(void)
 
     case AP_BoardConfig::PX4_BOARD_PCNC1:
         ADD_BACKEND(DRIVER_BMM150,
-                    AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), ROTATION_NONE));
+                    AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
         break;
     case AP_BoardConfig::VRX_BOARD_BRAIN54: {
         // external i2c bus
@@ -1987,6 +2006,18 @@ void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
     }
 }
 #endif // HAL_MSP_COMPASS_ENABLED
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
+{
+    if (!_driver_enabled(DRIVER_SERIAL)) {
+        return;
+    }
+    for (uint8_t i=0; i<_backend_count; i++) {
+        _backends[i]->handle_external(pkt);
+    }
+}
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 
 // singleton instance
 Compass *Compass::_singleton;

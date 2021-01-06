@@ -90,7 +90,7 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget cmake"
+BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
@@ -145,15 +145,6 @@ function maybe_prompt_user() {
         fi
     fi
 }
-
-# possibly grab a newer cmake for older ubuntu releases
-if [ ${RELEASE_CODENAME} == "precise" ]; then
-    sudo add-apt-repository ppa:george-edison55/precise-backports -y
-    $APT_GET update
-elif [ ${RELEASE_CODENAME} == "trusty" ]; then
-    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
-    $APT_GET update
-fi
 
 heading "Add user to dialout group to allow managing serial ports"
 sudo usermod -a -G dialout $USER

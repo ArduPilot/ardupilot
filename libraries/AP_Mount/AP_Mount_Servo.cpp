@@ -76,6 +76,18 @@ void AP_Mount_Servo::update()
             break;
         }
 
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            // constantly update the home location:
+            if (!AP::ahrs().home_is_set()) {
+                break;
+            }
+            _state._roi_target = AP::ahrs().get_home();
+            _state._roi_target_set = true;
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, false)) {
+                stabilize();
+            }
+            break;
+
         case MAV_MOUNT_MODE_SYSID_TARGET:
             if (calc_angle_to_sysid_target(_angle_ef_target_rad,
                                            _flags.tilt_control,

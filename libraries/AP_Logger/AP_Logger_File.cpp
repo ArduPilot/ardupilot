@@ -99,7 +99,6 @@ void AP_Logger_File::Init()
     hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_File::_io_timer, void));
 
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
@@ -873,7 +872,7 @@ void AP_Logger_File::flush(void)
         if (tnow > 2001) { // avoid resetting _last_write_time to 0
             _last_write_time = tnow - 2001;
         }
-        _io_timer();
+        io_timer();
     }
     if (write_fd_semaphore.take(1)) {
         if (_write_fd != -1) {
@@ -891,7 +890,7 @@ void AP_Logger_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
-void AP_Logger_File::_io_timer(void)
+void AP_Logger_File::io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
@@ -1003,7 +1002,7 @@ bool AP_Logger_File::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in a full seconds then it is dead
     // this is enough time for a sdcard remount
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U;
+    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 bool AP_Logger_File::logging_failed() const

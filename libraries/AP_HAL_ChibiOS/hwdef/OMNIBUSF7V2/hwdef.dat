@@ -70,7 +70,7 @@ PA1 BMP280_CS CS
 
 PC3 BATT_VOLTAGE_SENS ADC1 SCALE(1)
 PC2 BATT_CURRENT_SENS ADC1 SCALE(1)
- 
+
 PC5 RSSI_ADC ADC1
 
 # setup two IMUs
@@ -133,6 +133,9 @@ define HAL_BATTMON_FUEL_ENABLE 0
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
+
+# save FLASH, but leave above when flash issue is fixed
+define HAL_MINIMIZE_FEATURES 1
 
 # one baro
 BARO BMP280 SPI:bmp280

@@ -18,6 +18,7 @@
 
 #include <utility>
 
+#include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -69,11 +70,11 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
     const uint8_t CMD_SYSTEM_RESET[] =       { 0x5A, 0x04, 0x04, 0x62 };
     const uint8_t CMD_OUTPUT_FORMAT_CM[] =   { 0x5A, 0x05, 0x05, 0x01, 0x65 };
     const uint8_t CMD_ENABLE_DATA_OUTPUT[] = { 0x5A, 0x05, 0x07, 0x01, 0x67 };
-    const uint8_t CMD_FRAME_RATE_100HZ[] =   { 0x5A, 0x06, 0x03, 0x64, 0x00, 0xC7 };
+    const uint8_t CMD_FRAME_RATE_250HZ[] =   { 0x5A, 0x06, 0x03, 0xFA, 0x00, 0x5D };
     const uint8_t CMD_SAVE_SETTINGS[] =      { 0x5A, 0x04, 0x11, 0x6F };
     const uint8_t *cmds[] = {
         CMD_OUTPUT_FORMAT_CM,
-        CMD_FRAME_RATE_100HZ,
+        CMD_FRAME_RATE_250HZ,
         CMD_ENABLE_DATA_OUTPUT,
         CMD_SAVE_SETTINGS,
     };
@@ -101,8 +102,8 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
     }
 
     if (val[5] * 10000 + val[4] * 100 + val[3] < 20003) {
-        hal.console->printf(DRIVER ": minimum required FW version 2.0.3, but version %u.%u.%u found\n",
-                            val[5], val[4], val[3]);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TFMini: FW ver %u.%u.%u (need>=2.0.3)",
+                            (unsigned)val[5],(unsigned)val[4],(unsigned)val[3]);
         goto fail;
     }
 
@@ -125,7 +126,7 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
 
     hal.scheduler->delay(100);
 
-    _dev->register_periodic_callback(10000,
+    _dev->register_periodic_callback(20000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Benewake_TFMiniPlus::timer, void));
 
     return true;

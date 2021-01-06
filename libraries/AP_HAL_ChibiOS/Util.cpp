@@ -24,6 +24,7 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
 #include "shared_dma.h"
 
@@ -299,20 +300,14 @@ bool Util::was_watchdog_reset() const
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
-size_t Util::thread_info(char *buf, size_t bufsize)
+void Util::thread_info(ExpandingString &str)
 {
-  size_t total = 0;
-
   // a header to allow for machine parsers to determine format
   const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
-  int n = snprintf(buf, bufsize, "ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
-                   &__main_stack_base__, stack_free(&__main_stack_base__), isr_stack_size);
-  if (n <= 0) {
-      return 0;
-  }
-  buf += n;
-  bufsize -= n;
-  total += n;
+  str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+             &__main_stack_base__,
+             unsigned(stack_free(&__main_stack_base__)),
+             unsigned(isr_stack_size));
 
   for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
       uint32_t total_stack;
@@ -324,26 +319,26 @@ size_t Util::thread_info(char *buf, size_t bufsize)
           // above the stack top
           total_stack = uint32_t(tp) - uint32_t(tp->wabase);
       }
-      if (bufsize > 0) {
-          n = snprintf(buf, bufsize, "%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
-                       tp->name, unsigned(tp->prio), tp->wabase,
-                       stack_free(tp->wabase), total_stack);
-          if (n > bufsize) {
-              n = bufsize;
-          }
-          buf += n;
-          bufsize -= n;
-          total += n;
-      }
+#if HAL_ENABLE_THREAD_STATISTICS
+      str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
+                 tp->name, unsigned(tp->prio), tp->wabase,
+                 stack_free(tp->wabase), total_stack, RTC2US(STM32_HSECLK, tp->stats.best),
+                 RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n))),
+                 RTC2US(STM32_HSECLK, tp->stats.worst));
+      chTMObjectInit(&tp->stats); // reset counters to zero
+#else
+      str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+                 tp->name, unsigned(tp->prio), tp->wabase,
+                 unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+#endif
   }
-
-  return total;
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
 #if CH_CFG_USE_SEMAPHORES
 // request information on dma contention
-size_t Util::dma_info(char *buf, size_t bufsize) {
-    return ChibiOS::Shared_DMA::dma_info(buf, bufsize);
+void Util::dma_info(ExpandingString &str)
+{
+    ChibiOS::Shared_DMA::dma_info(str);
 }
 #endif

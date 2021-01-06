@@ -199,13 +199,15 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     const float a = sq(seg_end_minus_start.x) + sq(seg_end_minus_start.y);
     const float b = 2 * ((seg_end_minus_start.x * seg_start_local.x) + (seg_end_minus_start.y * seg_start_local.y));
     const float c = sq(seg_start_local.x) + sq(seg_start_local.y) - sq(radius);
-    const float delta = sq(b) - (4.0f * a * c);
 
     // check for invalid data
-    if (::is_zero(a)) {
-        return false;
+    if (::is_zero(a) || isnan(a) || isnan(b) || isnan(c)) {
+       return false;
     }
-    if (isnan(a) || isnan(b) || isnan(c) || isnan(delta)) {
+
+    const float delta = sq(b) - (4.0f * a * c);
+
+    if (isnan(delta)) {
        return false;
     }
 

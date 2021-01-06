@@ -117,7 +117,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
             motor_mask |= 1U << i;
         }
     }
-    uint16_t mask = rc_map_mask(motor_mask);
+    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
@@ -967,5 +967,16 @@ void AP_MotorsMatrix::thrust_compensation(void)
 {
     if (_thrust_compensation_callback) {
         _thrust_compensation_callback(_thrust_rpyt_out, AP_MOTORS_MAX_NUM_MOTORS);
+    }
+}
+
+/*
+  disable the use of motor torque to control yaw. Used when an
+  external mechanism such as vectoring is used for yaw control
+*/
+void AP_MotorsMatrix::disable_yaw_torque(void)
+{
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        _yaw_factor[i] = 0;
     }
 }

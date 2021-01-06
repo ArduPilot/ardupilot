@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.6-rc1 23-Dec-2020
+Changes from 4.0.5
+1) Bug fixes:
+    a) Fix vertical flyaways when rangefinder stops providing data and the user has configured EK*_ALT_SOURCE=1
+    b) Correct units on raw accel data
+    c) Fport RSSI value fix
+    d) Correct compilation when Advanced Failsafe compile time option is enabled
+    e) Correct time wrap in RAW_IMU mavlink message
+    f) PixracerPro - Fix analog volt pin assignments
+    g) fix landing detector for tradheli in acro mode
+2) Small enhancements:
+    a) Parameter documentation enhancements and corrections
+    b) Improve harmonic notch filter parameter documentation
+    c) Report prearm check status in the MAV_SYS_STATUS_PREARM_CHECK flag of the SYS_STATUS mavlink message
+    d) Smooth I term reset over 0.5 seconds
+3) TradHeli enhancements:
+    a) Differential Collective Pitch (DCP) trim support for Dual Heli
+    b) Incorporate hover collective learning
+    c) Option for pitch, roll and yaw I term to be based on takeoff/landing
+------------------------------------------------------------------
 Copter 4.0.5 27-Oct-2020 / 4.0.5-rc2 08-Oct-2020
 Changes from 4.0.5-rc1
 1) Bug fixes:

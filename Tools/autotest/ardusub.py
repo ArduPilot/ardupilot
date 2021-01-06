@@ -63,12 +63,6 @@ class AutoTestSub(AutoTest):
     def default_frame(self):
         return 'vectored'
 
-    def init(self):
-        super(AutoTestSub, self).init()
-
-        # FIXME:
-        self.set_parameter("FS_GCS_ENABLE", 0)
-
     def is_sub(self):
         return True
 
@@ -237,6 +231,12 @@ class AutoTestSub(AutoTest):
         self.disarm_vehicle()
         self.progress("Manual dive OK")
 
+        m = self.mav.recv_match(type='SCALED_PRESSURE3', blocking=True)
+        if m is None:
+            raise NotAchievedException("Did not get SCALED_PRESSURE3")
+        if m.temperature != 2650:
+            raise NotAchievedException("Did not get correct TSYS01 temperature")
+
     def dive_mission(self, filename):
         self.progress("Executing mission %s" % filename)
         self.load_mission(filename)
@@ -273,7 +273,8 @@ class AutoTestSub(AutoTest):
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         if ex is not None:
             raise ex
@@ -331,6 +332,11 @@ class AutoTestSub(AutoTest):
         while self.mav.recv_match(blocking=False):
             pass
         self.initialise_after_reboot_sitl()
+
+    def apply_defaultfile_parameters(self):
+        super(AutoTestSub, self).apply_defaultfile_parameters()
+        # FIXME:
+        self.set_parameter("FS_GCS_ENABLE", 0)
 
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()

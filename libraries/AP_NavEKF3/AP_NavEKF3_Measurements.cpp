@@ -961,7 +961,13 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
 
     yawAngDataNew.yawAng = yawAngle;
     yawAngDataNew.yawAngErr = yawAngleErr;
-    yawAngDataNew.type = type;
+    if (type == 2) {
+        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_321;
+    } else if (type == 1) {
+        yawAngDataNew.order = rotationOrder::TAIT_BRYAN_312;
+    } else {
+        return;
+    }
     yawAngDataNew.time_ms = timeStamp_ms;
 
     storedYawAng.push(yawAngDataNew);
@@ -1022,10 +1028,12 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         // extract yaw from the attitude
         float roll_rad, pitch_rad, yaw_rad;
         quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-
-        // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
-        const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
-        writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+        yaw_elements extNavYawAngDataNew;
+        extNavYawAngDataNew.yawAng = yaw_rad;
+        extNavYawAngDataNew.yawAngErr = MAX(angErr, radians(5.0f)); // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+        extNavYawAngDataNew.order = rotationOrder::TAIT_BRYAN_321; // Euler rotation order is 321 (ZYX)
+        extNavYawAngDataNew.time_ms = timeStamp_ms;
+        storedExtNavYawAng.push(extNavYawAngDataNew);
     }
 }
 
@@ -1282,7 +1290,8 @@ float NavEKF3_core::MagDeclination(void) const
 void NavEKF3_core::updateMovementCheck(void)
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass());
+    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
     if (!runCheck)
     {
         onGroundNotMoving = false;

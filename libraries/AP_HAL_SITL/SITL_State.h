@@ -43,6 +43,7 @@
 #include <SITL/SIM_RF_NMEA.h>
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
+#include <SITL/SIM_VectorNav.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -118,6 +119,11 @@ public:
                            Location &loc,
                            float &yaw_degrees);
 
+    /* lookup a location in locations.txt */
+    static bool lookup_location(const char *home_str,
+                                Location &loc,
+                                float &yaw_degrees);
+    
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -175,9 +181,6 @@ private:
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(struct sitl_input &input);
-    void _simulator_output(bool synthetic_clock_mode);
-    uint16_t _airspeed_sensor(float airspeed);
-    uint16_t _ground_sonar();
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);
@@ -298,6 +301,9 @@ private:
     // simulated CRSF devices
     SITL::CRSF *crsf;
 
+    // simulated VectorNav system:
+    SITL::VectorNav *vectornav;
+    
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     

@@ -136,6 +136,33 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
+
+        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
+            //parameter disallows rudder arming/disabling
+
+            // if we emit a message here then someone doing surface
+            // checks may be bothered by the message being emitted.
+            // check_failed(true, "Rudder arming disabled");
+            return false;
+        }
+
+        // if throttle is not down, then pilot cannot rudder arm/disarm
+        if (plane.get_throttle_input() != 0){
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
+
+        // if not in a manual throttle mode and not in CRUISE or FBWB
+        // modes then disallow rudder arming/disarming
+        if (plane.auto_throttle_mode &&
+            (plane.control_mode != &plane.mode_cruise && plane.control_mode != &plane.mode_fbwb)) {
+            check_failed(true, "Mode not rudder-armable");
+            return false;
+        }
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return true;
@@ -205,6 +232,19 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
  */
 bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        // don't allow rudder-disarming in flight:
+        if (plane.is_flying()) {
+            // obviously this could happen in-flight so we can't warn about it
+            return false;
+        }
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            return false;
+        }
+    }
+
     if (!AP_Arming::disarm(method)) {
         return false;
     }

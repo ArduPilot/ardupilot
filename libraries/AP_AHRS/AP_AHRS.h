@@ -604,6 +604,9 @@ public:
         return _rsem;
     }
 
+    // active AHRS type for logging
+    virtual uint8_t get_active_AHRS_type(void) const { return 0; }
+
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 

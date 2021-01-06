@@ -307,7 +307,8 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         0,                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
         0,                                       // horizontal FOV
         0,                                       // vertical FOV
-        (const float *)nullptr);                 // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
+        (const float *)nullptr,                  // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
+        0);                                      // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
 }
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
@@ -395,7 +396,7 @@ void GCS_MAVLINK::send_proximity() const
                         PROXIMITY_SENSOR_ID_START + i,                  // onboard ID of the sensor
                         dist_array.orientation[i],                      // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
                         0,                                              // Measurement covariance in centimeters, 0 for unknown / invalid readings
-                        0, 0, nullptr);
+                        0, 0, nullptr, 0);
             }
         }
     }
@@ -416,7 +417,7 @@ void GCS_MAVLINK::send_proximity() const
                 PROXIMITY_SENSOR_ID_START + PROXIMITY_MAX_DIRECTION + 1,  // onboard ID of the sensor
                 MAV_SENSOR_ROTATION_PITCH_90,                             // direction upwards
                 0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
-                0, 0, nullptr);
+                0, 0, nullptr, 0);
     }
 }
 
@@ -2685,6 +2686,15 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 
             return MAV_RESULT_FAILED;
         }
+        if (is_equal(packet.param4, 95.0f)) {
+            // the following text is unlikely to make it out...
+            send_text(MAV_SEVERITY_WARNING,"calling AP_HAL::panic(...)");
+
+            AP_HAL::panic("panicing");
+
+            // keep calm and carry on
+            return MAV_RESULT_FAILED;
+        }
     }
 
     if (hal.util->get_soft_armed()) {
@@ -3125,10 +3135,20 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
         packet.chan16_raw
     };
 
-    for (uint8_t i=0; i<ARRAY_SIZE(override_data); i++) {
+    for (uint8_t i=0; i<8; i++) {
         // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
         if (override_data[i] != UINT16_MAX) {
             RC_Channels::set_override(i, override_data[i], tnow);
+        }
+    }
+    for (uint8_t i=8; i<ARRAY_SIZE(override_data); i++) {
+        // Per MAVLink spec a value of zero or UINT16_MAX means to
+        // ignore this field.
+        if (override_data[i] != 0 && override_data[i] != UINT16_MAX) {
+            // per the mavlink spec, a value of UINT16_MAX-1 means
+            // return the field to RC radio values:
+            const uint16_t value = override_data[i] == (UINT16_MAX-1) ? 0 : override_data[i];
+            RC_Channels::set_override(i, value, tnow);
         }
     }
 }
@@ -4157,7 +4177,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     const Location roi_loc {
         packet.x,
         packet.y,
-        (int32_t)(packet.z * 100.0f),
+        (int32_t)constrain_float(packet.z * 100.0f,INT32_MIN,INT32_MAX),
         frame
     };
     return handle_command_do_set_roi(roi_loc);
@@ -4172,9 +4192,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // support the extra fields).
 
     const Location roi_loc {
-        (int32_t)(packet.param5 * 1.0e7f),
-        (int32_t)(packet.param6 * 1.0e7f),
-        (int32_t)(packet.param7 * 100.0f),
+        (int32_t)constrain_float(packet.param5 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param6 * 1.0e7f, INT32_MIN, INT32_MAX),
+        (int32_t)constrain_float(packet.param7 * 100.0f, INT32_MIN, INT32_MAX),
         Location::AltFrame::ABOVE_HOME
     };
     return handle_command_do_set_roi(roi_loc);

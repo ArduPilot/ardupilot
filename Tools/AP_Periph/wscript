@@ -37,6 +37,9 @@ def build(bld):
         'AP_RangeFinder',
         'AP_ROMFS',
         'AP_MSP',
+        'SRV_Channel',
+        'AP_Notify',
+        'AP_SerialLED',
         ],
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'

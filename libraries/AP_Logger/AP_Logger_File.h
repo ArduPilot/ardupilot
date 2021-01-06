@@ -54,6 +54,7 @@ public:
     bool logging_failed() const override;
 
     bool logging_started(void) const override { return _write_fd != -1; }
+    void io_timer(void) override;
 
 protected:
 
@@ -108,8 +109,6 @@ private:
     uint32_t _get_log_time(const uint16_t log_num);
 
     void stop_logging(void) override;
-
-    void _io_timer(void);
 
     uint32_t last_messagewrite_message_sent;
 

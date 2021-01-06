@@ -37,6 +37,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/NotchFilter.h>
@@ -418,6 +419,11 @@ public:
     };
     BatchSampler batchsampler{*this};
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // handle external AHRS data
+    void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
+#endif
+    
 private:
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);

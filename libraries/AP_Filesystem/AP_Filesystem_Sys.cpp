@@ -22,22 +22,22 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Common/ExpandingString.h>
 
 extern const AP_HAL::HAL& hal;
 
 struct SysFileList {
     const char* name;
-    uint32_t filesize; 
 };
 
 static const SysFileList sysfs_file_list[] = {
-    {"threads.txt", 1024},
-    {"tasks.txt", 6500},
-    {"dma.txt", 1024},
+    {"threads.txt"},
+    {"tasks.txt"},
+    {"dma.txt"},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    {"can_log.txt", 1024},
-    {"can0_stats.txt", 1024},
-    {"can1_stats.txt", 1024},
+    {"can_log.txt"},
+    {"can0_stats.txt"},
+    {"can1_stats.txt"},
 #endif
 };
 
@@ -67,51 +67,34 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         return -1;
     }
     struct rfile &r = file[idx];
-    r.data = new file_data;
-    if (r.data == nullptr) {
+    r.str = new ExpandingString;
+    if (r.str == nullptr) {
         errno = ENOMEM;
         return -1;
     }
 
     // This ensure that whenever new sys file is added its also added to list above
     int8_t pos = file_in_sysfs(fname);
-    uint32_t max_size = 0;
-    if (pos >= 0) {
-        max_size = sysfs_file_list[pos].filesize;
-    } else {
+    if (pos < 0) {
+        delete r.str;
+        r.str = nullptr;
         errno = ENOENT;
         return -1;
     }
 
     if (strcmp(fname, "threads.txt") == 0) {
-        r.data->data = (char *)malloc(max_size);
-        if (r.data->data) {
-            r.data->length = hal.util->thread_info(r.data->data, max_size);
-        }
+        hal.util->thread_info(*r.str);
     }
     if (strcmp(fname, "tasks.txt") == 0) {
-        r.data->data = (char *)malloc(max_size);
-        if (r.data->data) {
-            r.data->length = AP::scheduler().task_info(r.data->data, max_size);
-            if (r.data->length == 0) { // the feature may be disabled
-                free(r.data->data);
-                r.data->data = nullptr;
-            }
-        }
+        AP::scheduler().task_info(*r.str);
     }
     if (strcmp(fname, "dma.txt") == 0) {
-        r.data->data = (char *)malloc(max_size);
-        if (r.data->data) {
-            r.data->length = hal.util->dma_info(r.data->data, max_size);
-        }
+        hal.util->dma_info(*r.str);
     }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can_log.txt") == 0) {
-        r.data->data = (char *)malloc(max_size);
-        if (r.data->data) {
-            r.data->length = AP::can().log_retrieve(r.data->data, max_size);
-        }
+        AP::can().log_retrieve(*r.str);
     } else if (strcmp(fname, "can0_stats.txt") == 0) {
         can_stats_num = 0;
     } else if (strcmp(fname, "can1_stats.txt") == 0) {
@@ -119,16 +102,14 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     }
     if (can_stats_num != -1 && can_stats_num < HAL_NUM_CAN_IFACES) {
         if (hal.can[can_stats_num] != nullptr) {
-            r.data->data = (char *)malloc(max_size);
-            if (r.data->data) {
-                r.data->length = hal.can[can_stats_num]->get_stats(r.data->data, max_size);
-            }
+            hal.can[can_stats_num]->get_stats(*r.str);
         }
     }
 #endif
-    if (r.data->data == nullptr) {
-        delete r.data;
-        errno = ENOENT;
+    if (r.str->get_length() == 0) {
+        errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
+        delete r.str;
+        r.str = nullptr;
         return -1;
     }
     r.file_ofs = 0;
@@ -144,8 +125,8 @@ int AP_Filesystem_Sys::close(int fd)
     }
     struct rfile &r = file[fd];
     r.open = false;
-    free(r.data->data);
-    delete r.data;
+    delete r.str;
+    r.str = nullptr;
     return 0;
 }
 
@@ -156,8 +137,8 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
         return -1;
     }
     struct rfile &r = file[fd];
-    count = MIN(count, r.data->length - r.file_ofs);
-    memcpy(buf, &r.data->data[r.file_ofs], count);
+    count = MIN(count, r.str->get_length() - r.file_ofs);
+    memcpy(buf, &r.str->get_string()[r.file_ofs], count);
     r.file_ofs += count;
     return count;
 }
@@ -171,10 +152,10 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
     struct rfile &r = file[fd];
     switch (seek_from) {
     case SEEK_SET:
-        r.file_ofs = MIN(offset, int32_t(r.data->length));
+        r.file_ofs = MIN(offset, int32_t(r.str->get_length()));
         break;
     case SEEK_CUR:
-        r.file_ofs = MIN(r.data->length, offset+r.file_ofs);
+        r.file_ofs = MIN(r.str->get_length(), offset+r.file_ofs);
         break;
     case SEEK_END:
         errno = EINVAL;
@@ -242,6 +223,8 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
         errno = ENOENT;
         return -1;
     }
-    stbuf->st_size = sysfs_file_list[pos].filesize;
+    // give a fixed size for stat. It is too expensive to
+    // read every file for a directory listing
+    stbuf->st_size = 100000;
     return 0;
 }

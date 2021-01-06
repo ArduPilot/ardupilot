@@ -13,13 +13,11 @@
 #include <AP_Math/crc.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ROMFS/AP_ROMFS.h>
-#include <AP_Math/crc.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 

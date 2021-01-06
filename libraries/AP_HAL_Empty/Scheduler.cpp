@@ -28,7 +28,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc k)
 void Scheduler::register_timer_failsafe(AP_HAL::Proc, uint32_t period_us)
 {}
 
-void Scheduler::system_initialized()
+void Scheduler::set_system_initialized()
 {}
 
 void Scheduler::reboot(bool hold_in_bootloader) {

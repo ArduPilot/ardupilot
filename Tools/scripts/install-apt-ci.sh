@@ -6,15 +6,12 @@ set -ex
 PKGS=" \
     build-essential \
     gawk \
-    genromfs \
     libc6-i386 \
     libxml2-dev \
     libxslt1-dev \
     python-pip \
     python-dev \
     zlib1g-dev \
-    cmake3 \
-    cmake3-data \
     "
 
 read -r UBUNTU_CODENAME <<<$(lsb_release -c -s)

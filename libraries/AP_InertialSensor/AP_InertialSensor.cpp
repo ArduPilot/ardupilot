@@ -9,6 +9,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
@@ -24,6 +25,7 @@
 #include "AP_InertialSensor_BMI088.h"
 #include "AP_InertialSensor_Invensensev2.h"
 #include "AP_InertialSensor_ADIS1647x.h"
+#include "AP_InertialSensor_ExternalAHRS.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -850,6 +852,15 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_HIL::detect(*this));
         return;
     }
+
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // if enabled, make the first IMU the external AHRS
+    if (int8_t serial_port = AP::externalAHRS().get_port() >= 0) {
+        ADD_BACKEND(new AP_InertialSensor_ExternalAHRS(*this, serial_port));
+    }
+#endif
+
 #if defined(HAL_INS_PROBE_LIST)
     // IMUs defined by IMU lines in hwdef.dat
     HAL_INS_PROBE_LIST;
@@ -1523,6 +1534,10 @@ check_sample:
         uint8_t gyro_available_mask = 0;
         uint8_t accel_available_mask = 0;
         uint32_t wait_counter = 0;
+        // allow to wait for up to 1/3 of the loop time for samples from all
+        // IMUs to come in
+        const uint8_t wait_per_loop = 100;
+        const uint8_t wait_counter_limit = uint32_t(_loop_delta_t * 1.0e6) / (3*wait_per_loop);
 
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
@@ -1554,10 +1569,10 @@ check_sample:
                 }
             }
 
-            // we wait for up to 800us to get all of the required
+            // we wait for up to 1/3 of the loop time to get all of the required
             // accel and gyro samples. After that we accept at least
             // one of each
-            if (wait_counter < 7) {
+            if (wait_counter < wait_counter_limit) {
                 if (gyro_available_mask &&
                     ((gyro_available_mask & _gyro_wait_mask) == _gyro_wait_mask) &&
                     accel_available_mask &&
@@ -1575,7 +1590,7 @@ check_sample:
                 }
             }
 
-            hal.scheduler->delay_microseconds_boost(100);
+            hal.scheduler->delay_microseconds_boost(wait_per_loop);
             wait_counter++;
         }
     }
@@ -2209,6 +2224,15 @@ void AP_InertialSensor::kill_imu(uint8_t imu_idx, bool kill_it)
 }
 #endif // HAL_MINIMIZE_FEATURES
 
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
+{
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        _backends[i]->handle_external(pkt);
+    }
+}
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 
 namespace AP {
 

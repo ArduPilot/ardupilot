@@ -90,7 +90,7 @@ const extern AP_HAL::HAL &hal;
 #define ACCEL_DEFAULT_RANGE_G               8
 #define ACCEL_DEFAULT_RATE                  1000
 #define ACCEL_DEFAULT_ONCHIP_FILTER_FREQ    780
-#define ACCEL_ONE_G                         9.80665f
+#define ACCEL_ONE_G                         GRAVITY_MSS
 
 /************************************i3g4250d register addresses *******************************************/
 #define GYRO_WHO_AM_I             0x0F

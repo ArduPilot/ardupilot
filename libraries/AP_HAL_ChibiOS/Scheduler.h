@@ -92,7 +92,8 @@ public:
 
     bool     in_main_thread() const override { return get_main_thread() == chThdGetSelfX(); }
 
-    void     system_initialized() override;
+    void     set_system_initialized() override;
+    bool     is_system_initialized() override { return _initialized; };
     void     hal_initialized() { _hal_initialized = true; }
 
     bool     check_called_boost(void);

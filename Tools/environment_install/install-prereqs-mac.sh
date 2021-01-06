@@ -13,7 +13,6 @@ xcode-select --install
 
 brew tap ardupilot/homebrew-px4
 brew update
-brew install genromfs
 brew install gcc-arm-none-eabi
 brew install gawk
 

@@ -39,6 +39,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
@@ -315,6 +317,11 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise) override;
 
+    // active EKF type for logging
+    uint8_t get_active_AHRS_type(void) const override {
+        return uint8_t(active_EKF_type());
+    }
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
@@ -334,6 +341,9 @@ private:
 #endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ,SITL = 10
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+        ,EXTERNAL = 11
 #endif
     };
     EKFType active_EKF_type(void) const;
@@ -379,9 +389,15 @@ private:
     TriState takeoffExpectedState = TriState::UNKNOWN;
     TriState terrainHgtStableState = TriState::UNKNOWN;
 
+    EKFType last_active_ekf_type;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SITL::SITL *_sitl;
     uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
+#endif    
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void update_external(void);
 #endif    
 };

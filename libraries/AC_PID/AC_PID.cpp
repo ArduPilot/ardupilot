@@ -236,6 +236,7 @@ void AC_PID::update_i(bool limit)
         _integrator = 0.0f;
     }
     _pid_info.I = _integrator;
+    _pid_info.limit = limit;
 }
 
 float AC_PID::get_p() const
@@ -262,6 +263,23 @@ float AC_PID::get_ff()
 void AC_PID::reset_I()
 {
     _integrator = 0;
+}
+
+void AC_PID::reset_I_smoothly()
+{
+    float reset_time = AC_PID_RESET_TC * 3.0f;
+    uint64_t now = AP_HAL::micros64();
+
+    if ((now - _reset_last_update) > 5e5 ) {
+        _reset_counter = 0;
+    }
+    if ((float)_reset_counter < (reset_time/_dt)) {
+        _integrator = _integrator - (_dt / (_dt + AC_PID_RESET_TC)) * _integrator;
+        _reset_counter++;
+    } else {
+        _integrator = 0;
+    }
+    _reset_last_update = now;
 }
 
 void AC_PID::load_gains()

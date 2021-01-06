@@ -10,7 +10,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #define NUM_CHANNELS 4
 #define ESC_MAGIC 0xF7
 #define RC_SPEED 490
-#define UART uartE
+#define UART serial(4)
 
 class RC_UART : public AP_HAL::HAL::Callbacks {
 public:

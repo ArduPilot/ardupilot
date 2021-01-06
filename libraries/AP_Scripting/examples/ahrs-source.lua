@@ -2,7 +2,7 @@
 -- this script is intended to help vehicles move between GPS and Non-GPS environments
 --
 -- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=primary, middle=secondary, high=tertiary)
--- setup RCx_OPTION = 83 (ZigZag Auto).  When this switch is pulled high, the source will be automatically selected
+-- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 -- setup EK3_SRCn_ parameters so that GPS is the primary source, Non-GPS (i.e. T265) is secondary and optical flow tertiary
 -- configure a forward or downward facing lidar with a range of more than 5m
 --
@@ -25,16 +25,29 @@ local vote_counter_max = 20         -- when a vote counter reaches this number (
 local gps_vs_nongps_vote = 0        -- vote counter for GPS vs NonGPS (-20 = GPS, +20 = NonGPS)
 local extnav_vs_opticalflow_vote = 0 -- vote counter for extnav vs optical flow (-20 = extnav, +20 = opticalflow)
 
+-- play tune on buzzer to alert user to change in active source set
+function play_source_tune(source)
+  if (source) then
+    if (source == 0) then
+      notify:play_tune("L8C")       -- one long lower tone
+    elseif (source == 1) then
+      notify:play_tune("L12DD")     -- two fast medium tones
+    elseif (source == 2) then
+      notify:play_tune("L16FFF")    -- three very fast, high tones
+    end
+  end
+end
+
 -- the main update function
 function update()
 
   -- check switches are configured
   -- source selection from RCx_FUNCTION = 90 (EKF Source Select)
-  -- auto source from RCx_FUNCTION = 83 (ZigZag_Auto)
+  -- auto source from RCx_FUNCTION = 300 (Scripting1)
   local rc_function_source = rc:find_channel_for_option(90)
-  local rc_function_auto = rc:find_channel_for_option(83)
+  local rc_function_auto = rc:find_channel_for_option(300)
   if (rc_function_source == nil) or (rc_function_auto == nil) then
-    gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 83 not set!")
+    gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
 
@@ -117,15 +130,16 @@ function update()
   if sw_source_pos ~= sw_source_pos_prev then    -- check for changes in source switch position
     sw_source_pos_prev = sw_source_pos           -- record new switch position so we can detect changes
     auto_switch = false                          -- disable auto switching of source
-    if source_prev ~= sw_source_pos then       -- check if switch position does not match source (there is a one-to-one mapping of switch to source)
+    if source_prev ~= sw_source_pos then         -- check if switch position does not match source (there is a one-to-one mapping of switch to source)
       source_prev = sw_source_pos                -- record what source should now be (changed by ArduPilot vehicle code)
       gcs:send_text(0, "Pilot switched to Source " .. string.format("%d", source_prev+1))
     else
       gcs:send_text(0, "Pilot switched but already Source " .. string.format("%d", source_prev+1))
     end
+    play_source_tune(source_prev)                -- alert user of source whether changed or not
   end
 
-  -- read auto source switch position from RCx_FUNCTION = 83 (ZigZag_Auto)
+  -- read auto source switch position from RCx_FUNCTION = 300 (Scripting1)
   local sw_auto_pos = rc_function_auto:get_aux_switch_pos()
   if sw_auto_pos ~= sw_auto_pos_prev  then       -- check for changes in source auto switch position
     sw_auto_pos_prev = sw_auto_pos               -- record new switch position so we can detect changes
@@ -150,6 +164,7 @@ function update()
         gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
       end
     end
+    play_source_tune(source_prev)
   end
 
   -- auto switching
@@ -157,6 +172,7 @@ function update()
     source_prev = auto_source                  -- record selected source
     ahrs:set_posvelyaw_source_set(source_prev)     -- switch to pilot's selected source
     gcs:send_text(0, "Auto switched to Source " .. string.format("%d", source_prev+1))
+    play_source_tune(source_prev)
   end
 
   return update, 100

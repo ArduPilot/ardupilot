@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require,                 1,
-                             AP_PARAM_NO_SHIFT,
+                             AP_PARAM_FLAG_NO_SHIFT,
                              AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 
     // 2 was the CHECK paramter stored in a AP_Int16
@@ -898,6 +898,8 @@ bool AP_Arming::can_checks(bool report)
                     check_failed(ARMING_CHECK_SYSTEM, report, "TestCAN: No Arming with TestCAN enabled");
                     break;
                 }
+                case AP_CANManager::Driver_Type_EFI_NWPMU:
+                case AP_CANManager::Driver_Type_USD1:
                 case AP_CANManager::Driver_Type_None:
                     break;
             }

@@ -149,6 +149,9 @@ public:
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
 
+    // set limit flag for pitch, roll and yaw
+    void set_limit_flag_pitch_roll_yaw(bool flag);
+
     //
     // virtual functions that should be implemented by child classes
     //
@@ -207,7 +210,14 @@ protected:
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_write_angle(uint8_t chan, int16_t angle_cd);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
-    virtual uint32_t    rc_map_mask(uint32_t mask) const;
+
+
+    /*
+      map an internal motor mask to real motor mask, accounting for
+      SERVOn_FUNCTION mappings, and allowing for multiple outputs per
+      motor number
+    */
+    uint32_t    motor_mask_to_srv_channel_mask(uint32_t mask) const;
 
     // add a motor to the motor map
     void add_motor_num(int8_t motor_num);

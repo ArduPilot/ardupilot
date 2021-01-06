@@ -513,7 +513,7 @@ bool NavEKF3_core::use_compass(void) const
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if ((yaw_source != AP_NavEKF_Source::SourceYaw::COMPASS) &&
-        (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
+        (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK)) {
         // not using compass as a yaw source
         return false;
     }
@@ -528,8 +528,12 @@ bool NavEKF3_core::use_compass(void) const
 bool NavEKF3_core::using_external_yaw(void) const
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass()) {
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+        yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
+    }
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
     return false;
 }
@@ -595,7 +599,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
     // check delta angle bias variances
     const float delAngBiasVarMax = sq(radians(0.15f * dtEkfAvg));
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL) && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK)) {
+    if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+        (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
         Vector3f delAngBiasVarVec = Vector3f(P[10][10],P[11][11],P[12][12]);
@@ -690,14 +695,10 @@ void NavEKF3_core::runYawEstimatorCorrection()
             float gpsVelAcc = fmaxf(gpsSpdAccuracy, frontend->_gpsHorizVelNoise);
             yawEstimator->fuseVelData(gpsVelNE, gpsVelAcc);
 
-            // after velocity data has been fused the yaw variance esitmate will have been refreshed and
+            // after velocity data has been fused the yaw variance estimate will have been refreshed and
             // is used maintain a history of validity
-            float yawEKFGSF, yawVarianceEKFGSF, velInnovLength;
-            bool canUseEKFGSF = yawEstimator->getYawData(yawEKFGSF, yawVarianceEKFGSF) &&
-                                is_positive(yawVarianceEKFGSF) &&
-                                yawVarianceEKFGSF < sq(radians(GSF_YAW_ACCURACY_THRESHOLD_DEG)) &&
-                                (assume_zero_sideslip() || (yawEstimator->getVelInnovLength(velInnovLength) && velInnovLength < frontend->maxYawEstVelInnov));
-            if (canUseEKFGSF) {
+            float gsfYaw, gsfYawVariance;
+            if (EKFGSF_getYaw(gsfYaw, gsfYawVariance)) {
                 if (EKFGSF_yaw_valid_count <  GSF_YAW_VALID_HISTORY_THRESHOLD) {
                     EKFGSF_yaw_valid_count++;
                 }

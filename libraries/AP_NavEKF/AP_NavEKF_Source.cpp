@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 1_YAW
     // @DisplayName: Yaw Source
     // @Description: Yaw Source
-    // @Values: 0:None, 1:Compass, 2:External, 3:External with Compass Fallback
+    // @Values: 0:None, 1:Compass, 2:GPS, 3:GPS with Compass Fallback, 6:ExternalNav, 8:GSF
     // @User: Advanced
     AP_GROUPINFO("1_YAW", 5, AP_NavEKF_Source, _source_set[0].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::COMPASS),
 
@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 2_YAW
     // @DisplayName: Yaw Source (Secondary)
     // @Description: Yaw Source (Secondary)
-    // @Values: 0:None, 1:Compass, 2:External, 3:External with Compass Fallback
+    // @Values: 0:None, 1:Compass, 2:GPS, 3:GPS with Compass Fallback, 6:ExternalNav, 8:GSF
     // @User: Advanced
     AP_GROUPINFO("2_YAW", 10, AP_NavEKF_Source, _source_set[1].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::NONE),
 #endif
@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
     // @Param: 3_YAW
     // @DisplayName: Yaw Source (Tertiary)
     // @Description: Yaw Source (Tertiary)
-    // @Values: 0:None, 1:Compass, 2:External, 3:External with Compass Fallback
+    // @Values: 0:None, 1:Compass, 2:GPS, 3:GPS with Compass Fallback, 6:ExternalNav, 8:GSF
     // @User: Advanced
     AP_GROUPINFO("3_YAW", 15, AP_NavEKF_Source, _source_set[2].yaw, (int8_t)AP_NavEKF_Source::SourceYaw::NONE),
 #endif
@@ -145,52 +145,26 @@ AP_NavEKF_Source::AP_NavEKF_Source()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AP_NavEKF_Source::init()
-{
-    // ensure init is only run once
-    if (initialised) {
-        return;
-    }
-
-    // initialise active sources
-    _active_source_set.posxy = (SourceXY)_source_set[0].posxy.get();
-    _active_source_set.velxy = (SourceXY)_source_set[0].velxy.get();
-    _active_source_set.posz = (SourceZ)_source_set[0].posz.get();
-    _active_source_set.velz = (SourceZ)_source_set[0].velz.get();
-    _active_source_set.yaw = (SourceYaw)_source_set[0].yaw.get();
-
-    initialised = true;
-}
-
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void AP_NavEKF_Source::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
-    // ensure init has been run
-    init();
-
     // sanity check source idx
-    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
-        return;
+    if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
+        active_source_set = source_set_idx;
     }
-
-    _active_source_set.posxy = (SourceXY)_source_set[source_set_idx].posxy.get();
-    _active_source_set.velxy = (SourceXY)_source_set[source_set_idx].velxy.get();
-    _active_source_set.posz = (SourceZ)_source_set[source_set_idx].posz.get();
-    _active_source_set.velz = (SourceZ)_source_set[source_set_idx].velz.get();
-    _active_source_set.yaw = (SourceYaw)_source_set[source_set_idx].yaw.get();
 }
 
 // true/false of whether velocity source should be used
 bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
 {
-    if (velxy_source == _active_source_set.velxy) {
+    if (velxy_source == _source_set[active_source_set].velxy) {
         return true;
     }
 
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceXY)_source_set[i].velxy.get() == velxy_source) {
+            if (_source_set[i].velxy == velxy_source) {
                 return true;
             }
         }
@@ -202,14 +176,14 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
 
 bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 {
-    if (velz_source == _active_source_set.velz) {
+    if (velz_source == _source_set[active_source_set].velz) {
         return true;
     }
 
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].velz.get() == velz_source) {
+            if (_source_set[i].velz == velz_source) {
                 return true;
             }
         }
@@ -222,14 +196,14 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 // true if a velocity source is configured
 bool AP_NavEKF_Source::haveVelZSource() const
 {
-    if (_active_source_set.velz != SourceZ::NONE) {
+    if (_source_set[active_source_set].velz != SourceZ::NONE) {
         return true;
     }
 
     // check for fuse all velocities
     if (_options.get() & (uint16_t)(SourceOptions::FUSE_ALL_VELOCITIES)) {
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].velz.get() != SourceZ::NONE) {
+            if (_source_set[i].velz != SourceZ::NONE) {
                 return true;
             }
         }
@@ -237,6 +211,17 @@ bool AP_NavEKF_Source::haveVelZSource() const
 
     // if we got this far no velocity z source has been configured
     return false;
+}
+
+// get yaw source
+AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
+{
+    // check for special case of disabled compasses
+    if ((_source_set[active_source_set].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+        return SourceYaw::NONE;
+    }
+
+    return _source_set[active_source_set].yaw;
 }
 
 // align position of inactive sources to ahrs
@@ -256,7 +241,7 @@ void AP_NavEKF_Source::align_inactive_sources()
         (getPosXYSource() == SourceXY::BEACON)) {
         // only align position if active source is GPS or Beacon
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceXY)_source_set[i].posxy.get() == SourceXY::EXTNAV) {
+            if (_source_set[i].posxy == SourceXY::EXTNAV) {
                 // ExtNav could potentially be used, so align it
                 align_posxy = true;
                 break;
@@ -272,7 +257,7 @@ void AP_NavEKF_Source::align_inactive_sources()
         (getPosZSource() == SourceZ::BEACON)) {
         // ExtNav is not the active source; we do not want to align active source!
         for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if ((SourceZ)_source_set[i].posz.get() == SourceZ::EXTNAV) {
+            if (_source_set[i].posz == SourceZ::EXTNAV) {
                 // ExtNav could potentially be used, so align it
                 align_posz = true;
                 break;
@@ -289,7 +274,8 @@ bool AP_NavEKF_Source::usingGPS() const
     return getPosXYSource() == SourceXY::GPS ||
            getPosZSource() == SourceZ::GPS ||
            getVelXYSource() == SourceXY::GPS ||
-           getVelZSource() == SourceZ::GPS;
+           getVelZSource() == SourceZ::GPS ||
+           getYawSource() == SourceYaw::GSF;
 }
 
 // true if some parameters have been configured (used during parameter conversion)
@@ -418,12 +404,20 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
         // check yaw
         switch ((SourceYaw)_source_set[i].yaw.get()) {
         case SourceYaw::NONE:
-        case SourceYaw::EXTERNAL:
+        case SourceYaw::GPS:
             // valid yaw value
             break;
         case SourceYaw::COMPASS:
-        case SourceYaw::EXTERNAL_COMPASS_FALLBACK:
+            // skip compass check for easier user setup of compass-less operation
+            break;
+        case SourceYaw::GPS_COMPASS_FALLBACK:
             compass_required = true;
+            break;
+        case SourceYaw::EXTNAV:
+            visualodom_required = true;
+            break;
+        case SourceYaw::GSF:
+            gps_required = true;
             break;
         default:
             // invalid yaw value
@@ -444,7 +438,7 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
         return false;
     }
 
-    if (compass_required && dal.compass().get_num_enabled() == 0) {
+    if (compass_required && (dal.compass().get_num_enabled() == 0)) {
         hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Compass");
         return false;
     }
@@ -489,16 +483,19 @@ bool AP_NavEKF_Source::ext_nav_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
         const auto &src = _source_set[i];
-        if (SourceXY(src.posxy.get()) == SourceXY::EXTNAV) {
+        if (src.posxy == SourceXY::EXTNAV) {
             return true;
         }
-        if (SourceZ(src.posz.get()) == SourceZ::EXTNAV) {
+        if (src.posz == SourceZ::EXTNAV) {
             return true;
         }
-        if (SourceXY(src.velxy.get()) == SourceXY::EXTNAV) {
+        if (src.velxy == SourceXY::EXTNAV) {
             return true;
         }
-        if (SourceZ(src.velz.get()) == SourceZ::EXTNAV) {
+        if (src.velz == SourceZ::EXTNAV) {
+            return true;
+        }
+        if (src.yaw == SourceYaw::EXTNAV) {
             return true;
         }
     }
@@ -510,21 +507,21 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
         const auto &src = _source_set[i];
-        if (SourceXY(src.velxy.get()) == SourceXY::WHEEL_ENCODER) {
+        if (src.velxy == SourceXY::WHEEL_ENCODER) {
             return true;
         }
     }
     return false;
 }
 
-// return true if ext yaw is enabled on any source
-bool AP_NavEKF_Source::ext_yaw_enabled(void) const
+// return true if GPS yaw is enabled on any source
+bool AP_NavEKF_Source::gps_yaw_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
         const auto &src = _source_set[i];
         const SourceYaw yaw = SourceYaw(src.yaw.get());
-        if (yaw == SourceYaw::EXTERNAL ||
-            yaw == SourceYaw::EXTERNAL_COMPASS_FALLBACK) {
+        if (yaw == SourceYaw::GPS ||
+            yaw == SourceYaw::GPS_COMPASS_FALLBACK) {
             return true;
         }
     }

@@ -557,7 +557,9 @@ void UARTDriver::_uart_start_connection(void)
     tcsetattr(_fd, TCSANOW, &t);
 
     // set baudrate
-    set_speed(_uart_baudrate);
+    if (_uart_baudrate != 0) {
+        set_speed(_uart_baudrate);
+    }
 
     _connected = true;
     _use_send_recv = false;

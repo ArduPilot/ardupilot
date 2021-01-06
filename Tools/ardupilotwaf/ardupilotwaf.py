@@ -104,6 +104,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_MSP',
     'AP_OLC',
     'AP_WheelEncoder',
+    'AP_ExternalAHRS',
 ]
 
 def get_legacy_defines(sketch_name):

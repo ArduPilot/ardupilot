@@ -470,7 +470,10 @@ class sitl(Board):
         for f in os.listdir('Tools/autotest/models'):
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
-                    
+
+        # include locations.txt so SITL on windows can lookup by name
+        env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
+
         # embed any scripts from ROMFS/scripts
         if os.path.exists('ROMFS/scripts'):
             for f in os.listdir('ROMFS/scripts'):

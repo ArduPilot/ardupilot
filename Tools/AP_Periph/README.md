@@ -34,6 +34,7 @@ UAVCAN sensor types. Support is included for:
  - LEDs (GPIO, I2C or WS2812 serial)
  - Safety LED and Safety Switch
  - Buzzer (tonealarm or simple GPIO)
+ - RC Output (All standard RCOutput protocols)
 
 An AP_Periph UAVCAN firmware supports these UAVCAN features:
 

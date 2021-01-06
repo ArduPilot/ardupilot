@@ -82,4 +82,27 @@ TEST(Vector2Test, closest_point)
               (Vector2f::closest_point(Vector2f{0,0}, Vector2f{-1, 1}, Vector2f{1, 1})));
 }
 
+TEST(Vector2Test, circle_segment_intersectionx)
+{
+    Vector2f intersection;
+    EXPECT_EQ(Vector2f::circle_segment_intersection(
+                  Vector2f{0,0}, // seg start
+                  Vector2f{1,1}, // seg end
+                  Vector2f{0,0}, // circle center
+                  0.5,                 // circle radius
+                  intersection         // return value for intersection point
+                  ), true);
+    EXPECT_EQ(intersection, Vector2f(sqrtf(0.5)/2,sqrtf(0.5)/2));
+
+    EXPECT_EQ(Vector2f::circle_segment_intersection(
+                  Vector2f{std::numeric_limits<float>::quiet_NaN(),
+                          std::numeric_limits<float>::quiet_NaN()}, // seg start
+                  Vector2f{1,1}, // seg end
+                  Vector2f{0,0}, // circle center
+                  0.5,                 // circle radius
+                  intersection         // return value for intersection point
+                  ), false);
+
+}
+
 AP_GTEST_MAIN()
