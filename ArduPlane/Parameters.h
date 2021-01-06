@@ -577,8 +577,6 @@ public:
     AP_Follow follow;
 #endif
 
-    AP_Int8 airbrake_in_channel;
-
     AP_Int16 airbrake_slewrate;
 
     AP_Int8 flap_trim;
