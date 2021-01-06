@@ -689,11 +689,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     return GCS_MAVLINK::handle_command_mount(packet);
 }
 
-bool GCS_MAVLINK_Copter::allow_disarm() const
-{
-    return copter.ap.land_complete;
-}
-
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     switch(packet.command) {
