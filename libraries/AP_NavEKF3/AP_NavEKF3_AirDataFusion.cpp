@@ -25,7 +25,6 @@ void NavEKF3_core::FuseAirspeed()
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = dal.get_EAS2TAS();
     float SH_TAS[3];
     float SK_TAS[2];
     Vector24 H_TAS = {};
@@ -44,14 +43,7 @@ void NavEKF3_core::FuseAirspeed()
     if (VtasPred > 1.0f)
     {
         // calculate observation innovation and variance
-        float specifiedVariance = sq(MAX(frontend->_easNoise, 0.5f));
-        if (is_positive(defaultAirSpeed)) {
-            innovVtas = VtasPred - defaultAirSpeed;
-            specifiedVariance = MAX(specifiedVariance, defaultAirSpeedVariance);
-        } else {
-            innovVtas = VtasPred - tasDataDelayed.tas;
-        }
-        const float R_TAS = specifiedVariance * sq(constrain_float(EAS2TAS, 0.9f, 10.0f));
+        innovVtas = VtasPred - tasDataDelayed.tas;
 
         // calculate observation jacobians
         SH_TAS[0] = 1.0f/VtasPred;
@@ -63,8 +55,8 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        float temp = (R_TAS + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
-        if (temp >= R_TAS) {
+        float temp = (tasErrVar + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        if (temp >= tasErrVar) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
         } else {
@@ -256,8 +248,7 @@ void NavEKF3_core::SelectBetaDragFusion()
             airDataFusionWindOnly = true;
         }
         // Fuse estimated airspeed to aid wind estimation
-        if (is_positive(defaultAirSpeed)) {
-            frontend->_easNoise = 0.33f * defaultAirSpeed;
+        if (usingDefaultAirspeed) {
             FuseAirspeed();
         }
         FuseSideslip();
