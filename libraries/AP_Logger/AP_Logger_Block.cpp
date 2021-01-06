@@ -57,6 +57,12 @@ void AP_Logger_Block::Init(void)
     }
 
     WITH_SEMAPHORE(sem);
+
+    if (NeedErase()) {
+        EraseAll();
+    } else {
+        validate_log_structure();
+    }
 }
 
 uint32_t AP_Logger_Block::bufferspace_available()
@@ -341,22 +347,6 @@ void AP_Logger_Block::periodic_10Hz(const uint32_t now)
     // EraseAll should only set this in the main thread
     if (new_log_pending) {
         start_new_log();
-    }
-}
-
-void AP_Logger_Block::Prep()
-{
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-
-    WITH_SEMAPHORE(sem);
-
-    if (NeedErase()) {
-        EraseAll();
-    } else {
-        validate_log_structure();
     }
 }
 

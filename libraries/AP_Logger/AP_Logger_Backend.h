@@ -22,8 +22,6 @@ public:
     // erase handling
     virtual void EraseAll() = 0;
 
-    virtual void Prep() = 0;
-
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size) {
         return WritePrioritisedBlock(pBuffer, size, false);
