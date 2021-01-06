@@ -250,6 +250,10 @@ void ModeAuto::land_start(const Vector3f& destination)
 
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+
+#if AC_FENCE == ENABLED
+    copter.disable_fence_for_landing();
+#endif
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
