@@ -700,16 +700,11 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     float trueAirspeed;
-    if (is_positive(defaultAirSpeed) && assume_zero_sideslip()) {
-        if (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 5000) {
-            trueAirspeed = tasDataDelayed.tas;
-        } else {
-            trueAirspeed = defaultAirSpeed * dal.get_EAS2TAS();
-        }
+    if (assume_zero_sideslip()) {
+        trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
     } else {
         trueAirspeed = 0.0f;
     }
-
     yawEstimator->update(imuDataDelayed.delAng, imuDataDelayed.delVel, imuDataDelayed.delAngDT, imuDataDelayed.delVelDT, EKFGSF_run_filterbank, trueAirspeed);
 }
 
