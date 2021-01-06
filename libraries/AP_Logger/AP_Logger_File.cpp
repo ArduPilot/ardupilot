@@ -29,10 +29,6 @@ extern const AP_HAL::HAL& hal;
 
 #define LOGGER_PAGE_SIZE 1024UL
 
-#ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
-#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
-#endif
-
 #define MB_to_B 1000000
 #define B_to_MB 0.000001
 
@@ -46,11 +42,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
                                LoggerMessageWriter_DFLogStart *writer,
                                const char *log_directory) :
     AP_Logger_Backend(front, writer),
-    _write_fd(-1),
-    _read_fd(-1),
-    _log_directory(log_directory),
-    _writebuf(0),
-    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE)
+    _log_directory(log_directory)
 {
     df_stats_clear();
 }

@@ -13,6 +13,10 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Logger_Backend.h"
 
+#ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
+#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
+#endif
+
 class AP_Logger_File : public AP_Logger_Backend
 {
 public:
@@ -59,14 +63,14 @@ protected:
     bool StartNewLogOK() const override;
 
 private:
-    int _write_fd;
+    int _write_fd = -1;
     char *_write_filename;
     uint32_t _last_write_ms;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     bool _need_rtc_update;
 #endif
     
-    int _read_fd;
+    int _read_fd = -1;
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
@@ -92,8 +96,8 @@ private:
     bool log_exists(const uint16_t lognum) const;
 
     // write buffer
-    ByteBuffer _writebuf;
-    const uint16_t _writebuf_chunk;
+    ByteBuffer _writebuf{0};
+    const uint16_t _writebuf_chunk = HAL_LOGGER_WRITE_CHUNK_SIZE;
     uint32_t _last_write_time;
 
     /* construct a file name given a log number. Caller must free. */
