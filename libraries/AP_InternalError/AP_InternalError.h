@@ -43,7 +43,7 @@ public:
         logger_too_many_deletions   = (1U <<  3),  // 0x00008  8
         logger_bad_getfilename      = (1U <<  4),  // 0x00010  16
         panic                       = (1U <<  5),  // 0x00020  32
-        logger_flushing_without_sem = (1U <<  6),  // 0x00040  64
+        unused2                     = (1U <<  6),  // 0x00040  64
         logger_bad_current_block    = (1U <<  7),  // 0x00080  128
         logger_blockcount_mismatch  = (1U <<  8),  // 0x00100  256
         logger_dequeue_failure      = (1U <<  9),  // 0x00200  512
