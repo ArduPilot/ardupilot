@@ -298,7 +298,7 @@ void Plane::one_second_loop()
     }
 
     // the *2 is to accommodate for the +/- swing where flaps are positive only
-    control_airbrake.set_slewrate(g2.airbrake_slewrate * 2.0f);
+    control_airbrake.set_slewrate(g2.airbrake_slewrate * 4.0f);
     control_flap.set_slewrate(g.flap_slewrate);
     control_flap_auto.set_slewrate(g.flap_slewrate);
 
