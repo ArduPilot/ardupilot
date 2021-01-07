@@ -32,6 +32,7 @@ class RC_Channels_Rover : public RC_Channels
 
 public:
 
+    bool in_rc_failsafe() const override;
     bool has_valid_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;
