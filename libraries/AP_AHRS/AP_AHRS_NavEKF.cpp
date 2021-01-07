@@ -181,7 +181,33 @@ void AP_AHRS_NavEKF::update(bool skip_ins_update)
     EKFType active = active_EKF_type();
     if (active != last_active_ekf_type) {
         last_active_ekf_type = active;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: EKF%u active", unsigned(active));
+        const char *shortname = "???";
+        switch ((EKFType)active) {
+        case EKFType::NONE:
+            shortname = "DCM";
+            break;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case EKFType::SITL:
+            shortname = "SITL";
+            break;
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+        case EKFType::EXTERNAL:
+            shortname = "External";
+            break;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+        case EKFType::THREE:
+            shortname = "EKF3";
+            break;
+#endif
+#if HAL_NAVEKF2_AVAILABLE
+        case EKFType::TWO:
+            shortname = "EKF2";
+            break;
+#endif
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
 }
 
