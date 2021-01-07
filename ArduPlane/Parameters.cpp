@@ -1386,7 +1386,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("FLAP_AIL_MIX_MAX", 40, ParametersG2, flap_max_allowed_contribution_to_flaperon, 80),
+    AP_GROUPINFO("FLAP_AIL_MIX_MAX", 40, ParametersG2, flap_max_allowed_contribution_to_flaperon_pct, 80),
 
     AP_GROUPEND
 };

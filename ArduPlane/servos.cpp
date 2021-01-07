@@ -178,9 +178,9 @@ void Plane::flaperon_update()
       percentage of flaps. Flap input can come from a manual channel
       or from auto flaps.
      */
-    const float max_allowed_flap_contribution = constrain_float(g2.flap_max_allowed_contribution_to_flaperon * 0.01f, 0.0f, 1.0f);
-
-    const int16_t flap_auto_slewed_angle = (control_flap_auto.scaled_output * 45.0f) * max_allowed_flap_contribution;
+    const int16_t max_allowed_flap_contribution_pct = constrain_int16(g2.flap_max_allowed_contribution_to_flaperon_pct, 0, 100);
+    const int16_t flap_auto_slewed = MIN(control_flap_auto.scaled_output, max_allowed_flap_contribution_pct);
+    const int16_t flap_auto_slewed_angle = flap_auto_slewed * 45;
 
     const int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     const int16_t flaperon_left  = aileron + flap_auto_slewed_angle;
