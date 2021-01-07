@@ -13,8 +13,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Logger_File.h"
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -984,5 +985,5 @@ bool AP_Logger_File::logging_failed() const
     return false;
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED
 
