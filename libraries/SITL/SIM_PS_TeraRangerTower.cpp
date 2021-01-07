@@ -19,6 +19,7 @@
 #include "SIM_PS_TeraRangerTower.h"
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <stdio.h>
 #include <errno.h>
 
