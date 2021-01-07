@@ -4619,6 +4619,27 @@ class AutoTest(ABC):
         self.mavproxy.expect("Loaded module relay")
         self.mavproxy.send("relay set %d %d\n" % (relay_num, on_off))
 
+    def do_fence_en_or_dis_able(self, value, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        if value:
+            p1 = 1
+        else:
+            p1 = 0
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE,
+                     p1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0, # param7
+                     want_result=want_result)
+
+    def do_fence_enable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.do_fence_en_or_dis_able(True, want_result=want_result)
+
+    def do_fence_disable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.do_fence_en_or_dis_able(False, want_result=want_result)
+
     #################################################
     # WAIT UTILITIES
     #################################################
