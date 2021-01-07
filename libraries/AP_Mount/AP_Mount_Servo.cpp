@@ -62,7 +62,7 @@ void AP_Mount_Servo::update()
         case MAV_MOUNT_MODE_RC_TARGETING:
         {
             // update targets using pilot's rc inputs or go to neutral or retracted targets if no rc
-            if (!rc().has_valid_input()) {
+            if (rc().in_rc_failsafe()) {
                 switch (_state._rcinvalid_mode.get()) {
                     case MAV_MOUNT_MODE_RETRACT:
                        _angle_bf_output_deg = _state._retract_angles.get();
@@ -74,10 +74,10 @@ void AP_Mount_Servo::update()
                         //do nothing
                         break;
                     }
-            } else {
-            update_targets_from_rc();
-            stabilize();
+            } else if (rc().has_valid_input()) {
+                update_targets_from_rc();
             }
+            stabilize();
             break;
         }
 
