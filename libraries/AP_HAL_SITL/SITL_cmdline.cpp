@@ -297,8 +297,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
+#if HAL_LOGGING_FILESYSTEM_ENABLED
             AP_Param::erase_all();
+#endif
+#if HAL_LOGGING_SITL_ENABLED
             unlink(AP_Logger_SITL::filename);
+#endif
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);

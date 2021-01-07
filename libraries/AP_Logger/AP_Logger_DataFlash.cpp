@@ -5,9 +5,10 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#ifdef HAL_LOGGING_DATAFLASH
-
 #include "AP_Logger_DataFlash.h"
+
+#if HAL_LOGGING_DATAFLASH_ENABLED
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -324,4 +325,4 @@ void AP_Logger_DataFlash::flash_test()
     }
 }
 
-#endif // HAL_LOGGING_DATAFLASH
+#endif // HAL_LOGGING_DATAFLASH_ENABLED
