@@ -179,7 +179,7 @@ void Plane::flaperon_update()
       or from auto flaps.
      */
     const int16_t max_allowed_flap_contribution_pct = constrain_int16(g2.flap_max_allowed_contribution_to_flaperon_pct, 0, 100);
-    const int16_t flap_auto_slewed = MIN(control_flap_auto.scaled_output, max_allowed_flap_contribution_pct);
+    const int16_t flap_auto_slewed = MIN(control_flap_auto.get_scaled_output_slewed_pct(), max_allowed_flap_contribution_pct);
     const int16_t flap_auto_slewed_angle = flap_auto_slewed * 45;
 
     const int16_t aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -330,15 +330,15 @@ void Plane::airbrake_update(void)
 */
 void Plane::crow_update(void)
 {
-    const float flap_auto_slewed_norm = control_flap_auto.get_scaled_output_slewed_pct() * 0.01f;
-    const float airbrake_slewed_norm = control_airbrake.get_scaled_output_slewed_pct() * 0.01f;
+    const float flap_auto_slewed = control_flap_auto.get_scaled_output_slewed_pct();
+    const float airbrake_slewed = control_airbrake.get_scaled_output_slewed_pct();
 
-    float flap_inner = flap_auto_slewed_norm * g2.crow_flap_weight_inner*0.01f; // DSPOILER_CROW_W2
-    float flap_outer = flap_auto_slewed_norm * g2.crow_flap_weight_outer*0.01f; // DSPOILER_CROW_W1
+    const float flap_inner = flap_auto_slewed * g2.crow_flap_weight_inner*0.01f; // DSPOILER_CROW_W2
+    const float flap_outer = flap_auto_slewed * g2.crow_flap_weight_outer*0.01f; // DSPOILER_CROW_W1
 
     // Mix and rescale to use -4500 to 4500 (enables trim)
-    float crow_inner = (flap_inner + airbrake_slewed_norm - flap_inner*airbrake_slewed_norm) * 4500.0f;
-    float crow_outer = (flap_outer - airbrake_slewed_norm - flap_outer*airbrake_slewed_norm) * 4500.0f;
+    const float crow_inner = (flap_inner + airbrake_slewed - flap_inner*airbrake_slewed) * 45.0f;
+    const float crow_outer = (flap_outer - airbrake_slewed - flap_outer*airbrake_slewed) * 45.0f;
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_crow_inner, crow_inner);
     SRV_Channels::set_output_scaled(SRV_Channel::k_crow_outer, crow_outer);
