@@ -158,6 +158,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 1000
     // @User: Standard
     GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
+
+    // @Param: RTL_ALT_TYPE
+    // @DisplayName: RTL mode altitude type
+    // @Description: RTL altitude type.  Set to 1 for Terrain following during RTL and then set WPNAV_RFND_USE=1 to use rangefinder or WPNAV_RFND_USE=0 to use Terrain database
+    // @Values: 0:Relative to Home, 1:Terrain
+    // @User: Standard
+    GSCALAR(rtl_alt_type, "RTL_ALT_TYPE", 0),
 #endif
 
 #if RANGEFINDER_ENABLED == ENABLED
@@ -734,13 +741,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(throw_motor_start, "THROW_MOT_START", (float)ModeThrow::PreThrowMotorState::STOPPED),
 #endif
-
-    // @Param: RTL_ALT_TYPE
-    // @DisplayName: RTL mode altitude type
-    // @Description: RTL altitude type.  Set to 1 for Terrain following during RTL and then set WPNAV_RFND_USE=1 to use rangefinder or WPNAV_RFND_USE=0 to use Terrain database
-    // @Values: 0:Relative to Home, 1:Terrain
-    // @User: Standard
-    GSCALAR(rtl_alt_type, "RTL_ALT_TYPE", 0),
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     // @Group: OSD
