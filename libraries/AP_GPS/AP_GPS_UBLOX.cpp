@@ -1327,9 +1327,10 @@ AP_GPS_UBLOX::_parse_gps(void)
 #endif
         break;
 
-#if GPS_MOVING_BASELINE
+
     case MSG_RELPOSNED:
         {
+          #if GPS_MOVING_BASELINE
             // note that we require the yaw to come from a fixed solution, not a float solution
             // yaw from a float solution would only be acceptable with a very large separation between
             // GPS modules
@@ -1360,9 +1361,27 @@ AP_GPS_UBLOX::_parse_gps(void)
             } else {
                 state.have_gps_yaw_accuracy = false;
             }
+          #endif // GPS_MOVING_BASELINE
+            
+            //report rtk baseline distances from the rover
+            uint32_t baseline_valid = static_cast<uint32_t>(RELPOSNED::relPosValid) &
+                                     static_cast<uint32_t>(RELPOSNED::gnssFixOK);
+            if( _buffer.relposned.flags & baseline_valid )
+            {             
+              // relposN is in cm, relposHPN is in 10*mm
+              state.rtk_baseline_x_mm = (_buffer.relposned.relPosN + _buffer.relposned.relPosHPN*0.01)*10;
+              state.rtk_baseline_y_mm = (_buffer.relposned.relPosE + _buffer.relposned.relPosHPE*0.01)*10;
+              state.rtk_baseline_z_mm = (_buffer.relposned.relPosD + _buffer.relposned.relPosHPD*0.01)*10;
+
+              // also add other status info available
+              state.rtk_baseline_coords_type = 1; // 0: ECEF, 1: NED
+              // 3D accuracy as eucledean norm, in mm.
+              state.rtk_accuracy = safe_sqrt( _buffer.relposned.accN*0.1f * _buffer.relposned.accN*0.1f +
+                                         _buffer.relposned.accE*0.1f * _buffer.relposned.accE*0.1f +
+                                         _buffer.relposned.accD*0.1f * _buffer.relposned.accD*0.1f );
+            }
         }
         break;
-#endif // GPS_MOVING_BASELINE
 
     case MSG_PVT:
         Debug("MSG_PVT");
