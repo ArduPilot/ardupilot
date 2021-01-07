@@ -202,8 +202,8 @@ int64_t LoggerThread_File::disk_space()
 // returns 0 if no log was found
 uint16_t LoggerThread_File::find_oldest_log()
 {
-    if (_backend->_cached_oldest_log != 0) {
-        return _backend->_cached_oldest_log;
+    if (_cached_oldest_log != 0) {
+        return _cached_oldest_log;
     }
 
     uint16_t last_log_num = find_last_log();
@@ -262,7 +262,7 @@ uint16_t LoggerThread_File::find_oldest_log()
     }
     AP::FS().closedir(d);
 
-    _backend->_cached_oldest_log = current_oldest_log;
+    _cached_oldest_log = current_oldest_log;
 
     return current_oldest_log;
 }
@@ -323,7 +323,7 @@ void LoggerThread_File::Prep_MinSpace()
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
-                _backend->_cached_oldest_log = 0;
+                _cached_oldest_log = 0;
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -457,7 +457,7 @@ void LoggerThread_File::EraseAll()
         free(fname);
     }
 
-    _backend->_cached_oldest_log = 0;
+    _cached_oldest_log = 0;
 
     if (was_logging) {
         start_new_log();
@@ -886,7 +886,7 @@ void LoggerThread_File::start_new_log(void)
 
     stop_logging();
 
-    _backend->start_new_log_reset_variables();
+    start_new_log_reset_variables();
 
     if (_read_fd != -1) {
         AP::FS().close(_read_fd);
@@ -926,7 +926,7 @@ void LoggerThread_File::start_new_log(void)
 
     EXPECT_DELAY_MS(3000);
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
-    _backend->_cached_oldest_log = 0;
+    _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
         int saved_errno = errno;

@@ -8,8 +8,9 @@ class LoggerMessageWriter_DFLogStart;
 
 class LoggerThread {
 public:
+    virtual uint16_t find_last_log() = 0;
     uint16_t _cached_oldest_log;
-}
+};
 
 class AP_Logger_Backend
 {
@@ -39,7 +40,6 @@ public:
     bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
 
     // high level interface, indexed by the position in the list of logs
-    virtual uint16_t find_last_log() = 0;
     virtual void get_log_boundaries(uint16_t list_entry, uint32_t & start_page, uint32_t & end_page) = 0;
     virtual void get_log_info(uint16_t list_entry, uint32_t &size, uint32_t &time_utc) = 0;
     virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
