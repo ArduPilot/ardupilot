@@ -3,6 +3,7 @@
 #include "SIM_I2C.h"
 
 #include <SITL/SIM_Aircraft.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 namespace SITL {
 
