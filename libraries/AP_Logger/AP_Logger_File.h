@@ -8,10 +8,10 @@
 
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
-
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Logger_Backend.h"
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
 #define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
@@ -129,5 +129,4 @@ private:
     const char *last_io_operation = "";
 };
 
-#endif // HAVE_FILESYSTEM_SUPPORT
-
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED

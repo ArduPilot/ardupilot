@@ -5,13 +5,11 @@
  */
 #pragma once
 
-#define LOGGER_MAVLINK_SUPPORT 1
-
-#if LOGGER_MAVLINK_SUPPORT
-
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Logger_Backend.h"
+
+#if HAL_LOGGING_MAVLINK_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -180,4 +178,4 @@ private:
     HAL_Semaphore semaphore;
 };
 
-#endif // LOGGER_MAVLINK_SUPPORT
+#endif // HAL_LOGGING_MAVLINK_ENABLED

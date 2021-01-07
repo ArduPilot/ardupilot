@@ -4,7 +4,7 @@
 
 #include "AP_Logger_MAVLink.h"
 
-#if LOGGER_MAVLINK_SUPPORT
+#if HAL_LOGGING_MAVLINK_ENABLED
 
 #include "LogStructure.h"
 

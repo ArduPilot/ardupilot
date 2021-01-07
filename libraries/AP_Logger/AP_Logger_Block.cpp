@@ -4,6 +4,8 @@
 
 #include "AP_Logger_Block.h"
 
+#if HAL_LOGGING_BLOCK_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
@@ -921,3 +923,4 @@ void AP_Logger_Block::write_log_page()
     df_Write_FilePage++;
 }
 
+#endif // HAL_LOGGING_BLOCK_ENABLED
