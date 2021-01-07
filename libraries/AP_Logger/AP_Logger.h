@@ -5,13 +5,9 @@
 
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 
-#ifndef HAL_LOGGING_DATAFLASH
-    #define HAL_LOGGING_DATAFLASH 0
-#endif
-
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
-    #if HAL_LOGGING_DATAFLASH
+    #ifdef HAL_LOGGING_DATAFLASH
         #define HAL_LOGGING_DATAFLASH_ENABLED 1
     #else
         #define HAL_LOGGING_DATAFLASH_ENABLED 0
@@ -45,7 +41,7 @@
 #endif
 
 // sanity checks:
-#if HAL_LOGGING_DATAFLASH && !HAL_LOGGING_DATAFLASH_ENABLED
+#if defined(HAL_LOGGING_DATAFLASH) && !HAL_LOGGING_DATAFLASH_ENABLED
 #error Can not default to dataflash if it is not enabled
 #endif
 
