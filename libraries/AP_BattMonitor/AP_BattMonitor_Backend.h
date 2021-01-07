@@ -68,6 +68,10 @@ public:
     // reset remaining percentage to given value
     virtual bool reset_remaining(float percentage);
 
+    // logging functions 
+    void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
+    void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
+
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)

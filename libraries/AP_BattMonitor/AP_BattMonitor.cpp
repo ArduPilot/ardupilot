@@ -285,24 +285,30 @@ void AP_BattMonitor::convert_params(void) {
     _params[0]._type.save(true);
 }
 
-// read - read the voltage and current for all instances
-void
-AP_BattMonitor::read()
+// read - For all active instances read voltage & current; log BAT, BCL, POWR
+void AP_BattMonitor::read()
 {
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
+        logger->Write_Power();
+    }
+#endif
+
     for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
+            
+#ifndef HAL_BUILD_AP_PERIPH
+            if (logger != nullptr && logger->should_log(_log_battery_bit)) {
+                const uint64_t time_us = AP_HAL::micros64();
+                drivers[i]->Log_Write_BAT(i, time_us);
+                drivers[i]->Log_Write_BCL(i, time_us);
+            }
+#endif
         }
     }
-
-#ifndef HAL_BUILD_AP_PERIPH
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger != nullptr && logger->should_log(_log_battery_bit)) {
-        logger->Write_Current();
-        logger->Write_Power();
-    }
-#endif
 
     check_failsafes();
     
