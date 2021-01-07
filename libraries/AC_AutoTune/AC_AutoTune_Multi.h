@@ -50,16 +50,10 @@ protected:
     void updating_rate_d_up_all(AxisType test_axis) override;
     // generic method used to update gains for the rate d down tune type
     void updating_rate_d_down_all(AxisType test_axis) override;
-    // generic method used to update gains for the rate ff up tune type
-    void updating_rate_ff_up_all(AxisType test_axis) override {};
-    // generic method used to update gains for the rate ff down tune type
-    void updating_rate_ff_down_all(AxisType test_axis) override {};
     // generic method used to update gains for the angle p up tune type
     void updating_angle_p_up_all(AxisType test_axis) override;
     // generic method used to update gains for the angle p down tune type
     void updating_angle_p_down_all(AxisType test_axis) override;
-    // generic method used to update gains for the max gain tune type
-    void updating_max_gains_all(AxisType test_axis) override {};
 
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
