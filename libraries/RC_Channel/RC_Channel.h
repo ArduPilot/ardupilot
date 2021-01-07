@@ -52,7 +52,6 @@ public:
     */
     float       norm_input_dz() const;
 
-    float       percent_input_last;
     float       percent_input_dz();
     float       percent_input() const;
     int16_t     pwm_to_range() const;
@@ -257,6 +256,9 @@ private:
 
     // the input channel this corresponds to
     uint8_t     ch_in;
+
+    // deadband memory for percent_input()
+    float       percent_input_dz_last;
 
     // overrides
     uint16_t override_value;

@@ -327,12 +327,20 @@ RC_Channel::percent_input() const
     return ret;
 }
 
+/*
+  get percentage input from 0 to 100. This ignores the trim value and uses deadzone
+ */
 float RC_Channel::percent_input_dz()
 {
-    if ((radio_in > percent_input_last+dead_zone) || (radio_in < percent_input_last-dead_zone)) {
-        percent_input_last = percent_input();
+    if (radio_in <= radio_min) {
+        percent_input_dz_last = reversed?100:0;
+    } else if (radio_in >= radio_max) {
+        percent_input_dz_last = reversed?0:100;
+    } else if ((radio_in >= percent_input_dz_last+dead_zone) || (radio_in <= percent_input_dz_last-dead_zone)) {
+        // outside deadband, update value
+        percent_input_dz_last = percent_input();
     }
-    return percent_input_last;
+    return percent_input_dz_last;
 }
 /*
   return true if input is within deadzone of trim
