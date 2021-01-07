@@ -9516,13 +9516,13 @@ switch value'''
         self.end_subtest("Change mode via MAVLite")
 
         self.start_subtest("Enable fence via MAVlite")
-        #  FIXME: currently plane-specific
+        #  Fence can be enabled using MAV_CMD
         self.run_cmd_via_mavlite(
             frsky,
             sport_to_mavlite,
             mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE,
             p1=1,
-            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
         )
         self.end_subtest("Enable fence via MAVlite")
 
