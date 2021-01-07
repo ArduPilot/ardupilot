@@ -295,14 +295,14 @@ void Plane::dspoiler_update(void)
 void Plane::airbrake_update(void)
 {
     // Calculate any manual airbrake input from RC channel option.
-    int16_t manual_airbrake_percent = 0;
+    float manual_airbrake_percent = 0;
 
     if (channel_airbrake != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        manual_airbrake_percent = channel_airbrake->percent_input();
+        manual_airbrake_percent = channel_airbrake->percent_input_dz();
     }
 
     // Calculate auto airbrake from negative throttle.
-    int16_t airbrake_auto_pct = 0;
+    float airbrake_auto_pct = 0;
 
     if (have_reverse_thrust()) {
         if (landing.is_flaring()) {
@@ -318,11 +318,7 @@ void Plane::airbrake_update(void)
     }
 
     // Manual overrides auto airbrake setting.
-    if (airbrake_auto_pct < manual_airbrake_percent) {
-        airbrake_auto_pct = manual_airbrake_percent;
-    }
-
-    control_airbrake.scaled_output = airbrake_auto_pct;
+    control_airbrake.scaled_output = MAX(airbrake_auto_pct,manual_airbrake_percent);
 }
 /*
     Set CROW. CROW is a mix between flaps and airbrakes. There are two types of CROW outputs available -
@@ -330,20 +326,19 @@ void Plane::airbrake_update(void)
 */
 void Plane::crow_update(void)
 {
-    const float flap_auto_slewed = control_flap_auto.get_scaled_output_slewed_pct();
-    const float airbrake_slewed = control_airbrake.get_scaled_output_slewed_pct();
+    // Beware of dragons!
+    // These units are special due to the
+    // combination of addition and multiplication maths
 
-    const float flap_inner = flap_auto_slewed * g2.crow_flap_weight_inner*0.01f; // DSPOILER_CROW_W2
-    const float flap_outer = flap_auto_slewed * g2.crow_flap_weight_outer*0.01f; // DSPOILER_CROW_W1
+    // split flaps into inner/outer with different weights
+    const float flap_target = control_flap_auto.scaled_output * 0.01f;
+    const float flap_target_inner = flap_target * (g2.crow_flap_weight_inner*0.01f); // DSPOILER_CROW_W2
+    const float flap_target_outer = flap_target * (g2.crow_flap_weight_outer*0.01f); // DSPOILER_CROW_W1
 
-    // Mix and rescale to use -4500 to 4500 (enables trim)
-    const float crow_inner = (flap_inner + airbrake_slewed - flap_inner*airbrake_slewed) * 45.0f;
-    const float crow_outer = (flap_outer - airbrake_slewed - flap_outer*airbrake_slewed) * 45.0f;
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_inner, crow_inner);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_outer, crow_outer);
-
-    flaperon_update();
+    // Mix with airbrake (enables trim)
+    const float airbrake_target = control_airbrake.scaled_output * 0.01f;
+    control_crow_inner.scaled_output = (flap_target_inner + airbrake_target) - (flap_target_inner * airbrake_target);
+    control_crow_outer.scaled_output = (flap_target_outer - airbrake_target) - (flap_target_outer * airbrake_target);
 }
 
 /*
@@ -539,12 +534,12 @@ void Plane::set_servos_controlled(void)
 void Plane::set_servos_flaps(void)
 {
     // Auto flap deployment
-    int8_t auto_flap_percent = 0;
-    int16_t manual_flap_percent = -100;
+    float auto_flap_percent = 0;
+    float manual_flap_percent = -100;
 
     // work out any manual flap input
     if (channel_flap != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
-        manual_flap_percent = channel_flap->percent_input();
+        manual_flap_percent = channel_flap->percent_input_dz();
     }
 
     if (auto_throttle_mode) {
@@ -599,6 +594,7 @@ void Plane::set_servos_flaps(void)
         }
     }
 
+    // Manual overrides auto flap setting.
     control_flap_auto.scaled_output = MAX(auto_flap_percent, manual_flap_percent);
     control_flap.scaled_output = manual_flap_percent;
 }
@@ -788,12 +784,15 @@ void Plane::set_servos(void)
     set_landing_gear();
 #endif
 
-    // set airbrake outputs
+    // set airbrake outputs, depends on airbrake
     airbrake_update();
 
-    // set crow ooutputs
+    // set crow outputs, depends on flaps and airbrake
     crow_update();
     
+    // set flaperon outputs, depends on flaps
+    flaperon_update();
+
     if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
@@ -908,6 +907,13 @@ void Plane::servos_output(void)
 
     control_flap_auto.update_slew(G_Dt);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, control_flap_auto.get_scaled_output_slewed_pct());
+
+
+    control_crow_inner.update_slew(G_Dt);
+    control_crow_outer.update_slew(G_Dt);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_inner, control_crow_inner.get_scaled_output_slewed_pct() * 4500);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_crow_outer, control_crow_outer.get_scaled_output_slewed_pct() * 4500);
+
 
     SRV_Channels::calc_pwm();
 

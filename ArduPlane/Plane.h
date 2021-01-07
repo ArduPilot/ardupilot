@@ -1113,10 +1113,10 @@ private:
 
     struct Slew_Object {
     public:
-        int16_t scaled_output;
+        float scaled_output;
 
         float get_scaled_output_slewed_pct() const { return _scaled_output_slewed_norm * 100.0f; }
-        void set_slewrate(int16_t slewrate) { _slewrate = (float)slewrate * 0.01f; }
+        void set_slewrate(float slewrate) { _slewrate = slewrate * 0.01f; }
 
         void update_slew(const float g_Dt) {
             const float max_change = g_Dt * _slewrate;
@@ -1139,6 +1139,8 @@ private:
     Slew_Object control_airbrake;
     Slew_Object control_flap;
     Slew_Object control_flap_auto;
+    Slew_Object control_crow_inner;
+    Slew_Object control_crow_outer;
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {

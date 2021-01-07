@@ -297,9 +297,14 @@ void Plane::one_second_loop()
             landing.alt_offset = 0;
     }
 
-    control_airbrake.set_slewrate(g2.airbrake_slewrate);
+    // the *2 is to accommodate for the +/- swing where flaps are positive only
+    control_airbrake.set_slewrate(g2.airbrake_slewrate * 2.0f);
     control_flap.set_slewrate(g.flap_slewrate);
     control_flap_auto.set_slewrate(g.flap_slewrate);
+
+    // crow mixer maths are a different unit and need a scaler to match flap slew rates
+    control_crow_inner.set_slewrate(g.flap_slewrate * 0.01f);
+    control_crow_outer.set_slewrate(g.flap_slewrate * 0.01f);
 }
 
 void Plane::compass_save()
