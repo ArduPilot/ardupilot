@@ -863,7 +863,7 @@ class AutoTestPlane(AutoTest):
         self.wait_rc_channel_value(3, 950)
         self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
@@ -899,7 +899,7 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Did not go via circle mode")
         self.drain_mav_unparsed()
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
@@ -958,7 +958,7 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Checking fence is not present before being configured")
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         if (m.onboard_control_sensors_enabled & fence_bit):
             raise NotAchievedException("Fence enabled before being configured")
 
@@ -974,9 +974,10 @@ class AutoTestPlane(AutoTest):
             7: 2000,
         }) # Turn fence on with aux function
 
-
-        self.mavproxy.expect("fence enabled")
-        self.delay_sim_time(1)  # This is needed else the SYS_STATUS may not have updated
+        m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
+        self.progress("Got (%s)" % str(m))
+        if m is None:
+            raise NotAchievedException("Got FENCE_STATUS unexpectedly")
 
         self.progress("Checking fence is initially OK")
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE,
@@ -996,7 +997,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Checking fence is OK after receiver failure (bind-values)")
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence not enabled after RC fail")
 
@@ -1677,7 +1678,7 @@ class AutoTestPlane(AutoTest):
             self.delay_sim_time(1) # let the switch get polled
             self.test_adsb_send_threatening_adsb_message(here)
             m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=4)
-            print("Got (%s)" % str(m))
+            self.progress("Got (%s)" % str(m))
             if m is not None:
                 raise NotAchievedException("Got collision message when I shouldn't have")
 
@@ -2342,7 +2343,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Fly above ceiling and check for breach")
         self.change_altitude(self.homeloc.alt + cruise_alt + 80)
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         if ((m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence Ceiling did not breach")
 
@@ -2350,7 +2351,7 @@ class AutoTestPlane(AutoTest):
         self.change_altitude(self.homeloc.alt + cruise_alt)
 
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach did not clear")
 
@@ -2359,7 +2360,7 @@ class AutoTestPlane(AutoTest):
         self.change_altitude(self.homeloc.alt + cruise_alt - 80)
 
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        print("%s" % str(m))
+        self.progress("Got (%s)" % str(m))
         if ((m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence Floor did not breach")
 

@@ -1338,7 +1338,7 @@ class AutoTestCopter(AutoTest):
 
     # fly_alt_min_fence_test - fly down until you hit the fence
     def fly_alt_min_fence_test(self):
-        self.takeoff(50, mode="LOITER", timeout=120)
+        self.takeoff(30, mode="LOITER", timeout=60)
         """Hold loiter position."""
         self.mavproxy.send('switch 5\n')  # loiter mode
         self.wait_mode('LOITER')
@@ -1350,7 +1350,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("FENCE_TYPE", 8)
         self.set_parameter("FENCE_ALT_MIN", 20)
 
-        self.change_alt(50)
+        self.change_alt(30)
 
         # Activate the floor fence
         # TODO this test should run without requiring this
