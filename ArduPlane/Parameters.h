@@ -580,6 +580,7 @@ public:
     AP_Int16 airbrake_slewrate;
 
     AP_Int8 flap_trim;
+    AP_Int8 flap_max_allowed_contribution_to_flaperon;
 
     AP_Int8     stall_recovery_throttle1;
     AP_Int8     stall_recovery_throttle2;

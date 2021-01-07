@@ -137,6 +137,8 @@ public:
     friend class RC_Channel_Plane;
     friend class RC_Channels_Plane;
 
+    friend class Slew_Object;
+
     friend class Mode;
     friend class ModeCircle;
     friend class ModeStabilize;
@@ -1046,7 +1048,7 @@ private:
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out);
-    void flaperon_update(int8_t flap_percent);
+    void flaperon_update();
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
@@ -1108,9 +1110,35 @@ private:
     };
 
     void crow_update(void);
-    float airbrake_function_output;
-    float flap_function_output;
 
+    struct Slew_Object {
+    public:
+        int16_t scaled_output;
+
+        float get_scaled_output_slewed_pct() const { return _scaled_output_slewed_norm * 100.0f; }
+        void set_slewrate(int16_t slewrate) { _slewrate = slewrate; }
+
+        void update_slew(const float g_Dt) {
+            const float max_change = g_Dt * _slewrate;
+            const float scaled_output_norm = scaled_output*0.01f;
+
+            if ((scaled_output_norm - _scaled_output_slewed_norm) > max_change) {
+                _scaled_output_slewed_norm += max_change;
+            } else if ((scaled_output_norm - _scaled_output_slewed_norm) < -max_change) {
+                _scaled_output_slewed_norm -= max_change;
+            } else {
+                _scaled_output_slewed_norm = scaled_output_norm;
+            }
+        };
+
+    private:
+        float _scaled_output_slewed_norm;
+        float _slewrate;
+    };
+
+    Slew_Object control_airbrake;
+    Slew_Object control_flap;
+    Slew_Object control_flap_auto;
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {

@@ -296,6 +296,10 @@ void Plane::one_second_loop()
             // reset the landing altitude correction
             landing.alt_offset = 0;
     }
+
+    control_airbrake.set_slewrate(g2.airbrake_slewrate);
+    control_flap.set_slewrate(g.flap_slewrate);
+    control_flap_auto.set_slewrate(g.flap_slewrate);
 }
 
 void Plane::compass_save()

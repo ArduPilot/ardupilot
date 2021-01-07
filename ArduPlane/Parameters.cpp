@@ -1379,6 +1379,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     AP_GROUPINFO("STALL_SELF_RECVY", 39, ParametersG2, stall_self_recovery_enable, 0),
 
+    // @Param: FLAP_AIL_MIX_MAX
+    // @DisplayName: Flap Aileron Mix Max
+    // @Description: Maximum contribution from flaps into flaperon reserving headroom for aileron control.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("FLAP_AIL_MIX_MAX", 40, ParametersG2, flap_max_allowed_contribution_to_flaperon, 80),
+
     AP_GROUPEND
 };
 
