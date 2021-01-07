@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
-#define HAL_LOGGING_STACK_SIZE 768
+#define HAL_LOGGING_STACK_SIZE 1024
 #endif
 
 #ifndef HAL_LOGGING_MAV_BUFSIZE
