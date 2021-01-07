@@ -1116,7 +1116,7 @@ private:
         int16_t scaled_output;
 
         float get_scaled_output_slewed_pct() const { return _scaled_output_slewed_norm * 100.0f; }
-        void set_slewrate(int16_t slewrate) { _slewrate = slewrate; }
+        void set_slewrate(int16_t slewrate) { _slewrate = (float)slewrate * 0.01f; }
 
         void update_slew(const float g_Dt) {
             const float max_change = g_Dt * _slewrate;
