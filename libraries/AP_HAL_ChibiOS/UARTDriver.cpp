@@ -65,7 +65,7 @@ UARTDriver *UARTDriver::uart_drivers[UART_MAX_DRIVERS];
 #endif
 
 #ifndef HAL_UART_STACK_SIZE
-#define HAL_UART_STACK_SIZE 2048
+#define HAL_UART_STACK_SIZE 1536
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
