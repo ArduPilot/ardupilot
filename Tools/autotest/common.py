@@ -1256,33 +1256,10 @@ class AutoTest(ABC):
         parameters = mavparm.MAVParmDict()
         correct_parameters = set()
         parameters.load(filepath)
-        failfetch = None
-        for i in range(10):
-            self.progress("Apply parameter file (%s) pass %u" % (filepath, i+1,))
-            success = True
-            for p in parameters.keys():
-                if p in correct_parameters:
-                    continue
-                try:
-                    current = self.get_parameter(p, verbose=False)
-                except Exception as e:
-                    # may still be hidden
-                    self.progress("get_parameter(%s) failed" % p)
-                    failfetch = p
-                    success = False
-                    continue
-                delta = current - parameters[p]
-                self.progress("%s: want=%f got=%f delta=%f" %
-                              (p, parameters[p], current, delta))
-                if abs(delta) > 0.00001:
-                    success = False
-                    self.set_parameter(p, parameters[p], verbose=False)
-                    continue
-                correct_parameters.add(p)
-            if success:
-                self.progress("Applied parameter file (%s)" % (filepath))
-                return
-        raise NotAchievedException("Failed to load parameter file; last failfetch was %s" % failfetch)
+        param_dict = {}
+        for p in parameters.keys():
+            param_dict[p] = parameters[p]
+        self.set_parameters(param_dict)
 
     def repeatedly_apply_parameter_file_mavproxy(self, filepath):
         '''keep applying a parameter file until no parameters changed'''
@@ -5471,10 +5448,12 @@ Also, ignores heartbeats not from our target system'''
                  ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, 42.0), ],
             ]
         self.wait_heartbeat()
+        to_set = {}
         for param_set in params:
             for param in param_set:
                 (_, _out, value) = param
-                self.set_parameter(_out, value)
+                to_set[_out] = value
+        self.set_parameters(to_set)
         self.check_zero_mag_parameters(params)
 
     def check_mag_parameters(self, parameter_stuff, compass_number):
@@ -5574,11 +5553,13 @@ Also, ignores heartbeats not from our target system'''
             #     self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
             #     # set compass external to check that orientation is found and auto set
             #     self.set_parameter("COMPASS_EXTERN%d" % count, 1)
+            to_set = {}
             for param_set in params:
                 for param in param_set:
                     (_in, _out, value) = param
-                    self.set_parameter(_in, value)
-                    self.set_parameter(_out, value)
+                    to_set[_in] = value
+                    to_set[_out] = value
+            self.set_parameters(to_set)
             self.start_subtest("Zeroing Mag OFS parameters with Mavlink")
             self.zero_mag_offset_parameters()
             self.progress("=========================================")
@@ -5936,8 +5917,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("Values are not all unique!")
 
             self.progress("Setting parameters")
-            for param in originals.keys():
-                self.set_parameter(param, originals[param])
+            self.set_parameters(originals)
 
             self.reboot_sitl()
 
@@ -6016,17 +5996,20 @@ Also, ignores heartbeats not from our target system'''
                 "COMPASS_ODI3_Y": 0,
                 "COMPASS_ODI3_Z": 0,
             }
-            self.set_parameter("SIM_MAG_OFS_X", MAG_OFS_X)
-            self.set_parameter("SIM_MAG_OFS_Y", MAG_OFS_Y)
-            self.set_parameter("SIM_MAG_OFS_Z", MAG_OFS_Z)
+            self.set_parameters({
+                "SIM_MAG_OFS_X": MAG_OFS_X,
+                "SIM_MAG_OFS_Y": MAG_OFS_Y,
+                "SIM_MAG_OFS_Z": MAG_OFS_Z,
 
-            self.set_parameter("SIM_MAG2_OFS_X", MAG_OFS_X)
-            self.set_parameter("SIM_MAG2_OFS_Y", MAG_OFS_Y)
-            self.set_parameter("SIM_MAG2_OFS_Z", MAG_OFS_Z)
+                "SIM_MAG2_OFS_X": MAG_OFS_X,
+                "SIM_MAG2_OFS_Y": MAG_OFS_Y,
+                "SIM_MAG2_OFS_Z": MAG_OFS_Z,
 
-            self.set_parameter("SIM_MAG3_OFS_X", MAG_OFS_X)
-            self.set_parameter("SIM_MAG3_OFS_Y", MAG_OFS_Y)
-            self.set_parameter("SIM_MAG3_OFS_Z", MAG_OFS_Z)
+                "SIM_MAG3_OFS_X": MAG_OFS_X,
+                "SIM_MAG3_OFS_Y": MAG_OFS_Y,
+                "SIM_MAG3_OFS_Z": MAG_OFS_Z,
+            })
+
             # set to some sensible-ish initial values.  If your initial
             # offsets are way, way off you can get some very odd effects.
             for param in wanted:
@@ -6845,18 +6828,20 @@ Also, ignores heartbeats not from our target system'''
 
     def test_gripper(self):
         self.context_push()
-        self.set_parameter("GRIP_ENABLE", 1)
-        self.set_parameter("GRIP_GRAB", 2000)
-        self.set_parameter("GRIP_RELEASE", 1000)
-        self.set_parameter("GRIP_TYPE", 1)
-        self.set_parameter("SIM_GRPS_ENABLE", 1)
-        self.set_parameter("SIM_GRPS_PIN", 8)
-        self.set_parameter("SERVO8_FUNCTION", 28)
-        self.set_parameter("SERVO8_MIN", 1000)
-        self.set_parameter("SERVO8_MAX", 2000)
-        self.set_parameter("SERVO9_MIN", 1000)
-        self.set_parameter("SERVO9_MAX", 2000)
-        self.set_parameter("RC9_OPTION", 19)
+        self.set_parameters({
+            "GRIP_ENABLE": 1,
+            "GRIP_GRAB": 2000,
+            "GRIP_RELEASE": 1000,
+            "GRIP_TYPE": 1,
+            "SIM_GRPS_ENABLE": 1,
+            "SIM_GRPS_PIN": 8,
+            "SERVO8_FUNCTION": 28,
+            "SERVO8_MIN": 1000,
+            "SERVO8_MAX": 2000,
+            "SERVO9_MIN": 1000,
+            "SERVO9_MAX": 2000,
+            "RC9_OPTION": 19,
+        })
         self.set_rc(9, 1500)
         self.reboot_sitl()
         self.progress("Waiting for ready to arm")
