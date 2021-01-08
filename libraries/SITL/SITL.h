@@ -9,6 +9,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -98,6 +99,7 @@ public:
         AP_Param::setup_object_defaults(this, var_info3);
         AP_Param::setup_object_defaults(this, var_gps);
         AP_Param::setup_object_defaults(this, var_mag);
+        AP_Param::setup_object_defaults(this, var_ins);
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
@@ -152,6 +154,7 @@ public:
     static const struct AP_Param::GroupInfo var_info3[];
     static const struct AP_Param::GroupInfo var_gps[];
     static const struct AP_Param::GroupInfo var_mag[];
+    static const struct AP_Param::GroupInfo var_ins[];
 #ifdef SFML_JOYSTICK
     static const struct AP_Param::GroupInfo var_sfml_joystick[];
 #endif //SFML_JOYSTICK
@@ -446,6 +449,13 @@ public:
     // get the apparent wind speed and direction as set by external physics backend
     float get_apparent_wind_dir(){return state.wind_vane_apparent.direction;}
     float get_apparent_wind_spd(){return state.wind_vane_apparent.speed;}
+
+    // IMU temperature calibration params
+    AP_Float imu_temp_start;
+    AP_Float imu_temp_end;
+    AP_Float imu_temp_tconst;
+    AP_Float imu_temp_fixed;
+    AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
 };
 
 } // namespace SITL
