@@ -194,9 +194,12 @@ void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, 
     cal_temp = constrain_float(cal_temp, temp_min, temp_max);
 
     const float tmid = (temp_max + temp_min)*0.5;
+    if (tmid <= 0) {
+        return;
+    }
 
     // get the polynomial correction for the difference between the
-    // current temperature and the temperature we are at now
+    // current temperature and the mid temperature
     v -= polynomial_eval(temperature-tmid, coeff);
 
     // we need to add the correction for the temperature
@@ -214,6 +217,20 @@ void AP_InertialSensor::TCal::correct_accel(float temperature, float cal_temp, V
 void AP_InertialSensor::TCal::correct_gyro(float temperature, float cal_temp, Vector3f &gyro) const
 {
     correct_sensor(temperature, cal_temp, gyro_coeff, gyro);
+}
+
+void AP_InertialSensor::TCal::sitl_apply_accel(float temperature, Vector3f &accel) const
+{
+    Vector3f v;
+    correct_sensor(temperature, 0.5*(temp_max+temp_min), accel_coeff, v);
+    accel -= v;
+}
+
+void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro) const
+{
+    Vector3f v;
+    correct_sensor(temperature, 0.5*(temp_max+temp_min), gyro_coeff, v);
+    gyro -= v;
 }
 
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
