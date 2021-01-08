@@ -179,7 +179,9 @@ Vector3f AP_InertialSensor::TCal::polynomial_eval(float tdiff, const AP_Vector3f
 {
     // evaluate order 3 polynomial
     const Vector3f *c = (Vector3f *)&coeff[0];
-    return (c[0] + (c[1] + c[2]*tdiff)*tdiff)*tdiff;
+    // this scale factor ensures params are easy to work with in GUI parameter editors
+    const float scale_factor = 1.0e-6;
+    return (c[0] + (c[1] + c[2]*tdiff)*tdiff)*tdiff*scale_factor;
 }
 
 /*
@@ -200,13 +202,13 @@ void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, 
 
     // get the polynomial correction for the difference between the
     // current temperature and the mid temperature
-    v -= polynomial_eval(temperature-tmid, coeff);
+    v -= polynomial_eval(temperature - tmid, coeff);
 
     // we need to add the correction for the temperature
     // difference between the tmid, which is the reference used for
     // the calibration process, and the cal_temp, which is the
     // temperature that the offsets and scale factors was setup for
-    v += polynomial_eval(cal_temp-tmid, coeff);
+    v += polynomial_eval(cal_temp - tmid, coeff);
 }
 
 void AP_InertialSensor::TCal::correct_accel(float temperature, float cal_temp, Vector3f &accel) const
