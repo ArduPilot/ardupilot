@@ -367,15 +367,17 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     }
 
     // vertical proximity limits
-    float proximity_alt_diff;
     AP_Proximity *proximity = AP::proximity();
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled && proximity) {
+        float proximity_alt_diff;
 
-    // use distance from upward proximity sensor if closer than the ones calculated above
-    if (proximity && proximity->get_upward_distance(proximity_alt_diff)) {
-        proximity_alt_diff -= _margin;
-        if (!limit_max_alt || (proximity_alt_diff < alt_max_diff)) {
-            alt_max_diff = proximity_alt_diff;
-            limit_max_alt = true;
+        // use distance from upward proximity sensor if closer than the ones calculated above
+        if (proximity->get_upward_distance(proximity_alt_diff)) {
+            proximity_alt_diff -= _margin;
+            if (!limit_max_alt || (proximity_alt_diff < alt_max_diff)) {
+                alt_max_diff = proximity_alt_diff;
+                limit_max_alt = true;
+            }
         }
     }
 
