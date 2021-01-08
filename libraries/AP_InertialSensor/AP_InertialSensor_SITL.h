@@ -28,6 +28,7 @@ private:
     float gyro_drift(void);
     void generate_accel();
     void generate_gyro();
+    float get_temperature(void);
 
     SITL::SITL *sitl;
 

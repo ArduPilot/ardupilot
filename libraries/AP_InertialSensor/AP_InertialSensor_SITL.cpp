@@ -44,6 +44,20 @@ static float calculate_noise(float noise, float noise_variation) {
     return noise * (1.0f + noise_variation * rand_float());
 }
 
+float AP_InertialSensor_SITL::get_temperature(void)
+{
+    if (!is_zero(sitl->imu_temp_fixed)) {
+        // user wants fixed temperature
+        return sitl->imu_temp_fixed;
+    }
+    // follow a curve with given start, end and time constant
+    const float tsec = AP_HAL::millis() * 0.001f;
+    const float T0 = sitl->imu_temp_start;
+    const float T1 = sitl->imu_temp_end;
+    const float tconst = sitl->imu_temp_tconst;
+    return T1 - (T1 - T0) * expf(-tsec / tconst);
+}
+
 /*
   generate an accelerometer sample
  */
@@ -51,6 +65,9 @@ void AP_InertialSensor_SITL::generate_accel()
 {
     Vector3f accel_accum;
     uint8_t nsamples = enable_fast_sampling(accel_instance) ? 4 : 1;
+
+    float T = get_temperature();
+
     for (uint8_t j = 0; j < nsamples; j++) {
 
         // add accel bias and noise
@@ -143,6 +160,8 @@ void AP_InertialSensor_SITL::generate_accel()
 
         Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
 
+        sitl->imu_tcal[gyro_instance].sitl_apply_accel(T, accel);
+
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
 
         accel_accum += accel;
@@ -152,7 +171,7 @@ void AP_InertialSensor_SITL::generate_accel()
     _rotate_and_correct_accel(accel_instance, accel_accum);
     _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
 
-    _publish_temperature(accel_instance, 23);
+    _publish_temperature(accel_instance, get_temperature());
 }
 
 /*
@@ -223,6 +242,8 @@ void AP_InertialSensor_SITL::generate_gyro()
         }
 
         Vector3f gyro = Vector3f(p, q, r);
+
+        sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);
 
         // add in gyro scaling
         Vector3f scale = sitl->gyro_scale;
