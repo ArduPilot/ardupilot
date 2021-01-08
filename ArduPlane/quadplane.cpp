@@ -504,7 +504,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Param: TAILSIT_DSKLD
     // @DisplayName: Tailsitter disk loading
     // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. Only used with Q_TAILSIT_GSCMSK = 4
-    // @Units: kg/m.m
+    // @Units: kg/m/m
     // @Range: 0 50
     // @User: Standard
     AP_GROUPINFO("TAILSIT_DSKLD", 21, QuadPlane, tailsitter.disk_loading, 0),
