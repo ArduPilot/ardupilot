@@ -229,7 +229,7 @@ void Plane::Log_Write_AETR()
         ,elevator : SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
-        ,flap     : (int16_t)control_flap_auto.get_scaled_output_slewed_pct()
+        ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));

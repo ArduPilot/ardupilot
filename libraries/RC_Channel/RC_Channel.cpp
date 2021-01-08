@@ -332,9 +332,9 @@ RC_Channel::percent_input() const
  */
 float RC_Channel::percent_input_dz()
 {
-    if (radio_in <= radio_min) {
+    if (radio_in <= radio_min+dead_zone) {
         percent_input_dz_last = reversed?100:0;
-    } else if (radio_in >= radio_max) {
+    } else if (radio_in >= radio_max-dead_zone) {
         percent_input_dz_last = reversed?0:100;
     } else if ((radio_in >= percent_input_dz_last+dead_zone) || (radio_in <= percent_input_dz_last-dead_zone)) {
         // outside deadband, update value

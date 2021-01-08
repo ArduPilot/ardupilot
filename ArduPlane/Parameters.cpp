@@ -1265,10 +1265,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Trim flap
     // @Description: Auto flap to apply when above FLAP1_SPEED and FLAP2_SPEED
     // @Units: %
-    // @Range: 0 100
+    // @Range: -100 100
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("FLAP_TRIM", 25, ParametersG2, flap_trim, 0),
+    AP_GROUPINFO("FLAP_TRIM", 25, ParametersG2, flap_trim_percent, 0),
 
 #if MODE_FOLLOW_ENABLED == ENABLED
     // @Group: FOLL
@@ -1381,9 +1381,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FLAP_AIL_MIX_MAX
     // @DisplayName: Flap Aileron Mix Max
-    // @Description: Maximum contribution from flaps into flaperon reserving headroom for aileron control.
+    // @Description: Maximum contribution from flaps into flaperon output to preserve headroom for aileron control. Value is internally limited to 90% to prevent the flap from saturating the aileron.
     // @Units: %
-    // @Range: 0 100
+    // @Range: 0 90
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("FLAP_AIL_MIX_MAX", 40, ParametersG2, flap_max_allowed_contribution_to_flaperon_pct, 80),

@@ -1113,34 +1113,37 @@ private:
 
     struct Slew_Object {
     public:
-        float scaled_output;
+        float target;
+        float slewrate;
 
-        float get_scaled_output_slewed_pct() const { return _scaled_output_slewed_norm * 100.0f; }
-        void set_slewrate(float slewrate) { _slewrate = slewrate * 0.01f; }
+        float get_target_slewed() const { return _target_slewed; }
+        bool is_slewing() const { return !is_equal(target, _target_slewed); }
 
         void update_slew(const float g_Dt) {
-            const float max_change = g_Dt * _slewrate;
-            const float scaled_output_norm = scaled_output*0.01f;
+            if (slewrate <= 0) {
+                _target_slewed = target;
+                return;
+            }
+            const float max_change = g_Dt * slewrate;
 
-            if ((scaled_output_norm - _scaled_output_slewed_norm) > max_change) {
-                _scaled_output_slewed_norm += max_change;
-            } else if ((scaled_output_norm - _scaled_output_slewed_norm) < -max_change) {
-                _scaled_output_slewed_norm -= max_change;
+            if ((target - _target_slewed) > max_change) {
+                _target_slewed += max_change;
+            } else if ((target - _target_slewed) < -max_change) {
+                _target_slewed -= max_change;
             } else {
-                _scaled_output_slewed_norm = scaled_output_norm;
+                _target_slewed = target;
             }
         };
 
     private:
-        float _scaled_output_slewed_norm;
-        float _slewrate;
+        float _target_slewed;
     };
 
-    Slew_Object control_airbrake;
-    Slew_Object control_flap;
-    Slew_Object control_flap_auto;
-    Slew_Object control_crow_inner;
-    Slew_Object control_crow_outer;
+    Slew_Object control_airbrake_pct;
+    Slew_Object control_flap_pct;
+    Slew_Object control_flap_auto_pct;
+    Slew_Object control_crow_norm_inner;
+    Slew_Object control_crow_norm_outer;
 
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {

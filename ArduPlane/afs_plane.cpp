@@ -28,8 +28,8 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
         plane.landing.terminate();
     } else {
         // aerodynamic termination is the default approach to termination
-        plane.control_flap_auto.scaled_output = 100;
-        plane.control_flap.scaled_output = 100;
+        plane.control_flap_auto_pct.target = 100;
+        plane.control_flap_pct.target = 100;
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, SERVO_MAX);
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, SERVO_MAX);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, SERVO_MAX);

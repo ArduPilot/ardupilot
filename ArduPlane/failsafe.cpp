@@ -95,8 +95,8 @@ void Plane::failsafe_check(void)
         // setup secondary output channels that do have
         // corresponding input channels
         SRV_Channels::copy_radio_in_out(SRV_Channel::k_manual, true);
-        control_flap.scaled_output = 0;
-        control_flap_auto.scaled_output = 0;
+        control_flap_pct.target = 0;
+        control_flap_auto_pct.target = 0;
 
         // setup flaperons
         flaperon_update();

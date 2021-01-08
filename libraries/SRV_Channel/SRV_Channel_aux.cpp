@@ -98,6 +98,7 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_flap:
     case k_flap_auto:
     case k_egg_drop:
+    case k_airbrake:
         set_range(100);
         break;
     case k_heli_rsc:
@@ -128,14 +129,14 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_roll_out:
     case k_pitch_out:
     case k_yaw_out:
-    case k_crow_inner:
     case k_crow_outer:
+    case k_crow_inner:
         set_angle(4500);
         break;
+
     case k_throttle:
     case k_throttleLeft:
     case k_throttleRight:
-    case k_airbrake:
         // fixed wing throttle
         set_range(100);
         break;
