@@ -880,13 +880,15 @@ class AutoTestCopter(AutoTest):
 
     def test_battery_failsafe(self, timeout=300):
         self.progress("Configure battery failsafe parameters")
-        self.set_parameter('SIM_SPEEDUP', 4)
-        self.set_parameter('BATT_LOW_VOLT', 11.5)
-        self.set_parameter('BATT_CRT_VOLT', 10.1)
-        self.set_parameter('BATT_FS_LOW_ACT', 0)
-        self.set_parameter('BATT_FS_CRT_ACT', 0)
-        self.set_parameter('FS_OPTIONS', 0)
-        self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
+        self.set_parameters({
+            'SIM_SPEEDUP': 4,
+            'BATT_LOW_VOLT': 11.5,
+            'BATT_CRT_VOLT': 10.1,
+            'BATT_FS_LOW_ACT': 0,
+            'BATT_FS_CRT_ACT': 0,
+            'FS_OPTIONS': 0,
+            'SIM_BATT_VOLTAGE': 12.5,
+        })
 
         # Trigger low battery condition with failsafe disabled. Verify no action taken.
         self.start_subtest("Batt failsafe disabled test")
@@ -2092,17 +2094,19 @@ class AutoTestCopter(AutoTest):
         try:
             self.set_rc_default()
             # magic tridge EKF type that dramatically speeds up the test
-            self.set_parameter("AHRS_EKF_TYPE", 10)
-            self.set_parameter("INS_LOG_BAT_MASK", 3)
-            self.set_parameter("INS_LOG_BAT_OPT", 0)
-            self.set_parameter("LOG_BITMASK", 958)
-            self.set_parameter("LOG_DISARMED", 0)
-            self.set_parameter("SIM_VIB_MOT_MAX", 350)
-            # these are real values taken from a 180mm Quad
-            self.set_parameter("SIM_GYR_RND", 20)
-            self.set_parameter("SIM_ACC_RND", 5)
-            self.set_parameter("SIM_ACC2_RND", 5)
-            self.set_parameter("SIM_INS_THR_MIN", 0.1)
+            self.set_parameters({
+                "AHRS_EKF_TYPE": 10,
+                "INS_LOG_BAT_MASK": 3,
+                "INS_LOG_BAT_OPT": 0,
+                "LOG_BITMASK": 958,
+                "LOG_DISARMED": 0,
+                "SIM_VIB_MOT_MAX": 350,
+                # these are real values taken from a 180mm Quad:
+                "SIM_GYR_RND": 20,
+                "SIM_ACC_RND": 5,
+                "SIM_ACC2_RND": 5,
+                "SIM_INS_THR_MIN": 0.1,
+            })
             self.reboot_sitl()
 
             self.takeoff(15, mode="ALT_HOLD")
@@ -2125,11 +2129,13 @@ class AutoTestCopter(AutoTest):
                 self.progress("Detected motor peak at %fHz" % freq)
 
             # now add a notch and check that post-filter the peak is squashed below 40dB
-            self.set_parameter("INS_LOG_BAT_OPT", 2)
-            self.set_parameter("INS_NOTCH_ENABLE", 1)
-            self.set_parameter("INS_NOTCH_FREQ", freq)
-            self.set_parameter("INS_NOTCH_ATT", 50)
-            self.set_parameter("INS_NOTCH_BW", freq/2)
+            self.set_parameters({
+                "INS_LOG_BAT_OPT": 2,
+                "INS_NOTCH_ENABLE": 1,
+                "INS_NOTCH_FREQ": freq,
+                "INS_NOTCH_ATT": 50,
+                "INS_NOTCH_BW": freq/2,
+            })
             self.reboot_sitl()
 
             self.takeoff(15, mode="ALT_HOLD")
@@ -2254,18 +2260,20 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         ex = None
         try:
-            self.set_parameter("VISO_TYPE", 2)      # enable vicon
-            self.set_parameter("SERIAL5_PROTOCOL", 2)
-            self.set_parameter("EK3_ENABLE", 1)
-            self.set_parameter("EK3_SRC2_POSXY", 6) # External Nav
-            self.set_parameter("EK3_SRC2_POSZ", 6)  # External Nav
-            self.set_parameter("EK3_SRC2_VELXY", 6) # External Nav
-            self.set_parameter("EK3_SRC2_VELZ", 6)  # External Nav
-            self.set_parameter("EK3_SRC2_YAW", 6)   # External Nav
-            self.set_parameter("RC7_OPTION", 80)    # RC aux switch 7 set to Viso Align
-            self.set_parameter("RC8_OPTION", 90)    # RC aux switch 8 set to EKF source selector
-            self.set_parameter("EK2_ENABLE", 0)
-            self.set_parameter("AHRS_EKF_TYPE", 3)
+            self.set_parameters({
+                "VISO_TYPE": 2,      # enable vicon
+                "SERIAL5_PROTOCOL": 2,
+                "EK3_ENABLE": 1,
+                "EK3_SRC2_POSXY": 6, # External Nav
+                "EK3_SRC2_POSZ": 6,  # External Nav
+                "EK3_SRC2_VELXY": 6, # External Nav
+                "EK3_SRC2_VELZ": 6,  # External Nav
+                "EK3_SRC2_YAW": 6,   # External Nav
+                "RC7_OPTION": 80,    # RC aux switch 7 set to Viso Align
+                "RC8_OPTION": 90,    # RC aux switch 8 set to EKF source selector
+                "EK2_ENABLE": 0,
+                "AHRS_EKF_TYPE": 3,
+            })
             self.reboot_sitl()
 
             # switch to use GPS
@@ -2548,10 +2556,12 @@ class AutoTestCopter(AutoTest):
         try:
             self.set_analog_rangefinder_parameters()
 
-            self.set_parameter("RNGFND1_MAX_CM", 1500)
-            self.set_parameter("EK2_RNG_USE_HGT", 70)
-            self.set_parameter("EK2_ENABLE", 1)
-            self.set_parameter("AHRS_EKF_TYPE", 2)
+            self.set_parameters({
+                "RNGFND1_MAX_CM": 1500,
+                "EK2_RNG_USE_HGT": 70,
+                "EK2_ENABLE": 1,
+                "AHRS_EKF_TYPE": 2,
+            })
 
             self.reboot_sitl() # needed for both rangefinder and initial position
             self.assert_vehicle_location_is_at_startup_location()
@@ -4052,9 +4062,11 @@ class AutoTestCopter(AutoTest):
     def fly_throw_mode(self):
         # test boomerang mode:
         self.progress("Throwing vehicle away")
-        self.set_parameter("THROW_NEXTMODE", 6)
-        self.set_parameter("SIM_SHOVE_Z", -30)
-        self.set_parameter("SIM_SHOVE_X", -20)
+        self.set_parameters({
+            "THROW_NEXTMODE": 6,
+            "SIM_SHOVE_Z": -30,
+            "SIM_SHOVE_X": -20,
+        })
         self.change_mode('THROW')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -5683,33 +5695,35 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def test_replay_gps_bit(self):
-        self.set_parameter("LOG_REPLAY", 1)
-        self.set_parameter("LOG_DISARMED", 1)
-        self.set_parameter("EK3_ENABLE", 1)
-        self.set_parameter("EK2_ENABLE", 1)
-        self.set_parameter("AHRS_TRIM_X", 0.01)
-        self.set_parameter("AHRS_TRIM_Y", -0.03)
-        self.set_parameter("GPS_TYPE2", 1)
-        self.set_parameter("GPS_POS1_X", 0.1)
-        self.set_parameter("GPS_POS1_Y", 0.2)
-        self.set_parameter("GPS_POS1_Z", 0.3)
-        self.set_parameter("GPS_POS2_X", -0.1)
-        self.set_parameter("GPS_POS2_Y", -0.02)
-        self.set_parameter("GPS_POS2_Z", -0.31)
-        self.set_parameter("INS_POS1_X", 0.12)
-        self.set_parameter("INS_POS1_Y", 0.14)
-        self.set_parameter("INS_POS1_Z", -0.02)
-        self.set_parameter("INS_POS2_X", 0.07)
-        self.set_parameter("INS_POS2_Y", 0.012)
-        self.set_parameter("INS_POS2_Z", -0.06)
-        self.set_parameter("RNGFND1_TYPE", 1)
-        self.set_parameter("RNGFND1_PIN", 0)
-        self.set_parameter("RNGFND1_SCALING", 30)
-        self.set_parameter("RNGFND1_POS_X", 0.17)
-        self.set_parameter("RNGFND1_POS_Y", -0.07)
-        self.set_parameter("RNGFND1_POS_Z", -0.005)
-        self.set_parameter("SIM_SONAR_SCALE", 30)
-        self.set_parameter("SIM_GPS2_DISABLE", 0)
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 1,
+            "AHRS_TRIM_X": 0.01,
+            "AHRS_TRIM_Y": -0.03,
+            "GPS_TYPE2": 1,
+            "GPS_POS1_X": 0.1,
+            "GPS_POS1_Y": 0.2,
+            "GPS_POS1_Z": 0.3,
+            "GPS_POS2_X": -0.1,
+            "GPS_POS2_Y": -0.02,
+            "GPS_POS2_Z": -0.31,
+            "INS_POS1_X": 0.12,
+            "INS_POS1_Y": 0.14,
+            "INS_POS1_Z": -0.02,
+            "INS_POS2_X": 0.07,
+            "INS_POS2_Y": 0.012,
+            "INS_POS2_Z": -0.06,
+            "RNGFND1_TYPE": 1,
+            "RNGFND1_PIN": 0,
+            "RNGFND1_SCALING": 30,
+            "RNGFND1_POS_X": 0.17,
+            "RNGFND1_POS_Y": -0.07,
+            "RNGFND1_POS_Z": -0.005,
+            "SIM_SONAR_SCALE": 30,
+            "SIM_GPS2_DISABLE": 0,
+        })
         self.reboot_sitl()
 
         current_log_filepath = self.current_onboard_log_filepath()

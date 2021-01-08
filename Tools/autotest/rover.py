@@ -242,24 +242,26 @@ class AutoTestRover(AutoTest):
             spinner_ch_trim = 1510
             spinner_ch_max = 1975
 
-            self.set_parameter("SPRAY_ENABLE", 1)
+            self.set_parameters({
+                "SPRAY_ENABLE": 1,
 
-            self.set_parameter("SERVO%u_FUNCTION" % pump_ch, 22)
-            self.set_parameter("SERVO%u_MIN" % pump_ch, pump_ch_min)
-            self.set_parameter("SERVO%u_TRIM" % pump_ch, pump_ch_trim)
-            self.set_parameter("SERVO%u_MAX" % pump_ch, pump_ch_max)
+                "SERVO%u_FUNCTION" % pump_ch: 22,
+                "SERVO%u_MIN" % pump_ch: pump_ch_min,
+                "SERVO%u_TRIM" % pump_ch: pump_ch_trim,
+                "SERVO%u_MAX" % pump_ch: pump_ch_max,
 
-            self.set_parameter("SERVO%u_FUNCTION" % spinner_ch, 23)
-            self.set_parameter("SERVO%u_MIN" % spinner_ch, spinner_ch_min)
-            self.set_parameter("SERVO%u_TRIM" % spinner_ch, spinner_ch_trim)
-            self.set_parameter("SERVO%u_MAX" % spinner_ch, spinner_ch_max)
+                "SERVO%u_FUNCTION" % spinner_ch: 23,
+                "SERVO%u_MIN" % spinner_ch: spinner_ch_min,
+                "SERVO%u_TRIM" % spinner_ch: spinner_ch_trim,
+                "SERVO%u_MAX" % spinner_ch: spinner_ch_max,
 
-            self.set_parameter("SIM_SPR_ENABLE", 1)
-            self.set_parameter("SIM_SPR_PUMP", pump_ch)
-            self.set_parameter("SIM_SPR_SPIN", spinner_ch)
+                "SIM_SPR_ENABLE": 1,
+                "SIM_SPR_PUMP": pump_ch,
+                "SIM_SPR_SPIN": spinner_ch,
 
-            self.set_parameter("RC%u_OPTION" % rc_ch, 15)
-            self.set_parameter("LOG_DISARMED", 1)
+                "RC%u_OPTION" % rc_ch: 15,
+                "LOG_DISARMED": 1,
+            })
 
             self.reboot_sitl()
 
