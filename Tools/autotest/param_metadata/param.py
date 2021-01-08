@@ -108,7 +108,6 @@ known_units = {
              'octal'   : 'octal'                 ,
              'RPM'     : 'Revolutions Per Minute',
              'kg/m/m'  : 'kilograms per square meter', # metre is the SI unit name, meter is the american spelling of it
-             'kg/m.m'  : 'kilogram per meter squared'
              }
 
 required_param_fields = [
