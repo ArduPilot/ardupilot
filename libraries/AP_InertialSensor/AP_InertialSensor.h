@@ -681,11 +681,15 @@ private:
     uint8_t imu_kill_mask;
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
+public:
+    // TCal class is public for use by SITL
     class TCal {
     public:
         static const struct AP_Param::GroupInfo var_info[];
         void correct_accel(float temperature, float cal_temp, Vector3f &accel) const;
         void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
+        void sitl_apply_accel(float temperature, Vector3f &accel) const;
+        void sitl_apply_gyro(float temperature, Vector3f &accel) const;
     private:
         AP_Int8 enable;
         AP_Float temp_min;
@@ -698,6 +702,7 @@ private:
         void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
         Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
     };
+private:
     TCal tcal[INS_MAX_INSTANCES];
 
     // temperature that last calibration was run at
