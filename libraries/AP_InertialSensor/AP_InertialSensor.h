@@ -31,6 +31,11 @@
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
+#ifndef HAL_INS_TEMPERATURE_CAL_ENABLE
+#define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
+
+
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
@@ -99,7 +104,7 @@ public:
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
-    bool calibrating() const { return _calibrating; }
+    bool calibrating() const;
 
     /// Perform cold-start initialisation for just the gyros.
     ///
@@ -596,10 +601,11 @@ private:
     // are we in HIL mode?
     bool _hil_mode:1;
 
-    // are gyros or accels currently being calibrated
-    bool _calibrating:1;
-
     bool _backends_detected:1;
+
+    // are gyros or accels currently being calibrated
+    bool _calibrating_accel;
+    bool _calibrating_gyro;
 
     // the delta time in seconds for the last sample
     float _delta_time;
@@ -673,6 +679,31 @@ private:
     uint32_t _startup_ms;
 
     uint8_t imu_kill_mask;
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    class TCal {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+        void correct_accel(float temperature, float cal_temp, Vector3f &accel) const;
+        void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
+    private:
+        AP_Int8 enable;
+        AP_Float temp_min;
+        AP_Float temp_max;
+        AP_Vector3f accel_coeff[3];
+        AP_Vector3f gyro_coeff[3];
+        Vector3f accel_tref;
+        Vector3f gyro_tref;
+
+        void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
+        Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
+    };
+    TCal tcal[INS_MAX_INSTANCES];
+
+    // temperature that last calibration was run at
+    AP_Float caltemp_accel[INS_MAX_INSTANCES];
+    AP_Float caltemp_gyro[INS_MAX_INSTANCES];
+#endif
 };
 
 namespace AP {
