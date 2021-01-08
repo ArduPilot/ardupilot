@@ -2165,8 +2165,9 @@ class AutoTest(ABC):
 
         self.progress("Drained %u messages from mav (%s)" % (count, rate), send_statustext=False)
 
-    def do_timesync_roundtrip(self):
-        self.progress("Doing timesync roundtrip")
+    def do_timesync_roundtrip(self, quiet=False):
+        if not quiet:
+            self.progress("Doing timesync roundtrip")
         tstart = self.get_sim_time()
         self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
         while True:
@@ -2174,7 +2175,8 @@ class AutoTest(ABC):
             if now - tstart > 1:
                 raise AutoTestTimeoutException("Did not get timesync response")
             m = self.mav.recv_match(type='TIMESYNC', blocking=True, timeout=1)
-            self.progress("Received: %s" % str(m))
+            if not quiet:
+                self.progress("Received: %s" % str(m))
             if m is None:
                 continue
             if m.tc1 == 0:
@@ -2193,7 +2195,8 @@ class AutoTest(ABC):
 #            if m.get_srcComponent() != self.mav.target_component:
 #                self.progress("response from component other than our target (got=%u want=%u)" % (m.get_srcComponent(), self.mav.target_component))
 #                continue
-            self.progress("Received TIMESYNC response after %fs" % (now - tstart))
+            if not quiet:
+                self.progress("Received TIMESYNC response after %fs" % (now - tstart))
             self.timesync_number += 1
             break
 
@@ -3506,35 +3509,102 @@ class AutoTest(ABC):
             return self.send_set_parameter_mavproxy(name, value)
         return self.send_set_parameter_direct(name, value)
 
-    def set_parameter(self, name, value, add_to_context=True, epsilon=0.0002, retries=10, verbose=True):
+    def set_parameter(self, name, value, **kwargs):
+        self.set_parameters({name: value }, **kwargs)
+
+
+    def set_parameters(self, parameters, add_to_context=True, epsilon=0.000012, retries=None, verbose=True):
         """Set parameters from vehicle."""
-        if verbose:
-            self.progress("Setting %s to %f" % (name, value))
-        old_value = self.get_parameter(name, attempts=2)
-        for i in range(1, retries+2):
-            self.send_set_parameter(name, value)
-            # ArduPilot instantly volunteers the new value:
-            m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=5)
-            if verbose:
-                self.progress("set_parameter(%s): %s" % (name, str(m), ))
-            if m is None:
-                raise NotAchievedException("Did not receive volunteered parameter %s" % str(name))
-            returned_value = m.param_value
-            delta = float(value) - returned_value
-            if abs(delta) < epsilon:
-                # yes, near-enough-to-equal.
-                if add_to_context:
-                    context_param_name_list = [p[0] for p in self.context_get().parameters]
-                    if name.upper() not in context_param_name_list:
-                        self.context_get().parameters.append((name, old_value))
-                if self.should_fetch_all_for_parameter_change(name.upper()) and value != 0:
-                    self.fetch_parameters()
+        want = copy.copy(parameters)
+        self.progress("set_parameters: (%s)" % str(want))
+        self.drain_mav_unparsed()
+        if len(want) == 0:
+            return
+
+        if retries is None:
+            # we can easily fill ArduPilot's param-set/param-get queue
+            # which is quite short.  So we retry *a lot*.
+            retries = (len(want)+1) * 5
+
+        param_value_messages = []
+        def add_param_value(mav, m):
+            t = m.get_type()
+            if t != "PARAM_VALUE":
                 return
-        raise ValueError("Param fetch returned incorrect value for (%s): (%s) vs (%s)"
-                         % (name, returned_value, value))
+            param_value_messages.append(m)
+
+        self.install_message_hook(add_param_value)
+
+        original_values = {}
+        autopilot_values = {}
+        tstart = self.get_sim_time()
+        for i in range(retries):
+            self.drain_mav(quiet=True)
+            received = set()
+            for (name, value) in want.items():
+#                self.progress("%s want=%f autopilot=%s" % (name, value, autopilot_values.get(name, 'None')))
+                if name not in autopilot_values:
+                    self.send_get_parameter_direct(name)
+#                    self.progress("Requesting (%s) (retry=%u)" % (name, i))
+                    continue
+                delta = abs(autopilot_values[name] - value)
+                if delta < epsilon:
+                    # correct value
+                    self.progress("%s is now %f" % (name, autopilot_values[name]))
+                    if add_to_context:
+                        context_param_name_list = [p[0] for p in self.context_get().parameters]
+                        if name.upper() not in context_param_name_list:
+                            self.context_get().parameters.append((name, original_values[name]))
+                    received.add(name)
+                    continue
+                self.progress("Sending set (%s) to (%f) (old=%f)" % (name, value, original_values[name]))
+                self.send_set_parameter_direct(name, value)
+            for name in received:
+                del want[name]
+            if len(want):
+                # problem here is that a reboot can happen after we
+                # send the request but before we receive the reply:
+                try:
+                    self.do_timesync_roundtrip(quiet=True)
+                except AutoTestTimeoutException:
+                    pass
+                    # now = self.get_sim_time_cached()
+                    # if tstart > now:
+                    #     self.progress("Time wrap detected")
+                    # else:
+                    #     raise
+            do_fetch_all = False
+            for m in param_value_messages:
+                if m.param_id in want:
+                    self.progress("Received wanted PARAM_VALUE %s=%f" %
+                                  (str(m.param_id), m.param_value))
+                    autopilot_values[m.param_id] = m.param_value
+                    if m.param_id not in original_values:
+                        original_values[m.param_id] = m.param_value;
+                        if (self.should_fetch_all_for_parameter_change(m.param_id.upper()) and
+                            m.param_value != 0):
+                            do_fetch_all = True
+            param_value_messages = []
+#            if do_fetch_all:
+#                self.do_fetch_all()
+
+        self.remove_message_hook(add_param_value)
+
+        if len(want) == 0:
+            return
+        raise ValueError("Failed to set parameters (%s)" % want)
 
     def get_parameter(self, *args, **kwargs):
         return self.get_parameter_direct(*args, **kwargs)
+
+    def send_get_parameter_direct(self, name):
+        encname = name
+        if sys.version_info.major >= 3 and type(encname) != bytes:
+            encname = bytes(encname, 'ascii')
+        self.mav.mav.param_request_read_send(self.sysid_thismav(),
+                                             1,
+                                             encname,
+                                             -1)
 
     def get_parameter_direct(self, name, attempts=1, timeout=60, verbose=True):
         while attempts > 0:
@@ -3543,14 +3613,8 @@ class AutoTest(ABC):
             # we MUST parse here or collections fail where we need
             # them to work!
             self.drain_mav(quiet=True)
-            tstart = self.get_sim_time(timeout=timeout)
-            encname = name
-            if sys.version_info.major >= 3 and type(encname) != bytes:
-                encname = bytes(encname, 'ascii')
-            self.mav.mav.param_request_read_send(self.sysid_thismav(),
-                                                 1,
-                                                 encname,
-                                                 -1)
+            tstart = self.get_sim_time()
+            self.send_get_parameter_direct(name)
             while True:
                 now = self.get_sim_time_cached()
                 if tstart > now:
@@ -3602,7 +3666,6 @@ class AutoTest(ABC):
         def mh(mav, m):
             t = m.get_type()
             if t in context.collections:
-                print("m=%s" % str(m))
                 context.collections[t].append(m)
         self.install_message_hook_context(mh)
 
@@ -3632,13 +3695,10 @@ class AutoTest(ABC):
     def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
-        dead_parameters = dead.parameters
-        dead_parameters.reverse()
-        for p in dead_parameters:
-            (name, old_value) = p
-            self.set_parameter(name,
-                               old_value,
-                               add_to_context=False)
+        dead_parameters_dict = {}
+        for p in dead.parameters:
+            dead_parameters_dict[p[0]] = p[1]
+        self.set_parameters(dead_parameters_dict, add_to_context=False)
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
 
@@ -5347,11 +5407,6 @@ Also, ignores heartbeats not from our target system'''
             # tracker starts armed...
             self.disarm_vehicle(force=True)
         self.reboot_sitl()
-
-    def set_parameters(self, parameters):
-        '''set parameters from the supplied dict'''
-        for (name, value) in parameters.items():
-            self.set_parameter(name, value)
 
     def zero_mag_offset_parameters(self, compass_count=3):
         self.progress("Zeroing Mag OFS parameters")
