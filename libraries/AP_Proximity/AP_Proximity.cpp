@@ -465,7 +465,7 @@ bool AP_Proximity::get_upward_distance(float &distance) const
 bool AP_Proximity::get_downward_distance(float &distance) const
 {
     for (uint8_t i=0; i<num_instances; i++) {
-        if (get_orientation(i) == ROTATION_PITCH_270) {
+        if (get_orientation(i) == MAV_SENSOR_ROTATION_PITCH_270) {
             return get_downward_distance(i, distance);
         }
     }
