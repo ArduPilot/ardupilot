@@ -1300,7 +1300,7 @@ class AutoTestCopter(AutoTest):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
-    # fly_alt_max_fence_test - fly up until you hit the fence
+    # fly_alt_max_fence_test - fly up until you hit the fence ceiling
     def fly_alt_max_fence_test(self):
         self.takeoff(10, mode="LOITER")
         """Hold loiter position."""
@@ -1336,7 +1336,7 @@ class AutoTestCopter(AutoTest):
 
         self.zero_throttle()
 
-    # fly_alt_min_fence_test - fly down until you hit the fence
+    # fly_alt_min_fence_test - fly down until you hit the fence floor
     def fly_alt_min_fence_test(self):
         self.takeoff(30, mode="LOITER", timeout=60)
         """Hold loiter position."""
