@@ -488,12 +488,13 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
 // returns true if there is a temperature reading
 bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
 {
-    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == nullptr) {
         return false;
-    } else {
-        temperature = state[instance].temperature;
-        return (AP_HAL::millis() - state[instance].temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
-    }
+    } 
+    
+    temperature = state[instance].temperature;
+
+    return drivers[instance]->has_temperature();
 }
 
 // return true if cycle count can be provided and fills in cycles argument

@@ -43,6 +43,9 @@ public:
     // returns true if battery monitor provides individual cell voltages
     virtual bool has_cell_voltages() const { return false; }
 
+    // returns true if battery monitor provides temperature
+    virtual bool has_temperature() const { return false; }
+
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
     uint8_t capacity_remaining_pct() const;
 
