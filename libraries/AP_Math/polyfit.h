@@ -17,7 +17,7 @@ public:
     bool get_polynomial(float res[order]) const;
 
 private:
-    float mat[order][order];
-    float vec[order];
+    double mat[order][order];
+    double vec[order];
 };
 

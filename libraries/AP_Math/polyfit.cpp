@@ -9,7 +9,7 @@
 template <uint8_t order>
 void PolyFit<order>::update(float x, float y)
 {
-    float temp = 1;
+    double temp = 1;
 
     for (int8_t i = 2*(order-1); i >= 0; i--) {
         int8_t k = (i<order)?0:i - order + 1;
@@ -29,7 +29,7 @@ void PolyFit<order>::update(float x, float y)
 template <uint8_t order>
 bool PolyFit<order>::get_polynomial(float res[order]) const
 {
-    float inv_mat[order][order];
+    double inv_mat[order][order];
     if (!inverse(&mat[0][0], &inv_mat[0][0], order)) {
         return false;
     }
