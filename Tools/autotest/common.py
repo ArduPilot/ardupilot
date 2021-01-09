@@ -1529,14 +1529,26 @@ class AutoTest(ABC):
         if required_bootcount is None:
             required_bootcount = old_bootcount + 1
         while True:
+            # get_parameter calls get_sim_time.... streamrates may
+            # be zero so we need to prompt for one of these...
+            self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                          mavutil.mavlink.MAVLINK_MSG_ID_SYSTEM_TIME,
+                          0,
+                          0,
+                          0,
+                          0,
+                          0,
+                          0)
             if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
-                current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1, attempts=3)
+                current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1, attempts=1)
                 self.progress("current=%s required=%u" % (str(current_bootcount), required_bootcount))
                 if current_bootcount == required_bootcount:
                     break
             except NotAchievedException:
+                pass
+            except AutoTestTimeoutException:
                 pass
 
         # empty mav to avoid getting old timestamps:
@@ -3534,7 +3546,7 @@ class AutoTest(ABC):
             # we MUST parse here or collections fail where we need
             # them to work!
             self.drain_mav(quiet=True)
-            tstart = self.get_sim_time()
+            tstart = self.get_sim_time(timeout=timeout)
             encname = name
             if sys.version_info.major >= 3 and type(encname) != bytes:
                 encname = bytes(encname, 'ascii')
