@@ -144,6 +144,16 @@ void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(Mode::Number mode)
     }
 }
 
+int16_t AP_Avoidance_Copter::get_altitude_minimum() const
+{
+#if MODE_RTL_ENABLED == ENABLED
+    // do not descend if below RTL alt
+    return copter.g.rtl_altitude;
+#else
+    return 0;
+#endif
+}
+
 // check flight mode is avoid_adsb
 bool AP_Avoidance_Copter::check_flightmode(bool allow_mode_change)
 {
@@ -179,8 +189,8 @@ bool AP_Avoidance_Copter::handle_avoidance_vertical(const AP_Avoidance::Obstacle
         velocity_neu.z = copter.wp_nav->get_default_speed_up();
     } else {
         velocity_neu.z = -copter.wp_nav->get_default_speed_down();
-        // do not descend if below RTL alt
-        if (copter.current_loc.alt < copter.g.rtl_altitude) {
+        // do not descend if below minimum altitude
+        if (copter.current_loc.alt < get_altitude_minimum()) {
             velocity_neu.z = 0.0f;
         }
     }
@@ -238,8 +248,8 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
             velocity_neu.z *= copter.wp_nav->get_default_speed_up();
         } else {
             velocity_neu.z *= copter.wp_nav->get_default_speed_down();
-            // do not descend if below RTL alt
-            if (copter.current_loc.alt < copter.g.rtl_altitude) {
+            // do not descend if below minimum altitude
+            if (copter.current_loc.alt < get_altitude_minimum()) {
                 velocity_neu.z = 0.0f;
             }
         }
