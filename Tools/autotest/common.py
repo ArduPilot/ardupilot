@@ -1707,7 +1707,8 @@ class AutoTest(ABC):
                 if ("#define LOG_BASE_STRUCTURES" in line or
                     "#define LOG_STRUCTURE_FROM_DAL" in line or
                     "#define LOG_STRUCTURE_FROM_NAVEKF2" in line or
-                    "#define LOG_STRUCTURE_FROM_NAVEKF3" in line):
+                    "#define LOG_STRUCTURE_FROM_NAVEKF3" in line or
+                    "#define LOG_STRUCTURE_FROM_AHRS" in line):
 #                    self.progress("Moving inside")
                     state = state_inside
                 continue
