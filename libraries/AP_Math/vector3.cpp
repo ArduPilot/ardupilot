@@ -470,50 +470,9 @@ float Vector3<T>::closest_distance_between_line_and_point(const Vector3<T> &w1, 
     return dist;
 }
 
-// define for float
-template void Vector3<float>::rotate(enum Rotation);
-template void Vector3<float>::rotate_inverse(enum Rotation);
-template float Vector3<float>::length(void) const;
-template Vector3<float> Vector3<float>::operator %(const Vector3<float> &v) const;
-template float Vector3<float>::operator *(const Vector3<float> &v) const;
-template Vector3<float> Vector3<float>::operator *(const Matrix3<float> &m) const;
-template Matrix3<float> Vector3<float>::mul_rowcol(const Vector3<float> &v) const;
-template Vector3<float> &Vector3<float>::operator *=(const float num);
-template Vector3<float> &Vector3<float>::operator /=(const float num);
-template Vector3<float> &Vector3<float>::operator -=(const Vector3<float> &v);
-template Vector3<float> &Vector3<float>::operator +=(const Vector3<float> &v);
-template Vector3<float> Vector3<float>::operator /(const float num) const;
-template Vector3<float> Vector3<float>::operator *(const float num) const;
-template Vector3<float> Vector3<float>::operator +(const Vector3<float> &v) const;
-template Vector3<float> Vector3<float>::operator -(const Vector3<float> &v) const;
-template Vector3<float> Vector3<float>::operator -(void) const;
-template bool Vector3<float>::operator ==(const Vector3<float> &v) const;
-template bool Vector3<float>::operator !=(const Vector3<float> &v) const;
-template bool Vector3<float>::is_nan(void) const;
-template bool Vector3<float>::is_inf(void) const;
-template float Vector3<float>::angle(const Vector3<float> &v) const;
-template float Vector3<float>::distance_to_segment(const Vector3<float> &seg_start, const Vector3<float> &seg_end) const;
-template float Vector3<float>::closest_distance_between_line_and_point(const Vector3<float> &w1, const Vector3<float> &w2, const Vector3<float> &p);
+// define for float and double
+template class Vector3<float>;
+template class Vector3<double>;
+
 // define needed ops for Vector3l
 template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);
-
-template void Vector3<double>::rotate(enum Rotation);
-template void Vector3<double>::rotate_inverse(enum Rotation);
-template float Vector3<double>::length(void) const;
-template Vector3<double> Vector3<double>::operator %(const Vector3<double> &v) const;
-template double Vector3<double>::operator *(const Vector3<double> &v) const;
-template Vector3<double> Vector3<double>::operator *(const Matrix3<double> &m) const;
-template Matrix3<double> Vector3<double>::mul_rowcol(const Vector3<double> &v) const;
-template Vector3<double> &Vector3<double>::operator *=(const double num);
-template Vector3<double> &Vector3<double>::operator /=(const double num);
-template Vector3<double> &Vector3<double>::operator -=(const Vector3<double> &v);
-template Vector3<double> &Vector3<double>::operator +=(const Vector3<double> &v);
-template Vector3<double> Vector3<double>::operator /(const double num) const;
-template Vector3<double> Vector3<double>::operator *(const double num) const;
-template Vector3<double> Vector3<double>::operator +(const Vector3<double> &v) const;
-template Vector3<double> Vector3<double>::operator -(const Vector3<double> &v) const;
-template Vector3<double> Vector3<double>::operator -(void) const;
-template bool Vector3<double>::operator ==(const Vector3<double> &v) const;
-template bool Vector3<double>::operator !=(const Vector3<double> &v) const;
-template bool Vector3<double>::is_nan(void) const;
-template bool Vector3<double>::is_inf(void) const;
