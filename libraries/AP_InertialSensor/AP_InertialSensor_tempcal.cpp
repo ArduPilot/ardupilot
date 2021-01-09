@@ -21,6 +21,7 @@
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // this scale factor ensures params are easy to work with in GUI parameter editors
 #define SCALE_FACTOR 1.0e6
@@ -242,17 +243,70 @@ void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro)
     gyro -= v;
 }
 
+AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
+    start_temp(_start_temp),
+    tcal(_tcal)
+{
+    for (uint8_t i=0; i<2; i++) {
+        state[i].temp_filter.set_cutoff_frequency(1000, 0.5);
+        state[i].temp_filter.reset(start_temp);
+        state[i].last_temp = start_temp;
+    }
+}
+
 /*
   update polyfit with new sample
  */
-void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float temperature, PolyFit<4> pfit[3])
+void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float temperature, struct LearnState &st)
 {
-    const float tmid = 0.5 * (tcal.temp_max + start_temp);
-    const float tdiff = temperature - tmid;
+    temperature = st.temp_filter.apply(temperature);
 
-    pfit[0].update(tdiff, sample.x);
-    pfit[1].update(tdiff, sample.y);
-    pfit[2].update(tdiff, sample.z);
+    st.sum += sample;
+    st.sum_count++;
+
+    if (st.sum_count < 100 ||
+        temperature - st.last_temp < 0.5) {
+        // wait for more data
+        return;
+    }
+
+    st.sum /= st.sum_count;
+
+    const uint8_t si = &st - &state[0];
+
+    const float T = (temperature + st.last_temp) * 0.5;
+
+    if (si == 0) {
+        // we use the first accel sample as the zero baseline
+        if (accel_start.is_zero()) {
+            accel_start = st.sum;
+            start_temp = T;
+        }
+        st.sum -= accel_start;
+    }
+    
+    const float tmid = 0.5 * (tcal.temp_max + start_temp);
+    const float tdiff = T - tmid;
+
+    AP::logger().Write("TCLR", "TimeUS,I,Si,Temp,TDiff,X,Y,Z",
+                       "s#------",
+                       "F0000000",
+                       "QBBfffff",
+                       AP_HAL::micros64(),
+                       instance(),
+                       si,
+                       T,
+                       tdiff,
+                       st.sum.x, st.sum.y, st.sum.z);
+    
+    
+    st.pfit[0].update(tdiff, st.sum.x);
+    st.pfit[1].update(tdiff, st.sum.y);
+    st.pfit[2].update(tdiff, st.sum.z);
+
+    st.sum.zero();
+    st.sum_count = 0;
+    st.last_temp = temperature;
 
     if (temperature >= tcal.temp_max &&
         temperature - start_temp >= TEMP_RANGE_MIN) {
@@ -277,10 +331,7 @@ void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float
         }
     }
     if (learn != nullptr) {
-        if (learn->accel_start.is_zero()) {
-            learn->accel_start = accel;
-        }
-        learn->add_sample(accel - learn->accel_start, temperature, learn->polyfit_accel);
+        learn->add_sample(accel, temperature, learn->state[0]);
     }
 }
 
@@ -293,7 +344,7 @@ void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float t
         return;
     }
     if (learn != nullptr) {
-        learn->add_sample(gyro, temperature, learn->polyfit_gyro);
+        learn->add_sample(gyro, temperature, learn->state[1]);
     }
 }
 
@@ -303,23 +354,10 @@ void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float t
 void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
 {
     Vector3f coefficients[3];
+
     for (uint8_t i=0; i<3; i++) {
         float p[4];
-        if (!polyfit_gyro[i].get_polynomial(p)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance(), i);
-            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
-            return;
-        }
-        for (uint8_t k=0; k<3; k++) {
-            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
-        }
-    }
-    for (uint8_t k=0; k<3; k++) {
-        tcal.gyro_coeff[k].set_and_save(coefficients[k]);
-    }
-    for (uint8_t i=0; i<3; i++) {
-        float p[4];
-        if (!polyfit_accel[i].get_polynomial(p)) {
+        if (!state[0].pfit[i].get_polynomial(p)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance(), i);
             tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
             return;
@@ -330,6 +368,21 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
     }
     for (uint8_t k=0; k<3; k++) {
         tcal.accel_coeff[k].set_and_save(coefficients[k]);
+    }
+
+    for (uint8_t i=0; i<3; i++) {
+        float p[4];
+        if (!state[1].pfit[i].get_polynomial(p)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance(), i);
+            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
+            return;
+        }
+        for (uint8_t k=0; k<3; k++) {
+            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
+        }
+    }
+    for (uint8_t k=0; k<3; k++) {
+        tcal.gyro_coeff[k].set_and_save(coefficients[k]);
     }
     tcal.temp_min.set_and_save(start_temp);
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
