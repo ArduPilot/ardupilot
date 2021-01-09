@@ -199,6 +199,9 @@ bool AC_WPNav::get_wp_destination(Location& destination) const
     }
     destination.offset(dest.x*0.01f, dest.y*0.01f);
     destination.alt += dest.z;
+
+    destination.set_alt_cm(destination.alt, _terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+
     return true;
 }
 
