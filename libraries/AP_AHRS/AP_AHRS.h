@@ -610,6 +610,13 @@ public:
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+    // Logging to disk functions
+    void Write_AHRS2(void) const;
+    void Write_AOA_SSA(void);  // should be const? but it calls update functions
+    void Write_Attitude(const Vector3f &targets) const;
+    void Write_Origin(uint8_t origin_type, const Location &loc) const; 
+    void Write_POS(void) const;
+
 protected:
     void update_nmea_out();
 
