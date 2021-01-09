@@ -708,14 +708,21 @@ public:
         // class for online learning of calibration
         class Learn {
         public:
-            Learn(TCal &_tcal, float _start_temp) :
-                start_temp(_start_temp),
-                tcal(_tcal) {};
-            void add_sample(const Vector3f &sample, float temperature, PolyFit<4> pfit[3]);
+            Learn(TCal &_tcal, float _start_temp);
+
+            // state for accel/gyro (accel first)
+            struct LearnState {
+                float last_temp;
+                Vector3f sum;
+                uint32_t sum_count;
+                LowPassFilter2p<float> temp_filter;
+                PolyFit<4> pfit[3];
+            } state[2];
+
+            void add_sample(const Vector3f &sample, float temperature, LearnState &state);
             void finish_calibration(float temperature);
-            const float start_temp;
-            PolyFit<4> polyfit_gyro[3];
-            PolyFit<4> polyfit_accel[3];
+            float start_temp;
+            
             TCal &tcal;
             uint8_t instance(void) const {
                 return tcal.instance();
