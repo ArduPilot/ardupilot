@@ -13,6 +13,7 @@ from common import AutoTest
 from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
+from pymavlink.rotmat import Vector3
 
 import operator
 
@@ -1891,6 +1892,206 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
         self.fly_mission("ap1.txt")
 
+    def get_accelvec(self, m):
+        return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
+
+    def get_gyrovec(self, m):
+        return Vector3(m.xgyro, m.ygyro, m.zgyro) * 0.001 * math.degrees(1)
+
+    def test_imu_tempcal(self):
+        params = {
+            "SIM_IMUT1_ACC1_X" : 120000.000000,
+            "SIM_IMUT1_ACC1_Y" : -190000.000000,
+            "SIM_IMUT1_ACC1_Z" : 1493.864746,
+            "SIM_IMUT1_ACC2_X" : -51.624416,
+            "SIM_IMUT1_ACC2_Y" : 10.364172,
+            "SIM_IMUT1_ACC2_Z" : -7878.000000,
+            "SIM_IMUT1_ACC3_X" : -0.514242,
+            "SIM_IMUT1_ACC3_Y" : 0.862218,
+            "SIM_IMUT1_ACC3_Z" : -234.000000,
+            "SIM_IMUT1_ENABLE" : 1,
+            "SIM_IMUT1_GYR1_X" : -5122.513817,
+            "SIM_IMUT1_GYR1_Y" : -3250.470428,
+            "SIM_IMUT1_GYR1_Z" : -2136.346676,
+            "SIM_IMUT1_GYR2_X" : 30.720505,
+            "SIM_IMUT1_GYR2_Y" : 17.778447,
+            "SIM_IMUT1_GYR2_Z" : 0.765997,
+            "SIM_IMUT1_GYR3_X" : -0.003572,
+            "SIM_IMUT1_GYR3_Y" : 0.036346,
+            "SIM_IMUT1_GYR3_Z" : 0.015457,
+            "SIM_IMUT1_TMAX"   : 42.0,
+            "SIM_IMUT1_TMIN"   : 4.000000,
+            "SIM_IMUT2_ACC1_X" : -160000.000000,
+            "SIM_IMUT2_ACC1_Y" : 198730.000000,
+            "SIM_IMUT2_ACC1_Z" : 27812.000000,
+            "SIM_IMUT2_ACC2_X" : 30.658159,
+            "SIM_IMUT2_ACC2_Y" : 32.085022,
+            "SIM_IMUT2_ACC2_Z" : 1572.000000,
+            "SIM_IMUT2_ACC3_X" : 0.102912,
+            "SIM_IMUT2_ACC3_Y" : 0.229734,
+            "SIM_IMUT2_ACC3_Z" : 172.000000,
+            "SIM_IMUT2_ENABLE" : 1,
+            "SIM_IMUT2_GYR1_X" : 3173.925644,
+            "SIM_IMUT2_GYR1_Y" : -2368.312836,
+            "SIM_IMUT2_GYR1_Z" : -1796.497177,
+            "SIM_IMUT2_GYR2_X" : 13.029696,
+            "SIM_IMUT2_GYR2_Y" : -10.349280,
+            "SIM_IMUT2_GYR2_Z" : -15.082653,
+            "SIM_IMUT2_GYR3_X" : 0.004831,
+            "SIM_IMUT2_GYR3_Y" : -0.020528,
+            "SIM_IMUT2_GYR3_Z" : 0.009469,
+            "SIM_IMUT2_TMAX"   : 42.000000,
+            "SIM_IMUT2_TMIN"   : 4.000000,
+            "SIM_IMUT_END"     : 45.000000,
+            "SIM_IMUT_START"   : 3.000000,
+            "SIM_IMUT_TCONST"  : 75.000000,
+            "SIM_DRIFT_SPEED"  : 0,
+            "INS_GYR_CAL"      : 1,
+        }
+        self.progress("Setting up SITL temperature profile")
+        for p in params.keys():
+            self.set_parameter(p, params[p])
+
+        self.progress("Running accelcal")
+        self.set_parameter("SIM_IMUT_FIXED", 35)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0,0,0,0,4,0,0,
+                     timeout=5)
+        self.set_parameter("SIM_IMUT_FIXED", 3)
+        self.set_parameter("INS_TCAL1_ENABLE", 2)
+        self.set_parameter("INS_TCAL2_ENABLE", 2)
+        self.fetch_parameters()
+        self.set_parameter("INS_TCAL1_TMAX", 42)
+        self.set_parameter("INS_TCAL2_TMAX", 42)
+        self.set_parameter("INS_TCAL1_TMIN", 15)
+        self.set_parameter("INS_TCAL2_TMIN", 15)
+        self.set_parameter("SIM_SPEEDUP", 200)
+        self.mavproxy.send("set streamrate 1\n")
+        self.set_parameter("LOG_DISARMED", 1)
+        self.reboot_sitl()
+        self.set_parameter("SIM_IMUT_FIXED", 0)
+
+        self.progress("Waiting for IMU temperature")
+        tstart = self.get_sim_time()
+        timeout = 600
+        temp_ok = False
+        last_print_temp = -100
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=2)
+            if m is None:
+                raise NotAchievedException("RAW_IMU")
+            temperature = m.temperature*0.01
+            if temperature >= 43:
+                self.progress("Reached temperature %.1f" % temperature)
+                temp_ok = True
+                break
+            if temperature - last_print_temp > 1:
+                self.progress("temperature %.1f" % temperature)
+                last_print_temp = temperature
+
+        if not temp_ok:
+            raise NotAchievedException("target temperature")
+        if self.get_parameter("INS_TCAL1_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL1 did not complete")
+        if self.get_parameter("INS_TCAL2_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL2 did not complete")
+
+        self.progress("Testing with calibration enabled")
+        self.reboot_sitl()
+
+        tstart = self.get_sim_time()
+        timeout = 600
+        temp_ok = False
+        last_print_temp = -100
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=2)
+            if m is None:
+                raise NotAchievedException("RAW_IMU")
+            temperature = m.temperature*0.01
+            if temperature >= 43:
+                self.progress("Reached temperature %.1f" % temperature)
+                temp_ok = True
+                break
+            if temperature - last_print_temp > 1:
+                self.progress("temperature %.1f" % temperature)
+                last_print_temp = temperature
+
+        if not temp_ok:
+            raise NotAchievedException("target temperature")
+        if self.get_parameter("INS_TCAL1_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL1 did not complete")
+        if self.get_parameter("INS_TCAL2_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL2 did not complete")
+        
+        self.progress("Testing with compensation enabled")
+        gyro_threshold = 1.0
+        accel_threshold = 0.5
+
+        for temp in range(10,45,5):
+            self.progress("Testing temperature %.1f" % temp)
+            self.set_parameter("SIM_IMUT_FIXED", temp)
+            self.wait_heartbeat()
+            self.wait_heartbeat()
+            for msg in ['RAW_IMU', 'SCALED_IMU2']:
+                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
+                if m is None:
+                    raise NotAchievedException(msg)
+                temperature = m.temperature*0.01
+
+                if abs(temperature - temp) > 0.2:
+                    raise NotAchievedException("incorrect %s temperature %.1f should be %.1f" % (msg, temperature, temp))
+
+                accel = self.get_accelvec(m)
+                gyro = self.get_gyrovec(m)
+
+                self.progress("Checking corrected %s gyros at %.1fC length=%.1f" % (msg, temp, gyro.length()))
+                if gyro.length() > gyro_threshold:
+                    raise NotAchievedException("incorrect corrected %s gyro %s" % (msg, gyro))
+
+                accel2 = accel + Vector3(0,0,9.81)
+                self.progress("Checking corrected %s accels at %.1fC length=%.1f" % (msg, temp, accel2.length()))
+
+                if accel2.length() > accel_threshold:
+                    raise NotAchievedException("incorrect corrected %s accel %s" % (msg, accel))
+
+        self.progress("Testing with compensation disabled")
+        self.set_parameter("INS_TCAL1_ENABLE", 0)
+        self.set_parameter("INS_TCAL2_ENABLE", 0)
+
+        bad_value = False
+        for temp in range(10,45,5):
+            self.progress("Testing temperature %.1f" % temp)
+            self.set_parameter("SIM_IMUT_FIXED", temp)
+            self.wait_heartbeat()
+            self.wait_heartbeat()
+            for msg in ['RAW_IMU', 'SCALED_IMU2']:
+                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
+                if m is None:
+                    raise NotAchievedException(msg)
+                temperature = m.temperature*0.01
+
+                gyro_threshold = 1.0
+                accel_threshold = 0.5
+
+                if abs(temperature - temp) > 0.2:
+                    raise NotAchievedException("incorrect %s temperature %.1f should be %.1f" % (msg, temperature, temp))
+
+                accel = self.get_accelvec(m)
+                gyro = self.get_gyrovec(m)
+
+                self.progress("Checking uncorrected %s gyros at %.1fC length=%.1f" % (msg, temp, gyro.length()))
+                if gyro.length() > 2*gyro_threshold:
+                    bad_value = True
+
+                accel2 = accel + Vector3(0,0,9.81)
+                self.progress("Checking uncorrected %s accels at %.1fC length=%.1f" % (msg, temp, accel2.length()))
+
+                if accel2.length() > 2*accel_threshold:
+                    bad_value = True
+        if not bad_value:
+            raise NotAchievedException("uncompensated IMUs did not vary enough")
+
+        
     def ekf_lane_switch(self):
 
         self.context_push()
@@ -2196,6 +2397,10 @@ class AutoTestPlane(AutoTest):
             ("AirspeedDrivers",
              "Test AirSpeed drivers",
              self.test_airspeed_drivers),
+
+            ("IMUTempCal",
+             "Test IMU temperature calibration",
+             self.test_imu_tempcal),
 
             ("LogUpload",
              "Log upload",
