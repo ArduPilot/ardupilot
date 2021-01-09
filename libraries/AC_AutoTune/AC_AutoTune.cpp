@@ -666,7 +666,7 @@ void AC_AutoTune::control_attitude()
 
         // log this iterations lean angle and rotation rate
         Log_Write_AutoTuneDetails(lean_angle, rotation_rate);
-        AP::logger().Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         log_pids();
         break;
     }
