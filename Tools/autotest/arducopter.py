@@ -13,6 +13,7 @@ import shutil
 
 from pymavlink import mavutil
 from pymavlink import mavextra
+from pymavlink import rotmat as pymavlink_rotmat
 
 from pysim import util, rotmat
 from pysim import vehicleinfo
@@ -4912,6 +4913,82 @@ class AutoTestCopter(AutoTest):
             self.set_rc(2, 1500)
             self.do_RTL()
 
+    def OBSTACLE_DISTANCE_3D_test_angle(self, angle):
+        now = self.get_sim_time_cached()
+
+        distance = 15
+        right = distance * math.sin(math.radians(angle))
+        front = distance * math.cos(math.radians(angle))
+        down = 0
+
+        expected_distance_cm = distance * 100
+        # expected orientation
+        expected_orientation = int((angle+22.5)/45) % 8
+        self.progress("Angle %f expected orient %u" %
+                      (angle, expected_orientation))
+
+        tstart = self.get_sim_time()
+        last_send = 0
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                raise NotAchievedException("Did not get correct angle back")
+
+            if now - last_send > 0.1:
+                self.progress("ang=%f sending front=%f right=%f" %
+                              (angle, front, right))
+                self.mav.mav.obstacle_distance_3d_send(
+                    int(now*1000),  # time_boot_ms
+                    mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER,
+                    mavutil.mavlink.MAV_FRAME_BODY_FRD,
+                    65535,
+                    front,  # x (m)
+                    right,  # y (m)
+                    down,  # z (m)
+                    0,  # min_distance (m)
+                    20  # max_distance (m)
+                )
+                last_send = now
+            m = self.mav.recv_match(type="DISTANCE_SENSOR",
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+#            self.progress("Got (%s)" % str(m))
+            if m.orientation != expected_orientation:
+#                self.progress("Wrong orientation (want=%u got=%u)" %
+#                              (expected_orientation, m.orientation))
+                continue
+            if abs(m.current_distance - expected_distance_cm) > 1:
+#                self.progress("Wrong distance (want=%f got=%f)" %
+#                              (expected_distance_cm, m.current_distance))
+                continue
+            self.progress("distance-at-angle good")
+            break
+
+    def OBSTACLE_DISTANCE_3D(self):
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameters({
+                "SERIAL5_PROTOCOL": 1,
+                "PRX_TYPE": 2,
+            })
+            self.reboot_sitl()
+
+            for angle in range(0, 360):
+                self.OBSTACLE_DISTANCE_3D_test_angle(angle)
+
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def fly_proximity_avoidance_test(self):
         self.context_push()
         ex = None
@@ -6144,6 +6221,10 @@ class AutoTestCopter(AutoTest):
             ("StabilityPatch",
              "Fly stability patch",
              lambda: self.fly_stability_patch(30)), #17s
+
+            ("OBSTACLE_DISTANCE_3D",
+             "Test proximity avoidance slide behaviour in 3D",
+             self.OBSTACLE_DISTANCE_3D), #??s
 
             ("AC_Avoidance_Proximity",
              "Test proximity avoidance slide behaviour",
