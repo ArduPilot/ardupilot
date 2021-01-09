@@ -475,12 +475,12 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 #if AP_AHRS_NAVEKF_AVAILABLE
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        logger->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
     if (home_is_set()) {
-        logger->Write_Origin(LogOriginType::ahrs_home, _home);
+        Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 
