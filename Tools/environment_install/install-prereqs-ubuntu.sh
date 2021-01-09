@@ -180,13 +180,13 @@ fi
 
 # Check if we need to manually install realpath
 RP=$(apt-cache search -n '^realpath$')
-if [ -n "$RP" ]; then
+if [ -z "$RP" ]; then
     BASE_PKGS+=" realpath"
 fi
 
 # Check if we need to manually install libtool-bin
 LBTBIN=$(apt-cache search -n '^libtool-bin')
-if [ -n "$LBTBIN" ]; then
+if [ -z "$LBTBIN" ]; then
     SITL_PKGS+=" libtool-bin"
 fi
 
