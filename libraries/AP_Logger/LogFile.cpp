@@ -7,9 +7,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Motors/AP_Motors.h>
-#include <AC_AttitudeControl/AC_AttitudeControl.h>
-#include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_GPS/AP_GPS.h>
 
@@ -447,56 +444,6 @@ void AP_Logger::Write_Power(void)
 #endif
 }
 
-// Write an AHRS2 packet
-void AP_Logger::Write_AHRS2()
-{
-    const AP_AHRS &ahrs = AP::ahrs();
-    Vector3f euler;
-    struct Location loc;
-    Quaternion quat;
-    if (!ahrs.get_secondary_attitude(euler) || !ahrs.get_secondary_position(loc) || !ahrs.get_secondary_quaternion(quat)) {
-        return;
-    }
-    const struct log_AHRS pkt{
-        LOG_PACKET_HEADER_INIT(LOG_AHR2_MSG),
-        time_us : AP_HAL::micros64(),
-        roll  : (int16_t)(degrees(euler.x)*100),
-        pitch : (int16_t)(degrees(euler.y)*100),
-        yaw   : (uint16_t)(wrap_360_cd(degrees(euler.z)*100)),
-        alt   : loc.alt*1.0e-2f,
-        lat   : loc.lat,
-        lng   : loc.lng,
-        q1    : quat.q1,
-        q2    : quat.q2,
-        q3    : quat.q3,
-        q4    : quat.q4,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write a POS packet
-void AP_Logger::Write_POS()
-{
-    const AP_AHRS &ahrs = AP::ahrs();
-
-    Location loc;
-    if (!ahrs.get_position(loc)) {
-        return;
-    }
-    float home, origin;
-    ahrs.get_relative_position_D_home(home);
-    const struct log_POS pkt{
-        LOG_PACKET_HEADER_INIT(LOG_POS_MSG),
-        time_us        : AP_HAL::micros64(),
-        lat            : loc.lat,
-        lng            : loc.lng,
-        alt            : loc.alt*1.0e-2f,
-        rel_home_alt   : -home,
-        rel_origin_alt : ahrs.get_relative_position_D_origin(origin) ? -origin : quiet_nanf(),
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
 {
     const struct log_Radio pkt{
@@ -560,45 +507,6 @@ void AP_Logger::Write_Camera(const Location &current_loc, uint64_t timestamp_us)
 void AP_Logger::Write_Trigger(const Location &current_loc)
 {
     Write_CameraInfo(LOG_TRIGGER_MSG, current_loc, 0);
-}
-
-// Write an attitude packet
-void AP_Logger::Write_Attitude(const Vector3f &targets)
-{
-    const AP_AHRS &ahrs = AP::ahrs();
-
-    const struct log_Attitude pkt{
-        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)ahrs.roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
-        error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
-        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100),
-        active          : ahrs.get_active_AHRS_type(),
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write an attitude packet
-void AP_Logger::Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets)
-{
-    const struct log_Attitude pkt{
-        LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
-        time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)ahrs.roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)ahrs.pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(ahrs.yaw_sensor),
-        error_rp        : (uint16_t)(ahrs.get_error_rp() * 100),
-        error_yaw       : (uint16_t)(ahrs.get_error_yaw() * 100)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
 }
 
 void AP_Logger::Write_Current_instance(const uint64_t time_us,
@@ -795,19 +703,6 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_Origin(uint8_t origin_type, const Location &loc)
-{
-    const struct log_ORGN pkt{
-        LOG_PACKET_HEADER_INIT(LOG_ORGN_MSG),
-        time_us     : AP_HAL::micros64(),
-        origin_type : origin_type,
-        latitude    : loc.lat,
-        longitude   : loc.lng,
-        altitude    : loc.alt
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
 {
     float rpm1 = -1, rpm2 = -1;
@@ -822,33 +717,6 @@ void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
         rpm2        : rpm2
     };
     WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write a rate packet
-void AP_Logger::Write_Rate(const AP_AHRS_View *ahrs,
-                                     const AP_Motors &motors,
-                                     const AC_AttitudeControl &attitude_control,
-                                     const AC_PosControl &pos_control)
-{
-    const Vector3f &rate_targets = attitude_control.rate_bf_targets();
-    const Vector3f &accel_target = pos_control.get_accel_target();
-    const struct log_Rate pkt_rate{
-        LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_us         : AP_HAL::micros64(),
-        control_roll    : degrees(rate_targets.x),
-        roll            : degrees(ahrs->get_gyro().x),
-        roll_out        : motors.get_roll(),
-        control_pitch   : degrees(rate_targets.y),
-        pitch           : degrees(ahrs->get_gyro().y),
-        pitch_out       : motors.get_pitch(),
-        control_yaw     : degrees(rate_targets.z),
-        yaw             : degrees(ahrs->get_gyro().z),
-        yaw_out         : motors.get_yaw(),
-        control_accel   : (float)accel_target.z,
-        accel           : (float)(-(ahrs->get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
-        accel_out       : motors.get_throttle()
-    };
-    WriteBlock(&pkt_rate, sizeof(pkt_rate));
 }
 
 // Write visual odometry sensor data
@@ -907,19 +775,6 @@ void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, 
         ignored         : (uint8_t)ignored
     };
     WriteBlock(&pkt_visualvel, sizeof(log_VisualVelocity));
-}
-
-// Write AOA and SSA
-void AP_Logger::Write_AOA_SSA(AP_AHRS &ahrs)
-{
-    const struct log_AOA_SSA aoa_ssa{
-        LOG_PACKET_HEADER_INIT(LOG_AOA_SSA_MSG),
-        time_us         : AP_HAL::micros64(),
-        AOA             : ahrs.getAOA(),
-        SSA             : ahrs.getSSA()
-    };
-
-    WriteBlock(&aoa_ssa, sizeof(aoa_ssa));
 }
 
 // Write beacon sensor (position) data
