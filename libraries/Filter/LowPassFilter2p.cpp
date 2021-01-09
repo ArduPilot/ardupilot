@@ -32,6 +32,11 @@ void DigitalBiquadFilter<T>::reset() {
 }
 
 template <class T>
+void DigitalBiquadFilter<T>::reset(const T &value) {
+    _delay_element_1 = _delay_element_2 = value;
+}
+
+template <class T>
 void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq, biquad_params &ret) {
     ret.cutoff_freq = cutoff_freq;
     ret.sample_freq = sample_freq;
@@ -97,6 +102,11 @@ T LowPassFilter2p<T>::apply(const T &sample) {
 template <class T>
 void LowPassFilter2p<T>::reset(void) {
     return _filter.reset();
+}
+
+template <class T>
+void LowPassFilter2p<T>::reset(const T &value) {
+    return _filter.reset(value);
 }
 
 /* 
