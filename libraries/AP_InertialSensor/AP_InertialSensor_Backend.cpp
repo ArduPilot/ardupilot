@@ -95,6 +95,10 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     // rotate for sensor orientation
     accel.rotate(_imu._accel_orientation[instance]);
 
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    _imu.tcal[instance].update_accel_learning(accel, _imu.get_temperature(instance));
+#endif
+
     if (!_imu._calibrating_accel && (_imu._acal == nullptr || !_imu._acal->active())) {
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
@@ -125,6 +129,10 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 {
     // rotate for sensor orientation
     gyro.rotate(_imu._gyro_orientation[instance]);
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    _imu.tcal[instance].update_gyro_learning(gyro, _imu.get_temperature(instance));
+#endif
     
     if (!_imu._calibrating_gyro) {
 
