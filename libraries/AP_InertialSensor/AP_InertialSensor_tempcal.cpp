@@ -20,15 +20,24 @@
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 
+#include <GCS_MAVLink/GCS.h>
+
+// this scale factor ensures params are easy to work with in GUI parameter editors
+#define SCALE_FACTOR 1.0e6
+#define INV_SCALE_FACTOR 1.0e-6
+#define TEMP_RANGE_MIN 15
+
+extern const AP_HAL::HAL& hal;
+
 // temperature calibration parameters, per IMU
 const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable temperature calibration
     // @Description: Enable the use of temperature calibration parameters for this IMU
-    // @Values: 0:Disabled,1:Enabled
+    // @Values: 0:Disabled,1:Enabled,2:LearnCalibration
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_InertialSensor::TCal, enable,  0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_InertialSensor::TCal, enable,  float(Enable::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: TMIN
     // @DisplayName: Temperature calibration min
@@ -179,9 +188,7 @@ Vector3f AP_InertialSensor::TCal::polynomial_eval(float tdiff, const AP_Vector3f
 {
     // evaluate order 3 polynomial
     const Vector3f *c = (Vector3f *)&coeff[0];
-    // this scale factor ensures params are easy to work with in GUI parameter editors
-    const float scale_factor = 1.0e-6;
-    return (c[0] + (c[1] + c[2]*tdiff)*tdiff)*tdiff*scale_factor;
+    return (c[0] + (c[1] + c[2]*tdiff)*tdiff)*tdiff*INV_SCALE_FACTOR;
 }
 
 /*
@@ -189,7 +196,7 @@ Vector3f AP_InertialSensor::TCal::polynomial_eval(float tdiff, const AP_Vector3f
  */
 void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const
 {
-    if (!enable) {
+    if (enable != Enable::Enabled) {
         return;
     }
     temperature = constrain_float(temperature, temp_min, temp_max);
@@ -233,6 +240,107 @@ void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro)
     Vector3f v;
     correct_sensor(temperature, 0.5*(temp_max+temp_min), gyro_coeff, v);
     gyro -= v;
+}
+
+/*
+  update polyfit with new sample
+ */
+void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float temperature, PolyFit<4> pfit[3])
+{
+    const float tmid = 0.5 * (tcal.temp_max + start_temp);
+    const float tdiff = temperature - tmid;
+
+    pfit[0].update(tdiff, sample.x);
+    pfit[1].update(tdiff, sample.y);
+    pfit[2].update(tdiff, sample.z);
+
+    if (temperature >= tcal.temp_max &&
+        temperature - start_temp >= TEMP_RANGE_MIN) {
+        finish_calibration(temperature);
+    }
+}
+
+/*
+  update accel temperature compensation learning
+ */
+void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float temperature)
+{
+    if (enable != Enable::LearnCalibration) {
+        return;
+    }
+    if (learn == nullptr && hal.scheduler->is_system_initialized()) {
+        learn = new Learn(*this, temperature);
+        if (learn) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
+                          instance(),
+                          temperature, temp_max.get());
+        }
+    }
+    if (learn != nullptr) {
+        if (learn->accel_start.is_zero()) {
+            learn->accel_start = accel;
+        }
+        learn->add_sample(accel - learn->accel_start, temperature, learn->polyfit_accel);
+    }
+}
+
+/*
+  update gyro temperature compensation learning
+ */
+void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float temperature)
+{
+    if (enable != Enable::LearnCalibration) {
+        return;
+    }
+    if (learn != nullptr) {
+        learn->add_sample(gyro, temperature, learn->polyfit_gyro);
+    }
+}
+
+/*
+  finish and save calibration
+ */
+void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
+{
+    Vector3f coefficients[3];
+    for (uint8_t i=0; i<3; i++) {
+        float p[4];
+        if (!polyfit_gyro[i].get_polynomial(p)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance(), i);
+            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
+            return;
+        }
+        for (uint8_t k=0; k<3; k++) {
+            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
+        }
+    }
+    for (uint8_t k=0; k<3; k++) {
+        tcal.gyro_coeff[k].set_and_save(coefficients[k]);
+    }
+    for (uint8_t i=0; i<3; i++) {
+        float p[4];
+        if (!polyfit_accel[i].get_polynomial(p)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance(), i);
+            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
+            return;
+        }
+        for (uint8_t k=0; k<3; k++) {
+            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
+        }
+    }
+    for (uint8_t k=0; k<3; k++) {
+        tcal.accel_coeff[k].set_and_save(coefficients[k]);
+    }
+    tcal.temp_min.set_and_save(start_temp);
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
+                  instance(),
+                  tcal.temp_min.get(), tcal.temp_max.get());
+    tcal.enable.set_and_save(int8_t(TCal::Enable::Enabled));
+}
+
+uint8_t AP_InertialSensor::TCal::instance(void) const
+{
+    return AP::ins().tcal_instance(*this);
 }
 
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
