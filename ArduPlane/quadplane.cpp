@@ -2206,7 +2206,7 @@ void QuadPlane::motors_output(bool run_rate_controller)
         const uint32_t now = AP_HAL::millis();
 
         // log RATE at main loop rate
-        plane.logger.Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
 
         // log QTUN at 25 Hz
         if (now - last_qtun_log_ms > 40) {
