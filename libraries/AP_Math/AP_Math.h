@@ -82,16 +82,16 @@ template <typename T>
 float safe_sqrt(const T v);
 
 // invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
-bool inverse3x3(float m[], float invOut[]) WARN_IF_UNUSED;
+bool inverse3x3(const float m[], float invOut[]) WARN_IF_UNUSED;
 
 // invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
-bool inverse4x4(float m[],float invOut[]) WARN_IF_UNUSED;
+bool inverse4x4(const float m[],float invOut[]) WARN_IF_UNUSED;
 
 // matrix multiplication of two NxN matrices
-float *mat_mul(float *A, float *B, uint8_t n);
+float *mat_mul(const float *A, const float *B, uint8_t n);
 
 // matrix algebra
-bool inverse(float x[], float y[], uint16_t dim) WARN_IF_UNUSED;
+bool inverse(const float x[], float y[], uint16_t dim) WARN_IF_UNUSED;
 
 /*
  * Constrain an angle to be within the range: -180 to 180 degrees. The second
