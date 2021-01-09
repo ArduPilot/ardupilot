@@ -47,6 +47,7 @@
 #include <Filter/LowPassFilter.h>
 #include <Filter/NotchFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
+#include <AP_Math/polyfit.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -690,18 +691,59 @@ public:
         void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
         void sitl_apply_accel(float temperature, Vector3f &accel) const;
         void sitl_apply_gyro(float temperature, Vector3f &accel) const;
+
+        void update_accel_learning(const Vector3f &accel);
+        void update_gyro_learning(const Vector3f &accel);
+
+        enum class Enable : uint8_t {
+            Disabled = 0,
+            Enabled = 1,
+            LearnCalibration = 2,
+        };
+
+        // add samples for learning
+        void update_accel_learning(const Vector3f &gyro, float temperature);
+        void update_gyro_learning(const Vector3f &accel, float temperature);
+        
+        // class for online learning of calibration
+        class Learn {
+        public:
+            Learn(TCal &_tcal, float _start_temp) :
+                start_temp(_start_temp),
+                tcal(_tcal) {};
+            void add_sample(const Vector3f &sample, float temperature, PolyFit<4> pfit[3]);
+            void finish_calibration(float temperature);
+            const float start_temp;
+            PolyFit<4> polyfit_gyro[3];
+            PolyFit<4> polyfit_accel[3];
+            TCal &tcal;
+            uint8_t instance(void) const {
+                return tcal.instance();
+            }
+            Vector3f accel_start;
+        };
+
     private:
-        AP_Int8 enable;
+        AP_Enum<Enable> enable;
         AP_Float temp_min;
         AP_Float temp_max;
         AP_Vector3f accel_coeff[3];
         AP_Vector3f gyro_coeff[3];
         Vector3f accel_tref;
         Vector3f gyro_tref;
+        Learn *learn;
 
         void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
         Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
+
+        // get instance number
+        uint8_t instance(void) const;
     };
+
+    // instance number for logging
+    uint8_t tcal_instance(const TCal &tc) const {
+        return &tc - &tcal[0];
+    }
 private:
     TCal tcal[INS_MAX_INSTANCES];
 
