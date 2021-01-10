@@ -1073,6 +1073,7 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
     } else if (!group.dma_handle->lock_nonblock()) {
         return;
     }
+
 #ifdef HAL_WITH_BIDIR_DSHOT
     // assume that we won't be able to get the input capture lock
     group.bdshot.enabled = false;
@@ -1316,6 +1317,9 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t cha
         return false;
     }
 
+    // stop further dshot output before we reconfigure the DMA
+    serial_group = new_serial_group;
+
     // setup the groups for serial output. We ask for a bit width of 1, which gets modified by the
     // we setup all groups so they all are setup with the right polarity, and to make switching between
     // channels in blheli pass-thru fast
@@ -1327,8 +1331,6 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t cha
             }
         }
     }
-
-    serial_group = new_serial_group;
 
     // run the thread doing serial IO at highest priority. This is needed to ensure we don't
     // lose bytes when we switch between output and input

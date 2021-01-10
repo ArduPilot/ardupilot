@@ -466,7 +466,7 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     if (group->in_serial_dma && irq.waiter) {
         // tell the waiting process we've done the DMA
         chEvtSignalI(irq.waiter, serial_event_mask);
-    } else if (group->bdshot.enabled) {
+    } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
         // sending is done, in 30us the ESC will send telemetry
         TOGGLE_PIN_DEBUG(55);
