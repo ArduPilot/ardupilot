@@ -328,9 +328,11 @@ void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance(),
                           temperature, temp_max.get());
+            AP_Notify::events.initiated_temp_cal = 1;
         }
     }
     if (learn != nullptr) {
+        AP_Notify::flags.temp_cal_running = true;
         learn->add_sample(accel, temperature, learn->state[0]);
     }
 }
@@ -359,6 +361,7 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
         float p[4];
         if (!state[0].pfit[i].get_polynomial(p)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance(), i);
+            AP_Notify::events.temp_cal_failed = 1;
             tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
             return;
         }
@@ -374,6 +377,7 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
         float p[4];
         if (!state[1].pfit[i].get_polynomial(p)) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance(), i);
+            AP_Notify::events.temp_cal_failed = 1;
             tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
             return;
         }
@@ -389,6 +393,11 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
                   instance(),
                   tcal.temp_min.get(), tcal.temp_max.get());
     tcal.enable.set_and_save(int8_t(TCal::Enable::Enabled));
+
+    if (!AP::ins().temperature_cal_running()) {
+        AP_Notify::flags.temp_cal_running = false;
+        AP_Notify::events.temp_cal_saved = 1;
+    }
 }
 
 uint8_t AP_InertialSensor::TCal::instance(void) const
