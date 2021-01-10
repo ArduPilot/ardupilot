@@ -50,8 +50,12 @@ float AP_InertialSensor_SITL::get_temperature(void)
         // user wants fixed temperature
         return sitl->imu_temp_fixed;
     }
+    uint32_t now = AP_HAL::millis();
+    if (temp_start_ms == 0) {
+        temp_start_ms = now;
+    }
     // follow a curve with given start, end and time constant
-    const float tsec = AP_HAL::millis() * 0.001f;
+    const float tsec = (AP_HAL::millis() - temp_start_ms) * 0.001f;
     const float T0 = sitl->imu_temp_start;
     const float T1 = sitl->imu_temp_end;
     const float tconst = sitl->imu_temp_tconst;

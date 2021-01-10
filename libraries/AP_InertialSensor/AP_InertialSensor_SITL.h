@@ -43,6 +43,7 @@ private:
     float accel_time;
     float gyro_motor_phase[12];
     float accel_motor_phase[12];
+    uint32_t temp_start_ms;
 
     static uint8_t bus_id;
 };
