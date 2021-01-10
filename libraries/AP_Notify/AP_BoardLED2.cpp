@@ -89,7 +89,9 @@ void AP_BoardLED2::update(void)
         return;
     }
 
-    if(AP_Notify::flags.compass_cal_running){ // compass calibration
+    if(AP_Notify::flags.compass_cal_running ||
+       AP_Notify::flags.temp_cal_running){
+        // compass calibration or IMU temperature calibration
         switch(save_trim_counter) {
         case 0:
             hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON); // short blinks by both LEDs
