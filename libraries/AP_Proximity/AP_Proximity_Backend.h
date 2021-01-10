@@ -80,8 +80,11 @@ protected:
     static bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
     // Note: "angle" refers to yaw (in body frame) towards the obstacle
     static void database_push(float angle, float distance);
-    static void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned, float pitch = 0.0f);
-        
+    static void database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned) {
+        database_push(angle, 0.0f, distance, timestamp_ms, current_pos, body_to_ned);
+    };
+    static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
+
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
 

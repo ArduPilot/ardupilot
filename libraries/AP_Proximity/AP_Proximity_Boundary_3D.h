@@ -19,7 +19,7 @@
 #define PROXIMITY_NUM_LAYERS          5       // num of layers in a sector
 #define PROXIMITY_MIDDLE_LAYER        2       // middle layer
 #define PROXIMITY_PITCH_WIDTH_DEG     30      // width between each layer in degrees
-#define PROXIMITY_SECTOR_WIDTH_DEG    45.0f   // width of sectors in degrees
+#define PROXIMITY_SECTOR_WIDTH_DEG    (360.0f/PROXIMITY_NUM_SECTORS)   // width of sectors in degrees
 #define PROXIMITY_BOUNDARY_DIST_MIN   0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
 
@@ -30,6 +30,7 @@ public:
 	AP_Proximity_Boundary_3D();
 
     // stores the layer and sector as a single object to access and modify the 3-D boundary
+    // Objects of this class are used temporarily to modify the boundary, i,e they are not persistant or stored anywhere  
     class Face
     {
     public:
@@ -45,8 +46,8 @@ public:
 	    bool operator ==(const Face &other) const { return ((layer == other.layer) && (sector == other.sector)); }
 	    bool operator !=(const Face &other) const { return ((layer != other.layer) || (sector != other.sector)); }
 
-        uint8_t layer;  // vertical "steps" on the 3D Boundary
-        uint8_t sector; // horizontal "steps" on the 3D Boundary
+        uint8_t layer;  // vertical "steps" on the 3D Boundary. 0th layer is the bottom most layer, 1st layer is 30 degrees above (in body frame) and so on
+        uint8_t sector; // horizontal "steps" on the 3D Boundary. 0th sector is directly in front of the vehicle. Each sector is 45 degrees wide.
     };
 
     // returns face corresponding to the provided yaw and (optionally) pitch
@@ -59,8 +60,8 @@ public:
     // This method will also mark the sector and layer to be "valid",
     // This distance can then be used for Obstacle Avoidance
     // Assume detected obstacle is horizontal (zero pitch), if no pitch is passed
-    void set_face_attributes(Face face, float pitch, float yaw, float distance);
-    void set_face_attributes(Face face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
+    void set_face_attributes(const Face &face, float pitch, float yaw, float distance);
+    void set_face_attributes(const Face &face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
 
     // add a distance to the boundary if it is shorter than any other provided distance since the last time the boundary was reset
     // pitch and yaw are in degrees, distance is in meters
@@ -70,7 +71,7 @@ public:
     // update boundary points used for simple avoidance based on a single sector and pitch distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
     //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-    void update_boundary(Face face);
+    void update_boundary(const Face &face);
 
     // update middle layer boundary points
     void update_middle_boundary();
@@ -79,24 +80,21 @@ public:
     void reset();
 
     // Reset this location, specified by Face object, back to default
-    // i.e Distance is marked as not-valid, and set to a large number.
-    void reset_face(Face face);
+    // i.e Distance is marked as not-valid
+    void reset_face(const Face &face);
 
     // get distance for a face.  returns true on success and fills in distance argument with distance in meters
-    bool get_distance(Face face, float &distance) const;
+    bool get_distance(const Face &face, float &distance) const;
 
     // Get the total number of obstacles 
     uint8_t get_obstacle_count() const;
 
-    // Appropriate layer and sector are found from the passed obstacle_num
-    // This function then draws a line between this sector, and sector + 1 at the given layer
-    // Then returns the closest point on this line from vehicle, in body-frame. 
+    // Returns a body frame vector (in cm) to an obstacle
+    // False is returned if the obstacle_num provided does not produce a valid obstacle
     bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_boundary) const;
 
-    // Appropriate layer and sector are found from the passed obstacle_num
-    // This function then draws a line between this sector, and sector + 1 at the given layer
-    // Then returns the closest point on this line from the segment that was passed, in body-frame.
-    // Used by GPS based Simple Avoidance  - for "brake mode" 
+    // Returns a body frame vector (in cm) nearest to obstacle, in betwen seg_start and seg_end
+    // FLT_MAX is returned if the obstacle_num provided does not produce a valid obstacle
     float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
 
     // get distance and angle to closest object (used for pre-arm check)
@@ -108,8 +106,10 @@ public:
     bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
     // sectors
+    static_assert(PROXIMITY_NUM_SECTORS == 8, "PROXIMITY_NUM_SECTOR must be 8");
     const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
     // layers
+    static_assert(PROXIMITY_NUM_LAYERS == 5, "PROXIMITY_NUM_LAYERS must be 5");
     const int16_t _pitch_middle_deg[PROXIMITY_NUM_LAYERS] {-60, -30, 0, 30, 60};
 
 private:
@@ -128,7 +128,7 @@ private:
     // "update_boundary" method manipulates two sectors ccw and one sector cw from any valid face.
     // Any boundary that does not fall into these manipulated faces are useless, and will be marked as false
     // The resultant is packed into a Boundary Location object and returned by reference as "face"
-    bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const;
+    bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const WARN_IF_UNUSED;
 
     Vector3f _sector_edge_vector[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
     Vector3f _boundary_points[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
