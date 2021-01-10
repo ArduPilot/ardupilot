@@ -725,7 +725,8 @@ public:
             void add_sample(const Vector3f &sample, float temperature, LearnState &state);
             void finish_calibration(float temperature);
             float start_temp;
-            
+            float start_tmax;
+
             TCal &tcal;
             uint8_t instance(void) const {
                 return tcal.instance();
