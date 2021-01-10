@@ -21,7 +21,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAX_RANGE 100.0f
-#define PROXIMITY_ACCURACY  0.1f        // minimum distance between objects sent to object database
+#define PROXIMITY_ACCURACY  0.1f        // minimum distance (in meters) between objects sent to object database
 
 // update the state of the sensor
 void AP_Proximity_AirSimSITL::update(void)
@@ -52,7 +52,7 @@ void AP_Proximity_AirSimSITL::update(void)
         }
 
         // calculate distance to point and check larger than min distance
-        const Vector2f new_pos = Vector2f(point.x, point.y);
+        const Vector2f new_pos = Vector2f{point.x, point.y};
         const float distance_sq = new_pos.length_squared();
         if (distance_sq > distance_min_sq) {
 
