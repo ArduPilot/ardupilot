@@ -107,6 +107,9 @@ public:
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
 
+    /// calibrating - returns true if a temperature calibration is running
+    bool temperature_cal_running() const;
+    
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
@@ -730,8 +733,9 @@ public:
             Vector3f accel_start;
         };
 
-    private:
         AP_Enum<Enable> enable;
+
+    private:
         AP_Float temp_min;
         AP_Float temp_max;
         AP_Vector3f accel_coeff[3];

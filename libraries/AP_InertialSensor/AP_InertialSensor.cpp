@@ -1945,6 +1945,19 @@ bool AP_InertialSensor::calibrating() const
     return _calibrating_accel || _calibrating_gyro || (_acal && _acal->active());
 }
 
+/// calibrating - returns true if a temperature calibration is running
+bool AP_InertialSensor::temperature_cal_running() const
+{
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (tcal[i].enable == TCal::Enable::LearnCalibration) {
+            return true;
+        }
+    }
+#endif
+    return false;
+}
+
 // initialise and register accel calibrator
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
