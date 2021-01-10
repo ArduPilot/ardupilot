@@ -45,6 +45,7 @@ public:
 private:
     T _delay_element_1;
     T _delay_element_2;
+    bool initialised;
 };
 
 template <class T>
