@@ -330,7 +330,7 @@ void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float
         learn = new Learn(*this, temperature);
         if (learn) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
-                          instance(),
+                          instance()+1,
                           temperature, temp_max.get());
             AP_Notify::events.initiated_temp_cal = 1;
         }
@@ -380,7 +380,7 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
     for (uint8_t i=0; i<3; i++) {
         float p[4];
         if (!state[0].pfit[i].get_polynomial(p)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance(), i);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance()+1, i);
             AP_Notify::events.temp_cal_failed = 1;
             tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
             return;
@@ -396,7 +396,7 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
     for (uint8_t i=0; i<3; i++) {
         float p[4];
         if (!state[1].pfit[i].get_polynomial(p)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance(), i);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance()+1, i);
             AP_Notify::events.temp_cal_failed = 1;
             tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
             return;
@@ -410,7 +410,7 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
     }
     tcal.temp_min.set_and_save(start_temp);
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
-                  instance(),
+                  instance()+1,
                   tcal.temp_min.get(), tcal.temp_max.get());
     tcal.enable.set_and_save(int8_t(TCal::Enable::Enabled));
 
