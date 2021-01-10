@@ -17,6 +17,11 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
         return sample;
     }
 
+    if (!initialised) {
+        reset(sample);
+        initialised = true;
+    }
+
     T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
     T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
 
@@ -29,11 +34,13 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
 template <class T>
 void DigitalBiquadFilter<T>::reset() { 
     _delay_element_1 = _delay_element_2 = T();
+    initialised = false;
 }
 
 template <class T>
 void DigitalBiquadFilter<T>::reset(const T &value) {
     _delay_element_1 = _delay_element_2 = value;
+    initialised = true;
 }
 
 template <class T>
