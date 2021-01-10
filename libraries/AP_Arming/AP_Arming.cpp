@@ -363,6 +363,12 @@ bool AP_Arming::ins_checks(bool report)
             return false;
         }
 
+        // no arming while doing temp cal
+        if (ins.temperature_cal_running()) {
+            check_failed(ARMING_CHECK_INS, report, "temperature cal running");
+            return false;
+        }
+        
         // check AHRS attitudes are consistent
         char failure_msg[50] = {};
         if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
