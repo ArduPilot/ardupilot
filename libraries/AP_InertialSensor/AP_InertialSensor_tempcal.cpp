@@ -247,12 +247,7 @@ AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
     start_temp(_start_temp),
     tcal(_tcal)
 {
-    for (uint8_t i=0; i<2; i++) {
-        state[i].temp_filter.set_cutoff_frequency(1000, 0.5);
-        state[i].temp_filter.reset(start_temp);
-        state[i].last_temp = start_temp;
-    }
-    start_tmax = tcal.temp_max;
+    reset(_start_temp);
 }
 
 /*
@@ -312,9 +307,9 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
     if (!is_equal(start_tmax,tcal.temp_max.get())) {
         // user has changed the TMAX. This will give a bad result for
         // online learning as the reference temperature (tmid) will
-        // change
-        AP_Notify::events.temp_cal_failed = 1;
-        tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
+        // change, so we need to start again
+        reset(T);
+        return;
     }
     
     if (temperature >= tcal.temp_max &&
@@ -357,6 +352,22 @@ void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float t
     if (learn != nullptr) {
         learn->add_sample(gyro, temperature, learn->state[1]);
     }
+}
+
+/*
+  reset calibration
+ */
+void AP_InertialSensor::TCal::Learn::reset(float temperature)
+{
+    memset(state, 0, sizeof(state));
+    start_tmax = tcal.temp_max;
+    accel_start.zero();
+    for (uint8_t i=0; i<2; i++) {
+        state[i].temp_filter.set_cutoff_frequency(1000, 0.5);
+        state[i].temp_filter.reset(temperature);
+        state[i].last_temp = temperature;
+    }
+    start_tmax = tcal.temp_max;
 }
 
 /*
