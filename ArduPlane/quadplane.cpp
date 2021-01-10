@@ -160,15 +160,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: WVANE_GAIN
     // @DisplayName: Weathervaning gain
-    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.1 is to start with and will give a slow turn into the wind. Use a value of 0.4 for more rapid response. The weathervaning works by turning into the direction of roll.
+    // @Description: This controls the tendency to yaw to face into the wind. A value of 0.1 is to start with and will give a slow turn into the wind. Use a value of 0.4 for more rapid response. The weathervaning works by turning into the direction of roll or pitch see Q_OPTIONS.
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("WVANE_GAIN", 33, QuadPlane, weathervane.gain, 0),
 
     // @Param: WVANE_MINROLL
-    // @DisplayName: Weathervaning min roll
-    // @Description: This set the minimum roll in degrees before active weathervaning will start. This may need to be larger if your aircraft has bad roll trim.
+    // @DisplayName: Weathervaning min roll/pitch
+    // @Description: This set the minimum roll/pitch in degrees before active weathervaning will start. This may need to be larger if your aircraft has bad roll/pitch trim. To windvain side on or tail into the wind see Q_OPTIONS
     // @Range: 0 10
     // @Increment: 0.1
     // @User: Standard
@@ -330,7 +330,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Windvane nose and tail into the wind see Q_WVANE_GAIN,15:windvane side on to the wind see Q_WVANE_GAIN
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -3258,18 +3258,39 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0;
     }
 
+    float angle;
     float roll = wp_nav->get_roll() / 100.0f;
-    if (fabsf(roll) < weathervane.min_roll) {
-        weathervane.last_output = 0;
-        return 0;        
-    }
-    if (roll > 0) {
-        roll -= weathervane.min_roll;
+    float pitch = wp_nav->get_pitch() / 100.0f;
+
+    if (options & OPTION_WIND_VANE_SIDE_ON) {
+        // side into the wind
+        if (is_negative(roll)) {
+            // may need to consider adding some hysteresis
+            pitch *= -1;
+        }
+        angle = pitch;
+
     } else {
-        roll += weathervane.min_roll;
+        // nose/tail into the wind
+        if ((options & OPTION_WIND_VANE_NOSE_AND_TAIL) && is_positive(pitch)) {
+            // this allows to hold both nose and tail into the wind
+            // may need to consider adding some hysteresis
+            roll *= -1;
+        }
+        angle = roll;
     }
-    
-    float output = constrain_float((roll/45.0f) * weathervane.gain, -1, 1);
+
+    if (fabsf(angle) < weathervane.min_roll) {
+        weathervane.last_output = 0;
+        return 0;
+    }
+    if (angle > 0) {
+        angle -= weathervane.min_roll;
+    } else {
+        angle += weathervane.min_roll;
+    }
+
+    float output = constrain_float((angle/45.0f) * weathervane.gain, -1, 1);
     if (should_relax()) {
         output = 0;
     }

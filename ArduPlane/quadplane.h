@@ -593,6 +593,8 @@ private:
         OPTION_DELAY_ARMING=(1<<11),
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
+        OPTION_WIND_VANE_NOSE_AND_TAIL=(1<<14),
+        OPTION_WIND_VANE_SIDE_ON=(1<<15)
     };
 
     AP_Float takeoff_failure_scalar;
