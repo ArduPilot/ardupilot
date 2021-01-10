@@ -107,7 +107,7 @@ void AP_Proximity_Backend::database_push(float angle, float distance)
 
 // update Object Avoidance database with Earth-frame point
 // pitch can be optionally provided if needed
-void AP_Proximity_Backend::database_push(float angle, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned, float pitch)
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
 {
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {

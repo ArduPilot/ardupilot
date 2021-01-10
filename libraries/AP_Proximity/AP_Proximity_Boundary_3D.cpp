@@ -16,9 +16,9 @@ AP_Proximity_Boundary_3D::AP_Proximity_Boundary_3D()
 void AP_Proximity_Boundary_3D::init()
 {
     for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
+        const float pitch = ((float)_pitch_middle_deg[layer]);
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
-            float angle_rad = ((float)_sector_middle_deg[sector]+(PROXIMITY_SECTOR_WIDTH_DEG/2.0f));
-            float pitch = ((float)_pitch_middle_deg[layer]);
+            const float angle_rad = ((float)_sector_middle_deg[sector]+(PROXIMITY_SECTOR_WIDTH_DEG/2.0f));
             _sector_edge_vector[layer][sector].offset_bearing(angle_rad, pitch, 100.0f);
             _boundary_points[layer][sector] = _sector_edge_vector[layer][sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
         }
@@ -26,19 +26,19 @@ void AP_Proximity_Boundary_3D::init()
 }
 
 // returns face corresponding to the provided yaw and (optionally) pitch
-// pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle?)
+// pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle)
 // yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
 AP_Proximity_Boundary_3D::Face AP_Proximity_Boundary_3D::get_face(float pitch, float yaw) const
 {   
     const uint8_t sector = wrap_360(yaw + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
     const float pitch_limited = constrain_float(pitch, -75.0f, 74.9f);
     const uint8_t layer = (pitch_limited + 75.0f)/PROXIMITY_PITCH_WIDTH_DEG;
-    return Face(layer, sector);
+    return Face{layer, sector};
 }
 
 // Set the actual body-frame angle(yaw), pitch, and distance of the detected object.
 // This method will also mark the sector and layer to be "valid", so this distance can be used for Obstacle Avoidance
-void AP_Proximity_Boundary_3D::set_face_attributes(Face face, float angle, float pitch, float distance)
+void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch, float angle, float distance)
 {
     if (!face.valid()) {
         return;
@@ -58,16 +58,22 @@ void AP_Proximity_Boundary_3D::set_face_attributes(Face face, float angle, float
 void AP_Proximity_Boundary_3D::add_distance(float pitch, float yaw, float distance)
 {
     Face face = get_face(pitch, yaw);
+    if (!face.valid()) {
+        return;
+    }
+    
     if (!_distance_valid[face.layer][face.sector] || (distance < _distance[face.layer][face.sector])) {
         _distance[face.layer][face.sector] = distance;
         _distance_valid[face.layer][face.sector] = true;
+        _angle[face.layer][face.sector] = yaw;
+        _pitch[face.layer][face.sector] = pitch;
     }
 }
 
 // update boundary points used for object avoidance based on a single sector and pitch distance changing
 //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
 //   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-void AP_Proximity_Boundary_3D::update_boundary(const Face face)
+void AP_Proximity_Boundary_3D::update_boundary(const Face &face)
 {
     // sanity check
     if (!face.valid()) {
@@ -111,7 +117,7 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face face)
     }
     _boundary_points[layer][prev_sector] = _sector_edge_vector[layer][prev_sector] * shortest_distance;
 
-    // if the sector counter-clockwise from the previous sector has an invalid distance, set boundary to create a cup like boundary
+    // if the sector counter-clockwise from the previous sector has an invalid distance, set boundary to create a cup-like boundary
     const uint8_t prev_sector_ccw = get_prev_sector(prev_sector);
     if (!_distance_valid[layer][prev_sector_ccw]) {
         _boundary_points[layer][prev_sector_ccw] = _sector_edge_vector[layer][prev_sector_ccw] * shortest_distance;
@@ -122,7 +128,7 @@ void AP_Proximity_Boundary_3D::update_boundary(const Face face)
 void AP_Proximity_Boundary_3D::update_middle_boundary()
 {
     for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
-        update_boundary(Face(PROXIMITY_MIDDLE_LAYER, sector));
+        update_boundary(Face{PROXIMITY_MIDDLE_LAYER, sector});
     }
 }
 
@@ -138,7 +144,7 @@ void AP_Proximity_Boundary_3D::reset()
 
 // Reset this location, specified by Face object, back to default
 // i.e Distance is marked as not-valid, and set to a large number.
-void AP_Proximity_Boundary_3D::reset_face(Face face)
+void AP_Proximity_Boundary_3D::reset_face(const Face &face)
 {
     if (!face.valid()) {
         return;
@@ -150,7 +156,7 @@ void AP_Proximity_Boundary_3D::reset_face(Face face)
 }
 
 // get distance for a face.  returns true on success and fills in distance argument with distance in meters
-bool AP_Proximity_Boundary_3D::get_distance(Face face, float &distance) const
+bool AP_Proximity_Boundary_3D::get_distance(const Face &face, float &distance) const
 {
     if (!face.valid()) {
         return false;
@@ -183,23 +189,14 @@ bool AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num
     face.sector = sector;
     face.layer = layer;
 
-    // if this face is valid (sensor is directly pushing values towards this face), return true
-    if (_distance_valid[layer][sector]) {
-        return true;
-    } 
-
-    // if face cw from this face is valid, then "update_boundary" must have manipulated this face also. 
-    // return true
-    const uint8_t next_sector = get_next_sector(sector);
-    if (_distance_valid[layer][next_sector]) {
-        return true;
-    }
-    
-    // if face cw twice from this face is valid, then "update_boundary" must have manipulated this face also.
-    // return true
-    const uint8_t next_to_next_sector = get_next_sector(next_sector);
-    if (_distance_valid[layer][next_to_next_sector]) {
-        return true;
+    uint8_t valid_sector = sector; 
+    // check for 3 adjacent sectors
+    for (uint8_t i=0; i < 2; i++) {
+        if (_distance_valid[layer][valid_sector]) {
+            // update boundary has manipulated this face 
+            return true;
+        }
+        valid_sector = get_next_sector(valid_sector);
     }
 
     // this face was not manipulated by "update_boundary" and is stale. Don't use it
@@ -210,6 +207,7 @@ bool AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from vehicle, in body-frame. 
 // Used by GPS based Simple Avoidance  
+// False is returned if the obstacle_num provided does not produce a valid obstacle 
 bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {
     Face face;
@@ -222,7 +220,7 @@ bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_
     
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
-    vec_to_obstacle = Vector3f::closest_point_between_line_and_point(start, end, Vector3f{0.0f, 0.0f, 0.0f});
+    vec_to_obstacle = Vector3f::point_on_line_closest_to_other_point(start, end, Vector3f{});
     return true;
 }
 
@@ -230,6 +228,7 @@ bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_
 // This function then draws a line between this sector, and sector + 1 at the given layer
 // Then returns the closest point on this line from the segment that was passed, in body-frame.
 // Used by GPS based Simple Avoidance  - for "brake mode" 
+// FLT_MAX is returned if the obstacle_num provided does not produce a valid obstacle
 float AP_Proximity_Boundary_3D::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
 {   
     Face face; 
@@ -283,7 +282,7 @@ uint8_t AP_Proximity_Boundary_3D::get_horizontal_object_count() const
 
 // get an object's angle and distance, used for non-GPS avoidance
 // returns false if no angle or distance could be returned for some reason
-bool AP_Proximity_Boundary_3D::get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const
+bool AP_Proximity_Boundary_3D::get_horizontal_object_angle_and_distance(uint8_t object_number, float &angle_deg, float &distance) const
 {
     if ((object_number < PROXIMITY_NUM_SECTORS) && _distance_valid[PROXIMITY_MIDDLE_LAYER][object_number]) {
         angle_deg = _angle[PROXIMITY_MIDDLE_LAYER][object_number];
