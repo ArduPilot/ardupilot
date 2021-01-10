@@ -252,6 +252,7 @@ AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
         state[i].temp_filter.reset(start_temp);
         state[i].last_temp = start_temp;
     }
+    start_tmax = tcal.temp_max;
 }
 
 /*
@@ -308,6 +309,14 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
     st.sum_count = 0;
     st.last_temp = temperature;
 
+    if (!is_equal(start_tmax,tcal.temp_max.get())) {
+        // user has changed the TMAX. This will give a bad result for
+        // online learning as the reference temperature (tmid) will
+        // change
+        AP_Notify::events.temp_cal_failed = 1;
+        tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
+    }
+    
     if (temperature >= tcal.temp_max &&
         temperature - start_temp >= TEMP_RANGE_MIN) {
         finish_calibration(temperature);
