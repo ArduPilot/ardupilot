@@ -1529,20 +1529,10 @@ class AutoTest(ABC):
         if required_bootcount is None:
             required_bootcount = old_bootcount + 1
         while True:
-            # get_parameter calls get_sim_time.... streamrates may
-            # be zero so we need to prompt for one of these...
-            self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-                          mavutil.mavlink.MAVLINK_MSG_ID_SYSTEM_TIME,
-                          0,
-                          0,
-                          0,
-                          0,
-                          0,
-                          0)
             if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
-                current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1, attempts=1)
+                current_bootcount = self.get_parameter('STAT_BOOTCNT', timeout=1, attempts=1, verbose=True, timeout_in_wallclock=True)
                 self.progress("current=%s required=%u" % (str(current_bootcount), required_bootcount))
                 if current_bootcount == required_bootcount:
                     break
@@ -3548,7 +3538,7 @@ class AutoTest(ABC):
 #                    self.progress("Requesting (%s) (retry=%u)" % (name, i))
                     continue
                 delta = abs(autopilot_values[name] - value)
-                if delta < epsilon:
+                if delta <= epsilon:
                     # correct value
                     self.progress("%s is now %f" % (name, autopilot_values[name]))
                     if add_to_context:
@@ -3606,21 +3596,27 @@ class AutoTest(ABC):
                                              encname,
                                              -1)
 
-    def get_parameter_direct(self, name, attempts=1, timeout=60, verbose=True):
+    def get_parameter_direct(self, name, attempts=1, timeout=60, verbose=True, timeout_in_wallclock=False):
         while attempts > 0:
             if verbose:
                 self.progress("Sending param_request_read for (%s)" % name)
             # we MUST parse here or collections fail where we need
             # them to work!
             self.drain_mav(quiet=True)
-            tstart = self.get_sim_time()
+            if timeout_in_wallclock:
+                tstart = time.time()
+            else:
+                tstart = self.get_sim_time()
             self.send_get_parameter_direct(name)
             while True:
-                now = self.get_sim_time_cached()
-                if tstart > now:
-                    self.progress("Time wrap detected")
-                    # we're going to have to send another request...
-                    break
+                if timeout_in_wallclock:
+                    now = time.time()
+                else:
+                    now = self.get_sim_time_cached()
+                    if tstart > now:
+                        self.progress("Time wrap detected")
+                        # we're going to have to send another request...
+                        break
                 delta_time = now - tstart
                 if delta_time > timeout:
                     break
