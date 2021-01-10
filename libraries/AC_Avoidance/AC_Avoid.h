@@ -22,7 +22,7 @@
 #define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
 
 /*
- * This class prevents the vehicle from leaving a polygon fence or avoiding proximity based obstacles
+ * This class prevents the vehicle from leaving a polygon fence or hitting proximity-based obstacles
  * Additionally the vehicle may back up if the margin to obstacle is breached
  */
 class AC_Avoid {
@@ -45,10 +45,10 @@ public:
     // before the fence/object.
     // kP, accel_cmss are for the horizontal axis
     // kP_z, accel_cmss_z are for vertical axis
-    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float kP_z, float accel_cmss_z, bool &backing_up, float dt);
-    void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel_cms, float kP_z, float accel_cmss_z, float dt) {
+    void adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt);
+    void adjust_velocity(Vector3f &desired_vel_cms, float kP, float accel_cmss, float kP_z, float accel_cmss_z, float dt) {
         bool backing_up = false;
-        adjust_velocity(kP, accel_cmss, desired_vel_cms, kP_z, accel_cmss_z, backing_up, dt);
+        adjust_velocity(desired_vel_cms, backing_up, kP, accel_cmss, kP_z, accel_cmss_z, dt);
     }
 
     // This method limits velocity and calculates backaway velocity from various supported fences
@@ -143,7 +143,7 @@ private:
 
     /*
      * Adjusts the desired velocity given an array of boundary points
-     * The boundary is expected to be always in Earth Frame
+     * The boundary must be in Earth Frame
      * margin is the distance (in meters) that the vehicle should stop short of the polygon
      * stay_inside should be true for fences, false for exclusion polygons
      */
@@ -164,11 +164,11 @@ private:
     
     /*
     * Compute the back away velocity required to avoid breaching margin, including vertical component
-    * min_z_vel is <= 0, and stores the greatest velocity in the donwards direction
+    * min_z_vel is <= 0, and stores the greatest velocity in the downwards direction
     * max_z_vel is >= 0, and stores the greatest velocity in the upwards direction
     * eventually max_z_vel + min_z_vel will give the final desired Z backaway velocity
     */
-    void calc_backup_velocity_3D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &quad2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cm, Vector3f limit_direction, float kp_z, float accel_cmss_z, float back_distance_z, float& min_z_vel, float& max_z_vel, float dt);
+    void calc_backup_velocity_3D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &quad2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cms, Vector3f limit_direction, float kp_z, float accel_cmss_z, float back_distance_z, float& min_z_vel, float& max_z_vel, float dt);
    
    /*
     * Calculate maximum velocity vector that can be formed in each quadrant 
