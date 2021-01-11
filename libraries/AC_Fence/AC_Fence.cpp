@@ -134,6 +134,7 @@ void AC_Fence::enable(bool value)
     _enabled = value;
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
+        disable_floor();
     } else {
         enable_floor();
     }
