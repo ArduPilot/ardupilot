@@ -1517,9 +1517,13 @@ bool ModeAuto::verify_takeoff()
     // have we reached our target altitude?
     const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
 
-    // retract the landing gear
+    // if we have reached our destination
     if (reached_wp_dest) {
+        // retract the landing gear
         copter.landinggear.retract_after_takeoff();
+
+        // auto-enable the fence after takeoff
+        copter.autoenable_fence_after_takeoff();
     }
 
     return reached_wp_dest;
