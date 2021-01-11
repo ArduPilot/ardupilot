@@ -76,7 +76,6 @@ void Mode::_TakeOff::stop()
 {
     _running = false;
     start_ms = 0;
-    copter.flightmode->autoenable_floor_fence();
 }
 
 // returns pilot and takeoff climb rates
