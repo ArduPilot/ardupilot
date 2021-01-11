@@ -40,6 +40,9 @@ bool ModeLand::init(bool ignore_checks)
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 
+    // disable the fence on landing
+    copter.disable_fence_for_landing();
+
     return true;
 }
 
