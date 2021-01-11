@@ -1377,6 +1377,124 @@ class AutoTestCopter(AutoTest):
 
         self.zero_throttle()
 
+    def fly_fence_autoenable_always_disabled(self):
+        self.progress("Test AutoEnable Fence - AutoEnable Disabled")
+        self.context_push()
+        self.set_parameter("FENCE_AUTOENABLE", 0)
+        self.assert_fence_disabled()
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10)
+
+        # Check fence is still disabled
+        self.assert_fence_disabled()
+
+        self.change_mode('LAND')
+        # Fence disables at start of landing, check fence is disabled
+        self.assert_fence_disabled()
+        self.wait_landed_and_disarmed()
+        
+        self.context_pop()
+
+    def fly_fence_autoenable_always_after_takeoff(self):
+        self.progress("Test AutoEnable Fence - After Takeoff Complete")
+        self.context_push()
+        self.set_parameter("FENCE_AUTOENABLE", 1)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10)
+
+        # Check fence is enabled
+        self.assert_fence_enabled(timeout=10)
+
+        self.change_mode('LAND')
+        # Fence disables at start of landing, check fence is disabled
+        self.assert_fence_disabled()
+        self.wait_landed_and_disarmed()
+        
+        self.context_pop()
+
+    def fly_fence_autoenable_after_takeoff_disable_floor_on_land(self):
+        self.progress("Test AutoEnable Fence - Enable after Takeoff, Disable floor on land")
+        self.context_push()
+        self.set_parameter("FENCE_AUTOENABLE", 2)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10)
+
+        # Check fence is enabled
+        self.assert_fence_enabled()
+
+        self.change_mode('LAND')
+        # Fence disables at start of landing, check fence is disabled
+        self.assert_fence_enabled()
+        self.wait_landed_and_disarmed()
+        self.context_pop()
+
+    def fly_fence_autoenable_arm_disarm(self):
+        self.progress("Test AutoEnable Fence - Enable on Arming, Disable on Disarm")
+        self.context_push()
+        self.set_parameter("FENCE_AUTOENABLE", 3)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Fence enables on arming, check fence is enabled
+        self.assert_fence_enabled()
+        
+        self.disarm_vehicle(force=True)
+        # Fence disables on disarm, check fence is disabled
+        self.assert_fence_disabled()
+        self.context_pop()
+
+    def fly_fence_autoenable_test(self):
+        """fly_fence_autoenable_test. Fly test missions to auto-enable
+        fence. Tests all auto-enable conditions"""
+
+        self.progress("Test Fence Auto-Enable Conditions")
+        self.set_parameter("FENCE_ENABLE", 0)
+        self.set_parameter("FENCE_TYPE", 15)
+        self.set_parameter("FENCE_ALT_MIN", -10)
+
+        self.fly_fence_autoenable_always_disabled()
+        self.fly_fence_autoenable_always_after_takeoff()
+        self.fly_fence_autoenable_after_takeoff_disable_floor_on_land()
+        self.fly_fence_autoenable_arm_disarm()
+
+    def fly_fence_floor_enabled_landing(self):
+        """fly_fence_floor_enabled_landing.
+        """
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.progress("Test Landing while fence floor enabled")
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.set_parameter("FENCE_AUTOENABLE", 1)
+        self.set_parameter("FENCE_TYPE", 15)
+        self.set_parameter("FENCE_ALT_MIN", 10)
+        self.set_parameter("FENCE_ALT_MAX", 20)
+
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=15)
+
+        # Check fence is enabled
+        self.assert_fence_enabled()
+
+        # Change to RC controlled mode
+        self.change_mode('LOITER')
+
+        self.set_rc(3, 1800)
+
+        self.wait_mode('RTL', timeout=120)
+        self.wait_landed_and_disarmed()
+        self.assert_fence_enabled()
+
+        # Assert fence is not healthy
+        self.assert_sensor_state(fence_bit, healthy=False)
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
@@ -6526,9 +6644,17 @@ class AutoTestCopter(AutoTest):
              "Test Min Alt Fence",
              self.fly_alt_min_fence_test), #26s
 
+            ("FenceAutoEnable",
+             "Test Fence Auto-Enable conditions",
+             self.fly_fence_autoenable_test),
+
+            ("FenceFloorEnabledLanding",
+             "Test Landing with Fence floor enabled",
+             self.fly_fence_floor_enabled_landing),
+
             ("AutoTuneSwitch",
              "Fly AUTOTUNE on a switch",
-             self.fly_autotune_switch),  # 105s
+             self.fly_autotune_switch),  #105s
 
             ("GPSGlitchLoiter",
              "GPS Glitch Loiter Test",
