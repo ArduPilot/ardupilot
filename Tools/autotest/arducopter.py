@@ -4351,6 +4351,10 @@ class AutoTestCopter(AutoTest):
 
         self.context_pop()
 
+        # need a final reboot because weird things happen to your
+        # vehicle state when switching back from EKF type 10!
+        self.reboot_sitl()
+
         if ex is not None:
             raise ex
 
