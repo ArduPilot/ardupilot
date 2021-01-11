@@ -5,6 +5,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN useradd -U -m ardupilot && \
     usermod -G users ardupilot
 
+RUN echo 0 >/proc/sys/kernel/yama/ptrace_scope
+
 RUN apt-get update && apt-get install --no-install-recommends -y \
     lsb-release \
     sudo \
