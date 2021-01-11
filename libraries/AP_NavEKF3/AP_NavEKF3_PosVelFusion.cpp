@@ -986,10 +986,7 @@ void NavEKF3_core::selectHeightForFusion()
     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
     // select height source
-    if (extNavUsedForPos && (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::EXTNAV)) {
-        // always use external navigation as the height source if using for position.
-        activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
-    } else if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
+    if ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::RANGEFINDER) && _rng && rangeFinderDataIsFresh) {
         // user has specified the range finder as a primary height source
         activeHgtSource = AP_NavEKF_Source::SourceZ::RANGEFINDER;
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
