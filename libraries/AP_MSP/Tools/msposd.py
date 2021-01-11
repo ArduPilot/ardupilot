@@ -49,23 +49,23 @@ last_read_s = time.time()
 msp = pymsp.PyMSP()
 
 pygame.init()
-  
-# define the RGB value for white, 
-#  green, blue colour . 
-white = (255, 255, 255) 
-green = (0, 255, 0) 
-blue = (0, 0, 128) 
+
+# define the RGB value for white,
+#  green, blue colour .
+white = (255, 255, 255)
+green = (0, 255, 0)
+blue = (0, 0, 128)
 black = (0, 0 ,0)
-  
+
 # window size
 FontWidth = 25
 FontHeight = 25
 
 WindowWidth = 27 * FontWidth
 WindowHeight = 16 * FontHeight
-  
-# create the display surface object 
-# of specific dimension..e(X, Y). 
+
+# create the display surface object
+# of specific dimension..e(X, Y).
 display_surface = pygame.display.set_mode((WindowWidth,WindowHeight))
 
 # set the pygame window name
@@ -107,7 +107,7 @@ def draw_batt_icon(x, y):
     pygame.draw.rect(display_surface, (255, 255, 255), (x, y+3, 8, 14))
 
 def draw_triangle(x, y, r, angle):
-    a = angle -90 
+    a = angle -90
     ra = math.radians(a)
     x1 = int(x + r * math.cos(ra))
     y1 = int(y + r * math.sin(ra))
@@ -170,12 +170,12 @@ def display_cell_voltage():
     (X,Y) = XY
     px = X * FontWidth
     py = Y * FontHeight
-    display_text(msp.OSD_AVG_CELL_VOLTAGE, "%.02fv" % (0 if msp.get('BATTERY_STATE.cellCount')==0 else msp.get('BATTERY_STATE.voltage')/msp.get('BATTERY_STATE.cellCount')*0.1), 12)
+    display_text(msp.OSD_AVG_CELL_VOLTAGE, "%.02fv" % (0 if msp.get('BATTERY_STATE.cellCount')==0 else msp.get('BATTERY_STATE.voltage_cv')/msp.get('BATTERY_STATE.cellCount')*0.01), 12)
     draw_batt_icon(px,py-6)
 
 def display_all():
     '''display all items'''
-    
+
     '''
     _osd_item_settings[OSD_RSSI_VALUE] = &osd->screen[0].rssi;
     _osd_item_settings[OSD_MAIN_BATT_VOLTAGE] = &osd->screen[0].bat_volt;
@@ -264,7 +264,7 @@ def run():
             display_all()
             pygame.display.update()
             time.sleep(0.01)
-    
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -274,4 +274,3 @@ try:
     run()
 except KeyboardInterrupt:
     pass
-
