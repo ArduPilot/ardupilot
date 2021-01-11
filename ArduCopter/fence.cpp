@@ -83,6 +83,24 @@ void Copter::fence_check()
     }
 }
 
+/*
+  called when an auto-takeoff is complete
+ */
+void Copter::autoenable_fence_after_takeoff(void)
+{
+#if AC_FENCE == ENABLED
+    switch(fence.auto_enabled()) {
+        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
+        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
+            fence.enable(true);
+            break;
+        default:
+            // fence does not auto-enable in other takeoff conditions
+            break;
+    }
+#endif
+}
+
 void Copter::disable_fence_for_landing(void)
 {
     switch (fence.auto_enabled()) {
