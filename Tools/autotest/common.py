@@ -5453,10 +5453,6 @@ Also, ignores heartbeats not from our target system'''
             self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
 
     def test_mag_calibration(self, compass_count=3, timeout=1000):
-        ex = None
-        self.set_parameter("AHRS_EKF_TYPE", 10)
-        self.set_parameter("SIM_GND_BEHAV", 0)
-
         def reset_pos_and_start_magcal(tmask):
             self.mavproxy.send("sitl_stop\n")
             self.mavproxy.send("sitl_attitude 0 0 0\n")
@@ -5740,7 +5736,12 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy_unload_module("relay")
             self.mavproxy_unload_module("sitl_calibration")
 
+        ex = None
+
         try:
+            self.set_parameter("AHRS_EKF_TYPE", 10)
+            self.set_parameter("SIM_GND_BEHAV", 0)
+
             curr_params = []
             target_mask = 0
             # we test all bitmask plus 0 for all
@@ -5764,6 +5765,10 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
+        # need to reboot SITL after moving away from EKF type 10; we
+        # can end up with home set but origin not and that will lead
+        # to bad things.
+        self.reboot_sitl()
 
     def test_mag_reordering_assert_mag_transform(self, values, transforms):
         '''transforms ought to be read as, "take all the parameter values from
