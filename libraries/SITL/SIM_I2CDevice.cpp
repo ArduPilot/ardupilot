@@ -145,6 +145,13 @@ int SITL::I2CRegisters_8Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 };
 
 
+void SITL::I2CRegisters_8Bit::assert_register_value(uint8_t reg, uint8_t value)
+{
+    if (byte[reg] != value) {
+        AP_HAL::panic("Register 0x%02x (%s) was expected to have value (%02x) but has value (%02x)", reg, regname[reg], byte[reg], value);
+    }
+}
+
 int SITL::I2CCommandResponseDevice::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
 {
     const uint32_t now = AP_HAL::millis();

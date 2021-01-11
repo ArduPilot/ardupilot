@@ -49,6 +49,9 @@ public:
         return byte[(uint8_t)num];
     }
 
+    // dies if register does not have value value
+    void assert_register_value(uint8_t reg, uint8_t value);
+
 protected:
 
     uint8_t byte[256];
