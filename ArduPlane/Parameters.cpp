@@ -1317,6 +1317,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+#if FOLLOW_ENABLED == ENABLED
+    // @Group: FOLL
+    // @Path: ../libraries/AP_Follow/AP_Follow.cpp
+    AP_SUBGROUPINFO(follow, "FOLL", 29, ParametersG2, AP_Follow),
+#endif
+
     AP_GROUPEND
 };
 
