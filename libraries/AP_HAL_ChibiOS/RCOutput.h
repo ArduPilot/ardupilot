@@ -19,6 +19,7 @@
 #include "AP_HAL_ChibiOS.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "shared_dma.h"
 #include "ch.h"
@@ -67,7 +68,7 @@ public:
       return 100.0f * float(_bdshot.erpm_errors[chan]) / (1 + _bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan]);
     }
 #endif
-    void set_output_mode(uint16_t mask, const enum output_mode mode) override;
+    void set_output_mode(uint32_t mask, const enum output_mode mode) override;
     bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const override;
 
     /*
@@ -110,7 +111,7 @@ public:
       databits. This is used for ESC configuration and firmware
       flashing
      */
-    bool setup_serial_output(uint16_t chan_mask, ByteBuffer *buffer, uint32_t baudrate);
+    bool setup_serial_output(uint32_t chan_mask, ByteBuffer *buffer, uint32_t baudrate);
 
     /*
       setup for serial output to an ESC using the given
@@ -123,7 +124,7 @@ public:
       same channel timer group) may also be stopped, depending on the
       implementation
      */
-    bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t motor_mask) override;
+    bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t motor_mask) override;
 
     /*
       write a set of bytes to an ESC, using settings from
@@ -149,7 +150,7 @@ public:
       with Dshot to get telemetry feedback
       The mask uses servo channel numbering
      */
-    void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
+    void set_telem_request_mask(uint32_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
 #ifdef HAL_WITH_BIDIR_DSHOT
     /*
@@ -157,7 +158,7 @@ public:
       with Dshot to get telemetry feedback
       The mask uses servo channel numbering
      */
-    void set_bidir_dshot_mask(uint16_t mask) override;
+    void set_bidir_dshot_mask(uint32_t mask) override;
 
     void set_motor_poles(uint8_t poles) override { _bdshot.motor_poles = poles; }
 #endif
@@ -189,7 +190,7 @@ public:
     /*
       set safety mask for IOMCU
      */
-    void set_safety_mask(uint16_t mask) { safety_mask = mask; }
+    void set_safety_mask(uint32_t mask) { safety_mask = mask; }
 
 #ifndef DISABLE_DSHOT
     /*
@@ -197,21 +198,21 @@ public:
      * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
      * The mask uses servo channel numbering
      */
-    void set_reversible_mask(uint16_t chanmask) override;
+    void set_reversible_mask(uint32_t chanmask) override;
 
     /*
      * mark the channels in chanmask as reversed.
      * The chanmask passed is added (ORed) into any existing mask.
      * The mask uses servo channel numbering
      */
-    void set_reversed_mask(uint16_t chanmask) override;
-    uint16_t get_reversed_mask() override { return _reversed_mask << chan_offset; }
+    void set_reversed_mask(uint32_t chanmask) override;
+    uint32_t get_reversed_mask() override { return _reversed_mask << chan_offset; }
 
     /*
       mark escs as active for the purpose of sending dshot commands
       The mask uses servo channel numbering
      */
-    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= (chanmask >> chan_offset); }
+    void set_active_escs_mask(uint32_t chanmask) override { _active_escs_mask |= (chanmask >> chan_offset); }
 
     /*
       Send a dshot command, if command timout is 0 then 10 commands are sent
@@ -235,7 +236,7 @@ public:
       setup serial LED output for a given channel number, with
       the given max number of LEDs in the chain.
      */
-    bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint16_t clock_mask = 0) override;
+    bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint32_t clock_mask = 0) override;
 
     /*
       setup serial LED output data for a given output channel
@@ -309,9 +310,9 @@ private:
         enum output_mode current_mode;
         uint16_t frequency_hz;
         // mask of channels that are able to be enabled
-        uint16_t ch_mask;
+        uint32_t ch_mask;
         // mask of channels that are enabled and active
-        uint16_t en_mask;
+        uint32_t en_mask;
         const stm32_dma_stream_t *dma;
         Shared_DMA *dma_handle;
         uint32_t *dma_buffer;
@@ -466,7 +467,11 @@ private:
     // number of active fmu channels
     uint8_t active_fmu_channels;
 
+#if NUM_SERVO_CHANNELS >= 17
+    static const uint8_t max_channels = 32;
+#else
     static const uint8_t max_channels = 16;
+#endif
 
     // last sent values are for all channels
     uint16_t last_sent[max_channels];
@@ -477,7 +482,7 @@ private:
 
     // handling of bi-directional dshot
     struct {
-        uint16_t mask;
+        uint32_t mask;
         uint16_t erpm[max_channels];
 #ifdef HAL_WITH_BIDIR_DSHOT
         uint16_t erpm_errors[max_channels];
@@ -520,14 +525,14 @@ private:
 #endif
     bool corked;
     // mask of channels that are running in high speed
-    uint16_t fast_channel_mask;
-    uint16_t io_fast_channel_mask;
+    uint32_t fast_channel_mask;
+    uint32_t io_fast_channel_mask;
     // mask of channels that are 3D capable
-    uint16_t _reversible_mask;
+    uint32_t _reversible_mask;
     // mask of channels that should be reversed at startup
-    uint16_t _reversed_mask;
+    uint32_t _reversed_mask;
     // mask of active ESCs
-    uint16_t _active_escs_mask;
+    uint32_t _active_escs_mask;
 
     // min time to trigger next pulse to prevent overlap
     uint64_t min_pulse_trigger_us;
@@ -573,12 +578,12 @@ private:
     uint8_t safety_press_count; // 0.1s units
 
     // mask of channels to allow when safety on
-    uint16_t safety_mask;
+    uint32_t safety_mask;
 
     // update safety switch and LED
     void safety_update(void);
 
-    uint16_t telem_request_mask;
+    uint32_t telem_request_mask;
 
     /*
       Serial lED handling. Max of 32 LEDs uses max 12k of memory per group
