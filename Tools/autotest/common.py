@@ -4593,7 +4593,7 @@ class AutoTest(ABC):
             if m is None:
                 raise NotAchievedException("Did not receive a home position")
         if check_prearm_bit:
-            self.wait_prearm_sys_status_healthy()
+            self.wait_prearm_sys_status_healthy(timeout=timeout)
         self.progress("Took %u seconds to become armable" % armable_time)
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
