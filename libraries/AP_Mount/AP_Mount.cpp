@@ -396,20 +396,20 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 
-    // @Param: 2_RCINVLD_MODE
-    // @DisplayName: Mount2 RC Invalid Point Position
+    // @Param: 2_FS_RC_ACTION
+    // @DisplayName: Mount2 RC Failsafe Point Position
     // @Description: Uses the designated mode's target position if RC invalid in RC Targeting mode
     // @Values: -1:No Change,0:Retracted,1:Neutral
     // @User: Standard
-    AP_GROUPINFO("2_RCINVLD_MODE", 43, AP_Mount, state[1]._rcinvalid_mode, -1),
+    AP_GROUPINFO("2_FS_RC_ACTION", 43, AP_Mount, state[1]._rc_failsafe_action, -1),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
-    // @Param: _RCINVLD_MODE
-    // @DisplayName: Mount RC Invalid Point Position
+    // @Param: _FS_RC_ACTION
+    // @DisplayName: Mount RC Failsafe Point Position
     // @Description: Uses the designated modes target position if RC invalid in RC Targeting mode
     // @Values: -1:No Change,0:Retracted,1:Neutral
     // @User: Standard
-    AP_GROUPINFO("_RCINVLD_MODE", 44, AP_Mount, state[0]._rcinvalid_mode, -1),
+    AP_GROUPINFO("_FS_RC_ACTION", 44, AP_Mount, state[0]._rc_failsafe_action, -1),
 
     AP_GROUPEND
 };
@@ -451,7 +451,7 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         // default instance's state
         state[instance]._mode = (enum MAV_MOUNT_MODE)state[instance]._default_mode.get();
-        state[instance]._rcinvalid_mode = state[instance]._rcinvalid_mode.get();
+        state[instance]._rc_failsafe_action = state[instance]._rc_failsafe_action.get();
 
         MountType mount_type = get_mount_type(instance);
 

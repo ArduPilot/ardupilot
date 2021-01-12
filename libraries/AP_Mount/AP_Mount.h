@@ -159,7 +159,7 @@ protected:
         // Parameters
         AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
         AP_Int8         _default_mode;      // default mode on startup and when control is returned from autopilot
-        AP_Int8         _rcinvalid_mode;    // positional mode (no change/retract/neutral position) for invalid RC input (used in RC Targeting mode)
+        AP_Int8         _rc_failsafe_action;    // positional mode (no change/retract/neutral position) for invalid RC input (used in RC Targeting mode)
         AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
