@@ -2,6 +2,7 @@
 
 # Fly ArduPlane in SITL
 from __future__ import print_function
+import copy
 import math
 import os
 import time
@@ -1742,6 +1743,49 @@ class AutoTestPlane(AutoTest):
         self.progress("Centering elevator and ensuring we get back to loiter altitude")
         self.set_rc(2, 1500)
         self.wait_altitude(initial_alt-1, initial_alt+1)
+        
+    def fly_follow_mode(self):
+        self.set_parameter("FOLL_ENABLE", 1)
+        self.set_parameter("FOLL_SYSID", 255)
+        foll_ofs_x = 30 # metres
+        self.set_parameter("FOLL_OFS_X", -foll_ofs_x)
+        self.set_parameter("FOLL_OFS_TYPE", 1) # relative to other vehicle heading
+        self.takeoff(alt=20)
+        self.set_rc(3, 1500)
+        self.set_parameter("SIM_SPEEDUP", 1)
+#        self.change_mode("FOLLOW")
+        self.change_mode(24)
+        new_loc = self.mav.location()
+        new_loc_offset_n = 200
+        new_loc_offset_e = 300
+        self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
+        self.progress("new_loc: %s" % str(new_loc))
+        heading = 0
+        self.mavproxy.send("map icon %f %f greenplane %f\n" %
+                           (new_loc.lat, new_loc.lng, heading))
+
+        expected_loc = copy.copy(new_loc)
+        self.location_offset_ne(expected_loc, -foll_ofs_x, 0)
+        self.mavproxy.send("map icon %f %f hoop\n" %
+                           (expected_loc.lat, expected_loc.lng))
+        self.progress("expected_loc: %s" % str(expected_loc))
+
+        last_sent = 0
+        while True:
+            now = self.get_sim_time_cached()
+            if now - last_sent > 0.5:
+                gpi = self.global_position_int_for_location(new_loc,
+                                                            now,
+                                                            heading=heading)
+                gpi.pack(self.mav.mav)
+                self.mav.mav.send(gpi)
+            self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+            pos = self.mav.location()
+            delta = self.get_distance(expected_loc, pos)
+            max_delta = 100
+            self.progress("position delta=%f (want <%f)" % (delta, max_delta))
+            if delta < max_delta:
+                break
         self.fly_home_land_and_disarm()
 
     def CPUFailsafe(self):
@@ -2202,6 +2246,11 @@ class AutoTestPlane(AutoTest):
             ("LogUpload",
              "Log upload",
              self.log_upload),
+            
+            ("FOLLOW",
+             "Fly follow mode",
+             self.fly_follow_mode),
+            
         ])
         return ret
 
