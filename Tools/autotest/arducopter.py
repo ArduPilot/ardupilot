@@ -4832,7 +4832,7 @@ class AutoTestCopter(AutoTest):
                                          0,
                                          0)
             self.reach_heading_manual(0);
-            self.wait_location(north_loc, accuracy=6)
+            self.wait_location(north_loc, accuracy=6, timeout=200)
             self.reach_heading_manual(90);
             east_loc = mavutil.location(-35.363013,
                                         149.165194,
