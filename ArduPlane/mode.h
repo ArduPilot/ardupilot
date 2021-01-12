@@ -43,6 +43,7 @@ public:
         QAUTOTUNE     = 22,
         QACRO         = 23,
         THERMAL       = 24,
+        FOLLOW        = 25,
     };
 
     // Constructor
@@ -349,6 +350,33 @@ public:
 protected:
 
     bool _enter() override;
+};
+
+class ModeFollow : public Mode
+{
+public:
+
+    Mode::Number mode_number() const override { return Mode::Number::FOLLOW; }
+    const char *name() const override { return "FOLL"; }
+    const char *name4() const override { return "FOLL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+    bool does_auto_throttle() const override { return true; }
+
+protected:
+
+    bool _enter() override;
+
+private:
+    uint8_t follow_sysid;
 };
 
 class ModeCruise : public Mode
