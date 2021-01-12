@@ -29,9 +29,14 @@
 #elif defined(HAL_BUILD_AP_PERIPH)
     #define NUM_SERVO_CHANNELS 0
 #else
-    #define NUM_SERVO_CHANNELS 16
+    #if !HAL_MINIMIZE_FEATURES
+        #define NUM_SERVO_CHANNELS 32
+    #else
+        #define NUM_SERVO_CHANNELS 16
+    #endif
 #endif
 #endif
+static_assert(NUM_SERVO_CHANNELS <= 32, "More than 32 servos not supported");
 
 class SRV_Channels;
 
@@ -319,7 +324,7 @@ private:
     float get_output_norm(void);
 
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
-    typedef uint16_t servo_mask_t;
+    typedef uint32_t servo_mask_t;
 
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
@@ -383,8 +388,8 @@ public:
     static void set_output_norm(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get output channel mask for a function
-    static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
-    
+    static uint32_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+
     // limit slew rate to given limit in percent per second
     static void set_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, uint16_t range, float dt);
 
@@ -434,8 +439,8 @@ public:
     static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
 
     // copy radio_in to servo_out by channel mask
-    static void copy_radio_in_out_mask(uint16_t mask);
-    
+    static void copy_radio_in_out_mask(uint32_t mask);
+
     // setup failsafe for an auxiliary channel function, by pwm
     static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
 
@@ -456,7 +461,7 @@ public:
     static void enable_aux_servos(void);
 
     // enable channels by mask
-    static void enable_by_mask(uint16_t mask);
+    static void enable_by_mask(uint32_t mask);
 
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
@@ -520,14 +525,14 @@ public:
     static void push();
 
     // disable PWM output to a set of channels given by a mask. This is used by the AP_BLHeli code
-    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
-    static uint16_t get_disabled_channel_mask() { return disabled_mask; }
+    static void set_disabled_channel_mask(uint32_t mask) { disabled_mask = mask; }
+    static uint32_t get_disabled_channel_mask() { return disabled_mask; }
 
     // add to mask of outputs which use digital (non-PWM) output and optionally can reverse thrust, such as DShot
-    static void set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask);
+    static void set_digital_outputs(uint32_t dig_mask, uint32_t rev_mask);
 
     // return true if all of the outputs in mask are digital
-    static bool have_digital_outputs(uint16_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
+    static bool have_digital_outputs(uint32_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
 
     // return true if any of the outputs are digital
     static bool have_digital_outputs() { return digital_mask != 0; }
@@ -602,14 +607,14 @@ private:
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
     // mask of disabled channels
-    static uint16_t disabled_mask;
+    static uint32_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not
     // PWM (eg. DShot)
-    static uint16_t digital_mask;
+    static uint32_t digital_mask;
     
     // mask of outputs which are digitally reversible (eg. DShot-3D)
-    static uint16_t reversible_mask;
+    static uint32_t reversible_mask;
 
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
