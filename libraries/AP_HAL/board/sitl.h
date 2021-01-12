@@ -34,7 +34,7 @@
 #endif
 
 #ifndef HAL_STORAGE_SIZE
-#define HAL_STORAGE_SIZE            16384
+#define HAL_STORAGE_SIZE            32768
 #endif
 
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
