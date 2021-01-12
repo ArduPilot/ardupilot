@@ -86,16 +86,16 @@ private:
     // for lat/lng translation of a Relative Mission
     struct Translation {
         int32_t alt;            // altitude-displacement of location where AUTO has been switched on, relative to first waypoint [cm]
-        int32_t direction;      // direction from HomePoint to the location where AUTO has been switched on  [10^2°] North=0 East=9000
+        int32_t direction;      // direction from HomePoint to the location where AUTO has been switched on  [DEG*10^2] North=0 East=9000
         bool    do_translation; // for marking if location where AUTO has been switched is far enough from home-location
         bool    calculated;     // for marking if first waypoint is still proceeded and displacement is calculated
         };
 
     // for lat/lng rotation of a Relative Mission
     struct Rotation {
-        int32_t lat;            // latitude-displacement of location where AUTO has been switched on relative to current translated waypoint [10^7°]
-        int32_t lng;            // longitude-displacement of location where AUTO has been switched on relative to current translated waypoint [10^7°]
-        int32_t direction;      // direction from the location where AUTO has been switched on to the current translated waypoint [10^2°] North=0 East=9000
+        int32_t lat;            // latitude-displacement of location where AUTO has been switched on relative to current translated waypoint [DEG*10^7]
+        int32_t lng;            // longitude-displacement of location where AUTO has been switched on relative to current translated waypoint [DEG*10^7]
+        int32_t direction;      // direction from the location where AUTO has been switched on to the current translated waypoint [DEG*10^2] North=0 East=9000
         };
 
     // pw values for rotating by RC-channel (!don't change, because of simplification of the formula in the program-code!)
