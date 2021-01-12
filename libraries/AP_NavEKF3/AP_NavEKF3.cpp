@@ -2022,3 +2022,12 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
         }
     }
 }
+
+// returns true when the yaw angle has been aligned
+bool NavEKF3::yawAlignmentComplete(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].have_aligned_yaw();
+}
