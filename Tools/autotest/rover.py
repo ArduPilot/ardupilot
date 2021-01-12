@@ -4955,33 +4955,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
+
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+
         ex = None
         example_script = "hello_world.lua"
-        messages = []
-        def my_message_hook(mav, message):
-            if message.get_type() != 'STATUSTEXT':
-                return
-            messages.append(message)
-        self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
             self.install_example_script(example_script)
             self.reboot_sitl()
+            self.wait_statustext('hello, world', check_context=True, timeout=30)
         except Exception as e:
             ex = e
-        self.remove_example_script(example_script)
-        self.reboot_sitl()
 
-        self.remove_message_hook(my_message_hook)
+        self.remove_example_script(example_script)
+
+        self.context_pop()
+
+        self.reboot_sitl()
 
         if ex is not None:
             raise ex
-
-        # check all messages to see if we got our message
-        for m in messages:
-            if "hello, world" in m.text:
-                return # success!
-        raise NotAchievedException("Did not get expected text")
 
     def test_scripting_steering_and_throttle(self):
         self.start_subtest("Scripting square")
