@@ -1009,7 +1009,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 /*
   setup output mode
  */
-void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
+void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
 {
     for (auto &group : pwm_group_list) {
         enum output_mode thismode = mode;
@@ -1670,7 +1670,7 @@ void RCOutput::dma_cancel(pwm_group& group)
   While serial output is active normal output to the channel group is
   suspended.
 */
-bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t chanmask)
+bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask)
 {
     // account for IOMCU channels
     chan -= chan_offset;
@@ -2132,7 +2132,7 @@ uint32_t RCOutput::protocol_bitrate(const enum output_mode mode)
   setup serial led output for a given channel number, with
   the given max number of LEDs in the chain.
 */
-bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
 {
     if (!_initialised || num_leds == 0) {
         return false;
