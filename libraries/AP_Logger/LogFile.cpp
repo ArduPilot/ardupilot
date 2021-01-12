@@ -197,6 +197,41 @@ void AP_Logger::Write_RCOUT(void)
         chan14        : hal.rcout->read(13)
     };
     WriteBlock(&pkt, sizeof(pkt));
+
+#if NUM_SERVO_CHANNELS >= 15
+    const struct log_RCOUT2 pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_RCOUT2_MSG),
+        time_us       : AP_HAL::micros64(),
+        chan15         : hal.rcout->read(14),
+        chan16         : hal.rcout->read(15),
+        chan17         : hal.rcout->read(16),
+        chan18         : hal.rcout->read(17),
+    };
+    WriteBlock(&pkt2, sizeof(pkt2));
+#endif
+
+#if NUM_SERVO_CHANNELS >= 19
+    const struct log_RCOUT pkt3{
+        LOG_PACKET_HEADER_INIT(LOG_RCOUT3_MSG),
+        time_us       : AP_HAL::micros64(),
+        chan1         : hal.rcout->read(18),
+        chan2         : hal.rcout->read(19),
+        chan3         : hal.rcout->read(20),
+        chan4         : hal.rcout->read(21),
+        chan5         : hal.rcout->read(22),
+        chan6         : hal.rcout->read(23),
+        chan7         : hal.rcout->read(24),
+        chan8         : hal.rcout->read(25),
+        chan9         : hal.rcout->read(26),
+        chan10        : hal.rcout->read(27),
+        chan11        : hal.rcout->read(28),
+        chan12        : hal.rcout->read(29),
+        chan13        : hal.rcout->read(30),
+        chan14        : hal.rcout->read(31)
+    };
+    WriteBlock(&pkt3, sizeof(pkt3));
+#endif
+
 }
 
 // Write an RSSI packet
