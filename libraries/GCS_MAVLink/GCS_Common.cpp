@@ -2695,6 +2695,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             AP_HAL::panic("panicing");
 
             // keep calm and carry on
+        }
+        if (is_equal(packet.param4, 96.0f)) {
+            // deliberately corrupt parameter storage
+            send_text(MAV_SEVERITY_WARNING,"wiping parameter storage header");
+            StorageAccess param_storage{StorageManager::StorageParam};
+            uint8_t zeros[40] {};
+            param_storage.write_block(0, zeros, sizeof(zeros));
             return MAV_RESULT_FAILED;
         }
     }
