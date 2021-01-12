@@ -1,4 +1,5 @@
-#Shreya Kulsh. Original producer: Andrew Tridgell
+#Author:Shreya Kulsh
+#Original producer: Andrew Tridgell
 #!/bin/bash
 
 # three plane swarm (no set formaiton)
