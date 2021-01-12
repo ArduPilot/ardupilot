@@ -1717,18 +1717,14 @@ class AutoTest(ABC):
                 continue
             if state == state_outside:
                 if ("#define LOG_BASE_STRUCTURES" in line or
-                    "#define LOG_STRUCTURE_FROM_DAL" in line or
-                    "#define LOG_STRUCTURE_FROM_NAVEKF2" in line or
-                    "#define LOG_STRUCTURE_FROM_NAVEKF3" in line or
-                    "#define LOG_STRUCTURE_FROM_AHRS" in line):
+                    re.match("#define LOG_STRUCTURE_FROM_.*", line)):
 #                    self.progress("Moving inside")
                     state = state_inside
                 continue
             if state == state_inside:
                 if linestate == linestate_none:
                     allowed_list = ['LOG_SBP_STRUCTURES',
-                                    'LOG_STRUCTURE_FROM_DAL',
-                                    'LOG_STRUCTURE_FROM_NAVEKF']
+                                    'LOG_STRUCTURE_FROM_']
 
                     allowed = False
                     for a in allowed_list:
