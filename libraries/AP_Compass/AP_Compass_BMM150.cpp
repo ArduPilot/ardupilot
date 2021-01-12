@@ -236,7 +236,6 @@ bool AP_Compass_BMM150::init()
     return true;
 
 bus_error:
-    hal.console->printf("BMM150: Bus communication error\n");
     _dev->get_semaphore()->give();
     return false;
 }
