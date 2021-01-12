@@ -12,6 +12,7 @@ def build(bld):
             'AP_Avoidance',
             'AP_Arming',
             'AP_Camera',
+            'AP_Follow',
             'AP_L1_Control',
             'AP_Navigation',
             'AP_RCMapper',
