@@ -126,12 +126,12 @@ class AutoTestCopter(AutoTest):
                 takeoff_throttle=1700,
                 require_absolute=True,
                 mode="STABILIZE",
-                timeout=30):
+                timeout=120):
         """Takeoff get to 30m altitude."""
         self.progress("TAKEOFF")
         self.change_mode(mode)
         if not self.armed():
-            self.wait_ready_to_arm(require_absolute=require_absolute)
+            self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
             self.zero_throttle()
             self.arm_vehicle()
         self.set_rc(3, takeoff_throttle)
@@ -2283,7 +2283,7 @@ class AutoTestCopter(AutoTest):
 
             # takeoff to 10m in Loiter
             self.progress("Moving to ensure location is tracked")
-            self.takeoff(10, mode="LOITER", require_absolute=True)
+            self.takeoff(10, mode="LOITER", require_absolute=True, timeout=720)
 
             # fly forward in Loiter
             self.set_rc(2, 1300)
