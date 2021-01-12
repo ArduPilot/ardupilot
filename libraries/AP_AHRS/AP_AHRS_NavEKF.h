@@ -282,6 +282,7 @@ public:
 
     void setTakeoffExpected(bool val);
     void setTouchdownExpected(bool val);
+    bool yaw_alignment_complete(void) const;
 
     bool getGpsGlitchStatus() const;
 
