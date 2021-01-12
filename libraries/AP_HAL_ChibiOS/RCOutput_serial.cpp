@@ -123,14 +123,14 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 // Set the dshot outputs that should be reversed (as opposed to 3D)
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
-void RCOutput::set_reversed_mask(uint16_t chanmask) {
+void RCOutput::set_reversed_mask(uint32_t chanmask) {
     _reversed_mask |= (chanmask >> chan_offset);
 }
 
 // Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
-void RCOutput::set_reversible_mask(uint16_t chanmask) {
+void RCOutput::set_reversible_mask(uint32_t chanmask) {
     _reversible_mask |= (chanmask >> chan_offset);
 }
 
