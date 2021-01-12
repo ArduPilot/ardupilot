@@ -115,8 +115,6 @@ protected:
     // return expected input throttle setting to hover:
     virtual float throttle_hover() const;
 
-    void autoenable_floor_fence(void);
-
     // Alt_Hold based flight mode states used in Alt_Hold, Loiter, and Sport
     enum AltHoldModeState {
         AltHold_MotorStopped,
