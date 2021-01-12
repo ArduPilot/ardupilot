@@ -26,7 +26,7 @@ FLASH_RESERVE_START_KB 128
 define HAL_STORAGE_SIZE 16384
 
 # order of I2C buses
-I2C_ORDER I2C2 I2C1
+I2C_ORDER I2C1
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
@@ -35,7 +35,8 @@ SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
 
 # UART for IOMCU
-IOMCU_UART USART6
+# have to comment this out to get outputs above 6 to work, I have no idea why, should be able to get to 8 before running out of servo channels
+# IOMCU_UART USART6
 
 # UART4 serial GPS
 PA0 UART4_TX UART4
@@ -70,12 +71,13 @@ PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 # PWM output for buzzer
-PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+# PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
 
 # This defines a couple of general purpose outputs, mapped to GPIO
 # numbers 1 and 2 for users.
-PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
-PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
+# these would work great, but I'm not sure if there broken out on the carrier
+PB0 EXTERN_GPIO1 OUTPUT GPIO(1) # TIM3_CH3
+PB1 EXTERN_GPIO2 OUTPUT GPIO(2) # TIM3_CH4
 
 # This defines some input pins, currently unused.
 PB2 BOOT1 INPUT
@@ -91,8 +93,8 @@ PB8 I2C1_SCL I2C1
 PB9 I2C1_SDA I2C1
 
 # the 2nd I2C bus
-PB10 I2C2_SCL I2C2
-PB11 I2C2_SDA I2C2
+#PB10 I2C2_SCL I2C2
+#PB11 I2C2_SDA I2C2
 
 # the 2nd SPI bus
 PB13 SPI2_SCK SPI2
@@ -150,8 +152,8 @@ PD6 USART2_RX USART2
 # USART3 serial3 telem2
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
-PD11 USART3_CTS USART3
-PD12 USART3_RTS USART3
+#PD11 USART3_CTS USART3
+#PD12 USART3_RTS USART3
 
 # The CS pin for FRAM (ramtron). This one is marked as using
 # SPEED_VERYLOW, which matches the HAL_PX4 setup.
@@ -168,8 +170,12 @@ PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
 PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+PD12 TIM4_CH1 TIM4 PWM(7) GPIO(56) # telem2 RTS
+PB10 TIM2_CH3 TIM2 PWM(8) GPIO(57) # I2C 2 SCL
+PB11 TIM2_CH4 TIM2 PWM(9) GPIO(58) # I2C 2 SDA
+PA15 TIM2_CH1 TIM2 PWM(10) GPIO(59) # Buzzer, Need to check if there is a amplifier that would stop this working correctly, need to stop it being a buzzer in any-case as we need the timer
 
-define BOARD_PWM_COUNT_DEFAULT 4
+define BOARD_PWM_COUNT_DEFAULT 10
 
 # Pin for PWM Voltage Selection
 PB4 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
