@@ -320,7 +320,6 @@ public:
     void Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate = 0.0f);
     void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
     void Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct);
-    void Write_Current();
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -518,7 +517,6 @@ private:
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
-    void Write_Current_instance(uint64_t time_us, uint8_t battery_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 

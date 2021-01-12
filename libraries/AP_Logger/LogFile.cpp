@@ -2,7 +2,6 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -507,70 +506,6 @@ void AP_Logger::Write_Camera(const Location &current_loc, uint64_t timestamp_us)
 void AP_Logger::Write_Trigger(const Location &current_loc)
 {
     Write_CameraInfo(LOG_TRIGGER_MSG, current_loc, 0);
-}
-
-void AP_Logger::Write_Current_instance(const uint64_t time_us,
-                                       const uint8_t battery_instance)
-{
-    AP_BattMonitor &battery = AP::battery();
-    float temp;
-    bool has_temp = battery.get_temperature(temp, battery_instance);
-    float current, consumed_mah, consumed_wh;
-    if (!battery.current_amps(current, battery_instance)) {
-        current = quiet_nanf();
-    }
-    if (!battery.consumed_mah(consumed_mah, battery_instance)) {
-        consumed_mah = quiet_nanf();
-    }
-    if (!battery.consumed_wh(consumed_wh, battery_instance)) {
-        consumed_wh = quiet_nanf();
-    }
-
-    const struct log_Current pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CURRENT_MSG),
-        time_us             : time_us,
-        instance            : battery_instance,
-        voltage             : battery.voltage(battery_instance),
-        voltage_resting     : battery.voltage_resting_estimate(battery_instance),
-        current_amps        : current,
-        current_total       : consumed_mah,
-        consumed_wh         : consumed_wh,
-        temperature         : (int16_t)(has_temp ? (temp * 100) : 0),
-        resistance          : battery.get_resistance(battery_instance)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-
-    // individual cell voltages
-    if (battery.has_cell_voltages(battery_instance)) {
-        const AP_BattMonitor::cells &cells = battery.get_cell_voltages(battery_instance);
-        struct log_Current_Cells cell_pkt{
-            LOG_PACKET_HEADER_INIT(LOG_CURRENT_CELLS_MSG),
-            time_us             : time_us,
-            instance            : battery_instance,
-            voltage             : battery.voltage(battery_instance)
-        };
-        for (uint8_t i = 0; i < ARRAY_SIZE(cells.cells); i++) {
-            cell_pkt.cell_voltages[i] = cells.cells[i] + 1;
-        }
-        WriteBlock(&cell_pkt, sizeof(cell_pkt));
-
-        // check battery structure can hold all cells
-        static_assert(ARRAY_SIZE(cells.cells) == (sizeof(cell_pkt.cell_voltages) / sizeof(cell_pkt.cell_voltages[0])),
-                      "Battery cell number doesn't match in library and log structure");
-    }
-}
-
-// Write an Current data packet
-void AP_Logger::Write_Current()
-{
-    AP_BattMonitor &battery = AP::battery();
-    const uint64_t time_us = AP_HAL::micros64();
-    const uint8_t num_instances = AP::battery().num_instances();
-    for (uint8_t i = 0; i < num_instances; i++) {
-        if (battery.get_type(i) != AP_BattMonitor::Type::NONE) {
-            Write_Current_instance(time_us, i);
-        }
-    }
 }
 
 void AP_Logger::Write_Compass_instance(const uint64_t time_us, const uint8_t mag_instance)
