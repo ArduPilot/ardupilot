@@ -5160,7 +5160,7 @@ Also, ignores heartbeats not from our target system'''
         mavutil.dump_message_verbose(f, m)
         return f.getvalue()
 
-    def poll_home_position(self, quiet=False, timeout=30):
+    def poll_home_position(self, quiet=True, timeout=30):
         old = self.mav.messages.get("HOME_POSITION", None)
         tstart = self.get_sim_time()
         while True:
@@ -5188,6 +5188,7 @@ Also, ignores heartbeats not from our target system'''
                 break
             if m._timestamp != old._timestamp:
                 break
+        self.progress("Polled home position (%s)" % str(m))
         return m
 
     def distance_to_home(self, use_cached_home=False):
