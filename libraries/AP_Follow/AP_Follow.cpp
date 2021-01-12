@@ -310,7 +310,9 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
 
         // get a local timestamp with correction for transport jitter
+        _last_location_update_ms = AP_HAL::millis();
         _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
+        gcs().send_text(MAV_SEVERITY_INFO, "new update (%u)\n", _last_location_update_ms);
         if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
             _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
             _last_heading_update_ms = _last_location_update_ms;
