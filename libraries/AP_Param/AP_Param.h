@@ -678,6 +678,7 @@ private:
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;
 
     static StorageAccess        _storage;
+    static StorageAccess        _storage_bak;
     static uint16_t             _num_vars;
     static uint16_t             _parameter_count;
     static uint16_t             _count_marker;
