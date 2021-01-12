@@ -2,6 +2,10 @@
 
 #include <AP_Common/AP_Common.h>
 
+#if FOLLOW_ENABLED == ENABLED
+ # include <AP_Follow/AP_Follow.h>
+#endif
+
 // Global parameter class.
 //
 class Parameters {
@@ -589,6 +593,10 @@ public:
 
     // min initial climb in RTL
     AP_Int16        rtl_climb_min;
+    
+    #if FOLLOW_ENABLED == ENABLED
+    AP_Follow follow;
+    #endif
 };
 
 extern const AP_Param::Info var_info[];
