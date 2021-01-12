@@ -117,18 +117,19 @@ def module_is_uninitialised(d):
 
 def configure(cfg):
     cfg.find_program('git')
-    path = cfg.srcnode.abspath()+'/modules/'
-    check_modules = ['ChibiOS', 'gbenchmark', 'gtest', 'libcanard', 'mavlink', 'uavcan']
-    missing_modules = []
+    if cfg.env.OPTIONS['submodule_update']:
+        path = cfg.srcnode.abspath()+'/modules/'
+        check_modules = ['ChibiOS', 'gbenchmark', 'gtest', 'libcanard', 'mavlink', 'uavcan']
+        missing_modules = []
 
-    for i in check_modules:
-        path_module = os.path.join(path, i)
-        if module_is_uninitialised(path_module):
-            missing_modules.append(i)
+        for i in check_modules:
+            path_module = os.path.join(path, i)
+            if module_is_uninitialised(path_module):
+                missing_modules.append(i)
 
-    for i in missing_modules:
-        path_module = os.path.join(path, i)
-        subprocess.check_call(['git', 'submodule', 'update', '--init', path_module])
+        for i in missing_modules:
+            path_module = os.path.join(path, i)
+            subprocess.check_call(['git', 'submodule', 'update', '--init', path_module])
 
 
 _submodules_tasks = {}
