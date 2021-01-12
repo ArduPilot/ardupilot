@@ -373,6 +373,9 @@ public:
     // parameter conversion
     void convert_parameters();
 
+    // returns true when the yaw angle has been aligned
+    bool yawAlignmentComplete(void) const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
