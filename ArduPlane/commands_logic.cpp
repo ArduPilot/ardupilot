@@ -383,7 +383,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     }
 
 #if AC_FENCE == ENABLED
-    disable_fence_for_landing();
+    plane.fence.auto_disable_fence_for_landing();
 #endif
 }
 
