@@ -167,6 +167,7 @@ public:
         TYPE_I2C_DLVR_60IN=12,
         TYPE_NMEA_WATER=13,
         TYPE_MSP=14,
+        TYPE_I2C_ASP5033=15,
     };
 
     // get current primary sensor
