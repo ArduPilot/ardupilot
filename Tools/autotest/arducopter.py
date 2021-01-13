@@ -5603,6 +5603,75 @@ class AutoTestCopter(AutoTest):
         self.progress("mavlink rangefinder OK")
         self.land_and_disarm()
 
+    def fly_rangefinder_driver_maxbotix(self):
+        ex = None
+        try:
+            self.context_push()
+
+            self.start_subtest("No messages")
+            rf = self.mav.recv_match(type="DISTANCE_SENSOR", timeout=5, blocking=True)
+            if rf is not None:
+                raise NotAchievedException("Receiving DISTANCE_SENSOR when I shouldn't be")
+
+            self.start_subtest("Default address")
+            self.set_parameter("RNGFND1_TYPE", 2)  # maxbotix
+            self.reboot_sitl()
+            self.do_timesync_roundtrip()
+            rf = self.mav.recv_match(type="DISTANCE_SENSOR", timeout=5, blocking=True)
+            self.progress("Got (%s)" % str(rf))
+            if rf is None:
+                raise NotAchievedException("Didn't receive DISTANCE_SENSOR when I should've")
+
+            self.start_subtest("Explicitly set to default address")
+            self.set_parameter("RNGFND1_TYPE", 2)  # maxbotix
+            self.set_parameter("RNGFND1_ADDR", 0x70)
+            self.reboot_sitl()
+            self.do_timesync_roundtrip()
+            rf = self.mav.recv_match(type="DISTANCE_SENSOR", timeout=5, blocking=True)
+            self.progress("Got (%s)" % str(rf))
+            if rf is None:
+                raise NotAchievedException("Didn't receive DISTANCE_SENSOR when I should've")
+
+            self.start_subtest("Explicitly set to non-default address")
+            self.set_parameter("RNGFND1_ADDR", 0x71)
+            self.reboot_sitl()
+            self.do_timesync_roundtrip()
+            rf = self.mav.recv_match(type="DISTANCE_SENSOR", timeout=5, blocking=True)
+            self.progress("Got (%s)" % str(rf))
+            if rf is None:
+                raise NotAchievedException("Didn't receive DISTANCE_SENSOR when I should've")
+
+            self.start_subtest("Two MaxBotix RangeFinders")
+            self.set_parameter("RNGFND1_TYPE", 2)  # maxbotix
+            self.set_parameter("RNGFND1_ADDR", 0x70)
+            self.set_parameter("RNGFND1_MIN_CM", 150)
+            self.set_parameter("RNGFND2_TYPE", 2)  # maxbotix
+            self.set_parameter("RNGFND2_ADDR", 0x71)
+            self.set_parameter("RNGFND2_MIN_CM", 250)
+            self.reboot_sitl()
+            self.do_timesync_roundtrip()
+            for i in [0, 1]:
+                rf = self.mav.recv_match(type="DISTANCE_SENSOR", timeout=5, blocking=True, condition="DISTANCE_SENSOR.id==%u" % i)
+                self.progress("Got id==%u (%s)" % (i, str(rf)))
+                if rf is None:
+                    raise NotAchievedException("Didn't receive DISTANCE_SENSOR when I should've")
+                expected_dist = 150
+                if i == 1:
+                    expected_dist = 250
+                if rf.min_distance != expected_dist:
+                    raise NotAchievedException("Unexpected min_cm (want=%u got=%u)" %
+                    (expected_dist, rf.min_distance))
+
+            self.context_pop()
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def fly_rangefinder_drivers(self):
         self.set_parameter("RTL_ALT", 500)
         self.set_parameter("RTL_ALT_TYPE", 1)
@@ -6152,6 +6221,10 @@ class AutoTestCopter(AutoTest):
             ("RangeFinderDrivers",
              "Test rangefinder drivers",
              self.fly_rangefinder_drivers), #62s
+
+            ("MaxBotixI2CXL",
+             "Test maxbotix rangefinder drivers",
+             self.fly_rangefinder_driver_maxbotix), #62s
 
             ("ParameterValidation",
              "Test parameters are checked for validity",
