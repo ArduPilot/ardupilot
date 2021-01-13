@@ -160,6 +160,42 @@ void AC_Fence::disable_floor()
     clear_breach(AC_FENCE_TYPE_ALT_MIN);
 }
 
+/*
+  called when an auto-takeoff is complete
+*/
+void AC_Fence::auto_enable_fence_after_takeoff(void)
+{
+    switch(auto_enabled()) {
+        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
+        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
+            enable(true);
+            break;
+        default:
+            // fence does not auto-enable in other takeoff conditions
+            break;
+    }
+}
+
+/*
+  called when performing an auto landing
+ */
+void AC_Fence::auto_disable_fence_for_landing(void)
+{
+    switch (auto_enabled()) {
+        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
+            enable(false);
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+            break;
+        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
+            disable_floor();
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            break;
+        default:
+            // fence does not auto-disable in other landing conditions
+            break;
+    }
+}
+
 bool AC_Fence::present() const
 {
     const auto enabled_fences = _enabled_fences.get();
