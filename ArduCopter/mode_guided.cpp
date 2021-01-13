@@ -398,8 +398,10 @@ void ModeGuided::takeoff_run()
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
 
+#if AC_FENCE == ENABLED
         // takeoff complete, enable fence
-        copter.autoenable_fence_after_takeoff();
+        copter.fence.auto_enable_fence_after_takeoff();
+#endif
 
         // switch to position control mode but maintain current target
         const Vector3f target = wp_nav->get_wp_destination();
