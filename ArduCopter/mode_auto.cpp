@@ -252,7 +252,7 @@ void ModeAuto::land_start(const Vector3f& destination)
     copter.landinggear.deploy_for_landing();
 
 #if AC_FENCE == ENABLED
-    copter.disable_fence_for_landing();
+    copter.fence.auto_disable_fence_for_landing();
 #endif
 }
 
@@ -1522,8 +1522,10 @@ bool ModeAuto::verify_takeoff()
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
 
+#if AC_FENCE == ENABLED
         // auto-enable the fence after takeoff
-        copter.autoenable_fence_after_takeoff();
+        copter.fence.auto_enable_fence_after_takeoff();
+#endif
     }
 
     return reached_wp_dest;
