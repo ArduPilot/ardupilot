@@ -687,6 +687,27 @@ void NavEKF3_core::UpdateFilter(bool predict)
 
     // Wind output forward from the fusion to output time horizon
     calcOutputStates();
+
+    /*
+      this is a check to cope with a vehicle sitting idle on the
+      ground and getting over-confident of the state. The symptoms
+      would be "gyros still settling" when the user tries to arm. In
+      that state the EKF can't recover, so we do a hard reset and let
+      it try again.
+     */
+    if (filterStatus.value != 0) {
+        last_filter_ok_ms = dal.millis();
+    }
+    if (filterStatus.value == 0 &&
+        last_filter_ok_ms != 0 &&
+        dal.millis() - last_filter_ok_ms > 5000 &&
+        !dal.get_armed()) {
+        // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u forced reset",(unsigned)imu_index);
+        last_filter_ok_ms = 0;
+        statesInitialised = false;
+        InitialiseFilterBootstrap();
+    }
 }
 
 void NavEKF3_core::correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index)
