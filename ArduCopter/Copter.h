@@ -746,8 +746,6 @@ private:
     // fence.cpp
 #if AC_FENCE == ENABLED
     void fence_check();
-    void autoenable_fence_after_takeoff(void);
-    void disable_fence_for_landing(void);
 #endif
 
     // heli.cpp

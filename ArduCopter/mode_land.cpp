@@ -40,8 +40,10 @@ bool ModeLand::init(bool ignore_checks)
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 
+#if AC_FENCE == ENABLED
     // disable the fence on landing
-    copter.disable_fence_for_landing();
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 
     return true;
 }
