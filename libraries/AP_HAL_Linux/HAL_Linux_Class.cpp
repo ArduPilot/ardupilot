@@ -163,6 +163,9 @@ static RCInput_SoloLink rcinDriver;
 static RCInput_Navio2 rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 static RCInput_RCProtocol rcinDriver{"/dev/ttyPS0", NULL};
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV
+// this is needed to allow for RC input using SERIALn_PROTOCOL=23
+static RCInput_RCProtocol rcinDriver{"/dev/null", NULL};
 #else
 static RCInput rcinDriver;
 #endif
