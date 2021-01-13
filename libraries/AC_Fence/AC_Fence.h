@@ -74,6 +74,12 @@ public:
     /// disable_floor - allows fence floor to be enabled/disabled. Note this does not update the eeprom saved value
     void disable_floor();
 
+    /// auto_enable_fence_on_takeoff - auto enables the fence. Called after takeoff conditions met
+    void auto_enable_fence_after_takeoff();
+
+    /// auto_disable_fence_for_landing - auto disables respective fence. Called prior to landing.
+    void auto_disable_fence_for_landing();
+
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }
 
