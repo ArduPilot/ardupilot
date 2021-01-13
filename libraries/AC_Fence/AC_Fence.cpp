@@ -102,7 +102,8 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: AUTOENABLE
     // @DisplayName: Fence Auto-Enable
     // @Description: Auto-enable of fence
-    // @Values{Plane}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
+    // @Values{Copter, Plane}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
+    // @Values{Rover, Sub}: 0:AutoEnableOff,3:AutoEnableOnlyWhenArmed
     // @Range: 0 3
     // @Increment: 1
     // @User: Standard
