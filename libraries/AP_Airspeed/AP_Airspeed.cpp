@@ -30,6 +30,7 @@
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_DLVR.h"
+#include "AP_Airspeed_ASP5033.h
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_Backend.h"
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -356,6 +357,11 @@ void AP_Airspeed::init()
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 60);
 #endif // !HAL_MINIMIZE_FEATURES
             break;
+         case TYPE_I2C_ASP5033:
+#if !HAL_MINIMIZE_FEATURES
+            sensor[i] = new AP_Airspeed_ASP5033(*this, i);
+#endif // !HAL_MINIMIZE_FEATURES                
+            break;          
         case TYPE_UAVCAN:
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
