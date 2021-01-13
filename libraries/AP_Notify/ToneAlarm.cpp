@@ -127,7 +127,9 @@ bool AP_ToneAlarm::init()
     }
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     play_tone(AP_NOTIFY_TONE_STARTUP);
+#endif
     return true;
 }
 
