@@ -48,6 +48,7 @@ static IgnoredI2CDevice ignored;
 
 static ToshibaLED toshibaled;
 static MaxSonarI2CXL maxsonari2cxl;
+static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
 static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
@@ -60,6 +61,7 @@ struct i2c_device_at_address {
     I2CDevice &device;
 } i2c_devices[] {
     { 0, 0x70, maxsonari2cxl },
+    { 0, 0x71, maxsonari2cxl_2 },
     { 1, 0x01, icm40609 },
     { 1, 0x55, toshibaled },
     { 1, 0x38, ignored }, // NCP5623
