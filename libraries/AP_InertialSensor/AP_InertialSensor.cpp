@@ -1303,7 +1303,7 @@ AP_InertialSensor::_init_gyro()
     float best_diff[INS_MAX_INSTANCES];
     bool converged[INS_MAX_INSTANCES];
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    float start_temperature[INS_MAX_INSTANCES];
+    float start_temperature[INS_MAX_INSTANCES] {};
 #endif
 
     // exit immediately if calibration is already in progress
