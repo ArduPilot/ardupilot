@@ -1307,7 +1307,7 @@ void QuadPlane::init_qland(void)
     plane.g2.landing_gear.deploy_for_landing();
 #endif
 #if AC_FENCE == ENABLED
-    plane.disable_fence_for_landing();
+    plane.fence.auto_disable_fence_for_landing();
 #endif
 }
 
@@ -3051,7 +3051,9 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.state == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
-        plane.disable_fence_for_landing();
+#if AC_FENCE == ENABLED
+        plane.fence.auto_disable_fence_for_landing();
+#endif
 #if LANDING_GEAR_ENABLED == ENABLED
         plane.g2.landing_gear.deploy_for_landing();
 #endif
