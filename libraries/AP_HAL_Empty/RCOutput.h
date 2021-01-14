@@ -13,4 +13,6 @@ class Empty::RCOutput : public AP_HAL::RCOutput {
     void     read(uint16_t* period_us, uint8_t len) override;
     void     cork(void) override {}
     void     push(void) override {}
+private:
+    uint16_t value[16];
 };
