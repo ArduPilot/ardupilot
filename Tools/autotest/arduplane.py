@@ -1899,7 +1899,9 @@ class AutoTestPlane(AutoTest):
         return Vector3(m.xgyro, m.ygyro, m.zgyro) * 0.001 * math.degrees(1)
 
     def test_imu_tempcal(self):
-        params = {
+        self.progress("Setting up SITL temperature profile")
+        self.set_parameters({
+            "SIM_IMUT1_ENABLE" : 1,
             "SIM_IMUT1_ACC1_X" : 120000.000000,
             "SIM_IMUT1_ACC1_Y" : -190000.000000,
             "SIM_IMUT1_ACC1_Z" : 1493.864746,
@@ -1909,7 +1911,6 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT1_ACC3_X" : -0.514242,
             "SIM_IMUT1_ACC3_Y" : 0.862218,
             "SIM_IMUT1_ACC3_Z" : -234.000000,
-            "SIM_IMUT1_ENABLE" : 1,
             "SIM_IMUT1_GYR1_X" : -5122.513817,
             "SIM_IMUT1_GYR1_Y" : -3250.470428,
             "SIM_IMUT1_GYR1_Z" : -2136.346676,
@@ -1921,6 +1922,7 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT1_GYR3_Z" : 0.015457,
             "SIM_IMUT1_TMAX"   : 42.0,
             "SIM_IMUT1_TMIN"   : 4.000000,
+            "SIM_IMUT2_ENABLE" : 1,
             "SIM_IMUT2_ACC1_X" : -160000.000000,
             "SIM_IMUT2_ACC1_Y" : 198730.000000,
             "SIM_IMUT2_ACC1_Z" : 27812.000000,
@@ -1930,7 +1932,6 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT2_ACC3_X" : 0.102912,
             "SIM_IMUT2_ACC3_Y" : 0.229734,
             "SIM_IMUT2_ACC3_Z" : 172.000000,
-            "SIM_IMUT2_ENABLE" : 1,
             "SIM_IMUT2_GYR1_X" : 3173.925644,
             "SIM_IMUT2_GYR1_Y" : -2368.312836,
             "SIM_IMUT2_GYR1_Z" : -1796.497177,
@@ -1947,10 +1948,7 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT_TCONST"  : 75.000000,
             "SIM_DRIFT_SPEED"  : 0,
             "INS_GYR_CAL"      : 1,
-        }
-        self.progress("Setting up SITL temperature profile")
-        for p in params.keys():
-            self.set_parameter(p, params[p])
+        })
 
         self.progress("Running accelcal")
         self.set_parameter("SIM_IMUT_FIXED", 35)
@@ -1961,11 +1959,11 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("INS_TCAL1_ENABLE", 2)
         self.set_parameter("INS_TCAL2_ENABLE", 2)
         self.fetch_parameters()
-        self.set_parameter("INS_TCAL1_TMAX", 42)
-        self.set_parameter("INS_TCAL2_TMAX", 42)
-        self.set_parameter("INS_TCAL1_TMIN", 15)
-        self.set_parameter("INS_TCAL2_TMIN", 15)
-        self.set_parameter("SIM_SPEEDUP", 200)
+        self.set_parameters({"INS_TCAL1_TMAX" : 42,
+                             "INS_TCAL2_TMAX" : 42,
+                             "INS_TCAL1_TMIN" : 15,
+                             "INS_TCAL2_TMIN" : 15,
+                             "SIM_SPEEDUP" : 200})
         self.mavproxy.send("set streamrate 1\n")
         self.set_parameter("LOG_DISARMED", 1)
         self.reboot_sitl()
