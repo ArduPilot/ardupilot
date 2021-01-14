@@ -5660,6 +5660,8 @@ class AutoTestCopter(AutoTest):
         self.wait_groundspeed(0, 2)
 
     def test_parameter_validation(self):
+        # wait 10 seconds for initialisation
+        self.delay_sim_time(10)
         self.progress("invalid; min must be less than max:")
         self.set_parameter("MOT_PWM_MIN", 100)
         self.set_parameter("MOT_PWM_MAX", 50)
