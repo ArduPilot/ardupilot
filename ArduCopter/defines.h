@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "APM_Config.h"
 
 // Just so that it's completely clear...
 #define ENABLED                 1
@@ -88,7 +89,9 @@ enum AutoMode {
     Auto_TakeOff,
     Auto_WP,
     Auto_Land,
+#if MODE_RTL_ENABLED == ENABLED
     Auto_RTL,
+#endif
     Auto_CircleMoveToEdge,
     Auto_Circle,
     Auto_Spline,

@@ -80,8 +80,10 @@ void ModeAuto::run()
         land_run();
         break;
 
+#if MODE_RTL_ENABLED == ENABLED
     case Auto_RTL:
         rtl_run();
+#endif
         break;
 
     case Auto_Circle:
@@ -140,6 +142,7 @@ bool ModeAuto::loiter_start()
     return true;
 }
 
+#if MODE_RTL_ENABLED == ENABLED
 // auto_rtl_start - initialises RTL in AUTO flight mode
 void ModeAuto::rtl_start()
 {
@@ -148,6 +151,7 @@ void ModeAuto::rtl_start()
     // call regular rtl flight mode initialisation and ask it to ignore checks
     copter.mode_rtl.init(true);
 }
+#endif
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
@@ -360,8 +364,10 @@ bool ModeAuto::is_landing() const
     switch(_mode) {
     case Auto_Land:
         return true;
+#if MODE_RTL_ENABLED == ENABLED
     case Auto_RTL:
         return copter.mode_rtl.is_landing();
+#endif
     default:
         return false;
     }
@@ -431,9 +437,11 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_to_alt(cmd);
         break;
 
+#if MODE_RTL_ENABLED == ENABLED
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
         do_RTL();
         break;
+#endif
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
         do_spline_wp(cmd);
@@ -600,8 +608,10 @@ bool ModeAuto::get_wp(Location& destination)
         return copter.mode_guided.get_wp(destination);
     case Auto_WP:
         return wp_nav->get_oa_wp_destination(destination);
+#if MODE_RTL_ENABLED == ENABLED
     case Auto_RTL:
         return copter.mode_rtl.get_wp(destination);
+#endif
     default:
         return false;
     }
@@ -676,9 +686,11 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TO_ALT:
         return verify_loiter_to_alt();
 
+#if MODE_RTL_ENABLED == ENABLED
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         cmd_complete = verify_RTL();
         break;
+#endif
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         cmd_complete = verify_spline_wp(cmd);
@@ -849,6 +861,7 @@ void ModeAuto::land_run()
     land_run_vertical_control();
 }
 
+#if MODE_RTL_ENABLED == ENABLED
 // auto_rtl_run - rtl in AUTO flight mode
 //      called by auto_run at 100hz or more
 void ModeAuto::rtl_run()
@@ -856,6 +869,7 @@ void ModeAuto::rtl_run()
     // call regular rtl flight mode run function
     copter.mode_rtl.run(false);
 }
+#endif
 
 // auto_circle_run - circle in AUTO flight mode
 //      called by auto_run at 100hz or more
@@ -1154,10 +1168,12 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
                     fast_waypoint = true;
                 }
                 break;
+#if MODE_RTL_ENABLED == ENABLED
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 // do not stop for RTL
                 fast_waypoint = true;
                 break;
+#endif
             case MAV_CMD_NAV_TAKEOFF:
             default:
                 // always stop for takeoff commands
@@ -1496,12 +1512,14 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     nav_payload_place.descend_max = cmd.p1;
 }
 
+#if MODE_RTL_ENABLED == ENABLED
 // do_RTL - start Return-to-Launch
 void ModeAuto::do_RTL(void)
 {
     // start rtl in auto flight mode
     rtl_start();
 }
+#endif
 
 /********************************************************************************/
 // Verify Nav (Must) commands
@@ -1766,6 +1784,7 @@ bool ModeAuto::verify_loiter_to_alt()
     return false;
 }
 
+#if MODE_RTL_ENABLED == ENABLED
 // verify_RTL - handles any state changes required to implement RTL
 // do_RTL should have been called once first to initialise all variables
 // returns true with RTL has completed successfully
@@ -1775,6 +1794,7 @@ bool ModeAuto::verify_RTL()
             (copter.mode_rtl.state() == ModeRTL::RTL_FinalDescent || copter.mode_rtl.state() == ModeRTL::RTL_Land) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }
+#endif
 
 /********************************************************************************/
 // Verify Condition (May) commands

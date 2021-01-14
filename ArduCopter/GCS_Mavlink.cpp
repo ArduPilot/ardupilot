@@ -722,11 +722,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         return MAV_RESULT_ACCEPTED;
 
+#if MODE_RTL_ENABLED == ENABLED
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         if (!copter.set_mode(Mode::Number::RTL, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+#endif
 
     case MAV_CMD_NAV_LAND:
         if (!copter.set_mode(Mode::Number::LAND, ModeReason::GCS_COMMAND)) {
