@@ -4286,6 +4286,7 @@ class AutoTestCopter(AutoTest):
                 # magic tridge EKF type that dramatically speeds up the test
                 self.set_parameter("AHRS_EKF_TYPE", 10)
                 self.set_parameter("EK2_ENABLE", 0)
+                self.set_parameter("EK3_ENABLE", 0)
                 self.set_parameter("INS_LOG_BAT_MASK", 3)
                 self.set_parameter("INS_LOG_BAT_OPT", 0)
                 self.set_parameter("INS_GYRO_FILTER", 100)
@@ -4421,6 +4422,7 @@ class AutoTestCopter(AutoTest):
                 # magic tridge EKF type that dramatically speeds up the test
                 self.set_parameter("AHRS_EKF_TYPE", 10)
                 self.set_parameter("EK2_ENABLE", 0)
+                self.set_parameter("EK3_ENABLE", 0)
                 self.set_parameter("INS_LOG_BAT_MASK", 3)
                 self.set_parameter("INS_LOG_BAT_OPT", 0)
                 self.set_parameter("INS_GYRO_FILTER", 100)
