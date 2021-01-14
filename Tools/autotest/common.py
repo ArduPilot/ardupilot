@@ -3521,7 +3521,7 @@ class AutoTest(ABC):
         self.set_parameters({name: value }, **kwargs)
 
 
-    def set_parameters(self, parameters, add_to_context=True, epsilon=0.000012, retries=None, verbose=True):
+    def set_parameters(self, parameters, add_to_context=True, epsilon_pct=0.00001, retries=None, verbose=True):
         """Set parameters from vehicle."""
         want = copy.copy(parameters)
         self.progress("set_parameters: (%s)" % str(want))
@@ -3556,7 +3556,7 @@ class AutoTest(ABC):
 #                    self.progress("Requesting (%s) (retry=%u)" % (name, i))
                     continue
                 delta = abs(autopilot_values[name] - value)
-                if delta <= epsilon:
+                if delta <= epsilon_pct*0.01*abs(value):
                     # correct value
                     self.progress("%s is now %f" % (name, autopilot_values[name]))
                     if add_to_context:
