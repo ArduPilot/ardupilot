@@ -409,6 +409,32 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
     }
 }
 
+// calculate the lateral acceleration limited turn rate
+//
+// - lateral acceleration limiting has similar effect to motor speed scaling
+//   (MOT_SPD_SCA_BASE) as both parameters modify (decrease) the turn rate.
+// - lateral acceleration limiting is disabled if TURN_MAX_G is not positive
+// - there is no limiting appiled if AR_AttitudeControl::get_forward_speed returns zero
+float Mode::calc_accel_limited_turn_rate(float desired_turn_rate) const
+{
+    // get acceleration limit param (see also mode_steering) 
+    const float lat_accel_max = g.turn_max_g * GRAVITY_MSS;
+
+    // get current speed forward
+    float speed = 0.0;
+    if (!attitude_control.get_forward_speed(speed)) {
+        // no valid speed so return desired turn rate
+        return desired_turn_rate;
+    }
+
+    // apply lateral acceleration limiting if active
+    const float turn_rate_max = attitude_control.get_turn_rate_from_lat_accel(lat_accel_max, speed);        
+    const float turn_rate = is_positive(g.turn_max_g)
+        ? constrain_float(desired_turn_rate, -turn_rate_max, turn_rate_max)
+        : desired_turn_rate;
+    return turn_rate;
+}
+
 // high level call to navigate to waypoint
 // uses wp_nav to calculate turn rate and speed to drive along the path from origin to destination
 // this function updates _distance_to_destination
@@ -428,11 +454,17 @@ void Mode::navigate_to_waypoint()
         // sailboats use heading controller when tacking upwind
         desired_heading_cd = g2.sailboat.calc_heading(desired_heading_cd);
         // use pivot turn rate for tacks
-        const float turn_rate = g2.sailboat.tacking() ? g2.wp_nav.get_pivot_rate() : 0.0f;
+        const float desired_turn_rate = g2.sailboat.tacking() ? g2.wp_nav.get_pivot_rate() : 0.0f;
+        const float turn_rate = calc_accel_limited_turn_rate(desired_turn_rate);
+
+        // call heading steering controller
         calc_steering_to_heading(desired_heading_cd, turn_rate);
     } else {
+        const float desired_turn_rate = g2.wp_nav.get_turn_rate_rads();
+        const float turn_rate = calc_accel_limited_turn_rate(desired_turn_rate);
+
         // call turn rate steering controller
-        calc_steering_from_turn_rate(g2.wp_nav.get_turn_rate_rads());
+        calc_steering_from_turn_rate(turn_rate);
     }
 }
 

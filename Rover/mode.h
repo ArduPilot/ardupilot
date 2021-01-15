@@ -191,6 +191,10 @@ protected:
     //  reversed should be true if the vehicle is intentionally backing up which allows the pilot to increase the backing up speed by pulling the throttle stick down
     float calc_speed_nudge(float target_speed, bool reversed);
 
+    // calculate the lateral acceleration limited turn rate
+    // desired_turn_rate should be in rad/s
+    float calc_accel_limited_turn_rate(float desired_turn_rate) const;
+
 protected:
 
     // decode pilot steering and throttle inputs and return in steer_out and throttle_out arguments
