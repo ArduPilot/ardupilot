@@ -342,6 +342,7 @@ class AutoTestSub(AutoTest):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
             "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+            "FrameDefaults": "Sub maintainers want all values in files",
         })
         return ret
 
