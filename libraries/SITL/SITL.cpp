@@ -371,7 +371,7 @@ const AP_Param::GroupInfo SITL::var_sfml_joystick[] = {
 
 #endif //SFML_JOYSTICK
     
-/* report SITL state via MAVLink */
+/* report SITL state via MAVLink SIMSTATE*/
 void SITL::simstate_send(mavlink_channel_t chan)
 {
     float yaw;
@@ -394,6 +394,39 @@ void SITL::simstate_send(mavlink_channel_t chan)
                               radians(state.yawRate),
                               state.latitude*1.0e7,
                               state.longitude*1.0e7);
+}
+
+/* report SITL state via MAVLink SIM_STATE */
+void SITL::sim_state_send(mavlink_channel_t chan)
+{
+    // convert to same conventions as DCM
+    float yaw = state.yawDeg;
+    if (yaw > 180) {
+        yaw -= 360;
+    }
+
+    mavlink_msg_sim_state_send(chan,
+            state.quaternion.q1,
+            state.quaternion.q2,
+            state.quaternion.q3,
+            state.quaternion.q4,
+            ToRad(state.rollDeg),
+            ToRad(state.pitchDeg),
+            ToRad(yaw),
+            state.xAccel,
+            state.yAccel,
+            state.zAccel,
+            radians(state.rollRate),
+            radians(state.pitchRate),
+            radians(state.yawRate),
+            state.latitude*1.0e7,
+            state.longitude*1.0e7,
+            (float)state.altitude,
+            0.0,
+            0.0,
+            state.speedN,
+            state.speedE,
+            state.speedD);
 }
 
 /* report SITL state to AP_Logger */
