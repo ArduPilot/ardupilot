@@ -1822,7 +1822,6 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.set_rc(2, 1500)
-        self.set_rc(3, 1500)
         self.context_pop()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -2208,11 +2207,16 @@ class AutoTestCopter(AutoTest):
 
         ex = None
         try:
+            # configure EKF to use external nav instead of GPS
+            ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
+            if ahrs_ekf_type == 2:
+                self.set_parameter("EK2_GPS_TYPE", 3)
+            if ahrs_ekf_type == 3:
+                self.set_parameter("EK3_SRC1_POSXY", 6)
+                self.set_parameter("EK3_SRC1_VELXY", 6)
+                self.set_parameter("EK3_SRC1_POSZ", 6)
+                self.set_parameter("EK3_SRC1_VELZ", 6)
             self.set_parameter("GPS_TYPE", 0)
-            self.set_parameter("EK3_SRC1_POSXY", 6)
-            self.set_parameter("EK3_SRC1_VELXY", 6)
-            self.set_parameter("EK3_SRC1_POSZ", 6)
-            self.set_parameter("EK3_SRC1_VELZ", 6)
             self.set_parameter("VISO_TYPE", 1)
             self.set_parameter("SERIAL5_PROTOCOL", 1)
             self.reboot_sitl()
@@ -5712,7 +5716,7 @@ class AutoTestCopter(AutoTest):
 
             # check that mode change to ALT_HOLD has failed (it should)
             if self.mode_is("ALT_HOLD"):
-                raise NotAchievedException("FAIL - Changed to ALT_HOLD with no altitude estimate")
+                raise NotAchievedException("Changed to ALT_HOLD with no altitude estimate")
 
         except Exception as e:
             self.progress("Exception caught: %s" % (
