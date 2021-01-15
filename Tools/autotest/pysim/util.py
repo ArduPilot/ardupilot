@@ -344,8 +344,10 @@ def start_SITL(binary,
         cmd.extend(['--speedup', str(speedup)])
     if defaults_filepath is not None:
         if type(defaults_filepath) == list:
-            defaults_filepath = ",".join(defaults_filepath)
-        cmd.extend(['--defaults', defaults_filepath])
+            if len(defaults_filepath):
+                cmd.extend(['--defaults', ",".join(defaults_filepath)])
+        else:
+            cmd.extend(['--defaults', defaults_filepath])
     if unhide_parameters:
         cmd.extend(['--unhide-groups'])
     cmd.extend(customisations)
