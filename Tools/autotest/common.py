@@ -9267,7 +9267,9 @@ switch value'''
         self.test_parameters_download()
 
     def disabled_tests(self):
-        return {}
+        return {
+            "FrameDefaults": "Time constraints say we might not want to run this",
+        }
 
     def test_parameter_checks_poscontrol(self, param_prefix):
         self.wait_ready_to_arm()
@@ -10907,6 +10909,58 @@ switch value'''
         if ex is not None:
             raise ex
 
+    def check_frame_defaults(self, model):
+        '''check each of the entries in VehicleInfo to see if they override
+        parameters they shouldn't'''
+
+        defaults_filepath = self.model_defaults_filepath(model)
+        # we start the model but without passing through the defaults:
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=[],
+            wipe=True)
+        failed = []
+        for filepath in defaults_filepath:
+            parameters = mavparm.MAVParmDict()
+            if not os.path.exists(filepath):
+                #                raise NotAchievedException("Bad
+                #                parameter file referenced: %s" %
+                #                str(filepath))
+                failed.append("Bad parameter file referenced: %s" % str(filepath))
+            parameters.load(filepath)
+            for (file_param_name, file_param_value) in parameters.items():
+                try:
+                    current_value = self.get_parameter(file_param_name, verbose=False)
+                except NotAchievedException:
+                    failed.append("%s in (%s) but not in firmware" %
+                                  (filepath, file_param_name))
+                    continue
+                if current_value == parameters[file_param_name]:
+                    failed.append("%s has same value (%f) in (%s) and in firmware" %
+                                  (filepath, current_value, file_param_name))
+                    continue
+        if len(failed):
+            self.progress("Frame (%s) failed:" % (model, ))
+            for i in failed:
+                self.progress("        %s" % i)
+            return False
+        return True
+
+    def check_frames_defaults(self):
+        vinfo = vehicleinfo.VehicleInfo()
+        success = True
+        frames = vinfo.options[self.vehicleinfo_key()]["frames"]
+        for frame in frames:
+            if frames[frame].get("external", False):
+                continue
+            self.progress("Checking frame (%s)" % str(frame))
+            if not self.check_frame_defaults(frame):
+                success = False
+        self.customise_SITL_commandline(["--unhide-groups"])
+        if not success:
+            raise NotAchievedException("Defaults files validation failed")
+
     def tests(self):
         return [
             Test("PIDTuning",
@@ -10946,6 +11000,10 @@ switch value'''
             Test("InitialMode",
                  "Test initial mode switching",
                  self.test_initial_mode),
+
+            Test("FrameDefaults",
+                 "Test Frame defaults file",
+                 self.check_frames_defaults),
         ]
 
     def post_tests_announcements(self):
@@ -10987,6 +11045,7 @@ switch value'''
         return ret
 
     def mavfft_fttd(self, sensor_type, sensor_instance, since, until):
+
         '''display fft for raw ACC data in current logfile'''
 
         '''object to store data about a single FFT plot'''

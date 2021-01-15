@@ -6034,10 +6034,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = super(AutoTestRover, self).disabled_tests()
+        ret.update({
             "DriveMaxRCIN": "currently triggers Arithmetic Exception",
             "SlewRate": "got timing report failure on CI",
-        }
+        })
+        return ret
 
     def rc_defaults(self):
         ret = super(AutoTestRover, self).rc_defaults()

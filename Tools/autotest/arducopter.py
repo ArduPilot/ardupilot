@@ -7978,11 +7978,13 @@ class AutoTestCopter(AutoTest):
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = super(AutoTestCopter, self).disabled_tests()
+        ret.update({
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
-        }
+        })
+        return ret
 
 
 class AutoTestCopterTests1(AutoTestCopter):
