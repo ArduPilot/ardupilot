@@ -2904,7 +2904,7 @@ class AutoTestCopter(AutoTest):
                 command, # command
                 0, # current
                 1, # autocontinue
-                0, # p1 (relative seconds)
+                -1, # p1 (relative seconds)
                 hours, # p2
                 mins, # p3
                 secs, # p4
