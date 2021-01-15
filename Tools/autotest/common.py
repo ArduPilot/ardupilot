@@ -1298,10 +1298,8 @@ class AutoTest(ABC):
         # setup test parameters
         vinfo = vehicleinfo.VehicleInfo()
         if self.params is None:
-            frames = vinfo.options[self.vehicleinfo_key()]["frames"]
-            self.params = frames[self.frame]["default_params_filename"]
-        if not isinstance(self.params, list):
-            self.params = [self.params]
+            self.params = self.model_defaults_filepath(self.vehicleinfo_key(),
+                                                       self.frame)
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
         self.set_parameter('LOG_DISARMED', 1)
@@ -9161,4 +9159,4 @@ switch value'''
         defaults_list = []
         for d in defaults_filepath:
             defaults_list.append(os.path.join(testdir, d))
-        return ','.join(defaults_list)
+        return defaults_list
