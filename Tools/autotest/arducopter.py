@@ -6274,11 +6274,13 @@ class AutoTestCopter(AutoTest):
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = super(AutoTestCopter, self).disabled_tests()
+        ret.update({
             "Parachute": "See https://github.com/ArduPilot/ardupilot/issues/4702",
             "HorizontalAvoidFence": "See https://github.com/ArduPilot/ardupilot/issues/11525",
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
-        }
+        })
+        return ret
 
 class AutoTestHeli(AutoTestCopter):
 
@@ -6577,9 +6579,11 @@ class AutoTestHeli(AutoTestCopter):
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = super(AutoTestHeli, self).disabled_tests()
+        ret.update({
             "SplineWaypoint": "See https://github.com/ArduPilot/ardupilot/issues/14593",
-        }
+        })
+        return ret
 
 class AutoTestCopterTests1(AutoTestCopter):
     def tests(self):
