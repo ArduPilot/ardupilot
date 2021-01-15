@@ -242,6 +242,7 @@ public:
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_sensor_offsets();
     virtual void send_simstate() const;
+    void send_sim_state() const;
     void send_ahrs();
     void send_battery2();
     void send_opticalflow();
