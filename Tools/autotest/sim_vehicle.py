@@ -281,7 +281,7 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
-def do_build_waf(opts, frame_options):
+def do_build(opts, frame_options):
     """Build sitl using waf"""
     progress("WAF build")
 
@@ -366,39 +366,6 @@ def do_build_parameters(vehicle):
     if sts != 0:
         progress("Parameter build failed")
         sys.exit(1)
-
-
-def do_build(vehicledir, opts, frame_options):
-    """Build build target (e.g. sitl) in directory vehicledir"""
-
-    if opts.build_system == 'waf':
-        return do_build_waf(opts, frame_options)
-
-    old_dir = os.getcwd()
-
-    os.chdir(vehicledir)
-
-    if opts.clean:
-        run_cmd_blocking("Building clean", ["make", "clean"])
-
-    build_target = frame_options["make_target"]
-    if opts.debug:
-        build_target += "-debug"
-
-    build_cmd = ["make", build_target]
-    if opts.jobs is not None:
-        build_cmd += ['-j', str(opts.jobs)]
-
-    _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-    if sts != 0:
-        progress("Build failed; cleaning and rebuilding")
-        run_cmd_blocking("Cleaning", ["make", "clean"])
-        _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-        if sts != 0:
-            progress("Build failed")
-            sys.exit(1)
-
-    os.chdir(old_dir)
 
 
 def get_user_locations_path():
