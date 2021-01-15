@@ -40,6 +40,7 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS,
     MSG_AHRS,
     MSG_SIMSTATE,
+    MSG_SIM_STATE,
     MSG_AHRS2,
     MSG_HWSTATUS,
     MSG_WIND,
