@@ -2204,5 +2204,7 @@ class AutoTestPlane(AutoTest):
         return ret
 
     def disabled_tests(self):
-        return {
-        }
+        ret = super(AutoTestPlane, self).disabled_tests()
+        ret.update({
+        })
+        return ret

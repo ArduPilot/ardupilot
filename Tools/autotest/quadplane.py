@@ -567,11 +567,13 @@ class AutoTestQuadPlane(AutoTest):
         return "MANUAL"
 
     def disabled_tests(self):
-        return {
+        ret = super(AutoTestQuadPlane, self).disabled_tests()
+        ret.update({
             "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
             "FRSkyPassThrough": "Currently failing",
             "CPUFailsafe": "servo channel values not scaled like ArduPlane",
-        }
+        })
+        return ret
 
     def test_pilot_yaw(self):
         self.takeoff(10, mode="QLOITER")
