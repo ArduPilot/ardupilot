@@ -387,6 +387,7 @@ public:
     time_t start_time_UTC;
 
     void simstate_send(mavlink_channel_t chan);
+    void sim_state_send(mavlink_channel_t chan);
 
     void Log_Write_SIMSTATE();
 
