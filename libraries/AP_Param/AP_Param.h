@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include <cmath>
 
+#include <stdio.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
@@ -62,7 +64,7 @@
 
 // don't shift index 0 to index 63. Use this when you know there will be
 // no conflict with the parent
-#define AP_PARAM_FLAG_NO_SHIFT      (1<<3)
+#define AP_PARAM_NO_SHIFT           (1<<3)
 
 // the var_info is a pointer, allowing for dynamic definition of the var_info tree
 #define AP_PARAM_FLAG_INFO_POINTER  (1<<4)
@@ -72,13 +74,15 @@
 // use.
 #define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
 
+#define AP_PARAM_FLAG_SETHOOKS (1<<6)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   7
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -185,6 +189,14 @@ public:
         float value;        // parameter value
     };
 
+    struct ValidationHooks {
+        const void *ptr;
+        struct ValidationHooks *next;
+        bool (*function)(float newvalue);
+    };
+
+    static ValidationHooks *validation_hooks;
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -224,6 +236,9 @@ public:
 
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
+
+    static bool addhook(const char *name, bool (*function)(float newvalue));
+    bool check_value(float value) const;
 
     // the 'group_id' of a element of a group is the 18 bit identifier
     // used to distinguish between this element of the group and other

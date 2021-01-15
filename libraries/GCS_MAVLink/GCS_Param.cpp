@@ -71,7 +71,7 @@ GCS_MAVLINK::queued_param_send()
     }
     count -= async_replies_sent_count;
 
-    while (count && _queued_parameter != nullptr && get_last_txbuf() > 50) {
+    while (count && _queued_parameter != nullptr) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
@@ -289,6 +289,12 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", key);
         // send the readonly value
         send_parameter_value(key, var_type, old_value);
+        return;
+    }
+
+    if (parameter_flags & AP_PARAM_FLAG_SETHOOKS &&
+        !vp->check_value(packet.param_value)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Bad parameter value (%s)", key);
         return;
     }
 

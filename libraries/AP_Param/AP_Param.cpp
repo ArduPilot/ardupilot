@@ -36,6 +36,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
 #endif
+#include <signal.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -43,6 +44,8 @@ uint16_t AP_Param::sentinal_offset;
 
 // singleton instance
 AP_Param *AP_Param::_singleton;
+
+AP_Param::ValidationHooks *AP_Param::validation_hooks;
 
 #define ENABLE_DEBUG 1
 
@@ -158,7 +161,7 @@ void AP_Param::erase_all(void)
 */
 uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint8_t i, uint8_t shift)
 {
-    if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_FLAG_NO_SHIFT)) {
+    if (grpinfo[i].idx == 0 && shift != 0 && !(grpinfo[i].flags & AP_PARAM_NO_SHIFT)) {
         /*
           this is a special case for a bug in the original design. An
           idx of 0 shifted by n bits is still zero, which makes it
@@ -202,7 +205,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             return false;
         }
         if (group_shift != 0 && idx == 0) {
-            // treat idx 0 as 63 for duplicates. See group_id()
+            // great idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
         if (used_mask & (1ULL<<idx)) {
@@ -634,6 +637,37 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
     return nullptr;
 }
 
+bool AP_Param::addhook(const char *name, bool (*function)(float newvalue))
+{
+    uint16_t parameter_flags = 0;
+    enum ap_var_type var_type;
+    AP_Param *param = find(name, &var_type, &parameter_flags);
+    if (param == nullptr) {
+        ::fprintf(stderr, "Did not find %s\n", name);
+        return false;
+    }
+    if (param->_var_info == nullptr) {
+        ::fprintf(stderr, "varinfo is nullptr for %s\n", name);
+        return false;
+    }
+    if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
+        ::fprintf(stderr, "parameter (%s) not declared as having hooks\n", name);
+        return false;
+    }
+    ValidationHooks *old = validation_hooks;
+    validation_hooks = new ValidationHooks();
+    if (validation_hooks == nullptr) {
+        validation_hooks = old;
+        ::fprintf(stderr, "allocation failed for for %s\n", name);
+        return false;
+    }
+    validation_hooks->next = old;
+    validation_hooks->ptr = param->_var_info->ptr;
+    validation_hooks->function = function;
+    return true;
+}
+
+
 // return the storage size for a AP_PARAM_* type
 uint8_t AP_Param::type_size(enum ap_var_type type)
 {
@@ -890,6 +924,9 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             ptrdiff_t base;
             if (!get_base(_var_info[i], base)) {
                 return nullptr;
+            }
+            if (flags != nullptr) {
+                *flags = _var_info[i].flags;
             }
             return (AP_Param *)base;
         }
@@ -1957,6 +1994,21 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     return true;
 }
 
+bool AP_Param::check_value(float value) const
+{
+    ::fprintf(stderr, "check_value\n");
+    for (ValidationHooks *foo = validation_hooks; foo != nullptr; foo = foo->next) {
+        if (foo->ptr != _var_info->ptr) {
+            ::fprintf(stderr, "not my param\n");
+            continue;
+        }
+        if (!foo->function((float)value)) {
+            ::fprintf(stderr, "function says no\n");
+            return false;
+        }
+    }
+    return true;
+}
 
 /*
   set a parameter to a float value

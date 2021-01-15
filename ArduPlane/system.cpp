@@ -12,6 +12,18 @@ static void failsafe_check_static()
     plane.failsafe_check();
 }
 
+bool validate_sysid_mygcs(float newvalue)
+{
+    // plane.validate_sysid_mygcs(newvalue)
+    ::fprintf(stderr, "newvalue: %f\n", newvalue);
+    if (newvalue < 1 || newvalue > 255) {
+        ::fprintf(stderr, "value out of range\n");
+        return false;
+    }
+    ::fprintf(stderr, "value OK\n");
+    return true;
+}
+
 void Plane::init_ardupilot()
 {
 
@@ -154,6 +166,18 @@ void Plane::init_ardupilot()
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
+
+    ::fprintf(stderr, "Adding hook\n");
+    if (!AP_Param::addhook("SYSID_MYGCS", validate_sysid_mygcs)) {
+        ::fprintf(stderr, "Add hook failed\n");
+    } else {
+        ::fprintf(stderr, "Added hook\n");
+    }
+    if (!AP_Param::addhook("SYSID_THISMAV", validate_sysid_mygcs)) {
+        ::fprintf(stderr, "Add hook2 failed\n");
+    } else {
+        ::fprintf(stderr, "Added hook2\n");
+    }
 }
 
 //********************************************************************************

@@ -3,6 +3,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Param/AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -77,6 +78,13 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_SUB),
+
+    // @Param: ALT_FRAME
+    // @DisplayName: Fence Altitude Frame
+    // @Description: Frame for min and max altitude, default is 1; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
+    // @Range: 0 1 2 3
+    // @User: Standard
+    AP_GROUPINFO_FRAME("ALT_FRAME",     8, AC_Fence,    _alt_frame,    AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     AP_GROUPEND
 };
@@ -153,8 +161,15 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 }
 
 // additional checks for the alt fence:
+// mday99: Here I'm trying to use the conv_max_alt_frame to modify the maximum altitude into the desired frame
+// mday99: This is where I'm having issues, as _alt_max is type AP_Float and _new_max_alt is int32_t
 bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 {
+    // int32_t _new_max_alt;
+    // if (conv_max_alt_frame(_alt_max, _new_max_alt)) {
+    //     _alt_max.set((float)_new_max_alt);
+    // }
+    
     if (_alt_max < 0.0f) {
         fail_msg = "Invalid FENCE_ALT_MAX value";
         return false;
@@ -254,6 +269,131 @@ bool AC_Fence::check_fence_alt_max()
     return false;
 }
 
+// bool AC_Fence::conv_max_alt_frame(const Location& loc, float _old_max_alt, int32_t &_new_max_alt_cm)
+// mday99: I created this function to accept the old max altitude and return the new max altitude in the desired frame
+// It relies on the get_spec_alt_cm function I created in Location.cpp
+bool AC_Fence::conv_max_alt_frame(float _old_max_alt, int32_t &_new_max_alt_cm) 
+{
+    Location::AltFrame _des_frame = Location::AltFrame::ABOVE_HOME;
+    if (_alt_frame != _current_frame) {
+        switch (_alt_frame) {
+            // MSL
+            case 0:
+                _des_frame = Location::AltFrame(0);
+                break;
+            // REL/HOME
+            case 1:
+                _des_frame = Location::AltFrame(1);
+                break;
+            // ORIGIN
+            case 2:
+                _des_frame = Location::AltFrame(2);
+                break;
+            // TERRAIN
+            case 3:
+                _des_frame = Location::AltFrame(3);
+                break;
+
+        }
+    }
+
+    _current_frame = _alt_frame;
+
+    // FIX THIS!
+    return fenceloc.get_spec_alt_cm(Location::AltFrame(0), _des_frame, _old_max_alt, _new_max_alt_cm);
+}
+
+// _alt_frame is the parameter form of _des_frame
+// _current_frame is the current frame
+void AC_Fence::conv_max_alt_frame_new() 
+{
+    gcs().send_text(MAV_SEVERITY_NOTICE, "Current alt_max is: %f", (double)_alt_max);
+    
+    Location::AltFrame _des_frame = Location::AltFrame::ABOVE_HOME;
+    if (_alt_frame != _current_frame) {
+        switch (_alt_frame) {
+            // MSL
+            case 0:
+                _des_frame = Location::AltFrame(0);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence altitude frame: MSL");
+                break;
+            // REL/HOME
+            case 1:
+                _des_frame = Location::AltFrame(1);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence altitude frame: HOME/REL");
+                break;
+            // ORIGIN
+            case 2:
+                _des_frame = Location::AltFrame(2);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence altitude frame: ORIGIN");
+                break;
+            // TERRAIN
+            case 3:
+                _des_frame = Location::AltFrame(3);
+                gcs().send_text(MAV_SEVERITY_INFO, "Fence altitude frame: TERRAIN");
+                break;
+        }
+        
+        int32_t _new_max_alt_cm;
+        if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(int(_current_frame)), _des_frame, _alt_max, _new_max_alt_cm)) {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "before change, alt_max is: %f", (double)_alt_max);
+            gcs().send_text(MAV_SEVERITY_NOTICE, "after change, alt_max is: %d", _new_max_alt_cm / 100);
+            _alt_max = _new_max_alt_cm / 100;
+            _current_frame = _alt_frame;
+        } else {
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change not accepted, current frame is...");
+        }
+
+        switch (_current_frame) {
+            case 0:
+                gcs().send_text(MAV_SEVERITY_INFO, "The current fence max altitude frame is MSL");
+                break;
+            case 1:
+                gcs().send_text(MAV_SEVERITY_INFO, "The current fence max altitude frame is REL/HOME");
+                break;
+            case 2:
+                gcs().send_text(MAV_SEVERITY_INFO, "The current fence max altitude frame is ORIGIN");
+                break;
+            case 3:
+                gcs().send_text(MAV_SEVERITY_INFO, "The current fence max altitude frame is TERRAIN");
+                break;
+        }
+    
+    }
+
+
+    // } else {
+    //     int a = int(_current_frame);
+    //     _des_frame = static_cast<Location::AltFrame>(a);
+    // }
+
+    // int32_t _new_max_alt_cm;
+    // int b = int(_current_frame);
+
+    // // Convert _alt_max to cm
+    // // AP_Float _alt_max_temp;
+    // gcs().send_text(MAV_SEVERITY_NOTICE, "before change, alt_max is: %d", _new_max_alt_cm);
+    // // _alt_max = _alt_max * 100;
+    
+    // if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(b), _des_frame, _alt_max, _new_max_alt_cm)) {
+    //     gcs().send_text(MAV_SEVERITY_NOTICE, "after change, alt_max is: %d", _new_max_alt_cm);
+    //     _alt_max = _new_max_alt_cm;
+    //     _current_frame = _alt_frame;
+    //     gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change accepted, altitude is %d", _new_max_alt_cm);
+        
+
+    // } else {
+    //     _alt_frame = _current_frame;
+    //     gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change not accepted, current frame is...");
+    // }
+
+    // _frame_chg = _alt_frame;
+
+
+    
+    // _alt_max = fenceloc.get_spec_alt_cm(Location::AltFrame(0), _des_frame, _alt_max, _new_max_alt_cm);
+}
+
 // check_fence_polygon - returns true if the poly fence is freshly
 // breached.  That includes being inside exclusion zones and outside
 // inclusions zones
@@ -325,7 +465,9 @@ bool AC_Fence::check_fence_circle()
 
 /// check - returns bitmask of fence types breached (if any)
 uint8_t AC_Fence::check()
-{
+{    
+    conv_max_alt_frame_new();
+    
     uint8_t ret = 0;
 
     // return immediately if disabled
