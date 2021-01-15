@@ -791,6 +791,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_FENCE_STATUS,          MSG_FENCE_STATUS},
         { MAVLINK_MSG_ID_AHRS,                  MSG_AHRS},
         { MAVLINK_MSG_ID_SIMSTATE,              MSG_SIMSTATE},
+        { MAVLINK_MSG_ID_SIM_STATE,             MSG_SIM_STATE},
         { MAVLINK_MSG_ID_AHRS2,                 MSG_AHRS2},
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
@@ -3524,6 +3525,17 @@ void GCS_MAVLINK::send_simstate() const
 #endif
 }
 
+void GCS_MAVLINK::send_sim_state() const
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    sitl->sim_state_send(get_chan());
+#endif
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
 {
     if (uint32_t(packet.param5) != 290876) {
@@ -4719,6 +4731,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
+        break;
+
+    case MSG_SIM_STATE:
+        CHECK_PAYLOAD_SIZE(SIM_STATE);
+        send_sim_state();
         break;
 
     case MSG_SYS_STATUS:
