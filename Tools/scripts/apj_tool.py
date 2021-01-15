@@ -147,12 +147,27 @@ class embedded_defaults(object):
         self.firmware = new_fw
         self.length = len(contents)
 
-    def set_file(self, filename):
+    def set_file(self, filename, default_filename=None):
         '''set defaults to contents of a file'''
         print("Setting defaults from %s" % filename)
         f = open(filename, 'r')
         contents = f.read()
         f.close()
+        if default_filename:
+            f = open(default_filename, 'r')
+            default_contents = f.read()
+            f.close()
+            default_contents_line_items = default_contents.split("\n")
+            contents_line_items = contents.split("\n")
+            skip_default_contents_line_items = []
+            for item in contents_line_items:
+                if item in default_contents_line_items:
+                    print("skipping default item:", item)
+                else:
+                    skip_default_contents_line_items.append(item)
+            print(skip_default_contents_line_items)
+            contents = '\n'.join(skip_default_contents_line_items)
+
         # remove carriage returns from the file
         contents = contents.replace('\r','')
         self.set_contents(contents)
@@ -224,6 +239,7 @@ if __name__ == '__main__':
     parser.add_argument('--set', type=str, default=None, help='replace one parameter default, in form NAME=VALUE')
     parser.add_argument('--show', action='store_true', default=False, help='show current parameter defaults')
     parser.add_argument('--extract', action='store_true', default=False, help='extract firmware image to *.bin')
+    parser.add_argument('--default-file', type=str, default=False, help='parameter to skip in default parameter file')
 
     args = parser.parse_args()
 
@@ -237,7 +253,7 @@ if __name__ == '__main__':
 
     if args.set_file:
         # load new defaults from a file
-        defaults.set_file(args.set_file)
+        defaults.set_file(args.set_file, args.default_file)
         defaults.save()
 
     if args.set:
