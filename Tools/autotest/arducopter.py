@@ -5144,7 +5144,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.customise_SITL_commandline([
-                "--defaults", self.model_defaults_filepath('ArduCopter', 'Callisto')
+                "--defaults", ','.join(self.model_defaults_filepath('ArduCopter', 'Callisto'))
             ],
                                             model="octa-quad:@ROMFS/models/Callisto.json",
                                             wipe=True,
@@ -5829,7 +5829,7 @@ class AutoTestCopter(AutoTest):
 
     def test_callisto(self):
         self.customise_SITL_commandline([
-            "--defaults", self.model_defaults_filepath('ArduCopter', 'Callisto')
+            "--defaults", ','.join(self.model_defaults_filepath('ArduCopter', 'Callisto'))
         ],
                                         model="octa-quad:@ROMFS/models/Callisto.json",
                                         wipe=True,
