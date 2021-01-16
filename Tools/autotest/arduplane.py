@@ -1955,19 +1955,15 @@ class AutoTestPlane(AutoTest):
         self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
                      0,0,0,0,4,0,0,
                      timeout=5)
-        self.set_parameter("SIM_IMUT_FIXED", 3)
-        self.set_parameter("INS_TCAL1_ENABLE", 2)
-        self.set_parameter("INS_TCAL2_ENABLE", 2)
-        self.fetch_parameters()
-        self.set_parameters({"INS_TCAL1_TMAX" : 42,
+        self.set_parameters({"SIM_IMUT_FIXED" : 0,
+                             "INS_TCAL1_ENABLE" : 2,
+                             "INS_TCAL1_TMAX" : 42,
+                             "INS_TCAL2_ENABLE" : 2,
                              "INS_TCAL2_TMAX" : 42,
-                             "INS_TCAL1_TMIN" : 15,
-                             "INS_TCAL2_TMIN" : 15,
                              "SIM_SPEEDUP" : 200})
         self.mavproxy.send("set streamrate 1\n")
         self.set_parameter("LOG_DISARMED", 1)
         self.reboot_sitl()
-        self.set_parameter("SIM_IMUT_FIXED", 0)
 
         self.progress("Waiting for IMU temperature")
         tstart = self.get_sim_time()
