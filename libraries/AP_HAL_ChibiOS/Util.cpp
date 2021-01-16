@@ -400,7 +400,7 @@ bool Util::get_persistent_params(ExpandingString &str) const
     }
     // ensure that the length is a multiple of 32 to meet flash alignment requirements
     while (!str.has_failed_allocation() && str.get_length() % 32 != 0) {
-        str.append("\n", 1);
+        str.append(" ", 1);
     }
     return !str.has_failed_allocation();
 }
