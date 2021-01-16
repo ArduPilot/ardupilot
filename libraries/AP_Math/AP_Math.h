@@ -147,11 +147,7 @@ T constrain_value(const T amt, const T low, const T high);
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
 
-#if BOARD_FLASH_SIZE > 1024
-  #define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__LINE__))
-#else
-  #define constrain_float(amt, low, high) constrain_value(float(amt), float(low), float(high))
-#endif
+#define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__LINE__))
 
 inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
 {
