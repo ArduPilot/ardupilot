@@ -24,7 +24,7 @@ void ModeFollow::update()
         const uint32_t now = AP_HAL::millis();
         if (now - last_notify > 1000) {
             last_notify = now;
-            gcs().send_text(MAV_SEVERITY_INFO, "%u %u\n", loc.lat, loc.lng);
+            //gcs().send_text(MAV_SEVERITY_INFO, "%u %u\n", loc.lat, loc.lng);
         }
         plane.set_guided_WP();
     }
