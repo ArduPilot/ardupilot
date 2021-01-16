@@ -432,7 +432,15 @@ public:
     // handle external AHRS data
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
 #endif
-    
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    /*
+      get a string representation of parameters that should be made
+      persistent across changes of firmware type
+     */
+    void get_persistent_params(ExpandingString &str) const;
+#endif
+
 private:
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
@@ -736,6 +744,9 @@ public:
         };
 
         AP_Enum<Enable> enable;
+
+        // get persistent params for this instance
+        void get_persistent_params(ExpandingString &str) const;
 
     private:
         AP_Float temp_max;
