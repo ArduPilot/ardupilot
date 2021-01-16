@@ -682,15 +682,8 @@ def start_mavproxy(opts, stuff):
     # Parsing the arguments to pass to mavproxy, split args on space
     # and "=" signs and ignore those signs within quotation marks
     if opts.mavproxy_args:
-        # It would be great if this could be done with regex
-        mavargs = opts.mavproxy_args.split(" ")
-        # Find the arguments with '=' in them and split them up
-        for i, x in enumerate(mavargs):
-            if '=' in x:
-                mavargs[i] = x.split('=')[0]
-                mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair
-        # of quotation marks
+        # Split the arguments on space and "=" signs using regex
+        mavargs = re.split("[\s=]", opts.mavproxy_args) 
         inString = False
         beginStringIndex = []
         endStringIndex = []
