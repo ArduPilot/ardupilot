@@ -570,56 +570,56 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_SUBGROUPINFO(tcal[2], "TCAL3_", 45, AP_InertialSensor, AP_InertialSensor::TCal),
 #endif
 
-    // @Param: ACC_CALTEMP1
+    // @Param: ACC1_CALTEMP
     // @DisplayName: Calibration temperature for 1st accelerometer
     // @Description: Temperature that the 1st accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC_CALTEMP1", 46, AP_InertialSensor, caltemp_accel[0], -100),
+    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel[0], -100),
 
-    // @Param: GYR_CALTEMP1
+    // @Param: GYR1_CALTEMP
     // @DisplayName: Calibration temperature for 1st gyroscope
     // @Description: Temperature that the 1st gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR_CALTEMP1", 47, AP_InertialSensor, caltemp_gyro[0], -100),
+    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro[0], -100),
 
 #if INS_MAX_INSTANCES > 1
-    // @Param: ACC_CALTEMP2
+    // @Param: ACC2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd accelerometer
     // @Description: Temperature that the 2nd accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC_CALTEMP2", 48, AP_InertialSensor, caltemp_accel[1], -100),
+    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel[1], -100),
 
-    // @Param: GYR_CALTEMP2
+    // @Param: GYR2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd gyroscope
     // @Description: Temperature that the 2nd gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR_CALTEMP2", 49, AP_InertialSensor, caltemp_gyro[1], -100),
+    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro[1], -100),
 #endif
 
 #if INS_MAX_INSTANCES > 2
-    // @Param: ACC_CALTEMP3
+    // @Param: ACC3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd accelerometer
     // @Description: Temperature that the 3rd accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC_CALTEMP3", 50, AP_InertialSensor, caltemp_accel[2], -100),
+    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel[2], -100),
 
-    // @Param: GYR_CALTEMP3
+    // @Param: GYR3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd gyroscope
     // @Description: Temperature that the 3rd gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR_CALTEMP3", 51, AP_InertialSensor, caltemp_gyro[2], -100),
+    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro[2], -100),
 #endif
 
     // @Param: TCAL_OPTIONS
