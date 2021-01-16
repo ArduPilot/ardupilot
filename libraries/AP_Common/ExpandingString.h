@@ -29,6 +29,9 @@ public:
     uint32_t get_length(void) const {
         return used;
     }
+    char *get_writeable_string(void) const {
+        return buf;
+    }
 
     // print into the string
     void printf(const char *format, ...) FMT_PRINTF(2,3);
