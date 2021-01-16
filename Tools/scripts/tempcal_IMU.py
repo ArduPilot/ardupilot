@@ -297,13 +297,13 @@ def IMUfit(logfile):
                 if stop_capture[imu]:
                     continue
                 c.set_tmax(imu, msg.Value)
-            m = re.match("^INS_GYR_CALTEMP(\d)", msg.Name)
+            m = re.match("^INS_GYR(\d)_CALTEMP", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
                     continue
                 c.set_gyro_tcal(imu, msg.Value)
-            m = re.match("^INS_ACC_CALTEMP(\d)", msg.Name)
+            m = re.match("^INS_ACC(\d)_CALTEMP", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 if stop_capture[imu]:
@@ -317,12 +317,12 @@ def IMUfit(logfile):
             imu = msg.I
 
             T = msg.Temp
-            if msg.Si == 0:
+            if msg.SType == 0:
                 # accel
                 acc = Vector3(msg.X, msg.Y, msg.Z)
                 time = msg.TimeUS*1.0e-6
                 data.add_accel(imu, T, time, acc)
-            elif msg.Si == 1:
+            elif msg.SType == 1:
                 # gyro
                 gyr = Vector3(msg.X, msg.Y, msg.Z)
                 time = msg.TimeUS*1.0e-6
