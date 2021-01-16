@@ -190,6 +190,9 @@ public:
     // request information on dma contention
     virtual void dma_info(ExpandingString &str) {}
 
+    // load persistent parameters from bootloader sector
+    virtual bool load_persistent_params(ExpandingString &str) const { return false; }
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
