@@ -39,6 +39,9 @@ static const SysFileList sysfs_file_list[] = {
     {"can0_stats.txt"},
     {"can1_stats.txt"},
 #endif
+#if !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
+    {"persistent.parm"},
+#endif
 };
 
 int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
@@ -106,6 +109,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         }
     }
 #endif
+    if (strcmp(fname, "persistent.parm") == 0) {
+        hal.util->load_persistent_params(*r.str);
+    }
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
