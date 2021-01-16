@@ -621,6 +621,14 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
     AP_GROUPINFO("GYR_CALTEMP3", 51, AP_InertialSensor, caltemp_gyro[2], -100),
 #endif
+
+    // @Param: TCAL_OPTIONS
+    // @DisplayName: Options for temperature calibration
+    // @Description: This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.
+    // @Bitmask: 0:PersistParams
+    // @User: Advanced
+    AP_GROUPINFO("TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
+    
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
 
     /*
