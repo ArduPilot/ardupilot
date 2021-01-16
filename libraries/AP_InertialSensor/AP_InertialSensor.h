@@ -738,8 +738,8 @@ public:
         AP_Enum<Enable> enable;
 
     private:
-        AP_Float temp_min;
         AP_Float temp_max;
+        AP_Float temp_min;
         AP_Vector3f accel_coeff[3];
         AP_Vector3f gyro_coeff[3];
         Vector3f accel_tref;
@@ -763,6 +763,8 @@ private:
     // temperature that last calibration was run at
     AP_Float caltemp_accel[INS_MAX_INSTANCES];
     AP_Float caltemp_gyro[INS_MAX_INSTANCES];
+    bool tcal_learning;
+    int8_t tcal_old_brd_target;
 #endif
 };
 
