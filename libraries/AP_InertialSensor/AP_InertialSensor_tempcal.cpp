@@ -432,17 +432,17 @@ void AP_InertialSensor::TCal::get_persistent_params(ExpandingString &str) const
     }
     const uint8_t imu = instance()+1;
     str.printf("INS_TCAL%u_ENABLE=1\n", imu);
-    str.printf("INS_TCAL%u_TMIN=%.1f\n", imu, temp_min.get());
-    str.printf("INS_TCAL%u_TMAX=%.1f\n", imu, temp_max.get());
+    str.printf("INS_TCAL%u_TMIN=%.2f\n", imu, temp_min.get());
+    str.printf("INS_TCAL%u_TMAX=%.2f\n", imu, temp_max.get());
     for (uint8_t k=0; k<3; k++) {
         const Vector3f &acc = accel_coeff[k].get();
         const Vector3f &gyr = gyro_coeff[k].get();
-        str.printf("INS_TCAL%u_ACC%u_X=%.1f\n", imu, k+1, acc.x);
-        str.printf("INS_TCAL%u_ACC%u_Y=%.1f\n", imu, k+1, acc.y);
-        str.printf("INS_TCAL%u_ACC%u_Z=%.1f\n", imu, k+1, acc.z);
-        str.printf("INS_TCAL%u_GYR%u_X=%.1f\n", imu, k+1, gyr.x);
-        str.printf("INS_TCAL%u_GYR%u_Y=%.1f\n", imu, k+1, gyr.y);
-        str.printf("INS_TCAL%u_GYR%u_Z=%.1f\n", imu, k+1, gyr.z);
+        str.printf("INS_TCAL%u_ACC%u_X=%f\n", imu, k+1, acc.x);
+        str.printf("INS_TCAL%u_ACC%u_Y=%f\n", imu, k+1, acc.y);
+        str.printf("INS_TCAL%u_ACC%u_Z=%f\n", imu, k+1, acc.z);
+        str.printf("INS_TCAL%u_GYR%u_X=%f\n", imu, k+1, gyr.x);
+        str.printf("INS_TCAL%u_GYR%u_Y=%f\n", imu, k+1, gyr.y);
+        str.printf("INS_TCAL%u_GYR%u_Z=%f\n", imu, k+1, gyr.z);
     }
 }
 
@@ -452,8 +452,38 @@ void AP_InertialSensor::TCal::get_persistent_params(ExpandingString &str) const
 */
 void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
 {
-    for (auto &tc : tcal) {
-        tc.get_persistent_params(str);
+    bool save_options = false;
+    if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_ACCEL_CAL)) {
+        save_options = true;
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            const uint8_t imu = i+1;
+            const Vector3f &aoff = _accel_offset[i].get();
+            const Vector3f &ascl = _accel_scale[i].get();
+            char id[2] = "";
+            if (i > 0) {
+                id[0] = '1'+i;
+            }
+            str.printf("INS_ACC%sOFFS_X=%f\n", id, aoff.x);
+            str.printf("INS_ACC%sOFFS_Y=%f\n", id, aoff.y);
+            str.printf("INS_ACC%sOFFS_Z=%f\n", id, aoff.z);
+            str.printf("INS_ACC%sSCAL_X=%f\n", id, ascl.x);
+            str.printf("INS_ACC%sSCAL_Y=%f\n", id, ascl.y);
+            str.printf("INS_ACC%sSCAL_Z=%f\n", id, ascl.z);
+            str.printf("INS_ACC_CALTEMP%u=%.2f\n", imu, caltemp_accel[i].get());
+        }
+    }
+    if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_TEMP_CAL)) {
+        for (auto &tc : tcal) {
+            tc.get_persistent_params(str);
+        }
+        save_options = true;
+    }
+    if (save_options) {
+        /*
+          we also have to save the TCAL_OPTIONS parameter so that
+          fuuture flashing of the bootloader doesn't cause an erase
+         */
+        str.printf("INS_TCAL_OPTIONS=%u\n", unsigned(tcal_options.get()));
     }
 }
 
