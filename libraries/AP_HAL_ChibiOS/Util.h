@@ -81,6 +81,11 @@ public:
     void apply_persistent_params(void) const;
 #endif
 
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    // save/load key persistent parameters in bootloader sector
+    bool load_persistent_params(ExpandingString &str) const override;
+#endif
+    
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -116,6 +121,5 @@ private:
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // save/load key persistent parameters in bootloader sector
     bool get_persistent_params(ExpandingString &str) const;
-    bool load_persistent_params(ExpandingString &str) const;
 #endif
 };
