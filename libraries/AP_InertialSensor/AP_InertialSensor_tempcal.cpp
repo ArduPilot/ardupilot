@@ -26,7 +26,7 @@
 // this scale factor ensures params are easy to work with in GUI parameter editors
 #define SCALE_FACTOR 1.0e6
 #define INV_SCALE_FACTOR 1.0e-6
-#define TEMP_RANGE_MIN 15
+#define TEMP_RANGE_MIN 10
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,9 +35,10 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable temperature calibration
-    // @Description: Enable the use of temperature calibration parameters for this IMU
+    // @Description: Enable the use of temperature calibration parameters for this IMU. For automatic learning set to 2 and also set the INS_TCALn_TMAX to the target temperature, then reboot
     // @Values: 0:Disabled,1:Enabled,2:LearnCalibration
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO_FLAGS("ENABLE", 1, AP_InertialSensor::TCal, enable,  float(Enable::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: TMIN
@@ -413,11 +414,6 @@ void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
                   instance()+1,
                   tcal.temp_min.get(), tcal.temp_max.get());
     tcal.enable.set_and_save(int8_t(TCal::Enable::Enabled));
-
-    if (!AP::ins().temperature_cal_running()) {
-        AP_Notify::flags.temp_cal_running = false;
-        AP_Notify::events.temp_cal_saved = 1;
-    }
 }
 
 uint8_t AP_InertialSensor::TCal::instance(void) const

@@ -862,6 +862,15 @@ AP_InertialSensor::init(uint16_t loop_rate)
         _gyro_harmonic_notch_filter[i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz[0],
              _harmonic_notch_filter.bandwidth_hz(), _harmonic_notch_filter.attenuation_dB());
     }
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    /*
+      see if user has setup for on-boot enable of temperature learning
+     */
+    if (temperature_cal_running()) {
+        tcal_learning = true;
+    }
+#endif
 }
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
@@ -1566,6 +1575,14 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    if (tcal_learning && !temperature_cal_running()) {
+        AP_Notify::flags.temp_cal_running = false;
+        AP_Notify::events.temp_cal_saved = 1;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL finished all IMUs");
+    }
+#endif
 }
 
 /*
