@@ -22,6 +22,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Common/ExpandingString.h>
 
 // this scale factor ensures params are easy to work with in GUI parameter editors
 #define SCALE_FACTOR 1.0e6
@@ -420,5 +421,41 @@ uint8_t AP_InertialSensor::TCal::instance(void) const
 {
     return AP::ins().tcal_instance(*this);
 }
+
+/*
+  get a string representation of parameters for this calibration set
+*/
+void AP_InertialSensor::TCal::get_persistent_params(ExpandingString &str) const
+{
+    if (enable != TCal::Enable::Enabled) {
+        return;
+    }
+    const uint8_t imu = instance()+1;
+    str.printf("INS_TCAL%u_ENABLE=1\n", imu);
+    str.printf("INS_TCAL%u_TMIN=%.1f\n", imu, temp_min.get());
+    str.printf("INS_TCAL%u_TMAX=%.1f\n", imu, temp_max.get());
+    for (uint8_t k=0; k<3; k++) {
+        const Vector3f &acc = accel_coeff[k].get();
+        const Vector3f &gyr = gyro_coeff[k].get();
+        str.printf("INS_TCAL%u_ACC%u_X=%.1f\n", imu, k+1, acc.x);
+        str.printf("INS_TCAL%u_ACC%u_Y=%.1f\n", imu, k+1, acc.y);
+        str.printf("INS_TCAL%u_ACC%u_Z=%.1f\n", imu, k+1, acc.z);
+        str.printf("INS_TCAL%u_GYR%u_X=%.1f\n", imu, k+1, gyr.x);
+        str.printf("INS_TCAL%u_GYR%u_Y=%.1f\n", imu, k+1, gyr.y);
+        str.printf("INS_TCAL%u_GYR%u_Z=%.1f\n", imu, k+1, gyr.z);
+    }
+}
+
+/*
+  get a string representation of parameters that should be made
+  persistent across changes of firmware type
+*/
+void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
+{
+    for (auto &tc : tcal) {
+        tc.get_persistent_params(str);
+    }
+}
+
 
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
