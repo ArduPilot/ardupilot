@@ -286,16 +286,17 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
     const float tmid = 0.5 * (tcal.temp_max + start_temp);
     const float tdiff = T - tmid;
 
-    AP::logger().Write("TCLR", "TimeUS,I,Si,Temp,TDiff,X,Y,Z",
-                       "s#------",
-                       "F0000000",
-                       "QBBfffff",
+    AP::logger().Write("TCLR", "TimeUS,I,SType,Temp,TDiff,X,Y,Z,NSamp",
+                       "s#-------",
+                       "F0000000-",
+                       "QBBfffffI",
                        AP_HAL::micros64(),
                        instance(),
                        si,
                        T,
                        tdiff,
-                       st.sum.x, st.sum.y, st.sum.z);
+                       st.sum.x, st.sum.y, st.sum.z,
+                       st.sum_count);
     
     
     st.pfit[0].update(tdiff, st.sum.x);
@@ -469,7 +470,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
             str.printf("INS_ACC%sSCAL_X=%f\n", id, ascl.x);
             str.printf("INS_ACC%sSCAL_Y=%f\n", id, ascl.y);
             str.printf("INS_ACC%sSCAL_Z=%f\n", id, ascl.z);
-            str.printf("INS_ACC_CALTEMP%u=%.2f\n", imu, caltemp_accel[i].get());
+            str.printf("INS_ACC%u_CALTEMP=%.2f\n", imu, caltemp_accel[i].get());
         }
     }
     if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_TEMP_CAL)) {
