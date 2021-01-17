@@ -703,6 +703,7 @@ class AutoTestCopter(AutoTest):
         except Exception as ex:
             self.setGCSfailsafe(0)
             self.set_parameter('FS_OPTIONS', 0)
+            self.disarm_vehicle(force=True)
             self.reboot_sitl()
             raise ex
 
