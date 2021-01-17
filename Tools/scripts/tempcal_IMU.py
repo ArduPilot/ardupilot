@@ -23,7 +23,13 @@ import matplotlib.pyplot as pyplot
 from scipy import signal
 from pymavlink.rotmat import Vector3, Matrix3
 
+# fit an order 3 polynomial
 POLY_ORDER = 3
+
+# we use a fixed reference temperature of 35C. This has the advantage that
+# we don't need to know the final temperature when doing an online calibration
+# which allows us to have a calibration timeout
+TEMP_REF = 35.0
 
 # we scale the parameters so the values work nicely in
 # parameter editors and parameter files that don't
@@ -91,9 +97,6 @@ class Coefficients:
         '''calculate correction from temperature calibration from log data using parameters'''
         if self.enable[imu] != 1.0:
             return 0.0
-        tmid = 0.5 * (self.tmax[imu] + self.tmin[imu])
-        if tmid <= 0:
-            return 0.0
         if self.atcal[imu] <= -80:
             return 0.0
         if not axis in coeff:
@@ -101,7 +104,7 @@ class Coefficients:
         temperature = constrain(temperature, self.tmin[imu], self.tmax[imu])
         cal_temp = constrain(self.atcal[imu], self.tmin[imu], self.tmax[imu])
         poly = np.poly1d(coeff[axis])
-        ret = poly(self.atcal[imu] - tmid) - poly(temperature-tmid)
+        ret = poly(self.atcal[imu] - TEMP_REF) - poly(temperature - TEMP_REF)
         return ret
 
     def correction_accel(self, imu, temperature):
@@ -369,7 +372,6 @@ def IMUfit(logfile):
     for imu in data.IMUs():
         tmin = np.amin(data.accel[imu]['T'])
         tmax = np.amax(data.accel[imu]['T'])
-        tref = (tmin+tmax)*0.5
 
         c.set_tmin(imu, tmin)
         c.set_tmax(imu, tmax)
@@ -377,14 +379,14 @@ def IMUfit(logfile):
         for axis in AXES:
             if args.online:
                 fit = OnlineIMUfit()
-                trel = data.accel[imu]['T'] - tref
+                trel = data.accel[imu]['T'] - TEMP_REF
                 c.set_accel_poly(imu, axis, fit.polyfit(trel, data.accel[imu][axis] - np.median(data.accel[imu][axis]), POLY_ORDER))
-                trel = data.gyro[imu]['T'] - tref
+                trel = data.gyro[imu]['T'] - TEMP_REF
                 c.set_gyro_poly(imu, axis, fit.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
             else:
-                trel = data.accel[imu]['T'] - tref
+                trel = data.accel[imu]['T'] - TEMP_REF
                 c.set_accel_poly(imu, axis, np.polyfit(trel, data.accel[imu][axis] - np.median(data.accel[imu][axis]), POLY_ORDER))
-                trel = data.gyro[imu]['T'] - tref
+                trel = data.gyro[imu]['T'] - TEMP_REF
                 c.set_gyro_poly(imu, axis, np.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
 
         params = c.param_string(imu)
@@ -408,7 +410,7 @@ def IMUfit(logfile):
             axs[imu].plot(data.gyro[imu]['time'], data.gyro[imu][axis]*scale, label='Uncorrected %s' % axis)
         for axis in AXES:
             poly = np.poly1d(c.gcoef[imu][axis])
-            trel = data.gyro[imu]['T'] - tref
+            trel = data.gyro[imu]['T'] - TEMP_REF
             correction = poly(trel)
             axs[imu].plot(data.gyro[imu]['time'], (data.gyro[imu][axis] - correction)*scale, label='Corrected %s' % axis)
         if args.log_parm:
@@ -417,8 +419,7 @@ def IMUfit(logfile):
                     print("IMU[%u] disabled in log parms" % imu)
                     continue
                 poly = np.poly1d(clog.gcoef[imu][axis])
-                tmid = 0.5*(clog.tmin[imu]+clog.tmax[imu])
-                correction = poly(data.gyro[imu]['T'] - tmid)
+                correction = poly(data.gyro[imu]['T'] - TEMP_REF)
                 axs[imu].plot(data.gyro[imu]['time'], (data.gyro[imu][axis] - correction)*scale, label='Corrected %s (log parm)' % axis)
         ax2 = axs[imu].twinx()
         ax2.plot(data.gyro[imu]['time'], data.gyro[imu]['T'], label='Temperature(C)', color='black')
@@ -437,7 +438,7 @@ def IMUfit(logfile):
             axs[imu].plot(data.accel[imu]['time'], data.accel[imu][axis] - mean[axis], label='Uncorrected %s' % axis)
         for axis in AXES:
             poly = np.poly1d(c.acoef[imu][axis])
-            trel = data.accel[imu]['T'] - tref
+            trel = data.accel[imu]['T'] - TEMP_REF
             correction = poly(trel)
             axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis]-mean[axis]) - correction, label='Corrected %s' % axis)
         if args.log_parm:
@@ -446,8 +447,7 @@ def IMUfit(logfile):
                     print("IMU[%u] disabled in log parms" % imu)
                     continue
                 poly = np.poly1d(clog.acoef[imu][axis])
-                tmid = 0.5*(clog.tmin[imu]+clog.tmax[imu])
-                correction = poly(data.accel[imu]['T'] - tmid)
+                correction = poly(data.accel[imu]['T'] - TEMP_REF)
                 axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis]-mean[axis]) - correction, label='Corrected %s (log parm)' % axis)
         ax2 = axs[imu].twinx()
         ax2.plot(data.accel[imu]['time'], data.accel[imu]['T'], label='Temperature(C)', color='black')
