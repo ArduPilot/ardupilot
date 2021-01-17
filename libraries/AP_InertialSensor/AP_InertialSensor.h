@@ -724,6 +724,7 @@ public:
             // state for accel/gyro (accel first)
             struct LearnState {
                 float last_temp;
+                uint32_t last_sample_ms;
                 Vector3f sum;
                 uint32_t sum_count;
                 LowPassFilter2p<float> temp_filter;
@@ -732,6 +733,7 @@ public:
 
             void add_sample(const Vector3f &sample, float temperature, LearnState &state);
             void finish_calibration(float temperature);
+            bool save_calibration(float temperature);
             void reset(float temperature);
             float start_temp;
             float start_tmax;
