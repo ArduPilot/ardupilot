@@ -29,6 +29,16 @@
 #define INV_SCALE_FACTOR 1.0e-6
 #define TEMP_RANGE_MIN 10
 
+// timeout calibration after 10 minutes, if no temperature rise
+#define CAL_TIMEOUT_MS (600U*1000U)
+
+/*
+  we use a fixed reference temperature of 35C. This has the advantage
+  that we don't need to know the final temperature when doing an
+  online calibration which allows us to have a calibration timeout
+*/
+#define TEMP_REFERENCE 35.0
+
 extern const AP_HAL::HAL& hal;
 
 // temperature calibration parameters, per IMU
@@ -205,20 +215,16 @@ void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, 
     temperature = constrain_float(temperature, temp_min, temp_max);
     cal_temp = constrain_float(cal_temp, temp_min, temp_max);
 
-    const float tmid = (temp_max + temp_min)*0.5;
-    if (tmid <= 0) {
-        return;
-    }
 
     // get the polynomial correction for the difference between the
     // current temperature and the mid temperature
-    v -= polynomial_eval(temperature - tmid, coeff);
+    v -= polynomial_eval(temperature - TEMP_REFERENCE, coeff);
 
     // we need to add the correction for the temperature
-    // difference between the tmid, which is the reference used for
+    // difference between the TREF, which is the reference used for
     // the calibration process, and the cal_temp, which is the
     // temperature that the offsets and scale factors was setup for
-    v += polynomial_eval(cal_temp - tmid, coeff);
+    v += polynomial_eval(cal_temp - TEMP_REFERENCE, coeff);
 }
 
 void AP_InertialSensor::TCal::correct_accel(float temperature, float cal_temp, Vector3f &accel) const
@@ -234,14 +240,14 @@ void AP_InertialSensor::TCal::correct_gyro(float temperature, float cal_temp, Ve
 void AP_InertialSensor::TCal::sitl_apply_accel(float temperature, Vector3f &accel) const
 {
     Vector3f v;
-    correct_sensor(temperature, 0.5*(temp_max+temp_min), accel_coeff, v);
+    correct_sensor(temperature, TEMP_REFERENCE, accel_coeff, v);
     accel -= v;
 }
 
 void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro) const
 {
     Vector3f v;
-    correct_sensor(temperature, 0.5*(temp_max+temp_min), gyro_coeff, v);
+    correct_sensor(temperature, TEMP_REFERENCE, gyro_coeff, v);
     gyro -= v;
 }
 
@@ -262,8 +268,17 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
     st.sum += sample;
     st.sum_count++;
 
+    uint32_t now = AP_HAL::millis();
+
     if (st.sum_count < 100 ||
         temperature - st.last_temp < 0.5) {
+        // check for timeout
+        if (st.last_sample_ms != 0 &&
+            temperature - start_temp >= TEMP_RANGE_MIN &&
+            now - st.last_sample_ms > CAL_TIMEOUT_MS) {
+            // we have timed out, finish up now
+            finish_calibration(st.last_temp);
+        }
         // wait for more data
         return;
     }
@@ -282,19 +297,17 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
         }
         st.sum -= accel_start;
     }
-    
-    const float tmid = 0.5 * (tcal.temp_max + start_temp);
-    const float tdiff = T - tmid;
 
-    AP::logger().Write("TCLR", "TimeUS,I,SType,Temp,TDiff,X,Y,Z,NSamp",
-                       "s#-------",
-                       "F0000000-",
-                       "QBBfffffI",
+    const float tdiff = T - TEMP_REFERENCE;
+
+    AP::logger().Write("TCLR", "TimeUS,I,SType,Temp,X,Y,Z,NSamp",
+                       "s#------",
+                       "F000000-",
+                       "QBBffffI",
                        AP_HAL::micros64(),
                        instance(),
                        si,
                        T,
-                       tdiff,
                        st.sum.x, st.sum.y, st.sum.z,
                        st.sum_count);
     
@@ -306,18 +319,17 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
     st.sum.zero();
     st.sum_count = 0;
     st.last_temp = temperature;
+    st.last_sample_ms = now;
 
-    if (!is_equal(start_tmax,tcal.temp_max.get())) {
-        // user has changed the TMAX. This will give a bad result for
-        // online learning as the reference temperature (tmid) will
-        // change, so we need to start again
-        reset(T);
-        return;
-    }
-    
-    if (temperature >= tcal.temp_max &&
-        temperature - start_temp >= TEMP_RANGE_MIN) {
-        finish_calibration(temperature);
+    if (temperature - start_temp >= TEMP_RANGE_MIN) {
+        if (temperature >= start_tmax) {
+            // we've reached the target temperature
+            finish_calibration(temperature);
+        } else {
+            // save partial calibration, so if user stops the cal part
+            // way then they still have a useful calibration
+            save_calibration(st.last_temp);
+        }
     }
 }
 
@@ -334,7 +346,7 @@ void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float
         if (learn) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance()+1,
-                          temperature, temp_max.get());
+                          temperature, learn->start_tmax);
             AP_Notify::events.initiated_temp_cal = 1;
         }
     }
@@ -370,7 +382,6 @@ void AP_InertialSensor::TCal::Learn::reset(float temperature)
         state[i].temp_filter.reset(temperature);
         state[i].last_temp = temperature;
     }
-    start_tmax = tcal.temp_max;
 }
 
 /*
@@ -378,44 +389,53 @@ void AP_InertialSensor::TCal::Learn::reset(float temperature)
  */
 void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
 {
+    if (!save_calibration(temperature)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed fit", instance()+1);
+        AP_Notify::events.temp_cal_failed = 1;
+        tcal.enable.set_and_save_ifchanged(int8_t(TCal::Enable::Disabled));
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
+                  instance()+1,
+                  tcal.temp_min.get(), tcal.temp_max.get());
+    tcal.enable.set_and_save_ifchanged(int8_t(TCal::Enable::Enabled));
+}
+
+/*
+  save calibration state
+ */
+bool AP_InertialSensor::TCal::Learn::save_calibration(float temperature)
+{
     Vector3f coefficients[3];
 
     for (uint8_t i=0; i<3; i++) {
         float p[4];
         if (!state[0].pfit[i].get_polynomial(p)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed accel fit axis %u", instance()+1, i);
-            AP_Notify::events.temp_cal_failed = 1;
-            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
-            return;
+            return false;
         }
         for (uint8_t k=0; k<3; k++) {
             coefficients[k][i] = p[2-k] * SCALE_FACTOR;
         }
     }
     for (uint8_t k=0; k<3; k++) {
-        tcal.accel_coeff[k].set_and_save(coefficients[k]);
+        tcal.accel_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
 
     for (uint8_t i=0; i<3; i++) {
         float p[4];
         if (!state[1].pfit[i].get_polynomial(p)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed gyro fit axis %u", tcal.instance()+1, i);
-            AP_Notify::events.temp_cal_failed = 1;
-            tcal.enable.set_and_save(int8_t(TCal::Enable::Disabled));
-            return;
+            return false;
         }
         for (uint8_t k=0; k<3; k++) {
             coefficients[k][i] = p[2-k] * SCALE_FACTOR;
         }
     }
     for (uint8_t k=0; k<3; k++) {
-        tcal.gyro_coeff[k].set_and_save(coefficients[k]);
+        tcal.gyro_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
-    tcal.temp_min.set_and_save(start_temp);
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
-                  instance()+1,
-                  tcal.temp_min.get(), tcal.temp_max.get());
-    tcal.enable.set_and_save(int8_t(TCal::Enable::Enabled));
+    tcal.temp_min.set_and_save_ifchanged(start_temp);
+    tcal.temp_max.set_and_save_ifchanged(temperature);
+    return true;
 }
 
 uint8_t AP_InertialSensor::TCal::instance(void) const
