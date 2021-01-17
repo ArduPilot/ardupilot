@@ -2,7 +2,7 @@
 #This program tests a formation between two planes
 #!/bin/bash
 
-# three plane swarm (x offset formation)
+# two plane swarm (x offset formation)
 
 # assume we start the script from the root directory
 ROOTDIR=$PWD
