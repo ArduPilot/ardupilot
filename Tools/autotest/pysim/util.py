@@ -442,7 +442,6 @@ def start_MAVProxy_SITL(atype, aircraft=None, setup=False, master='tcp:127.0.0.1
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
-    cmd.extend(['--out', '127.0.0.1:14550'])
     if setup:
         cmd.append('--setup')
     if aircraft is None:
