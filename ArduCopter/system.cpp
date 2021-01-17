@@ -13,6 +13,31 @@ static void failsafe_check_static()
     copter.failsafe_check();
 }
 
+bool validate_fence_frame(float newframe) // Get the proper type for this variable
+{    
+    switch ((int)newframe) {
+        case 0:
+            ::fprintf(stderr, "Requested frame: MSL\n");
+            break;
+        case 1:
+            ::fprintf(stderr, "Requested frame: REL/HOME\n");
+            break;
+        case 2:
+            ::fprintf(stderr, "Requested frame: ORIGIN\n");
+            break;
+        case 3:
+            ::fprintf(stderr, "Requested frame: TERRAIN\n");
+            break;
+        default:
+            ::fprintf(stderr, "Unknown frame\n");
+            return false;
+    }
+
+    AP::fence()->conv_max_alt_frame_new();
+
+    return true;
+}
+
 void Copter::init_ardupilot()
 {
 
@@ -225,6 +250,13 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+    ::fprintf(stderr, "Adding hook\n");
+    if (!AP_Param::addhook("FENCE_ALT_FRAME", validate_fence_frame)) {
+        ::fprintf(stderr, "Add hook failed\n");
+    } else {
+        ::fprintf(stderr, "Added hook\n");
+    }
 }
 
 

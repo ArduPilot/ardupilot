@@ -650,7 +650,7 @@ bool AP_Param::addhook(const char *name, bool (*function)(float newvalue))
         ::fprintf(stderr, "varinfo is nullptr for %s\n", name);
         return false;
     }
-    if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
+    if (!(parameter_flags)) {  // if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
         ::fprintf(stderr, "parameter (%s) not declared as having hooks\n", name);
         return false;
     }

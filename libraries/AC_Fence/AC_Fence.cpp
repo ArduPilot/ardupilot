@@ -466,7 +466,7 @@ bool AC_Fence::check_fence_circle()
 /// check - returns bitmask of fence types breached (if any)
 uint8_t AC_Fence::check()
 {    
-    conv_max_alt_frame_new();
+    // conv_max_alt_frame_new();
     
     uint8_t ret = 0;
 
