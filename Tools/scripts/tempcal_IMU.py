@@ -93,34 +93,36 @@ class Coefficients:
     def set_enable(self, imu, value):
         self.enable[imu] = value
 
-    def correction(self, coeff, imu, temperature, axis):
+    def correction(self, coeff, imu, temperature, axis, cal_temp):
         '''calculate correction from temperature calibration from log data using parameters'''
         if self.enable[imu] != 1.0:
             return 0.0
-        if self.atcal[imu] <= -80:
+        if cal_temp < -80:
             return 0.0
         if not axis in coeff:
             return 0.0
         temperature = constrain(temperature, self.tmin[imu], self.tmax[imu])
-        cal_temp = constrain(self.atcal[imu], self.tmin[imu], self.tmax[imu])
+        cal_temp = constrain(cal_temp, self.tmin[imu], self.tmax[imu])
         poly = np.poly1d(coeff[axis])
-        ret = poly(self.atcal[imu] - TEMP_REF) - poly(temperature - TEMP_REF)
+        ret = poly(cal_temp - TEMP_REF) - poly(temperature - TEMP_REF)
         return ret
 
     def correction_accel(self, imu, temperature):
         '''calculate accel correction from temperature calibration from
         log data using parameters'''
-        return Vector3(self.correction(self.acoef[imu], imu, temperature, 'X'),
-                       self.correction(self.acoef[imu], imu, temperature, 'Y'),
-                       self.correction(self.acoef[imu], imu, temperature, 'Z'))
+        cal_temp = self.atcal[imu]
+        return Vector3(self.correction(self.acoef[imu], imu, temperature, 'X', cal_temp),
+                       self.correction(self.acoef[imu], imu, temperature, 'Y', cal_temp),
+                       self.correction(self.acoef[imu], imu, temperature, 'Z', cal_temp))
 
 
     def correction_gyro(self, imu, temperature):
         '''calculate gyro correction from temperature calibration from
         log data using parameters'''
-        return Vector3(self.correction(self.gcoef[imu], imu, temperature, 'X'),
-                       self.correction(self.gcoef[imu], imu, temperature, 'Y'),
-                       self.correction(self.gcoef[imu], imu, temperature, 'Z'))
+        cal_temp = self.gtcal[imu]
+        return Vector3(self.correction(self.gcoef[imu], imu, temperature, 'X', cal_temp),
+                       self.correction(self.gcoef[imu], imu, temperature, 'Y', cal_temp),
+                       self.correction(self.gcoef[imu], imu, temperature, 'Z', cal_temp))
 
     def param_string(self, imu):
         params = ''
