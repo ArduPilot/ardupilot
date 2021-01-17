@@ -1976,11 +1976,11 @@ void QuadPlane::update(void)
         }
         pos_control->relax_alt_hold_controllers(0);
     }
-    
+
+    const uint32_t now = AP_HAL::millis();
     if (!in_vtol_mode()) {
         update_transition();
     } else {
-        const uint32_t now = AP_HAL::millis();
 
         assisted_flight = false;
 
@@ -2050,6 +2050,27 @@ void QuadPlane::update(void)
     }
 
     tiltrotor_update();
+
+    // motors logging
+    if (motors->armed()) {
+        const bool motors_active = in_vtol_mode() || assisted_flight;
+        if (motors_active && (motors->get_spool_state() != AP_Motors::SpoolState::SHUT_DOWN)) {
+            // log RATE at main loop rate
+            ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
+
+            // log CTRL at 10 Hz
+            if (now - last_ctrl_log_ms > 100) {
+                last_ctrl_log_ms = now;
+                attitude_control->control_monitor_log();
+            }
+        }
+        // log QTUN at 25 Hz if motors are active, or have been active in the last quarter second
+        if ((motors_active || (now - last_motors_active_ms < 250)) && (now - last_qtun_log_ms > 40)) {
+            last_qtun_log_ms = now;
+            Log_Write_QControl_Tuning();
+        }
+    }
+
 }
 
 /*
@@ -2202,30 +2223,12 @@ void QuadPlane::motors_output(bool run_rate_controller)
     update_throttle_suppression();
     
     motors->output();
-    if (motors->armed() && motors->get_spool_state() != AP_Motors::SpoolState::SHUT_DOWN) {
-        const uint32_t now = AP_HAL::millis();
-
-        // log RATE at main loop rate
-        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
-
-        // log QTUN at 25 Hz
-        if (now - last_qtun_log_ms > 40) {
-            last_qtun_log_ms = now;
-            Log_Write_QControl_Tuning();
-        }
-
-        // log CTRL at 10 Hz
-        if (now - last_ctrl_log_ms > 100) {
-            last_ctrl_log_ms = now;
-            attitude_control->control_monitor_log();
-        }
-    }
 
     // remember when motors were last active for throttle suppression
     if (motors->get_throttle() > 0.01f || tilt.motors_active) {
         last_motors_active_ms = AP_HAL::millis();
     }
-    
+
 }
 
 /*
