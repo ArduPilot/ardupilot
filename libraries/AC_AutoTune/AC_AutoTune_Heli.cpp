@@ -38,6 +38,19 @@
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
+// constructor
+AC_AutoTune_Heli::AC_AutoTune_Heli()
+{
+    //            tune_seq[0] = 4;  // RFF_UP
+    //            tune_seq[1] = 8;   // MAX_GAINS
+    //            tune_seq[2] = 0; // RD_UP
+    //            tune_seq[3] = 2; // RP_UP
+    //            tune_seq[2] = 6; // SP_UP
+    //            tune_seq[3] = 9; // tune complete
+    tune_seq[0] = SP_UP;
+    tune_seq[1] = TUNE_COMPLETE;
+}
+
 void AC_AutoTune_Heli::test_init()
 {
 
