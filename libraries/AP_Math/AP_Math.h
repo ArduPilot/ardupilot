@@ -82,23 +82,18 @@ float safe_asin(const T v);
 template <typename T>
 float safe_sqrt(const T v);
 
-// invOut is an inverted 4x4 matrix when returns true, otherwise matrix is Singular
-template<typename T>
-bool inverse3x3(const T m[], T invOut[]) WARN_IF_UNUSED;
-
-// invOut is an inverted 3x3 matrix when returns true, otherwise matrix is Singular
-template <typename T>
-bool inverse4x4(const T m[],T invOut[]) WARN_IF_UNUSED;
-
 // matrix multiplication of two NxN matrices
 template <typename T>
-float *mat_mul(const T *A, const T *B, uint8_t n);
+void mat_mul(const T *A, const T *B, T *C, uint16_t n);
 
-// matrix algebra
+// matrix inverse
 template <typename T>
-bool inverse(const T x[], T y[], uint16_t dim) WARN_IF_UNUSED;
+bool mat_inverse(const T *x, T *y, uint16_t dim) WARN_IF_UNUSED;
 
-#include "matrix_alg.h"
+// matrix identity
+template <typename T>
+void mat_identity(T *x, uint16_t dim);
+
 /*
  * Constrain an angle to be within the range: -180 to 180 degrees. The second
  * parameter changes the units. Default: 1 == degrees, 10 == dezi,
