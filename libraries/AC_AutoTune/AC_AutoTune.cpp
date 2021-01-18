@@ -347,6 +347,7 @@ void AC_AutoTune::run()
 
 }
 
+// check if current is greater than maximum and update level_problem structure
 bool AC_AutoTune::check_level(const LevelIssue issue, const float current, const float maximum)
 {
     if (current > maximum) {
@@ -358,6 +359,7 @@ bool AC_AutoTune::check_level(const LevelIssue issue, const float current, const
     return true;
 }
 
+// return true if vehicle is close to level
 bool AC_AutoTune::currently_level()
 {
     float threshold_mul = 1.0;
@@ -410,7 +412,8 @@ bool AC_AutoTune::currently_level()
     return true;
 }
 
-// attitude_controller - sets attitude control targets during tuning
+// main state machine to level vehicle, perform a test and update gains
+// directly updates attitude controller with targets
 void AC_AutoTune::control_attitude()
 {
     rotation_rate = 0.0f;        // rotation rate in radians/second
@@ -509,7 +512,6 @@ void AC_AutoTune::control_attitude()
         attitude_control->use_sqrt_controller(true);
 
         // log the latest gains
-
         Log_AutoTune();
 
         switch (tune_type) {
@@ -570,7 +572,7 @@ void AC_AutoTune::control_attitude()
                     tune_pitch_rp = MAX(get_rp_min(), tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 case YAW:
-                    tune_yaw_rLPF = MAX(get_rlpf_min(), tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
+                    tune_yaw_rLPF = MAX(get_yaw_rate_filt_min(), tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
                     tune_yaw_rp = MAX(get_rp_min(), tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
                     break;
                 }
@@ -816,7 +818,7 @@ void AC_AutoTune::load_tuned_gains()
     if (roll_enabled()) {
         if (!is_zero(tune_roll_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-            attitude_control->get_rate_roll_pid().kI(get_load_tuned_ri(axis));
+            attitude_control->get_rate_roll_pid().kI(get_tuned_ri(axis));
             attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
             attitude_control->get_rate_roll_pid().ff(tune_roll_rff);
             attitude_control->get_angle_roll_p().kP(tune_roll_sp);
@@ -826,7 +828,7 @@ void AC_AutoTune::load_tuned_gains()
     if (pitch_enabled()) {
         if (!is_zero(tune_pitch_rp) || allow_zero_rate_p()) {
             attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-            attitude_control->get_rate_pitch_pid().kI(get_load_tuned_ri(axis));
+            attitude_control->get_rate_pitch_pid().kI(get_tuned_ri(axis));
             attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
             attitude_control->get_rate_pitch_pid().ff(tune_pitch_rff);
             attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
@@ -836,8 +838,8 @@ void AC_AutoTune::load_tuned_gains()
     if (yaw_enabled()) {
         if (!is_zero(tune_yaw_rp)) {
             attitude_control->get_rate_yaw_pid().kP(tune_yaw_rp);
-            attitude_control->get_rate_yaw_pid().kI(get_load_tuned_ri(axis));
-            attitude_control->get_rate_yaw_pid().kD(get_load_tuned_yaw_rd());
+            attitude_control->get_rate_yaw_pid().kI(get_tuned_ri(axis));
+            attitude_control->get_rate_yaw_pid().kD(get_tuned_yaw_rd());
             attitude_control->get_rate_yaw_pid().ff(tune_yaw_rff);
             attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
             attitude_control->get_angle_yaw_p().kP(tune_yaw_sp);
