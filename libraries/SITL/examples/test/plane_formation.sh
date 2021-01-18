@@ -25,8 +25,8 @@ mkdir -p swarm/plane1 swarm/plane2 swarm/plane3
 cat <<EOF > swarm/plane2/follow.parm
 SYSID_THISMAV 2
 FOLL_ENABLE 1
-FOLL_OFS_X -5
-FOLL_OFS_TYPE 1
+FOLL_OFS_Y -5
+FOLL_OFS_TYPE 0
 FOLL_SYSID 1
 FOLL_DIST_MAX 1000
 EOF
@@ -37,8 +37,8 @@ EOF
 cat <<EOF > swarm/plane3/follow.parm
 SYSID_THISMAV 3
 FOLL_ENABLE 1
-FOLL_OFS_X 5
-FOLL_OFS_TYPE 1
+FOLL_OFS_Y 5
+FOLL_OFS_TYPE 0
 FOLL_SYSID 1
 FOLL_DIST_MAX 1000
 EOF
