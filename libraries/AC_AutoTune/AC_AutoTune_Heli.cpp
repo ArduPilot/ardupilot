@@ -17,6 +17,8 @@
   Converted to a library by Andrew Tridgell, and rewritten to include helicopters by Bill Geyer
  */
 
+#include "AC_AutoTune_Heli.h"
+
 #define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     2000   // target roll/pitch angle during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS     5000   // target roll/pitch rate during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_FFI_RATIO_FOR_TESTING     0.5f     // I is set 2x smaller than VFF during testing
@@ -35,8 +37,6 @@
 #define AUTOTUNE_SP_MAX                   10.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
-
-#include "AC_AutoTune_Heli.h"
 
 void AC_AutoTune_Heli::test_init()
 {
@@ -253,7 +253,7 @@ void AC_AutoTune_Heli::save_tuning_gains()
     reset();
 }
 
-// generic method used to update gains for the rate p up tune type
+// update gains for the rate p up tune type
 void AC_AutoTune_Heli::updating_rate_p_up_all(AxisType test_axis)
 {
     float p_gain = 0.0f;
@@ -285,7 +285,7 @@ void AC_AutoTune_Heli::updating_rate_p_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the rate d up tune type
+// update gains for the rate d up tune type
 void AC_AutoTune_Heli::updating_rate_d_up_all(AxisType test_axis)
 {
     float d_gain = 0.0f;
@@ -317,7 +317,7 @@ void AC_AutoTune_Heli::updating_rate_d_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the rate ff up tune type
+// update gains for the rate ff up tune type
 void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -333,7 +333,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the angle p up tune type
+// update gains for the angle p up tune type
 void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 {
     // announce results of dwell and update
@@ -352,7 +352,7 @@ void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the max gain tune type
+// update gains for the max gain tune type
 void AC_AutoTune_Heli::updating_max_gains_all(AxisType test_axis)
 {
 
@@ -666,6 +666,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate
         rate_rads*57.3f);
 }
 
+// get intra test rate I gain for the specified axis
 float AC_AutoTune_Heli::get_intra_test_ri(AxisType test_axis)
 {
     float ret = 0.0f;
@@ -683,7 +684,8 @@ float AC_AutoTune_Heli::get_intra_test_ri(AxisType test_axis)
     return ret;
 }
 
-float AC_AutoTune_Heli::get_load_tuned_ri(AxisType test_axis)
+// get tuned rate I gain for the specified axis
+float AC_AutoTune_Heli::get_tuned_ri(AxisType test_axis)
 {
     float ret = 0.0f;
     switch (test_axis) {
@@ -700,16 +702,21 @@ float AC_AutoTune_Heli::get_load_tuned_ri(AxisType test_axis)
     return ret;
 }
 
+// get minimum rate P (for any axis)
 float AC_AutoTune_Heli::get_rp_min() const
 {
     return AUTOTUNE_RP_MIN;
 }
+
+// get minimum angle P (for any axis)
 float AC_AutoTune_Heli::get_sp_min() const
 {
     return AUTOTUNE_SP_MIN;
 }
 
-float AC_AutoTune_Heli::get_rlpf_min() const
+// get minimum rate Yaw filter value
+float AC_AutoTune_Heli::get_yaw_rate_filt_min() const
 {
     return AUTOTUNE_RLPF_MIN;
 }
+
