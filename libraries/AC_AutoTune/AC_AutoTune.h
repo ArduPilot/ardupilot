@@ -22,6 +22,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
+#include "AC_AutoTune_FreqResp.h"
 
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
 #define AUTOTUNE_AXIS_BITMASK_PITCH           2
@@ -38,8 +39,6 @@
 #define AUTOTUNE_MESSAGE_TESTING 5
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
-
-#define AUTOTUNE_DWELL_CYCLES                10
 
 class AC_AutoTune
 {
@@ -175,6 +174,12 @@ protected:
     // returns true if rate P gain of zero is acceptable for this vehicle
     virtual bool allow_zero_rate_p() = 0;
 
+    // returns true if max tested accel is used for parameter
+    virtual bool set_accel_to_max_test_value() = 0;
+
+    // returns true if pilot is allowed to make inputs during test
+    virtual bool allow_pilot_rp_input() = 0;
+
     // get minimum rate P (for any axis)
     virtual float get_rp_min() const = 0;
 
@@ -184,11 +189,15 @@ protected:
     // get minimum rate Yaw filter value
     virtual float get_yaw_rate_filt_min() const = 0;
 
+    // reverse direction for twitch test
+    virtual bool twitch_reverse_direction() = 0;
+
     // get attitude for slow position hold in autotune mode
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
     virtual void Log_AutoTune() = 0;
     virtual void Log_AutoTuneDetails() = 0;
+    virtual void Log_AutoTuneSweep() = 0;
 
     // send message with high level status (e.g. Started, Stopped)
     void update_gcs(uint8_t message_id) const;
@@ -251,6 +260,8 @@ protected:
     };
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
+
+    virtual void set_tune_sequence() = 0;
 
     // type of gains to load
     enum GainType {
@@ -343,18 +354,17 @@ protected:
 
     // Feedforward test used to determine Rate FF gain
     void rate_ff_test_init();
-    void rate_ff_test_run(float max_angle_cds, float target_rate_cds);
+    void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
 
     // dwell test used to perform frequency dwells for rate gains
     void dwell_test_init(float filt_freq);
-    void dwell_test_run(uint8_t freq_resp_input, float dwell_freq, float &dwell_gain, float &dwell_phase);
+    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // dwell test used to perform frequency dwells for angle gains
     void angle_dwell_test_init(float filt_freq);
-    void angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase);
+    void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
-    // determines the gain and phase for a dwell
-    void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
+    float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
 
     uint8_t  ff_test_phase;                         // phase of feedforward test
     float    test_command_filt;                     // filtered commanded output
@@ -370,11 +380,34 @@ protected:
     uint8_t  freq_cnt;
     uint8_t  freq_cnt_max;
     float    curr_test_freq;
-    bool     dwell_complete;
+    float    curr_test_gain;
+    float    curr_test_phase;
     Vector3f start_angles;
+    uint32_t settle_time;
+    uint32_t phase_out_time;
+    float    waveform_freq_rads;  //current frequency for chirp waveform
+    float    start_freq;  //start freq for dwell test
+    float    stop_freq;   //ending freq for dwell test
+    float    trim_pff_out;  // trim output of the PID rate controller for P, I and FF terms
+    float    trim_meas_rate;  // trim measured gyro rate
 
     LowPassFilterFloat  command_filt;               // filtered command
     LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
+
+    // sweep_data tracks the overall characteristics in the response to the frequency sweep
+    struct sweep_data {
+        float    maxgain_freq;
+        float    maxgain_gain;
+        float    maxgain_phase;
+        float    ph180_freq;
+        float    ph180_gain;
+        float    ph180_phase;
+        float    ph270_freq;
+        float    ph270_gain;
+        float    ph270_phase;
+        uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
+    };
+    sweep_data sweep;
 
     struct max_gain_data {
         float freq;
@@ -385,4 +418,8 @@ protected:
 
     max_gain_data max_rate_p;
     max_gain_data max_rate_d;
+
+AC_AutoTune_FreqResp freqresp_rate;
+AC_AutoTune_FreqResp freqresp_angle;
+
 };

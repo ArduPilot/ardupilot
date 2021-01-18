@@ -36,15 +36,31 @@
 
 #include "AC_AutoTune_Multi.h"
 
+const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
+    AP_NESTEDGROUPINFO(AC_AutoTune, 0),
+
+    // @Param: AGGR
+    // @DisplayName: Autotune aggressiveness
+    // @Description: Autotune aggressiveness. Defines the bounce back used to detect size of the D term.
+    // @Range: 0.05 0.10
+    // @User: Standard
+    AP_GROUPINFO("AGGR", 1, AC_AutoTune_Multi, aggressiveness, 0.1f),
+
+    // @Param: MIN_D
+    // @DisplayName: AutoTune minimum D
+    // @Description: Defines the minimum D gain
+    // @Range: 0.001 0.006
+    // @User: Standard
+    AP_GROUPINFO("MIN_D", 2, AC_AutoTune_Multi, min_d,  0.001f),
+
+    AP_GROUPEND
+};
+
 // constructor
 AC_AutoTune_Multi::AC_AutoTune_Multi()
 {
-    tune_seq[0] = RD_UP;
-    tune_seq[1] = RD_DOWN;
-    tune_seq[2] = RP_UP;
-    tune_seq[3] = SP_DOWN;
-    tune_seq[4] = SP_UP;
-    tune_seq[5] = TUNE_COMPLETE;
+    tune_seq[0] = TUNE_COMPLETE;
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void AC_AutoTune_Multi::do_gcs_announcements()
