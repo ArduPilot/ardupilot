@@ -1416,7 +1416,7 @@ void AP_AHRS_NavEKF::get_relative_position_D_home(float &posD) const
     float originD;
     if (!get_relative_position_D_origin(originD) ||
         !get_origin(originLLH)) {
-        posD = -AP::baro().get_altitude();
+        AP_AHRS_DCM::get_relative_position_D_home(posD);
         return;
     }
 
