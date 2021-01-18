@@ -15,19 +15,14 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma GCC optimize("O2")
-#pragma once
+
 #include <AP_HAL/AP_HAL.h>
+#include "AP_Math.h"
 
 #include <stdio.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <fenv.h>
 #endif
-
-
-// extern const AP_HAL::HAL& hal;
-
-//TODO: use higher precision datatypes to achieve more accuracy for matrix algebra operations
 
 /*
  *    Does matrix multiplication of two regular/square matrices
@@ -38,14 +33,14 @@
  *    @returns                multiplied matrix i.e. A*B
  */
 template<typename T>
-T* matrix_multiply(const T *A, const T *B, uint8_t n)
+static T* matrix_multiply(const T *A, const T *B, uint16_t n)
 {
     T* ret = new T[n*n];
     memset(ret,0.0f,n*n*sizeof(T));
 
-    for(uint8_t i = 0; i < n; i++) {
-        for(uint8_t j = 0; j < n; j++) {
-            for(uint8_t k = 0;k < n; k++) {
+    for(uint16_t i = 0; i < n; i++) {
+        for(uint16_t j = 0; j < n; j++) {
+            for(uint16_t k = 0;k < n; k++) {
                 ret[i*n + j] += A[i*n + k] * B[k*n + j];
             }
         }
@@ -71,19 +66,19 @@ static inline void swap(T &a, T &b)
  *    @returns                false = matrix is Singular or non positive definite, true = matrix inversion successful
  */
 template<typename T>
-static void mat_pivot(const T* A, T* pivot, uint8_t n)
+static void mat_pivot(const T* A, T* pivot, uint16_t n)
 {
-    for(uint8_t i = 0;i<n;i++){
-        for(uint8_t j=0;j<n;j++) {
+    for(uint16_t i = 0;i<n;i++){
+        for(uint16_t j=0;j<n;j++) {
             pivot[i*n+j] = static_cast<T>(i==j);
         }
     }
 
-    for(uint8_t i = 0;i < n; i++) {
-        uint8_t max_j = i;
-        for(uint8_t j=i;j<n;j++){
+    for(uint16_t i = 0;i < n; i++) {
+        uint16_t max_j = i;
+        for(uint16_t j=i;j<n;j++){
             if (std::is_same<T, double>::value) {
-                if(fabs(A[j*n + i]) > fabs(A[max_j*n + i])) {
+                if(fabsf(A[j*n + i]) > fabsf(A[max_j*n + i])) {
                     max_j = j;
                 }
             } else {
@@ -94,7 +89,7 @@ static void mat_pivot(const T* A, T* pivot, uint8_t n)
         }
 
         if(max_j != i) {
-            for(uint8_t k = 0; k < n; k++) {
+            for(uint16_t k = 0; k < n; k++) {
                 swap(pivot[i*n + k], pivot[max_j*n + k]);
             }
         }
@@ -109,7 +104,7 @@ static void mat_pivot(const T* A, T* pivot, uint8_t n)
  *    @param     n,           dimension of matrix
  */
 template<typename T>
-static void mat_forward_sub(const T *L, T *out, uint8_t n)
+static void mat_forward_sub(const T *L, T *out, uint16_t n)
 {
     // Forward substitution solve LY = I
     for(int i = 0; i < n; i++) {
@@ -131,7 +126,7 @@ static void mat_forward_sub(const T *L, T *out, uint8_t n)
  *    @param     n,           dimension of matrix
  */
 template<typename T>
-static void mat_back_sub(const T *U, T *out, uint8_t n)
+static void mat_back_sub(const T *U, T *out, uint16_t n)
 {
     // Backward Substitution solve UY = I
     for(int i = n-1; i >= 0; i--) {
@@ -154,7 +149,7 @@ static void mat_back_sub(const T *U, T *out, uint8_t n)
  *    @param     n,           dimension of matrix
  */
 template<typename T>
-static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint8_t n)
+static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint16_t n)
 {
     memset(L,0,n*n*sizeof(T));
     memset(U,0,n*n*sizeof(T));
@@ -162,20 +157,20 @@ static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint8_t n)
     mat_pivot(A,P,n);
 
     T *APrime = matrix_multiply(P,A,n);
-    for(uint8_t i = 0; i < n; i++) {
+    for(uint16_t i = 0; i < n; i++) {
         L[i*n + i] = 1;
     }
-    for(uint8_t i = 0; i < n; i++) {
-        for(uint8_t j = 0; j < n; j++) {
+    for(uint16_t i = 0; i < n; i++) {
+        for(uint16_t j = 0; j < n; j++) {
             if(j <= i) {    
                 U[j*n + i] = APrime[j*n + i];
-                for(uint8_t k = 0; k < j; k++) {
+                for(uint16_t k = 0; k < j; k++) {
                     U[j*n + i] -= L[j*n + k] * U[k*n + i]; 
                 }
             }
             if(j >= i) {
                 L[j*n + i] = APrime[j*n + i];
-                for(uint8_t k = 0; k < i; k++) {
+                for(uint16_t k = 0; k < i; k++) {
                     L[j*n + i] -= L[j*n + k] * U[k*n + i]; 
                 }
                 L[j*n + i] /= U[i*n + i];
@@ -195,7 +190,7 @@ static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint8_t n)
  *    @returns                false = matrix is Singular, true = matrix inversion successful
  */
 template<typename T>
-static bool mat_inverse(const T* A, T* inv, uint8_t n)
+static bool mat_inverseN(const T* A, T* inv, uint16_t n)
 {
     T *L, *U, *P;
     bool ret = true;
@@ -221,8 +216,8 @@ static bool mat_inverse(const T* A, T* inv, uint8_t n)
     T *inv_pivoted = matrix_multiply(inv_unpivoted, P, n);
 
     //check sanity of results
-    for(uint8_t i = 0; i < n; i++) {
-        for(uint8_t j = 0; j < n; j++) {
+    for(uint16_t i = 0; i < n; i++) {
+        for(uint16_t j = 0; j < n; j++) {
             if(isnan(inv_pivoted[i*n+j]) || isinf(inv_pivoted[i*n+j])){
                 ret = false;
             }
@@ -247,7 +242,7 @@ static bool mat_inverse(const T* A, T* inv, uint8_t n)
  *    @returns                false = matrix is Singular, true = matrix inversion successful
  */
 template<typename T>
-bool inverse3x3(const T m[], T invOut[])
+static bool inverse3x3(const T m[], T invOut[])
 {
     T inv[9];
     // computes the inverse of a matrix m
@@ -270,7 +265,7 @@ bool inverse3x3(const T m[], T invOut[])
     inv[7] = (m[6] * m[1] - m[0] * m[7]) * invdet;
     inv[8] = (m[0] * m[4] - m[3] * m[1]) * invdet;
 
-    for(uint8_t i = 0; i < 9; i++){
+    for(uint16_t i = 0; i < 9; i++){
         invOut[i] = inv[i];
     }
 
@@ -286,10 +281,10 @@ bool inverse3x3(const T m[], T invOut[])
  *    @returns                false = matrix is Singular, true = matrix inversion successful
  */
 template<typename T>
-bool inverse4x4(const T m[],T invOut[])
+static bool inverse4x4(const T m[],T invOut[])
 {
     T inv[16], det;
-    uint8_t i;
+    uint16_t i;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     //disable FE_INEXACT detection as it fails on mac os runs
@@ -440,11 +435,41 @@ bool inverse4x4(const T m[],T invOut[])
  *    @returns          false = matrix is Singular, true = matrix inversion successful
  */
 template<typename T>
-bool inverse(const T x[], T y[], uint16_t dim)
+bool mat_inverse(const T x[], T y[], uint16_t dim)
 {
     switch(dim){
-        case 3: return inverse3x3(x,y);
-        case 4: return inverse4x4(x,y);
-        default: return mat_inverse(x,y,(uint8_t)dim);
+    case 3: return inverse3x3(x,y);
+    case 4: return inverse4x4(x,y);
+    default: return mat_inverseN(x,y,dim);
     }
 }
+
+template <typename T>
+void mat_mul(const T *A, const T *B, T *C, uint16_t n)
+{
+    memset(C, 0, sizeof(T)*n*n);
+    for(uint16_t i = 0; i < n; i++) {
+        for(uint16_t j = 0; j < n; j++) {
+            for(uint16_t k = 0;k < n; k++) {
+                C[i*n + j] += A[i*n + k] * B[k*n + j];
+            }
+        }
+    }
+}
+
+template <typename T>
+void mat_identity(T *A, uint16_t n)
+{
+    memset(A, 0, sizeof(T)*n*n);
+    for (uint16_t i=0; i<n; i++) {
+        A[i*n+i] = 1;
+    }
+}
+
+template bool mat_inverse<float>(const float x[], float y[], uint16_t dim);
+template void mat_mul<float>(const float *A, const float *B, float *C, uint16_t n);
+template void mat_identity<float>(float x[], uint16_t dim);
+
+template bool mat_inverse<double>(const double x[], double y[], uint16_t dim);
+template void mat_mul<double>(const double *A, const double *B, double *C, uint16_t n);
+template void mat_identity<double>(double x[], uint16_t dim);
