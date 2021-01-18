@@ -631,7 +631,14 @@ protected:
     AP_Float gps_gain;
 
     AP_Float beta;
-    AP_Int8 _gps_use;
+
+    enum class GPSUse : uint8_t {
+        Disable = 0,
+        Enable  = 1,
+        EnableWithHeight = 2,
+    };
+
+    AP_Enum<GPSUse> _gps_use;
     AP_Int8 _wind_max;
     AP_Int8 _board_orientation;
     AP_Int8 _gps_minsats;
