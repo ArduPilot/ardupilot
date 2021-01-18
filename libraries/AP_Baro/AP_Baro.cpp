@@ -254,6 +254,12 @@ void AP_Baro::calibrate(bool save)
         return;
     }
     
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (AP::sitl()->baro_count == 0) {
+        return;
+    }
+#endif
+
     #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
             BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Baro: no sensors found, skipping calibration");
@@ -670,7 +676,11 @@ void AP_Baro::init(void)
 #endif
 
 #if !defined(HAL_BARO_ALLOW_INIT_NO_BARO) // most boards requires external baro
-
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (sitl->baro_count == 0) {
+        return;
+    }
+#endif
     if (_num_drivers == 0 || _num_sensors == 0 || drivers[0] == nullptr) {
         AP_BoardConfig::config_error("Baro: unable to initialise driver");
     }
