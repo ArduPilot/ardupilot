@@ -1357,6 +1357,7 @@ class AutoTestPlane(AutoTest):
         self.wait_disarmed(timeout=120)
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.wait_ready_to_arm()
         self.gpi = None
         self.simstate = None
         self.last_print = 0
