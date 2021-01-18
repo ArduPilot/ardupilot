@@ -517,7 +517,7 @@ def start_antenna_tracker(opts):
     options = vinfo.options["AntennaTracker"]
     tracker_default_frame = options["default_frame"]
     tracker_frame_options = options["frames"][tracker_default_frame]
-    do_build(vehicledir, opts, tracker_frame_options)
+    do_build(opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
