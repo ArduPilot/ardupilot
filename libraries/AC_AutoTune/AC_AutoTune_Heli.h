@@ -24,19 +24,13 @@ class AC_AutoTune_Heli : public AC_AutoTune
 {
 public:
     // constructor
-    AC_AutoTune_Heli()
-    {
-        //            tune_seq[0] = 4;  // RFF_UP
-        //            tune_seq[1] = 8;   // MAX_GAINS
-        //            tune_seq[2] = 0; // RD_UP
-        //            tune_seq[3] = 2; // RP_UP
-        //            tune_seq[2] = 6; // SP_UP
-        //            tune_seq[3] = 9; // tune complete
-        tune_seq[0] = SP_UP;
-        tune_seq[1] = TUNE_COMPLETE;
-    };
+    AC_AutoTune_Heli();
+
     // save gained, called on disarm
     void save_tuning_gains() override;
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
@@ -90,25 +84,52 @@ protected:
     // get minimum rate Yaw filter value
     float get_yaw_rate_filt_min() const override;
 
+    // reverse direction for twitch test
+    bool twitch_reverse_direction() override { return positive_direction; }
+
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
-    void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp);
-    void Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads);
-
+    void Log_AutoTuneSweep() override;
+    void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads, float tgt_ang_rad, float ang_rad);
+    void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
     // returns true if rate P gain of zero is acceptable for this vehicle
     bool allow_zero_rate_p() override { return true; }
 
+    // returns true if max tested accel is used for parameter
+    bool set_accel_to_max_test_value() override { return false; }
+
+    // returns true if pilot is allowed to make inputs during test
+    bool allow_pilot_rp_input() override
+    {
+        if (!use_poshold && tune_type == SP_UP) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
+
+    void set_tune_sequence() override;
+
+    AP_Int8  seq_bitmask;
+    AP_Float min_sweep_freq;
+    AP_Float max_sweep_freq;
+    AP_Float max_resp_gain;
 
 private:
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is acheived
     void updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command);
-    void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, float gain_incr, float max_gain);
+    void updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p);
     void updating_rate_d_up(float &tune_d, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_d);
     void updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
+    void updating_angle_p_up_yaw(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
     void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
+
+    uint8_t method; //0: determine freq, 1: use max gain method, 2: use phase 180 method
 
 };
