@@ -104,8 +104,7 @@ class Coefficients:
         temperature = constrain(temperature, self.tmin[imu], self.tmax[imu])
         cal_temp = constrain(cal_temp, self.tmin[imu], self.tmax[imu])
         poly = np.poly1d(coeff[axis])
-        ret = poly(cal_temp - TEMP_REF) - poly(temperature - TEMP_REF)
-        return ret
+        return poly(cal_temp - TEMP_REF) - poly(temperature - TEMP_REF)
 
     def correction_accel(self, imu, temperature):
         '''calculate accel correction from temperature calibration from
@@ -335,6 +334,9 @@ def IMUfit(logfile):
 
         if msg.get_type() == 'IMU' and not args.tclr:
             imu = msg.I
+
+            if stop_capture[imu]:
+                continue
 
             T = msg.T
             acc = Vector3(msg.AccX, msg.AccY, msg.AccZ)
