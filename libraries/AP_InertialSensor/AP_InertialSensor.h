@@ -728,7 +728,9 @@ public:
                 Vector3f sum;
                 uint32_t sum_count;
                 LowPassFilter2p<float> temp_filter;
-                PolyFit<4> pfit[3];
+                // double precision is needed for good results when we
+                // span a wide range of temperatures
+                PolyFit<4, double, Vector3f> pfit;
             } state[2];
 
             void add_sample(const Vector3f &sample, float temperature, LearnState &state);
