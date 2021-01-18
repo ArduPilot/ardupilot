@@ -1947,13 +1947,17 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT_START"   : 3.000000,
             "SIM_IMUT_TCONST"  : 75.000000,
             "SIM_DRIFT_SPEED"  : 0,
-            "INS_GYR_CAL"      : 1,
+            "INS_GYR_CAL"      : 0,
         })
 
-        self.progress("Running accelcal")
-        self.set_parameter("SIM_IMUT_FIXED", 35)
+        self.set_parameter("SIM_IMUT_FIXED", 12)
+        self.progress("Running accel cal")
         self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
                      0,0,0,0,4,0,0,
+                     timeout=5)
+        self.progress("Running gyro cal")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0,0,0,0,1,0,0,
                      timeout=5)
         self.set_parameters({"SIM_IMUT_FIXED" : 0,
                              "INS_TCAL1_ENABLE" : 2,
@@ -2018,8 +2022,8 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("TCAL2 did not complete")
         
         self.progress("Testing with compensation enabled")
-        gyro_threshold = 1.0
-        accel_threshold = 0.5
+        gyro_threshold = 0.2
+        accel_threshold = 0.05
 
         test_temperatures = range(10,45,5)
         corrected = {}
