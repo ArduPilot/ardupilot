@@ -10,14 +10,18 @@
 
 #include <stdint.h>
 
-template <uint8_t order>
-class PolyFit {
+/*
+  polynomial fit with X axis type xtype and yaxis type vtype (must be a vector)
+ */
+template <uint8_t order, typename xtype, typename vtype>
+class PolyFit
+{
 public:
-    void update(float x, float y);
-    bool get_polynomial(float res[order]) const;
+    void update(xtype x, vtype y);
+    bool get_polynomial(vtype res[order]) const;
 
 private:
-    double mat[order][order];
-    double vec[order];
+    xtype mat[order][order];
+    vtype vec[order];
 };
 
