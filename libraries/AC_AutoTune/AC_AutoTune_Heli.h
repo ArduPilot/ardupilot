@@ -24,17 +24,8 @@ class AC_AutoTune_Heli : public AC_AutoTune
 {
 public:
     // constructor
-    AC_AutoTune_Heli()
-    {
-        //            tune_seq[0] = 4;  // RFF_UP
-        //            tune_seq[1] = 8;   // MAX_GAINS
-        //            tune_seq[2] = 0; // RD_UP
-        //            tune_seq[3] = 2; // RP_UP
-        //            tune_seq[2] = 6; // SP_UP
-        //            tune_seq[3] = 9; // tune complete
-        tune_seq[0] = SP_UP;
-        tune_seq[1] = TUNE_COMPLETE;
-    };
+    AC_AutoTune_Heli();
+
     // save gained, called on disarm
     void save_tuning_gains() override;
 
