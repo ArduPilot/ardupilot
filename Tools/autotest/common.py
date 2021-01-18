@@ -4582,8 +4582,8 @@ class AutoTest(ABC):
             self.progress("GPS healthy")
             return
 
-    def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True):
-        return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True)
+    def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True, verbose=False):
+        return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True, verbose=verbose)
 
     def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=False):
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=5)
