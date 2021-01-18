@@ -1920,8 +1920,8 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT1_GYR3_X" : -0.003572,
             "SIM_IMUT1_GYR3_Y" : 0.036346,
             "SIM_IMUT1_GYR3_Z" : 0.015457,
-            "SIM_IMUT1_TMAX"   : 42.0,
-            "SIM_IMUT1_TMIN"   : 4.000000,
+            "SIM_IMUT1_TMAX"   : 70.0,
+            "SIM_IMUT1_TMIN"   : -20.000000,
             "SIM_IMUT2_ENABLE" : 1,
             "SIM_IMUT2_ACC1_X" : -160000.000000,
             "SIM_IMUT2_ACC1_Y" : 198730.000000,
@@ -1941,8 +1941,8 @@ class AutoTestPlane(AutoTest):
             "SIM_IMUT2_GYR3_X" : 0.004831,
             "SIM_IMUT2_GYR3_Y" : -0.020528,
             "SIM_IMUT2_GYR3_Z" : 0.009469,
-            "SIM_IMUT2_TMAX"   : 42.000000,
-            "SIM_IMUT2_TMIN"   : 4.000000,
+            "SIM_IMUT2_TMAX"   : 70.000000,
+            "SIM_IMUT2_TMIN"   : -20.000000,
             "SIM_IMUT_END"     : 45.000000,
             "SIM_IMUT_START"   : 3.000000,
             "SIM_IMUT_TCONST"  : 75.000000,
@@ -2021,7 +2021,11 @@ class AutoTestPlane(AutoTest):
         gyro_threshold = 1.0
         accel_threshold = 0.5
 
-        for temp in range(10,45,5):
+        test_temperatures = range(10,45,5)
+        corrected = {}
+        uncorrected = {}
+
+        for temp in test_temperatures:
             self.progress("Testing temperature %.1f" % temp)
             self.set_parameter("SIM_IMUT_FIXED", temp)
             self.wait_heartbeat()
@@ -2037,23 +2041,15 @@ class AutoTestPlane(AutoTest):
 
                 accel = self.get_accelvec(m)
                 gyro = self.get_gyrovec(m)
-
-                self.progress("Checking corrected %s gyros at %.1fC length=%.1f" % (msg, temp, gyro.length()))
-                if gyro.length() > gyro_threshold:
-                    raise NotAchievedException("incorrect corrected %s gyro %s" % (msg, gyro))
-
                 accel2 = accel + Vector3(0,0,9.81)
-                self.progress("Checking corrected %s accels at %.1fC length=%.1f" % (msg, temp, accel2.length()))
 
-                if accel2.length() > accel_threshold:
-                    raise NotAchievedException("incorrect corrected %s accel %s" % (msg, accel))
+                corrected[temperature] = (accel2, gyro)
 
         self.progress("Testing with compensation disabled")
         self.set_parameter("INS_TCAL1_ENABLE", 0)
         self.set_parameter("INS_TCAL2_ENABLE", 0)
 
-        bad_value = False
-        for temp in range(10,45,5):
+        for temp in test_temperatures:
             self.progress("Testing temperature %.1f" % temp)
             self.set_parameter("SIM_IMUT_FIXED", temp)
             self.wait_heartbeat()
@@ -2073,15 +2069,35 @@ class AutoTestPlane(AutoTest):
                 accel = self.get_accelvec(m)
                 gyro = self.get_gyrovec(m)
 
-                self.progress("Checking uncorrected %s gyros at %.1fC length=%.1f" % (msg, temp, gyro.length()))
-                if gyro.length() > 2*gyro_threshold:
-                    bad_value = True
-
                 accel2 = accel + Vector3(0,0,9.81)
-                self.progress("Checking uncorrected %s accels at %.1fC length=%.1f" % (msg, temp, accel2.length()))
+                uncorrected[temperature] = (accel2, gyro)
 
-                if accel2.length() > 2*accel_threshold:
-                    bad_value = True
+        for temp in test_temperatures:
+            (accel, gyro) = corrected[temp]
+            self.progress("Corrected gyro at %.1f %s" % (temp, gyro))
+            self.progress("Corrected accel at %.1f %s" % (temp, accel))
+
+        for temp in test_temperatures:
+            (accel, gyro) = uncorrected[temp]
+            self.progress("Uncorrected gyro at %.1f %s" % (temp, gyro))
+            self.progress("Uncorrected accel at %.1f %s" % (temp, accel))
+            
+        bad_value = False
+        for temp in test_temperatures:
+            (accel, gyro) = corrected[temp]
+            if gyro.length() > gyro_threshold:
+                raise NotAchievedException("incorrect corrected at %.1f gyro %s" % (temp, gyro))
+
+            if accel.length() > accel_threshold:
+                raise NotAchievedException("incorrect corrected at %.1f accel %s" % (temp, accel))
+
+            (accel, gyro) = uncorrected[temp]
+            if gyro.length() > gyro_threshold*2:
+                bad_value = True
+
+            if accel.length() > accel_threshold*2:
+                bad_value = True
+
         if not bad_value:
             raise NotAchievedException("uncompensated IMUs did not vary enough")
 
