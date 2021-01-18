@@ -49,6 +49,8 @@ class Coefficients:
         self.tmax = [-100]*3
         self.gtcal = {}
         self.atcal = {}
+        self.gofs = {}
+        self.aofs = {}
 
     def set_accel_poly(self, imu, axis, values):
         if not imu in self.acoef:
@@ -78,6 +80,16 @@ class Coefficients:
             self.gcoef[imu][axis] = [0]*4
         self.gcoef[imu][axis][POLY_ORDER-order] = value
 
+    def set_aoffset(self, imu, axis, value):
+        if not imu in self.aofs:
+            self.aofs[imu] = {}
+        self.aofs[imu][axis] = value
+
+    def set_goffset(self, imu, axis, value):
+        if not imu in self.gofs:
+            self.gofs[imu] = {}
+        self.gofs[imu][axis] = value
+        
     def set_tmin(self, imu, tmin):
         self.tmin[imu] = tmin
 
@@ -230,6 +242,31 @@ class IMUData:
             self.accel[imu] = self.FilterArray(self.accel[imu], width_s)
             self.gyro[imu] = self.FilterArray(self.gyro[imu], width_s)
 
+    def accel_at_temp(self, imu, axis, temperature):
+        '''return the accel value closest to the given temperature'''
+        if temperature < self.accel[imu]['T'][0]:
+            return self.accel[imu][axis][0]
+        for i in range(len(self.accel[imu]['T'])-1):
+            if temperature >= self.accel[imu]['T'][i] and temperature <= self.accel[imu]['T'][i+1]:
+                v1 = self.accel[imu][axis][i]
+                v2 = self.accel[imu][axis][i+1]
+                p = (temperature - self.accel[imu]['T'][i]) / (self.accel[imu]['T'][i+1]-self.accel[imu]['T'][i])
+                return v1 + (v2-v1) * p
+        return self.accel[imu][axis][-1]
+
+    def gyro_at_temp(self, imu, axis, temperature):
+        '''return the gyro value closest to the given temperature'''
+        if temperature < self.gyro[imu]['T'][0]:
+            return self.gyro[imu][axis][0]
+        for i in range(len(self.gyro[imu]['T'])-1):
+            if temperature >= self.gyro[imu]['T'][i] and temperature <= self.gyro[imu]['T'][i+1]:
+                v1 = self.gyro[imu][axis][i]
+                v2 = self.gyro[imu][axis][i+1]
+                p = (temperature - self.gyro[imu]['T'][i]) / (self.gyro[imu]['T'][i+1]-self.gyro[imu]['T'][i])
+                return v1 + (v2-v1) * p
+        return self.gyro[imu][axis][-1]
+
+
 def constrain(value, minv, maxv):
     """Constrain a value to a range."""
     if value < minv:
@@ -313,6 +350,20 @@ def IMUfit(logfile):
                 if stop_capture[imu]:
                     continue
                 c.set_accel_tcal(imu, msg.Value)
+            m = re.match("^INS_([AG]..)(\d?)OFFS_([XYZ])$", msg.Name)
+            if m:
+                stype = m.group(1)
+                if m.group(2) == "":
+                    imu = 0
+                else:
+                    imu = int(m.group(2))-1
+                axis = m.group(3)
+                if stop_capture[imu]:
+                    continue
+                if stype == 'ACC':
+                    c.set_aoffset(imu, axis, msg.Value)
+                if stype == 'GYR':
+                    c.set_goffset(imu, axis, msg.Value)
             if msg.Name == 'AHRS_ORIENTATION':
                 orientation = int(msg.Value)
                 print("Using orientation %d" % orientation)
@@ -384,12 +435,14 @@ def IMUfit(logfile):
             if args.online:
                 fit = OnlineIMUfit()
                 trel = data.accel[imu]['T'] - TEMP_REF
-                c.set_accel_poly(imu, axis, fit.polyfit(trel, data.accel[imu][axis] - np.median(data.accel[imu][axis]), POLY_ORDER))
+                ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+                c.set_accel_poly(imu, axis, fit.polyfit(trel, data.accel[imu][axis] - ofs, POLY_ORDER))
                 trel = data.gyro[imu]['T'] - TEMP_REF
                 c.set_gyro_poly(imu, axis, fit.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
             else:
                 trel = data.accel[imu]['T'] - TEMP_REF
-                c.set_accel_poly(imu, axis, np.polyfit(trel, data.accel[imu][axis] - np.median(data.accel[imu][axis]), POLY_ORDER))
+                ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+                c.set_accel_poly(imu, axis, np.polyfit(trel, data.accel[imu][axis] - ofs, POLY_ORDER))
                 trel = data.gyro[imu]['T'] - TEMP_REF
                 c.set_gyro_poly(imu, axis, np.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
 
@@ -423,7 +476,7 @@ def IMUfit(logfile):
                     print("IMU[%u] disabled in log parms" % imu)
                     continue
                 poly = np.poly1d(clog.gcoef[imu][axis])
-                correction = poly(data.gyro[imu]['T'] - TEMP_REF)
+                correction = poly(data.gyro[imu]['T'] - TEMP_REF) - poly(clog.gtcal[imu] - TEMP_REF) + clog.gofs[imu][axis]
                 axs[imu].plot(data.gyro[imu]['time'], (data.gyro[imu][axis] - correction)*scale, label='Corrected %s (log parm)' % axis)
         ax2 = axs[imu].twinx()
         ax2.plot(data.gyro[imu]['time'], data.gyro[imu]['T'], label='Temperature(C)', color='black')
@@ -436,23 +489,24 @@ def IMUfit(logfile):
         axs = [axs]
 
     for imu in data.IMUs():
-        mean = {}
         for axis in AXES:
-            mean[axis] = np.mean(data.accel[imu][axis])
-            axs[imu].plot(data.accel[imu]['time'], data.accel[imu][axis] - mean[axis], label='Uncorrected %s' % axis)
+            ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+            axs[imu].plot(data.accel[imu]['time'], data.accel[imu][axis] - ofs, label='Uncorrected %s' % axis)
         for axis in AXES:
             poly = np.poly1d(c.acoef[imu][axis])
             trel = data.accel[imu]['T'] - TEMP_REF
             correction = poly(trel)
-            axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis]-mean[axis]) - correction, label='Corrected %s' % axis)
+            ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+            axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis] - ofs) - correction, label='Corrected %s' % axis)
         if args.log_parm:
             for axis in AXES:
                 if clog.enable[imu] == 0.0:
                     print("IMU[%u] disabled in log parms" % imu)
                     continue
                 poly = np.poly1d(clog.acoef[imu][axis])
-                correction = poly(data.accel[imu]['T'] - TEMP_REF)
-                axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis]-mean[axis]) - correction, label='Corrected %s (log parm)' % axis)
+                ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+                correction = poly(data.accel[imu]['T'] - TEMP_REF) - poly(clog.atcal[imu] - TEMP_REF)
+                axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis] - ofs) - correction, label='Corrected %s (log parm)' % axis)
         ax2 = axs[imu].twinx()
         ax2.plot(data.accel[imu]['time'], data.accel[imu]['T'], label='Temperature(C)', color='black')
         ax2.legend(loc='upper right')
