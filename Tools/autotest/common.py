@@ -7835,7 +7835,7 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             self.set_parameter("STAT_BOOTCNT", 0)
-            self.set_parameter("SIM_BARO_COUNT", 0)
+            self.set_parameter("SIM_BARO_COUNT", -1)
 
             if self.is_tracker():
                 # starts armed...
