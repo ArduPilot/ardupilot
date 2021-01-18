@@ -1274,7 +1274,7 @@ if cmd_opts.hil:
 
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
-        do_build(vehicle_dir, cmd_opts, frame_infos)
+        do_build(cmd_opts, frame_infos)
 
     if cmd_opts.fresh_params:
         do_build_parameters(cmd_opts.vehicle)
