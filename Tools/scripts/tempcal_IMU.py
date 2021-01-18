@@ -518,5 +518,5 @@ def IMUfit(logfile):
 
 
 IMUfit(args.log)
-sys.exit(1)
+
 
