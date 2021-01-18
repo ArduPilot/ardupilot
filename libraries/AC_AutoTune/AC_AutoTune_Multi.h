@@ -30,6 +30,9 @@ public:
     // save gained, called on disarm
     void save_tuning_gains() override;
 
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
     // load gains
     void load_test_gains() override;
@@ -77,6 +80,12 @@ protected:
     // returns true if rate P gain of zero is acceptable for this vehicle
     bool allow_zero_rate_p() override { return false; }
 
+    // returns true if pilot is allowed to make inputs during test
+    bool allow_pilot_rp_input() override { return false; }
+
+    // returns true if max tested accel is used for parameter
+    bool set_accel_to_max_test_value() override { return true; }
+
     // get minimum rate P (for any axis)
     float get_rp_min() const override;
 
@@ -86,8 +95,12 @@ protected:
     // get minimum yaw rate filter value
     float get_yaw_rate_filt_min() const override;
 
+    // reverse direction for twitch test
+    bool twitch_reverse_direction() override { return !positive_direction; }
+
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
+    void Log_AutoTuneSweep() override {};
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
@@ -111,4 +124,14 @@ private:
     // updating_angle_p_up - increase P to ensure the target is reached
     // P is increased until we achieve our target within a reasonable time
     void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+
+    void set_tune_sequence() override {
+        tune_seq[0] = RD_UP;
+        tune_seq[1] = RD_DOWN;
+        tune_seq[2] = RP_UP;
+        tune_seq[3] = SP_DOWN;
+        tune_seq[4] = SP_UP;
+        tune_seq[5] = TUNE_COMPLETE;
+    }
+
 };
