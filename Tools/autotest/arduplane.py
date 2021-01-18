@@ -1152,9 +1152,9 @@ class AutoTestPlane(AutoTest):
             self.assert_fence_sys_status(True, True, True)
             self.mavproxy.send("fence clear\n")
             self.mavproxy.expect("fence removed")
+            self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, False, False, True)
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
-            self.assert_fence_sys_status(False, False, True)
 
         except Exception as e:
             self.progress("Exception caught:")
