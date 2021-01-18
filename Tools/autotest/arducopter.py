@@ -4558,6 +4558,9 @@ class AutoTestCopter(AutoTest):
 
         self.context_pop()
 
+        # must reboot after we move away from EKF type 10 to EKF2 or EKF3
+        self.reboot_sitl()
+
         if ex is not None:
             raise ex
 
