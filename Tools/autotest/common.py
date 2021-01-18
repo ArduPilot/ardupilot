@@ -3519,7 +3519,7 @@ class AutoTest(ABC):
         """Set parameters from vehicle."""
         want = copy.copy(parameters)
         self.progress("set_parameters: (%s)" % str(want))
-        self.drain_mav_unparsed()
+        self.drain_mav()
         if len(want) == 0:
             return
 
