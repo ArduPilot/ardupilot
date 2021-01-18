@@ -237,18 +237,21 @@ void AP_InertialSensor::TCal::correct_gyro(float temperature, float cal_temp, Ve
     correct_sensor(temperature, cal_temp, gyro_coeff, gyro);
 }
 
+/*
+  for SITL we don't apply the temperature limits and use mid-point as
+  reference. This makes the SITL data independent of TEMP_REFERENCE
+  and prevents an abrupt change at the endpoints
+ */
 void AP_InertialSensor::TCal::sitl_apply_accel(float temperature, Vector3f &accel) const
 {
-    Vector3f v;
-    correct_sensor(temperature, TEMP_REFERENCE, accel_coeff, v);
-    accel -= v;
+    const float tmid = 0.5*(temp_max+temp_min);
+    accel += polynomial_eval(temperature - tmid, accel_coeff);
 }
 
 void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro) const
 {
-    Vector3f v;
-    correct_sensor(temperature, TEMP_REFERENCE, gyro_coeff, v);
-    gyro -= v;
+    const float tmid = 0.5*(temp_max+temp_min);
+    gyro += polynomial_eval(temperature - tmid, gyro_coeff);
 }
 
 AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
@@ -312,9 +315,7 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
                        st.sum_count);
     
     
-    st.pfit[0].update(tdiff, st.sum.x);
-    st.pfit[1].update(tdiff, st.sum.y);
-    st.pfit[2].update(tdiff, st.sum.z);
+    st.pfit.update(tdiff, st.sum);
 
     st.sum.zero();
     st.sum_count = 0;
@@ -408,28 +409,25 @@ bool AP_InertialSensor::TCal::Learn::save_calibration(float temperature)
 {
     Vector3f coefficients[3];
 
-    for (uint8_t i=0; i<3; i++) {
-        float p[4];
-        if (!state[0].pfit[i].get_polynomial(p)) {
-            return false;
-        }
-        for (uint8_t k=0; k<3; k++) {
-            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
-        }
+    Vector3f p[4];
+    if (!state[0].pfit.get_polynomial(p)) {
+        return false;
     }
+    for (uint8_t k=0; k<3; k++) {
+        coefficients[k] = p[2-k] * SCALE_FACTOR;
+    }
+
     for (uint8_t k=0; k<3; k++) {
         tcal.accel_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
 
-    for (uint8_t i=0; i<3; i++) {
-        float p[4];
-        if (!state[1].pfit[i].get_polynomial(p)) {
-            return false;
-        }
-        for (uint8_t k=0; k<3; k++) {
-            coefficients[k][i] = p[2-k] * SCALE_FACTOR;
-        }
+    if (!state[1].pfit.get_polynomial(p)) {
+        return false;
     }
+    for (uint8_t k=0; k<3; k++) {
+        coefficients[k] = p[2-k] * SCALE_FACTOR;
+    }
+
     for (uint8_t k=0; k<3; k++) {
         tcal.gyro_coeff[k].set_and_save_ifchanged(coefficients[k]);
     }
@@ -502,7 +500,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
     if (save_options) {
         /*
           we also have to save the TCAL_OPTIONS parameter so that
-          fuuture flashing of the bootloader doesn't cause an erase
+          future flashing of the bootloader doesn't cause an erase
          */
         str.printf("INS_TCAL_OPTIONS=%u\n", unsigned(tcal_options.get()));
     }
