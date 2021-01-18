@@ -60,14 +60,14 @@ void ModeRTL::run(bool disarm_on_land)
             climb_start();
 
         	if (copter.ap.gimbal_control_active){
-        		copter.Spirit_Gimbal_Control_Auto();
+        		copter.Spirit_Gimbal_Control();
         	}
 
             break;
         case RTL_InitialClimb:
 
         	if (copter.ap.gimbal_control_active){
-        		copter.Spirit_Gimbal_Control_Auto();
+        		copter.Spirit_Gimbal_Control();
         	}
 
             return_start();
@@ -75,7 +75,7 @@ void ModeRTL::run(bool disarm_on_land)
         case RTL_ReturnHome:
 
         	if (copter.ap.gimbal_control_active){
-        		copter.Spirit_Gimbal_Control_Auto();
+        		copter.Spirit_Gimbal_Control();
         	}
 
             loiterathome_start();
@@ -174,7 +174,7 @@ void ModeRTL::climb_return_run()
         make_safe_spool_down();
 
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
 
         return;
@@ -186,7 +186,7 @@ void ModeRTL::climb_return_run()
     /////////////////////////////////////////////////////////////
 
     if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 		target_yaw_rate = 0;
 	}else{
 
@@ -245,7 +245,7 @@ void ModeRTL::loiterathome_start()
     _loiter_start_time = millis();
 
 	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 	}
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
@@ -264,7 +264,7 @@ void ModeRTL::loiterathome_run()
     if (is_disarmed_or_landed()) {
         make_safe_spool_down();
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
         return;
     }

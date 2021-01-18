@@ -784,7 +784,7 @@ private:
     void update_throttle_thr_mix();
 
     void Spirit_Land_Detector();
-    void Spirit_Gimbal_Control_Auto();
+    void Spirit_Gimbal_Control();
     void Decode_Buttons();
     void Detect_Buttons();
     void Killswitch();

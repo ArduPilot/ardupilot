@@ -19,36 +19,66 @@ void Copter::userhook_init()
 	function_counter = 0;
 	cam_button_debounce_timer = 0;
 
+	ch7_button_pressed = false;
 	ch9_button_pressed = false;
 	ch10_button_pressed = false;
 	ch11_button_pressed = false;
 	ch12_button_pressed = false;
 
+	long_press_flag_ch7 = false;
 	long_press_flag_ch9 = false;
 	long_press_flag_ch10 = false;
 	long_press_flag_ch11 = false;
 	long_press_flag_ch12 = false;
 
+	short_press_flag_ch7 = false;
 	short_press_flag_ch9 = false;
 	short_press_flag_ch10 = false;
 	short_press_flag_ch11 = false;
 	short_press_flag_ch12 = false;
 
+	ch7_button_hold = false;
 	ch9_button_hold = false;
 	ch10_button_hold = false;
 	ch11_button_hold = false;
 	ch12_button_hold = false;
 
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
-	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1500);
-
-
 	// startup spirit state
 	spirit_state = disarm;
+	viewpro_state = rc_target;
+
+	gimbal_pan_spd = 0.0;
+	gimbal_tilt_spd = 0.0;
+
+	zoom_in = false;
+	zoom_out  = false;
+	zoom_stop = true;
+	camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+
+
+	roi_1.lng = g.roi_1_long;
+	roi_1.lat = g.roi_1_lat;
+	roi_1.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
+
+//camera_mount.set_roi_target(roi_1);
+
+copter.mode_auto.mission.clear();
+
+AP_Mission::Mission_Command cmd_roi;
+
+  cmd_roi.id = MAV_CMD_DO_SET_ROI;
+  cmd_roi.index = 0;
+  cmd_roi.p1 = 0;
+  cmd_roi.content.location = Location{
+	  roi_1.lat,
+	  roi_1.lng,
+	  roi_1.alt,
+      Location::AltFrame::ABOVE_TERRAIN
+  };
+
+
+  copter.mode_auto.mission.add_cmd(cmd_roi);
+
 
 
 	//GPIOs for on/off to payload and critical systems
@@ -135,6 +165,8 @@ if(motors->armed()){
 
 	if(!motors->armed()){
 		spirit_state = disarm;
+		viewpro_state = rc_target;
+		//camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 
 	// the rest considers the vehicle to be armed
 		//always move through spoolup
@@ -143,6 +175,8 @@ if(motors->armed()){
 		hal.gpio->write(52, false);
 		hal.gpio->write(53, true);
 
+		camera_mount.set_mode(MAV_MOUNT_MODE_NEUTRAL);
+
 		spirit_state = spoolup;
 		spoolup_watcher = AP_HAL::millis16();
 		gcs().send_text(MAV_SEVERITY_INFO,"SpoolUp");
@@ -150,18 +184,16 @@ if(motors->armed()){
 	}else if(spirit_state == land and (copter.flightmode->is_taking_off() or !ap.land_complete)){
 
 		spirit_state = takeoff;
-		//gcs().send_text(MAV_SEVERITY_INFO,"takeoff");
 
 	}else if(spirit_state == takeoff and (!copter.flightmode->is_taking_off() or copter.flightmode->has_manual_throttle()) ){
 
 		spirit_state = hover;
-		//gcs().send_text(MAV_SEVERITY_INFO,"hover");
-
+	//	camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+		viewpro_state = rc_target;
 
 	}else if((spirit_state == hover or spirit_state == landing) and ap.land_complete){
 
 		spirit_state = land;
-		//gcs().send_text(MAV_SEVERITY_INFO,"land");
 
 	}
 
@@ -176,6 +208,8 @@ if(motors->armed()){
 		//zero out dynamic trim for now
 		motors->set_dynamic_trim(0.0, 0.0);
 
+
+		//Prompt for flashing yellow LEDs if no RC input
 		if(RC_Channels::rc_channel(CH_3)->get_radio_in() == 0){
 			AP_Notify::flags.no_RC_in = true;
 		}else{
@@ -235,6 +269,10 @@ if(motors->armed()){
 
 	case hover:
 
+
+		//Gimbal control logic for hover
+
+
 		//////// Determine if we are landing //////
 		if(copter.flightmode->get_alt_above_ground_cm() <= (int32_t)g2.land_alt_low){   // need to be close to the ground
 
@@ -292,6 +330,9 @@ void Copter::userhook_MediumLoop()
 	}else if(AP_HAL::millis16() - start_rpm_comp_time > 3000){
 		motors->enable_rpm_comp(true);
 	}
+
+
+	 //logger.ROI_logging();
 
 }
 #endif
@@ -417,34 +458,46 @@ void Copter::servo_voltage_watcher(){
 
 
 
-void Copter::Spirit_Gimbal_Control_Auto(){
-
+//
+void Copter::Spirit_Gimbal_Control(){
+	/*
 	if(!g.herelink_enable){
 		return;
 	}
 
-int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom, gimbal_focus;
 
-		gimbal_tilt = RC_Channels::rc_channel(CH_2)->get_radio_in();
-		gimbal_pan = RC_Channels::rc_channel(CH_1)->get_radio_in();
-		gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
-		gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
+	int16_t  gimbal_pan, gimbal_tilt, gimbal_zoom; // , gimbal_focus;
 
-		if(g.top_cam){
+				gimbal_tilt = RC_Channels::rc_channel(CH_2)->get_radio_in();
+				gimbal_pan = RC_Channels::rc_channel(CH_1)->get_radio_in();
+				gimbal_zoom = RC_Channels::rc_channel(CH_3)->get_radio_in();
+				//gimbal_focus = RC_Channels::rc_channel(CH_4)->get_radio_in();
 
-			gimbal_tilt = (RC_Channels::rc_channel(CH_2)->get_radio_max() - gimbal_tilt) + RC_Channels::rc_channel(CH_2)->get_radio_min();
 
-			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
-			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
+				gimbal_tilt_spd  = -90.0 + ((float)gimbal_tilt - 1100.0)*(0.225);
+				gimbal_pan_spd  = -90.0 + ((float)gimbal_pan - 1100.0)*(0.225);
 
-		}else{
 
-			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, gimbal_tilt);
-			SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, gimbal_pan);
-		}
+				gimbal_tilt_spd = (constrain_float(gimbal_tilt_spd, -90.0, 90.0));
+				gimbal_pan_spd = (constrain_float(gimbal_pan_spd, -90.0, 90.0));
 
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, gimbal_zoom);
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, gimbal_focus);
+
+	int16_t gimbal_zoom;
+
+				if(gimbal_zoom < 1400){
+					zoom_in = false;
+					zoom_out = true;
+				}else if(gimbal_zoom > 1600){
+					zoom_in = true;
+					zoom_out = false;
+				}else{
+					zoom_in = false;
+					zoom_out = false;
+				}
+
+*/
+			//	hal.console->printf("value %f", gimbal_pan_spd)  ;
+
 }
 
 
@@ -485,6 +538,33 @@ void Copter::Killswitch(){
 
 
 void Copter::Detect_Buttons(){
+
+
+	if(RC_Channels::rc_channel(CH_7)->get_radio_in() > 1800){
+					if(!ch7_button_hold){
+						if(!ch7_button_pressed){
+							ch7_button_pressed = true;
+							ch7_timer = millis();
+						}else{
+							if( (millis() - ch7_timer) > 750 ){
+								long_press_flag_ch7 = true;  //these are reset in the 10Hz loop
+								function_counter = 0;
+								ch7_button_hold = true;
+							}
+						}
+					}
+				}else{
+					if(ch7_button_pressed){
+						if(!ch7_button_hold){  //if hold was active don't do a short_press
+							short_press_flag_ch7 = true;//these are reset in the 10Hz loop
+							function_counter = 0;
+						}
+						ch7_button_hold = false;
+						ch7_button_pressed = false; //reset button press flag
+					}
+				}
+
+
 
 
 
@@ -567,104 +647,79 @@ void Copter::Detect_Buttons(){
 
 void Copter::Decode_Buttons(){
 
-/*
-	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800){
 
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1500);
+	if(short_press_flag_ch7){
 
-	}
-
-
-	if(RC_Channels::rc_channel(CH_10)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
-
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1900);
-
-	}
-
-
-	if(RC_Channels::rc_channel(CH_9)->get_radio_in() > 1800 and RC_Channels::rc_channel(CH_11)->get_radio_in() > 1800){
-
-		SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_track, 1100);
-
-	}
-*/
+		//CODE TO TURN ON/OFF CAMERA
 
 
 
-	if(RC_Channels::rc_channel(CH_7)->get_radio_in() >= 1700){
-		copter.ap.gimbal_control_active = true;
-		cam_button_pressed = true;
-	}else if(cam_button_pressed){
-		if(cam_button_debounce_timer >= 1){
-			cam_button_pressed = false;
-			cam_button_debounce_timer = 0;
-		}else{
-			cam_button_debounce_timer++;
+		short_press_flag_ch7 = false;
+
 		}
-	}else{
-		copter.ap.gimbal_control_active = false;
-	}
+
+		if(long_press_flag_ch7){
+
+			//CODE TO CHANGE CAMERA MODE
+			long_press_flag_ch7 = false;
+		}
+
+
+
 
 	if(short_press_flag_ch9){
-			if(function_counter < 2){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1500);
-				function_counter++;
-			}else if(function_counter < 4){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1100);
-				function_counter++;
-			}else{
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1500);
+
 				short_press_flag_ch9 = false;
-				function_counter = 0;
-			}
+				//camera_mount.set_roi_target(roi_1);
+				//AP_Notify::events.user_mode_change = 1;
+				//camera_mount.enable_follow(true);
+
+		}else{
+
+			//camera_mount.enable_follow(false);
 		}
 
 
 
 		if(long_press_flag_ch9){
-			if(function_counter < 2){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1500);
-				function_counter++;
-			}else if(function_counter < 4){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1900);
-				function_counter++;
-			}else{
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_rec, 1500);
+
 				long_press_flag_ch9 = false;
-				function_counter = 0;
-			}
+
 
 		}
 
 		if(short_press_flag_ch10){
 
+			AP_Notify::events.user_mode_change = 1;
+
+
+			if(camera_mount.get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
+
+				camera_mount.set_mode(MAV_MOUNT_MODE_GPS_POINT);
+
+			}else if(camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT){
+
+				camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+
+			}else{
+
+				camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+			}
+
 			short_press_flag_ch10 = false;
 
-			if(speed_setting == 3){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1900);
-			}else if(speed_setting == 1){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1100);
-			}else{
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1500);
-			}
-			speed_setting++;
-			if(speed_setting > 3){ speed_setting = 1; }
 		}
 
+
 		if(long_press_flag_ch10){
-			if(function_counter < 4){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1500);
-				function_counter++;
-			}else if(function_counter < 5){
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1900);
-				function_counter++;
-			}else{
-				SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_mode, 1500);
-				function_counter++;
-				long_press_flag_ch10 = false;
-				function_counter = 0;
-			}
+
+
+			camera_mount.set_camera_point_ROI(ahrs.get_yaw());
+
+			long_press_flag_ch10 = false;
+
 		}
+
 
 		if(short_press_flag_ch11){
 			short_press_flag_ch11 = false;

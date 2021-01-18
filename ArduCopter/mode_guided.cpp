@@ -42,6 +42,10 @@ bool ModeGuided::init(bool ignore_checks)
 {
     // start in position control mode
     pos_control_start();
+
+
+    copter.camera_mount.enable_RC_control(true);
+
     return true;
 }
 
@@ -334,6 +338,10 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms, bool use_y
 // should be called at 100hz or more
 void ModeGuided::run()
 {
+
+
+	copter.camera_mount.enable_RC_control(true);
+
     // call the correct auto controller
     switch (guided_mode) {
 
@@ -383,7 +391,7 @@ void Mode::auto_takeoff_run()
         wp_nav->shift_wp_origin_to_current_pos();
 
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
 
         return;
@@ -396,7 +404,7 @@ void Mode::auto_takeoff_run()
     ////////////////////////////////////
 
     if (copter.ap.gimbal_control_active){
-    	copter.Spirit_Gimbal_Control_Auto();
+    	copter.Spirit_Gimbal_Control();
     	target_yaw_rate = 0;
     }else{
         if (!copter.failsafe.radio) {
@@ -455,7 +463,7 @@ void ModeGuided::pos_control_run()
     /////////////////////////////
 
 	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 		target_yaw_rate = 0;
 	}else{
 
@@ -496,7 +504,7 @@ void ModeGuided::pos_control_run()
 
 
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
 
 
@@ -535,7 +543,7 @@ void ModeGuided::vel_control_run()
     /////////////////////////////
 
   	if (copter.ap.gimbal_control_active){
-  		copter.Spirit_Gimbal_Control_Auto();
+  		copter.Spirit_Gimbal_Control();
   		target_yaw_rate = 0;
   	}else{
 
@@ -572,7 +580,7 @@ void ModeGuided::vel_control_run()
         make_safe_spool_down();
 
         if (copter.ap.gimbal_control_active){
-          		copter.Spirit_Gimbal_Control_Auto();
+          		copter.Spirit_Gimbal_Control();
           	}
 
         return;
@@ -620,7 +628,7 @@ void ModeGuided::posvel_control_run()
     /////////////////////////////
 
   	if (copter.ap.gimbal_control_active){
-  		copter.Spirit_Gimbal_Control_Auto();
+  		copter.Spirit_Gimbal_Control();
   		target_yaw_rate = 0;
   	}else{
 

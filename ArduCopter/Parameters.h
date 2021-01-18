@@ -379,6 +379,13 @@ public:
 		k_param_battery_number,
 		k_param_payload_weight,
 		k_param_top_cam,
+		k_param_roi_1_long,
+		k_param_roi_1_lat,
+		k_param_roi_2_long,
+		k_param_roi_2_lat
+
+
+
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -480,6 +487,12 @@ public:
     AP_Int8					battery_number;
     AP_Float				payload_weight;
     AP_Int8					top_cam;
+
+    AP_Int32			roi_1_long;
+	 AP_Int32			roi_1_lat;
+	 AP_Int32			roi_2_long;
+	 AP_Int32			roi_2_lat;
+
 
 
     // Note: keep initializers here in the same order as they are declared

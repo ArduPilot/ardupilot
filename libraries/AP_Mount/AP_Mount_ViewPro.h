@@ -1,5 +1,5 @@
 /*
-  SToRM32 mount backend class
+  ViewPro mount using serial protocol backend class
  */
 #pragma once
 
@@ -8,21 +8,21 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <RC_Channel/RC_Channel.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Mount_Backend.h"
+#include <Filter/Filter.h>
 
-#define AP_MOUNT_STORM32_RESEND_MS  1000    // resend angle targets to gimbal once per second
-#define AP_MOUNT_STORM32_SEARCH_MS  60000   // search for gimbal for 1 minute after startup
+#define AP_MOUNT_VIEWPRO_RESEND_MS   1000    // resend angle targets to gimbal once per second
 
-class AP_Mount_SToRM32 : public AP_Mount_Backend
+class AP_Mount_ViewPro : public AP_Mount_Backend
 {
 
 public:
     // Constructor
-    AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
+    AP_Mount_ViewPro(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
-    void init() override {}
+    void init() override;
 
     // update mount position - should be called periodically
     void update() override;
@@ -36,18 +36,236 @@ public:
     // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     void send_mount_status(mavlink_channel_t chan) override;
 
+   void set_init_cmd();
+
+   void ctrl_camera();
+
+   void reset_camera();
+
 private:
 
-    // search for gimbal in GCS_MAVLink routing table
-    void find_gimbal();
+    void update_target_spd_from_rc();
 
-    // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-    void send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode);
+    void update_zoom_focus_from_rc();
+
+    void enable_follow_yaw();
+    void disable_follow_yaw();
+
+
+    void send_targeting_cmd();
+
+    void send_zoom();
+
+   // void set_to_follow(bool follow_en);
+
+    void turn_motors_off(bool en);
+
+    // send read data request
+    void get_angles();
+
+    // read_incoming
+    void read_incoming();
+    void parse_reply();
+
+    enum ReplyType {
+        ReplyType_UNKNOWN = 0,
+        ReplyType_Zoom_DATA,
+		ReplyType_angle_DATA,
+		ReplyType_Rec_State_DATA,
+    };
+
+    //void add_next_reply(ReplyType reply_type);
+    uint8_t get_reply_size(ReplyType reply_type);
+    bool can_send(bool with_control);
+
+   // LowPassFilterFloat yaw_follow_filter;
+
+    struct PACKED ViewPro_reply_angle_struct {
+        uint8_t header1;
+        uint8_t header2;
+        uint8_t header3;
+        uint8_t header4;
+        int16_t roll_ang;
+        uint8_t roll_RC_target_ang_1;
+        uint8_t roll_RC_target_ang_2;
+        uint8_t roll_rel_ang_1;
+        uint8_t roll_rel_ang_2;
+        uint8_t roll_rel_ang_3;
+        uint8_t roll_rel_ang_4;
+        uint8_t zero_1a;
+        uint8_t zero_2a;
+        uint8_t zero_3a;
+        uint8_t zero_4a;
+        uint8_t zero_5a;
+        uint8_t zero_6a;
+        uint8_t zero_7a;
+        uint8_t zero_8a;
+        uint8_t zero_9a;
+        uint8_t zero_10a;
+        int16_t pitch_ang;
+        uint8_t pitch_RC_target_ang_1;
+        uint8_t pitch_RC_target_ang_2;
+        int32_t pitch_rel_ang;
+        uint8_t zero_1b;
+        uint8_t zero_2b;
+        uint8_t zero_3b;
+        uint8_t zero_4b;
+        uint8_t zero_5b;
+        uint8_t zero_6b;
+        uint8_t zero_7b;
+        uint8_t zero_8b;
+        uint8_t zero_9b;
+        uint8_t zero_10b;
+        int16_t yaw_ang;
+        uint8_t yaw_RC_target_ang_1;
+        uint8_t yaw_RC_target_ang_2;
+        int32_t yaw_rel_ang;
+        uint8_t crc;
+    };
+
+
+    struct PACKED ViewPro_reply_video_state{
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t state;
+        uint8_t byte6;
+
+    };
+
+
+
+    struct PACKED ViewPro_reply_zoom_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+       // uint32_t zoom_level;
+        uint8_t byte7;
+    };
+
+
+
+    struct PACKED cmd_set_angles_struct {
+        uint8_t header1;
+        uint8_t header2;
+        uint8_t header3;
+        uint8_t header4;
+        uint8_t RM;
+        uint8_t PM;
+        uint8_t YM;
+        int16_t Rs;
+        int16_t Ra;
+        int16_t Ps;
+        int16_t Pa;
+        int16_t Ys;
+        int16_t Ya;
+        uint8_t crc;
+    };
+
+
+    struct PACKED cmd_5_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+    };
+
+
+    struct PACKED cmd_6_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+    };
+
+
+    struct PACKED cmd_7_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+        uint8_t byte7;
+    };
+
+
+
+    struct PACKED cmd_11_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+        uint8_t byte7;
+        uint8_t byte8;
+        uint8_t byte9;
+        uint8_t byte10;
+        uint8_t byte11;
+    };
+
+
+
+enum zoom_state{
+	ZOOM_IN,
+	ZOOM_OUT,
+	ZOOM_STOP,
+}current_zoom_state;
+
+
+struct query_flags {
+    bool angles;
+	bool zoom;
+    bool camera_state;
+    bool track_state;
+    }  query_flags;
+
+
+struct command_flags {
+	bool change_state;
+	bool take_picture;
+	bool center_yaw;
+	bool toggle_video;
+	bool toggle_pip;
+	bool toggle_track;
+	}  command_flags;
+
+	bool is_recording;
+	bool state_is_video;
+
+
+uint16_t _zoom_level;
+
+bool _zooming_state_change;
+bool _query_switch;
+
 
     // internal variables
+    AP_HAL::UARTDriver *_port;
+
     bool _initialised;              // true once the driver has been initialised
-    uint8_t _sysid;                 // sysid of gimbal
-    uint8_t _compid;                // component id of gimbal
-    mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal.  Currently hard-coded to Telem2
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
+
+    uint8_t _reply_length;
+    uint8_t _reply_counter;
+    ReplyType _reply_type;
+
+
+    union PACKED viewpro_reply {
+        DEFINE_BYTE_ARRAY_METHODS
+		ViewPro_reply_zoom_struct zoom_data;
+        ViewPro_reply_angle_struct angle_data;
+        ViewPro_reply_video_state video_state_data;
+    } _buffer;
+
+    // keep the last _current_angle values
+    Vector3l _current_angle;
 };

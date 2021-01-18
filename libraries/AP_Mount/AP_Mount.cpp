@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_ViewPro.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -462,6 +463,11 @@ void AP_Mount::init()
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
+
+
+        }else if (mount_type == Mount_Type_ViewPro) {
+            _backends[instance] = new AP_Mount_ViewPro(*this, state[instance], instance);
+            _num_instances++;
         }
 
         // init new instance
@@ -548,6 +554,7 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     _backends[instance]->set_mode(mode);
 }
 
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
 {
@@ -558,6 +565,47 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
     // send command to backend
     _backends[instance]->set_angle_targets(roll, tilt, pan);
 }
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::enable_RC_control(uint8_t instance, bool en)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->enable_RC_control(en);
+}
+
+
+
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::set_camera_point_ROI(uint8_t instance, float yaw)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->set_camera_point_ROI(yaw);
+}
+
+
+
+
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::enable_follow(uint8_t instance, bool en)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->enable_follow(en);
+}
+
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
 {

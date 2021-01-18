@@ -55,6 +55,7 @@ public:
     virtual void set_angle_targets(float roll, float tilt, float pan);
 
     // set_roi_target - sets target location that mount should attempt to point towards
+
     virtual void set_roi_target(const struct Location &target_loc);
 
     // control - control the mount
@@ -78,16 +79,33 @@ public:
     // send a GIMBAL_REPORT message to the GCS
     virtual void send_gimbal_report(const mavlink_channel_t chan) {}
 
+
+    virtual void enable_RC_control(bool en);
+
+
+	virtual void enable_follow(bool en);
+
+	virtual void set_camera_point_ROI(float yaw);
+
+
+    float _lat, _long, _roi_pan;
+
+    bool _enable_follow;
+
 protected:
 
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
     void update_targets_from_rc();
 
+
     // angle_input_rad - convert RC input into an earth-frame target angle
     float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
-    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
+    //void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan = true);
+
+    //Changing function to use angles_to_target_deg instead of angles_to_target_rad
+    void calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_deg, bool calc_tilt, bool calc_pan, bool relative_pan = true);
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
@@ -96,6 +114,29 @@ protected:
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+    Vector3f    _angle_ef_target_deg;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+
+    Vector3f    _speed_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+    Vector3f    _speed_ef_target_deg;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+    Vector3f	_feedback_angles_deg;
+    bool		_get_angles;
+
+    Location  roi_gps_target;
+
+    float _camera_tilt_angle;
+    float _camera_pan_angle;
+
+    enum MAV_MOUNT_MODE _previous_mode;
+
+
+    bool _zoom_in, _zoom_out;
+    bool _RC_control_enable;
+
+    bool is_recording;
+    bool is_video_mode;
+    bool is_connected;
+
+
 
 private:
 

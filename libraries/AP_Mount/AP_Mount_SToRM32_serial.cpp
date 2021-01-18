@@ -151,12 +151,12 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
         0xFA,
         0x0E,
         0x11,
-        0, // pitch
-        0, // roll
-        0, // yaw
-        0, // flags
-        0, // type
-        0, // crc
+        0x02, // pitch
+        0x03, // roll
+        0x04, // yaw
+        0x05, // flags
+        0x06, // type
+        0xEE, // crc
     };
 
     // exit immediately if not initialised
@@ -169,17 +169,17 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
     }
 
     // reverse pitch and yaw control
-    pitch_deg = -pitch_deg;
-    yaw_deg = -yaw_deg;
+   // pitch_deg = -pitch_deg;
+  //  yaw_deg = -yaw_deg;
 
     // send CMD_SETANGLE
-    cmd_set_angles_data.pitch = pitch_deg;
-    cmd_set_angles_data.roll = roll_deg;
-    cmd_set_angles_data.yaw = yaw_deg;
+   // cmd_set_angles_data.pitch = pitch_deg;
+   // cmd_set_angles_data.roll = roll_deg;
+   // cmd_set_angles_data.yaw = yaw_deg;
 
     uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
 
-    cmd_set_angles_data.crc = crc_calculate(&buf[1], sizeof(cmd_set_angles_data)-3);
+   // cmd_set_angles_data.crc = crc_calculate(&buf[1], sizeof(cmd_set_angles_data)-3);
 
     for (uint8_t i = 0;  i != sizeof(cmd_set_angles_data) ; i++) {
         _port->write(buf[i]);

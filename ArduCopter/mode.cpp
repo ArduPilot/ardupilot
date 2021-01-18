@@ -336,6 +336,7 @@ void Copter::exit_mode(Mode *&old_flightmode,
         }
 #if MOUNT == ENABLED
         camera_mount.set_mode_to_default();
+
 #endif  // MOUNT == ENABLED
     }
 #endif
@@ -345,6 +346,7 @@ void Copter::exit_mode(Mode *&old_flightmode,
         // this assumes all manual flight modes use get_pilot_desired_throttle to translate pilot input to output throttle
         set_accel_throttle_I_from_pilot_throttle();
     }
+
 
     // cancel any takeoffs in progress
     old_flightmode->takeoff_stop();
@@ -577,7 +579,7 @@ void Mode::land_run_horizontal_control()
     ///////////////////////////////////////////////
 
         if (copter.ap.gimbal_control_active){
-            	copter.Spirit_Gimbal_Control_Auto();
+            	copter.Spirit_Gimbal_Control();
             	target_pitch = 0;
             	target_roll = 0;
             	target_yaw_rate = 0;

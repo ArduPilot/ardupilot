@@ -45,6 +45,10 @@ bool ModeAuto::init(bool ignore_checks)
 
         // start/resume the mission (based on MIS_RESTART parameter)
         mission.start_or_resume();
+
+        copter.camera_mount.enable_RC_control(true);
+
+
         return true;
     } else {
         return false;
@@ -755,7 +759,7 @@ void ModeAuto::wp_run()
 
         //If disarmed, still allow gimbal control
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
         return;
     }
@@ -766,7 +770,7 @@ void ModeAuto::wp_run()
 ///////////////////////////////////////////////
 
     if (copter.ap.gimbal_control_active){
-        	copter.Spirit_Gimbal_Control_Auto();
+        	copter.Spirit_Gimbal_Control();
         	target_yaw_rate = 0;
         }else{
             if (!copter.failsafe.radio) {
@@ -826,7 +830,7 @@ void ModeAuto::spline_run()
 
         //If disarmed, still allow gimbal control
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
         return;
     }
@@ -838,7 +842,7 @@ void ModeAuto::spline_run()
     ///////////////////////////////////////////////
 
         if (copter.ap.gimbal_control_active){
-            	copter.Spirit_Gimbal_Control_Auto();
+            	copter.Spirit_Gimbal_Control();
             	target_yaw_rate = 0;
             }else{
                 if (!copter.failsafe.radio) {
@@ -901,7 +905,7 @@ void ModeAuto::land_run()
 
         //If disarmed, still allow gimbal control
     	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control_Auto();
+    		copter.Spirit_Gimbal_Control();
     	}
         return;
     }
@@ -932,7 +936,7 @@ void ModeAuto::circle_run()
     pos_control->update_z_controller();
 
 	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 	}
 
 
@@ -977,7 +981,7 @@ void ModeAuto::loiter_run()
         wp_nav->wp_and_spline_init();
 
 		if (copter.ap.gimbal_control_active){
-			copter.Spirit_Gimbal_Control_Auto();
+			copter.Spirit_Gimbal_Control();
 		}
 
         return;
@@ -989,7 +993,7 @@ void ModeAuto::loiter_run()
     /////////////////////////////////////////////////////////////
 
     if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 		target_yaw_rate = 0;
 	}else{
 	    if (!copter.failsafe.radio) {
@@ -1029,7 +1033,7 @@ void ModeAuto::loiter_to_alt_run()
 {
 
 	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control_Auto();
+		copter.Spirit_Gimbal_Control();
 	}
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
@@ -1395,6 +1399,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
         pos_control->freeze_ff_z();
     }
 }
+
 
 // do_spline_wp - initiate move to next waypoint
 void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)

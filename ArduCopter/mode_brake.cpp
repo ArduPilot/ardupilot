@@ -32,7 +32,7 @@ bool ModeBrake::init(bool ignore_checks)
 void ModeBrake::run()
 {
 
-	copter.Spirit_Gimbal_Control_Auto();
+	copter.Spirit_Gimbal_Control();
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {

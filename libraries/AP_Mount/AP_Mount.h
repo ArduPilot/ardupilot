@@ -34,6 +34,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_ViewPro;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -49,6 +50,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_ViewPro;
 
 public:
     AP_Mount(const struct Location &current_loc);
@@ -69,7 +71,8 @@ public:
         Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+        Mount_Type_SToRM32_serial = 5,   /// SToRM32 mount using custom serial protocol
+		Mount_Type_ViewPro = 6,
     };
 
     // init - detect and initialise all mounts
@@ -107,6 +110,27 @@ public:
     void set_angle_targets(float roll, float tilt, float pan) { set_angle_targets(_primary, roll, tilt, pan); }
     void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
 
+   // void set_speed_targets(uint8_t instance, float tilt, float pan);
+   // void set_speed_targets(float tilt, float pan) { set_speed_targets(_primary, tilt, pan); }
+
+    //void set_zoom(uint8_t instance, bool zoom_in, bool zoom_out);
+    //void set_zoom(bool zoom_in, bool zoom_out) { set_zoom(_primary, zoom_in, zoom_out); }
+
+
+    void enable_RC_control(uint8_t instance, bool en);
+    void enable_RC_control(bool en) { enable_RC_control(_primary, en); }
+
+    void enable_camera(uint8_t instance);
+    void enable_camera() { enable_camera(_primary); }
+
+    void set_camera_point_ROI(uint8_t instance, float yaw);
+    void set_camera_point_ROI(float yaw) { set_camera_point_ROI(_primary, yaw); }
+
+
+    void enable_follow(uint8_t instance, bool en);
+    void enable_follow(bool en) { enable_follow(_primary, en); }
+
+
     // set_roi_target - sets target location that mount should attempt to point towards
     void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const struct Location &target_loc);
@@ -122,8 +146,11 @@ public:
     // send a MOUNT_STATUS message to GCS:
     void send_mount_status(mavlink_channel_t chan);
 
+
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
+
+    float f_lat, f_long, f_roi_pan;
 
 protected:
 
@@ -134,6 +161,8 @@ protected:
 
     // frontend parameters
     AP_Int8             _joystick_speed;    // joystick gain
+
+
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated

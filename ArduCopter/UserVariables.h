@@ -15,6 +15,7 @@ bool timer_trigger;
 
 uint16_t spoolup_watcher;
 
+uint32_t ch7_timer;
 uint32_t ch9_timer;
 uint32_t ch10_timer;
 uint32_t ch11_timer;
@@ -27,6 +28,13 @@ bool ch9_button_pressed;
 bool ch10_button_pressed;
 bool ch11_button_pressed;
 bool ch12_button_pressed;
+
+
+bool ch7_button_pressed;
+bool long_press_flag_ch7;
+bool short_press_flag_ch7;
+bool ch7_button_hold;
+
 
 bool long_press_flag_ch9;
 bool long_press_flag_ch10;
@@ -47,6 +55,12 @@ bool ch10_button_hold;
 bool ch11_button_hold;
 bool ch12_button_hold;
 
+float gimbal_pan_spd;
+float gimbal_tilt_spd;
+bool zoom_in;
+bool zoom_out;
+bool zoom_stop;
+
 bool no_RC_in;
 
 int8_t num_battery;
@@ -66,6 +80,17 @@ enum vehicle_state{
 	landing,
 
 }spirit_state;
+
+
+ struct Location roi_1;
+ struct Location roi_2;
+
+
+enum gimbal_state{
+	rc_target,
+	roi_point,
+}viewpro_state;
+
 #if WII_CAMERA == 1
 WiiCamera           ircam;
 int                 WiiRange=0;

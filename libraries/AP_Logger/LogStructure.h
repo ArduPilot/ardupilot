@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_Mount/AP_Mount.h>
+
 // if you add any new types, units or multipliers, please update README.md
 
 /*
@@ -245,6 +247,26 @@ struct PACKED log_IMU {
     uint8_t gyro_health, accel_health;
     uint16_t gyro_rate, accel_rate;
 };
+
+
+
+
+
+
+
+struct PACKED log_ROI {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    MAV_MOUNT_MODE mount_state;
+	float ROI_Lat, ROI_Long, angle_pan;
+};
+
+
+
+
+
+
+
 
 struct PACKED log_IMUDT {
     LOG_PACKET_HEADER;
@@ -1423,7 +1445,9 @@ struct PACKED log_Arm_Disarm {
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBHHfLLLL","TimeUS,Active,DesYaw,Yaw,Mar,DLat,DLng,OALat,OALng", "sbddmDUDU", "F----GGGG" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }
+      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
+	{ ROI_LOG, sizeof(log_ROI), \
+      "roi","QBfff","TimeUS,State,lat,long,pan", "s----", "F----" }
 
 // messages for more advanced boards
 #define LOG_EXTRA_STRUCTURES \
@@ -1804,6 +1828,8 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
+
+	ROI_LOG,
 
     _LOG_LAST_MSG_
 };

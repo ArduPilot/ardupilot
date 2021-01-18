@@ -118,9 +118,9 @@ private:
         uint8_t byte1;
         uint8_t byte2;
         uint8_t byte3;
-        float pitch;
-        float roll;
-        float yaw;
+        uint8_t pitch;
+        uint8_t roll;
+        uint8_t yaw;
         uint8_t flags;
         uint8_t type;
         uint16_t crc;

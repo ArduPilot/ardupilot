@@ -519,6 +519,44 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(top_cam,  "SPIRIT_TOP_CAM",    0),
 
 
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(roi_1_long,  "SPIRIT_ROI_1_LNG",    0),
+
+
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(roi_1_lat,  "SPIRIT_ROI_1_LAT",    0),
+
+
+
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(roi_2_long,  "SPIRIT_ROI_2_LNG",    0),
+
+
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(roi_2_lat,  "SPIRIT_ROI_2_LAT",    0),
+
+
+
 
 
     // variables not in the g class which contain EEPROM saved variables
