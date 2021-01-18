@@ -2144,6 +2144,9 @@ class AutoTestCopter(AutoTest):
                 attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
             tend = self.get_sim_time()
 
+            # if we don't reduce vibes here then the landing detector
+            # may not trigger
+            self.set_parameter("SIM_VIB_MOT_MAX", 0)
             self.do_RTL()
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             # ignore the first 20Hz and look for a peak at -15dB or more
@@ -2161,6 +2164,7 @@ class AutoTestCopter(AutoTest):
                 "INS_NOTCH_FREQ": freq,
                 "INS_NOTCH_ATT": 50,
                 "INS_NOTCH_BW": freq/2,
+                "SIM_VIB_MOT_MAX": 350,
             })
             self.reboot_sitl()
 
@@ -2171,6 +2175,7 @@ class AutoTestCopter(AutoTest):
             while self.get_sim_time_cached() < tstart + hover_time:
                 attitude = self.mav.recv_match(type='ATTITUDE', blocking=True)
             tend = self.get_sim_time()
+            self.set_parameter("SIM_VIB_MOT_MAX", 0)
             self.do_RTL()
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
             freq = psd["F"][numpy.argmax(psd["X"][ignore_bins:]) + ignore_bins]
