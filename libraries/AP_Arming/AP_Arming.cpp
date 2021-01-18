@@ -201,6 +201,15 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
 
 bool AP_Arming::barometer_checks(bool report)
 {
+#ifdef HAL_BARO_ALLOW_INIT_NO_BARO
+    return true;
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (AP::sitl()->baro_count == 0) {
+        // simulate no baro boards
+        return true;
+    }
+#endif
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
         if (!AP::baro().all_healthy()) {
