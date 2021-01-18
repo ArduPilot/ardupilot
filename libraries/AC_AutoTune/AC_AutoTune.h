@@ -41,8 +41,6 @@
 
 #define AUTOTUNE_DWELL_CYCLES                10
 
-
-
 class AC_AutoTune
 {
 public:
@@ -68,10 +66,20 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+
+    // axis that can be tuned
+    enum AxisType {
+        ROLL = 0,                 // roll axis is being tuned (either angle or rate)
+        PITCH = 1,                // pitch axis is being tuned (either angle or rate)
+        YAW = 2,                  // pitch axis is being tuned (either angle or rate)
+    };
+
+    //
     // methods that must be supplied by the vehicle specific subclass
+    //
     virtual bool init(void) = 0;
 
-    // get pilot input for desired cimb rate
+    // get pilot input for desired climb rate
     virtual float get_pilot_desired_climb_rate_cms(void) const = 0;
 
     // get pilot input for designed roll and pitch, and yaw rate
@@ -96,56 +104,105 @@ protected:
     // initialise position controller
     bool init_position_controller();
 
-    // things that can be tuned
-    enum AxisType {
-        ROLL = 0,                 // roll axis is being tuned (either angle or rate)
-        PITCH = 1,                // pitch axis is being tuned (either angle or rate)
-        YAW = 2,                  // pitch axis is being tuned (either angle or rate)
-    };
-
+    // main state machine to level vehicle, perform a test and update gains
+    // directly updates attitude controller with targets
     void control_attitude();
+
+    //
+    // methods to load and save gains
+    //
+
+    // backup original gains and prepare for start of tuning
     void backup_gains_and_initialise();
+
+    // switch to use original gains
     void load_orig_gains();
+
+    // switch to gains found by last successful autotune
     void load_tuned_gains();
+
+    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
     void load_intra_test_gains();
+
+    // load gains for next test.  relies on axis variable being set
     virtual void load_test_gains();
+
+    // get intra test rate I gain for the specified axis
+    virtual float get_intra_test_ri(AxisType test_axis) = 0;
+
+    // get tuned rate I gain for the specified axis
+    virtual float get_tuned_ri(AxisType test_axis) = 0;
+
+    // get tuned yaw rate d gain
+    virtual float get_tuned_yaw_rd() = 0;
+
+    // test init and run methods that should be overridden for each vehicle
     virtual void test_init() = 0;
     virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
-    void update_gcs(uint8_t message_id) const;
+
+    // return true if user has enabled autotune for roll, pitch or yaw axis
     bool roll_enabled() const;
     bool pitch_enabled() const;
     bool yaw_enabled() const;
+
     void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
     void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
     void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
 
-    // Added generic twitch test functions for multi
+    // twitch test functions for multicopter
     void twitch_test_init();
     void twitch_test_run(AxisType test_axis, const float dir_sign);
 
-    // replace multi specific updating gain functions with generic forms that covers all axes
-    // generic method used by subclasses to update gains for the rate p up tune type
+    // update gains for the rate p up tune type
     virtual void updating_rate_p_up_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the rate p down tune type
+
+    // update gains for the rate p down tune type
     virtual void updating_rate_p_down_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the rate d up tune type
+
+    // update gains for the rate d up tune type
     virtual void updating_rate_d_up_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the rate d down tune type
+
+    // update gains for the rate d down tune type
     virtual void updating_rate_d_down_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the angle p up tune type
+
+    // update gains for the angle p up tune type
     virtual void updating_angle_p_up_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the angle p down tune type
+
+    // update gains for the angle p down tune type
     virtual void updating_angle_p_down_all(AxisType test_axis)=0;
+
+    // returns true if rate P gain of zero is acceptable for this vehicle
+    virtual bool allow_zero_rate_p() = 0;
+
+    // get minimum rate P (for any axis)
+    virtual float get_rp_min() const = 0;
+
+    // get minimum angle P (for any axis)
+    virtual float get_sp_min() const = 0;
+
+    // get minimum rate Yaw filter value
+    virtual float get_yaw_rate_filt_min() const = 0;
+
+    // get attitude for slow position hold in autotune mode
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
     virtual void Log_AutoTune() = 0;
     virtual void Log_AutoTuneDetails() = 0;
 
+    // send message with high level status (e.g. Started, Stopped)
+    void update_gcs(uint8_t message_id) const;
+
+    // send lower level step status (e.g. Pilot overrides Active)
     void send_step_string();
+
+    // convert latest level issue to string for reporting
     const char *level_issue_string() const;
-    const char * type_string() const;
-    void announce_state_to_gcs();
+
+    // convert tune type to string for reporting
+    const char *type_string() const;
+
+    // send intermittant updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
 
     enum struct LevelIssue {
@@ -157,7 +214,11 @@ protected:
         RATE_PITCH,
         RATE_YAW,
     };
+
+    // check if current is greater than maximum and update level_problem structure
     bool check_level(const enum LevelIssue issue, const float current, const float maximum);
+
+    // returns true if vehicle is close to level
     bool currently_level();
 
     // autotune modes (high level states)
@@ -188,6 +249,8 @@ protected:
         MAX_GAINS = 8,            // max allowable stable gains are determined
         TUNE_COMPLETE = 9         // Reached end of tuning
     };
+    TuneType tune_seq[6];         // holds sequence of tune_types to be performed
+    uint8_t tune_seq_curr;        // current tune sequence step
 
     // type of gains to load
     enum GainType {
@@ -200,7 +263,7 @@ protected:
 
     TuneMode mode;                       // see TuneMode for what modes are allowed
     bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
-    AxisType axis;                       // see AxisType for which things can be tuned
+    AxisType axis;                       // current axis being tuned. see AxisType enum
     bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
     StepType step;                       // see StepType for what steps are performed
     TuneType tune_type;                  // see TuneType
@@ -208,7 +271,7 @@ protected:
     bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     bool     use_poshold;                // true = enable position hold
     bool     have_position;              // true = start_position is value
-    Vector3f start_position;
+    Vector3f start_position;             // target when holding position as an offset from EKF origin in cm in NEU frame
     uint8_t  axes_completed;             // bitmask of completed axes
 
     // variables
@@ -256,6 +319,7 @@ protected:
         float current;
     } level_problem;
 
+    // parameters
     AP_Int8  axis_bitmask;
     AP_Float aggressiveness;
     AP_Float min_d;
@@ -266,16 +330,6 @@ protected:
     AP_AHRS_View *ahrs_view;
     AP_InertialNav *inertial_nav;
     AP_Motors *motors;
-
-    TuneType  tune_seq[6];              // holds sequence of tune_types to be performed
-    uint8_t tune_seq_curr;               // current tune sequence step
-    virtual bool allow_zero_rate_p() = 0;
-    virtual float get_intra_test_ri(AxisType test_axis) = 0;
-    virtual float get_load_tuned_ri(AxisType test_axis) = 0;
-    virtual float get_load_tuned_yaw_rd() = 0;
-    virtual float get_rp_min() const = 0;
-    virtual float get_sp_min() const = 0;
-    virtual float get_rlpf_min() const = 0;
 
     // Functions added for heli autotune
 
@@ -331,5 +385,4 @@ protected:
 
     max_gain_data max_rate_p;
     max_gain_data max_rate_d;
-
 };

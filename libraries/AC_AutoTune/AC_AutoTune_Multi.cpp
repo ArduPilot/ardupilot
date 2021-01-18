@@ -36,6 +36,17 @@
 
 #include "AC_AutoTune_Multi.h"
 
+// constructor
+AC_AutoTune_Multi::AC_AutoTune_Multi()
+{
+    tune_seq[0] = RD_UP;
+    tune_seq[1] = RD_DOWN;
+    tune_seq[2] = RP_UP;
+    tune_seq[3] = SP_DOWN;
+    tune_seq[4] = SP_UP;
+    tune_seq[5] = TUNE_COMPLETE;
+}
+
 void AC_AutoTune_Multi::do_gcs_announcements()
 {
     const uint32_t now = AP_HAL::millis();
@@ -199,7 +210,7 @@ void AC_AutoTune_Multi::save_tuning_gains()
     reset();
 }
 
-// generic method used to update gains for the rate p up tune type
+// update gains for the rate p up tune type
 void AC_AutoTune_Multi::updating_rate_p_up_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -215,7 +226,7 @@ void AC_AutoTune_Multi::updating_rate_p_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the rate d up tune type
+// update gains for the rate d up tune type
 void AC_AutoTune_Multi::updating_rate_d_up_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -231,7 +242,7 @@ void AC_AutoTune_Multi::updating_rate_d_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the rate d down tune type
+// update gains for the rate d down tune type
 void AC_AutoTune_Multi::updating_rate_d_down_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -247,7 +258,7 @@ void AC_AutoTune_Multi::updating_rate_d_down_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the angle p up tune type
+// update gains for the angle p up tune type
 void AC_AutoTune_Multi::updating_angle_p_up_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -263,7 +274,7 @@ void AC_AutoTune_Multi::updating_angle_p_up_all(AxisType test_axis)
     }
 }
 
-// generic method used to update gains for the angle p down tune type
+// update gains for the angle p down tune type
 void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
 {
     switch (test_axis) {
@@ -587,6 +598,7 @@ void AC_AutoTune_Multi::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds
         rate_cds*0.01f);
 }
 
+// get intra test rate I gain for the specified axis
 float AC_AutoTune_Multi::get_intra_test_ri(AxisType test_axis)
 {
     float ret = 0.0f;
@@ -604,7 +616,8 @@ float AC_AutoTune_Multi::get_intra_test_ri(AxisType test_axis)
     return ret;
 }
 
-float AC_AutoTune_Multi::get_load_tuned_ri(AxisType test_axis)
+// get tuned rate I gain for the specified axis
+float AC_AutoTune_Multi::get_tuned_ri(AxisType test_axis)
 {
     float ret = 0.0f;
     switch (test_axis) {
@@ -621,17 +634,20 @@ float AC_AutoTune_Multi::get_load_tuned_ri(AxisType test_axis)
     return ret;
 }
 
+// get minimum rate P (for any axis)
 float AC_AutoTune_Multi::get_rp_min() const
 {
     return AUTOTUNE_RP_MIN;
 }
 
+// get minimum angle P (for any axis)
 float AC_AutoTune_Multi::get_sp_min() const
 {
     return AUTOTUNE_SP_MIN;
 }
 
-float AC_AutoTune_Multi::get_rlpf_min() const
+// get minimum rate Yaw filter value
+float AC_AutoTune_Multi::get_yaw_rate_filt_min() const
 {
     return AUTOTUNE_RLPF_MIN;
 }
