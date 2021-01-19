@@ -363,6 +363,23 @@ def get_boards_names():
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
+def get_ap_periph_boards():
+    '''Add AP_Periph boards based on existance of periph keywork in hwdef.dat or board name'''
+    list_ap = [s for s in list(_board_classes.keys()) if "periph" in s]
+    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
+    for d in dirlist:
+        if d in list_ap:
+            continue
+        hwdef = os.path.join(dirname, d, 'hwdef.dat')
+        if os.path.exists(hwdef):
+            with open(hwdef, "r") as f:
+                if '-periph' in f.readline():  # try to get -periph include
+                    list_ap.append(d)
+                if 'AP_PERIPH' in f.read():
+                    list_ap.append(d)
+    list_ap = list(set(list_ap))
+    return list_ap
+
 def get_removed_boards():
     '''list of boards which have been removed'''
     return sorted(['px4-v1', 'px4-v2', 'px4-v3', 'px4-v4', 'px4-v4pro'])
