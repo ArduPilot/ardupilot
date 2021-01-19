@@ -34,8 +34,8 @@
 #define AUTOTUNE_RLPF_MAX                  20.0f     // maximum Rate Yaw filter value
 #define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
 #define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
-#define AUTOTUNE_SP_MAX                   10.0f     // maximum Stab P value
-#define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
+#define AUTOTUNE_SP_MAX                    10.0f     // maximum Stab P value
+#define AUTOTUNE_SP_MIN                    3.0f     // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
 // constructor
@@ -523,7 +523,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             curr_test_freq = freq[frq_cnt];
         }
     } else {
-        if (gain[frq_cnt] < max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f) {
+        if ((gain[frq_cnt] < max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f) && tune_p < AUTOTUNE_SP_MAX) {
             tune_p += 0.5f;
         } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] > 180.0f) {
             curr_test_freq = curr_test_freq - 0.5 * test_freq_incr;
@@ -531,7 +531,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
         } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] < 160.0f) {
             curr_test_freq = curr_test_freq + 0.5 * test_freq_incr;
             freq[frq_cnt] = curr_test_freq;
-        } else if (gain[frq_cnt] >= max_gain || tune_p > 10.0f) {
+        } else if (gain[frq_cnt] >= max_gain || tune_p >= AUTOTUNE_SP_MAX) {
             counter = AUTOTUNE_SUCCESS_COUNT;
             // reset curr_test_freq and frq_cnt for next test
             curr_test_freq = freq[0];
