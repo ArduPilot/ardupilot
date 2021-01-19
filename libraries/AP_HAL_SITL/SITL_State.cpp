@@ -606,7 +606,9 @@ void SITL_State::_fdm_input_local(void)
     struct sitl_input input;
 
     // check for direct RC input
-    _check_rc_input();
+    if (_sitl != nullptr) {
+        _check_rc_input();
+    }
 
     // construct servos structure for FDM
     _simulator_servos(input);
