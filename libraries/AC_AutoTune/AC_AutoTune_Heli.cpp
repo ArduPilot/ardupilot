@@ -623,9 +623,9 @@ void AC_AutoTune_Heli::Log_AutoTuneDetails()
     Log_Write_AutoTuneDetails(command_out, filt_target_rate, rotation_rate);
 }
 
-// @LoggerMessage: ATUN
-// @Description: Copter/QuadPlane AutoTune
-// @Vehicles: Copter, Plane
+// @LoggerMessage: ATNH
+// @Description: Heli AutoTune
+// @Vehicles: Copter
 // @Field: TimeUS: Time since system startup
 // @Field: Axis: which axis is currently being tuned
 // @Field: TuneStep: step in autotune process
@@ -641,7 +641,7 @@ void AC_AutoTune_Heli::Log_AutoTuneDetails()
 void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp)
 {
     AP::logger().Write(
-        "ATUN",
+        "ATNH",
         "TimeUS,Axis,TuneStep,Freq,Gain,Phase,RFF,RP,RD,SP",
         "s---------",
         "F--000----",
@@ -661,14 +661,15 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, floa
 // Write an Autotune data packet
 void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads)
 {
-    // @LoggerMessage: ATDE
-    // @Description: AutoTune data packet
+    // @LoggerMessage: ATDH
+    // @Description: Heli AutoTune data packet
+    // @Vehicles: Copter
     // @Field: TimeUS: Time since system startup
     // @Field: Cmd: current motor command
     // @Field: TRate: current target angular rate
     // @Field: Rate: current angular rate
     AP::logger().Write(
-        "ATDE",
+        "ATDH",
         "TimeUS,Cmd,TRate,Rate",
         "s-kk",
         "F000",
