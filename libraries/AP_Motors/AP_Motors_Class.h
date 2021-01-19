@@ -45,6 +45,7 @@ public:
         MOTOR_FRAME_DODECAHEXA = 12,
         MOTOR_FRAME_HELI_QUAD = 13,
         MOTOR_FRAME_DECA = 14,
+        MOTOR_FRAME_SCRIPTING_MATRIX = 15,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
