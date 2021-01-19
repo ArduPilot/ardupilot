@@ -1366,9 +1366,11 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1100)
         self.wait_distance(20)
 
-        # stop flying forward and start flying based on input:
-        self.set_rc(2, 1500)
-        self.set_rc(3, 1200)
+        # stop flying forward and start flying down:
+        self.set_rc_from_map({
+            2: 1500,
+            3: 1200,
+        })
 
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
