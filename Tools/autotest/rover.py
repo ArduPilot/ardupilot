@@ -2159,7 +2159,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         tstart = self.get_sim_time_cached()
         last_heartbeat_sent = 0
-        got_sptgi = False
+        got_ptgi = False
         magic_waypoint_tstart = 0
         magic_waypoint_tstop = 0
         while True:
@@ -2187,9 +2187,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     print("At magic waypoint")
                     if magic_waypoint_tstart == 0:
                         magic_waypoint_tstart = self.get_sim_time_cached()
-                    sptgi = self.mav.messages.get("SET_POSITION_TARGET_GLOBAL_INT", None)
-                    if sptgi is not None:
-                        got_sptgi = True
+                    ptgi = self.mav.messages.get("POSITION_TARGET_GLOBAL_INT", None)
+                    if ptgi is not None:
+                        got_ptgi = True
                 elif mc.seq > magic_waypoint:
                     if magic_waypoint_tstop == 0:
                         magic_waypoint_tstop = self.get_sim_time_cached()
@@ -2200,9 +2200,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not stay in offboard control for correct time (want=%f got=%f)" %
                                        (offboard_expected_duration, offboard_duration))
 
-        if not got_sptgi:
-            raise NotAchievedException("Did not get sptgi message")
-        print("spgti: %s" % str(sptgi))
+        if not got_ptgi:
+            raise NotAchievedException("Did not get ptgi message")
+        print("pgti: %s" % str(ptgi))
 
     def assert_mission_count_on_link(self, mav, expected_count, target_system, target_component, mission_type):
         self.drain_mav_unparsed(mav=mav, freshen_sim_time=True)
