@@ -990,6 +990,7 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // protect against NaN
     if (pos.is_nan() || isnan(posErr)) {
         return;
@@ -1038,10 +1039,12 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         extNavYawAngDataNew.time_ms = timeStamp_ms;
         storedExtNavYawAng.push(extNavYawAngDataNew);
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // sanity check for NaNs
     if (vel.is_nan() || isnan(err)) {
         return;
@@ -1067,6 +1070,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     extNavVelNew.corrected = false;
 
     storedExtNavVel.push(extNavVelNew);
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 /*

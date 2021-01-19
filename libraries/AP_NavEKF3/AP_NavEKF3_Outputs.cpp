@@ -474,6 +474,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         innovations = gpsVelInnov;
         variances = gpsVelVarInnov;
         return true;
+#if EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::EXTNAV:
         // check for timeouts
         if (AP_HAL::millis() - extNavVelInnovTime_ms > 500) {
@@ -482,6 +483,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
         innovations = extNavVelInnov;
         variances = extNavVelVarInnov;
         return true;
+#endif // EK3_FEATURE_EXTERNAL_NAV
     default:
         // variances are not available for this source
         return false;

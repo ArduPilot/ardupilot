@@ -136,6 +136,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
     }
+#if EK3_FEATURE_EXTERNAL_NAV
     if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
         return false;
     }
@@ -145,6 +146,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
         return false;
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
@@ -393,6 +395,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
     extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
@@ -403,6 +406,7 @@ void NavEKF3_core::InitialiseVariables()
     extNavVelToFuse = false;
     useExtNavVel = false;
     extNavVelMeasTime_ms = 0;
+#endif
 
     // zero data buffers
     storedIMU.reset();
@@ -416,8 +420,10 @@ void NavEKF3_core::InitialiseVariables()
     storedBodyOdm.reset();
     storedWheelOdm.reset();
 #endif
+#if EK3_FEATURE_EXTERNAL_NAV
     storedExtNav.reset();
     storedExtNavVel.reset();
+#endif
 
     // initialise pre-arm message
     dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
@@ -458,7 +464,9 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+#if EK3_FEATURE_EXTERNAL_NAV
     storedExtNavYawAng.reset();
+#endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
 }

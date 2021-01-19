@@ -1316,6 +1316,7 @@ private:
     bool onGroundNotMoving;             // true when on the ground and not moving
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // external navigation fusion
     EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
@@ -1327,13 +1328,14 @@ private:
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
     bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
-    bool useExtNavVel;                  // true if external nav velocity should be used
     Vector3f extNavVelInnov;            // external nav velocity innovations
     Vector3f extNavVelVarInnov;         // external nav velocity innovation variances
     uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
     EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
     yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
     uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
+#endif // EK3_FEATURE_EXTERNAL_NAV
+    bool useExtNavVel;                  // true if external nav velocity should be used
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
