@@ -1645,7 +1645,8 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
             dwell_start_time_ms = now;
         }
         tgt_rate_reading = target_angle_cd / 5730.0f;
-        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle + target_angle_cd) / 5730.0f;
+//        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle + target_angle_cd) / 5730.0f;
+        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle) / 5730.0f;
         break;
     case PITCH:
         gyro_reading = ahrs_view->get_gyro().y;
