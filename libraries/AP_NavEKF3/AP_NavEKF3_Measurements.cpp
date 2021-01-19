@@ -1377,6 +1377,7 @@ void NavEKF3_core::updateMovementCheck(void)
 
 void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
+#if EK3_FEATURE_DRAG_FUSION
     // Average and down sample to 5Hz
     const float bcoef_x = frontend->_ballisticCoef_x;
     const float bcoef_y = frontend->_ballisticCoef_y;
@@ -1419,4 +1420,5 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
         dragDownSampled.time_ms = 0;
         dragSampleTimeDelta = 0.0f;
     }
+#endif // EK3_FEATURE_DRAG_FUSION
 }

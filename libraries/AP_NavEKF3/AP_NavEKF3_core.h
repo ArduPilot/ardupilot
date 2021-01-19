@@ -1267,6 +1267,7 @@ private:
         Vector3f beaconPosNED; // beacon NED position
     } *rngBcnFusionReport;
 
+#if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation
     EKF_obs_buffer_t<drag_elements> storedDrag;
     drag_elements dragSampleDelayed;
@@ -1276,6 +1277,7 @@ private:
     Vector2f innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
 	Vector2f innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
 	Vector2f dragTestRatio;		        // drag innovation consistency check ratio
+#endif
     bool dragFusionEnabled;
 
     // height source selection logic

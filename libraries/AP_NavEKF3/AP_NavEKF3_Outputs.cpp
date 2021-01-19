@@ -440,9 +440,11 @@ void  NavEKF3_core::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vecto
 // return the synthetic air data drag and sideslip innovations
 void NavEKF3_core::getSynthAirDataInnovations(Vector2f &dragInnov, float &betaInnov) const
 {
+#if EK3_FEATURE_DRAG_FUSION
     dragInnov.x = innovDrag[0];
     dragInnov.y = innovDrag[1];
     betaInnov   = innovBeta;
+#endif
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
