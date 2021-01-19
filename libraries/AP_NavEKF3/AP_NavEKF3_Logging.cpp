@@ -379,8 +379,10 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
 
+#if EK3_FEATURE_BODY_ODOM
     // write debug data for body frame odometry fusion
     Log_Write_BodyOdom(time_us);
+#endif
 
     // log state variances every 0.49s
     Log_Write_State_Variances(time_us);

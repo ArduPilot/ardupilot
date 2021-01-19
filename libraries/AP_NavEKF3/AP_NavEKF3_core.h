@@ -35,6 +35,7 @@
 #include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
+#include "AP_NavEKF3_feature.h"
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -1189,9 +1190,11 @@ private:
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
 
     // body frame odometry fusion
+#if EK3_FEATURE_BODY_ODOM
     EKF_obs_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
     vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
     vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
+#endif
     uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
     Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (m/sec)^2
@@ -1201,9 +1204,11 @@ private:
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
 
+#if EK3_FEATURE_BODY_ODOM
     // wheel sensor fusion
     EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
+#endif
 
     // GPS yaw sensor fusion
     uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer

@@ -59,6 +59,7 @@ float NavEKF3_core::errorScore() const
     return score;
 }
 
+#if EK3_FEATURE_BODY_ODOM
 // return data for debugging body frame odometry fusion
 uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velInnovVar)
 {
@@ -70,6 +71,7 @@ uint32_t NavEKF3_core::getBodyFrameOdomDebug(Vector3f &velInnov, Vector3f &velIn
     velInnovVar.z = varInnovBodyVel[2];
     return MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
