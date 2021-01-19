@@ -113,6 +113,7 @@ void NavEKF3_core::readRangeFinder(void)
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
+#if EK3_FEATURE_BODY_ODOM
     // protect against NaN
     if (isnan(quality) || delPos.is_nan() || delAng.is_nan() || isnan(delTime) || posOffset.is_nan()) {
         return;
@@ -138,9 +139,10 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
     bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
     storedBodyOdm.push(bodyOdmDataNew);
-
+#endif // EK3_FEATURE_BODY_ODOM
 }
 
+#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
@@ -166,6 +168,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
     storedWheelOdm.push(wheelOdmDataNew);
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
 // write the raw optical flow measurements
 // this needs to be called externally.

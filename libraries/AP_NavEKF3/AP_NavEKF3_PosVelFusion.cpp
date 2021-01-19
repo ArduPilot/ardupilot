@@ -1146,6 +1146,7 @@ void NavEKF3_core::selectHeightForFusion()
     }
 }
 
+#if EK3_FEATURE_BODY_ODOM
 /*
  * Fuse body frame velocity measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
@@ -1781,7 +1782,9 @@ void NavEKF3_core::FuseBodyVel()
         }
     }
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
+#if EK3_FEATURE_BODY_ODOM
 // select fusion of body odometry measurements
 void NavEKF3_core::SelectBodyOdomFusion()
 {
@@ -1834,4 +1837,4 @@ void NavEKF3_core::SelectBodyOdomFusion()
         }
     }
 }
-
+#endif // EK3_FEATURE_BODY_ODOM
