@@ -785,7 +785,6 @@ private:
     AP_Float caltemp_gyro[INS_MAX_INSTANCES];
     AP_Int32 tcal_options;
     bool tcal_learning;
-    int8_t tcal_old_brd_target;
 #endif
 };
 
