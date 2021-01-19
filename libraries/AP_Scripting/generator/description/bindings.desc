@@ -303,3 +303,9 @@ include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane alias quadplane
 singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 singleton QuadPlane method in_vtol_mode boolean
+
+include AP_Motors/AP_MotorsMatrix.h
+singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter) 
+singleton AP_MotorsMatrix alias MotorsMatrix
+singleton AP_MotorsMatrix method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
+singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
