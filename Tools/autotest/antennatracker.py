@@ -149,12 +149,10 @@ class AutoTestTracker(AutoTest):
                                           comparator=operator.le)
 
     def disabled_tests(self):
-        ret = super(AutoTestTracker, self).disabled_tests()
-        ret.update({
+        return {
             "ArmFeatures": "See https://github.com/ArduPilot/ardupilot/issues/10652",
             "CPUFailsafe": " tracker doesn't have a CPU failsafe",
-        })
-        return ret
+        }
 
     def tests(self):
         '''return list of all tests'''
