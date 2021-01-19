@@ -405,6 +405,9 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+def list_ap_periph_boards(ctx):
+    print(*boards.get_ap_periph_boards())
+
 @conf
 def ap_periph_boards(ctx):
     return boards.get_ap_periph_boards()
