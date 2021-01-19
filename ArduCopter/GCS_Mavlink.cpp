@@ -14,7 +14,10 @@
 
 MAV_TYPE GCS_Copter::frame_type() const
 {
-    return copter.get_frame_mav_type();
+    if (copter.motors == nullptr) {
+        return MAV_TYPE_GENERIC;
+    }
+    return copter.motors->get_frame_mav_type();
 }
 
 MAV_MODE GCS_MAVLINK_Copter::base_mode() const
