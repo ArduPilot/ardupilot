@@ -153,9 +153,11 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
+#if EK3_FEATURE_DRAG_FUSION
     if (!storedDrag.init(obs_buffer_length)) {
         return false;
     }
+#endif
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
