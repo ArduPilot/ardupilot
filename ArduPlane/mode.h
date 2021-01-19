@@ -451,8 +451,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
-
 protected:
 
     bool _enter() override;
@@ -472,8 +470,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
-
 protected:
 
     bool _enter() override;
@@ -492,8 +488,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
-
 protected:
 
     bool _enter() override;
@@ -511,8 +505,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-
-    bool does_auto_throttle() const override { return true; }
 
 protected:
 
@@ -552,8 +544,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-
-    bool does_auto_throttle() const override { return true; }
 
 protected:
 
