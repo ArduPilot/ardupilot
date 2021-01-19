@@ -459,6 +459,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
+#if EK3_FEATURE_BODY_ODOM
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
         !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
         // exit immediately if sources not configured to fuse external nav or wheel encoders
@@ -476,6 +477,9 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
+#else
+    return false;
+#endif // EK3_FEATURE_BODY_ODOM
 }
 
 // return true if the filter to be ready to use gps
