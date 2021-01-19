@@ -1130,8 +1130,8 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
-    // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    // this is the delay, p1 is seconds
+    loiter_time_max = cmd.p1 * 1000;
 
     // Set wp navigation target
     wp_start(target_loc);
@@ -1246,7 +1246,7 @@ void ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 
     // setup loiter timer
     loiter_time     = 0;
-    loiter_time_max = cmd.p1;     // units are (seconds)
+    loiter_time_max = cmd.p1 * 1000;     // p1 are (seconds)
 }
 
 // do_loiter_alt - initiate loitering at a point until a given altitude is reached
@@ -1292,8 +1292,8 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
-    // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    // this is the delay, p1 is seconds
+    loiter_time_max = cmd.p1 * 1000;
 
     // determine segment start and end type
     bool stopped_at_start = true;
@@ -1747,7 +1747,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if ((millis() - loiter_time) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -1828,7 +1828,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if ((millis() - loiter_time) >= loiter_time_max) {
         if (loiter_time_max == 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
@@ -1869,7 +1869,7 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if ((millis() - loiter_time) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
