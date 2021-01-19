@@ -17,7 +17,7 @@ SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
     add_block("Device Name", SMBusBattDevReg::DEVICE_NAME, O_RDONLY);
     add_register("Manufacture Data", SMBusBattDevReg::MANUFACTURE_DATA, O_RDONLY);
 
-    set_register(SMBusBattDevReg::TEMP, (int16_t)((15 + 273.15)*10));
+    set_register(SMBusBattDevReg::TEMP, (int16_t)((15 + C_TO_KELVIN)*10));
      // see update for voltage
      // see update for current
      // TODO: remaining capacity
