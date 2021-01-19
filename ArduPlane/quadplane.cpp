@@ -2323,7 +2323,6 @@ bool QuadPlane::run_stabilize_transition(void) {
     // We have stabilized the aircraft if the z velocity has stayed within limits for a second or we try to stabilize too long
     if (now - vtol_transition_finished_ms > 8000 || now - transition_stabilization.last_wait_at > 1000) {
         transition_stabilization.is_stabilized = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "stabilization took: %d ms", now - vtol_transition_finished_ms);
         return false;
     }
 

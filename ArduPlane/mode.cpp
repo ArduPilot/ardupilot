@@ -82,7 +82,6 @@ bool Mode::enter()
         // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
         plane.control_failsafe();
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Current mode: %s", this->name());
     return enter_result;
 }
 
