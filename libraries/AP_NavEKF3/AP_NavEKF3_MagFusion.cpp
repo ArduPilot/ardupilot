@@ -326,6 +326,7 @@ void NavEKF3_core::SelectMagFusion()
         // fall through to magnetometer fusion
     }
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // Handle case where we are using an external nav for yaw
     const bool extNavYawDataToFuse = storedExtNavYawAng.recall(extNavYawAngDataDelayed, imuDataDelayed.time_ms);
     if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
@@ -353,6 +354,7 @@ void NavEKF3_core::SelectMagFusion()
             }
         }
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
 
     // If we are using the compass and the magnetometer has been unhealthy for too long we declare a timeout
     if (magHealth) {
@@ -905,9 +907,11 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         R_YAW = sq(frontend->_yawNoise);
         break;
 
+#if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
         R_YAW = sq(MAX(extNavYawAngDataDelayed.yawAngErr, 0.05f));
         break;
+#endif
     }
 
     // determine if a 321 or 312 Euler sequence is best
@@ -929,9 +933,11 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         order = (fabsf(prevTnb[0][2]) < fabsf(prevTnb[1][2])) ? rotationOrder::TAIT_BRYAN_321 : rotationOrder::TAIT_BRYAN_312;
         break;
 
+#if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
         order = extNavYawAngDataDelayed.order;
         break;
+#endif
     }
 
     // calculate observation jacobian, predicted yaw and zero yaw body to earth rotation matrix
@@ -1091,9 +1097,11 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         innovYaw = 0.0f;
         break;
 
+#if EK3_FEATURE_EXTERNAL_NAV
     case yawFusionMethod::EXTNAV:
         innovYaw = wrap_PI(yawAngPredicted - extNavYawAngDataDelayed.yawAng);
         break;
+#endif
     }
 
     // Calculate innovation variance and Kalman gains, taking advantage of the fact that only the first 4 elements in H are non zero
