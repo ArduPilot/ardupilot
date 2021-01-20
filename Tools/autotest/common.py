@@ -1366,9 +1366,9 @@ class AutoTest(ABC):
                                             target_component,
                                             idx)
         m = self.mav.recv_match(type="FENCE_POINT", blocking=True, timeout=2)
-        print("m: %s" % str(m))
         if m is None:
             raise NotAchievedException("Did not get fence return point back")
+        self.progress("m: %s" % str(m))
         if m.idx != idx:
             raise NotAchievedException("Invalid idx returned (want=%u got=%u)" %
                                        (idx, m.seq))
@@ -4561,11 +4561,11 @@ class AutoTest(ABC):
             if m is None:
                 continue
             m_value = getattr(m, channel_field, None)
-            self.progress("want SERVO_OUTPUT_RAW.%s=%u %s %u" %
-                          (channel_field, m_value, opstring, value))
             if m_value is None:
                 raise ValueError("message (%s) has no field %s" %
                                  (str(m), channel_field))
+            self.progress("want SERVO_OUTPUT_RAW.%s=%u %s %u" %
+                          (channel_field, m_value, opstring, value))
             if comparator(m_value, value):
                 return m_value
 
@@ -5370,6 +5370,8 @@ Also, ignores heartbeats not from our target system'''
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
             m = self.mav.recv_match(blocking=True, timeout=0.1)
+            if m is None:
+                raise NotAchievedException("Did not get MISSION_COUNT response")
             if verbose:
                 self.progress(str(m))
             if m.get_type() == 'MISSION_ACK':
@@ -5380,8 +5382,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("Received MISSION_ACK while waiting for MISSION_COUNT")
             if m.get_type() != 'MISSION_COUNT':
                 continue
-            if m is None:
-                raise NotAchievedException("Did not get MISSION_COUNT response")
             if m.target_component != 250: # FIXME: constant?!
                 continue
             if m.mission_type != mission_type:
@@ -5408,9 +5408,9 @@ Also, ignores heartbeats not from our target system'''
                                     blocking=True,
                                     timeout=5,
                                     condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
-            self.progress("Got (%s)" % str(m))
             if m is None:
                 raise NotAchievedException("Did not receive MISSION_ITEM_INT")
+            self.progress("Got (%s)" % str(m))
             if m.mission_type != mission_type:
                 raise NotAchievedException("Received waypoint of wrong type")
             if m.seq != next_to_request:
@@ -8321,24 +8321,24 @@ switch value'''
         mask = 1<<pin
         self.set_parameter("SIM_PIN_MASK", mask)
         m = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("### m: %s" % str(m))
         if m is None:
             raise NotAchievedException("Did not receive BUTTON_CHANGE event")
+        self.progress("### m: %s" % str(m))
         if not (m.state & mask):
             raise NotAchievedException("Bit not set in mask (got=%u want=%u)" % (m.state, mask))
         m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("### m2: %s" % str(m2))
         if m2 is None:
             raise NotAchievedException("Did not get repeat message")
+        self.progress("### m2: %s" % str(m2))
         # wait for messages to stop coming:
         self.drain_mav_seconds(15)
 
         new_mask = 0
         self.send_set_parameter("SIM_PIN_MASK", new_mask, verbose=True)
         m3 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
-        self.progress("### m3: %s" % str(m3))
         if m3 is None:
             raise NotAchievedException("Did not get 'off' message")
+        self.progress("### m3: %s" % str(m3))
 
         if m.last_change_ms == m3.last_change_ms:
             raise NotAchievedException("last_change_ms same as first message")
