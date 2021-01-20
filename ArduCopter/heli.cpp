@@ -159,9 +159,14 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
+    
+#if RPM_ENABLED == ENABLED
+    // set rpm from rotor speed sensor
+    motors->set_rpm(rpm_sensor.get_rpm(0));
+#endif
 
     switch (rsc_control_mode) {
-        case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
+        case ROTOR_CONTROL_MODE_PASSTHROUGH:
             // pass through pilot desired rotor speed from the RC
             if (get_pilot_desired_rotor_speed() > 0.01) {
                 ap.motor_interlock_switch = true;
@@ -171,19 +176,10 @@ void Copter::heli_update_rotor_speed_targets()
                 motors->set_desired_rotor_speed(0.0f);
             }
             break;
-        case ROTOR_CONTROL_MODE_SPEED_SETPOINT:
-        case ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT:
-        case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
-            // pass setpoint through as desired rotor speed. Needs work, this is pointless as it is
-            // not used by closed loop control. Being used as a catch-all for other modes regardless
-            // of whether or not they actually use it
-            // set rpm from rotor speed sensor
+        case ROTOR_CONTROL_MODE_SETPOINT:
+        case ROTOR_CONTROL_MODE_THROTTLECURVE:
+        case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
             if (motors->get_interlock()) {
-#if RPM_ENABLED == ENABLED
-                float rpm = -1;
-                rpm_sensor.get_rpm(0, rpm);
-                motors->set_rpm(rpm);
-#endif
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{
                 motors->set_desired_rotor_speed(0.0f);
