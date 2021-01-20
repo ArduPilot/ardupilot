@@ -101,7 +101,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     }
 #endif
 
-    if (!_imu._calibrating_accel && (_imu._acal == nullptr || !_imu._acal->active())) {
+    if (!_imu._calibrating_accel && (_imu._acal == nullptr || !_imu._acal->running())) {
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections

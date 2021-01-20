@@ -576,7 +576,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel[0], -100),
+    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel[0], -300),
 
     // @Param: GYR1_CALTEMP
     // @DisplayName: Calibration temperature for 1st gyroscope
@@ -584,7 +584,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro[0], -100),
+    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro[0], -300),
 
 #if INS_MAX_INSTANCES > 1
     // @Param: ACC2_CALTEMP
@@ -593,7 +593,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel[1], -100),
+    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel[1], -300),
 
     // @Param: GYR2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd gyroscope
@@ -601,7 +601,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro[1], -100),
+    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro[1], -300),
 #endif
 
 #if INS_MAX_INSTANCES > 2
@@ -611,7 +611,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel[2], -100),
+    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel[2], -300),
 
     // @Param: GYR3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd gyroscope
@@ -619,7 +619,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro[2], -100),
+    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro[2], -300),
 #endif
 
     // @Param: TCAL_OPTIONS
@@ -1482,7 +1482,7 @@ void AP_InertialSensor::_save_gyro_calibration()
         _gyro_offset[i].set_and_save(Vector3f());
         _gyro_id[i].set_and_save(0);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_gyro[i].set_and_save_ifchanged(-100);
+        caltemp_gyro[i].set_and_save_ifchanged(-300);
 #endif
     }
 }
@@ -1968,7 +1968,7 @@ bool AP_InertialSensor::is_still()
 // return true if we are in a calibration
 bool AP_InertialSensor::calibrating() const
 {
-    return _calibrating_accel || _calibrating_gyro || (_acal && _acal->active());
+    return _calibrating_accel || _calibrating_gyro || (_acal && _acal->running());
 }
 
 /// calibrating - returns true if a temperature calibration is running
@@ -2053,7 +2053,7 @@ void AP_InertialSensor::_acal_save_calibrations()
             _accel_offset[i].set_and_save(Vector3f());
             _accel_scale[i].set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel[i].set_and_save(-100);
+            caltemp_accel[i].set_and_save(-300);
 #endif
         }
     }
@@ -2064,7 +2064,7 @@ void AP_InertialSensor::_acal_save_calibrations()
         _accel_offset[i].set_and_save(Vector3f());
         _accel_scale[i].set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_accel[i].set_and_save_ifchanged(-100);
+        caltemp_accel[i].set_and_save_ifchanged(-300);
 #endif
     }
     
