@@ -47,8 +47,9 @@ AC_AutoTune_Heli::AC_AutoTune_Heli()
     //            tune_seq[3] = 2; // RP_UP
     //            tune_seq[2] = 6; // SP_UP
     //            tune_seq[3] = 9; // tune complete
-    tune_seq[0] = SP_UP;
-    tune_seq[1] = TUNE_COMPLETE;
+    tune_seq[0] = RFF_UP;
+    tune_seq[1] = SP_UP;
+    tune_seq[2] = TUNE_COMPLETE;
 }
 
 void AC_AutoTune_Heli::test_init()
@@ -188,11 +189,11 @@ void AC_AutoTune_Heli::load_test_gains()
 
     switch (axis) {
     case ROLL:
-        if (tune_type == SP_UP) {
-            attitude_control->get_rate_roll_pid().kI(orig_roll_ri);
-        } else {
+//        if (tune_type == SP_UP) {
+//            attitude_control->get_rate_roll_pid().kI(orig_roll_ri);
+//        } else {
             attitude_control->get_rate_roll_pid().kI(0.0f);
-        }
+//        }
         attitude_control->get_rate_roll_pid().ff(tune_roll_rff);
         attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
         break;
@@ -398,7 +399,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 1.05f * fabsf(rate_target) &&
                fabsf(meas_rate) > 0.95f * fabsf(rate_target)) {
         counter = AUTOTUNE_SUCCESS_COUNT;
-        tune_ff = 0.75f * tune_ff;
+        tune_ff = 0.9f * tune_ff;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) > 1.05f * fabsf(rate_target)) {
         tune_ff = 0.98f * tune_ff;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
