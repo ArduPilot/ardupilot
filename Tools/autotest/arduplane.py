@@ -1985,8 +1985,6 @@ class AutoTestPlane(AutoTest):
         self.assert_reach_imu_temperature(43, timeout=600)
 
         self.progress("Testing with compensation enabled")
-        gyro_threshold = 0.2
-        accel_threshold = 0.05
 
         test_temperatures = range(10,45,5)
         corrected = {}
@@ -2015,6 +2013,9 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("INS_TCAL1_ENABLE", 0)
         self.set_parameter("INS_TCAL2_ENABLE", 0)
 
+        gyro_threshold = 0.2
+        accel_threshold = 0.2
+
         for temp in test_temperatures:
             self.progress("Testing temperature %.1f" % temp)
             self.set_parameter("SIM_IMUT_FIXED", temp)
@@ -2025,9 +2026,6 @@ class AutoTestPlane(AutoTest):
                 if m is None:
                     raise NotAchievedException(msg)
                 temperature = m.temperature*0.01
-
-                gyro_threshold = 1.0
-                accel_threshold = 0.5
 
                 if abs(temperature - temp) > 0.2:
                     raise NotAchievedException("incorrect %s temperature %.1f should be %.1f" % (msg, temperature, temp))
