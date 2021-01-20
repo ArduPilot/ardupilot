@@ -74,11 +74,30 @@ void AP_InertialSensor_SITL::generate_accel()
 
     for (uint8_t j = 0; j < nsamples; j++) {
 
-        // add accel bias and noise
+        float xAccel = sitl->state.xAccel;
+        float yAccel = sitl->state.yAccel;
+        float zAccel = sitl->state.zAccel;
+
+        // add scaling
+        Vector3f accel_scale = sitl->accel_scale[accel_instance].get();
+        // note that we divide so the SIM_ACC values match the
+        // INS_ACCSCAL values
+        if (!is_zero(accel_scale.x)) {
+            xAccel /= accel_scale.x;
+        }
+        if (!is_zero(accel_scale.y)) {
+            yAccel /= accel_scale.y;
+        }
+        if (!is_zero(accel_scale.z)) {
+            zAccel /= accel_scale.z;
+        }
+
+        // apply bias
         const Vector3f &accel_bias = sitl->accel_bias[accel_instance].get();
-        float xAccel = sitl->state.xAccel + accel_bias.x;
-        float yAccel = sitl->state.yAccel + accel_bias.y;
-        float zAccel = sitl->state.zAccel + accel_bias.z;
+        xAccel += accel_bias.x;
+        yAccel += accel_bias.y;
+        zAccel += accel_bias.z;
+
 
         // minimum noise levels are 2 bits, but averaged over many
         // samples, giving around 0.01 m/s/s
