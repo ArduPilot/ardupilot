@@ -92,24 +92,26 @@ void ModeSmartRTL::path_follow_run()
 
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
-        Vector3f next_point;
+        Vector3f dest_NED;
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
-        if (g2.smart_rtl.pop_point(next_point)) {
+        if (g2.smart_rtl.pop_point(dest_NED)) {
             path_follow_last_pop_fail_ms = 0;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
-                next_point.z -= 2.0f;
+                dest_NED.z -= 2.0f;
                 smart_rtl_state = SmartRTL_PreLandPosition;
-                wp_nav->set_wp_destination_NED(next_point);
+                wp_nav->set_wp_destination_NED(dest_NED);
             } else {
                 // peek at the next point
-                Vector3f next_next_point;
-                if (g2.smart_rtl.peek_point(next_next_point)) {
-                    wp_nav->set_wp_destination_NED(next_point, next_next_point);
+                Vector3f next_dest_NED;
+                if (g2.smart_rtl.peek_point(next_dest_NED)) {
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    wp_nav->set_wp_destination_next_NED(next_dest_NED);
                 } else {
                     // this should never happen but send next point anyway
-                    wp_nav->set_wp_destination_NED(next_point);
+                    wp_nav->set_wp_destination_NED(dest_NED);
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 }
             }
         } else if (g2.smart_rtl.get_num_points() == 0) {
@@ -181,7 +183,7 @@ bool ModeSmartRTL::get_wp(Location& destination)
     case SmartRTL_PathFollow:
     case SmartRTL_PreLandPosition:
     case SmartRTL_Descend:
-        return wp_nav->get_wp_destination(destination);
+        return wp_nav->get_wp_destination_loc(destination);
     case SmartRTL_Land:
         return false;
     }

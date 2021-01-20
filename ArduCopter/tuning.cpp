@@ -72,7 +72,7 @@ void Copter::tuning()
         break;
 
     case TUNING_THROTTLE_RATE_KP:
-        pos_control->get_vel_z_p().kP(tuning_value);
+        pos_control->get_vel_z_pid().kP(tuning_value);
         break;
 
     case TUNING_ACCEL_Z_KP:
