@@ -53,40 +53,36 @@ class Coefficients:
         self.aofs = {}
 
     def set_accel_poly(self, imu, axis, values):
-        if not imu in self.acoef:
+        if imu not in self.acoef:
             self.acoef[imu] = {}
-        if not axis in self.acoef[imu]:
-            self.acoef[imu][axis] = [0]*4
         self.acoef[imu][axis] = values
 
     def set_gyro_poly(self, imu, axis, values):
-        if not imu in self.gcoef:
+        if imu not in self.gcoef:
             self.gcoef[imu] = {}
-        if not axis in self.gcoef[imu]:
-            self.gcoef[imu][axis] = [0]*4
         self.gcoef[imu][axis] = values
         
     def set_acoeff(self, imu, axis, order, value):
-        if not imu in self.acoef:
+        if imu not in self.acoef:
             self.acoef[imu] = {}
         if not axis in self.acoef[imu]:
             self.acoef[imu][axis] = [0]*4
         self.acoef[imu][axis][POLY_ORDER-order] = value
 
     def set_gcoeff(self, imu, axis, order, value):
-        if not imu in self.gcoef:
+        if imu not in self.gcoef:
             self.gcoef[imu] = {}
         if not axis in self.gcoef[imu]:
             self.gcoef[imu][axis] = [0]*4
         self.gcoef[imu][axis][POLY_ORDER-order] = value
 
     def set_aoffset(self, imu, axis, value):
-        if not imu in self.aofs:
+        if imu not in self.aofs:
             self.aofs[imu] = {}
         self.aofs[imu][axis] = value
 
     def set_goffset(self, imu, axis, value):
-        if not imu in self.gofs:
+        if imu not in self.gofs:
             self.gofs[imu] = {}
         self.gofs[imu][axis] = value
         
@@ -176,7 +172,6 @@ class OnlineIMUfit:
         inv_mat = np.linalg.inv(self.mat)
         res = np.zeros(self.porder)
         for i in range(self.porder):
-            res[i] = 0.0
             for j in range(self.porder):
                 res[i] += inv_mat[i][j] * self.vec[j]
         return res
@@ -196,10 +191,13 @@ class IMUData:
 
     def IMUs(self):
         '''return list of IMUs'''
+        if len(self.accel.keys()) != len(self.gyro.keys()):
+            print("accel and gyro data doesn't match")
+            sys.exit(1)
         return self.accel.keys()
 
     def add_accel(self, imu, temperature, time, value):
-        if not imu in self.accel:
+        if imu not in self.accel:
             self.accel[imu] = {}
             for axis in AXEST:
                 self.accel[imu][axis] = np.zeros(0,dtype=float)
@@ -210,7 +208,7 @@ class IMUData:
         self.accel[imu]['time'] = np.append(self.accel[imu]['time'], time)
 
     def add_gyro(self, imu, temperature, time, value):
-        if not imu in self.gyro:
+        if imu not in self.gyro:
             self.gyro[imu] = {}
             for axis in AXEST:
                 self.gyro[imu][axis] = np.zeros(0,dtype=float)
@@ -314,7 +312,7 @@ def IMUfit(logfile):
                     stop_capture[imu] = True
                     continue
                 c.set_enable(imu, msg.Value)
-            m = re.match("^INS_TCAL(\d)_([AG]..)([1-3])_([XYZ])$", msg.Name)
+            m = re.match("^INS_TCAL(\d)_(ACC|GYR)([1-3])_([XYZ])$", msg.Name)
             if m:
                 imu = int(m.group(1))-1
                 stype = m.group(2)
@@ -350,7 +348,7 @@ def IMUfit(logfile):
                 if stop_capture[imu]:
                     continue
                 c.set_accel_tcal(imu, msg.Value)
-            m = re.match("^INS_([AG]..)(\d?)OFFS_([XYZ])$", msg.Name)
+            m = re.match("^INS_(ACC|GYR)(\d?)OFFS_([XYZ])$", msg.Name)
             if m:
                 stype = m.group(1)
                 if m.group(2) == "":
