@@ -739,6 +739,7 @@ public:
             void reset(float temperature);
             float start_temp;
             float start_tmax;
+            uint32_t last_save_ms;
 
             TCal &tcal;
             uint8_t instance(void) const {

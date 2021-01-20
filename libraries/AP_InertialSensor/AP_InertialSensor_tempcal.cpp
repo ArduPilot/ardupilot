@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
 
     // @Param: TMAX
     // @DisplayName: Temperature calibration max
-    // @Description: The maximum temperature that the calibration is valid for
+    // @Description: The maximum temperature that the calibration is valid for. This must be at least 10 degrees above TMIN for calibration
     // @Range: -70 80
     // @Units: degC
     // @User: Advanced
@@ -326,9 +326,10 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
         if (temperature >= start_tmax) {
             // we've reached the target temperature
             finish_calibration(temperature);
-        } else {
+        } else if (now - last_save_ms > 15000) {
             // save partial calibration, so if user stops the cal part
             // way then they still have a useful calibration
+            last_save_ms = now;
             save_calibration(st.last_temp);
         }
     }
