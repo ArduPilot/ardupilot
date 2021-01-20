@@ -372,8 +372,12 @@ def run_specific_test(step, *args, **kwargs):
 
     print("Got %s" % str(tester))
     for a in tester.tests():
-        print("Got %s" % (a[0]))
-        if a[0] == test:
+        if hasattr(a, 'name'):
+            name = a.name
+        else:
+            name = a[0]
+        print("Got %s" % (name))
+        if name == test:
             return tester.run_tests([a])
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)

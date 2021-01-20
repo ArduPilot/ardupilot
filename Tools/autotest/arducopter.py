@@ -19,6 +19,7 @@ from pysim import vehicleinfo
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
+from common import Test
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -6273,61 +6274,62 @@ class AutoTestCopter(AutoTest):
     def tests2b(self): #this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
-            ("MotorVibration",
-             "Fly motor vibration test",
-             self.fly_motor_vibration), 
+            Test("MotorVibration",
+                 "Fly motor vibration test",
+                 self.fly_motor_vibration), 
 
-            ("DynamicNotches",
-             "Fly Dynamic Notches",
-             self.fly_dynamic_notches), 
+            Test("DynamicNotches",
+                 "Fly Dynamic Notches",
+                 self.fly_dynamic_notches), 
 
-            ("GyroFFT",
-             "Fly Gyro FFT",
-             self.fly_gyro_fft),
- 
-            ("GyroFFTHarmonic",
-             "Fly Gyro FFT Harmonic Matching",
-             self.fly_gyro_fft_harmonic),
+            Test("GyroFFT",
+                 "Fly Gyro FFT",
+                 self.fly_gyro_fft,
+                 attempts=4),
 
-            ("CompassReordering",
-             "Test Compass reordering when priorities are changed",
-             self.test_mag_reordering),  # 40sec?
+            Test("GyroFFTHarmonic",
+                 "Fly Gyro FFT Harmonic Matching",
+                 self.fly_gyro_fft_harmonic),
 
-            ("CRSF",
-             "Test RC CRSF",
-             self.test_crsf), #20secs ish
+            Test("CompassReordering",
+                 "Test Compass reordering when priorities are changed",
+                 self.test_mag_reordering),  # 40sec?
 
-            ("MotorTest",
-             "Run Motor Tests",
-             self.test_motortest), #20secs ish
+            Test("CRSF",
+                 "Test RC CRSF",
+                 self.test_crsf), #20secs ish
 
-            ("AltEstimation",
-             "Test that Alt Estimation is mandatory for ALT_HOLD",
-             self.test_alt_estimate_prearm), #20secs ish
+            Test("MotorTest",
+                 "Run Motor Tests",
+                 self.test_motortest), #20secs ish
 
-            ("EKFSource",
-             "Check EKF Source Prearms work",
-             self.test_ekf_source),
+            Test("AltEstimation",
+                 "Test that Alt Estimation is mandatory for ALT_HOLD",
+                 self.test_alt_estimate_prearm), #20secs ish
 
-            ("DataFlash",
-             "Test DataFlash Block backend",
-             self.test_dataflash_sitl),
+            Test("EKFSource",
+                 "Check EKF Source Prearms work",
+                 self.test_ekf_source),
 
-            ("DataFlashErase",
-             "Test DataFlash Block backend erase",
-             self.test_dataflash_erase),
+            Test("DataFlash",
+                 "Test DataFlash Block backend",
+                 self.test_dataflash_sitl),
 
-            ("Callisto",
-             "Test Callisto",
-             self.test_callisto),
+            Test("DataFlashErase",
+                 "Test DataFlash Block backend erase",
+                 self.test_dataflash_erase),
 
-            ("Replay",
-             "Test Replay",
-             self.test_replay),
+            Test("Callisto",
+                 "Test Callisto",
+                 self.test_callisto),
 
-            ("LogUpload",
-             "Log upload",
-             self.log_upload),
+            Test("Replay",
+                 "Test Replay",
+                 self.test_replay),
+
+            Test("LogUpload",
+                 "Log upload",
+                 self.log_upload),
         ])
         return ret
 

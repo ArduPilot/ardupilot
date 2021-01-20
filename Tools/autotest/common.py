@@ -1104,6 +1104,14 @@ class LocationInt(object):
         self.alt = alt
         self.yaw = yaw
 
+class Test(object):
+    '''a test definition - information about a test'''
+    def __init__(self, name, description, function, attempts=1):
+        self.name = name
+        self.description = description
+        self.function = function
+        self.attempts = attempts
+
 class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
@@ -4890,10 +4898,27 @@ Also, ignores heartbeats not from our target system'''
             util.run_cmd('/bin/cp build/sitl/bin/* %s' % to_dir,
                          directory=util.reltopdir('.'))
 
-    def run_one_test(self, name, desc, test_function, interact=False):
+    def run_one_test(self, test, interact=False):
         '''new-style run-one-test used by run_tests'''
-        test_output_filename = self.buildlogs_path("%s-%s.txt" %
-                                                   (self.log_name(), name))
+        for i in range(0, test.attempts-1):
+            if self.run_one_test_attempt(test, interact=interact, attempt=i+2, do_fail_list=False):
+                return
+            self.progress("Run attempt failed.  Retrying")
+        self.run_one_test_attempt(test, interact=interact, attempt=1)
+
+    def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
+        '''called by run_one_test to actually run the test in a retry loop'''
+        name = test.name
+        desc = test.description
+        test_function = test.function
+        if attempt != 1:
+            self.progress("RETRYING %s" % name)
+            test_output_filename = self.buildlogs_path("%s-%s-retry-%u.txt" %
+                                                       (self.log_name(), name, attempt-1))
+        else:
+            test_output_filename = self.buildlogs_path("%s-%s.txt" %
+                                                       (self.log_name(), name))
+
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         prettyname = "%s (%s)" % (name, desc)
@@ -4958,7 +4983,8 @@ Also, ignores heartbeats not from our target system'''
         else:
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(ex), test_output_filename))
-            self.fail_list.append((prettyname, ex, test_output_filename))
+            if do_fail_list:
+                self.fail_list.append((prettyname, ex, test_output_filename))
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
@@ -4969,6 +4995,8 @@ Also, ignores heartbeats not from our target system'''
         self.clear_mission_using_mavproxy()
 
         tee.close()
+
+        return passed
 
     def check_test_syntax(self, test_file):
         """Check mistake on autotest function syntax."""
@@ -7591,8 +7619,7 @@ switch value'''
         pass
 
     def test_skipped(self, test, reason):
-        (name, desc, func) = test
-        self.progress("##### %s is skipped: %s" % (name, reason))
+        self.progress("##### %s is skipped: %s" % (test, reason))
         self.skip_list.append((test, reason))
 
     def last_onboard_log(self):
@@ -7652,8 +7679,7 @@ switch value'''
                 self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
             for test in tests:
-                (name, desc, func) = test
-                self.run_one_test(name, desc, func)
+                self.run_one_test(test)
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
@@ -7673,8 +7699,7 @@ switch value'''
             self.progress("Skipped tests:")
             for skipped in self.skip_list:
                 (test, reason) = skipped
-                (name, desc, func) = test
-                print("  %s (see %s)" % (name, reason))
+                print("  %s (see %s)" % (test.name, reason))
 
         if len(self.fail_list):
             self.progress("Failing tests:")
@@ -8985,43 +9010,43 @@ switch value'''
 
     def tests(self):
         return [
-            ("PIDTuning",
-             "Test PID Tuning",
-             self.test_pid_tuning),
+            Test("PIDTuning",
+                 "Test PID Tuning",
+                 self.test_pid_tuning),
 
-            ("ArmFeatures", "Arm features", self.test_arm_feature),
+            Test("ArmFeatures", "Arm features", self.test_arm_feature),
 
-            ("SetHome",
-            "Test Set Home",
-             self.fly_test_set_home),
+            Test("SetHome",
+                 "Test Set Home",
+                 self.fly_test_set_home),
 
-            ("ConfigErrorLoop",
-             "Test Config Error Loop",
-             self.test_config_error_loop),
+            Test("ConfigErrorLoop",
+                 "Test Config Error Loop",
+                 self.test_config_error_loop),
 
-            ("CPUFailsafe",
-             "Ensure we do something appropriate when the main loop stops",
-             self.CPUFailsafe),
+            Test("CPUFailsafe",
+                 "Ensure we do something appropriate when the main loop stops",
+                 self.CPUFailsafe),
 
-            ("Parameters",
-             "Test Parameter Set/Get",
-             self.test_parameters),
+            Test("Parameters",
+                 "Test Parameter Set/Get",
+                 self.test_parameters),
 
-            ("LoggerDocumentation",
-             "Test Onboard Logging Generation",
-             self.test_onboard_logging_generation),
+            Test("LoggerDocumentation",
+                 "Test Onboard Logging Generation",
+                 self.test_onboard_logging_generation),
 
-            ("Logging",
-             "Test Onboard Logging",
-             self.test_onboard_logging),
+            Test("Logging",
+                 "Teqst Onboard Logging",
+                 self.test_onboard_logging),
 
-            ("GetCapabilities",
-             "Get Capabilities",
-             self.test_get_autopilot_capabilities),
+            Test("GetCapabilities",
+                 "Get Capabilities",
+                 self.test_get_autopilot_capabilities),
 
-            ("InitialMode",
-             "Test initial mode switching",
-             self.test_initial_mode),
+            Test("InitialMode",
+                 "Test initial mode switching",
+                 self.test_initial_mode),
         ]
 
     def post_tests_announcements(self):
@@ -9041,13 +9066,20 @@ switch value'''
 
     def autotest(self):
         """Autotest used by ArduPilot autotest CI."""
-        all_tests = self.tests()
+        all_tests = []
+        for test in self.tests():
+            if type(test) == Test:
+                all_tests.append(test)
+                continue
+            (name, desc, func) = test
+            actual_test = Test(name, desc, func)
+            all_tests.append(actual_test)
+
         disabled = self.disabled_tests()
         tests = []
         for test in all_tests:
-            (name, desc, func) = test
-            if name in disabled:
-                self.test_skipped(test, disabled[name])
+            if test.name in disabled:
+                self.test_skipped(test, disabled[test.name])
                 continue
             tests.append(test)
 
