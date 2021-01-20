@@ -378,7 +378,7 @@ void AP_InertialSensor::TCal::Learn::reset(float temperature)
     memset(state, 0, sizeof(state));
     start_tmax = tcal.temp_max;
     accel_start.zero();
-    for (uint8_t i=0; i<2; i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
         state[i].temp_filter.set_cutoff_frequency(1000, 0.5);
         state[i].temp_filter.reset(temperature);
         state[i].last_temp = temperature;
