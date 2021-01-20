@@ -8014,6 +8014,29 @@ switch value'''
     def accelcal(self):
         ex = None
         try:
+            # setup with pre-existing accel offsets, to show that existing offsets don't
+            # adversely affect a new cal
+            pre_aofs = [Vector3(2.8, 1.2, 1.7),
+                        Vector3(0.2, -0.9, 2.9)]
+            pre_ascale = [Vector3(0.95, 1.2, 0.98),
+                          Vector3(1.1, 1.0, 0.93)]
+            aofs = [Vector3(0.7, -0.3, 1.8),
+                    Vector3(-2.1, 1.9, 2.3)]
+            ascale = [Vector3(0.98, 1.12, 1.05),
+                      Vector3(1.11, 0.98, 0.96)]
+            param_map = [("INS_ACCOFFS",  "SIM_ACC1_BIAS", pre_aofs[0], aofs[0]),
+                         ("INS_ACC2OFFS", "SIM_ACC2_BIAS", pre_aofs[1], aofs[1]),
+                         ("INS_ACCSCAL",  "SIM_ACC1_SCAL", pre_ascale[0], ascale[0]),
+                         ("INS_ACC2SCAL", "SIM_ACC2_SCAL", pre_ascale[1], ascale[1])]
+            axes = ['X','Y','Z']
+
+            # form the pre-calibration params
+            initial_params = {}
+            for (ins_prefix, sim_prefix, pre_value, post_value) in param_map:
+                for axis in axes:
+                    initial_params[ins_prefix+"_"+axis] = getattr(pre_value,axis.lower())
+                    initial_params[sim_prefix+"_"+axis] = getattr(post_value,axis.lower())
+            self.set_parameters(initial_params)
             self.customise_SITL_commandline(["-M", "calibration"])
             self.mavproxy_load_module("sitl_calibration")
             self.mavproxy_load_module("calibration")
@@ -8028,13 +8051,26 @@ switch value'''
                             "nose DOWN",
                             "nose UP",
                             "on its BACK",
-            ]:
+                            ]:
                 timeout = 2
                 self.mavproxy.expect("Place vehicle %s and press any key." % wanted, timeout=timeout)
                 self.mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 self.mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
                 self.mavproxy.send("\n")
             self.mavproxy.expect("APM: Calibration successful", timeout=timeout)
+            self.fetch_parameters()
+            self.drain_mav()
+
+            self.progress("Checking results")
+            accuracy_pct = 1.0
+            for (ins_prefix, sim_prefix, pre_value, post_value) in param_map:
+                for axis in axes:
+                    pname = ins_prefix+"_"+axis
+                    v = self.mav.param(pname)
+                    expected_v = getattr(post_value,axis.lower())
+                    error_pct = 100.0 * abs(v - expected_v) / abs(expected_v)
+                    if error_pct > accuracy_pct:
+                        raise NotAchievedException("Incorrect value %.4f for %s should be %.4f" % (v, pname, expected_v))
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
