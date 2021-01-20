@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Description: Selects the type of rotor speed control used to determine throttle output to the HeliRSC servo channel when motor interlock is enabled (throttle hold off). RC Passthrough sends the input from the RC Motor Interlock channel as throttle output.  External Gov SetPoint sends the RSC SetPoint parameter value as throttle output.  Throttle Curve uses the 5 point throttle curve to determine throttle output based on the collective output.  Governor is ArduCopter's built-in governor that uses the throttle curve for a feed forward throttle command to determine throttle output.
     // @Values: 1:RC Passthrough, 2:External Gov SetPoint, 3:Throttle Curve, 4:Governor
     // @User: Standard
-    AP_GROUPINFO("MODE", 2, AP_MotorsHeli_RSC, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH),
+    AP_GROUPINFO("MODE", 2, AP_MotorsHeli_RSC, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_PASSTHROUGH),
 
     // @Param: RAMP_TIME
     // @DisplayName: Throttle Ramp Time
@@ -250,14 +250,14 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             // set main rotor ramp to increase to full speed
             update_rotor_ramp(1.0f, dt);
 
-            if ((_control_mode == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SPEED_SETPOINT)) {
+            if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
                 // set control rotor speed to ramp slewed value between idle and desired speed
                 _control_output = get_idle_output() + (_rotor_ramp_output * (_desired_speed - get_idle_output()));
-            } else if (_control_mode == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT) {
+            } else if (_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
                 // throttle output from throttle curve based on collective position
                 float desired_throttle = calculate_desired_throttle(_collective_in);
                 _control_output = get_idle_output() + (_rotor_ramp_output * (desired_throttle - get_idle_output()));
-            } else if (_control_mode == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+            } else if (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
                 // governor provides two modes of throttle control - governor engaged
                 // or throttle curve if governor is out of range or sensor failed
             	float desired_throttle = calculate_desired_throttle(_collective_in);
