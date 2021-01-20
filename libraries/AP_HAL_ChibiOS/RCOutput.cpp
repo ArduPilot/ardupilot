@@ -1079,8 +1079,8 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
     // assume that we won't be able to get the input capture lock
     group.bdshot.enabled = false;
 
-    // now grab the input capture lock if we are able
-    if ((_bdshot.mask & (1 << group.chan[group.bdshot.curr_telem_chan])) && group.has_ic()) {
+    // now grab the input capture lock if we are able, we can only enable bi-dir on a group basis
+    if (((_bdshot.mask & group.ch_mask) == group.ch_mask) && group.has_ic()) {
         if (group.has_shared_ic_up_dma()) {
             // no locking required
             group.bdshot.enabled = true;
@@ -1163,7 +1163,7 @@ void RCOutput::dshot_send(pwm_group &group, bool blocking)
             }
 
             bool request_telemetry = (telem_request_mask & chan_mask)?true:false;
-            uint16_t packet = create_dshot_packet(value, request_telemetry, _bdshot.mask);
+            uint16_t packet = create_dshot_packet(value, request_telemetry, group.bdshot.enabled);
             if (request_telemetry) {
                 telem_request_mask &= ~chan_mask;
             }
