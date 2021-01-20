@@ -163,14 +163,6 @@ public:
     Matrix3f ahrs_rotation;
     Matrix3f ahrs_rotation_inv;
 
-    // noise levels for simulated sensors
-    AP_Float gyro_noise;  // in degrees/second
-    AP_Vector3f gyro_scale;  // percentage
-    AP_Float accel_noise; // in m/s/s
-    AP_Float accel2_noise; // in m/s/s
-    AP_Vector3f accel_bias; // in m/s/s
-    AP_Vector3f accel2_bias; // in m/s/s
-
     AP_Float arspd_noise[2];  // pressure noise
     AP_Float arspd_fail[2];   // airspeed value in m/s to fail to
     AP_Float arspd_fail_pressure[2]; // pitot tube failure pressure in Pa
@@ -213,7 +205,6 @@ public:
 
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
-    AP_Float accel_fail;  // accelerometer failure value
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
@@ -326,10 +317,6 @@ public:
     AP_Float vibe_motor_scale;
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
-
-    // gyro and accel fail masks
-    AP_Int8 gyro_fail_mask;
-    AP_Int8 accel_fail_mask;
 
     struct {
         AP_Float x;
@@ -456,6 +443,17 @@ public:
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
     AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
+
+    // IMU control parameters
+    AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second
+    AP_Vector3f gyro_scale[INS_MAX_INSTANCES];  // percentage
+    AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
+    AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
+    AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
+    // gyro and accel fail masks
+    AP_Int8 gyro_fail_mask;
+    AP_Int8 accel_fail_mask;
+
 };
 
 } // namespace SITL
