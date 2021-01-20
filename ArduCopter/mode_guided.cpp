@@ -116,7 +116,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     }
     target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
-    if (!wp_nav->set_wp_destination(target_loc)) {
+    if (!wp_nav->set_wp_destination_loc(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
@@ -296,7 +296,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         pos_control_start();
     }
 
-    if (!wp_nav->set_wp_destination(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
         // failure is propagated to GCS with NAK
