@@ -1959,68 +1959,31 @@ class AutoTestPlane(AutoTest):
         self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
                      0,0,0,0,1,0,0,
                      timeout=5)
-        self.set_parameters({"SIM_IMUT_FIXED" : 0,
-                             "INS_TCAL1_ENABLE" : 2,
-                             "INS_TCAL1_TMAX" : 42,
-                             "INS_TCAL2_ENABLE" : 2,
-                             "INS_TCAL2_TMAX" : 42,
-                             "SIM_SPEEDUP" : 200})
-        self.mavproxy.send("set streamrate 1\n")
+        self.set_parameters({
+            "SIM_IMUT_FIXED" : 0,
+            "INS_TCAL1_ENABLE" : 2,
+            "INS_TCAL1_TMAX" : 42,
+            "INS_TCAL2_ENABLE" : 2,
+            "INS_TCAL2_TMAX" : 42,
+            "SIM_SPEEDUP" : 200,
+            })
+        self.set_streamrate(1)
         self.set_parameter("LOG_DISARMED", 1)
         self.reboot_sitl()
 
         self.progress("Waiting for IMU temperature")
-        tstart = self.get_sim_time()
-        timeout = 600
-        temp_ok = False
-        last_print_temp = -100
-        while self.get_sim_time_cached() - tstart < timeout:
-            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=2)
-            if m is None:
-                raise NotAchievedException("RAW_IMU")
-            temperature = m.temperature*0.01
-            if temperature >= 43:
-                self.progress("Reached temperature %.1f" % temperature)
-                temp_ok = True
-                break
-            if temperature - last_print_temp > 1:
-                self.progress("temperature %.1f" % temperature)
-                last_print_temp = temperature
+        self.assert_reach_imu_temperature(43, timeout=600)
 
-        if not temp_ok:
-            raise NotAchievedException("target temperature")
         if self.get_parameter("INS_TCAL1_ENABLE") != 1.0:
             raise NotAchievedException("TCAL1 did not complete")
         if self.get_parameter("INS_TCAL2_ENABLE") != 1.0:
             raise NotAchievedException("TCAL2 did not complete")
 
-        self.progress("Testing with calibration enabled")
+        self.progress("Logging with calibration enabled")
         self.reboot_sitl()
 
-        tstart = self.get_sim_time()
-        timeout = 600
-        temp_ok = False
-        last_print_temp = -100
-        while self.get_sim_time_cached() - tstart < timeout:
-            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=2)
-            if m is None:
-                raise NotAchievedException("RAW_IMU")
-            temperature = m.temperature*0.01
-            if temperature >= 43:
-                self.progress("Reached temperature %.1f" % temperature)
-                temp_ok = True
-                break
-            if temperature - last_print_temp > 1:
-                self.progress("temperature %.1f" % temperature)
-                last_print_temp = temperature
+        self.assert_reach_imu_temperature(43, timeout=600)
 
-        if not temp_ok:
-            raise NotAchievedException("target temperature")
-        if self.get_parameter("INS_TCAL1_ENABLE") != 1.0:
-            raise NotAchievedException("TCAL1 did not complete")
-        if self.get_parameter("INS_TCAL2_ENABLE") != 1.0:
-            raise NotAchievedException("TCAL2 did not complete")
-        
         self.progress("Testing with compensation enabled")
         gyro_threshold = 0.2
         accel_threshold = 0.05
