@@ -2510,6 +2510,27 @@ class AutoTest(ABC):
                                        (parameter, required, got))
         self.progress("%s has value %f" % (parameter, required))
 
+    def assert_reach_imu_temperature(self, target, timeout):
+        '''wait to reach a target temperature'''
+        tstart = self.get_sim_time()
+        temp_ok = False
+        last_print_temp = -100
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.mav.recv_match(type='RAW_IMU', blocking=True, timeout=2)
+            if m is None:
+                raise NotAchievedException("RAW_IMU")
+            temperature = m.temperature*0.01
+            if temperature >= target:
+                self.progress("Reached temperature %.1f" % temperature)
+                temp_ok = True
+                break
+            if temperature - last_print_temp > 1:
+                self.progress("temperature %.1f" % temperature)
+                last_print_temp = temperature
+
+        if not temp_ok:
+            raise NotAchievedException("target temperature")
+        
     def onboard_logging_not_log_disarmed(self):
         self.set_parameter("LOG_DISARMED", 0)
         self.set_parameter("LOG_FILE_DSRMROT", 0)
