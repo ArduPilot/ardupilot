@@ -739,9 +739,10 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
 
     // read temperature every 10th sample
-    if (_temp_counter++ % 10 == 0) {
+    if (_temp_counter == 10) {
         int16_t traw;
         const uint8_t regtemp = OUT_TEMP_L_XM | 0xC0;
+        _temp_counter = 0;
         if (_dev_accel->transfer(&regtemp, 1, (uint8_t *)&traw, sizeof(traw))) {
             _temperature = _temp_filter.apply(traw * 0.125 + 25);
         }
