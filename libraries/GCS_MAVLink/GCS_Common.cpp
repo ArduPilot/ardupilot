@@ -2712,6 +2712,15 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             param_storage.write_block(0, zeros, sizeof(zeros));
             return MAV_RESULT_FAILED;
         }
+        if (is_equal(packet.param4, 97.0f)) {
+            // create a really long loop
+            send_text(MAV_SEVERITY_WARNING,"Creating long loop");
+            // 250ms:
+            for (uint8_t i=0; i<250; i++) {
+                hal.scheduler->delay_microseconds(1000);
+            }
+            return MAV_RESULT_ACCEPTED;
+        }
     }
 
     if (hal.util->get_soft_armed()) {
