@@ -37,7 +37,7 @@ public:
     void handleMessage(const mavlink_message_t &msg);
 
     // true if we are in a calibration process
-    bool active(void) const;
+    bool running(void) const;
 
 private:
     GCS_MAVLINK *_gcs;
