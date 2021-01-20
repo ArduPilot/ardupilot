@@ -460,7 +460,7 @@ class AutoTestQuadPlane(AutoTest):
                 "SIM_DRIFT_SPEED": 0,
                 "SIM_DRIFT_TIME": 0,
                 # enable a noisy motor peak
-                "SIM_GYR_RND": 20,
+                "SIM_GYR1_RND": 20,
                 # enabling FFT will also enable the arming check: self-testing the functionality
                 "FFT_ENABLE": 1,
                 "FFT_MINHZ": 80,

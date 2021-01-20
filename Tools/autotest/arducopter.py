@@ -2129,8 +2129,8 @@ class AutoTestCopter(AutoTest):
                 "LOG_DISARMED": 0,
                 "SIM_VIB_MOT_MAX": 350,
                 # these are real values taken from a 180mm Quad:
-                "SIM_GYR_RND": 20,
-                "SIM_ACC_RND": 5,
+                "SIM_GYR1_RND": 20,
+                "SIM_ACC1_RND": 5,
                 "SIM_ACC2_RND": 5,
                 "SIM_INS_THR_MIN": 0.1,
             })
@@ -4179,7 +4179,7 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter("LOG_BITMASK", 958)
                 self.set_parameter("LOG_DISARMED", 0)
                 self.set_parameter("SIM_VIB_MOT_MAX", 350)
-                self.set_parameter("SIM_GYR_RND", 20)
+                self.set_parameter("SIM_GYR1_RND", 20)
                 self.reboot_sitl()
 
                 self.takeoff(10, mode="ALT_HOLD")
@@ -4302,7 +4302,7 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter("SIM_DRIFT_TIME", 0)
                 self.set_parameter("FFT_THR_REF", self.get_parameter("MOT_THST_HOVER"))
                 # enable a noisy motor peak
-                self.set_parameter("SIM_GYR_RND", 20)
+                self.set_parameter("SIM_GYR1_RND", 20)
                 # enabling FFT will also enable the arming check, self-testing the functionality
                 self.set_parameter("FFT_ENABLE", 1)
                 self.set_parameter("FFT_MINHZ", 50)
@@ -4437,7 +4437,7 @@ class AutoTestCopter(AutoTest):
                 self.set_parameter("SIM_DRIFT_SPEED", 0)
                 self.set_parameter("SIM_DRIFT_TIME", 0)
                 # enable a noisy motor peak
-                self.set_parameter("SIM_GYR_RND", 20)
+                self.set_parameter("SIM_GYR1_RND", 20)
                 # enabling FFT will also enable the arming check, self-testing the functionality
                 self.set_parameter("FFT_ENABLE", 1)
                 self.set_parameter("FFT_MINHZ", 50)
