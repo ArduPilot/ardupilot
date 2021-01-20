@@ -93,10 +93,6 @@ void ModeAuto::run()
         circle_run();
         break;
 
-    case Auto_Spline:
-        spline_run();
-        break;
-
     case Auto_NavGuided:
 #if NAV_GUIDED == ENABLED
         nav_guided_run();
@@ -190,7 +186,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     }
 
     // set waypoint controller target
-    if (!wp_nav->set_wp_destination(dest)) {
+    if (!wp_nav->set_wp_destination_loc(dest)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -212,7 +208,7 @@ void ModeAuto::wp_start(const Location& dest_loc)
     _mode = Auto_WP;
 
     // send target to waypoint controller
-    if (!wp_nav->set_wp_destination(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
@@ -293,7 +289,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
 
         // initialise wpnav to move to edge of circle
-        if (!wp_nav->set_wp_destination(circle_edge)) {
+        if (!wp_nav->set_wp_destination_loc(circle_edge)) {
             // failure to set destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
         }
@@ -328,28 +324,6 @@ void ModeAuto::circle_start()
 
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
         auto_yaw.set_mode(AUTO_YAW_CIRCLE);
-    }
-}
-
-// auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
-//  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
-void ModeAuto::spline_start(const Location& destination, bool stopped_at_start,
-                               AC_WPNav::spline_segment_end_type seg_end_type, 
-                               const Location& next_destination)
-{
-    _mode = Auto_Spline;
-
-    // initialise wpnav
-    if (!wp_nav->set_spline_destination(destination, stopped_at_start, seg_end_type, next_destination)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
-    }
-
-    // initialise yaw
-    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
     }
 }
 
@@ -782,47 +756,7 @@ void ModeAuto::wp_run()
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
-    }
-}
-
-// auto_spline_run - runs the auto spline controller
-//      called by auto_run at 100hz or more
-void ModeAuto::spline_run()
-{
-    // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
-        wp_nav->wp_and_spline_init();
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    wp_nav->update_spline();
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();
-
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), auto_yaw.rate_cds());
     }
 }
 
@@ -1096,25 +1030,25 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
-Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
+Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const
 {
     Location ret(cmd.content.location);
 
     // use current lat, lon if zero
     if (ret.lat == 0 && ret.lng == 0) {
-        ret.lat = copter.current_loc.lat;
-        ret.lng = copter.current_loc.lng;
+        ret.lat = default_loc.lat;
+        ret.lng = default_loc.lng;
     }
     // use current altitude if not provided
     if (ret.alt == 0) {
-        // set to current altitude but in command's alt frame
-        int32_t curr_alt;
-        if (copter.current_loc.get_alt_cm(ret.get_alt_frame(),curr_alt)) {
-            ret.set_alt_cm(curr_alt, ret.get_alt_frame());
+        // set to default_loc's altitude but in command's alt frame
+        // note that this may use the terrain database
+        int32_t default_alt;
+        if (default_loc.get_alt_cm(ret.get_alt_frame(), default_alt)) {
+            ret.set_alt_cm(default_alt, ret.get_alt_frame());
         } else {
-            // default to current altitude as alt-above-home
-            ret.set_alt_cm(copter.current_loc.alt,
-                           copter.current_loc.get_alt_frame());
+            // default to default_loc's altitude and frame
+            ret.set_alt_cm(default_loc.alt, default_loc.get_alt_frame());
         }
     }
     return ret;
@@ -1123,46 +1057,90 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd) const
 // do_nav_wp - initiate move to next waypoint
 void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    Location target_loc = loc_from_cmd(cmd);
+    // calculate default location used when lat, lon or alt is zero
+    Location default_loc = copter.current_loc;
+    if (wp_nav->is_active() && wp_nav->reached_wp_destination()) {
+        if (!wp_nav->get_wp_destination_loc(default_loc)) {
+            // this should never happen
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
+    }
+
+    // get waypoint's location from command and send to wp_nav
+    const Location dest_loc = loc_from_cmd(cmd, default_loc);
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
+
+    _mode = Auto_WP;
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
 
-    // Set wp navigation target
-    wp_start(target_loc);
-
-    // if no delay as well as not final waypoint set the waypoint as "fast"
-    AP_Mission::Mission_Command temp_cmd;
-    bool fast_waypoint = false;
-    if (loiter_time_max == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-
-        // whether vehicle should stop at the target position depends upon the next command
-        switch (temp_cmd.id) {
-            case MAV_CMD_NAV_WAYPOINT:
-            case MAV_CMD_NAV_LOITER_UNLIM:
-            case MAV_CMD_NAV_LOITER_TURNS:
-            case MAV_CMD_NAV_LOITER_TIME:
-            case MAV_CMD_NAV_LAND:
-            case MAV_CMD_NAV_SPLINE_WAYPOINT:
-                // if next command's lat, lon is specified then do not slowdown at this waypoint
-                if ((temp_cmd.content.location.lat != 0) || (temp_cmd.content.location.lng != 0)) {
-                    fast_waypoint = true;
-                }
-                break;
-            case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-                // do not stop for RTL
-                fast_waypoint = true;
-                break;
-            case MAV_CMD_NAV_TAKEOFF:
-            default:
-                // always stop for takeoff commands
-                // for unsupported commands it is safer to stop
-                break;
-        }
-        copter.wp_nav->set_fast_waypoint(fast_waypoint);
+    // set next destination if necessary
+    if (!set_next_wp(cmd, dest_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
     }
+
+    // initialise yaw
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode_to_default(false);
+    }
+}
+
+// checks the next mission command and adds it as a destination if necessary
+// supports both straight line and spline waypoints
+// cmd should be the current command
+// default_loc should be the destination from the current_cmd but corrected for cases where user set lat, lon or alt to zero
+// returns true on success, false on failure which should only happen due to a failure to retrieve terrain data
+bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc)
+{
+    // do not add next wp if current command has a delay meaning the vehicle will stop at the destination
+    if (current_cmd.p1 > 0) {
+        return true;
+    }
+
+    // do not add next wp if there are no more navigation commands
+    AP_Mission::Mission_Command next_cmd;
+    if (!mission.get_next_nav_cmd(current_cmd.index+1, next_cmd)) {
+        return true;
+    }
+
+    // whether vehicle should stop at the target position depends upon the next command
+    switch (next_cmd.id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TIME: {
+        const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
+        const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
+        return wp_nav->set_wp_destination_next_loc(next_dest_loc);
+    }
+    case MAV_CMD_NAV_SPLINE_WAYPOINT: {
+        // get spline's location and next location from command and send to wp_nav
+        Location next_dest_loc, next_next_dest_loc;
+        bool next_next_dest_loc_is_spline;
+        get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+        return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+    }
+    case MAV_CMD_NAV_LAND:
+        // stop because we may change between rel,abs and terrain alt types
+    case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+    case MAV_CMD_NAV_TAKEOFF:
+        // always stop for RTL and takeoff commands
+    default:
+        // for unsupported commands it is safer to stop
+        break;
+    }
+
+    return true;
 }
 
 // do_land - initiate landing procedure
@@ -1225,7 +1203,7 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 // do_circle - initiate moving in a circle
 void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
-    const Location circle_center = loc_from_cmd(cmd);
+    const Location circle_center = loc_from_cmd(cmd, copter.current_loc);
 
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1276,67 +1254,65 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     pos_control->set_max_accel_z(wp_nav->get_accel_z());
     pos_control->set_max_speed_z(wp_nav->get_default_speed_down(),
                                  wp_nav->get_default_speed_up());
-
-    if (pos_control->is_active_z()) {
-        pos_control->freeze_ff_z();
-    }
 }
 
-// do_spline_wp - initiate move to next waypoint
+// do_nav_wp - initiate move to next waypoint
 void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
-    const Location target_loc = loc_from_cmd(cmd);
+    // calculate default location used when lat, lon or alt is zero
+    Location default_loc = copter.current_loc;
+    if (wp_nav->is_active() && wp_nav->reached_wp_destination()) {
+        if (!wp_nav->get_wp_destination_loc(default_loc)) {
+            // this should never happen
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
+    }
+
+    // get spline's location and next location from command and send to wp_nav
+    Location dest_loc, next_dest_loc;
+    bool next_dest_loc_is_spline;
+    get_spline_from_cmd(cmd, default_loc, dest_loc, next_dest_loc, next_dest_loc_is_spline);
+    if (!wp_nav->set_spline_destination_loc(dest_loc, next_dest_loc, next_dest_loc_is_spline)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
+
+    _mode = Auto_WP;
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
     loiter_time_max = cmd.p1;
 
-    // determine segment start and end type
-    bool stopped_at_start = true;
-    AC_WPNav::spline_segment_end_type seg_end_type = AC_WPNav::SEGMENT_END_STOP;
-    AP_Mission::Mission_Command temp_cmd;
-
-    // if previous command was a wp_nav command with no delay set stopped_at_start to false
-    // To-Do: move processing of delay into wp-nav controller to allow it to determine the stopped_at_start value itself?
-    uint16_t prev_cmd_idx = mission.get_prev_nav_cmd_index();
-    if (prev_cmd_idx != AP_MISSION_CMD_INDEX_NONE) {
-        if (mission.read_cmd_from_storage(prev_cmd_idx, temp_cmd)) {
-            if ((temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) && temp_cmd.p1 == 0) {
-                stopped_at_start = false;
-            }
-        }
+    // set next destination if necessary
+    if (!set_next_wp(cmd, dest_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
     }
+
+    // initialise yaw
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode_to_default(false);
+    }
+}
+
+// get_spline_from_cmd - Calculates the spline type for a given spline waypoint mission command
+void ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline)
+{
+    dest_loc = loc_from_cmd(cmd, default_loc);
 
     // if there is no delay at the end of this segment get next nav command
-    Location next_loc;
+    AP_Mission::Mission_Command temp_cmd;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-        next_loc = temp_cmd.content.location;
-        // default lat, lon to first waypoint's lat, lon
-        if (next_loc.lat == 0 && next_loc.lng == 0) {
-            next_loc.lat = target_loc.lat;
-            next_loc.lng = target_loc.lng;
-        }
-        // default alt to first waypoint's alt but in next waypoint's alt frame
-        if (next_loc.alt == 0) {
-            int32_t next_alt;
-            if (target_loc.get_alt_cm(next_loc.get_alt_frame(), next_alt)) {
-                next_loc.set_alt_cm(next_alt, next_loc.get_alt_frame());
-            } else {
-                // default to first waypoints altitude
-                next_loc.set_alt_cm(target_loc.alt, target_loc.get_alt_frame());
-            }
-        }
-        // if the next nav command is a waypoint set end type to spline or straight
-        if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT) {
-            seg_end_type = AC_WPNav::SEGMENT_END_STRAIGHT;
-        } else if (temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT) {
-            seg_end_type = AC_WPNav::SEGMENT_END_SPLINE;
-        }
+        next_dest_loc = loc_from_cmd(temp_cmd, dest_loc);
+        next_dest_loc_is_spline = temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT;
+    } else {
+        next_dest_loc = dest_loc;
+        next_dest_loc_is_spline = false;
     }
-
-    // set spline navigation target
-    spline_start(target_loc, stopped_at_start, seg_end_type, next_loc);
 }
 
 #if NAV_GUIDED == ENABLED
