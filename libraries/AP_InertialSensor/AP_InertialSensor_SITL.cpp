@@ -75,7 +75,7 @@ void AP_InertialSensor_SITL::generate_accel()
     for (uint8_t j = 0; j < nsamples; j++) {
 
         // add accel bias and noise
-        Vector3f accel_bias = accel_instance == 0 ? sitl->accel_bias.get() : sitl->accel2_bias.get();
+        const Vector3f &accel_bias = sitl->accel_bias[accel_instance].get();
         float xAccel = sitl->state.xAccel + accel_bias.x;
         float yAccel = sitl->state.yAccel + accel_bias.y;
         float zAccel = sitl->state.zAccel + accel_bias.z;
@@ -97,7 +97,7 @@ void AP_InertialSensor_SITL::generate_accel()
         // giving a accel noise variation of 5.33 m/s/s over the full throttle range
         if (motors_on) {
             // add extra noise when the motors are on
-            accel_noise = (accel_instance == 0 ? sitl->accel_noise : sitl->accel2_noise) * sitl->throttle;
+            accel_noise = sitl->accel_noise[accel_instance];
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -156,10 +156,8 @@ void AP_InertialSensor_SITL::generate_accel()
             zAccel += lever_arm_accel.z + centripetal_accel.z;
         }
 
-        if (fabsf(sitl->accel_fail) > 1.0e-6f) {
-            xAccel = sitl->accel_fail;
-            yAccel = sitl->accel_fail;
-            zAccel = sitl->accel_fail;
+        if (fabsf(sitl->accel_fail[accel_instance]) > 1.0e-6f) {
+            xAccel = yAccel = zAccel = sitl->accel_fail[accel_instance];
         }
 
         Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
@@ -206,7 +204,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
             // add extra noise when the motors are on
-            gyro_noise = ToRad(sitl->gyro_noise) * sitl->throttle;
+            gyro_noise = ToRad(sitl->gyro_noise[gyro_instance]) * sitl->throttle;
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -250,7 +248,7 @@ void AP_InertialSensor_SITL::generate_gyro()
         sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);
 
         // add in gyro scaling
-        Vector3f scale = sitl->gyro_scale;
+        Vector3f scale = sitl->gyro_scale[gyro_instance];
         gyro.x *= (1 + scale.x * 0.01f);
         gyro.y *= (1 + scale.y * 0.01f);
         gyro.z *= (1 + scale.z * 0.01f);
