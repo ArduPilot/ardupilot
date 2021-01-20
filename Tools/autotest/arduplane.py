@@ -1995,8 +1995,7 @@ class AutoTestPlane(AutoTest):
         for temp in test_temperatures:
             self.progress("Testing temperature %.1f" % temp)
             self.set_parameter("SIM_IMUT_FIXED", temp)
-            self.wait_heartbeat()
-            self.wait_heartbeat()
+            self.delay_sim_time(2)
             for msg in ['RAW_IMU', 'SCALED_IMU2']:
                 m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
                 if m is None:
