@@ -117,7 +117,7 @@ class Coefficients:
     def correction_accel(self, imu, temperature):
         '''calculate accel correction from temperature calibration from
         log data using parameters'''
-        cal_temp = self.atcal[imu]
+        cal_temp = self.atcal.get(imu, TEMP_REF)
         return Vector3(self.correction(self.acoef[imu], imu, temperature, 'X', cal_temp),
                        self.correction(self.acoef[imu], imu, temperature, 'Y', cal_temp),
                        self.correction(self.acoef[imu], imu, temperature, 'Z', cal_temp))
@@ -126,7 +126,7 @@ class Coefficients:
     def correction_gyro(self, imu, temperature):
         '''calculate gyro correction from temperature calibration from
         log data using parameters'''
-        cal_temp = self.gtcal[imu]
+        cal_temp = self.gtcal.get(imu, TEMP_REF)
         return Vector3(self.correction(self.gcoef[imu], imu, temperature, 'X', cal_temp),
                        self.correction(self.gcoef[imu], imu, temperature, 'Y', cal_temp),
                        self.correction(self.gcoef[imu], imu, temperature, 'Z', cal_temp))
@@ -439,7 +439,10 @@ def IMUfit(logfile):
                 c.set_gyro_poly(imu, axis, fit.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
             else:
                 trel = data.accel[imu]['T'] - TEMP_REF
-                ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+                if imu in clog.atcal:
+                    ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+                else:
+                    ofs = np.mean(data.accel[imu][axis])
                 c.set_accel_poly(imu, axis, np.polyfit(trel, data.accel[imu][axis] - ofs, POLY_ORDER))
                 trel = data.gyro[imu]['T'] - TEMP_REF
                 c.set_gyro_poly(imu, axis, np.polyfit(trel, data.gyro[imu][axis], POLY_ORDER))
@@ -488,13 +491,13 @@ def IMUfit(logfile):
 
     for imu in data.IMUs():
         for axis in AXES:
-            ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+            ofs = data.accel_at_temp(imu, axis, clog.atcal.get(imu, TEMP_REF))
             axs[imu].plot(data.accel[imu]['time'], data.accel[imu][axis] - ofs, label='Uncorrected %s' % axis)
         for axis in AXES:
             poly = np.poly1d(c.acoef[imu][axis])
             trel = data.accel[imu]['T'] - TEMP_REF
             correction = poly(trel)
-            ofs = data.accel_at_temp(imu, axis, clog.atcal[imu])
+            ofs = data.accel_at_temp(imu, axis, clog.atcal.get(imu, TEMP_REF))
             axs[imu].plot(data.accel[imu]['time'], (data.accel[imu][axis] - ofs) - correction, label='Corrected %s' % axis)
         if args.log_parm:
             for axis in AXES:
