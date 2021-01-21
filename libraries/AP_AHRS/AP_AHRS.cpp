@@ -246,7 +246,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-        const float cog = radians(AP::gps().ground_course_cd()*0.01f);
+        const float cog = radians(AP::gps().ground_course());
         gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
     }
     // If both ADS and GPS data is available, apply a complementary filter
