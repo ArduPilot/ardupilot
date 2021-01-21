@@ -380,7 +380,7 @@ void GCS_MAVLINK::param_io_timer(void)
     AP_Param *vp;
 
     if (req.param_index != -1) {
-        AP_Param::ParamToken token;
+        AP_Param::ParamToken token {};
         vp = AP_Param::find_by_index(req.param_index, &reply.p_type, &token);
         if (vp == nullptr) {
             return;
