@@ -34,7 +34,7 @@ extern const AP_HAL::HAL &hal;
  AS_5600::AS_5600()
 {
 
-    bus = 0; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
+    bus = 1; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
     address = 0x36; //This is the I2C address for the device, it is set by the manufacturer
 
     //ChibiOS::I2CDeviceManager myDev; //Create an instance of an I2C device
