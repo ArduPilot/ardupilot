@@ -161,6 +161,9 @@ void Plane::init_ardupilot()
     g2.gripper.init();
 #endif
 
+    //Code added by Cole, initialize AS5600 sensor
+    aoa_sensor.init();
+
     // disable safety if requested
     BoardConfig.init_safety();
 }
