@@ -43,7 +43,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
     // always check if inertial nav has started and is ready
     char failure_msg[50] = {};
-    if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
