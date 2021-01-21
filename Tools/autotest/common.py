@@ -6585,21 +6585,25 @@ Also, ignores heartbeats not from our target system'''
 
         # we should find at least one Armed event and one disarmed
         # event, and at least one ARM message for arm and disarm
+        self.progress("Checking for an arm event")
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type="EV", condition="EV.Id==10") # armed
         if m is None:
             raise NotAchievedException("Did not find an Armed EV message")
 
+        self.progress("Checking for a disarm event")
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type="EV", condition="EV.Id==11") # disarmed
         if m is None:
             raise NotAchievedException("Did not find a disarmed EV message")
 
+        self.progress("Checking for ARM.ArmState==1")
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==1")
         if m is None:
             raise NotAchievedException("Did not find a armed ARM message")
 
+        self.progress("Checking for ARM.ArmState==0")
         dfreader = self.dfreader_for_current_onboard_log()
         m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==0")
         if m is None:
