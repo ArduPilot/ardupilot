@@ -483,6 +483,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
             if (i > 0) {
                 id[0] = '1'+i;
             }
+            str.printf("INS_ACC%s_ID=%u\n", id, unsigned(_accel_id[i].get()));
             str.printf("INS_ACC%sOFFS_X=%f\n", id, aoff.x);
             str.printf("INS_ACC%sOFFS_Y=%f\n", id, aoff.y);
             str.printf("INS_ACC%sOFFS_Z=%f\n", id, aoff.z);
