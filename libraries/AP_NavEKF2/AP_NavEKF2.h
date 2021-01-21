@@ -221,20 +221,6 @@ public:
     void  getFilterFaults(int8_t instance, uint16_t &faults) const;
 
     /*
-    return filter timeout status as a bitmasked integer for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     4 = unassigned
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-    */
-    void  getFilterTimeouts(int8_t instance, uint8_t &timeouts) const;
-
-    /*
     return filter gps quality check status for the specified instance
     An out of range instance (eg -1) returns data for the primary instance
     */
