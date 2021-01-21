@@ -1668,7 +1668,8 @@ bool AP_AHRS_NavEKF::healthy(void) const
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+// requires_position should be true if horizontal position configuration should be checked
+bool AP_AHRS_NavEKF::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     bool ret = true;
     if (!healthy()) {
@@ -1705,7 +1706,7 @@ bool AP_AHRS_NavEKF::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) c
             hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
             return false;
         }
-        return EKF3.pre_arm_check(failure_msg, failure_msg_len) && ret;
+        return EKF3.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
 #endif
     }
 
