@@ -299,7 +299,8 @@ void AP_NavEKF_Source::mark_configured_in_storage()
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+// requires_position should be true if horizontal position configuration should be checked
+bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     auto &dal = AP::dal();
     bool baro_required = false;
@@ -314,91 +315,93 @@ bool AP_NavEKF_Source::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
     // check source params are valid
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
 
-        // check posxy
-        switch ((SourceXY)_source_set[i].posxy.get()) {
-        case SourceXY::NONE:
-            break;
-        case SourceXY::GPS:
-            gps_required = true;
-            break;
-        case SourceXY::BEACON:
-            beacon_required = true;
-            break;
-        case SourceXY::EXTNAV:
-            visualodom_required = true;
-            break;
-        case SourceXY::OPTFLOW:
-        case SourceXY::WHEEL_ENCODER:
-        default:
-            // invalid posxy value
-            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSXY", (int)i+1);
-            return false;
-        }
+        if (requires_position) {
+            // check posxy
+            switch ((SourceXY)_source_set[i].posxy.get()) {
+            case SourceXY::NONE:
+                break;
+            case SourceXY::GPS:
+                gps_required = true;
+                break;
+            case SourceXY::BEACON:
+                beacon_required = true;
+                break;
+            case SourceXY::EXTNAV:
+                visualodom_required = true;
+                break;
+            case SourceXY::OPTFLOW:
+            case SourceXY::WHEEL_ENCODER:
+            default:
+                // invalid posxy value
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSXY", (int)i+1);
+                return false;
+            }
 
-        // check velxy
-        switch ((SourceXY)_source_set[i].velxy.get()) {
-        case SourceXY::NONE:
-            break;
-        case SourceXY::GPS:
-            gps_required = true;
-            break;
-        case SourceXY::OPTFLOW:
-            optflow_required = true;
-            break;
-        case SourceXY::EXTNAV:
-            visualodom_required = true;
-            break;
-        case SourceXY::WHEEL_ENCODER:
-            wheelencoder_required = true;
-            break;
-        case SourceXY::BEACON:
-        default:
-            // invalid velxy value
-            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELXY", (int)i+1);
-            return false;
-        }
+            // check velxy
+            switch ((SourceXY)_source_set[i].velxy.get()) {
+            case SourceXY::NONE:
+                break;
+            case SourceXY::GPS:
+                gps_required = true;
+                break;
+            case SourceXY::OPTFLOW:
+                optflow_required = true;
+                break;
+            case SourceXY::EXTNAV:
+                visualodom_required = true;
+                break;
+            case SourceXY::WHEEL_ENCODER:
+                wheelencoder_required = true;
+                break;
+            case SourceXY::BEACON:
+            default:
+                // invalid velxy value
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELXY", (int)i+1);
+                return false;
+            }
 
-        // check posz
-        switch ((SourceZ)_source_set[i].posz.get()) {
-        case SourceZ::BARO:
-            baro_required = true;
-            break;
-        case SourceZ::RANGEFINDER:
-            rangefinder_required = true;
-            break;
-        case SourceZ::GPS:
-            gps_required = true;
-            break;
-        case SourceZ::BEACON:
-            beacon_required = true;
-            break;
-        case SourceZ::EXTNAV:
-            visualodom_required = true;
-            break;
-        case SourceZ::NONE:
-        default:
-            // invalid posz value
-            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
-            return false;
-        }
+            // check posz
+            switch ((SourceZ)_source_set[i].posz.get()) {
+            case SourceZ::BARO:
+                baro_required = true;
+                break;
+            case SourceZ::RANGEFINDER:
+                rangefinder_required = true;
+                break;
+            case SourceZ::GPS:
+                gps_required = true;
+                break;
+            case SourceZ::BEACON:
+                beacon_required = true;
+                break;
+            case SourceZ::EXTNAV:
+                visualodom_required = true;
+                break;
+            case SourceZ::NONE:
+            default:
+                // invalid posz value
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_POSZ", (int)i+1);
+                return false;
+            }
 
-        // check velz
-        switch ((SourceZ)_source_set[i].velz.get()) {
-        case SourceZ::NONE:
-            break;
-        case SourceZ::GPS:
-            gps_required = true;
-            break;
-        case SourceZ::EXTNAV:
-            visualodom_required = true;
-            break;
-        case SourceZ::BARO:
-        case SourceZ::RANGEFINDER:
-        case SourceZ::BEACON:
-        default:
-            // invalid velz value
-            hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
-            return false;
+            // check velz
+            switch ((SourceZ)_source_set[i].velz.get()) {
+            case SourceZ::NONE:
+                break;
+            case SourceZ::GPS:
+                gps_required = true;
+                break;
+            case SourceZ::EXTNAV:
+                visualodom_required = true;
+                break;
+            case SourceZ::BARO:
+            case SourceZ::RANGEFINDER:
+            case SourceZ::BEACON:
+            default:
+                // invalid velz value
+                hal.util->snprintf(failure_msg, failure_msg_len, "Check EK3_SRC%d_VELZ", (int)i+1);
+                return false;
+            }
         }
 
         // check yaw
