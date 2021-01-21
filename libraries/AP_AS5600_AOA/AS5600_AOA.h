@@ -1,9 +1,6 @@
 #include <cstdint>
-#include <AP_HAL_ChibiOS/I2CDevice.h>
+#include <AP_HAL/I2CDevice.h>
 #include <unistd.h>
-
-
-
 
 class AS_5600 {
 

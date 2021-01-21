@@ -16,8 +16,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_HAL_ChibiOS/I2CDevice.h>
-#include <AP_HAL_ChibiOS/I2CDevice.cpp>
 
 #include "AS5600_AOA.h"
 
