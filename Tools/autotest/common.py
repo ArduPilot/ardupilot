@@ -5026,7 +5026,8 @@ Also, ignores heartbeats not from our target system'''
         if reset_needed:
             self.reset_SITL_commandline()
 
-        self.clear_mission_using_mavproxy()
+        if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
 
         tee.close()
 
