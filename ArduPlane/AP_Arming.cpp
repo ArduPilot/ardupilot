@@ -153,14 +153,11 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
             check_failed(true, "Non-zero throttle");
             return false;
         }
+    }
 
-        // if not in a manual throttle mode and not in CRUISE or FBWB
-        // modes then disallow rudder arming/disarming
-        if (plane.control_mode->does_auto_throttle() &&
-            (plane.control_mode != &plane.mode_cruise && plane.control_mode != &plane.mode_fbwb)) {
-            check_failed(true, "Mode not rudder-armable");
-            return false;
-        }
+    if (!plane.control_mode->allows_arming()) {
+        check_failed(true, "Mode does not allow arming");
+        return false;
     }
 
     //are arming checks disabled?
