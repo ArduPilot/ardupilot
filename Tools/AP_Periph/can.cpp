@@ -210,7 +210,7 @@ static void handle_param_getset(CanardInstance* ins, CanardRxTransfer* transfer)
         strncpy((char *)name, (char *)req.name.data, req.name.len);
         vp = AP_Param::find((char *)name, &ptype);
     } else {
-        AP_Param::ParamToken token;
+        AP_Param::ParamToken token {};
         vp = AP_Param::find_by_index(req.index, &ptype, &token);
         if (vp != nullptr) {
             vp->copy_name_token(token, (char *)name, AP_MAX_NAME_SIZE+1, true);
