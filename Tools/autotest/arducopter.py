@@ -6289,7 +6289,8 @@ class AutoTestCopter(AutoTest):
 
             Test("GyroFFTHarmonic",
                  "Fly Gyro FFT Harmonic Matching",
-                 self.fly_gyro_fft_harmonic),
+                 self.fly_gyro_fft_harmonic,
+                 attempts=4),
 
             Test("CompassReordering",
                  "Test Compass reordering when priorities are changed",
