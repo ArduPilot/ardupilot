@@ -512,26 +512,6 @@ void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
               !statesInitialised<<7);
 }
 
-/*
-return filter timeout status as a bitmasked integer
- 0 = position measurement timeout
- 1 = velocity measurement timeout
- 2 = height measurement timeout
- 3 = magnetometer measurement timeout
- 4 = true airspeed measurement timeout
- 5 = unassigned
- 6 = unassigned
- 7 = unassigned
-*/
-void  NavEKF3_core::getFilterTimeouts(uint8_t &timeouts) const
-{
-    timeouts = (posTimeout<<0 |
-                velTimeout<<1 |
-                hgtTimeout<<2 |
-                magTimeout<<3 |
-                tasTimeout<<4);
-}
-
 // Return the navigation filter status message
 void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
 {

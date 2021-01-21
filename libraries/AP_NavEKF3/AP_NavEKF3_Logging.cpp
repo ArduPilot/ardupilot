@@ -138,13 +138,18 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tasVar = 0;
     uint16_t _faultStatus=0;
     Vector2f offset;
-    uint8_t timeoutStatus=0;
+    const uint8_t timeoutStatus =
+        posTimeout<<0 |
+        velTimeout<<1 |
+        hgtTimeout<<2 |
+        magTimeout<<3 |
+        tasTimeout<<4;
+
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
-    getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
     const struct log_NKF4 pkt4{
