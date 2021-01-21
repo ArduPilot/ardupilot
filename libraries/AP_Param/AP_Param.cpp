@@ -2389,7 +2389,7 @@ uint16_t AP_Param::count_parameters(void)
             _count_marker != _count_marker_done) &&
            limit--) {
         AP_Param  *vp;
-        AP_Param::ParamToken token;
+        AP_Param::ParamToken token {};
         uint16_t count = 0;
         uint16_t marker = _count_marker;
 
