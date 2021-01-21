@@ -175,15 +175,20 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     set_device_address(address);
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
+
     if (bus_clock < bus.busclock) {
+
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
+
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
         }
+
 #else
         bus.i2ccfg.clock_speed = bus_clock;
         bus.busclock = bus_clock;
+
         if (bus_clock <= 100000) {
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }

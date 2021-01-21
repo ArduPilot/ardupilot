@@ -30,7 +30,7 @@ private:
     uint16_t sf20_stream_val[NUM_SF20_DATA_STREAMS];
     int currentStreamSequenceIndex = 0;
 
-    // constructor
+    // constructor cole: declaration
     AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state,
                                 AP_RangeFinder_Params &_params,
                                 AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
