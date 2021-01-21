@@ -4793,6 +4793,18 @@ Also, ignores heartbeats not from our target system'''
     def wait_text(self, *args, **kwargs):
         self.wait_statustext(*args, **kwargs)
 
+    def statustext_in_collections(self, text, regex=False):
+        c = self.context_get()
+        if "STATUSTEXT" not in c.collections:
+            raise NotAchievedException("Asked to check context but it isn't collecting!")
+        for statustext in [x.text for x in c.collections["STATUSTEXT"]]:
+            if regex:
+                if re.match(text, statustext):
+                    return True
+            elif text.lower() in statustext.lower():
+                return True
+        return False
+
     def wait_statustext(self, text, timeout=20, the_function=None, check_context=False, regex=False):
         """Wait for a specific STATUSTEXT."""
 
@@ -4804,17 +4816,9 @@ Also, ignores heartbeats not from our target system'''
         # which checks all incoming messages.
         self.progress("Waiting for text : %s" % text.lower())
         if check_context:
-            c = self.context_get()
-            if "STATUSTEXT" not in c.collections:
-                raise NotAchievedException("Asked to check context but it isn't collecting!")
-            for statustext in [x.text for x in c.collections["STATUSTEXT"]]:
-                if regex:
-                    if re.match(text, statustext):
-                        self.progress("Found expected text in collection: %s" % text.lower())
-                        return
-                elif text.lower() in statustext.lower():
-                    self.progress("Found expected text in collection: %s" % text.lower())
-                    return
+            if self.statustext_in_collections(text, regex=regex):
+                self.progress("Found expected text in collection: %s" % text.lower())
+                return
 
         global statustext_found
         statustext_found = False
