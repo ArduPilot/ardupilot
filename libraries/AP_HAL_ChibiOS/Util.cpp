@@ -435,20 +435,54 @@ void Util::apply_persistent_params(void) const
     char *saveptr;
     s += strlen(persistent_header);
     uint32_t count = 0;
+    uint32_t errors = 0;
     for (char *p = strtok_r(s, "\n", &saveptr);
          p; p = strtok_r(nullptr, "\n", &saveptr)) {
         char *eq = strchr(p, int('='));
         if (eq) {
             *eq = 0;
-            if (AP_Param::set_default_by_name(p, atof(eq+1))) {
+            const char *pname = p;
+            const float value = atof(eq+1);
+            if (AP_Param::set_default_by_name(pname, value)) {
                 count++;
+                /*
+                  we now have a special case for INS_ACC*_ID. To
+                  support factory accelerometer calibration we need to
+                  do a save() on the ID parameters if they are not
+                  already in storage. This is needed as
+                  AP_InertialSensor determines if a calibration has
+                  been done by whether the IDs are configured in
+                  storage
+                 */
+                if (strncmp(pname, "INS_ACC", 7) == 0 &&
+                    strcmp(pname+strlen(pname)-3, "_ID") == 0) {
+                    enum ap_var_type ptype;
+                    AP_Int32 *ap = (AP_Int32 *)AP_Param::find(pname, &ptype);
+                    if (ap && ptype == AP_PARAM_INT32) {
+                        if (ap->get() != int32_t(value)) {
+                            // the accelerometer ID has changed since
+                            // this persistent data was saved. Stop
+                            // loading persistent parameters as it is
+                            // no longer valid for this board. This
+                            // can happen if the user has set
+                            // parameters to prevent loading of
+                            // specific IMU drivers, or if they have
+                            // setup an external IMU
+                            errors++;
+                            break;
+                        }
+                        if (!ap->configured_in_storage()) {
+                            ap->save();
+                        }
+                    }
+                }
             }
         }
     }
     if (count) {
         AP_Param::invalidate_count();
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Loaded %u persistent parameters",
-                      unsigned(count));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Loaded %u persistent parameters (%u errors)",
+                      unsigned(count), unsigned(errors));
     }
 }
 
