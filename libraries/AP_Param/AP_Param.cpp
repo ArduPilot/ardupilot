@@ -1215,6 +1215,10 @@ void AP_Param::save_io_handler(void)
     while (save_queue.pop(p)) {
         p.param->save_sync(p.force_save);
     }
+    if (hal.scheduler->is_system_initialized()) {
+        // pay the cost of parameter counting in the IO thread
+        count_parameters();
+    }
 }
 
 /*
@@ -1531,9 +1535,6 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
     struct Param_header phdr;
     uint16_t key;
 
-    // reset cached param counter as we may be loading a dynamic var_info
-    invalidate_count();
-    
     if (!find_key_by_pointer(object_pointer, key)) {
         hal.console->printf("ERROR: Unable to find param pointer\n");
         return;
@@ -1575,6 +1576,9 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
             ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
         }
     }
+
+    // reset cached param counter as we may be loading a dynamic var_info
+    invalidate_count();
 }
 
 
@@ -1600,13 +1604,14 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
 
 /// Returns the next variable in a group, recursing into groups
 /// as needed
-AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_info,
+AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *group_info,
                                bool *found_current,
-                               uint32_t group_base,
-                               uint8_t group_shift,
-                               ptrdiff_t group_offset,
+                               const uint32_t group_base,
+                               const uint8_t group_shift,
+                               const ptrdiff_t group_offset,
                                ParamToken *token,
-                               enum ap_var_type *ptype)
+                               enum ap_var_type *ptype,
+                               bool skip_disabled)
 {
     enum ap_var_type type;
     for (uint8_t i=0;
@@ -1629,7 +1634,7 @@ AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_in
             }
 
             ap = next_group(vindex, ginfo, found_current, group_id(group_info, group_base, i, group_shift),
-                            group_shift + _group_level_shift, new_offset, token, ptype);
+                            group_shift + _group_level_shift, new_offset, token, ptype, skip_disabled);
             if (ap != nullptr) {
                 return ap;
             }
@@ -1646,10 +1651,24 @@ AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_in
                 if (!get_base(_var_info[vindex], base)) {
                     continue;
                 }
-                return (AP_Param*)(base + group_info[i].offset + group_offset);
+
+                AP_Param *ret = (AP_Param*)(base + group_info[i].offset + group_offset);
+
+                if (skip_disabled &&
+                    _hide_disabled_groups &&
+                    group_info[i].type == AP_PARAM_INT8 &&
+                    (group_info[i].flags & AP_PARAM_FLAG_ENABLE) &&
+                    ((AP_Int8 *)ret)->get() == 0) {
+                    token->last_disabled = 1;
+                }
+                return ret;
             }
             if (group_id(group_info, group_base, i, group_shift) == token->group_element) {
                 *found_current = true;
+                if (token->last_disabled) {
+                    token->last_disabled = 0;
+                    return nullptr;
+                }
                 if (type == AP_PARAM_VECTOR3F && token->idx < 3) {
                     // return the next element of the vector as a
                     // float
@@ -1673,7 +1692,7 @@ AP_Param *AP_Param::next_group(uint16_t vindex, const struct GroupInfo *group_in
 
 /// Returns the next variable in _var_info, recursing into groups
 /// as needed
-AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
+AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype, bool skip_disabled)
 {
     uint16_t i = token->key;
     bool found_current = false;
@@ -1707,7 +1726,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype)
             if (group_info == nullptr) {
                 continue;
             }
-            AP_Param *ap = next_group(i, group_info, &found_current, 0, 0, 0, token, ptype);
+            AP_Param *ap = next_group(i, group_info, &found_current, 0, 0, 0, token, ptype, skip_disabled);
             if (ap != nullptr) {
                 return ap;
             }
@@ -1731,47 +1750,12 @@ AP_Param *AP_Param::next_scalar(ParamToken *token, enum ap_var_type *ptype)
 {
     AP_Param *ap;
     enum ap_var_type type;
-    while ((ap = next(token, &type)) != nullptr && type > AP_PARAM_FLOAT) ;
+    while ((ap = next(token, &type, true)) != nullptr && type > AP_PARAM_FLOAT) ;
 
-    if (ap != nullptr && type == AP_PARAM_INT8) {
-        /* 
-           check if this is an enable variable. To do that we need to
-           find the info structures for the variable
-         */
-        uint32_t group_element;
-        const struct GroupInfo *ginfo;
-        struct GroupNesting group_nesting {};
-        uint8_t idx;
-        const struct AP_Param::Info *info = ap->find_var_info_token(*token, &group_element,
-                                                                    ginfo, group_nesting, &idx);
-        if (info && ginfo &&
-            (ginfo->flags & AP_PARAM_FLAG_ENABLE) &&
-            ((AP_Int8 *)ap)->get() == 0 &&
-            _hide_disabled_groups) {
-            /*
-              this is a disabled parameter tree, include this
-              parameter but not others below it. We need to keep
-              looking until we go past the parameters in this object
-            */
-            ParamToken token2 = *token;
-            enum ap_var_type type2;
-            AP_Param *ap2;
-            while ((ap2 = next(&token2, &type2)) != nullptr) {
-                if (token2.key != token->key) {
-                    break;
-                }
-                if (group_nesting.level != 0 && (token->group_element & 0x3F) != (token2.group_element & 0x3F)) {
-                    break;
-                }
-                // update the returned token so the next() call goes from this point
-                *token = token2;
-            }
-            
+    if (ap != nullptr) {
+        if (ptype != nullptr) {
+            *ptype = type;
         }
-    }
-
-    if (ap != nullptr && ptype != nullptr) {
-        *ptype = type;
     }
     return ap;
 }
