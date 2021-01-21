@@ -24,6 +24,7 @@
 #include "SIM_I2C.h"
 
 #include "SIM_Airspeed_DLVR.h"
+#include "SIM_AS5600.h"
 #include "SIM_BattMonitor_SMBus_Generic.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
@@ -117,6 +118,9 @@ static INA3221 ina3221;
 #if AP_SIM_TERARANGERI2C_ENABLED
 static TeraRangerI2C terarangeri2c;
 #endif
+#if AP_SIM_AS5600_ENABLED
+static AS5600 as5600;  // AoA sensor
+#endif  // AP_SIM_AS5600_ENABLED
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -146,6 +150,9 @@ struct i2c_device_at_address {
 #endif
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
+#if AP_SIM_AS5600_ENABLED
+    { 1, 0x36, as5600 },
+#endif
     { 1, 0x40, ignored }, // KellerLD
 #if AP_SIM_MS5525_ENABLED
     { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
