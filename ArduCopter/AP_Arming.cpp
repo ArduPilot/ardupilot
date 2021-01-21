@@ -511,16 +511,16 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 // performs mandatory gps checks.  returns true if passed
 bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
 {
+    // check if flight mode requires GPS
+    bool mode_requires_gps = copter.flightmode->requires_GPS();
+
     // always check if inertial nav has started and is ready
     const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
     char failure_msg[50] = {};
-    if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
-
-    // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
 
     // check if fence requires GPS
     bool fence_requires_gps = false;
