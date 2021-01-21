@@ -51,7 +51,7 @@ function heading() {
 }
 
 # Install lsb-release as it is needed to check Ubuntu version
-if package_is_installed "lsb-release" -eq 1; then
+if ! package_is_installed "lsb-release"; then
     heading "Installing lsb-release"
     $APT_GET install lsb-release
     echo "Done!"
@@ -229,7 +229,7 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
 fi
 
 heading "Removing modemmanager package that could conflict with firmware uploading"
-if package_is_installed "modemmanager" -eq 1; then
+if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
 fi
 echo "Done!"
