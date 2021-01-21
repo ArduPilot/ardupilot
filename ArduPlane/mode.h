@@ -315,6 +315,8 @@ public:
     const char *name() const override { return "INITIALISING"; }
     const char *name4() const override { return "INIT"; }
 
+    bool _enter() override { return false; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
