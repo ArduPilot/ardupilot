@@ -63,6 +63,9 @@ public:
     // returns a string for this flightmode, exactly 4 bytes
     virtual const char *name4() const = 0;
 
+    // returns true if the vehicle can be armed in this mode
+    virtual bool allows_arming() const { return true; }
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -320,6 +323,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    bool allows_arming() const override { return false; }
+
     bool allows_throttle_nudging() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
@@ -488,6 +493,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool allows_arming() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -505,6 +512,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool allows_arming() const override { return false; }
 
 protected:
 
