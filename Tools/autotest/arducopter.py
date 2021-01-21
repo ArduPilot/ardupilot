@@ -6280,7 +6280,8 @@ class AutoTestCopter(AutoTest):
 
             Test("DynamicNotches",
                  "Fly Dynamic Notches",
-                 self.fly_dynamic_notches), 
+                 self.fly_dynamic_notches,
+                 attempts=4),
 
             Test("GyroFFT",
                  "Fly Gyro FFT",
