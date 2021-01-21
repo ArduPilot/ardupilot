@@ -3433,22 +3433,31 @@ class AutoTest(ABC):
         self.set_output_to_trim(self.get_stick_arming_channel())
         return False
 
-    def disarm_motors_with_rc_input(self, timeout=20):
+    def disarm_motors_with_rc_input(self, timeout=20, watch_for_disabled=False):
         """Disarm motors with radio."""
         self.progress("Disarm motors with radio")
+        self.do_timesync_roundtrip()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.set_output_to_min(self.get_stick_arming_channel())
         tstart = self.get_sim_time()
+        ret = False
         while self.get_sim_time_cached() < tstart + timeout:
             self.wait_heartbeat()
             if not self.mav.motors_armed():
                 disarm_delay = self.get_sim_time_cached() - tstart
-                self.progress("MOTORS DISARMED OK WITH RADIO")
-                self.set_output_to_trim(self.get_stick_arming_channel())
-                self.progress("Disarm in %ss" % disarm_delay)  # TODO check disarming time
-                return True
-        self.progress("Failed to DISARM with radio")
+                self.progress("MOTORS DISARMED OK WITH RADIO (in %ss)" % disarm_delay)
+                ret = True
+                break
+            if self.statustext_in_collections("Rudder disarm: disabled"):
+                self.progress("Found 'Rudder disarm: disabled' in statustext")
+                break
+            self.context_clear_collection('STATUSTEXT')
+        if not ret:
+            self.progress("Failed to DISARM with RC input")
         self.set_output_to_trim(self.get_stick_arming_channel())
-        return False
+        self.context_pop()
+        return ret
 
     def arm_motors_with_switch(self, switch_chan, timeout=20):
         """Arm motors with switch."""
@@ -6436,7 +6445,7 @@ Also, ignores heartbeats not from our target system'''
                     "Armed with rudder when ARMING_RUDDER=0")
             self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
             self.arm_vehicle()
-            if self.disarm_motors_with_rc_input():
+            if self.disarm_motors_with_rc_input(watch_for_disabled=True):
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
