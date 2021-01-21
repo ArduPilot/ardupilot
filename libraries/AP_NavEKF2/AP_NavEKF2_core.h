@@ -235,19 +235,6 @@ public:
     void  getFilterFaults(uint16_t &faults) const;
 
     /*
-    return filter timeout status as a bitmasked integer
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-     7 = unassigned
-    */
-    void  getFilterTimeouts(uint8_t &timeouts) const;
-
-    /*
     return filter gps quality check status
     */
     void  getFilterGpsStatus(nav_gps_status &status) const;

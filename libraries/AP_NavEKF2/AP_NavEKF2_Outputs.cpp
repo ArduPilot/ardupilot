@@ -465,15 +465,6 @@ return filter timeout status as a bitmasked integer
  6 = unassigned
  7 = unassigned
 */
-void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
-{
-    timeouts = (posTimeout<<0 |
-                velTimeout<<1 |
-                hgtTimeout<<2 |
-                magTimeout<<3 |
-                tasTimeout<<4);
-}
-
 // Return the navigation filter status message
 void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
 {
