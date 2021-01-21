@@ -164,7 +164,8 @@ public:
     virtual void update(bool skip_ins_update=false) = 0;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const = 0;
+    // requires_position should be true if horizontal position configuration should be checked
+    virtual bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const = 0;
 
     // check all cores providing consistent attitudes for prearm checks
     virtual bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const { return true; }
