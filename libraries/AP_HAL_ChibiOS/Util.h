@@ -75,6 +75,9 @@ public:
     // request information on dma contention
     void dma_info(ExpandingString &str) override;
 #endif
+#if CH_CFG_USE_HEAP == TRUE
+    void mem_info(ExpandingString &str) override;
+#endif
 
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // apply persistent parameters to current parameters
