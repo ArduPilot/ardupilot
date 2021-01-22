@@ -38,6 +38,7 @@
 #include <uavcan/equipment/range_sensor/Measurement.h>
 #include <uavcan/equipment/hardpoint/Command.h>
 #include <uavcan/equipment/esc/Status.h>
+#include <uavcan/equipment/safety/ArmingStatus.h>
 #include <ardupilot/indication/SafetyState.h>
 #include <ardupilot/indication/Button.h>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.h>
@@ -525,6 +526,19 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
 }
 #endif // HAL_GPIO_PIN_SAFE_LED
 
+/*
+  handle ArmingStatus
+ */
+static void handle_arming_status(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_equipment_safety_ArmingStatus req;
+    can_printf("looking to decode a status");
+    if (uavcan_equipment_safety_ArmingStatus_decode(transfer, transfer->payload_len, &req, nullptr) < 0) {
+        return;
+    }
+    hal.util->set_soft_armed(req.status == UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_STATUS_FULLY_ARMED);
+}
+
 #ifdef HAL_PERIPH_ENABLE_GPS
 /*
   handle gnss::RTCMStream
@@ -843,6 +857,10 @@ static void onTransferReceived(CanardInstance* ins,
         break;
 #endif
 
+    case UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_ID:
+        handle_arming_status(ins, transfer);
+        break;
+
 #ifdef HAL_PERIPH_ENABLE_GPS
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         handle_RTCMStream(ins, transfer);
@@ -923,6 +941,9 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
         *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
         return true;
 #endif
+    case UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_ID:
+        *out_data_type_signature = UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_SIGNATURE;
+        return true;
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
