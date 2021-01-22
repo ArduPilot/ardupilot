@@ -114,6 +114,9 @@ public:
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
 
+    // reset rate controller I terms smoothly to zero in 0.5 seconds
+    void reset_rate_controller_I_terms_smoothly();
+
     // Sets attitude target to vehicle attitude
     void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target_quat); }
 
@@ -316,6 +319,10 @@ public:
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     virtual void set_hover_roll_trim_scalar(float scalar) {}
+
+    // Return angle in centidegrees to be added to roll angle for hover collective learn. Used by heli to counteract
+    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
+    virtual float get_roll_trim_cd() { return 0;}
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};

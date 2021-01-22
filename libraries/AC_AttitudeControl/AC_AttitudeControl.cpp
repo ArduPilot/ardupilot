@@ -179,6 +179,14 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
     get_rate_yaw_pid().reset_I();
 }
 
+// reset rate controller I terms smoothly to zero in 0.5 seconds
+void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
+{
+    get_rate_roll_pid().reset_I_smoothly();
+    get_rate_pitch_pid().reset_I_smoothly();
+    get_rate_yaw_pid().reset_I_smoothly();
+}
+
 // The attitude controller works around the concept of the desired attitude, target attitude
 // and measured attitude. The desired attitude is the attitude input into the attitude controller
 // that expresses where the higher level code would like the aircraft to move to. The target attitude is moved
