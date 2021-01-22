@@ -123,6 +123,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_BattMonitor/LogStructure.h>
 
 #include <AP_AHRS/LogStructure.h>
+#include <AP_Camera/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -478,21 +479,6 @@ struct PACKED log_Radio {
     uint8_t remnoise;
     uint16_t rxerrors;
     uint16_t fixed;
-};
-
-struct PACKED log_Camera {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint32_t gps_time;
-    uint16_t gps_week;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  altitude;
-    int32_t  altitude_rel;
-    int32_t  altitude_gps;
-    int16_t  roll;
-    int16_t  pitch;
-    uint16_t yaw;
 };
 
 struct PACKED log_PID {
@@ -1057,20 +1043,6 @@ struct PACKED log_PSC {
 // @Field: PosX: Calculated beacon position, x-axis
 // @Field: PosY: Calculated beacon position, y-axis
 // @Field: PosZ: Calculated beacon position, z-axis
-
-// @LoggerMessage: CAM,TRIG
-// @Description: Camera shutter information
-// @Field: TimeUS: Time since system startup
-// @Field: GPSTime: milliseconds since start of GPS week
-// @Field: GPSWeek: weeks since 5 Jan 1980
-// @Field: Lat: current latitude
-// @Field: Lng: current longitude
-// @Field: Alt: current altitude
-// @Field: RelAlt: current altitude relative to home
-// @Field: GPSAlt: altitude as reported by GPS
-// @Field: Roll: current vehicle roll
-// @Field: Pitch: current vehicle pitch
-// @Field: Yaw: current vehicle yaw
 
 // @LoggerMessage: CESC
 // @Description: CAN ESC data
@@ -1748,10 +1720,7 @@ struct PACKED log_PSC {
       "MAVC", "QBBBHBBffffiifBB","TimeUS,TS,TC,Fr,Cmd,Cur,AC,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------" }, \
-    { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
-    { LOG_TRIGGER_MSG, sizeof(log_Camera), \
-      "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
+LOG_STRUCTURE_FROM_CAMERA \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBfB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hfp,Pri", "s#nPOPP----", "F-00B00----" }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
@@ -1905,7 +1874,7 @@ enum LogMessages : uint8_t {
     LOG_MAVLINK_COMMAND_MSG,
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
-    LOG_CAMERA_MSG,
+    LOG_IDS_FROM_CAMERA,
     LOG_TERRAIN_MSG,
     LOG_GPS_UBX1_MSG,
     LOG_GPS_UBX2_MSG,
@@ -1951,7 +1920,6 @@ enum LogMessages : uint8_t {
     LOG_MSG_SBPRAWH,
     LOG_MSG_SBPRAWM,
     LOG_MSG_SBPEVENT,
-    LOG_TRIGGER_MSG,
 
     LOG_RALLY_MSG,
     LOG_VISUALODOM_MSG,
