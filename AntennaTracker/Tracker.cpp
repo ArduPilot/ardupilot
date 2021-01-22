@@ -98,7 +98,7 @@ void Tracker::one_second_loop()
 void Tracker::ten_hz_logging_loop()
 {
     if (should_log(MASK_LOG_IMU)) {
-        logger.Write_IMU();
+        AP::ins().Write_IMU();
     }
     if (should_log(MASK_LOG_ATTITUDE)) {
         Log_Write_Attitude();
