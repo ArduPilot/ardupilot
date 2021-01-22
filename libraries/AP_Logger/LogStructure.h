@@ -129,6 +129,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Baro/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
+#include <AC_Avoidance/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -657,48 +658,6 @@ struct PACKED log_SRTL {
     float D;
 };
 
-struct PACKED log_OABendyRuler {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t type;
-    uint8_t active;
-    uint16_t target_yaw;
-    uint16_t yaw;
-    uint16_t target_pitch;
-    bool resist_chg;
-    float margin;
-    int32_t final_lat;
-    int32_t final_lng;
-    int32_t final_alt;
-    int32_t oa_lat;
-    int32_t oa_lng;
-    int32_t oa_alt;
-};
-
-struct PACKED log_OADijkstra {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t state;
-    uint8_t error_id;
-    uint8_t curr_point;
-    uint8_t tot_points;
-    int32_t final_lat;
-    int32_t final_lng;
-    int32_t oa_lat;
-    int32_t oa_lng;
-};
-
-struct PACKED log_SimpleAvoid {
-  LOG_PACKET_HEADER;
-  uint64_t time_us;
-  uint8_t state;
-  float desired_vel_x;
-  float desired_vel_y;
-  float modified_vel_x;
-  float modified_vel_y;
-  uint8_t backing_up;
-};
-
 struct PACKED log_DSTL {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -1032,35 +991,6 @@ struct PACKED log_PSCZ {
 // @Field: Id: character referenced by FMTU
 // @Field: Mult: numeric multiplier
 
-// @LoggerMessage: OABR
-// @Description: Object avoidance (Bendy Ruler) diagnostics
-// @Field: TimeUS: Time since system startup
-// @Field: Type: Type of BendyRuler currently active
-// @Field: Act: True if Bendy Ruler avoidance is being used
-// @Field: DYaw: Best yaw chosen to avoid obstacle
-// @Field: Yaw: Current vehicle yaw
-// @Field: DP: Desired pitch chosen to avoid obstacle
-// @Field: RChg: True if BendyRuler resisted changing bearing and continued in last calculated bearing
-// @Field: Mar: Margin from path to obstacle on best yaw chosen
-// @Field: DLt: Destination latitude
-// @Field: DLg: Destination longitude
-// @Field: DAlt: Desired alt above EKF Origin
-// @Field: OLt: Intermediate location chosen for avoidance
-// @Field: OLg: Intermediate location chosen for avoidance
-// @Field: OAlt: Intermediate alt chosen for avoidance above EKF origin
-
-// @LoggerMessage: OADJ
-// @Description: Object avoidance (Dijkstra) diagnostics
-// @Field: TimeUS: Time since system startup
-// @Field: State: Dijkstra avoidance library state
-// @Field: Err: Dijkstra library error condition
-// @Field: CurrPoint: Destination point in calculated path to destination
-// @Field: TotPoints: Number of points in path to destination
-// @Field: DLat: Destination latitude
-// @Field: DLng: Destination longitude
-// @Field: OALat: Object Avoidance chosen destination point latitude
-// @Field: OALng: Object Avoidance chosen destination point longitude
-
 // @LoggerMessage: OF
 // @Description: Optical flow sensor data
 // @Field: TimeUS: Time since system startup
@@ -1245,16 +1175,6 @@ struct PACKED log_PSCZ {
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
 
-// @LoggerMessage: SA
-// @Description: Simple Avoidance messages
-// @Field: TimeUS: Time since system startup
-// @Field: State: True if Simple Avoidance is active
-// @Field: DVelX: Desired velocity, X-Axis (Velocity before Avoidance)
-// @Field: DVelY: Desired velocity, Y-Axis (Velocity before Avoidance)
-// @Field: MVelX: Modified velocity, X-Axis (Velocity after Avoidance)
-// @Field: MVelY: Modified velocity, Y-Axis (Velocity after Avoidance)
-// @Field: Back: True if vehicle is backing away 
-
 // @LoggerMessage: TERR
 // @Description: Terrain database infomration
 // @Field: TimeUS: Time since system startup
@@ -1385,12 +1305,7 @@ LOG_STRUCTURE_FROM_CAMERA \
       "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
-    { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
-    { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
-      "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
-    { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
-      "SA",  "QBffffB","TimeUS,State,DVelX,DVelY,MVelX,MVelY,Back", "sbnnnnb", "F------"}, \
+LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
@@ -1558,9 +1473,7 @@ enum LogMessages : uint8_t {
     LOG_ERROR_MSG,
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_OA_BENDYRULER_MSG,
-    LOG_OA_DIJKSTRA_MSG,
-    LOG_SIMPLE_AVOID_MSG,
+    LOG_IDS_FROM_AVOIDANCE,
     LOG_WINCH_MSG,
     LOG_PSC_MSG,
     LOG_PSCZ_MSG,
