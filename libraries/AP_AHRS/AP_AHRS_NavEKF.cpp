@@ -2566,7 +2566,6 @@ bool AP_AHRS_NavEKF::yaw_alignment_complete(void) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
         // use EKF to get variance
-        Vector2f offset;
         return EKF3.yawAlignmentComplete();
     }
 #endif
