@@ -99,7 +99,7 @@ bool AP_HAL::Device::check_next_register(void)
     _checked.counter = 0;
 
     struct checkreg &reg = _checked.regs[_checked.next];
-    uint8_t v;
+    uint8_t v, v2;
 
     if (_bank_select) {
         if (!_bank_select(reg.bank)) {
@@ -113,7 +113,8 @@ bool AP_HAL::Device::check_next_register(void)
         }
     }
 
-    if (!read_registers(reg.regnum, &v, 1) || v != reg.value) {
+    if ((!read_registers(reg.regnum, &v, 1) || v != reg.value) &&
+        (!read_registers(reg.regnum, &v2, 1) || v2 != reg.value)) {
         // a register has changed value unexpectedly. Try changing it back
         // and re-check it next time
 #if 0
