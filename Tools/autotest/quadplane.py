@@ -528,10 +528,9 @@ class AutoTestQuadPlane(AutoTest):
             self.load_mission("quadplane-gyro-mission.txt")
             self.mavproxy.send('wp list\n')
             self.mavproxy.expect('Requesting [0-9]+ waypoints')
+            self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.mavproxy.send('mode AUTO\n')
-            self.wait_mode('AUTO')
             self.wait_waypoint(1, 7, max_dist=60, timeout=1200)
             self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
