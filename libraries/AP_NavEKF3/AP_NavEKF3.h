@@ -371,6 +371,9 @@ public:
     // parameter conversion
     void convert_parameters();
 
+    // EKF3 selected
+    bool isEnable(void) const { return _enable != 0; } 
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
