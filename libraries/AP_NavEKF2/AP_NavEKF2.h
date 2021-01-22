@@ -313,6 +313,9 @@ public:
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
+    // EKF2 selected
+    bool isEnable(void) const { return _enable != 0; } 
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
