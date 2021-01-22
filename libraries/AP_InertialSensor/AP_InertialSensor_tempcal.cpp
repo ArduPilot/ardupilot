@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @Units: degC
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("TMAX", 3, AP_InertialSensor::TCal, temp_max,  0),
+    AP_GROUPINFO("TMAX", 3, AP_InertialSensor::TCal, temp_max,  70),
 
     // @Param: ACC1_X
     // @DisplayName: Accelerometer 1st order temperature coefficient X axis
