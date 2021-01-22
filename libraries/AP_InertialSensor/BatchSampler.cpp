@@ -209,27 +209,18 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
             }
             break;
         }
-        if (!logger->Write_ISBH(isb_seqnum,
-                                       type,
-                                       instance,
-                                       multiplier,
-                                       _required_count,
-                                       measurement_started_us,
-                                       sample_rate)) {
+        if (!Write_ISBH(sample_rate)) {
             // buffer full?
             return;
         }
         isbh_sent = true;
     }
-    // pack and send a data packet:
-    if (!logger->Write_ISBD(isb_seqnum,
-                                   data_read_offset/samples_per_msg,
-                                   &data_x[data_read_offset],
-                                   &data_y[data_read_offset],
-                                   &data_z[data_read_offset])) {
+    // pack a nd send a data packet:
+    if (!Write_ISBD()) {
         // maybe later?!
         return;
     }
+
     data_read_offset += samples_per_msg;
     last_sent_ms = AP_HAL::millis();
     if (data_read_offset >= _required_count) {
