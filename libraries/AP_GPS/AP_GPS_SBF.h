@@ -68,11 +68,15 @@ private:
     uint32_t _init_blob_time;
     char *_initial_sso;
     const char* _sso_normal = ", PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod, msec100\n";
-    const char* _initialisation_blob[4] = {
+    static constexpr const char* _initialisation_blob[] = {
     "srd, Moderate, UAV\n",
     "sem, PVT, 5\n",
     "spm, Rover, all\n",
-    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n"};
+    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n",
+#if defined (GPS_SBF_EXTRA_CONFIG)
+    GPS_SBF_EXTRA_CONFIG
+#endif
+    };
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
@@ -239,4 +243,9 @@ private:
         INVALIDCONFIG = (1 << 10),  // set if one or more configuration file (permission or channel configuration) is invalid or absent.
         OUTOFGEOFENCE = (1 << 11),  // set if the receiver is currently out of its permitted region of operation (geo-fencing).
     };
+
+    static constexpr const char *portIdentifiers[] = { "COM", "USB", "IP1", "NTR", "IPS", "IPR" };
+    char portIdentifier[5];
+    uint8_t portLength;
+    bool readyForCommand;
 };
