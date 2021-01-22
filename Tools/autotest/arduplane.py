@@ -1000,6 +1000,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Got (%s)" % str(m))
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence not enabled after RC fail")
+        self.do_fence_disable() # Ensure the fence is disabled after test
 
     def test_gripper_mission(self):
         self.context_push()
