@@ -52,6 +52,7 @@ protected:
     bool gcs_failsafe_check(bool display_failure);
     bool winch_checks(bool display_failure) const;
     bool alt_checks(bool display_failure);
+    bool ekf_checks(bool display_failure);
 
     void set_pre_arm_check(bool b);
 

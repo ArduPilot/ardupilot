@@ -64,6 +64,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & gcs_failsafe_check(display_failure)
         & winch_checks(display_failure)
         & alt_checks(display_failure)
+        & ekf_checks(display_failure)
         & AP_Arming::pre_arm_checks(display_failure);
 }
 
@@ -615,6 +616,30 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
     if (!copter.flightmode->has_manual_throttle() && !copter.ekf_alt_ok()) {
         check_failed(display_failure, "Need Alt Estimate");
         return false;
+    }
+
+    return true;
+}
+
+/**
+ * ekf enable checks
+ * 
+ * @retval true passed
+ * @retval false failed
+ * @note If the CPU clock is FMUV6 class or higher, EKF2 and EKF3 can be used.<BR>
+ * ex: Cube Orange, Durandal
+ */
+bool AP_Arming_Copter::ekf_checks(bool display_failure)
+{
+    const AP_AHRS_NavEKF &ahrs = AP::ahrs_navekf();
+    if (ahrs.EKF2.isEnable() && ahrs.EKF2.isEnable()) {
+        check_failed(display_failure, "EKF2 and EKF3 is Enabled");
+        switch (AP_BoardConfig::get_board_type()) {
+        case AP_BoardConfig::PX4_BOARD_FMUV6:
+            return true;
+        default:
+            return false;
+        }
     }
 
     return true;
