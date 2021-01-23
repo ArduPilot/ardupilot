@@ -73,7 +73,9 @@
 #define STM32_FLASH_SIZE    KB(BOARD_FLASH_SIZE)
 
 // optionally disable interrupts during flash writes
+#ifndef STM32_FLASH_DISABLE_ISR
 #define STM32_FLASH_DISABLE_ISR 0
+#endif
 
 // the 2nd bank of flash needs to be handled differently
 #define STM32_FLASH_BANK2_START (STM32_FLASH_BASE+0x00080000)
@@ -448,23 +450,37 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
         // only allow 256 bit aligned writes
         return false;
     }
+
+#if STM32_FLASH_DISABLE_ISR
+    syssts_t sts = chSysGetStatusAndLockX();
+#endif
+
     stm32_flash_unlock();
     while (count >= 32) {
         if (memcmp((void*)addr, b, 32) != 0 &&
             !stm32h7_flash_write32(addr, b)) {
-            return false;
+            goto failed;
         }
         // check contents
         if (memcmp((void *)addr, b, 32) != 0) {
-            stm32_flash_lock();
-            return false;
+            goto failed;
         }
         addr += 32;
         count -= 32;
         b += 32;
     }
     stm32_flash_lock();
+#if STM32_FLASH_DISABLE_ISR
+    chSysRestoreStatusX(sts);
+#endif
     return true;
+
+failed:
+    stm32_flash_lock();
+#if STM32_FLASH_DISABLE_ISR
+    chSysRestoreStatusX(sts);
+#endif
+    return false;
 }
 
 #endif // STM32H7
