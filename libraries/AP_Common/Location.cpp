@@ -134,15 +134,15 @@ bool Location::get_spec_alt_cm(AltFrame current_frame, AltFrame desired_frame, i
     // check for terrain altitude
     float alt_terr_cm = 0;
     if (current_frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
-#if AP_TERRAIN_AVAILABLE
-        if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+    #if AP_TERRAIN_AVAILABLE
+            if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+                return false;
+            }
+            // convert terrain alt to cm
+            alt_terr_cm *= 100.0f;
+    #else
             return false;
-        }
-        // convert terrain alt to cm
-        alt_terr_cm *= 100.0f;
-#else
-        return false;
-#endif
+    #endif
     }
 
     // convert alt to absolute

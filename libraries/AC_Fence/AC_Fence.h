@@ -110,8 +110,9 @@ public:
     void manual_recovery_start();
 
     // Comments go here
-    bool conv_max_alt_frame(float _old_max_alt, int32_t &new_max_alt_cm);
-    void conv_max_alt_frame_new();
+    // bool conv_max_alt_frame(float _old_max_alt, int32_t &new_max_alt_cm);
+    bool conv_max_alt_frame(int newframe);
+    void change_max_alt(float newalt);
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
@@ -151,14 +152,14 @@ private:
     AP_Int8         _enabled;               // top level enable/disable control
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
+    AP_Float        _alt_max_ext;           // front facing max altitude
     AP_Float        _alt_max;               // altitude upper limit in meters
     AP_Float        _alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
-    AP_Int8         _alt_frame;
-    AP_Int8         _current_frame;             // frame the alt_max is currently in
-    AP_Int8         _cont_chk;              // allow check
+    AP_Int8         _alt_frame;             // 
+    AP_Int8         _current_frame;         // frame the alt_max is currently in
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away

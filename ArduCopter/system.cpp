@@ -13,7 +13,7 @@ static void failsafe_check_static()
     copter.failsafe_check();
 }
 
-bool validate_fence_frame(float newframe) // Get the proper type for this variable
+bool validate_fence_frame(float newframe) 
 {    
     switch ((int)newframe) {
         case 0:
@@ -33,7 +33,12 @@ bool validate_fence_frame(float newframe) // Get the proper type for this variab
             return false;
     }
 
-    AP::fence()->conv_max_alt_frame_new();
+    return AP::fence()->conv_max_alt_frame((int)newframe);
+}
+
+bool chg_max_alt(float newalt)
+{
+    AP::fence()->change_max_alt(newalt);
 
     return true;
 }
@@ -253,6 +258,12 @@ void Copter::init_ardupilot()
 
     ::fprintf(stderr, "Adding hook\n");
     if (!AP_Param::addhook("FENCE_ALT_FRAME", validate_fence_frame)) {
+        ::fprintf(stderr, "Add hook failed\n");
+    } else {
+        ::fprintf(stderr, "Added hook\n");
+    }
+    ::fprintf(stderr, "Adding hook\n");
+    if (!AP_Param::addhook("FENCE_ALT_MAX", chg_max_alt)) {
         ::fprintf(stderr, "Add hook failed\n");
     } else {
         ::fprintf(stderr, "Added hook\n");

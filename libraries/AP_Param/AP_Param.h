@@ -105,6 +105,7 @@
 
 // declare a group var_info line with a frame type mask
 #define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
+// #define AP_GROUPINFO_FRAME_SETHOOKS(name, idx, clazz, element, def, frame_flags) { AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT ), AP_PARAM_FLAG_SETHOOKS }
 
 // declare a group var_info line with both flags and frame type mask
 #define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
@@ -190,6 +191,7 @@ public:
     };
 
     struct ValidationHooks {
+        const char *name;
         const void *ptr;
         struct ValidationHooks *next;
         bool (*function)(float newvalue);
@@ -238,7 +240,7 @@ public:
     static bool initialised(void);
 
     static bool addhook(const char *name, bool (*function)(float newvalue));
-    bool check_value(float value) const;
+    bool check_value(float value, const char *name) const;
 
     // the 'group_id' of a element of a group is the 18 bit identifier
     // used to distinguish between this element of the group and other

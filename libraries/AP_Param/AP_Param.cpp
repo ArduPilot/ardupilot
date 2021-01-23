@@ -37,6 +37,7 @@
     #include <SITL/SITL.h>
 #endif
 #include <signal.h>
+#include <iostream>
 
 extern const AP_HAL::HAL &hal;
 
@@ -650,7 +651,8 @@ bool AP_Param::addhook(const char *name, bool (*function)(float newvalue))
         ::fprintf(stderr, "varinfo is nullptr for %s\n", name);
         return false;
     }
-    if (!(parameter_flags)) {  // if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
+    // if (!(parameter_flags)) {  // if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
+    if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
         ::fprintf(stderr, "parameter (%s) not declared as having hooks\n", name);
         return false;
     }
@@ -661,6 +663,7 @@ bool AP_Param::addhook(const char *name, bool (*function)(float newvalue))
         ::fprintf(stderr, "allocation failed for for %s\n", name);
         return false;
     }
+    validation_hooks->name = name;
     validation_hooks->next = old;
     validation_hooks->ptr = param->_var_info->ptr;
     validation_hooks->function = function;
@@ -1994,17 +1997,20 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     return true;
 }
 
-bool AP_Param::check_value(float value) const
+bool AP_Param::check_value(float value, const char *name) const
 {
     ::fprintf(stderr, "check_value\n");
+
     for (ValidationHooks *foo = validation_hooks; foo != nullptr; foo = foo->next) {
-        if (foo->ptr != _var_info->ptr) {
-            ::fprintf(stderr, "not my param\n");
-            continue;
-        }
-        if (!foo->function((float)value)) {
-            ::fprintf(stderr, "function says no\n");
-            return false;
+        if (std::string(foo->name) == std::string(name)) {    
+            if (foo->ptr != _var_info->ptr) {
+                ::fprintf(stderr, "not my param\n");
+                continue;
+            }
+            if (!foo->function((float)value)) {
+                ::fprintf(stderr, "function says no\n");
+                return false;
+            }
         }
     }
     return true;
