@@ -311,6 +311,10 @@ private:
     */
     float wind_pressure_correction(uint8_t instance);
 #endif
+
+    // Logging function
+    void Write_Baro(void);
+    void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     
 };
 
