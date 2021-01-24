@@ -74,30 +74,34 @@ void AP_InertialSensor_SITL::generate_accel()
 
     for (uint8_t j = 0; j < nsamples; j++) {
 
-        float xAccel = sitl->state.xAccel;
-        float yAccel = sitl->state.yAccel;
-        float zAccel = sitl->state.zAccel;
+        Vector3f accel = Vector3f(sitl->state.xAccel,
+                                  sitl->state.yAccel,
+                                  sitl->state.zAccel);
+
+        const Vector3f &accel_trim = sitl->accel_trim.get();
+        if (!accel_trim.is_zero()) {
+            Matrix3f trim_rotation;
+            trim_rotation.from_euler(accel_trim.x, accel_trim.y, 0);
+            accel = trim_rotation.transposed() * accel;
+        }
 
         // add scaling
         Vector3f accel_scale = sitl->accel_scale[accel_instance].get();
         // note that we divide so the SIM_ACC values match the
         // INS_ACCSCAL values
         if (!is_zero(accel_scale.x)) {
-            xAccel /= accel_scale.x;
+            accel.x /= accel_scale.x;
         }
         if (!is_zero(accel_scale.y)) {
-            yAccel /= accel_scale.y;
+            accel.y /= accel_scale.y;
         }
         if (!is_zero(accel_scale.z)) {
-            zAccel /= accel_scale.z;
+            accel.z /= accel_scale.z;
         }
 
         // apply bias
         const Vector3f &accel_bias = sitl->accel_bias[accel_instance].get();
-        xAccel += accel_bias.x;
-        yAccel += accel_bias.y;
-        zAccel += accel_bias.z;
-
+        accel += accel_bias;
 
         // minimum noise levels are 2 bits, but averaged over many
         // samples, giving around 0.01 m/s/s
@@ -105,10 +109,9 @@ void AP_InertialSensor_SITL::generate_accel()
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
+
         // add in sensor noise
-        xAccel += accel_noise * rand_float();
-        yAccel += accel_noise * rand_float();
-        zAccel += accel_noise * rand_float();
+        accel += Vector3f(rand_float(), rand_float(), rand_float()) * accel_noise;
 
         bool motors_on = sitl->throttle > sitl->ins_noise_throttle_min;
 
@@ -122,17 +125,10 @@ void AP_InertialSensor_SITL::generate_accel()
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = sitl->vibe_freq;
 
-        if (vibe_freq.is_zero() && is_zero(sitl->vibe_motor)) {
-            // no rpm noise, so add in background noise if any
-            xAccel += accel_noise * rand_float();
-            yAccel += accel_noise * rand_float();
-            zAccel += accel_noise * rand_float();
-        }
-
         if (!vibe_freq.is_zero() && motors_on) {
-            xAccel += sinf(accel_time * 2 * M_PI * vibe_freq.x) * calculate_noise(accel_noise, noise_variation);
-            yAccel += sinf(accel_time * 2 * M_PI * vibe_freq.y) * calculate_noise(accel_noise, noise_variation);
-            zAccel += sinf(accel_time * 2 * M_PI * vibe_freq.z) * calculate_noise(accel_noise, noise_variation);
+            accel.x += sinf(accel_time * 2 * M_PI * vibe_freq.x) * calculate_noise(accel_noise, noise_variation);
+            accel.y += sinf(accel_time * 2 * M_PI * vibe_freq.y) * calculate_noise(accel_noise, noise_variation);
+            accel.z += sinf(accel_time * 2 * M_PI * vibe_freq.z) * calculate_noise(accel_noise, noise_variation);
             accel_time += 1.0f / (accel_sample_hz * nsamples);
         }
 
@@ -149,9 +145,9 @@ void AP_InertialSensor_SITL::generate_accel()
                 else if (phase_incr < -M_PI) {
                     phase += 2 * M_PI;
                 }
-                xAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
-                yAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
-                zAccel += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                accel.x += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                accel.y += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                accel.z += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
             }
         }
 
@@ -170,16 +166,14 @@ void AP_InertialSensor_SITL::generate_accel()
             Vector3f centripetal_accel = angular_rate % (angular_rate % pos_offset);
 
             // apply corrections
-            xAccel += lever_arm_accel.x + centripetal_accel.x;
-            yAccel += lever_arm_accel.y + centripetal_accel.y;
-            zAccel += lever_arm_accel.z + centripetal_accel.z;
+            accel.x += lever_arm_accel.x + centripetal_accel.x;
+            accel.y += lever_arm_accel.y + centripetal_accel.y;
+            accel.z += lever_arm_accel.z + centripetal_accel.z;
         }
 
         if (fabsf(sitl->accel_fail[accel_instance]) > 1.0e-6f) {
-            xAccel = yAccel = zAccel = sitl->accel_fail[accel_instance];
+            accel.x = accel.y = accel.z = sitl->accel_fail[accel_instance];
         }
-
-        Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
 
         sitl->imu_tcal[gyro_instance].sitl_apply_accel(T, accel);
 
