@@ -1214,8 +1214,6 @@ bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
         return false;
     }
 
-    _calibrating_accel = true;
-
     const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_loop_rate_hz()+0.5f);
 
     // wait 100ms for ins filter to rise
@@ -1246,11 +1244,9 @@ bool AP_InertialSensor::calibrate_trim(float &trim_roll, float &trim_pitch)
         goto failed;
     }
 
-    _calibrating_accel = false;
     return true;
 
 failed:
-    _calibrating_accel = false;
     return false;
 }
 
