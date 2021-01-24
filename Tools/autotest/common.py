@@ -8192,10 +8192,13 @@ switch value'''
                     Vector3(-2.1, 1.9, 2.3)]
             ascale = [Vector3(0.98, 1.12, 1.05),
                       Vector3(1.11, 0.98, 0.96)]
+            atrim = Vector3(0.05, -0.03, 0)
+            pre_atrim = Vector3(-0.02, 0.04, 0)
             param_map = [("INS_ACCOFFS",  "SIM_ACC1_BIAS", pre_aofs[0], aofs[0]),
                          ("INS_ACC2OFFS", "SIM_ACC2_BIAS", pre_aofs[1], aofs[1]),
                          ("INS_ACCSCAL",  "SIM_ACC1_SCAL", pre_ascale[0], ascale[0]),
-                         ("INS_ACC2SCAL", "SIM_ACC2_SCAL", pre_ascale[1], ascale[1])]
+                         ("INS_ACC2SCAL", "SIM_ACC2_SCAL", pre_ascale[1], ascale[1]),
+                         ("AHRS_TRIM",    "SIM_ACC_TRIM", pre_atrim, atrim)]
             axes = ['X','Y','Z']
 
             # form the pre-calibration params
@@ -8229,15 +8232,19 @@ switch value'''
             self.drain_mav()
 
             self.progress("Checking results")
-            accuracy_pct = 1.0
+            accuracy_pct = 0.2
             for (ins_prefix, sim_prefix, pre_value, post_value) in param_map:
                 for axis in axes:
                     pname = ins_prefix+"_"+axis
                     v = self.mav.param(pname)
                     expected_v = getattr(post_value,axis.lower())
+                    if v == expected_v:
+                        continue
                     error_pct = 100.0 * abs(v - expected_v) / abs(expected_v)
                     if error_pct > accuracy_pct:
-                        raise NotAchievedException("Incorrect value %.4f for %s should be %.4f" % (v, pname, expected_v))
+                        raise NotAchievedException("Incorrect value %.6f for %s should be %.6f error %.2f%%" % (v, pname, expected_v, error_pct))
+                    else:
+                        self.progress("Correct value %.4f for %s error %.2f%%" % (v, pname, error_pct))
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
@@ -8247,6 +8254,51 @@ switch value'''
         self.mavproxy_unload_module("sitl_calibration")
         if ex is not None:
             raise ex
+
+    def ahrstrim(self):
+        # setup with non-zero accel offsets
+        self.set_parameters({
+            "INS_ACCOFFS_X" : 0.7,
+            "INS_ACCOFFS_Y" : -0.3,
+            "INS_ACCOFFS_Z" : 1.8,
+            "INS_ACC2OFFS_X" : -2.1,
+            "INS_ACC2OFFS_Y" : 1.9,
+            "INS_ACC2OFFS_Z" : 2.3,
+            "SIM_ACC1_BIAS_X" : 0.7,
+            "SIM_ACC1_BIAS_Y" : -0.3,
+            "SIM_ACC1_BIAS_Z" : 1.8,
+            "SIM_ACC2_BIAS_X" : -2.1,
+            "SIM_ACC2_BIAS_Y" : 1.9,
+            "SIM_ACC2_BIAS_Z" : 2.3,
+            "AHRS_TRIM_X"    : 0.05,
+            "AHRS_TRIM_Y"    : -0.03,
+            "SIM_ACC_TRIM_X" : -0.04,
+            "SIM_ACC_TRIM_Y" : 0.05,
+            })
+        expected_parms = {
+            "AHRS_TRIM_X" : -0.04,
+            "AHRS_TRIM_Y" : 0.05,
+        }
+
+        self.progress("Starting ahrstrim")
+        self.drain_mav()
+        self.mav.mav.command_long_send(self.sysid_thismav(), 1,
+                                       mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
+                                       0, 0, 0, 0, 2, 0, 0)
+        self.wait_statustext('Trim OK')
+        self.fetch_parameters()
+        self.drain_mav()
+
+        self.progress("Checking results")
+        accuracy_pct = 0.2
+        for (pname, expected_v) in expected_parms.items():
+            v = self.get_parameter(pname)
+            if v == expected_v:
+                continue
+            error_pct = 100.0 * abs(v - expected_v) / abs(expected_v)
+            if error_pct > accuracy_pct:
+                raise NotAchievedException("Incorrect value %.6f for %s should be %.6f error %.2f%%" % (v, pname, expected_v, error_pct))
+            self.progress("Correct value %.4f for %s error %.2f%%" % (v, pname, error_pct))
 
     def test_button(self):
         self.set_parameter("SIM_PIN_MASK", 0)
