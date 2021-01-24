@@ -56,6 +56,7 @@ void Copter::userhook_init()
 	camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 
 
+	/*
 	roi_1.lng = g.roi_1_long;
 	roi_1.lat = g.roi_1_lat;
 	roi_1.set_alt_cm(0, Location::AltFrame::ABOVE_TERRAIN);
@@ -74,12 +75,14 @@ AP_Mission::Mission_Command cmd_roi;
 	  roi_1.lng,
 	  roi_1.alt,
       Location::AltFrame::ABOVE_TERRAIN
+
+
   };
 
 
   copter.mode_auto.mission.add_cmd(cmd_roi);
 
-
+*/
 
 	//GPIOs for on/off to payload and critical systems
 
@@ -91,7 +94,6 @@ AP_Mission::Mission_Command cmd_roi;
 
 	//Spool up support
 	timer_trigger = false;
-
 
 
 	//Set starting RPM if the number of vehicle batteries is set
@@ -647,12 +649,11 @@ void Copter::Detect_Buttons(){
 
 void Copter::Decode_Buttons(){
 
+	bool camera_type = g.camera_type;
 
 	if(short_press_flag_ch7){
 
-		//CODE TO TURN ON/OFF CAMERA
-
-
+		camera_mount.toggle_record(camera_type);
 
 		short_press_flag_ch7 = false;
 
@@ -660,7 +661,8 @@ void Copter::Decode_Buttons(){
 
 		if(long_press_flag_ch7){
 
-			//CODE TO CHANGE CAMERA MODE
+			camera_mount.toggle_camera_state(camera_type);
+
 			long_press_flag_ch7 = false;
 		}
 
@@ -669,21 +671,18 @@ void Copter::Decode_Buttons(){
 
 	if(short_press_flag_ch9){
 
-				short_press_flag_ch9 = false;
-				//camera_mount.set_roi_target(roi_1);
-				//AP_Notify::events.user_mode_change = 1;
-				//camera_mount.enable_follow(true);
 
-		}else{
+		camera_mount.toggle_PIP();
+		short_press_flag_ch9 = false;
 
-			//camera_mount.enable_follow(false);
 		}
 
 
 
 		if(long_press_flag_ch9){
 
-				long_press_flag_ch9 = false;
+			camera_mount.toggle_tracking();
+			long_press_flag_ch9 = false;
 
 
 		}

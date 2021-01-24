@@ -82,10 +82,18 @@ public:
 
     virtual void enable_RC_control(bool en);
 
+    virtual void toggle_record(bool type);
+
+	 virtual void toggle_camera_state(bool type);
+
+
+	 virtual void toggle_tracking();
 
 	virtual void enable_follow(bool en);
 
 	virtual void set_camera_point_ROI(float yaw);
+
+	virtual void toggle_PIP();
 
 
     float _lat, _long, _roi_pan;
@@ -133,8 +141,22 @@ protected:
     bool _RC_control_enable;
 
     bool is_recording;
+    bool is_tracking;
     bool is_video_mode;
     bool is_connected;
+
+
+    struct command_flags {
+    	bool change_state;
+    	bool take_picture;
+    	bool center_yaw;
+    	bool toggle_video;
+    	bool toggle_video_tracking;
+    	bool toggle_tracking;
+    	bool toggle_tracking_video_state;
+    	bool toggle_pip;
+    	bool toggle_track;
+    	}  command_flags;
 
 
 

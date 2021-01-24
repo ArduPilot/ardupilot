@@ -382,7 +382,8 @@ public:
 		k_param_roi_1_long,
 		k_param_roi_1_lat,
 		k_param_roi_2_long,
-		k_param_roi_2_lat
+		k_param_roi_2_lat,
+		k_param_camera_type,
 
 
 
@@ -492,6 +493,7 @@ public:
 	 AP_Int32			roi_1_lat;
 	 AP_Int32			roi_2_long;
 	 AP_Int32			roi_2_lat;
+	 AP_Int8			camera_type;
 
 
 

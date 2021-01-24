@@ -556,6 +556,15 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(roi_2_lat,  "SPIRIT_ROI_2_LAT",    0),
 
 
+    // @Param: SPIRIT_TOP_CAM
+    // @DisplayName:
+    // @Description:
+    // @Values:
+    // @Range:
+    // @User:
+    GSCALAR(camera_type,  "SPIRIT_CAM_TYPE",    0),
+
+
 
 
 

@@ -120,11 +120,22 @@ public:
     void enable_RC_control(uint8_t instance, bool en);
     void enable_RC_control(bool en) { enable_RC_control(_primary, en); }
 
-    void enable_camera(uint8_t instance);
-    void enable_camera() { enable_camera(_primary); }
+    void toggle_record(uint8_t instance, bool type);
+    void toggle_record(bool type) { toggle_record(_primary, type); }
+
+
+    void toggle_camera_state(uint8_t instance, bool type);
+    void toggle_camera_state(bool type) { toggle_camera_state(_primary, type); }
+
 
     void set_camera_point_ROI(uint8_t instance, float yaw);
     void set_camera_point_ROI(float yaw) { set_camera_point_ROI(_primary, yaw); }
+
+    void toggle_tracking(uint8_t instance);
+    void toggle_tracking() { toggle_tracking(_primary); }
+
+    void toggle_PIP(uint8_t instance);
+    void toggle_PIP() { toggle_PIP(_primary); }
 
 
     void enable_follow(uint8_t instance, bool en);

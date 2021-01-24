@@ -38,7 +38,7 @@ public:
 
    void set_init_cmd();
 
-   void ctrl_camera();
+   void toggle_camera();
 
    void reset_camera();
 
@@ -213,6 +213,58 @@ private:
     };
 
 
+    struct PACKED cmd_48_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+        uint8_t byte7;
+        uint8_t byte8;
+        uint8_t byte9;
+        uint8_t byte10;
+        uint8_t byte11;
+        uint8_t byte12;
+        uint8_t byte13;
+        uint8_t byte14;
+        uint8_t byte15;
+        uint8_t byte16;
+        uint8_t byte17;
+        uint8_t byte18;
+        uint8_t byte19;
+        uint8_t byte20;
+        uint8_t byte21;
+        uint8_t byte22;
+        uint8_t byte23;
+        uint8_t byte24;
+        uint8_t byte25;
+        uint8_t byte26;
+        uint8_t byte27;
+        uint8_t byte28;
+        uint8_t byte29;
+        uint8_t byte30;
+        uint8_t byte31;
+        uint8_t byte32;
+        uint8_t byte33;
+        uint8_t byte34;
+        uint8_t byte35;
+        uint8_t byte36;
+        uint8_t byte37;
+        uint8_t byte38;
+        uint8_t byte39;
+        uint8_t byte40;
+        uint8_t byte41;
+        uint8_t byte42;
+		uint8_t byte43;
+		uint8_t byte44;
+		uint8_t byte45;
+		uint8_t byte46;
+		uint8_t byte47;
+		uint8_t byte48;
+    };
+
+
 
 enum zoom_state{
 	ZOOM_IN,
@@ -229,15 +281,7 @@ struct query_flags {
     }  query_flags;
 
 
-struct command_flags {
-	bool change_state;
-	bool take_picture;
-	bool center_yaw;
-	bool toggle_video;
-	bool toggle_pip;
-	bool toggle_track;
-	}  command_flags;
-
+    uint8_t pip_state;
 	bool is_recording;
 	bool state_is_video;
 

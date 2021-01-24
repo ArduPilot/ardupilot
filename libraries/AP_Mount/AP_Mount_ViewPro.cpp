@@ -31,6 +31,11 @@ void AP_Mount_ViewPro::init()
 
     }
 
+    is_recording = false;
+    is_tracking = false;
+    pip_state = 0;
+    state_is_video = true;
+
 }
 
 // update mount position - should be called periodically
@@ -117,7 +122,7 @@ void AP_Mount_ViewPro::update()
     	hal.console->print("\n");
 
     }
-    */
+*/
 
 
     if(get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
@@ -222,6 +227,81 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 	    return;
 
 
+	}else if(command_flags.toggle_tracking_video_state){
+
+		static cmd_48_byte_struct cmd_toggle_tracking_video_state;
+
+		cmd_toggle_tracking_video_state.byte1 = 0x7E;
+		cmd_toggle_tracking_video_state.byte2 = 0x7E;
+		cmd_toggle_tracking_video_state.byte3 = 0x44;
+		cmd_toggle_tracking_video_state.byte4 = 0x00;
+		cmd_toggle_tracking_video_state.byte5 = 0x00;
+		cmd_toggle_tracking_video_state.byte6 = 0x7C;
+		cmd_toggle_tracking_video_state.byte7 = 0x00;
+		cmd_toggle_tracking_video_state.byte8 = 0x00;
+		cmd_toggle_tracking_video_state.byte9 = 0x00;
+		cmd_toggle_tracking_video_state.byte10 = 0x00;
+		cmd_toggle_tracking_video_state.byte11 = 0x00;
+		cmd_toggle_tracking_video_state.byte12 = 0x00;
+		cmd_toggle_tracking_video_state.byte13 = 0x00;
+		cmd_toggle_tracking_video_state.byte14 = 0x00;
+		cmd_toggle_tracking_video_state.byte15 = 0x00;
+		cmd_toggle_tracking_video_state.byte16 = 0x00;
+		cmd_toggle_tracking_video_state.byte17 = 0x00;
+		cmd_toggle_tracking_video_state.byte18 = 0x00;
+		cmd_toggle_tracking_video_state.byte19 = 0x00;
+		cmd_toggle_tracking_video_state.byte20 = 0x00;
+		cmd_toggle_tracking_video_state.byte21 = 0x00;
+		cmd_toggle_tracking_video_state.byte22 = 0x00;
+		cmd_toggle_tracking_video_state.byte23 = 0x00;
+		cmd_toggle_tracking_video_state.byte24 = 0x00;
+		cmd_toggle_tracking_video_state.byte25 = 0x00;
+		cmd_toggle_tracking_video_state.byte26 = 0x00;
+		cmd_toggle_tracking_video_state.byte27 = 0x00;
+		cmd_toggle_tracking_video_state.byte28 = 0x00;
+		cmd_toggle_tracking_video_state.byte29 = 0x00;
+		cmd_toggle_tracking_video_state.byte30 = 0x00;
+		cmd_toggle_tracking_video_state.byte31 = 0x00;
+		cmd_toggle_tracking_video_state.byte32 = 0x00;
+		cmd_toggle_tracking_video_state.byte33 = 0x00;
+		cmd_toggle_tracking_video_state.byte34 = 0x00;
+		cmd_toggle_tracking_video_state.byte35 = 0x00;
+		cmd_toggle_tracking_video_state.byte36 = 0x00;
+		cmd_toggle_tracking_video_state.byte37 = 0x00;
+		cmd_toggle_tracking_video_state.byte38 = 0x00;
+		cmd_toggle_tracking_video_state.byte39 = 0x00;
+		cmd_toggle_tracking_video_state.byte40 = 0x00;
+		cmd_toggle_tracking_video_state.byte41 = 0x00;
+		cmd_toggle_tracking_video_state.byte42 = 0x00;
+		cmd_toggle_tracking_video_state.byte43 = 0x00;
+		cmd_toggle_tracking_video_state.byte44 = 0x00;
+		cmd_toggle_tracking_video_state.byte45 = 0x00;
+		cmd_toggle_tracking_video_state.byte46 = 0x00;
+		cmd_toggle_tracking_video_state.byte47 = 0x00;
+		cmd_toggle_tracking_video_state.byte48 = 0x00;
+
+
+			uint8_t* buf_take_picture = (uint8_t*)&cmd_toggle_tracking_video_state;
+			uint16_t sum_take_picture = 0;
+
+			for (uint8_t i = 0;  i < 47 ; i++) {
+				sum_take_picture += buf_take_picture[i];
+			}
+
+			cmd_toggle_tracking_video_state.byte48 = (uint8_t)(sum_take_picture % 256);
+
+			if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_video_state)) {
+				return;
+			}
+
+			for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_video_state) ; i++) {
+				_port->write(buf_take_picture[i]);
+			}
+
+		command_flags.toggle_tracking_video_state = false;
+		return;
+
+
 	}else if(command_flags.center_yaw){
 
 		static	cmd_6_byte_struct center_yaw;
@@ -274,7 +354,287 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 	    return;
 
+	} else if(command_flags.toggle_video_tracking){
+
+
+		static cmd_48_byte_struct cmd_toggle_tracking_video_on_off;
+
+			cmd_toggle_tracking_video_on_off.byte1 = 0x7E;
+			cmd_toggle_tracking_video_on_off.byte2 = 0x7E;
+			cmd_toggle_tracking_video_on_off.byte3 = 0x44;
+			cmd_toggle_tracking_video_on_off.byte4 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte5 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte6 = 0x7C;
+			cmd_toggle_tracking_video_on_off.byte7 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte8 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte9 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte10 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte11 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte12 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte13 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte14 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte15 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte16 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte17 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte18 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte19 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte20 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte21 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte22 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte23 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte24 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte25 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte26 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte27 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte28 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte29 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte30 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte31 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte32 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte33 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte34 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte35 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte36 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte37 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte38 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte39 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte40 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte41 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte42 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte43 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte44 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte45 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte46 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte47 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte48 = 0x00;
+
+
+			if(is_recording){
+				cmd_toggle_tracking_video_on_off.byte7 = 0x04;
+				is_recording = false;
+			}else{
+				cmd_toggle_tracking_video_on_off.byte7 = 0x05;
+				is_recording = true;
+			}
+
+
+			uint8_t* buf_tracking_video_control = (uint8_t*)&cmd_toggle_tracking_video_on_off;
+			uint16_t sum_tracking_video_control = 0;
+
+			for (uint8_t i = 0;  i < 47 ; i++) {
+				sum_tracking_video_control += buf_tracking_video_control[i];
+			}
+
+			cmd_toggle_tracking_video_on_off.byte48 = (uint8_t)(sum_tracking_video_control % 256);
+
+			if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_video_on_off)) {
+				return;
+			}
+
+			for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_video_on_off) ; i++) {
+				_port->write(buf_tracking_video_control[i]);
+			}
+
+		command_flags.toggle_video_tracking = false;
+
+		return;
+
+	}else if(command_flags.toggle_tracking){
+
+
+		static cmd_48_byte_struct cmd_toggle_tracking_on_off;
+
+		cmd_toggle_tracking_on_off.byte1 = 0x7E;
+		cmd_toggle_tracking_on_off.byte2 = 0x7E;
+		cmd_toggle_tracking_on_off.byte3 = 0x44;
+		cmd_toggle_tracking_on_off.byte4 = 0x00;
+		cmd_toggle_tracking_on_off.byte5 = 0x00;
+		cmd_toggle_tracking_on_off.byte6 = 0x00;
+		cmd_toggle_tracking_on_off.byte7 = 0x00;
+		cmd_toggle_tracking_on_off.byte8 = 0x00;
+		cmd_toggle_tracking_on_off.byte9 = 0x00;
+		cmd_toggle_tracking_on_off.byte10 = 0x00;
+		cmd_toggle_tracking_on_off.byte11 = 0x00;
+		cmd_toggle_tracking_on_off.byte12 = 0x00;
+		cmd_toggle_tracking_on_off.byte13 = 0x00;
+		cmd_toggle_tracking_on_off.byte14 = 0x00;
+		cmd_toggle_tracking_on_off.byte15 = 0x00;
+		cmd_toggle_tracking_on_off.byte16 = 0x00;
+		cmd_toggle_tracking_on_off.byte17 = 0x00;
+		cmd_toggle_tracking_on_off.byte18 = 0x00;
+		cmd_toggle_tracking_on_off.byte19 = 0x00;
+		cmd_toggle_tracking_on_off.byte20 = 0x00;
+		cmd_toggle_tracking_on_off.byte21 = 0x00;
+		cmd_toggle_tracking_on_off.byte22 = 0x00;
+		cmd_toggle_tracking_on_off.byte23 = 0x00;
+		cmd_toggle_tracking_on_off.byte24 = 0x00;
+		cmd_toggle_tracking_on_off.byte25 = 0x00;
+		cmd_toggle_tracking_on_off.byte26 = 0x00;
+		cmd_toggle_tracking_on_off.byte27 = 0x00;
+		cmd_toggle_tracking_on_off.byte28 = 0x00;
+		cmd_toggle_tracking_on_off.byte29 = 0x00;
+		cmd_toggle_tracking_on_off.byte30 = 0x00;
+		cmd_toggle_tracking_on_off.byte31 = 0x00;
+		cmd_toggle_tracking_on_off.byte32 = 0x00;
+		cmd_toggle_tracking_on_off.byte33 = 0x00;
+		cmd_toggle_tracking_on_off.byte34 = 0x00;
+		cmd_toggle_tracking_on_off.byte35 = 0x00;
+		cmd_toggle_tracking_on_off.byte36 = 0x00;
+		cmd_toggle_tracking_on_off.byte37 = 0x00;
+		cmd_toggle_tracking_on_off.byte38 = 0x00;
+		cmd_toggle_tracking_on_off.byte39 = 0x00;
+		cmd_toggle_tracking_on_off.byte40 = 0x00;
+		cmd_toggle_tracking_on_off.byte41 = 0x00;
+		cmd_toggle_tracking_on_off.byte42 = 0x00;
+		cmd_toggle_tracking_on_off.byte43 = 0x00;
+		cmd_toggle_tracking_on_off.byte44 = 0x00;
+		cmd_toggle_tracking_on_off.byte45 = 0x00;
+		cmd_toggle_tracking_on_off.byte46 = 0x00;
+		cmd_toggle_tracking_on_off.byte47 = 0x00;
+		cmd_toggle_tracking_on_off.byte48 = 0x00;
+
+
+				if(is_tracking){
+					cmd_toggle_tracking_on_off.byte6 = 0x71;
+					cmd_toggle_tracking_on_off.byte12 = 0x01;
+					cmd_toggle_tracking_on_off.byte14 = 0x3C;
+					is_tracking = false;
+				}else{
+					cmd_toggle_tracking_on_off.byte6 = 0x00;
+					cmd_toggle_tracking_on_off.byte12 = 0x00;
+					cmd_toggle_tracking_on_off.byte14 = 0x00;
+					is_tracking = true;
+				}
+
+
+				uint8_t* buf_tracking_control = (uint8_t*)&cmd_toggle_tracking_on_off;
+				uint16_t sum_tracking_control = 0;
+
+				for (uint8_t i = 0;  i < 47 ; i++) {
+					sum_tracking_control += buf_tracking_control[i];
+				}
+
+				cmd_toggle_tracking_on_off.byte48 = (uint8_t)(sum_tracking_control % 256);
+
+				if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_on_off)) {
+					return;
+				}
+
+				for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_on_off) ; i++) {
+					_port->write(buf_tracking_control[i]);
+				}
+
+			command_flags.toggle_tracking = false;
+
+			return;
+
+	}else if(command_flags.toggle_pip){
+
+
+		static cmd_48_byte_struct cmd_toggle_pip;
+
+		cmd_toggle_pip.byte1 = 0x7E;
+		cmd_toggle_pip.byte2 = 0x7E;
+		cmd_toggle_pip.byte3 = 0x44;
+		cmd_toggle_pip.byte4 = 0x00;
+		cmd_toggle_pip.byte5 = 0x00;
+		cmd_toggle_pip.byte6 = 0x78;
+		cmd_toggle_pip.byte7 = 0x00;
+		cmd_toggle_pip.byte8 = 0x00;
+		cmd_toggle_pip.byte9 = 0x00;
+		cmd_toggle_pip.byte10 = 0x00;
+		cmd_toggle_pip.byte11 = 0x00;
+		cmd_toggle_pip.byte12 = 0x00;
+		cmd_toggle_pip.byte13 = 0x00;
+		cmd_toggle_pip.byte14 = 0x00;
+		cmd_toggle_pip.byte15 = 0x00;
+		cmd_toggle_pip.byte16 = 0x00;
+		cmd_toggle_pip.byte17 = 0x00;
+		cmd_toggle_pip.byte18 = 0x00;
+		cmd_toggle_pip.byte19 = 0x00;
+		cmd_toggle_pip.byte20 = 0x00;
+		cmd_toggle_pip.byte21 = 0x00;
+		cmd_toggle_pip.byte22 = 0x00;
+		cmd_toggle_pip.byte23 = 0x00;
+		cmd_toggle_pip.byte24 = 0x00;
+		cmd_toggle_pip.byte25 = 0x00;
+		cmd_toggle_pip.byte26 = 0x00;
+		cmd_toggle_pip.byte27 = 0x00;
+		cmd_toggle_pip.byte28 = 0x00;
+		cmd_toggle_pip.byte29 = 0x00;
+		cmd_toggle_pip.byte30 = 0x00;
+		cmd_toggle_pip.byte31 = 0x00;
+		cmd_toggle_pip.byte32 = 0x00;
+		cmd_toggle_pip.byte33 = 0x00;
+		cmd_toggle_pip.byte34 = 0x00;
+		cmd_toggle_pip.byte35 = 0x00;
+		cmd_toggle_pip.byte36 = 0x00;
+		cmd_toggle_pip.byte37 = 0x00;
+		cmd_toggle_pip.byte38 = 0x00;
+		cmd_toggle_pip.byte39 = 0x00;
+		cmd_toggle_pip.byte40 = 0x00;
+		cmd_toggle_pip.byte41 = 0x00;
+		cmd_toggle_pip.byte42 = 0x00;
+		cmd_toggle_pip.byte43 = 0x00;
+		cmd_toggle_pip.byte44 = 0x00;
+		cmd_toggle_pip.byte45 = 0x00;
+		cmd_toggle_pip.byte46 = 0x00;
+		cmd_toggle_pip.byte47 = 0x00;
+		cmd_toggle_pip.byte48 = 0x00;
+
+
+				if(pip_state == 0){
+
+					// EO+IR(pip)
+
+				}else if(pip_state == 1){
+
+					//IR
+					cmd_toggle_pip.byte15 = 0x01;
+
+				}else if(pip_state == 2){
+
+					//IR+EO(pip)
+					cmd_toggle_pip.byte15 = 0x02;
+
+				}else{
+
+					//EO
+					cmd_toggle_pip.byte15 = 0x03;
+				}
+
+
+
+				uint8_t* buf_pip_control = (uint8_t*)&cmd_toggle_pip;
+				uint16_t sum_pip_control = 0;
+
+				for (uint8_t i = 0;  i < 47 ; i++) {
+					sum_pip_control += buf_pip_control[i];
+				}
+
+				cmd_toggle_pip.byte48 = (uint8_t)(sum_pip_control % 256);
+
+				if ((size_t)_port->txspace() < sizeof(cmd_toggle_pip)) {
+					return;
+				}
+
+				for (uint8_t i = 0;  i != sizeof(cmd_toggle_pip) ; i++) {
+					_port->write(buf_pip_control[i]);
+				}
+
+
+		pip_state++;
+
+		if(pip_state >= 4 ){
+			pip_state = 0;
+		}
+
+		command_flags.toggle_pip = false;
+
+		return;
+
 	}else if(_zooming_state_change){
+
 
 		static cmd_6_byte_struct cmd_set_zoom_data;
 
@@ -675,7 +1035,7 @@ void AP_Mount_ViewPro::parse_reply() {
         case ReplyType_angle_DATA:
 
         	_camera_tilt_angle = (_buffer.angle_data.pitch_ang)*0.0219726;
-        	_camera_pan_angle = (_buffer.angle_data.yaw_rel_ang)*0.0219726;;
+        	_camera_pan_angle = (_buffer.angle_data.yaw_rel_ang)*0.0219726;
 /*
         	hal.console->print("\n");
         	hal.console->printf("tilt:%f", _camera_tilt_angle)  ;
@@ -956,5 +1316,8 @@ void AP_Mount_ViewPro::reset_camera(){
 }
 
 
+void AP_Mount_ViewPro::toggle_camera(){
 
+	command_flags.toggle_video = true;
+}
 
