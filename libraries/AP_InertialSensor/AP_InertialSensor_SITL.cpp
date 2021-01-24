@@ -111,7 +111,7 @@ void AP_InertialSensor_SITL::generate_accel()
         float freq_variation = 0.12f;
 
         // add in sensor noise
-        accel += Vector3f(rand_float(), rand_float(), rand_float()) * accel_noise;
+        accel += Vector3f{rand_float(), rand_float(), rand_float()} * accel_noise;
 
         bool motors_on = sitl->throttle > sitl->ins_noise_throttle_min;
 
@@ -166,9 +166,7 @@ void AP_InertialSensor_SITL::generate_accel()
             Vector3f centripetal_accel = angular_rate % (angular_rate % pos_offset);
 
             // apply corrections
-            accel.x += lever_arm_accel.x + centripetal_accel.x;
-            accel.y += lever_arm_accel.y + centripetal_accel.y;
-            accel.z += lever_arm_accel.z + centripetal_accel.z;
+            accel += lever_arm_accel + centripetal_accel;
         }
 
         if (fabsf(sitl->accel_fail[accel_instance]) > 1.0e-6f) {
