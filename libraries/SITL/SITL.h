@@ -450,6 +450,7 @@ public:
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
+    AP_Vector3f accel_trim;
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;

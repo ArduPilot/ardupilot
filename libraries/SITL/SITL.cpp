@@ -386,6 +386,7 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
     AP_GROUPINFO("ACC1_SCAL",    22, SITL, accel_scale[0], 0),
     AP_GROUPINFO("ACC2_SCAL",    23, SITL, accel_scale[1], 0),
     AP_GROUPINFO("ACC3_SCAL",    24, SITL, accel_scale[2], 0),
+    AP_GROUPINFO("ACC_TRIM",     25, SITL, accel_trim, 0),
 
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SITL, AP_InertialSensor::TCal),
