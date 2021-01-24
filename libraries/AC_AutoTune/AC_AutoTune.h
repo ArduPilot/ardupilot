@@ -39,7 +39,7 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
-#define AUTOTUNE_DWELL_CYCLES                10
+#define AUTOTUNE_DWELL_CYCLES                6
 
 class AC_AutoTune
 {

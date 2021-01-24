@@ -1603,17 +1603,37 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
 
 void AC_AutoTune::angle_dwell_test_init(float filt_freq)
 {
-    rotation_rate_filt.reset(0);
     rotation_rate_filt.set_cutoff_frequency(filt_freq);
-    command_filt.reset(0);
     command_filt.set_cutoff_frequency(filt_freq);
-    target_rate_filt.reset(0);
     target_rate_filt.set_cutoff_frequency(filt_freq);
-    test_command_filt = 0.0f;
-    test_rate_filt = 0.0f;
-    test_tgt_rate_filt = 0.0f;
-    filt_target_rate = 0.0f;
     dwell_start_time_ms = 0.0f;
+    switch (axis) {
+    case ROLL:
+        rotation_rate_filt.reset(((float)ahrs_view->roll_sensor) / 5730.0f);
+        command_filt.reset(motors->get_roll());
+        target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f);
+        rotation_rate = ((float)ahrs_view->roll_sensor) / 5730.0f;
+        command_out = motors->get_roll();
+        filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
+        break;
+    case PITCH:
+        rotation_rate_filt.reset(((float)ahrs_view->pitch_sensor) / 5730.0f);
+        command_filt.reset(motors->get_pitch());
+        target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f);
+        rotation_rate = ((float)ahrs_view->pitch_sensor) / 5730.0f;
+        command_out = motors->get_pitch();
+        filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
+        break;
+    case YAW:
+        rotation_rate_filt.reset(((float)ahrs_view->yaw_sensor) / 5730.0f);
+        command_filt.reset(motors->get_yaw());
+        target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().z) / 5730.0f);
+        rotation_rate = ((float)ahrs_view->yaw_sensor) / 5730.0f;
+        command_out = motors->get_yaw();
+        filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().z) / 5730.0f;
+        break;
+    }
+
 }
 
 void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, float &dwell_phase)
@@ -1621,72 +1641,60 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     float gyro_reading = 0.0f;
     float command_reading = 0.0f;
     float tgt_rate_reading = 0.0f;
-    float tgt_attitude = 5.0f * 0.01745f;
+    float tgt_attitude = 10.0f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
     float target_rate_cds;
     static uint32_t settle_time = 200;
-    static bool dtrmn_gain;
+
+    if (settle_time == 0) {
+        target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+    } else {
+        target_angle_cd = 0.0f;
+        settle_time--;
+        dwell_start_time_ms = now;
+    }
 
     switch (axis) {
     case ROLL:
-        //        gyro_reading = ahrs_view->get_gyro().x;
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd, 0.0f, 0.0f);
         command_reading = motors->get_roll();
-        //        tgt_rate_reading = attitude_control->rate_bf_targets().x;
-
-        attitude_control->bf_feedforward(false);
-        if (settle_time == 0) {
-            target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + start_angles.x, start_angles.y, 0.0f);
-        } else {
-            target_angle_cd = 0.0f;
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, 0.0f);
-            settle_time--;
-            dwell_start_time_ms = now;
-        }
-        tgt_rate_reading = target_angle_cd / 5730.0f;
-//        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle + target_angle_cd) / 5730.0f;
-        gyro_reading = ((float)ahrs_view->roll_sensor - (float)start_angle) / 5730.0f;
+        tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
+        gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
         break;
     case PITCH:
-        gyro_reading = ahrs_view->get_gyro().y;
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, target_angle_cd, 0.0f);
         command_reading = motors->get_pitch();
-        tgt_rate_reading = attitude_control->rate_bf_targets().y;
-        target_angle_cd = tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, target_angle_cd + start_angles.y, 0.0f);
+        tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
+        gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
         break;
     case YAW:
-        gyro_reading = ahrs_view->get_gyro().z;
         command_reading = motors->get_yaw();
-        tgt_rate_reading = attitude_control->rate_bf_targets().z;
-        target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, start_angles.y, target_rate_cds);
+        tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().z) / 5730.0f;
+        gyro_reading = ((float)ahrs_view->yaw_sensor) / 5730.0f;
+        target_rate_cds = target_angle_cd * dwell_freq;
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, target_rate_cds);
         break;
-    }
-
-    // need to hold off from starting determine gain until neg rate is established
-    if (!is_zero(dwell_start_time_ms) && tgt_rate_reading < -0.01745f && !dtrmn_gain) {
-        dtrmn_gain = true;
     }
 
     // looks at gain and phase of input rate to output rate
     rotation_rate = rotation_rate_filt.apply(gyro_reading,
-                    AP::scheduler().get_loop_period_s());
+                AP::scheduler().get_loop_period_s());
     filt_target_rate = target_rate_filt.apply(tgt_rate_reading,
-                       AP::scheduler().get_loop_period_s());
+                AP::scheduler().get_loop_period_s());
     command_out = command_filt.apply(command_reading,
-                                     AP::scheduler().get_loop_period_s());
+                AP::scheduler().get_loop_period_s());
 
     // wait for dwell to start before determining gain and phase
-    if (!is_zero(dwell_start_time_ms) && dtrmn_gain) {
+    if (!is_zero(dwell_start_time_ms)) {
         determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
     }
+
     //    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
     if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
         settle_time = 200;
-        dtrmn_gain = false;
         // announce results of dwell and update
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(dwell_freq), (double)(dwell_gain), (double)(dwell_phase));
 
@@ -1699,15 +1707,17 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
 // is set.  This function must be reset using the reset flag prior to the next dwell.
 void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
 {
-    static float max_target, max_meas, prev_target, prev_meas;
+    static float max_target, max_meas, prev_target, prev_meas, sum_tgt_rate, sum_meas_rate;
     static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES+1], input_ampl[AUTOTUNE_DWELL_CYCLES+1];
     static float temp_max_target, temp_min_target;
     static float temp_max_meas, temp_min_meas;
     static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES+1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES+1];
-    static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms;
+    static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
     static uint8_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
+    static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
+    static bool print3 = false;
     uint32_t now = AP_HAL::millis();
 
     if (funct_reset) {
@@ -1715,6 +1725,10 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         min_target_cnt = 0;
         max_meas_cnt = 0;
         min_meas_cnt = 0;
+        input_start_time_ms = 0;
+        sum_tgt_rate = 0;
+        sum_meas_rate = 0;
+        avg_sample_cnt = 0;
         new_tgt_time_ms = 0;
         new_meas_time_ms = 0;
         new_target = false;
@@ -1723,13 +1737,51 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         phase = 0.0f;
         cycles_complete = false;
         funct_reset = false;
+        print3 = false;
         return;
     }
 
     uint32_t half_cycle_time_ms = 0;
+    uint32_t cycle_time_ms = 0;
     if (!is_zero(freq)) {
-        half_cycle_time_ms = (uint32_t)(400 * 6.28 / freq);
+        half_cycle_time_ms = (uint32_t)(300 * 6.28 / freq);
+        cycle_time_ms = (uint32_t)(1000 * 6.28 / freq);
     }
+
+    if (input_start_time_ms == 0) {
+        input_start_time_ms = now;
+    }
+
+    if (now < (uint32_t) (input_start_time_ms + 4 * cycle_time_ms)) {
+        //wait for signal to stabilize for 1 cycle
+        return;
+    } else if (now < (uint32_t) (input_start_time_ms + 6 * cycle_time_ms)) {
+        // sum target rate and measured rate signals over next 2 cycles
+        sum_tgt_rate += tgt_rate;
+        sum_meas_rate += meas_rate;
+        avg_sample_cnt++;
+        return;
+    } else if (now < (uint32_t) (input_start_time_ms + 6.25 * cycle_time_ms)) {
+        // give it another 1/4 cycle before starting the gain and phase calculation
+        prev_target = tgt_rate;
+        prev_meas = meas_rate;
+        return;
+    }
+
+    if (avg_sample_cnt > 0) {
+        tgt_rate = tgt_rate - (sum_tgt_rate / (float) avg_sample_cnt);
+        meas_rate = meas_rate - (sum_meas_rate / (float) avg_sample_cnt);
+    }
+
+        if (!print3) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: avg_tgt=%f", (double)(sum_tgt_rate / (float) avg_sample_cnt));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: avg_meas=%f", (double)(sum_meas_rate / (float) avg_sample_cnt));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: sum_tgt_rate=%f", (double)(sum_tgt_rate));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: sample_cnt=%f", (double)(avg_sample_cnt));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: nowtime=%f", (double)(now * 0.001));
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: starttime=%f", (double)(input_start_time_ms * 0.001));
+            print3 = true;
+        }
 
     // cycles are complete! determine gain and phase and exit
     if (max_meas_cnt > AUTOTUNE_DWELL_CYCLES + 1 && max_target_cnt > AUTOTUNE_DWELL_CYCLES + 1) {
@@ -1759,6 +1811,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
             phase = phase - 360.0f;
         }
         cycles_complete = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
         return;
     }
 
@@ -1773,7 +1826,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
             input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
         }
-        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
 
     } else if (is_positive(prev_target) && !is_positive(tgt_rate) && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
         new_target = false;
@@ -1798,7 +1851,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
             output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
         }
-        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
     } else if (is_positive(prev_meas) && !is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
         new_meas = false;
         new_meas_time_ms = now + half_cycle_time_ms;
