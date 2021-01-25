@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.0.6-rc2 16-Jan-2021
+Copter 4.0.6 25-Jan-2021 / 4.0.6-rc2 16-Jan-2021
 Changes from 4.0.6-rc1
 1) Add support for keeping a backup of storage for last 100 boots
 2) Bug fixes:
