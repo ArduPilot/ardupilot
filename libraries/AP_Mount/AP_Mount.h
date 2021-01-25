@@ -190,6 +190,8 @@ protected:
         Location _target_sysid_location; // sysid target location
         bool _target_sysid_location_set;
 
+        AP_Int8         _rel_pan;           // Use relative pan for servo mounts (0=Disable, 1=Enable)
+
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
