@@ -8568,7 +8568,7 @@ switch value'''
             for (ins_prefix, sim_prefix, pre_value, post_value) in param_map:
                 for axis in axes:
                     pname = ins_prefix+"_"+axis
-                    v = self.mav.param(pname)
+                    v = self.get_parameter(pname)
                     expected_v = getattr(post_value, axis.lower())
                     if v == expected_v:
                         continue
