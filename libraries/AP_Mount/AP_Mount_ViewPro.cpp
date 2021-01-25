@@ -97,6 +97,9 @@ void AP_Mount_ViewPro::update()
             if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_deg, true, true);
             }
+
+            update_zoom_focus_from_rc();
+
             break;
 
         default:

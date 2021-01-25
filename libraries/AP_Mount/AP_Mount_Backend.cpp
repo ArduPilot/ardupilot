@@ -20,7 +20,7 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
     // set the target gps location
     _state._roi_target = target_loc;
-
+/*
 	hal.console->print("\n");
 	hal.console->print("\n");
 	hal.console->printf("lat:%ld", _state._roi_target.lat)  ;
@@ -28,7 +28,7 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 	hal.console->printf("long:%ld", _state._roi_target.lng)  ;
 	hal.console->print("\n");
 	hal.console->print("\n");
-
+*/
 
 
 
@@ -165,7 +165,7 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     //float GPS_vector_z = (target.alt-_frontend._current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
     //float GPS_vector_z = (_frontend._current_loc.alt - target.alt);
 
-    float GPS_vector_z = 1000.0f; //(_frontend._current_loc.alt);
+    float GPS_vector_z = (_frontend._current_loc.alt);
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
 
     // initialise all angles to zero
@@ -251,12 +251,12 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 	float tilt_angle;
 	float pan_angle;
 
-	tilt_angle = constrain_float(_camera_tilt_angle, 0, 89.9);
+	tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
 
 
 	tilt_angle = 90.0f - tilt_angle;
 
-	float distance = tanf(radians(tilt_angle))*10.0f;     //*((float)_frontend._current_loc.alt / 100.0f);
+	float distance = tanf(radians(tilt_angle))*((float)_frontend._current_loc.alt / 100.0f);
 
 	if(_camera_pan_angle >= 0){
 
