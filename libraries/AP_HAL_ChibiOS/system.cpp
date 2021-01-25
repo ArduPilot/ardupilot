@@ -72,22 +72,22 @@ static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fa
     bool using_watchdog = AP_BoardConfig::watchdog_enabled();
     if (using_watchdog) {
         AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-        pd.fault_line = line;
         if (pd.fault_type == 0) {
             // don't overwrite earlier fault
+            pd.fault_line = line;
             pd.fault_type = fault_type;
-        }
-        pd.fault_addr = fault_addr;
-        thread_t *tp = chThdGetSelfX();
-        if (tp) {
-            pd.fault_thd_prio = tp->prio;
-            // get first 4 bytes of the name, but only of first fault
-            if (tp->name && pd.thread_name4[0] == 0) {
-                strncpy_noterm(pd.thread_name4, tp->name, 4);
+            pd.fault_addr = fault_addr;
+            thread_t *tp = chThdGetSelfX();
+            if (tp) {
+                pd.fault_thd_prio = tp->prio;
+                // get first 4 bytes of the name, but only of first fault
+                if (tp->name && pd.thread_name4[0] == 0) {
+                    strncpy_noterm(pd.thread_name4, tp->name, 4);
+                }
             }
+            pd.fault_icsr = SCB->ICSR;
+            pd.fault_lr = lr;
         }
-        pd.fault_icsr = SCB->ICSR;
-        pd.fault_lr = lr;
         stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
     }
 #endif
@@ -106,6 +106,10 @@ void HardFault_Handler(void) {
     //For HardFault/BusFault this is the address that was accessed causing the error
     uint32_t faultAddress = SCB->BFAR;
     (void)faultAddress;
+    bool forced = SCB->HFSR & SCB_HFSR_FORCED_Msk;
+    (void)forced;
+    uint32_t cfsr = SCB->CFSR;
+    (void)cfsr;
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
     bool isFaultPrecise = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 1) ? true : false);
@@ -123,7 +127,15 @@ void HardFault_Handler(void) {
 
 #ifdef HAL_GPIO_PIN_FAULT
     while (true) {
-        fault_printf("HARDFAULT\n");
+        // forced means that another kind of unhandled fault got escalated to a hardfault
+        if (faultType == BusFault) {
+            fault_printf("BUSFAULT\n");
+        } else if (forced) {
+            fault_printf("FORCED HARDFAULT\n");
+        } else {
+            fault_printf("HARDFAULT(%d)\n", int(faultType));
+        }
+        fault_printf("CSFR=0x%08x\n", cfsr);
         fault_printf("CUR=0x%08x\n", ch.rlist.current);
         if (ch.rlist.current) {
             fault_printf("NAME=%s\n", ch.rlist.current->name);
@@ -144,6 +156,8 @@ void HardFault_Handler(void) {
     while(1) {}
 }
 
+// For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
+// ChibiOS does not do this by default
 void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
 
 void UsageFault_Handler(void);
@@ -208,6 +222,7 @@ void MemManage_Handler(void) {
 
     while(1) {}
 }
+
 }
 namespace AP_HAL {
 
