@@ -213,7 +213,12 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // 24 is AVAILABLE
+    // @Param: _REL_PAN
+    // @DisplayName: Relative pan flag for Servo Mount
+    // @Description: Enable to calculate pan angle to GPS location relative to vehicle orientation (for type servo (1))
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("_REL_PAN",        24, AP_Mount, state[0]._rel_pan, 0),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -395,6 +400,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
+
+    // @Param: 2_REL_PAN
+    // @DisplayName: Relative pan flag for Servo Mount 2
+    // @Description: Enable to calculate pan angle to GPS location relative to vehicle orientation (for type servo (1))
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("2_REL_PAN",        43, AP_Mount, state[0]._rel_pan, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
