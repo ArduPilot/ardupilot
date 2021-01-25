@@ -638,9 +638,14 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
+
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+protected:
+    bool _enter() override { return false; };
 };
 
 class ModeFollow : public Mode
