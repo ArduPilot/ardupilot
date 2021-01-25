@@ -408,6 +408,19 @@ bool stm32_flash_erasepage(uint32_t page)
 
 
 #if defined(STM32H7)
+// Check that the flash line is erased as writing to an un-erased line causes flash corruption
+static bool stm32h7_check_all_ones(uint32_t addr, uint32_t words)
+{
+    for (uint32_t i = 0; i < words; i++) {
+        // check that the byte was erased
+        if (getreg32(addr) != 0xFFFFFFFF) {
+            return false;
+        }
+        addr += 4;
+    }
+    return true;
+}
+
 /*
   the H7 needs special handling, and only writes 32 bytes at a time
  */
@@ -424,12 +437,12 @@ static bool stm32h7_flash_write32(uint32_t addr, const void *buf)
         SR = &FLASH->SR2;
     }
     stm32_flash_wait_idle();
+
     *CCR = ~0;
     *CR |= FLASH_CR_PG;
 
     const uint32_t *v = (const uint32_t *)buf;
-    uint8_t i;
-    for (i=0; i<8; i++) {
+    for (uint8_t i=0; i<8; i++) {
         while (*SR & (FLASH_SR_BSY|FLASH_SR_QW)) ;
         putreg32(*v, addr);
         v++;
@@ -451,36 +464,41 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
         return false;
     }
 
+    // check for erasure
+    if (!stm32h7_check_all_ones(addr, count >> 2)) {
+        return false;
+    }
+
 #if STM32_FLASH_DISABLE_ISR
     syssts_t sts = chSysGetStatusAndLockX();
 #endif
 
     stm32_flash_unlock();
+    bool success = true;
+
     while (count >= 32) {
-        if (memcmp((void*)addr, b, 32) != 0 &&
-            !stm32h7_flash_write32(addr, b)) {
+        if (!stm32h7_flash_write32(addr, b)) {
+            success = false;
             goto failed;
         }
+
         // check contents
-        if (memcmp((void *)addr, b, 32) != 0) {
+        if (memcmp((void*)addr, b, 32) != 0) {
+            success = false;
             goto failed;
         }
+
         addr += 32;
         count -= 32;
         b += 32;
     }
-    stm32_flash_lock();
-#if STM32_FLASH_DISABLE_ISR
-    chSysRestoreStatusX(sts);
-#endif
-    return true;
 
 failed:
     stm32_flash_lock();
 #if STM32_FLASH_DISABLE_ISR
     chSysRestoreStatusX(sts);
 #endif
-    return false;
+    return success;
 }
 
 #endif // STM32H7
