@@ -35,6 +35,8 @@ void AP_Mount_Servo::update()
         _last_check_servo_map_ms = now;
     }
 
+    uint8_t relative_pan = _state._options & AP_MOUNT_OPTION_RELATIVE_PAN;
+
     switch(get_mode()) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
         case MAV_MOUNT_MODE_RETRACT:
@@ -70,7 +72,7 @@ void AP_Mount_Servo::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
         {
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, _state._rel_pan)) {
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, relative_pan)) {
                 stabilize();
             }
             break;
@@ -83,7 +85,7 @@ void AP_Mount_Servo::update()
             }
             _state._roi_target = AP::ahrs().get_home();
             _state._roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, _state._rel_pan)) {
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, relative_pan)) {
                 stabilize();
             }
             break;
@@ -92,7 +94,7 @@ void AP_Mount_Servo::update()
             if (calc_angle_to_sysid_target(_angle_ef_target_rad,
                                            _flags.tilt_control,
                                            _flags.pan_control,
-                                           _state._rel_pan)) {
+                                           relative_pan)) {
                 stabilize();
             }
             break;
