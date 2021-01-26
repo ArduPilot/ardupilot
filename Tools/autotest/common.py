@@ -2683,6 +2683,7 @@ class AutoTest(ABC):
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
         self.drain_mav()
+        self.send_poll_message('SYSTEM_TIME')
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
         if m is None:
             raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)

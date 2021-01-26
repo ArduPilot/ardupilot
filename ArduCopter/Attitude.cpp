@@ -1,35 +1,5 @@
 #include "Copter.h"
 
-// transform pilot's yaw input into a desired yaw rate
-// returns desired yaw rate in centi-degrees per second
-float Copter::get_pilot_desired_yaw_rate(int16_t stick_angle)
-{
-    // throttle failsafe check
-    if (failsafe.radio || !ap.rc_receiver_present) {
-        return 0.0f;
-    }
-    float yaw_request;
-
-    // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
-
-    // calculate yaw rate request
-    if (is_zero(g2.acro_y_expo)) {
-        yaw_request = stick_angle * g.acro_yaw_p;
-    } else {
-        // expo variables
-        float y_in, y_in3, y_out;
-
-        // yaw expo
-        y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
-        y_in3 = y_in*y_in*y_in;
-        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
-        yaw_request = ROLL_PITCH_YAW_INPUT_MAX * y_out * g.acro_yaw_p;
-    }
-    // convert pilot input to the desired yaw rate
-    return yaw_request;
-}
-
 /*************************************************************
  *  throttle control
  ****************************************************************/
