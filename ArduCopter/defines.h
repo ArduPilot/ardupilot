@@ -83,20 +83,6 @@ enum tuning_func {
 #define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicopters)
 
-// Auto modes
-enum class AutoMode : uint8_t {
-    TAKEOFF,
-    WP,
-    LAND,
-    RTL,
-    CIRCLE_MOVE_TO_EDGE,
-    CIRCLE,
-    SPLINE,
-    NAVGUIDED,
-    LOITER,
-    LOITER_TO_ALT,
-    NAV_PAYLOAD_PLACE,
-};
 
 // Airmode
 enum class AirMode {
