@@ -322,3 +322,9 @@ singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 
+
+include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+singleton AP_MotorsMatrix_6DoF_Scripting alias Motors_6DoF
+singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
+singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
