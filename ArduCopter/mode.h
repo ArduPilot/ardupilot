@@ -1237,6 +1237,15 @@ public:
 
     bool is_landing() const override;
 
+    // Safe RTL states
+    enum class SmartRTLState : uint8_t {
+        WAIT_FOR_PATH_CLEANUP,
+        PATH_FOLLOW,
+        PRELAND_POSITION,
+        DESCEND,
+        LAND
+    };
+
 protected:
 
     const char *name() const override { return "SMARTRTL"; }
