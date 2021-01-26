@@ -1116,13 +1116,13 @@ public:
     bool get_wp(Location &loc) override;
 
     // RTL states
-    enum RTLState {
-        RTL_Starting,
-        RTL_InitialClimb,
-        RTL_ReturnHome,
-        RTL_LoiterAtHome,
-        RTL_FinalDescent,
-        RTL_Land
+    enum class RTLState : uint8_t {
+        STARTING,
+        INITIAL_CLIMB,
+        RETURN_HOME,
+        LOITER_AT_HOME,
+        FINAL_DESCENT,
+        LAND
     };
     RTLState state() { return _state; }
 
@@ -1167,7 +1167,7 @@ private:
     void build_path();
     void compute_return_target();
 
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+    RTLState _state = RTLState::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
