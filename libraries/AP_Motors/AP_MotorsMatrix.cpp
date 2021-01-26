@@ -89,8 +89,6 @@ bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
 
     set_update_rate(_speed_hz);
 
-    set_initialised_ok(true);
-
     return true;
 }
 #endif // ENABLE_SCRIPTING
