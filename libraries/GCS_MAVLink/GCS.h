@@ -448,6 +448,9 @@ protected:
 
 private:
 
+    // reduce effect of vehicle Yaw and gimbal pitch with increasing camera zoom
+    MAV_RESULT handle_command_do_scale_with_zoom(const mavlink_command_long_t &packet);
+    
     void log_mavlink_stats();
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);

@@ -132,6 +132,8 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
 
+    float mount_scale_with_zoom;
+
 protected:
 
     static AP_Mount *_singleton;

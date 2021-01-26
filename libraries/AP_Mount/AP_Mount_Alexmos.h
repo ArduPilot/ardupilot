@@ -59,8 +59,9 @@
 
 #define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
 
-#define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
-#define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
+// degree mapped to range 0.0-1.0, with fixed point 14-bit fraction
+#define VALUE_TO_DEGREE(d) ((float)(d)*(360.0f/16384.0f))
+#define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(16384.0f/360.0f)))
 #define DEGREE_PER_SEC_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.1220740379f)))
 
 class AP_Mount_Alexmos : public AP_Mount_Backend

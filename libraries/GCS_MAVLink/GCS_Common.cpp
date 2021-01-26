@@ -3689,7 +3689,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packe
     if (mount == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
-    return mount->handle_command_long(packet);
+
+    // scale the pitch, roll, yaw with zoom
+    mavlink_command_long_t scaled_packet = packet;
+    scaled_packet.param1 = scaled_packet.param1 * mount->mount_scale_with_zoom;
+    scaled_packet.param2 = scaled_packet.param2 * mount->mount_scale_with_zoom;
+    scaled_packet.param3 = scaled_packet.param3 * mount->mount_scale_with_zoom;
+    return mount->handle_command_long(scaled_packet);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t &packet)
@@ -3717,6 +3723,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t 
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_scale_with_zoom(const mavlink_command_long_t &packet)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    mount->mount_scale_with_zoom = packet.param1;
+    return MAV_RESULT_ACCEPTED;
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
@@ -3742,6 +3758,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_DO_FENCE_ENABLE:
         result = handle_command_do_fence_enable(packet);
+        break;
+
+    case MAV_CMD_DO_SCALE_WITH_ZOOM:
+        result = handle_command_do_scale_with_zoom(packet);
         break;
 
     case MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:

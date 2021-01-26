@@ -55,7 +55,17 @@ void ModeStabilize::run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    if ((auto_yaw.mode() != AUTO_YAW_FIXED)
+        || (target_yaw_rate > 200) || (target_yaw_rate < -200)) {
+        // the total range of target_yaw_rate is about -10000 to 10000,
+        // set the deadband to 200/10000 or 2% of the total range,
+        // allow the pilot to override the yaw_condition command if the commanded yaw is outside the deadband
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    }
+    else {
+        // roll, pitch from pilot, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, auto_yaw.yaw(), true);
+    }
 
     // output pilot's throttle
     attitude_control->set_throttle_out(get_pilot_desired_throttle(),

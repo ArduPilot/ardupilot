@@ -424,6 +424,9 @@ void AP_Mount::init()
         }
     }
 
+    // start with scaling disabled
+    mount_scale_with_zoom = 1.0;
+
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
