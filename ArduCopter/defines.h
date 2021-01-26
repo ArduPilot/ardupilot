@@ -91,15 +91,6 @@ enum class AirMode {
     AIRMODE_ENABLED,
 };
 
-// Safe RTL states
-enum class SmartRTLState : uint8_t {
-    WAIT_FOR_PATH_CLEANUP,
-    PATH_FOLLOW,
-    PRELAND_POSITION,
-    DESCEND,
-    LAND
-};
-
 enum PayloadPlaceStateType {
     PayloadPlaceStateType_FlyToLocation,
     PayloadPlaceStateType_Calibrating_Hover_Start,
