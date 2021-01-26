@@ -1,5 +1,5 @@
-Release 4.0.8beta1, 6th January 2021
-------------------------------------
+Release 4.0.8, 26th January 2021
+--------------------------------
 
 This is a minor release with just bug fixes:
 
@@ -8,6 +8,8 @@ This is a minor release with just bug fixes:
  - fixed FPort RSSI scaling
 
  - fixed timestamp on RAW_IMU data to be 64 bit
+
+ - fixed an issue with BLHeli pass-thru on some ESCs
 
 Happy flying!
 
