@@ -1239,7 +1239,7 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SmartRTLState smart_rtl_state = SmartRTL_PathFollow;
+    SmartRTLState smart_rtl_state = SmartRTLState::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
