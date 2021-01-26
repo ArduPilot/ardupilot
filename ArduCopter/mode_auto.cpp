@@ -1832,7 +1832,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 bool ModeAuto::verify_RTL()
 {
     return (copter.mode_rtl.state_complete() && 
-            (copter.mode_rtl.state() == ModeRTL::RTL_FinalDescent || copter.mode_rtl.state() == ModeRTL::RTL_Land) &&
+            (copter.mode_rtl.state() == ModeRTL::RTLState::FINAL_DESCENT || copter.mode_rtl.state() == ModeRTL::RTLState::LAND) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }
 
