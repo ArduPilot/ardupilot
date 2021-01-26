@@ -34,7 +34,7 @@ public:
 
 #ifdef ENABLE_SCRIPTING
     // Init to be called from scripting
-    bool                init(uint8_t expected_num_motors);
+    virtual bool        init(uint8_t expected_num_motors);
 #endif // ENABLE_SCRIPTING
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
