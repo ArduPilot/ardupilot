@@ -213,12 +213,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // @Param: _REL_PAN
-    // @DisplayName: Relative pan flag for Servo Mount
-    // @Description: Enable to calculate pan angle to GPS location relative to vehicle orientation (for type servo (1))
-    // @Values: 0:Disabled,1:Enabled
+    // @Param: _OPTIONS
+    // @DisplayName: Options field
+    // @Description: User configurable options; 0 = Enable Relative Pan on Servo Mounts
+    // @Values:  0:RelativePan
+    // @Bitmask: 0:RelativePan
     // @User: Standard
-    AP_GROUPINFO("_REL_PAN",        24, AP_Mount, state[0]._rel_pan, 0),
+    AP_GROUPINFO("_OPTIONS",        24, AP_Mount, state[0]._options, 0),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -401,12 +402,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 
-    // @Param: 2_REL_PAN
-    // @DisplayName: Relative pan flag for Servo Mount 2
-    // @Description: Enable to calculate pan angle to GPS location relative to vehicle orientation (for type servo (1))
-    // @Values: 0:Disabled,1:Enabled
+    // @Param: 2_OPTIONS
+    // @DisplayName: Options field for Mount 2
+    // @Description: User configurable options; 0 = Enable Relative Pan on Servo Mounts
+    // @Values:  0:RelativePan
+    // @Bitmask: 0:RelativePan
     // @User: Standard
-    AP_GROUPINFO("2_REL_PAN",        43, AP_Mount, state[0]._rel_pan, 0),
+    AP_GROUPINFO("2_OPTIONS",       43, AP_Mount, state[1]._options, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
