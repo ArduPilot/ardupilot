@@ -360,6 +360,21 @@ public:
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return mode() == AutoMode::NAVGUIDED; }
 
+    // Auto modes
+    enum class AutoMode : uint8_t {
+        TAKEOFF,
+        WP,
+        LAND,
+        RTL,
+        CIRCLE_MOVE_TO_EDGE,
+        CIRCLE,
+        SPLINE,
+        NAVGUIDED,
+        LOITER,
+        LOITER_TO_ALT,
+        NAV_PAYLOAD_PLACE,
+    };
+
     // Auto
     AutoMode mode() const { return _mode; }
 
