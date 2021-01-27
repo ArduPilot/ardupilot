@@ -237,14 +237,19 @@ bool AC_WPNav::set_wp_destination_next_loc(const Location& destination)
     return set_wp_destination_next(dest_neu, terr_alt);
 }
 
+// get destination as a location.  Altitude frame will be absolute (AMSL) or above terrain
+// returns false if unable to return a destination (for example if origin has not yet been set)
 bool AC_WPNav::get_wp_destination_loc(Location& destination) const
 {
-    Vector3f dest = get_wp_destination();
     if (!AP::ahrs().get_origin(destination)) {
         return false;
     }
-    destination.offset(dest.x*0.01f, dest.y*0.01f);
-    destination.alt += dest.z;
+    destination.offset(_destination.x*0.01f, _destination.y*0.01f);
+    if (_terrain_alt) {
+        destination.set_alt_cm(_destination.z, Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        destination.alt += _destination.z;
+    }
     return true;
 }
 
