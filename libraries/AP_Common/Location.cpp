@@ -109,17 +109,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #endif
     Location::AltFrame current_frame = get_alt_frame();
 
-    // shortcut if desired and underlying frame are the same
-    // if (desired_frame == current_frame) {
-    //     ret_alt_cm = alt;
-    //     return true;
-    // }
-
-
-
     return get_spec_alt_cm(current_frame, desired_frame, alt, ret_alt_cm);
-
-    // return false;
 }
 
 // mday99: This function was a part of get_alt_cm up above. I pulled it out to accept any altitude as an input

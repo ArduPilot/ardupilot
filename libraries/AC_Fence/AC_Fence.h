@@ -44,6 +44,8 @@ public:
 
     void init() {
         _poly_loader.init();
+        AP_Param::set_and_save_by_name("FENCE_ALT_MAX", AC_FENCE_ALT_MAX_DEFAULT);
+        AP_Param::set_and_save_by_name("FENCE_ALT_FRAME", AC_FENCE_ALT_FRAME_DEFAULT);
     }
 
     // get singleton instance

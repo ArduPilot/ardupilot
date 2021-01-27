@@ -85,9 +85,6 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Description: Frame for min and max altitude, default is 1; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
     // @Range: 0 1 2 3
     // @User: Standard
-    // AP_GROUPINFO_FRAME_SETHOOKS("ALT_FRAME",     8, AC_Fence,    _alt_frame,    AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
-    // AP_GROUPINFO("ALT_FRAME",     8, AC_Fence,    _alt_frame,    AC_FENCE_ALT_FRAME_DEFAULT),
-    // AP_GROUPINFO_FLAGS("ALT_FRAME", 8, AC_Fence, _alt_frame, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FLAG_SETHOOKS),
     AP_GROUPINFO_FLAGS_FRAME("ALT_FRAME", 8, AC_Fence, _alt_frame, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FLAG_SETHOOKS, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     AP_GROUPEND
@@ -104,7 +101,6 @@ AC_Fence::AC_Fence()
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 
-    _alt_max = _alt_max_ext;
 }
 
 /// enable the Fence code generally; a master switch for all fences
@@ -167,15 +163,8 @@ bool AC_Fence::pre_arm_check_circle(const char* &fail_msg) const
 }
 
 // additional checks for the alt fence:
-// mday99: Here I'm trying to use the conv_max_alt_frame to modify the maximum altitude into the desired frame
-// mday99: This is where I'm having issues, as _alt_max is type AP_Float and _new_max_alt is int32_t
 bool AC_Fence::pre_arm_check_alt(const char* &fail_msg) const
 {
-    // int32_t _new_max_alt;
-    // if (conv_max_alt_frame(_alt_max, _new_max_alt)) {
-    //     _alt_max.set((float)_new_max_alt);
-    // }
-    
     if (_alt_max < 0.0f) {
         fail_msg = "Invalid FENCE_ALT_MAX value";
         return false;
@@ -275,8 +264,8 @@ bool AC_Fence::check_fence_alt_max()
     return false;
 }
 
-// // _alt_frame is the parameter form of _des_frame
-// // _current_frame is the current frame
+// _alt_frame is the parameter form of _des_frame
+// _current_frame is the current frame
 bool AC_Fence::conv_max_alt_frame(int newframe) 
 {
     int32_t _new_max_alt_cm;
