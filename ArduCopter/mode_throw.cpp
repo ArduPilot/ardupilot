@@ -60,7 +60,7 @@ void ModeThrow::run()
 
         // initialise the demanded height to 3m above the throw height
         // we want to rapidly clear surrounding obstacles
-        if (g2.throw_type == ThrowType_Drop) {
+        if (g2.throw_type == ThrowType::Drop) {
             pos_control->set_alt_target(inertial_nav.get_altitude() - 100);
         } else {
             pos_control->set_alt_target(inertial_nav.get_altitude() + 300);
@@ -108,7 +108,7 @@ void ModeThrow::run()
     case Throw_Disarmed:
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
+        if (g.throw_motor_start == PreThrowMotorState::RUNNING) {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
@@ -123,7 +123,7 @@ void ModeThrow::run()
     case Throw_Detecting:
 
         // prevent motors from rotating before the throw is detected unless enabled by the user
-        if (g.throw_motor_start == 1) {
+        if (g.throw_motor_start == PreThrowMotorState::RUNNING) {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
@@ -244,7 +244,7 @@ bool ModeThrow::throw_detected()
 
     // check for upwards or downwards trajectory (airdrop) of 50cm/s
     bool changing_height;
-    if (g2.throw_type == ThrowType_Drop) {
+    if (g2.throw_type == ThrowType::Drop) {
         changing_height = inertial_nav.get_velocity().z < -THROW_VERTICAL_SPEED;
     } else {
         changing_height = inertial_nav.get_velocity().z > THROW_VERTICAL_SPEED;

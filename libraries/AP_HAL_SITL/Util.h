@@ -33,6 +33,11 @@ public:
         return sitlState->defaults_path;
     }
 
+    /**
+       return commandline arguments, if available
+     */
+    void commandline_arguments(uint8_t &argc, char * const *&argv) override;
+    
     uint64_t get_hw_rtc() const override;
 
     bool get_system_id(char buf[40]) override;
@@ -71,6 +76,11 @@ public:
 #endif
     }
 
+    void init(int argc, char *const *argv) {
+        saved_argc = argc;
+        saved_argv = argv;
+    }
+
 private:
     SITL_State *sitlState;
 
@@ -88,4 +98,7 @@ private:
       size_t current_heap_usage;
     };
 #endif // ENABLE_HEAP
+
+    int saved_argc;
+    char *const *saved_argv;
 };

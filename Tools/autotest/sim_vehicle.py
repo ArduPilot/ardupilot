@@ -281,7 +281,7 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
-def do_build_waf(opts, frame_options):
+def do_build(opts, frame_options):
     """Build sitl using waf"""
     progress("WAF build")
 
@@ -366,39 +366,6 @@ def do_build_parameters(vehicle):
     if sts != 0:
         progress("Parameter build failed")
         sys.exit(1)
-
-
-def do_build(vehicledir, opts, frame_options):
-    """Build build target (e.g. sitl) in directory vehicledir"""
-
-    if opts.build_system == 'waf':
-        return do_build_waf(opts, frame_options)
-
-    old_dir = os.getcwd()
-
-    os.chdir(vehicledir)
-
-    if opts.clean:
-        run_cmd_blocking("Building clean", ["make", "clean"])
-
-    build_target = frame_options["make_target"]
-    if opts.debug:
-        build_target += "-debug"
-
-    build_cmd = ["make", build_target]
-    if opts.jobs is not None:
-        build_cmd += ['-j', str(opts.jobs)]
-
-    _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-    if sts != 0:
-        progress("Build failed; cleaning and rebuilding")
-        run_cmd_blocking("Cleaning", ["make", "clean"])
-        _, sts = run_cmd_blocking("Building %s" % build_target, build_cmd)
-        if sts != 0:
-            progress("Build failed")
-            sys.exit(1)
-
-    os.chdir(old_dir)
 
 
 def get_user_locations_path():
@@ -550,7 +517,7 @@ def start_antenna_tracker(opts):
     options = vinfo.options["AntennaTracker"]
     tracker_default_frame = options["default_frame"]
     tracker_frame_options = options["frames"][tracker_default_frame]
-    do_build(vehicledir, opts, tracker_frame_options)
+    do_build(opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
@@ -843,6 +810,11 @@ parser.add_option("-v", "--vehicle",
 parser.add_option("-f", "--frame", type='string', default=None, help="""set vehicle frame type
 
 %s""" % (generate_frame_help()))
+
+parser.add_option("--vehicle-binary",
+                  default=None,
+                  help="vehicle binary path")
+
 parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   action='store_true',
                   default=False,
@@ -1302,12 +1274,14 @@ if cmd_opts.hil:
 
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
-        do_build(vehicle_dir, cmd_opts, frame_infos)
+        do_build(cmd_opts, frame_infos)
 
     if cmd_opts.fresh_params:
         do_build_parameters(cmd_opts.vehicle)
 
-    if cmd_opts.build_system == "waf":
+    if cmd_opts.vehicle_binary is not None:
+        vehicle_binary = cmd_opts.vehicle_binary
+    elif cmd_opts.build_system == "waf":
         binary_basedir = "build/sitl"
         vehicle_binary = os.path.join(root_dir,
                                       binary_basedir,

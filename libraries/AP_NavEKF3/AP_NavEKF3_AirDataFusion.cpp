@@ -2,9 +2,7 @@
 
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
-#include <AP_AHRS/AP_AHRS.h>
-
-extern const AP_HAL::HAL& hal;
+#include <AP_DAL/AP_DAL.h>
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -21,24 +19,18 @@ extern const AP_HAL::HAL& hal;
 */
 void NavEKF3_core::FuseAirspeed()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseAirspeed);
-
     // declarations
     float vn;
     float ve;
     float vd;
     float vwn;
     float vwe;
-    float EAS2TAS = _ahrs->get_EAS2TAS();
+    float EAS2TAS = dal.get_EAS2TAS();
     const float R_TAS = sq(constrain_float(frontend->_easNoise, 0.5f, 5.0f) * constrain_float(EAS2TAS, 0.9f, 10.0f));
     float SH_TAS[3];
     float SK_TAS[2];
     Vector24 H_TAS = {};
     float VtasPred;
-
-    // health is set bad until test passed
-    tasHealth = false;
 
     // copy required states to local variable names
     vn = stateStruct.velocity.x;
@@ -134,7 +126,7 @@ void NavEKF3_core::FuseAirspeed()
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (float)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
@@ -188,9 +180,6 @@ void NavEKF3_core::FuseAirspeed()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop performance timer
-    hal.util->perf_end(_perf_FuseAirspeed);
 }
 
 // select fusion of true airspeed measurements
@@ -222,10 +211,11 @@ void NavEKF3_core::SelectTasFusion()
 }
 
 
-// select fusion of synthetic sideslip measurements
+// select fusion of synthetic sideslip measurements or body frame drag
 // synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
-// it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
-void NavEKF3_core::SelectBetaFusion()
+// body frame drag only works for bluff body multi rotor vehices with thrust forces aligned with the Z axis
+// it requires a stable wind for best results and should not be used for aerobatic flight
+void NavEKF3_core::SelectBetaDragFusion()
 {
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
@@ -238,16 +228,23 @@ void NavEKF3_core::SelectBetaFusion()
     }
 
     // set true when the fusion time interval has triggered
-    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaStep_ms) >= frontend->betaAvg_ms);
+    bool f_timeTrigger = ((imuSampleTime_ms - prevBetaDragStep_ms) >= frontend->betaAvg_ms);
     // set true when use of synthetic sideslip fusion is necessary because we have limited sensor data or are dead reckoning position
-    bool f_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->posRetryTimeNoVel_ms));
+    bool f_beta_required = !(use_compass() && useAirspeed() && ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->posRetryTimeNoVel_ms));
     // set true when sideslip fusion is feasible (requires zero sideslip assumption to be valid and use of wind states)
-    bool f_feasible = (assume_zero_sideslip() && !inhibitWindStates);
+    bool f_beta_feasible = (assume_zero_sideslip() && !inhibitWindStates);
     // use synthetic sideslip fusion if feasible, required and enough time has lapsed since the last fusion
-    if (f_feasible && f_required && f_timeTrigger) {
+    if (f_beta_feasible && f_beta_required && f_timeTrigger) {
         FuseSideslip();
-        prevBetaStep_ms = imuSampleTime_ms;
+        prevBetaDragStep_ms = imuSampleTime_ms;
     }
+
+#if EK3_FEATURE_DRAG_FUSION
+    // fusion of XY body frame aero specific forces is done at a slower rate and only if alternative methods of wind estimation are not available
+    if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
+        FuseDragForces();
+    }
+#endif
 }
 
 /*
@@ -257,9 +254,6 @@ void NavEKF3_core::SelectBetaFusion()
 */
 void NavEKF3_core::FuseSideslip()
 {
-    // start performance timer
-    hal.util->perf_begin(_perf_FuseSideslip);
-
     // declarations
     float q0;
     float q1;
@@ -275,7 +269,6 @@ void NavEKF3_core::FuseSideslip()
     Vector8 SK_BETA;
     Vector3f vel_rel_wind;
     Vector24 H_BETA;
-    float innovBeta;
 
     // copy required states to local variable names
     q0 = stateStruct.quat[0];
@@ -456,10 +449,279 @@ void NavEKF3_core::FuseSideslip()
     // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
     ForceSymmetry();
     ConstrainVariances();
-
-    // stop the performance timer
-    hal.util->perf_end(_perf_FuseSideslip);
 }
+
+#if EK3_FEATURE_DRAG_FUSION
+/*
+ * Fuse X and Y body axis specific forces using explicit algebraic equations generated with SymPy.
+ * See AP_NavEKF3/derivation/main.py for derivation
+ * Output for change reference: AP_NavEKF3/derivation/generated/acc_bf_generated.cpp
+*/
+void NavEKF3_core::FuseDragForces()
+{
+    // drag model parameters
+    const float bcoef_x = frontend->_ballisticCoef_x;
+    const float bcoef_y = frontend->_ballisticCoef_x;
+    const float mcoef = frontend->_momentumDragCoef.get();
+    const bool using_bcoef_x = bcoef_x > 1.0f;
+    const bool using_bcoef_y = bcoef_y > 1.0f;
+    const bool using_mcoef = mcoef > 0.001f;
+
+    memset (&Kfusion, 0, sizeof(Kfusion));
+    Vector24 Hfusion; // Observation Jacobians
+    const float R_ACC = sq(fmaxf(frontend->_dragObsNoise, 0.5f));
+    const float density_ratio = sqrtf(dal.get_EAS2TAS());
+    const float rho = fmaxf(1.225f * density_ratio, 0.1f); // air density
+
+    // get latest estimated orientation
+    const float &q0 = stateStruct.quat[0];
+    const float &q1 = stateStruct.quat[1];
+    const float &q2 = stateStruct.quat[2];
+    const float &q3 = stateStruct.quat[3];
+
+    // get latest velocity in earth frame
+    const float &vn = stateStruct.velocity.x;
+    const float &ve = stateStruct.velocity.y;
+    const float &vd = stateStruct.velocity.z;
+
+    // get latest wind velocity in earth frame
+    const float &vwn = stateStruct.wind_vel.x;
+    const float &vwe = stateStruct.wind_vel.y;
+
+    // predicted specific forces
+    // calculate relative wind velocity in earth frame and rotate into body frame
+    const Vector3f rel_wind_earth(vn - vwn, ve - vwe, vd);
+    const Vector3f rel_wind_body = prevTnb * rel_wind_earth;
+
+    // perform sequential fusion of XY specific forces
+    for (uint8_t axis_index = 0; axis_index < 2; axis_index++) {
+        // correct accel data for bias
+        const float mea_acc = dragSampleDelayed.accelXY[axis_index]  - stateStruct.accel_bias[axis_index] / dtEkfAvg;
+
+        // Acceleration in m/s/s predicfed using vehicle and wind velocity estimates
+        // Initialised to measured value and updated later using available drag model
+        float predAccel = mea_acc;
+
+        // predicted sign of drag force
+        const float dragForceSign = is_positive(rel_wind_body[axis_index]) ? -1.0f : 1.0f;
+
+        if (axis_index == 0) {
+            // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
+            // speed squared, and rotor momentum drag that is proportional to speed.
+            float Kacc; // Derivative of specific force wrt airspeed
+            if (using_mcoef && using_bcoef_x) {
+                // mixed bluff body and propeller momentum drag
+                const float airSpd = (bcoef_x / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef_x) * fabsf(mea_acc)));
+                Kacc = fmaxf(1e-1f, (rho / bcoef_x) * airSpd + mcoef * density_ratio);
+                predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign - rel_wind_body[0] * mcoef * density_ratio;
+            } else if (using_mcoef) {
+                // propeller momentum drag only
+                Kacc = fmaxf(1e-1f, mcoef * density_ratio);
+                predAccel = - rel_wind_body[0] * mcoef * density_ratio;
+            } else if (using_bcoef_x) {
+                // bluff body drag only
+                const float airSpd = sqrtf((2.0f * bcoef_x * fabsf(mea_acc)) / rho);
+                Kacc = fmaxf(1e-1f, (rho / bcoef_x) * airSpd);
+                predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign;
+            } else {
+                // skip this axis
+                continue;
+            }
+
+            // intermediate variables
+            const float HK0 = vn - vwn;
+            const float HK1 = ve - vwe;
+            const float HK2 = HK0*q0 + HK1*q3 - q2*vd;
+            const float HK3 = 2*Kacc;
+            const float HK4 = HK0*q1 + HK1*q2 + q3*vd;
+            const float HK5 = HK0*q2 - HK1*q1 + q0*vd;
+            const float HK6 = -HK0*q3 + HK1*q0 + q1*vd;
+            const float HK7 = powf(q0, 2) + powf(q1, 2) - powf(q2, 2) - powf(q3, 2);
+            const float HK8 = HK7*Kacc;
+            const float HK9 = q0*q3 + q1*q2;
+            const float HK10 = HK3*HK9;
+            const float HK11 = q0*q2 - q1*q3;
+            const float HK12 = 2*HK9;
+            const float HK13 = 2*HK11;
+            const float HK14 = 2*HK4;
+            const float HK15 = 2*HK2;
+            const float HK16 = 2*HK5;
+            const float HK17 = 2*HK6;
+            const float HK18 = -HK12*P[0][23] + HK12*P[0][5] - HK13*P[0][6] + HK14*P[0][1] + HK15*P[0][0] - HK16*P[0][2] + HK17*P[0][3] - HK7*P[0][22] + HK7*P[0][4];
+            const float HK19 = HK12*P[5][23];
+            const float HK20 = -HK12*P[23][23] - HK13*P[6][23] + HK14*P[1][23] + HK15*P[0][23] - HK16*P[2][23] + HK17*P[3][23] + HK19 - HK7*P[22][23] + HK7*P[4][23];
+            const float HK21 = powf(Kacc, 2);
+            const float HK22 = HK12*HK21;
+            const float HK23 = HK12*P[5][5] - HK13*P[5][6] + HK14*P[1][5] + HK15*P[0][5] - HK16*P[2][5] + HK17*P[3][5] - HK19 + HK7*P[4][5] - HK7*P[5][22];
+            const float HK24 = HK12*P[5][6] - HK12*P[6][23] - HK13*P[6][6] + HK14*P[1][6] + HK15*P[0][6] - HK16*P[2][6] + HK17*P[3][6] + HK7*P[4][6] - HK7*P[6][22];
+            const float HK25 = HK7*P[4][22];
+            const float HK26 = -HK12*P[4][23] + HK12*P[4][5] - HK13*P[4][6] + HK14*P[1][4] + HK15*P[0][4] - HK16*P[2][4] + HK17*P[3][4] - HK25 + HK7*P[4][4];
+            const float HK27 = HK21*HK7;
+            const float HK28 = -HK12*P[22][23] + HK12*P[5][22] - HK13*P[6][22] + HK14*P[1][22] + HK15*P[0][22] - HK16*P[2][22] + HK17*P[3][22] + HK25 - HK7*P[22][22];
+            const float HK29 = -HK12*P[1][23] + HK12*P[1][5] - HK13*P[1][6] + HK14*P[1][1] + HK15*P[0][1] - HK16*P[1][2] + HK17*P[1][3] - HK7*P[1][22] + HK7*P[1][4];
+            const float HK30 = -HK12*P[2][23] + HK12*P[2][5] - HK13*P[2][6] + HK14*P[1][2] + HK15*P[0][2] - HK16*P[2][2] + HK17*P[2][3] - HK7*P[2][22] + HK7*P[2][4];
+            const float HK31 = -HK12*P[3][23] + HK12*P[3][5] - HK13*P[3][6] + HK14*P[1][3] + HK15*P[0][3] - HK16*P[2][3] + HK17*P[3][3] - HK7*P[3][22] + HK7*P[3][4];
+            // const float HK32 = Kacc/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+
+            // calculate innovation variance and exit if badly conditioned
+            innovDragVar.x = (-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+            if (innovDragVar.x < R_ACC) {
+                return;
+            }
+            const float HK32 = Kacc / innovDragVar.x;
+
+            // Observation Jacobians
+            Hfusion[0] = -HK2*HK3;
+            Hfusion[1] = -HK3*HK4;
+            Hfusion[2] = HK3*HK5;
+            Hfusion[3] = -HK3*HK6;
+            Hfusion[4] = -HK8;
+            Hfusion[5] = -HK10;
+            Hfusion[6] = HK11*HK3;
+            Hfusion[22] = HK8;
+            Hfusion[23] = HK10;
+
+            // Kalman gains
+            // Don't allow modification of any states other than wind velocity - we only need a wind estimate.
+            // See AP_NavEKF3/derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
+            Kfusion[22] = -HK28*HK32;
+            Kfusion[23] = -HK20*HK32;
+
+
+        } else if (axis_index == 1) {
+            // drag can be modelled as an arbitrary  combination of bluff body drag that proportional to
+            // speed squared, and rotor momentum drag that is proportional to speed.
+            float Kacc; // Derivative of specific force wrt airspeed
+            if (using_mcoef && using_bcoef_y) {
+                // mixed bluff body and propeller momentum drag
+                const float airSpd = (bcoef_y / rho) * (- mcoef + sqrtf(sq(mcoef) + 2.0f * (rho / bcoef_y) * fabsf(mea_acc)));
+                Kacc = fmaxf(1e-1f, (rho / bcoef_y) * airSpd + mcoef * density_ratio);
+                predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign - rel_wind_body[1] * mcoef * density_ratio;
+            } else if (using_mcoef) {
+                // propeller momentum drag only
+                Kacc = fmaxf(1e-1f, mcoef * density_ratio);
+                predAccel = - rel_wind_body[1] * mcoef * density_ratio;
+            } else if (using_bcoef_y) {
+                // bluff body drag only
+                const float airSpd = sqrtf((2.0f * bcoef_y * fabsf(mea_acc)) / rho);
+                Kacc = fmaxf(1e-1f, (rho / bcoef_y) * airSpd);
+                predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign;
+            } else {
+                // nothing more to do
+                return;
+            }
+
+            // intermediate variables
+            const float HK0 = ve - vwe;
+            const float HK1 = vn - vwn;
+            const float HK2 = HK0*q0 - HK1*q3 + q1*vd;
+            const float HK3 = 2*Kacc;
+            const float HK4 = -HK0*q1 + HK1*q2 + q0*vd;
+            const float HK5 = HK0*q2 + HK1*q1 + q3*vd;
+            const float HK6 = HK0*q3 + HK1*q0 - q2*vd;
+            const float HK7 = q0*q3 - q1*q2;
+            const float HK8 = HK3*HK7;
+            const float HK9 = powf(q0, 2) - powf(q1, 2) + powf(q2, 2) - powf(q3, 2);
+            const float HK10 = HK9*Kacc;
+            const float HK11 = q0*q1 + q2*q3;
+            const float HK12 = 2*HK11;
+            const float HK13 = 2*HK7;
+            const float HK14 = 2*HK5;
+            const float HK15 = 2*HK2;
+            const float HK16 = 2*HK4;
+            const float HK17 = 2*HK6;
+            const float HK18 = HK12*P[0][6] + HK13*P[0][22] - HK13*P[0][4] + HK14*P[0][2] + HK15*P[0][0] + HK16*P[0][1] - HK17*P[0][3] - HK9*P[0][23] + HK9*P[0][5];
+            const float HK19 = powf(Kacc, 2);
+            const float HK20 = HK12*P[6][6] - HK13*P[4][6] + HK13*P[6][22] + HK14*P[2][6] + HK15*P[0][6] + HK16*P[1][6] - HK17*P[3][6] + HK9*P[5][6] - HK9*P[6][23];
+            const float HK21 = HK13*P[4][22];
+            const float HK22 = HK12*P[6][22] + HK13*P[22][22] + HK14*P[2][22] + HK15*P[0][22] + HK16*P[1][22] - HK17*P[3][22] - HK21 - HK9*P[22][23] + HK9*P[5][22];
+            const float HK23 = HK13*HK19;
+            const float HK24 = HK12*P[4][6] - HK13*P[4][4] + HK14*P[2][4] + HK15*P[0][4] + HK16*P[1][4] - HK17*P[3][4] + HK21 - HK9*P[4][23] + HK9*P[4][5];
+            const float HK25 = HK9*P[5][23];
+            const float HK26 = HK12*P[5][6] - HK13*P[4][5] + HK13*P[5][22] + HK14*P[2][5] + HK15*P[0][5] + HK16*P[1][5] - HK17*P[3][5] - HK25 + HK9*P[5][5];
+            const float HK27 = HK19*HK9;
+            const float HK28 = HK12*P[6][23] + HK13*P[22][23] - HK13*P[4][23] + HK14*P[2][23] + HK15*P[0][23] + HK16*P[1][23] - HK17*P[3][23] + HK25 - HK9*P[23][23];
+            const float HK29 = HK12*P[2][6] + HK13*P[2][22] - HK13*P[2][4] + HK14*P[2][2] + HK15*P[0][2] + HK16*P[1][2] - HK17*P[2][3] - HK9*P[2][23] + HK9*P[2][5];
+            const float HK30 = HK12*P[1][6] + HK13*P[1][22] - HK13*P[1][4] + HK14*P[1][2] + HK15*P[0][1] + HK16*P[1][1] - HK17*P[1][3] - HK9*P[1][23] + HK9*P[1][5];
+            const float HK31 = HK12*P[3][6] + HK13*P[3][22] - HK13*P[3][4] + HK14*P[2][3] + HK15*P[0][3] + HK16*P[1][3] - HK17*P[3][3] - HK9*P[3][23] + HK9*P[3][5];
+            // const float HK32 = Kaccy/(HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
+
+            innovDragVar.y = (HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
+            if (innovDragVar.y < R_ACC) {
+                // calculation is badly conditioned
+                return;
+            }
+            const float HK32 = Kacc / innovDragVar.y;
+
+            // Observation Jacobians
+            Hfusion[0] = -HK2*HK3;
+            Hfusion[1] = -HK3*HK4;
+            Hfusion[2] = -HK3*HK5;
+            Hfusion[3] = HK3*HK6;
+            Hfusion[4] = HK8;
+            Hfusion[5] = -HK10;
+            Hfusion[6] = -HK11*HK3;
+            Hfusion[22] = -HK8;
+            Hfusion[23] = HK10;
+
+            // Kalman gains
+            // Don't allow modification of any states other than wind velocity at this stage of development - we only need a wind estimate.
+            // See AP_NavEKF3/derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
+            Kfusion[22] = -HK22*HK32;
+            Kfusion[23] = -HK28*HK32;
+        }
+
+        innovDrag[axis_index] = predAccel - mea_acc;
+        dragTestRatio[axis_index] = sq(innovDrag[axis_index]) / (25.0f * innovDragVar[axis_index]);
+
+        // if the innovation consistency check fails then don't fuse the sample
+        if (dragTestRatio[axis_index] > 1.0f) {
+            return;
+        }
+
+        // correct the state vector
+        for (uint8_t j= 0; j<=stateIndexLim; j++) {
+            statesArray[j] = statesArray[j] - Kfusion[j] * innovDrag[axis_index];
+        }
+        stateStruct.quat.normalize();
+
+        // correct the covariance P = (I - K*H)*P
+        // take advantage of the empty columns in KH to reduce the
+        // number of operations
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=6; j++) {
+                KH[i][j] = Kfusion[i] * Hfusion[j];
+            }
+            for (unsigned j = 7; j<=21; j++) {
+                KH[i][j] = 0.0f;
+            }
+            for (unsigned j = 22; j<=23; j++) {
+                KH[i][j] = Kfusion[i] * Hfusion[j];
+            }
+        }
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                ftype res = 0;
+                res += KH[i][0] * P[0][j];
+                res += KH[i][1] * P[1][j];
+                res += KH[i][2] * P[2][j];
+                res += KH[i][3] * P[3][j];
+                res += KH[i][4] * P[4][j];
+                res += KH[i][5] * P[5][j];
+                res += KH[i][6] * P[6][j];
+                res += KH[i][22] * P[22][j];
+                res += KH[i][23] * P[23][j];
+                KHP[i][j] = res;
+            }
+        }
+        for (unsigned i = 0; i<=stateIndexLim; i++) {
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
+                P[i][j] = P[i][j] - KHP[i][j];
+            }
+        }
+    }
+}
+#endif // EK3_FEATURE_DRAG_FUSION
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

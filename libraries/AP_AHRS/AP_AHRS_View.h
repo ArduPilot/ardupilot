@@ -21,6 +21,11 @@
  */
 
 #include "AP_AHRS.h"
+#include <AP_Motors/AP_Motors.h>
+
+// fwd declarations to avoid include errors
+class AC_AttitudeControl;
+class AC_PosControl;
 
 class AP_AHRS_View
 {
@@ -171,6 +176,11 @@ public:
     float get_error_yaw(void) const {
         return ahrs.get_error_yaw();
     }
+
+    // Logging Functions
+    void Write_AttitudeView(const Vector3f &targets) const;    
+    void Write_Rate( const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
+                        const AC_PosControl &pos_control) const;
 
     float roll;
     float pitch;

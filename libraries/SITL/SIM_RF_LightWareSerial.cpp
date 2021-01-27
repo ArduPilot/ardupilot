@@ -32,7 +32,7 @@ bool RF_LightWareSerial::check_synced()
         ssize_t n = read_from_autopilot(buffer, ARRAY_SIZE(buffer) - 1);
         if (n > 0) {
             if (!strncmp(buffer, "www\r\n", ARRAY_SIZE(buffer))) {
-                gcs().send_text(MAV_SEVERITY_INFO, "Slurped a sync thing\n");
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Slurped a sync thing\n");
                 synced = true;
             }
         }

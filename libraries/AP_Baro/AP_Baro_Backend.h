@@ -28,9 +28,13 @@ public:
     virtual void handle_msp(const MSP::msp_baro_data_message_t &pkt) {}
 #endif 
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt) {}
+#endif 
+    
     /*
       device driver IDs. These are used to fill in the devtype field
-      of the device ID, which shows up as GND_BARO_ID* parameters to
+      of the device ID, which shows up as BARO_DEVID* parameters to
       users.
      */
     enum DevTypes {
@@ -66,7 +70,7 @@ protected:
     // number of dropped samples. Not used for now, but can be usable to choose more reliable sensor
     uint32_t _error_count;
 
-    // set bus ID of this instance, for GND_BARO_ID parameters
+    // set bus ID of this instance, for BARO_DEVID parameters
     void set_bus_id(uint8_t instance, uint32_t id) {
         _frontend.sensors[instance].bus_id.set(int32_t(id));
     }

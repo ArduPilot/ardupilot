@@ -43,8 +43,6 @@ protected:
     virtual MAV_VTOL_STATE vtol_state() const override { return MAV_VTOL_STATE_MC; };
     virtual MAV_LANDED_STATE landed_state() const override;
 
-    bool allow_disarm() const override;
-
 private:
 
     void handleMessage(const mavlink_message_t &msg) override;
@@ -60,10 +58,13 @@ private:
     MAV_MODE base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
+    float vfr_hud_airspeed() const override;
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_alt() const override;
 
     void send_pid_tuning() override;
 
     void send_winch_status() const override;
+
+    void send_wind() const;
 };

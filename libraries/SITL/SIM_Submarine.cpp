@@ -235,6 +235,7 @@ void Submarine::update(const struct sitl_input &input)
     calculate_forces(input, rot_accel, accel_body);
 
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

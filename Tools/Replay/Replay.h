@@ -13,41 +13,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#include <AP_Common/AP_Common.h>
-#include <AP_Param/AP_Param.h>
-#include <StorageManager/StorageManager.h>
-#include <fenv.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_Declination/AP_Declination.h>
-#include <Filter/Filter.h>
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Compass/AP_Compass.h>
-#include <AP_Baro/AP_Baro.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF3/AP_NavEKF3.h>
-#include <AP_Mission/AP_Mission.h>
-#include <AP_Rally/AP_Rally.h>
-#include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_Terrain/AP_Terrain.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <RC_Channel/RC_Channel.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
-#include <stdio.h>
-#include <errno.h>
-#include <signal.h>
-#include <unistd.h>
-#include <AP_HAL/utility/getopt_cpp.h>
+
+#include "LogReader.h"
+
+struct user_parameter {
+    struct user_parameter *next;
+    char name[17];
+    float value;
+};
+
+extern user_parameter *user_parameters;
+extern bool replay_force_ekf2;
+extern bool replay_force_ekf3;
 
 class ReplayVehicle : public AP_Vehicle {
 public:
@@ -74,6 +52,9 @@ public:
     };
     AP_Logger logger{unused};
 
+    NavEKF2 ekf2;
+    NavEKF3 ekf3;
+
 protected:
 
     void init_ardupilot() override;
@@ -87,33 +68,14 @@ private:
     static const AP_Param::Info var_info[];
 };
 
-
 class Replay : public AP_HAL::HAL::Callbacks {
+
 public:
     Replay(ReplayVehicle &vehicle) :
-        filename("log.bin"),
         _vehicle(vehicle) { }
 
-    // HAL::Callbacks implementation.
     void setup() override;
     void loop() override;
-
-    void flush_logger(void);
-    void show_packet_counts();
-
-    bool check_solution = false;
-    const char *log_filename = NULL;
-    bool generate_fpe = true;
-
-    /*
-      information about a log from find_log_info
-     */
-    struct log_information {
-        uint16_t update_rate;
-        bool have_imu2:1;
-        bool have_imt:1;
-        bool have_imt2:1;
-    } log_info {};
 
     // return true if a user parameter of name is set
     bool check_user_param(const char *name);
@@ -122,98 +84,12 @@ private:
     const char *filename;
     ReplayVehicle &_vehicle;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
-#endif
-
-    LogReader logreader{_vehicle.ahrs,
-            _vehicle.ins,
-            _vehicle.compass,
-            _vehicle.gps,
-            _vehicle.airspeed,
-            _vehicle.logger,
-            _vehicle.log_structure,
-            0,
-            nottypes};
-
-    FILE *ekf1f;
-    FILE *ekf2f;
-    FILE *ekf3f;
-    FILE *ekf4f;
-
-    bool done_baro_init;
-    bool done_home_init;
-    int32_t arm_time_ms = -1;
-    bool ahrs_healthy;
-    bool use_imt = true;
-    bool check_generate = false;
-    float tolerance_euler = 3;
-    float tolerance_pos = 2;
-    float tolerance_vel = 2;
-    const char **nottypes = NULL;
-    uint16_t downsample = 0;
-    bool logmatch = false;
-    uint32_t output_counter = 0;
-    uint64_t last_timestamp = 0;
-    bool packet_counts = false;
-
-    struct {
-        float max_roll_error;
-        float max_pitch_error;
-        float max_yaw_error;
-        float max_pos_error;
-        float max_alt_error;
-        float max_vel_error;
-    } check_result {};
+    LogReader reader{_vehicle.log_structure, _vehicle.ekf2, _vehicle.ekf3};
 
     void _parse_command_line(uint8_t argc, char * const argv[]);
 
-    struct user_parameter {
-        struct user_parameter *next;
-        char name[17];
-        float value;
-    } *user_parameters;
-
-    void set_ins_update_rate(uint16_t update_rate);
-    void inhibit_gyro_cal();
-    void force_log_disarmed();
-
-    void usage(void);
     void set_user_parameters(void);
-    void read_sensors(const char *type, uint8_t core);
-    void write_ekf_logs(void);
-    void log_check_generate();
-    void log_check_solution();
-    bool show_error(const char *text, float max_error, float tolerance);
-    void report_checks();
-    bool find_log_info(struct log_information &info);
-    const char **parse_list_from_string(const char *str);
     bool parse_param_line(char *line, char **vname, float &value);
     void load_param_file(const char *filename);
-    void set_signal_handlers(void);
-    void flush_and_exit();
-
-    FILE *xfopen(const char *f, const char *mode);
-
-    bool seen_non_fmt;
+    void usage();
 };
-
-/*
-  Replay specific log structures
- */
-struct PACKED log_Chek {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    int16_t roll;
-    int16_t pitch;
-    uint16_t yaw;
-    int32_t lat;
-    int32_t lng;
-    float alt;
-    float vnorth;
-    float veast;
-    float vdown;
-};
-
-
-extern Replay replay;

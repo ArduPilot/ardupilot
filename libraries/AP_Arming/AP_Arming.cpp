@@ -31,7 +31,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
-#include <AP_Generator/AP_Generator_RichenPower.h>
+#include <AP_Generator/AP_Generator.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Scripting/AP_Scripting.h>
@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
     AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require,                 1,
-                             AP_PARAM_NO_SHIFT,
+                             AP_PARAM_FLAG_NO_SHIFT,
                              AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 
     // 2 was the CHECK paramter stored in a AP_Int16
@@ -363,6 +363,12 @@ bool AP_Arming::ins_checks(bool report)
             return false;
         }
 
+        // no arming while doing temp cal
+        if (ins.temperature_cal_running()) {
+            check_failed(ARMING_CHECK_INS, report, "temperature cal running");
+            return false;
+        }
+        
         // check AHRS attitudes are consistent
         char failure_msg[50] = {};
         if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
@@ -898,6 +904,8 @@ bool AP_Arming::can_checks(bool report)
                     check_failed(ARMING_CHECK_SYSTEM, report, "TestCAN: No Arming with TestCAN enabled");
                     break;
                 }
+                case AP_CANManager::Driver_Type_EFI_NWPMU:
+                case AP_CANManager::Driver_Type_USD1:
                 case AP_CANManager::Driver_Type_None:
                     break;
             }
@@ -952,7 +960,7 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_ENABLED
+#if OSD_PARAM_ENABLED && OSD_ENABLED 
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
@@ -1073,8 +1081,10 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
     }
 
     // send failure or waiting message
-    if (some_failures && !failure_msg_sent) {
-        check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Auxiliary authorisation refused");
+    if (some_failures) {
+        if (!failure_msg_sent) {
+            check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Auxiliary authorisation refused");
+        }
         return false;
     } else if (waiting_for_responses) {
         check_failed(ARMING_CHECK_AUX_AUTH, display_failure, "Waiting for auxiliary authorisation");
@@ -1088,7 +1098,7 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
 bool AP_Arming::generator_checks(bool display_failure) const
 {
 #if GENERATOR_ENABLED
-    const AP_Generator_RichenPower *generator = AP::generator();
+    const AP_Generator *generator = AP::generator();
     if (generator == nullptr) {
         return true;
     }
@@ -1200,7 +1210,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm(const AP_Arming::Method method)
+bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (!armed) { // already disarmed
         return false;

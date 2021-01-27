@@ -22,6 +22,7 @@
 #include "GPS_detect_state.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_MSP/msp.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -65,6 +66,7 @@ class AP_GPS
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
     friend class AP_GPS_MSP;
+    friend class AP_GPS_ExternalAHRS;
     friend class AP_GPS_MTK;
     friend class AP_GPS_MTK19;
     friend class AP_GPS_NMEA;
@@ -114,6 +116,8 @@ public:
         GPS_TYPE_UBLOX_RTK_BASE = 17,
         GPS_TYPE_UBLOX_RTK_ROVER = 18,
         GPS_TYPE_MSP = 19,
+        GPS_TYPE_ALLYSTAR = 20, // AllyStar NMEA
+        GPS_TYPE_EXTERNAL_AHRS = 21,
     };
 
     /// GPS status codes
@@ -211,6 +215,9 @@ public:
     void handle_msg(const mavlink_message_t &msg);
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt);
 #endif
 
     // Accessor functions
@@ -522,6 +529,7 @@ protected:
     AP_Int8 _blend_mask;
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
+    AP_Int8 _primary;
 
 #if GPS_MOVING_BASELINE
     MovingBase mb_params[GPS_MAX_RECEIVERS];
@@ -659,7 +667,8 @@ private:
         NONE        = 0,
         USE_BEST    = 1,
         BLEND       = 2,
-        USE_SECOND  = 3,
+        //USE_SECOND  = 3, deprecated for new primary param
+        USE_PRIMARY_IF_3D_FIX = 4,
     };
 
     // used for flight testing with GPS loss

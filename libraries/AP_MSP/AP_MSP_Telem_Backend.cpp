@@ -15,6 +15,7 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <RC_Channel/RC_Channel.h>
@@ -458,7 +459,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
     case MSP_RC:
         return msp_process_out_rc(dst);
     default:
-        return MSP_RESULT_ERROR;
+        // MSP always requires an ACK even for unsupported messages
+        return MSP_RESULT_ACK;
     }
 }
 
@@ -490,6 +492,11 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     case MSP2_SENSOR_BAROMETER: {
         const MSP::msp_baro_data_message_t *pkt = (const MSP::msp_baro_data_message_t *)src->ptr;
         msp_handle_baro(*pkt);
+    }
+    break;
+    case MSP2_SENSOR_AIRSPEED: {
+        const MSP::msp_airspeed_data_message_t *pkt = (const MSP::msp_airspeed_data_message_t *)src->ptr;
+        msp_handle_airspeed(*pkt);
     }
     break;
     }
@@ -537,6 +544,16 @@ void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &p
 {
 #if HAL_MSP_BARO_ENABLED
     AP::baro().handle_msp(pkt);
+#endif
+}
+
+void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
+{
+#if HAL_MSP_AIRSPEED_ENABLED
+    auto *airspeed = AP::airspeed();
+    if (airspeed) {
+        airspeed->handle_msp(pkt);
+    }
 #endif
 }
 

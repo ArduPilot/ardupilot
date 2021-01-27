@@ -110,7 +110,7 @@ void GCS::send_named_float(const char *name, float value) const
 /*
   install an alternative protocol handler. This allows another
   protocol to take over the link if MAVLink goes idle. It is used to
-  allow for the AP_BLHeli pass-thru protocols to run on hal.uartA
+  allow for the AP_BLHeli pass-thru protocols to run on hal.serial(0)
  */
 bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protocol_handler_fn_t handler)
 {

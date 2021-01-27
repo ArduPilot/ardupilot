@@ -122,9 +122,6 @@ void Rover::init_ardupilot()
 
     rover.g2.sailboat.init();
 
-    // disable safety if requested
-    BoardConfig.init_safety();
-
     // flag that initialisation has completed
     initialised = true;
 }
@@ -140,7 +137,7 @@ void Rover::startup_ground(void)
 
     #if(GROUND_START_DELAY > 0)
         gcs().send_text(MAV_SEVERITY_NOTICE, "<startup_ground> With delay");
-        delay(GROUND_START_DELAY * 1000);
+        hal.scheduler->delay(GROUND_START_DELAY * 1000);
     #endif
 
     // IMU ground start

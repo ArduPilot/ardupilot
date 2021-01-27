@@ -2,6 +2,7 @@
 
 #include <AP_Math/AP_Math.h>
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 bool AP_Frsky_MAVlite_Message::get_bytes(uint8_t *bytes, const uint8_t offset, const uint8_t count) const
 {
     if (offset + count > MAVLITE_MAX_PAYLOAD_LEN) {
@@ -53,3 +54,4 @@ void AP_Frsky_MAVlite_Message::bit8_pack(uint8_t &value, const uint8_t bit_value
     }
     value |= (bit_value<<bit_offset) & mask;
 }
+#endif

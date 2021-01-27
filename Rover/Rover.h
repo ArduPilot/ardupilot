@@ -165,7 +165,7 @@ private:
     OpticalFlow optflow;
 #endif
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
 
@@ -298,9 +298,6 @@ private:
     bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     void update_home();
 
-    // compat.cpp
-    void delay(uint32_t ms);
-
     // crash_check.cpp
     void crash_check();
 
@@ -390,9 +387,10 @@ private:
     bool should_log(uint32_t mask);
     bool is_boat() const;
 
-#if OSD_ENABLED == ENABLED
-    void publish_osd_info();
-#endif
+    // vehicle specific waypoint info helpers
+    bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_bearing_deg(float &bearing) const override;
+    bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
     enum Failsafe_Action {
         Failsafe_Action_None          = 0,

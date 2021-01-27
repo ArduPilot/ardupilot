@@ -1,9 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
+#include <AP_DAL/AP_DAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -52,46 +51,6 @@ float NavEKF2_core::errorScore() const
     return score;
 }
 
-// return data for debugging optical flow fusion
-void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInnovX, float &flowInnovY, float &auxInnov, float &HAGL, float &rngInnov, float &range, float &gndOffsetErr) const
-{
-    varFlow = MAX(flowTestRatio[0],flowTestRatio[1]);
-    gndOffset = terrainState;
-    flowInnovX = innovOptFlow[0];
-    flowInnovY = innovOptFlow[1];
-    auxInnov = norm(auxFlowObsInnov.x,auxFlowObsInnov.y);
-    HAGL = terrainState - stateStruct.position.z;
-    rngInnov = innovRng;
-    range = rangeDataDelayed.rng;
-    gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
-}
-
-// return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
-bool NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED, float &offsetHigh, float &offsetLow)
-{
-    // if the states have not been initialised or we have not received any beacon updates then return zeros
-    if (!statesInitialised || N_beacons == 0) {
-        return false;
-    }
-
-    // Ensure that beacons are not skipped due to calling this function at a rate lower than the updates
-    if (rngBcnFuseDataReportIndex >= N_beacons) {
-        rngBcnFuseDataReportIndex = 0;
-    }
-
-    // Output the fusion status data for the specified beacon
-    ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
-    rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
-    innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
-    innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
-    testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
-    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
-    offsetHigh = bcnPosOffsetMax;                                               // beacon system vertical pos offset upper estimate
-    offsetLow = bcnPosOffsetMin;                                                // beacon system vertical pos offset lower estimate
-    rngBcnFuseDataReportIndex++;
-    return true;
-}
-
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
@@ -100,7 +59,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow only navigation
     if (frontend->_fusionModeGPS == 3 && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-        const RangeFinder *_rng = AP::rangefinder();
+        const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
@@ -121,7 +80,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
 void NavEKF2_core::getEulerAngles(Vector3f &euler) const
 {
     outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - _ahrs->get_trim();
+    euler = euler - dal.get_trim();
 }
 
 // return body axis gyro bias estimates in rad/sec
@@ -146,17 +105,11 @@ void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
     gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
-// return tilt error convergence metric
-void NavEKF2_core::getTiltError(float &ang) const
-{
-    ang = tiltErrFilt;
-}
-
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
     outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * _ahrs->get_rotation_vehicle_body_to_autopilot_body();
+    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
 }
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
@@ -214,18 +167,28 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
     vel = outputDataNew.velocity + velOffsetNED;
 }
 
+// return estimate of true airspeed vector in body frame in m/s
+// returns false if estimate is unavailable
+bool NavEKF2_core::getAirSpdVec(Vector3f &vel) const
+{
+    if (inhibitWindStates || PV_AidingMode == AID_NONE) {
+        return false;
+    }
+    vel = outputDataNew.velocity + velOffsetNED;
+    vel.x -= stateStruct.wind_vel.x;
+    vel.y -= stateStruct.wind_vel.y;
+    Matrix3f Tnb; // rotation from nav to body frame
+    outputDataNew.quat.inverse().rotation_matrix(Tnb);
+    vel = Tnb * vel;
+    return true;
+}
+
 // Return the rate of change of vertical position in the down direction (dPosD/dt) of the body frame origin in m/s
 float NavEKF2_core::getPosDownDerivative(void) const
 {
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     // correct for the IMU offset (EKF calculations are at the IMU)
     return vertCompFiltState.vel + velOffsetNED.z;
-}
-
-// This returns the specific forces in the NED frame
-void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
-    accelNED = velDotNED;
-    accelNED.z -= GRAVITY_MSS;
 }
 
 // return the Z-accel bias estimate in m/s^2
@@ -252,9 +215,9 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            if ((AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D)) {
+            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const struct Location &gpsloc = AP::gps().location();
+                const struct Location &gpsloc = dal.gps().location();
                 const Vector2f tempPosNE = EKF_origin.get_distance_NE(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
@@ -316,7 +279,7 @@ bool NavEKF2_core::getHAGL(float &HAGL) const
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF2_core::getLLH(struct Location &loc) const
 {
-    const AP_GPS &gps = AP::gps();
+    const auto &gps = dal.gps();
     Location origin;
     float posD;
 
@@ -336,7 +299,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status() >= AP_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
                 const struct Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
@@ -358,7 +321,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
-        if ((gps.status() >= AP_GPS::GPS_OK_FIX_3D)) {
+        if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location();
             loc = gpsloc;
             loc.relative_alt = 0;
@@ -414,7 +377,7 @@ void NavEKF2_core::getMagXYZ(Vector3f &magXYZ) const
 // return true if offsets are valid
 bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
-    if (!_ahrs->get_compass()) {
+    if (!dal.get_compass()) {
         return false;
     }
 
@@ -425,20 +388,14 @@ bool NavEKF2_core::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
     if ((mag_idx == magSelectIndex) &&
             finalInflightMagInit &&
             !inhibitMagStates &&
-            _ahrs->get_compass()->healthy(magSelectIndex) &&
+            dal.get_compass()->healthy(magSelectIndex) &&
             variancesConverged) {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex) - stateStruct.body_magfield*1000.0f;
         return true;
     } else {
-        magOffsets = _ahrs->get_compass()->get_offsets(magSelectIndex);
+        magOffsets = dal.get_compass()->get_offsets(magSelectIndex);
         return false;
     }
-}
-
-// return the index for the active magnetometer
-uint8_t NavEKF2_core::getActiveMag() const
-{
-    return (uint8_t)magSelectIndex;
 }
 
 // return the innovations for the NED Pos, NED Vel, XYZ Mag and Vtas measurements
@@ -508,15 +465,6 @@ return filter timeout status as a bitmasked integer
  6 = unassigned
  7 = unassigned
 */
-void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
-{
-    timeouts = (posTimeout<<0 |
-                velTimeout<<1 |
-                hgtTimeout<<2 |
-                magTimeout<<3 |
-                tasTimeout<<4);
-}
-
 // Return the navigation filter status message
 void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
 {
@@ -623,22 +571,8 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
     return framesSincePredict;
 }
 
-// publish output observer angular, velocity and position tracking error
-void NavEKF2_core::getOutputTrackingError(Vector3f &error) const
-{
-    error = outputTrackError;
-}
-
 // return true when external nav data is also being used as a yaw observation
 bool NavEKF2_core::isExtNavUsedForYaw()
 {
     return extNavUsedForYaw;
-}
-
-bool NavEKF2_core::getDataEKFGSF(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF])
-{
-    if (yawEstimator != nullptr) {
-        return yawEstimator->getLogData(yaw_composite, yaw_composite_variance, yaw, innov_VN, innov_VE, weight);
-    }
-    return false;
 }

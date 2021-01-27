@@ -109,7 +109,19 @@ void system_halt_hook(void);
 
 // hook for stack overflow
 void stack_overflow(thread_t *tp);
-    
+
+/*
+  check how much stack is free given a stack base. Assumes the fill
+  byte is 0x55
+ */
+uint32_t stack_free(void *stack_base);
+
+// allow stack view code to show free ISR stack
+extern uint32_t __main_stack_base__;
+extern uint32_t __main_stack_end__;
+extern uint32_t __main_thread_stack_base__;
+extern uint32_t __main_thread_stack_end__;
+
 #ifdef __cplusplus
 }
 #endif

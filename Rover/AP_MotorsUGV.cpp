@@ -249,7 +249,7 @@ float AP_MotorsUGV::get_slew_limited_throttle(float throttle, float dt) const
         return throttle;
     }
 
-    const float throttle_change_max = MAX(1.0f, (float)_slew_rate * dt);
+    const float throttle_change_max = static_cast<float>(_slew_rate) * dt;
     return constrain_float(throttle, _throttle_prev - throttle_change_max, _throttle_prev + throttle_change_max);
 }
 

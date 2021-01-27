@@ -139,7 +139,7 @@ module load graph
 @alias add gspeedup g lowpass(delta(RAW_IMU.time_usec*1.0e-6,"i"),"l",0.9)
 @alias add gysim g degrees(SIMSTATE.yaw) degrees(ATTITUDE.yaw)
 
-@alias add wp-cmac wp load ../Tools/autotest/CMAC-circuit.txt
+@alias add wp-cmac wp load ../Tools/autotest/Generic_Missions/CMAC-circuit.txt
 
 
 #graph SERVO_OUTPUT_RAW.servo8_raw

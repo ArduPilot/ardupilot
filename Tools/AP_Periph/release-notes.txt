@@ -1,3 +1,26 @@
+Release 1.2.0 6th Jan 2020
+--------------------------
+
+This is a major release with several significant bug fixes and
+improvements:
+
+ - support for battery monitor nodes
+
+ - support for testing in SITL
+
+ - improvements in error reporting to the flight controller
+
+ - fixes to stack sizes
+
+ - MSP output support
+
+ - support for BGR NCP5623 LEDs
+
+ - switched to common CAN stack with main ArduPilot vehicle code
+
+ - added several new board types
+
+
 Release 1.1.0 14th May 2020
 ---------------------------
 

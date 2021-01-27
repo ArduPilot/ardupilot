@@ -70,6 +70,12 @@ public:
         return received_telem_data;
     }
 
+    bool has_bidir_dshot(uint8_t esc_index) const {
+        return channel_bidir_dshot_mask.get() & (1U << motor_map[esc_index]);
+    }
+
+    uint16_t get_bidir_dshot_mask() const { return channel_bidir_dshot_mask.get(); }
+
     static AP_BLHeli *get_singleton(void) {
         return _singleton;
     }
@@ -91,6 +97,8 @@ private:
     AP_Int8 output_type;
     AP_Int8 control_port;
     AP_Int8 motor_poles;
+    // mask of channels with bi-directional dshot enabled
+    AP_Int32 channel_bidir_dshot_mask;
     
     enum mspState {
         MSP_IDLE=0,
@@ -214,7 +222,7 @@ private:
         ESC_PROTOCOL_ONESHOT125=2,
         ESC_PROTOCOL_DSHOT=5,
     };
-    
+
     // ESC status structure at address 0xEB00
     struct PACKED esc_status {
         uint8_t unknown[3];
@@ -301,7 +309,8 @@ private:
     void run_connection_test(uint8_t chan);
     uint8_t telem_crc8(uint8_t crc, uint8_t crc_seed) const;
     void read_telemetry_packet(void);
-    
+    void log_bidir_telemetry(void);
+
     // protocol handler hook
     bool protocol_handler(uint8_t , AP_HAL::UARTDriver *);
 };

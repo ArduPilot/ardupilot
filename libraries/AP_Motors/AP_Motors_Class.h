@@ -44,6 +44,8 @@ public:
         MOTOR_FRAME_HELI_DUAL = 11,
         MOTOR_FRAME_DODECAHEXA = 12,
         MOTOR_FRAME_HELI_QUAD = 13,
+        MOTOR_FRAME_DECA = 14,
+        MOTOR_FRAME_SCRIPTING_MATRIX = 15,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -148,6 +150,9 @@ public:
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
 
+    // set limit flag for pitch, roll and yaw
+    void set_limit_flag_pitch_roll_yaw(bool flag);
+
     //
     // virtual functions that should be implemented by child classes
     //
@@ -200,13 +205,22 @@ public:
                     PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
 
+    MAV_TYPE get_frame_mav_type() const { return _mav_type; }
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
     virtual void        rc_write_angle(uint8_t chan, int16_t angle_cd);
     virtual void        rc_set_freq(uint32_t mask, uint16_t freq_hz);
-    virtual uint32_t    rc_map_mask(uint32_t mask) const;
+
+
+    /*
+      map an internal motor mask to real motor mask, accounting for
+      SERVOn_FUNCTION mappings, and allowing for multiple outputs per
+      motor number
+    */
+    uint32_t    motor_mask_to_srv_channel_mask(uint32_t mask) const;
 
     // add a motor to the motor map
     void add_motor_num(int8_t motor_num);
@@ -253,6 +267,8 @@ protected:
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
     bool                _thrust_balanced;       // true when output thrust is well balanced
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
+
+    MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
 private:
 

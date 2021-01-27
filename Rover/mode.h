@@ -327,7 +327,8 @@ private:
     enum Mis_Done_Behave {
         MIS_DONE_BEHAVE_HOLD      = 0,
         MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2
+        MIS_DONE_BEHAVE_ACRO      = 2,
+        MIS_DONE_BEHAVE_MANUAL    = 3
     };
 
     bool auto_triggered;        // true when auto has been triggered to start
@@ -638,9 +639,14 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
+    // do not allow arming from this mode
+    bool allows_arming() const override { return false; }
+
     // attributes for mavlink system status reporting
     bool has_manual_input() const override { return true; }
     bool attitude_stabilized() const override { return false; }
+protected:
+    bool _enter() override { return false; };
 };
 
 class ModeFollow : public Mode

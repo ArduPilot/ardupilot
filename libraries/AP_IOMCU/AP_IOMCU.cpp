@@ -13,13 +13,11 @@
 #include <AP_Math/crc.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ROMFS/AP_ROMFS.h>
-#include <AP_Math/crc.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -1018,8 +1016,12 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
     uint32_t ts1 = last_iocmu_timestamp_ms;
+    // when we are in an expected delay allow for a larger time
+    // delta. This copes with flash erase, such as bootloader update
+    const uint32_t max_delay = hal.scheduler->in_expected_delay()?5000:500;
     last_iocmu_timestamp_ms = reg_status.timestamp_ms;
-    if (dt_ms < 500) {
+
+    if (dt_ms < max_delay) {
         // all OK
         return;
     }

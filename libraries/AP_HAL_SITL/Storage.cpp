@@ -1,3 +1,6 @@
+#include "Storage.h"
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/AP_HAL.h>
 
 #include <assert.h>
@@ -5,9 +8,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "Storage.h"
-
 #include <stdio.h>
+
+#ifndef HAL_STORAGE_FILE
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#define HAL_STORAGE_FILE "eeprom-replay.bin"
+#else
+#define HAL_STORAGE_FILE "eeprom.bin"
+#endif
+#endif
 
 using namespace HALSITL;
 

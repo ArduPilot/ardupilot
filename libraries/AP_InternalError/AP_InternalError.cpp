@@ -1,6 +1,7 @@
 #include "AP_InternalError.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -12,6 +13,7 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
     switch (e) {
     case AP_InternalError::error_t::watchdog_reset:
     case AP_InternalError::error_t::main_loop_stuck:
+    case AP_InternalError::error_t::params_restored:
         // don't panic on these to facilitate watchdog testing
         break;
     default:
@@ -56,6 +58,9 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "stack_ovrflw",  // stack_overflow
         "imu_reset",  // imu_reset
         "gpio_isr",
+        "mem_guard",
+        "dma_fail",
+        "params_restored",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");
@@ -108,5 +113,15 @@ void AP_stack_overflow(const char *thread_name)
     hal.util->persistent_data.fault_type = 42; // magic value
     if (!hal.util->get_soft_armed()) {
         AP_HAL::panic("stack overflow %s\n", thread_name);
+    }
+}
+
+// hook for memory guard errors with --enable-memory-guard
+void AP_memory_guard_error(uint32_t size)
+{
+    INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+    if (!hal.util->get_soft_armed()) {
+        ::printf("memory guard error size=%u\n", unsigned(size));
+        AP_HAL::panic("memory guard size=%u\n", unsigned(size));
     }
 }

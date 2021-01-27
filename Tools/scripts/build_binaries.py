@@ -389,7 +389,7 @@ is bob we will attempt to checkout bob-AVR'''
 
                 if self.skip_board_waf(board):
                     continue
-                
+
                 if os.path.exists(self.buildroot):
                     shutil.rmtree(self.buildroot)
 
@@ -570,6 +570,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "KakuteF4",
                 "KakuteF7",
                 "KakuteF7Mini",
+                "MambaF405v2",
                 "MatekF405",
                 "MatekF405-STD",
                 "MatekF405-Wing",
@@ -603,6 +604,7 @@ is bob we will attempt to checkout bob-AVR'''
                 "mRoControlZeroF7",
                 "mRoNexus",
                 "mRoPixracerPro",
+                "mRoControlZeroOEMH7",
                 "F35Lightning",
                 "speedybeef4",
                 "SuccexF4",
@@ -618,6 +620,8 @@ is bob we will attempt to checkout bob-AVR'''
                 "CubeYellow",
                 "R9Pilot",
                 "QioTekZealotF427",
+                "BeastH7",
+                "BeastF7",
                 # SITL targets
                 "SITL_x86_64_linux_gnu",
                 "SITL_arm_linux_gnueabihf",
@@ -637,6 +641,8 @@ is bob we will attempt to checkout bob-AVR'''
                 "CUAV_GPS",
                 "ZubaxGNSS",
                 "CubeOrange-periph",
+                "CubeBlack-periph",
+                "HitecMosaic",
                 ]
 
     def build_arducopter(self, tag):
@@ -702,7 +708,7 @@ is bob we will attempt to checkout bob-AVR'''
                            "AP_Periph",
                            "AP_Periph")
 
-        
+
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")

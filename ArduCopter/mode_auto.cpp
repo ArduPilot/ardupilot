@@ -382,7 +382,12 @@ void ModeAuto::payload_place_start()
 
     // call location specific place start function
     payload_place_start(stopping_point);
+}
 
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeAuto::use_pilot_yaw(void) const
+{
+    return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
 }
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -750,7 +755,7 @@ void ModeAuto::wp_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -797,7 +802,7 @@ void ModeAuto::spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -858,7 +863,7 @@ void ModeAuto::circle_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -904,7 +909,7 @@ void ModeAuto::loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
@@ -958,7 +963,7 @@ void ModeAuto::loiter_to_alt_run()
 
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
-    float target_climb_rate = AC_AttitudeControl::sqrt_controller(
+    float target_climb_rate = sqrt_controller(
         -alt_error_cm,
         pos_control->get_pos_z_p().kP(),
         pos_control->get_max_accel_z(),
@@ -1018,9 +1023,10 @@ void ModeAuto::payload_place_run()
     case PayloadPlaceStateType_Releasing:
     case PayloadPlaceStateType_Released:
     case PayloadPlaceStateType_Ascending_Start:
+        return payload_place_run_loiter();
     case PayloadPlaceStateType_Ascending:
     case PayloadPlaceStateType_Done:
-        return payload_place_run_loiter();
+        return wp_run();
     }
 }
 
@@ -1050,13 +1056,6 @@ void ModeAuto::payload_place_run_loiter()
 {
     // loiter...
     land_run_horizontal_control();
-
-    // run loiter controller
-    loiter_nav->update();
-
-    // call attitude controller
-    const float target_yaw_rate = 0;
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), target_yaw_rate);
 
     // call position controller
     pos_control->update_z_controller();
@@ -1559,7 +1558,7 @@ bool ModeAuto::verify_land()
 
         default:
             // this should never happen
-            // TO-DO: log an error
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             retval = true;
             break;
     }
@@ -1587,7 +1586,7 @@ bool ModeAuto::verify_payload_place()
     const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
 
     const float current_throttle_level = motors->get_throttle();
-    const uint32_t now =  AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     // if we discover we've landed then immediately release the load:
     if (copter.ap.land_complete) {
@@ -1597,7 +1596,7 @@ bool ModeAuto::verify_payload_place()
         case PayloadPlaceStateType_Calibrating_Hover:
         case PayloadPlaceStateType_Descending_Start:
         case PayloadPlaceStateType_Descending:
-            gcs().send_text(MAV_SEVERITY_INFO, "NAV_PLACE: landed");
+            gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: landed");
             nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
             break;
         case PayloadPlaceStateType_Releasing_Start:
@@ -1721,7 +1720,7 @@ bool ModeAuto::verify_payload_place()
         return true;
     default:
         // this should never happen
-        // TO-DO: log an error
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return true;
     }
     // should never get here

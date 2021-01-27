@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
@@ -350,6 +351,10 @@ public:
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt);
+#endif
+    
 private:
     static Compass *_singleton;
 
@@ -424,6 +429,7 @@ private:
         DRIVER_IST8308  =15,
 		DRIVER_RM3100   =16,
         DRIVER_MSP      =17,
+        DRIVER_SERIAL   =18,
     };
 
     bool _driver_enabled(enum DriverType driver_type);

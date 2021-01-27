@@ -109,13 +109,13 @@ void AP_Beacon::init(void)
 }
 
 // return true if beacon feature is enabled
-bool AP_Beacon::enabled(void)
+bool AP_Beacon::enabled(void) const
 {
     return (_type != AP_BeaconType_None);
 }
 
 // return true if sensor is basically healthy (we are receiving data)
-bool AP_Beacon::healthy(void)
+bool AP_Beacon::healthy(void) const
 {
     if (!device_ready()) {
         return false;

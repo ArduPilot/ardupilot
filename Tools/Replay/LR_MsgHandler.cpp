@@ -2,419 +2,327 @@
 #include "LogReader.h"
 #include "Replay.h"
 
-#include <AP_HAL_Linux/Scheduler.h>
+#include <AP_DAL/AP_DAL.h>
 
 #include <cinttypes>
 
 extern const AP_HAL::HAL& hal;
 
-LR_MsgHandler::LR_MsgHandler(struct log_Format &_f,
-                             AP_Logger &_logger,
-                             uint64_t &_last_timestamp_usec) :
-    logger(_logger), last_timestamp_usec(_last_timestamp_usec),
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, sizeof(msg));
+
+LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
 }
 
-void LR_MsgHandler::wait_timestamp_usec(uint64_t timestamp)
+void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
 {
-    last_timestamp_usec = timestamp;
-    hal.scheduler->stop_clock(timestamp);
+    MSG_CREATE(RFRH, msgbytes);
+    AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler::wait_timestamp(uint32_t timestamp)
+void LR_MsgHandler_RFRF::process_message(uint8_t *msgbytes)
 {
-    uint64_t usecs = timestamp*1000UL;
-    wait_timestamp_usec(usecs);
+    MSG_CREATE(RFRF, msgbytes);
+#define MAP_FLAG(flag1, flag2) if (msg.frame_types & uint8_t(flag1)) msg.frame_types |= uint8_t(flag2)
+    /*
+      when we force an EKF we map the trigger flags over
+     */
+    if (replay_force_ekf2) {
+        MAP_FLAG(AP_DAL::FrameType::InitialiseFilterEKF3, AP_DAL::FrameType::InitialiseFilterEKF2);
+        MAP_FLAG(AP_DAL::FrameType::UpdateFilterEKF3, AP_DAL::FrameType::UpdateFilterEKF2);
+        MAP_FLAG(AP_DAL::FrameType::LogWriteEKF3, AP_DAL::FrameType::LogWriteEKF2);
+    }
+    if (replay_force_ekf3) {
+        MAP_FLAG(AP_DAL::FrameType::InitialiseFilterEKF2, AP_DAL::FrameType::InitialiseFilterEKF3);
+        MAP_FLAG(AP_DAL::FrameType::UpdateFilterEKF2, AP_DAL::FrameType::UpdateFilterEKF3);
+        MAP_FLAG(AP_DAL::FrameType::LogWriteEKF2, AP_DAL::FrameType::LogWriteEKF3);
+    }
+#undef MAP_FLAG
+    AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
-void LR_MsgHandler::wait_timestamp_from_msg(uint8_t *msg)
+void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
 {
-    uint64_t time_us;
-    uint32_t time_ms;
+    MSG_CREATE(RFRN, msgbytes);
+    AP::dal().handle_message(msg);
+}
 
-    if (field_value(msg, "TimeUS", time_us)) {
-        // 64-bit timestamp present - great!
-        wait_timestamp_usec(time_us);
-    } else if (field_value(msg, "TimeMS", time_ms)) {
-        // there is special rounding code that needs to be crossed in
-        // wait_timestamp:
-        wait_timestamp(time_ms);
-    } else {
-        ::printf("No timestamp on message");
+void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REV2, msgbytes);
+
+    switch ((AP_DAL::Event)msg.event) {
+
+    case AP_DAL::Event::resetGyroBias:
+        ekf2.resetGyroBias();
+        break;
+    case AP_DAL::Event::resetHeightDatum:
+        ekf2.resetHeightDatum();
+        break;
+    case AP_DAL::Event::setTakeoffExpected:
+        ekf2.setTakeoffExpected(true);
+        break;
+    case AP_DAL::Event::unsetTakeoffExpected:
+        ekf2.setTakeoffExpected(false);
+        break;
+    case AP_DAL::Event::setTouchdownExpected:
+        ekf2.setTouchdownExpected(true);
+        break;
+    case AP_DAL::Event::unsetTouchdownExpected:
+        ekf2.setTouchdownExpected(false);
+        break;
+    case AP_DAL::Event::setTerrainHgtStable:
+        ekf2.setTerrainHgtStable(true);
+        break;
+    case AP_DAL::Event::unsetTerrainHgtStable:
+        ekf2.setTerrainHgtStable(false);
+        break;
+    case AP_DAL::Event::requestYawReset:
+        ekf2.requestYawReset();
+        break;
+    case AP_DAL::Event::checkLaneSwitch:
+        ekf2.checkLaneSwitch();
+        break;
+    }
+    if (replay_force_ekf3) {
+        LR_MsgHandler_REV3 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
 }
 
-
-
-/*
- * subclasses to handle specific messages below here
-*/
-
-void LR_MsgHandler_AHR2::process_message(uint8_t *msg)
+void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
 {
-    wait_timestamp_from_msg(msg);
-    attitude_from_msg(msg, ahr2_attitude, "Roll", "Pitch", "Yaw");
-}
-
-
-void LR_MsgHandler_ARM::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-    uint8_t ArmState = require_field_uint8_t(msg, "ArmState");
-    hal.util->set_soft_armed(ArmState);
-    printf("Armed state: %u at %lu\n", 
-           (unsigned)ArmState,
-           (unsigned long)AP_HAL::millis());
-}
-
-
-void LR_MsgHandler_ARSP::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-
-    airspeed.setHIL(require_field_float(msg, "Airspeed"),
-		    require_field_float(msg, "DiffPress"),
-		    require_field_float(msg, "Temp"));
-}
-
-void LR_MsgHandler_NKF1::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-}
-
-void LR_MsgHandler_NKF1::process_message(uint8_t *msg, uint8_t &core)
-{
-    wait_timestamp_from_msg(msg);
-    if (!field_value(msg, "C", core)) {
-        // 255 here is a special marker for "no core present in log".
-        // This may give us a hope of backwards-compatability.
-        core = 255;
-    }
-}
-
-void LR_MsgHandler_XKF1::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-}
-
-void LR_MsgHandler_XKF1::process_message(uint8_t *msg, uint8_t &core)
-{
-    wait_timestamp_from_msg(msg);
-    if (!field_value(msg, "C", core)) {
-        // 255 here is a special marker for "no core present in log".
-        // This may give us a hope of backwards-compatability.
-        core = 255;
-    }
-}
-
-
-void LR_MsgHandler_ATT::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-    attitude_from_msg(msg, attitude, "Roll", "Pitch", "Yaw");
-}
-
-void LR_MsgHandler_CHEK::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-    check_state.time_us = AP_HAL::micros64();
-    attitude_from_msg(msg, check_state.euler, "Roll", "Pitch", "Yaw");
-    check_state.euler *= radians(1);
-    location_from_msg(msg, check_state.pos, "Lat", "Lng", "Alt");
-    require_field(msg, "VN", check_state.velocity.x);
-    require_field(msg, "VE", check_state.velocity.y);
-    require_field(msg, "VD", check_state.velocity.z);
-}
-
-
-void LR_MsgHandler_BARO::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-    uint32_t last_update_ms;
-    if (!field_value(msg, "SMS", last_update_ms)) {
-        last_update_ms = 0;
-    }
-    AP::baro().setHIL(0,
-		require_field_float(msg, "Press"),
-		require_field_int16_t(msg, "Temp") * 0.01f,
-		require_field_float(msg, "Alt"),
-		require_field_float(msg, "CRt"),
-                last_update_ms);
-}
-
-
-void LR_MsgHandler_Event::process_message(uint8_t *msg)
-{
-    uint8_t id = require_field_uint8_t(msg, "Id");
-    if ((LogEvent)id == LogEvent::ARMED) {
-        hal.util->set_soft_armed(true);
-        printf("Armed at %lu\n", 
-               (unsigned long)AP_HAL::millis());
-    } else if ((LogEvent)id == LogEvent::DISARMED) {
-        hal.util->set_soft_armed(false);
-        printf("Disarmed at %lu\n", 
-               (unsigned long)AP_HAL::millis());
-    }
-}
-
-
-void LR_MsgHandler_GPS2::process_message(uint8_t *msg)
-{
-    update_from_msg_gps(1, msg);
-}
-
-void LR_MsgHandler_GPS_Base::update_from_msg_gps(uint8_t gps_offset, uint8_t *msg)
-{
-    uint64_t time_us;
-    if (! field_value(msg, "TimeUS", time_us)) {
-        uint32_t timestamp;
-        require_field(msg, "T", timestamp);
-        time_us = timestamp * 1000;
-    }
-    wait_timestamp_usec(time_us);
-
+    MSG_CREATE(RSO2, msgbytes);
     Location loc;
-    location_from_msg(msg, loc, "Lat", "Lng", "Alt");
-    Vector3f vel;
-    ground_vel_from_msg(msg, vel, "Spd", "GCrs", "VZ");
+    loc.lat = msg.lat;
+    loc.lng = msg.lng;
+    loc.alt = msg.alt;
+    ekf2.setOriginLLH(loc);
 
-    uint8_t status = require_field_uint8_t(msg, "Status");
-    uint8_t hdop = 0;
-    if (! field_value(msg, "HDop", hdop) &&
-        ! field_value(msg, "HDp", hdop)) {
-        hdop = 20;
+    if (replay_force_ekf3) {
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
-    uint8_t nsats = 0;
-    if (! field_value(msg, "NSats", nsats) &&
-        ! field_value(msg, "numSV", nsats)) {
-        field_not_found(msg, "NSats");
-    }
-    uint16_t GWk;
-    uint32_t GMS;
-    if (! field_value(msg, "GWk", GWk)) {
-        field_not_found(msg, "GWk");
-    }
-    if (! field_value(msg, "GMS", GMS)) {
-        field_not_found(msg, "GMS");
-    }
-    gps.setHIL(gps_offset,
-               (AP_GPS::GPS_Status)status,
-               AP_GPS::time_epoch_convert(GWk, GMS),
-               loc,
-               vel,
-               nsats,
-               hdop);
-    if (status == AP_GPS::GPS_OK_FIX_3D && ground_alt_cm == 0) {
-        ground_alt_cm = require_field_int32_t(msg, "Alt");
-    }
-
-    // we don't call GPS update_instance which would ordinarily write
-    // these...
-    AP::logger().Write_GPS(gps_offset);
 }
 
-
-
-void LR_MsgHandler_GPS::process_message(uint8_t *msg)
+void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
 {
-    update_from_msg_gps(0, msg);
-}
-
-
-void LR_MsgHandler_GPA_Base::update_from_msg_gpa(uint8_t gps_offset, uint8_t *msg)
-{
-    uint64_t time_us;
-    require_field(msg, "TimeUS", time_us);
-    wait_timestamp_usec(time_us);
-
-    uint16_t vdop, hacc, vacc, sacc;
-    require_field(msg, "VDop", vdop);
-    require_field(msg, "HAcc", hacc);
-    require_field(msg, "VAcc", vacc);
-    require_field(msg, "SAcc", sacc);
-    uint8_t have_vertical_velocity;
-    if (! field_value(msg, "VV", have_vertical_velocity)) {
-        have_vertical_velocity = !is_zero(gps.velocity(gps_offset).z);
-    }
-    uint32_t sample_ms;
-    if (! field_value(msg, "SMS", sample_ms)) {
-        sample_ms = 0;
-    }
-
-    gps.setHIL_Accuracy(gps_offset, vdop*0.01f, hacc*0.01f, vacc*0.01f, sacc*0.01f, have_vertical_velocity, sample_ms);
-}
-
-void LR_MsgHandler_GPA::process_message(uint8_t *msg)
-{
-    update_from_msg_gpa(0, msg);
-}
-
-
-void LR_MsgHandler_GPA2::process_message(uint8_t *msg)
-{
-    update_from_msg_gpa(1, msg);
-}
-
-
-
-void LR_MsgHandler_IMU2::process_message(uint8_t *msg)
-{
-  update_from_msg_imu(1, msg);
-}
-
-
-void LR_MsgHandler_IMU3::process_message(uint8_t *msg)
-{
-  update_from_msg_imu(2, msg);
-}
-
-
-void LR_MsgHandler_IMU_Base::update_from_msg_imu(uint8_t imu_offset, uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-
-    uint8_t this_imu_mask = 1 << imu_offset;
-
-    if (gyro_mask & this_imu_mask) {
-        Vector3f gyro;
-        require_field(msg, "Gyr", gyro);
-        ins.set_gyro(imu_offset, gyro);
-    }
-    if (accel_mask & this_imu_mask) {
-        Vector3f accel2;
-        require_field(msg, "Acc", accel2);
-        ins.set_accel(imu_offset, accel2);
+    MSG_CREATE(RWA2, msgbytes);
+    ekf2.writeDefaultAirSpeed(msg.airspeed);
+    if (replay_force_ekf3) {
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
 }
 
 
-void LR_MsgHandler_IMU::process_message(uint8_t *msg)
+void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
 {
-    update_from_msg_imu(0, msg);
-}
+    MSG_CREATE(REV3, msgbytes);
 
-void LR_MsgHandler_IMT_Base::update_from_msg_imt(uint8_t imu_offset, uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
+    switch ((AP_DAL::Event)msg.event) {
 
-    if (!use_imt) {
-        return;
+    case AP_DAL::Event::resetGyroBias:
+        ekf3.resetGyroBias();
+        break;
+    case AP_DAL::Event::resetHeightDatum:
+        ekf3.resetHeightDatum();
+        break;
+    case AP_DAL::Event::setTakeoffExpected:
+        ekf3.setTakeoffExpected(true);
+        break;
+    case AP_DAL::Event::unsetTakeoffExpected:
+        ekf3.setTakeoffExpected(false);
+        break;
+    case AP_DAL::Event::setTouchdownExpected:
+        ekf3.setTouchdownExpected(true);
+        break;
+    case AP_DAL::Event::unsetTouchdownExpected:
+        ekf3.setTouchdownExpected(false);
+        break;
+    case AP_DAL::Event::setTerrainHgtStable:
+        ekf3.setTerrainHgtStable(true);
+        break;
+    case AP_DAL::Event::unsetTerrainHgtStable:
+        ekf3.setTerrainHgtStable(false);
+        break;
+    case AP_DAL::Event::requestYawReset:
+        ekf3.requestYawReset();
+        break;
+    case AP_DAL::Event::checkLaneSwitch:
+        ekf3.checkLaneSwitch();
+        break;
     }
 
-    uint8_t this_imu_mask = 1 << imu_offset;
-
-    float delta_time = 0;
-    require_field(msg, "DelT", delta_time);
-    ins.set_delta_time(delta_time);
-
-    if (gyro_mask & this_imu_mask) {
-        Vector3f d_angle;
-        require_field(msg, "DelA", d_angle);
-        float d_angle_dt;
-        if (!field_value(msg, "DelaT", d_angle_dt)) {
-            d_angle_dt = 0;
-        }
-        ins.set_delta_angle(imu_offset, d_angle, d_angle_dt);
-    }
-    if (accel_mask & this_imu_mask) {
-        float dvt = 0;
-        require_field(msg, "DelvT", dvt);
-        Vector3f d_velocity;
-        require_field(msg, "DelV", d_velocity);
-        ins.set_delta_velocity(imu_offset, dvt, d_velocity);
+    if (replay_force_ekf2) {
+        LR_MsgHandler_REV2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
 }
 
-void LR_MsgHandler_IMT::process_message(uint8_t *msg)
+void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
 {
-  update_from_msg_imt(0, msg);
-}
-
-void LR_MsgHandler_IMT2::process_message(uint8_t *msg)
-{
-  update_from_msg_imt(1, msg);
-}
-
-void LR_MsgHandler_IMT3::process_message(uint8_t *msg)
-{
-  update_from_msg_imt(2, msg);
-}
-
-void LR_MsgHandler_MAG2::process_message(uint8_t *msg)
-{
-    update_from_msg_compass(1, msg);
-}
-
-
-void LR_MsgHandler_MAG_Base::update_from_msg_compass(uint8_t compass_offset, uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-
-    Vector3f mag;
-    require_field(msg, "Mag", mag);
-    Vector3f mag_offset;
-    require_field(msg, "Ofs", mag_offset);
-    uint32_t last_update_usec;
-    if (!field_value(msg, "S", last_update_usec)) {
-        last_update_usec = AP_HAL::micros();
+    MSG_CREATE(RSO3, msgbytes);
+    Location loc;
+    loc.lat = msg.lat;
+    loc.lng = msg.lng;
+    loc.alt = msg.alt;
+    ekf3.setOriginLLH(loc);
+    if (replay_force_ekf2) {
+        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
     }
-
-    compass.setHIL(compass_offset, mag - mag_offset, last_update_usec);
-    // compass_offset is which compass we are setting info for;
-    // mag_offset is a vector indicating the compass' calibration...
-    compass.set_offsets(compass_offset, mag_offset);
 }
 
-
-
-void LR_MsgHandler_MAG::process_message(uint8_t *msg)
+void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
 {
-    update_from_msg_compass(0, msg);
+    MSG_CREATE(RWA3, msgbytes);
+    ekf3.writeDefaultAirSpeed(msg.airspeed);
+    if (replay_force_ekf2) {
+        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
+        h.process_message(msgbytes);
+    }
+}
+
+void LR_MsgHandler_REY3::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REY3, msgbytes);
+    ekf3.writeEulerYawAngle(msg.yawangle, msg.yawangleerr, msg.timestamp_ms, msg.type);
+}
+
+void LR_MsgHandler_RISH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RISH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+void LR_MsgHandler_RISI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RISI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RASH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RASH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+void LR_MsgHandler_RASI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RASI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBRH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBRH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBRI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBRI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RRNH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RRNH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RRNI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RRNI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RGPH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RGPH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RGPI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RGPI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RGPJ::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RGPJ, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RMGH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RMGH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RMGI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RMGI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBCH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBCH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RBCI::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBCI, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_RVOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RVOH, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
+void LR_MsgHandler_ROFH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(ROFH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_RWOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RWOH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_RBOH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RBOH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_REPH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REPH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
+}
+
+void LR_MsgHandler_REVH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REVH, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
 #include <AP_AHRS/AP_AHRS.h>
 #include "VehicleType.h"
 
-void LR_MsgHandler_MSG::process_message(uint8_t *msg)
-{
-    const uint8_t msg_text_len = 64;
-    char msg_text[msg_text_len];
-    require_field(msg, "Message", msg_text, msg_text_len);
-
-    if (strncmp(msg_text, "ArduPlane", strlen("ArduPlane")) == 0) {
-	vehicle = VehicleType::VEHICLE_PLANE;
-	::printf("Detected Plane\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_FIXED_WING);
-	ahrs.set_fly_forward(true);
-    } else if (strncmp(msg_text, "ArduCopter", strlen("ArduCopter")) == 0 ||
-	       strncmp(msg_text, "APM:Copter", strlen("APM:Copter")) == 0) {
-	vehicle = VehicleType::VEHICLE_COPTER;
-	::printf("Detected Copter\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
-	ahrs.set_fly_forward(false);
-    } else if (strncmp(msg_text, "ArduRover", strlen("ArduRover")) == 0) {
-	vehicle = VehicleType::VEHICLE_ROVER;
-	::printf("Detected Rover\n");
-	ahrs.set_vehicle_class(AHRS_VEHICLE_GROUND);
-	ahrs.set_fly_forward(true);
-    }
-}
-
-
-void LR_MsgHandler_NTUN_Copter::process_message(uint8_t *msg)
-{
-    inavpos = Vector3f(require_field_float(msg, "PosX") * 0.01f,
-		       require_field_float(msg, "PosY") * 0.01f,
-		       0);
-}
-
-
 bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
 {
-    const char *ignore_parms[] = { "GPS_TYPE", "AHRS_EKF_TYPE", "EK2_ENABLE", "EK3_ENABLE"
-                                   "COMPASS_ORIENT", "COMPASS_ORIENT2",
-                                   "COMPASS_ORIENT3", "LOG_FILE_BUFSIZE",
-                                   "LOG_DISARMED"};
+    const char *ignore_parms[] = {
+        "LOG_FILE_BUFSIZE",
+        "LOG_DISARMED"
+    };
     for (uint8_t i=0; i < ARRAY_SIZE(ignore_parms); i++) {
         if (strncmp(name, ignore_parms[i], AP_MAX_NAME_SIZE) == 0) {
             ::printf("Ignoring set of %s to %f\n", name, value);
@@ -422,47 +330,16 @@ bool LR_MsgHandler_PARM::set_parameter(const char *name, const float value)
         }
     }
 
-    return _set_parameter_callback(name, value);
+    return LogReader::set_parameter(name, value);
 }
 
 void LR_MsgHandler_PARM::process_message(uint8_t *msg)
 {
     const uint8_t parameter_name_len = AP_MAX_NAME_SIZE + 1; // null-term
     char parameter_name[parameter_name_len];
-    uint64_t time_us;
-
-    if (field_value(msg, "TimeUS", time_us)) {
-        wait_timestamp_usec(time_us);
-    } else {
-        // older logs can have a lot of FMT and PARM messages up the
-        // front which don't have timestamps.  Since in Replay we run
-        // AP_Logger's IO only when stop_clock is called, we can
-        // overflow AP_Logger's ringbuffer.  This should force us to
-        // do IO:
-        hal.scheduler->stop_clock(((Linux::Scheduler*)hal.scheduler)->stopped_clock_usec());
-    }
 
     require_field(msg, "Name", parameter_name, parameter_name_len);
 
     float value = require_field_float(msg, "Value");
-    if (globals.no_params || replay.check_user_param(parameter_name)) {
-        printf("Not changing %s to %f\n", parameter_name, value);
-    } else {
-        set_parameter(parameter_name, value);
-    }
-}
-
-void LR_MsgHandler_PM::process_message(uint8_t *msg)
-{
-    uint32_t new_logdrop;
-    if (field_value(msg, "LogDrop", new_logdrop) &&
-        new_logdrop != 0) {
-        printf("PM.LogDrop: %u dropped at timestamp %" PRIu64 "\n", new_logdrop, last_timestamp_usec);
-    }
-}
-
-void LR_MsgHandler_SIM::process_message(uint8_t *msg)
-{
-    wait_timestamp_from_msg(msg);
-    attitude_from_msg(msg, sim_attitude, "Roll", "Pitch", "Yaw");
+    set_parameter(parameter_name, value);
 }

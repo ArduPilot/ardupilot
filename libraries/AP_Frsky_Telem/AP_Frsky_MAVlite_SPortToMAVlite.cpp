@@ -2,6 +2,7 @@
 
 #include "AP_Frsky_MAVlite.h"
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 void AP_Frsky_MAVlite_SPortToMAVlite::reset(void)
 {
     checksum = 0;
@@ -102,3 +103,4 @@ void AP_Frsky_MAVlite_SPortToMAVlite::parse(uint8_t byte)
         return;
     }
 }
+#endif

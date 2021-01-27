@@ -46,6 +46,8 @@
 #include <AP_Math/AP_Math.h>
 # include <hal.h>
 #include <AP_CANManager/AP_CANManager.h>
+#include <AP_Common/ExpandingString.h>
+
 # if defined(STM32H7XX)
 #include "CANFDIface.h"
 
@@ -929,34 +931,29 @@ bool CANIface::select(bool &read, bool &write,
 }
 
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
-uint32_t CANIface::get_stats(char* data, uint32_t max_size)
+void CANIface::get_stats(ExpandingString &str)
 {
-    if (data == nullptr) {
-        return 0;
-    }
     CriticalSectionLocker lock;
-    uint32_t ret = snprintf(data, max_size,
-                            "tx_requests:    %lu\n"
-                            "tx_rejected:    %lu\n"
-                            "tx_success:     %lu\n"
-                            "tx_timedout:    %lu\n"
-                            "tx_abort:       %lu\n"
-                            "rx_received:    %lu\n"
-                            "rx_overflow:    %lu\n"
-                            "rx_errors:      %lu\n"
-                            "num_busoff_err: %lu\n"
-                            "num_events:     %lu\n",
-                            stats.tx_requests,
-                            stats.tx_rejected,
-                            stats.tx_success,
-                            stats.tx_timedout,
-                            stats.tx_abort,
-                            stats.rx_received,
-                            stats.rx_overflow,
-                            stats.rx_errors,
-                            stats.num_busoff_err,
-                            stats.num_events);
-    return ret;
+    str.printf("tx_requests:    %lu\n"
+               "tx_rejected:    %lu\n"
+               "tx_success:     %lu\n"
+               "tx_timedout:    %lu\n"
+               "tx_abort:       %lu\n"
+               "rx_received:    %lu\n"
+               "rx_overflow:    %lu\n"
+               "rx_errors:      %lu\n"
+               "num_busoff_err: %lu\n"
+               "num_events:     %lu\n",
+               stats.tx_requests,
+               stats.tx_rejected,
+               stats.tx_success,
+               stats.tx_timedout,
+               stats.tx_abort,
+               stats.rx_received,
+               stats.rx_overflow,
+               stats.rx_errors,
+               stats.num_busoff_err,
+               stats.num_events);
 }
 #endif
 

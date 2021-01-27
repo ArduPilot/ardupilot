@@ -103,6 +103,7 @@ public:
         bool waiting_for_throw;   // true when copter is in THROW mode and waiting to detect the user hand launch
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
+        bool temp_cal_running;    // true if a temperature calibration is running
     };
 
     /// notify_events_type - bitmask of active events.
@@ -125,6 +126,9 @@ public:
         uint32_t tune_next              : 3;    // tuning switched to next parameter
         uint32_t tune_save              : 1;    // tuning saved parameters
         uint32_t tune_error             : 1;    // tuning controller error
+        uint32_t initiated_temp_cal     : 1;    // 1 when temperature calibration starts
+        uint32_t temp_cal_saved         : 1;    // 1 when temperature calibration was just saved
+        uint32_t temp_cal_failed        : 1;    // 1 when temperature calibration has just failed
     };
 
     // The notify flags and values are static to allow direct class access
@@ -141,7 +145,7 @@ public:
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
 
-    // handle RGB from Scripting
+    // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
 
     // handle a PLAY_TUNE message
@@ -165,7 +169,8 @@ public:
     uint8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
-    uint8_t get_led_len() const {return _led_len; }
+    uint8_t get_led_len() const { return _led_len; }
+    int8_t get_rgb_led_brightness_percent() const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HAL_Semaphore sf_window_mutex;

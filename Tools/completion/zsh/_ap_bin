@@ -29,6 +29,7 @@ _ap_bin() {
     '--uartF[set device string for UARTF]:DEVICE:' \
     '--uartG[set device string for UARTG]:DEVICE:' \
     '--uartH[set device string for UARTH]:DEVICE:' \
+    '--uartI[set device string for UARTI]:DEVICE:' \
     '--rtscts[enable rtscts on serial ports (default false)]' \
     '--base-port[set port num for base port(default 5670) must be before -I option]:PORT:' \
     '--rc-in-port[set port num for rc in]:PORT:' \

@@ -21,7 +21,11 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 
-#define NUM_SERVO_CHANNELS 16
+#if !defined(NUM_SERVO_CHANNELS) && defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT) && (HAL_PWM_COUNT >= 1)
+    #define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#else
+    #define NUM_SERVO_CHANNELS 16
+#endif
 
 class SRV_Channels;
 
@@ -84,6 +88,9 @@ public:
         k_motor8                = 40,
         k_motor_tilt            = 41,            ///< tiltrotor motor tilt control
         k_generator_control     = 42,            ///< state control for generator
+        k_tiltMotorRear         = 45,            ///<vectored thrust, rear tilt
+        k_tiltMotorRearLeft     = 46,            ///<vectored thrust, rear left tilt
+        k_tiltMotorRearRight    = 47,            ///<vectored thrust, rear right tilt
         k_rcin1                 = 51,            ///< these are for pass-thru from arbitrary rc inputs
         k_rcin2                 = 52,
         k_rcin3                 = 53,
@@ -158,6 +165,9 @@ public:
         k_ProfiLED_3            = 131,
         k_ProfiLED_Clock        = 132,
         k_winch_clutch          = 133,
+        k_min                   = 134,  // always outputs SERVOn_MIN
+        k_trim                  = 135,  // always outputs SERVOn_TRIM
+        k_max                   = 136,  // always outputs SERVOn_MAX
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -519,6 +529,7 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
@@ -536,6 +547,8 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+#endif // HAL_BUILD_AP_PERIPH
+
     static uint16_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not

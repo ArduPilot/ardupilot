@@ -54,7 +54,10 @@ public:
 #if HAL_MSP_GPS_ENABLED
     virtual void handle_msp(const MSP::msp_gps_data_message_t &pkt) { return; }
 #endif
-
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt) { return; }
+#endif
+    
     // driver specific lag, returns true if the driver is confident in the provided lag
     virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
 
@@ -126,6 +129,11 @@ protected:
 #if GPS_MOVING_BASELINE
     bool calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D);
 #endif //GPS_MOVING_BASELINE
+
+    // get GPS type, for subtype config
+    AP_GPS::GPS_Type get_type() const {
+        return gps.get_type(state.instance);
+    }
 
 private:
     // itow from previous message

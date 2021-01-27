@@ -44,11 +44,15 @@ function package_is_installed() {
     dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
 }
 
+function heading() {
+    echo "$sep"
+    echo $*
+    echo "$sep"
+}
+
 # Install lsb-release as it is needed to check Ubuntu version
 if package_is_installed "lsb-release" -eq 1; then
-    echo "$sep"
-    echo "Installing lsb-release"
-    echo "$sep"
+    heading "Installing lsb-release"
     $APT_GET install lsb-release
     echo "Done!"
 fi
@@ -72,6 +76,11 @@ elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
+elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
@@ -81,7 +90,7 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget cmake"
+BASE_PKGS="build-essential ccache g++ gawk git make wget"
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
@@ -109,9 +118,7 @@ function install_arm_none_eabi_toolchain() {
   if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
-        echo "$sep"
-        echo "Installing toolchain for STM32 Boards"
-        echo "$sep"
+        heading "Installing toolchain for STM32 Boards"
         echo "Downloading from ArduPilot server"
         sudo wget $ARM_TARBALL_URL
         echo "Installing..."
@@ -139,23 +146,15 @@ function maybe_prompt_user() {
     fi
 }
 
-# possibly grab a newer cmake for older ubuntu releases
-if [ ${RELEASE_CODENAME} == "precise" ]; then
-    sudo add-apt-repository ppa:george-edison55/precise-backports -y
-    $APT_GET update
-elif [ ${RELEASE_CODENAME} == "trusty" ]; then
-    sudo add-apt-repository ppa:george-edison55/cmake-3.x -y
-    $APT_GET update
-fi
-
-echo "$sep"
-echo "Add user to dialout group to allow managing serial ports"
-echo "$sep"
+heading "Add user to dialout group to allow managing serial ports"
 sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
 if [ ${RELEASE_CODENAME} == 'focal' ]; then
+    BASE_PKGS+=" python-is-python3"
+    SITL_PKGS+=" libpython3-stdlib" # for argparse
+elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -164,7 +163,10 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'focal' ]; then
+  if [ ${RELEASE_CODENAME} == 'groovy' ]; then
+    SITL_PKGS+=" python3-wxgtk4.0"
+    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif apt-cache search python-wxgtk3.0 | grep wx; then
@@ -196,9 +198,7 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
-echo "$sep"
-echo "Removing modemmanager package that could conflict with firmware uploading"
-echo "$sep"
+heading "Removing modemmanager package that could conflict with firmware uploading"
 if package_is_installed "modemmanager" -eq 1; then
     $APT_GET remove modemmanager
 fi
@@ -209,9 +209,7 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
   install_arm_none_eabi_toolchain
 fi
 
-echo "$sep"
-echo "Check if we are inside docker environment..."
-echo "$sep"
+heading "Check if we are inside docker environment..."
 IS_DOCKER=false
 if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup ; then
     IS_DOCKER=true
@@ -224,9 +222,7 @@ if $IS_DOCKER; then
     SHELL_LOGIN=".bashrc"
 fi
 
-echo "$sep"
-echo "Adding ArduPilot Tools to environment"
-echo "$sep"
+heading "Adding ArduPilot Tools to environment"
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
@@ -275,9 +271,7 @@ echo "Done!"
 
 if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
   if [ -d ".git" ]; then
-    echo "$sep"
-    echo "Update git submodules"
-    echo "$sep"
+    heading "Update git submodules"
     cd $ARDUPILOT_ROOT
     git submodule update --init --recursive
     echo "Done!"

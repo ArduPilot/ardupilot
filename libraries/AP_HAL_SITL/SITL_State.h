@@ -43,12 +43,15 @@
 #include <SITL/SIM_RF_NMEA.h>
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
+#include <SITL/SIM_VectorNav.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
+#include <SITL/SIM_PS_TeraRangerTower.h>
+#include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
 #include <AP_HAL/utility/Socket.h>
@@ -116,6 +119,11 @@ public:
                            Location &loc,
                            float &yaw_degrees);
 
+    /* lookup a location in locations.txt */
+    static bool lookup_location(const char *home_str,
+                                Location &loc,
+                                float &yaw_degrees);
+    
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
@@ -151,7 +159,7 @@ private:
     void _update_gps_mtk(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk16(const struct gps_data *d, uint8_t instance);
     void _update_gps_mtk19(const struct gps_data *d, uint8_t instance);
-    uint16_t _gps_nmea_checksum(const char *s);
+    uint8_t _gps_nmea_checksum(const char *s);
     void _gps_nmea_printf(uint8_t instance, const char *fmt, ...);
     void _update_gps_nmea(const struct gps_data *d, uint8_t instance);
     void _sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, uint8_t *payload, uint8_t instance);
@@ -173,9 +181,6 @@ private:
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(struct sitl_input &input);
-    void _simulator_output(bool synthetic_clock_mode);
-    uint16_t _airspeed_sensor(float airspeed);
-    uint16_t _ground_sonar();
     void _fdm_input_step(void);
 
     void wait_clock(uint64_t wait_time_usec);
@@ -284,12 +289,21 @@ private:
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
-    // simulated NMEA rangefinder:
+
+    // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+
+    // simulated SF45B proximity sensor:
+    SITL::PS_LightWare_SF45B *sf45b;
+
+    SITL::PS_TeraRangerTower *terarangertower;
 
     // simulated CRSF devices
     SITL::CRSF *crsf;
 
+    // simulated VectorNav system:
+    SITL::VectorNav *vectornav;
+    
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
     

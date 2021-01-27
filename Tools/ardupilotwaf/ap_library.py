@@ -51,8 +51,10 @@ def _vehicle_index(vehicle):
         _vehicle_indexes[vehicle] = len(_vehicle_indexes) + 1
     return _vehicle_indexes[vehicle]
 
-_vehicle_macros = ('SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
-                   'APM_BUILD_TYPE')
+# note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
+_vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
+                   'APM_BUILD_TYPE',
+                   'AP_NavEKF3_core.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 
 def _remove_comments(s):
@@ -64,8 +66,13 @@ def _depends_on_vehicle(bld, source_node):
 
     if not bld.env.BUILDROOT:
         bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
-    if path.startswith(bld.env.BUILDROOT) or path.startswith("build/"):
+    if path.startswith(bld.env.BUILDROOT) or path.startswith("build.tmp.binaries/"):
         _depends_on_vehicle_cache[path] = False
+    if path.startswith("build/"):
+        # allow vehicle dependend #if in cpp generated in build/
+        # only scripting bindings currently
+        _depends_on_vehicle_cache[path] = True
+
 
     if path not in _depends_on_vehicle_cache:
         s = _remove_comments(source_node.read())
@@ -152,6 +159,9 @@ class ap_library_check_headers(Task.Task):
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Camera/AP_RunCam.h',
+        'libraries/AP_Common/AP_FWVersionDefine.h',
+        'libraries/AP_Scripting/lua_generated_bindings.h',
+        'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -189,7 +199,19 @@ class ap_library_check_headers(Task.Task):
             p = n.abspath()
             if not p.startswith(srcnode_path):
                 continue
-            if os.path.relpath(p, srcnode_path) in self.whitelist:
+            rel_p = os.path.relpath(p, srcnode_path)
+            if rel_p in self.whitelist:
+                continue
+
+            # check if the path ends with something in the white list
+            # this is required for white listing files in 'build/' (for scripting generated bindings)
+            found = False
+            for m in self.whitelist:
+                if rel_p.endswith(m):
+                    found = True
+                    break
+            
+            if found:
                 continue
 
             r.append(n)

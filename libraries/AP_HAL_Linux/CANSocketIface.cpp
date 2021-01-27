@@ -39,6 +39,8 @@
 #include <cstring>
 #include "Scheduler.h"
 #include <AP_CANManager/AP_CANManager.h>
+#include <AP_Common/ExpandingString.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
@@ -319,6 +321,9 @@ bool CANIface::_pollRead()
 
 int CANIface::_write(const AP_HAL::CANFrame& frame) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     errno = 0;
 
     const can_frame sockcan_frame = makeSocketCanFrame(frame);
@@ -339,6 +344,9 @@ int CANIface::_write(const AP_HAL::CANFrame& frame) const
 
 int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopback) const
 {
+    if (_fd < 0) {
+        return -1;
+    }
     auto iov = iovec();
     auto sockcan_frame = can_frame();
     iov.iov_base = &sockcan_frame;
@@ -565,41 +573,36 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
     return true;
 }
 
-uint32_t CANIface::get_stats(char* data, uint32_t max_size)
+void CANIface::get_stats(ExpandingString &str)
 {
-    if (data == nullptr) {
-        return 0;
-    }
-    uint32_t ret = snprintf(data, max_size,
-                            "tx_requests:    %u\n"
-                            "tx_write_fail:  %u\n"
-                            "tx_full:        %u\n"
-                            "tx_confirmed:   %u\n"
-                            "tx_success:     %u\n"
-                            "tx_timedout:    %u\n"
-                            "rx_received:    %u\n"
-                            "rx_errors:      %u\n"
-                            "num_downs:      %u\n"
-                            "num_rx_poll_req:  %u\n"
-                            "num_tx_poll_req:  %u\n"
-                            "num_poll_waits:   %u\n"
-                            "num_poll_tx_events: %u\n"
-                            "num_poll_rx_events: %u\n",
-                            stats.tx_requests,
-                            stats.tx_write_fail,
-                            stats.tx_full,
-                            stats.tx_confirmed,
-                            stats.tx_success,
-                            stats.tx_timedout,
-                            stats.rx_received,
-                            stats.rx_errors,
-                            stats.num_downs,
-                            stats.num_rx_poll_req,
-                            stats.num_tx_poll_req,
-                            stats.num_poll_waits,
-                            stats.num_poll_tx_events,
-                            stats.num_poll_rx_events);
-    return ret;
+    str.printf("tx_requests:    %u\n"
+               "tx_write_fail:  %u\n"
+               "tx_full:        %u\n"
+               "tx_confirmed:   %u\n"
+               "tx_success:     %u\n"
+               "tx_timedout:    %u\n"
+               "rx_received:    %u\n"
+               "rx_errors:      %u\n"
+               "num_downs:      %u\n"
+               "num_rx_poll_req:  %u\n"
+               "num_tx_poll_req:  %u\n"
+               "num_poll_waits:   %u\n"
+               "num_poll_tx_events: %u\n"
+               "num_poll_rx_events: %u\n",
+               stats.tx_requests,
+               stats.tx_write_fail,
+               stats.tx_full,
+               stats.tx_confirmed,
+               stats.tx_success,
+               stats.tx_timedout,
+               stats.rx_received,
+               stats.rx_errors,
+               stats.num_downs,
+               stats.num_rx_poll_req,
+               stats.num_tx_poll_req,
+               stats.num_poll_waits,
+               stats.num_poll_tx_events,
+               stats.num_poll_rx_events);
 }
 
 #endif

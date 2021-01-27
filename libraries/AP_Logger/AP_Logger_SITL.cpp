@@ -6,7 +6,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if HAL_LOGGING_SITL_ENABLED
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -105,5 +105,4 @@ bool AP_Logger_SITL::InErase()
     return false;
 }
 
-#endif // HAL_BOARD_SITL
-
+#endif // HAL_LOGGING_SITL_ENABLED

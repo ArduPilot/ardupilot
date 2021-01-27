@@ -111,8 +111,14 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
+    // Used by child class AC_AttitudeControl_TS to change behavior for tailsitter quadplanes
+    virtual void relax_attitude_controllers(bool exclude_pitch) { relax_attitude_controllers(); }
+
     // reset rate controller I terms
     void reset_rate_controller_I_terms();
+
+    // reset rate controller I terms smoothly to zero in 0.5 seconds
+    void reset_rate_controller_I_terms_smoothly();
 
     // Sets attitude target to vehicle attitude
     void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target_quat); }
@@ -136,8 +142,9 @@ public:
     virtual void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
     // Command euler yaw rate and pitch angle with roll angle specified in body frame
-    // (used only by tailsitter quadplanes)
-    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
+    // (implemented only in AC_AttitudeControl_TS for tailsitter quadplanes)
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, 
+        float euler_pitch_angle_cd, float euler_yaw_rate_cds) {}
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
     void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
@@ -261,12 +268,6 @@ public:
     // Return tilt angle in degrees
     float lean_angle() const { return degrees(_thrust_angle); }
 
-    // Proportional controller with piecewise sqrt sections to constrain second derivative
-    static float sqrt_controller(float error, float p, float second_ord_lim, float dt);
-
-    // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
-    static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
-
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
     static float input_shaping_angle(float error_angle, float smoothing_gain, float accel_max, float target_ang_vel, float dt);
@@ -312,6 +313,10 @@ public:
 
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     virtual void set_hover_roll_trim_scalar(float scalar) {}
+
+    // Return angle in centidegrees to be added to roll angle for hover collective learn. Used by heli to counteract
+    // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
+    virtual float get_roll_trim_cd() { return 0;}
 
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     virtual void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) {};

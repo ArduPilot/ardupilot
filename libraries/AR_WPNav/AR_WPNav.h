@@ -110,12 +110,11 @@ private:
     void update_pivot_active_flag();
 
     // adjust speed to ensure it does not fall below value held in SPEED_MIN
-    void apply_speed_min(float &desired_speed);
+    // desired_speed should always be positive (or zero)
+    void apply_speed_min(float &desired_speed) const;
 
     // calculate the crosstrack error (does not rely on L1 controller)
     float calc_crosstrack_error(const Location& current_loc) const;
-
-private:
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s

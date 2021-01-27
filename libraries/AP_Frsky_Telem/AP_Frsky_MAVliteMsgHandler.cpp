@@ -5,6 +5,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 /*
  * Handle the COMMAND_LONG mavlite message
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
@@ -207,6 +208,13 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
     if (vp == nullptr || isnan(param_value) || isinf(param_value)) {
         return;
     }
+    if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+        // the user can set BRD_OPTIONS to enable set of internal
+        // parameters, for developer testing or unusual use cases
+        if (AP_BoardConfig::allow_set_internal_parameters()) {
+            parameter_flags &= ~AP_PARAM_FLAG_INTERNAL_USE_ONLY;
+        }
+    }
     if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
     } else if (!AP_Param::set_and_save(param_name, param_value)) {
@@ -277,3 +285,4 @@ bool AP_Frsky_MAVliteMsgHandler::send_message(AP_Frsky_MAVlite_Message &txmsg)
 {
     return _send_fn(txmsg);
 }
+#endif

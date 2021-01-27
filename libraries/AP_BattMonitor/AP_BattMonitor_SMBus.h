@@ -41,6 +41,8 @@ public:
 
     bool has_cell_voltages() const override { return _has_cell_voltages; }
 
+    bool has_temperature() const override { return _has_temperature; }
+
     // all smart batteries are expected to provide current
     bool has_current() const override { return true; }
 
@@ -70,7 +72,7 @@ protected:
 
     // reads the temperature word from the battery
     // returns true if the read was successful
-    bool read_temp(void);
+    virtual bool read_temp(void);
 
     // reads the serial number if it's not already known
     // returns true if the read was successful, or the number was already known
@@ -95,6 +97,7 @@ protected:
     bool _has_cell_voltages;        // smbus backends flag this as true once they have received a valid cell voltage report
     uint16_t _cycle_count = 0;      // number of cycles the battery has experienced. An amount of discharge approximately equal to the value of DesignCapacity.
     bool _has_cycle_count;          // true if cycle count has been retrieved from the battery
+    bool _has_temperature;
 
     virtual void timer(void) = 0;   // timer function to read from the battery
 

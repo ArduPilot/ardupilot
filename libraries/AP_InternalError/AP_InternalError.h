@@ -63,7 +63,10 @@ public:
         stack_overflow              = (1U << 23),  //0x800000  8388608
         imu_reset                   = (1U << 24),  //0x1000000 16777216
         gpio_isr                    = (1U << 25),  //0x2000000 33554432
-        __LAST__                    = (1U << 26),  // used only for sanity check
+        mem_guard                   = (1U << 26),  //0x4000000 67108864
+        dma_fail                    = (1U << 27),  //0x8000000 134217728
+        params_restored             = (1U << 28),  //0x10000000 268435456
+        __LAST__                    = (1U << 29),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to
@@ -101,6 +104,7 @@ namespace AP {
 
 extern "C" {
     void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
 }
 
 #define INTERNAL_ERROR(error_number) \

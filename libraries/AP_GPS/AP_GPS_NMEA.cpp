@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "AP_GPS_NMEA.h"
 
@@ -72,6 +73,41 @@ bool AP_GPS_NMEA::read(void)
         }
     }
     return parsed;
+}
+
+/*
+  formatted print of NMEA message to the port, with checksum appended
+ */
+bool AP_GPS_NMEA::nmea_printf(const char *fmt, ...) const
+{
+    char *s = nullptr;
+    char trailer[6];
+    va_list ap;
+
+    va_start(ap, fmt);
+    int ret = vasprintf(&s, fmt, ap);
+    va_end(ap);
+    if (ret == -1 || s == nullptr) {
+        // allocation failed
+        return false;
+    }
+
+    // calculate the checksum
+    uint8_t cs = 0;
+    const uint8_t *b = (const uint8_t *)s+1;
+    while (*b) {
+        cs ^= *b++;
+    }
+    uint32_t len = strlen(s);
+    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)cs);
+    if (port->txspace() < len + 5) {
+        free(s);
+        return false;
+    }
+    port->write((const uint8_t*)s, len);
+    port->write((const uint8_t*)trailer, 5);
+    free(s);
+    return true;
 }
 
 bool AP_GPS_NMEA::_decode(char c)
@@ -210,6 +246,25 @@ bool AP_GPS_NMEA::_have_new_message()
         now - _last_VTG_ms > 150) {
         return false;
     }
+
+    /*
+      if we have seen the $PHD messages then wait for them again. This
+      is important as the have_vertical_velocity field will be
+      overwritten by fill_3d_velocity()
+     */
+    if (_last_PHD_12_ms != 0 &&
+        now - _last_PHD_12_ms > 150 &&
+        now - _last_PHD_12_ms < 1000) {
+        // waiting on PHD_12
+        return false;
+    }
+    if (_last_PHD_26_ms != 0 &&
+        now - _last_PHD_26_ms > 150 &&
+        now - _last_PHD_26_ms < 1000) {
+        // waiting on PHD_26
+        return false;
+    }
+
     // prevent these messages being used again
     if (_last_VTG_ms != 0) {
         _last_VTG_ms = 1;
@@ -219,6 +274,17 @@ bool AP_GPS_NMEA::_have_new_message()
         // we have lost GPS yaw
         state.have_gps_yaw = false;
     }
+
+    // special case for fixing low output rate of ALLYSTAR GPS modules
+    const int32_t dt_ms = now - _last_fix_ms;
+    if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
+        get_type() == AP_GPS::GPS_TYPE_ALLYSTAR) {
+        nmea_printf("$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
+                    1000U/gps._rate_ms[state.instance],
+                    gps._rate_ms[state.instance]);
+    }
+
+    _last_fix_ms = now;
 
     _last_GGA_ms = 1;
     _last_RMC_ms = 1;
@@ -253,7 +319,10 @@ bool AP_GPS_NMEA::_term_complete()
                     make_gps_time(_new_date, _new_time * 10);
                     set_uart_timestamp(_sentence_length);
                     state.last_gps_time_ms = now;
-                    fill_3d_velocity();
+                    if (_last_PHD_12_ms == 0 ||
+                        now - _last_PHD_12_ms > 1000) {
+                        fill_3d_velocity();
+                    }
                     break;
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
@@ -293,7 +362,10 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_VTG_ms = now;
                     state.ground_speed  = _new_speed*0.01f;
                     state.ground_course = wrap_360(_new_course*0.01f);
-                    fill_3d_velocity();
+                    if (_last_PHD_12_ms == 0 ||
+                        now - _last_PHD_12_ms > 1000) {
+                        fill_3d_velocity();
+                    }
                     // VTG has no fix indicator, can't change fix status
                     break;
                 case _GPS_SENTENCE_HDT:
@@ -306,6 +378,22 @@ bool AP_GPS_NMEA::_term_complete()
                     // HDT sentence.
                     state.gps_yaw_configured = true;
                     break;
+                case _GPS_SENTENCE_PHD:
+                    if (_phd.msg_id == 12) {
+                        state.velocity.x = _phd.fields[0] * 0.01;
+                        state.velocity.y = _phd.fields[1] * 0.01;
+                        state.velocity.z = _phd.fields[2] * 0.01;
+                        state.have_vertical_velocity = true;
+                        _last_PHD_12_ms = now;
+                    } else if (_phd.msg_id == 26) {
+                        state.horizontal_accuracy = MAX(_phd.fields[0],_phd.fields[1]) * 0.001;
+                        state.have_horizontal_accuracy = true;
+                        state.vertical_accuracy = _phd.fields[2] * 0.001;
+                        state.have_vertical_accuracy = true;
+                        state.speed_accuracy = MAX(_phd.fields[3],_phd.fields[4]) * 0.001;
+                        state.have_speed_accuracy = true;
+                        _last_PHD_26_ms = now;
+                    }
                 }
             } else {
                 switch (_sentence_type) {
@@ -325,6 +413,13 @@ bool AP_GPS_NMEA::_term_complete()
 
     // the first term determines the sentence type
     if (_term_number == 0) {
+        /*
+          special case for $PHD message
+         */
+        if (strcmp(_term, "PHD") == 0) {
+            _sentence_type = _GPS_SENTENCE_PHD;
+            return false;
+        }
         /*
           The first two letters of the NMEA term are the talker
           ID. The most common is 'GP' but there are a bunch of others
@@ -423,6 +518,23 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_RMC + 8: // Course (GPRMC)
         case _GPS_SENTENCE_VTG + 1: // Course (VTG)
             _new_course = _parse_decimal_100(_term);
+            break;
+
+        case _GPS_SENTENCE_PHD + 1: // PHD class
+            _phd.msg_class = atol(_term);
+            break;
+        case _GPS_SENTENCE_PHD + 2: // PHD message
+            _phd.msg_id = atol(_term);
+            if (_phd.msg_class == 1 && (_phd.msg_id == 12 || _phd.msg_id == 26)) {
+                // we only support $PHD messages 1/12 and 1/26
+                _gps_data_good = true;
+            }
+            break;
+        case _GPS_SENTENCE_PHD + 5: // PHD message, itow
+            _phd.itow = strtoul(_term, nullptr, 10);
+            break;
+        case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
+            _phd.fields[_term_number-6] = atol(_term);
             break;
         }
     }

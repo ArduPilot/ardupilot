@@ -117,7 +117,14 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
     // @User: Advanced
     AP_GROUPINFO("REMASK",  10, AP_BLHeli, channel_reversible_mask, 0),
-
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // @Param: BDMASK
+    // @DisplayName: BLHeli bitmask of bi-directional dshot channels
+    // @Description: Mask of channels which support bi-directional dshot. This is used for ESCs which have firmware that supports bi-directional dshot allowing fast rpm telemetry values to be returned for the harmonic notch.
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @User: Advanced
+    AP_GROUPINFO("BDMASK",  11, AP_BLHeli, channel_bidir_dshot_mask, 0),
+#endif
     AP_GROUPEND
 };
 
@@ -1293,7 +1300,10 @@ void AP_BLHeli::update(void)
     SRV_Channels::set_digital_mask(mask);
     SRV_Channels::set_reversible_mask(uint16_t(channel_reversible_mask.get()) & mask);
     hal.rcout->set_reversible_mask(channel_reversible_mask.get() & mask);
-
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // possibly enable bi-directional dshot
+    hal.rcout->set_bidir_dshot_mask(channel_bidir_dshot_mask.get() & mask);
+#endif
     // add motors from channel mask
     for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
         if (mask & (1U<<i)) {
@@ -1337,7 +1347,13 @@ float AP_BLHeli::get_average_motor_frequency_hz() const
     uint8_t valid_escs = 0;
     // average the rpm of each motor as reported by BLHeli and convert to Hz
     for (uint8_t i = 0; i < num_motors; i++) {
-        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
+        if (has_bidir_dshot(i)) {
+            uint16_t erpm = hal.rcout->get_erpm(i);
+            if (erpm > 0 && erpm < 0xFFFF) {
+                valid_escs++;
+                motor_freq += (erpm * 200 / motor_poles) / 60.f;
+            }
+        } else if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
             valid_escs++;
             // slew the update
             const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
@@ -1356,9 +1372,15 @@ uint8_t AP_BLHeli::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
 {
     const uint32_t now = AP_HAL::millis();
     uint8_t valid_escs = 0;
+
     // average the rpm of each motor as reported by BLHeli and convert to Hz
     for (uint8_t i = 0; i < num_motors && i < nfreqs; i++) {
-        if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
+        if (has_bidir_dshot(i)) {
+            uint16_t erpm = hal.rcout->get_erpm(i);
+            if (erpm > 0 && erpm < 0xFFFF) {
+                freqs[valid_escs++] = (erpm * 200 / motor_poles) / 60.f;
+            }
+        } else if (last_telem[i].timestamp_ms && (now - last_telem[i].timestamp_ms < 1000)) {
             // slew the update
             const float slew = MIN(1.0f, (now - last_telem[i].timestamp_ms) * telem_rate / 1000.0f);
             freqs[valid_escs++] = (prev_motor_rpm[i] + (last_telem[i].rpm - prev_motor_rpm[i]) * slew) / 60.0f;
@@ -1420,29 +1442,86 @@ void AP_BLHeli::read_telemetry_packet(void)
     received_telem_data = true;
 
     AP_Logger *logger = AP_Logger::get_singleton();
+
+    uint16_t trpm = td.rpm;
+    float terr = 0.0f;
+
     if (logger && logger->logging_enabled()
         // log at 10Hz
         && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
+
+        if (has_bidir_dshot(last_telem_esc)) {
+            trpm = hal.rcout->get_erpm(last_telem_esc);
+            if (trpm != 0xFFFF) {
+                trpm = trpm * 200 / motor_poles;
+            }
+            terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+        }
+
         logger->Write_ESC(uint8_t(last_telem_esc),
                       AP_HAL::micros64(),
-                      td.rpm*100U,
+                      trpm*100U,
                       td.voltage,
                       td.current,
                       td.temperature * 100U,
                       td.consumption,
-                      0);
+                      0,
+                      terr);
         last_log_ms[last_telem_esc] = td.timestamp_ms;
     }
 
     if (debug_level >= 2) {
-        hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u t=%u\n",
+        if (has_bidir_dshot(last_telem_esc)) {
+            trpm = hal.rcout->get_erpm(last_telem_esc);
+            if (trpm != 0xFFFF) {
+                trpm = trpm * 200 / motor_poles;
+            }
+            terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+        }
+        hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
                             td.temperature,
                             td.voltage,
                             td.current,
                             td.consumption,
-                            td.rpm, (unsigned)AP_HAL::millis());
+                            trpm, terr, (unsigned)AP_HAL::millis());
     }
+}
+
+/*
+  log bidir telemetry - only called if BLH telemetry is not active
+ */
+void AP_BLHeli::log_bidir_telemetry(void)
+{
+    AP_Logger *logger = AP_Logger::get_singleton();
+
+    uint32_t now = AP_HAL::millis();
+
+    if (logger && logger->logging_enabled()
+        // log at 10Hz
+        && now - last_log_ms[last_telem_esc] > 100) {
+
+        if (has_bidir_dshot(last_telem_esc)) {
+            uint16_t trpm = hal.rcout->get_erpm(last_telem_esc);
+            if (trpm != 0xFFFF) {
+                trpm = trpm * 200 / motor_poles;
+            }
+            float terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+
+            logger->Write_ESC(uint8_t(last_telem_esc),
+                      AP_HAL::micros64(),
+                      trpm*100U,
+                      0, 0, 0, 0,
+                      terr);
+            last_log_ms[last_telem_esc] = now;
+
+            if (debug_level >= 2) {
+                hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());
+            }
+        }
+    }
+
+    last_telem_esc = (last_telem_esc + 1) % num_motors;
 }
 
 /*
@@ -1451,6 +1530,12 @@ void AP_BLHeli::read_telemetry_packet(void)
  */
 void AP_BLHeli::update_telemetry(void)
 {
+#ifdef HAL_WITH_BIDIR_DSHOT
+    // we might only have bi-dir dshot
+    if (channel_bidir_dshot_mask.get() != 0 && !telem_uart) {
+        log_bidir_telemetry();
+    }
+#endif
     if (!telem_uart) {
         return;
     }

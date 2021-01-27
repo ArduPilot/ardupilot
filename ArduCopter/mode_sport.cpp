@@ -54,15 +54,15 @@ void ModeSport::run()
 
     const float angle_max = copter.aparm.angle_max;
     if (roll_angle > angle_max){
-        target_roll_rate +=  AC_AttitudeControl::sqrt_controller(angle_max - roll_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_roll_max(), G_Dt);
+        target_roll_rate +=  sqrt_controller(angle_max - roll_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_roll_max(), G_Dt);
     }else if (roll_angle < -angle_max) {
-        target_roll_rate +=  AC_AttitudeControl::sqrt_controller(-angle_max - roll_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_roll_max(), G_Dt);
+        target_roll_rate +=  sqrt_controller(-angle_max - roll_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_roll_max(), G_Dt);
     }
 
     if (pitch_angle > angle_max){
-        target_pitch_rate +=  AC_AttitudeControl::sqrt_controller(angle_max - pitch_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_pitch_max(), G_Dt);
+        target_pitch_rate +=  sqrt_controller(angle_max - pitch_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_pitch_max(), G_Dt);
     }else if (pitch_angle < -angle_max) {
-        target_pitch_rate +=  AC_AttitudeControl::sqrt_controller(-angle_max - pitch_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_pitch_max(), G_Dt);
+        target_pitch_rate +=  sqrt_controller(-angle_max - pitch_angle, g.acro_rp_p * 4.5, attitude_control->get_accel_pitch_max(), G_Dt);
     }
 
     // get pilot's desired yaw rate
@@ -106,7 +106,7 @@ void ModeSport::run()
         FALLTHROUGH;
 
     case AltHold_Landed_Pre_Takeoff:
-        attitude_control->reset_rate_controller_I_terms();
+        attitude_control->reset_rate_controller_I_terms_smoothly();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         break;
 

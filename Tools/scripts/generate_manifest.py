@@ -38,6 +38,7 @@ brand_map = {
     'CUAV-Nora' : ('CUAV Nora', 'CUAV'),
     'CUAV-X7' : ('CUAV X7', 'CUAV'),
     'DrotekP3Pro' : ('Pixhawk 3 Pro', 'Drotek'),
+    'MambaF405v2' : ('Diatone Mamba F405 MK2', 'Diatone'),
     'MatekF405' : ('Matek F405', 'Matek'),
     'MatekF405-STD' : ('Matek F405 STD', 'Matek'),
     'MatekF405-Wing' : ('Matek F405 Wing', 'Matek'),
@@ -46,6 +47,8 @@ brand_map = {
     'Pixracer' : ('PixRacer', 'mRobotics'),
     'mRoX21' : ('mRo X2.1', 'mRobotics'),
     'mRoX21-777' : ('mRo X2.1-777', 'mRobotics'),
+    'mRoPixracerPro' : ('mRo PixracerPro', 'mRobotics'),
+    'mRoControlZeroOEMH7' : ('mRo ControlZero OEM H7', 'mRobotics'),
     'mRoNexus' : ('mRo Nexus', 'mRobotics'),
     'TBS-Colibri-F7' : ('Colibri F7', 'TBS'),
     'sparky2' : ('Sparky2', 'TauLabs'),
@@ -56,6 +59,8 @@ brand_map = {
     'OmnibusNanoV6' : ('Omnibus Nano V6', 'Airbot'),
     'speedybeef4' : ('SpeedyBee F4', 'SpeedyBee'),
     'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
+    'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
+    'BeastF7' : ('Beast F7 45A AIO', 'iFlight'),
 }
 
 class Firmware():
@@ -101,6 +106,7 @@ class ManifestGenerator():
             "tri": "TRICOPTER",
             "octa": "OCTOROTOR",
             "octa-quad": "ARDUPILOT_OCTAQUAD",
+            "deca": "DECAROTOR",
             "heli": "HELICOPTER",
             "Plane": "FIXED_WING",
             "AntennaTracker": "ANTENNA_TRACKER",

@@ -4,6 +4,8 @@
 
 #include "AP_Logger_Block.h"
 
+#if HAL_LOGGING_BLOCK_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
@@ -58,7 +60,11 @@ void AP_Logger_Block::Init(void)
 
     WITH_SEMAPHORE(sem);
 
-    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Logger_Block::io_timer, void));
+    if (NeedErase()) {
+        EraseAll();
+    } else {
+        validate_log_structure();
+    }
 }
 
 uint32_t AP_Logger_Block::bufferspace_available()
@@ -343,22 +349,6 @@ void AP_Logger_Block::periodic_10Hz(const uint32_t now)
     // EraseAll should only set this in the main thread
     if (new_log_pending) {
         start_new_log();
-    }
-}
-
-void AP_Logger_Block::Prep()
-{
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-
-    WITH_SEMAPHORE(sem);
-
-    if (NeedErase()) {
-        EraseAll();
-    } else {
-        validate_log_structure();
     }
 }
 
@@ -822,10 +812,12 @@ bool AP_Logger_Block::logging_failed() const
     return false;
 }
 
+// detect whether the IO thread is running, since this is considered a catastrophic failure for the logging system
+// better be really, really sure
 bool AP_Logger_Block::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in 1s it is dead
-    return (AP_HAL::millis() - io_timer_heartbeat) < 1000U;
+    // if the io thread hasn't had a heartbeat in 3s it is dead
+    return (AP_HAL::millis() - io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 /*
@@ -872,12 +864,14 @@ void AP_Logger_Block::io_timer(void)
         const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_64k) * sectors_in_64k;
         while (next_sector < aligned_sector) {
             Sector4kErase(next_sector);
+            io_timer_heartbeat = AP_HAL::millis();
             next_sector++;
         }
         uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
             blocks_erased++;
             SectorErase(next_sector / sectors_in_64k);
+            io_timer_heartbeat = AP_HAL::millis();
             next_sector += sectors_in_64k;
         }
         status_msg = StatusMessage::RECOVERY_COMPLETE;
@@ -929,3 +923,4 @@ void AP_Logger_Block::write_log_page()
     df_Write_FilePage++;
 }
 
+#endif // HAL_LOGGING_BLOCK_ENABLED

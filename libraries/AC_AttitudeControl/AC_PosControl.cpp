@@ -568,7 +568,7 @@ void AC_PosControl::run_z_controller()
     }
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
-    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
+    _vel_target.z = sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
 
     // check speed limits
     // To-Do: check these speed limits here or in the pos->rate controller
@@ -1037,7 +1037,7 @@ void AC_PosControl::run_xy_controller(float dt)
             _pos_target.y = curr_pos.y + _pos_error.y;
         }
 
-        _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
+        _vel_target = sqrt_controller_3D(_pos_error, kP, _accel_cms);
     }
 
     // add velocity feed-forward
@@ -1206,20 +1206,8 @@ void AC_PosControl::check_for_ekf_z_reset()
     }
 }
 
-/// limit vector to a given length, returns true if vector was limited
-bool AC_PosControl::limit_vector_length(float& vector_x, float& vector_y, float max_length)
-{
-    float vector_length = norm(vector_x, vector_y);
-    if ((vector_length > max_length) && is_positive(vector_length)) {
-        vector_x *= (max_length / vector_length);
-        vector_y *= (max_length / vector_length);
-        return true;
-    }
-    return false;
-}
-
 /// Proportional controller with piecewise sqrt sections to constrain second derivative
-Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float second_ord_lim)
+Vector3f AC_PosControl::sqrt_controller_3D(const Vector3f& error, float p, float second_ord_lim)
 {
     if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
         return Vector3f(error.x * p, error.y * p, error.z);

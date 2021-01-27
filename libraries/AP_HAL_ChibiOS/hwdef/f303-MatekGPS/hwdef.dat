@@ -22,7 +22,7 @@ define HAL_WATCHDOG_ENABLED_DEFAULT true
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-define CH_CFG_ST_FREQUENCY 100000
+define CH_CFG_ST_FREQUENCY 1000
 define CH_CFG_ST_TIMEDELTA 0
 
 # assume the 256k flash part for now
@@ -58,7 +58,7 @@ define DMA_RESERVE_SIZE 0
 define PERIPH_FW TRUE
 
 # MAIN_STACK is stack of initial thread
-MAIN_STACK 0x80
+MAIN_STACK 0x300
 
 # PROCESS_STACK controls stack for main thread
 PROCESS_STACK 0x800
@@ -76,14 +76,13 @@ define STM32_I2C_USE_I2C1 TRUE
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
 
-define HAL_UART_STACK_SIZE 256
+define HAL_UART_STACK_SIZE 512
 
-define STORAGE_THD_WA_SIZE 256
-define IO_THD_WA_SIZE      256
+define STORAGE_THD_WA_SIZE 512
+define IO_THD_WA_SIZE      512
 
 define HAL_NO_GCS
 define HAL_NO_LOGGING
-define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
@@ -94,9 +93,9 @@ I2C_ORDER I2C1
 
 define HAL_I2C_CLEAR_ON_TIMEOUT 0
 
-define HAL_DEVICE_THREAD_STACK 256
+define HAL_DEVICE_THREAD_STACK 512
 
-define AP_PARAM_MAX_EMBEDDED_PARAM 0
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
 
 define HAL_I2C_INTERNAL_MASK 1
 
@@ -127,8 +126,8 @@ PA2 USART2_TX USART2 SPEED_HIGH NODMA
 PA3 USART2_RX USART2 SPEED_HIGH NODMA
 
 # USART3, for MSP
-PB10  USART3_TX USART3 SPEED_HIGH NODMA
-PB11  USART3_RX USART3 SPEED_HIGH NODMA
+PB10  USART3_TX USART3 SPEED_HIGH
+PB11  USART3_RX USART3 SPEED_HIGH
 
 # use a default node ID so this works with MSP only
 define HAL_CAN_DEFAULT_NODE_ID 112
@@ -150,15 +149,16 @@ define HAL_PERIPH_ENABLE_AIRSPEED
 define HAL_PERIPH_ENABLE_RANGEFINDER
 define HAL_PERIPH_ENABLE_MSP
 
-# allow for rangefinder to be plugged in on "MSP" port
-define RANGEFINDER_MAX_INSTANCES 1
-define ADSB_PORT hal.uartC
-define HAL_PERIPH_ENABLE_ADSB
-
+# setup for MSP
 define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 2
 
-# the GPS is good at 10Hz
-define GPS_MAX_RATE_MS 100
+# disable rangefinder by default
+define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
+
+# the M8 GPS is good at 10Hz, but the M9 is better at 5Hz,
+# so stick to 5Hz as the firmware is shared
+define GPS_MAX_RATE_MS 200
 
 # 10" DLVR sensor by default
 define HAL_AIRSPEED_TYPE_DEFAULT 9

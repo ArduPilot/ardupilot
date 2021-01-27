@@ -449,3 +449,19 @@ void stack_overflow(thread_t *tp)
     (void)tp;
 #endif
 }
+
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+/*
+  check how much stack is free given a stack base. Assumes the fill
+  byte is 0x55
+ */
+uint32_t stack_free(void *stack_base)
+{
+    const uint32_t *p = (uint32_t *)stack_base;
+    const uint32_t canary_word = 0x55555555;
+    while (*p == canary_word) {
+        p++;
+    }
+    return ((uint32_t)p) - (uint32_t)stack_base;
+}
+#endif

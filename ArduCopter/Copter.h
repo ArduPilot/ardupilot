@@ -141,7 +141,7 @@
  # include <AP_Button/AP_Button.h>
 #endif
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
  #include <AP_OSD/AP_OSD.h>
 #endif
 
@@ -442,7 +442,7 @@ private:
                            FUNCTOR_BIND_MEMBER(&Copter::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
 
@@ -864,7 +864,6 @@ private:
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
-    MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
     bool is_tradheli() const;
@@ -887,9 +886,10 @@ private:
     void userhook_auxSwitch2(uint8_t ch_flag);
     void userhook_auxSwitch3(uint8_t ch_flag);
 
-#if OSD_ENABLED == ENABLED
-    void publish_osd_info();
-#endif
+    // vehicle specific waypoint info helpers
+    bool get_wp_distance_m(float &distance) const override;
+    bool get_wp_bearing_deg(float &bearing) const override;
+    bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
     Mode *flightmode;
 #if MODE_ACRO_ENABLED == ENABLED

@@ -536,13 +536,12 @@ uint32_t SLCAN::CANIface::getErrorCount() const
     return 0;
 }
 
-uint32_t SLCAN::CANIface::get_stats(char* data, uint32_t max_size)
+void SLCAN::CANIface::get_stats(ExpandingString &str)
 {
     // When in passthrough mode methods is handled through can iface
     if (_can_iface) {
-        return _can_iface->get_stats(data, max_size);
+        _can_iface->get_stats(str);
     }
-    return 0;
 }
 
 bool SLCAN::CANIface::is_busoff() const

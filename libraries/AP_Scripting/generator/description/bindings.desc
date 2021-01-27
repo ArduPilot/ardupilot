@@ -12,6 +12,7 @@ userdata Location field loiter_xtrack boolean read write
 
 userdata Location method get_distance float Location
 userdata Location method offset void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
+userdata Location method offset_bearing void float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
@@ -41,6 +42,8 @@ singleton AP_AHRS method earth_to_body Vector3f Vector3f
 singleton AP_AHRS method body_to_earth Vector3f Vector3f
 singleton AP_AHRS method get_EAS2TAS float
 singleton AP_AHRS method get_variances boolean float'Null float'Null float'Null Vector3f'Null float'Null
+singleton AP_AHRS method set_posvelyaw_source_set void uint8_t 0 2
+singleton AP_AHRS method get_vel_innovations_and_variances_for_source boolean uint8_t 3 6 Vector3f'Null Vector3f'Null
 
 include AP_Arming/AP_Arming.h
 
@@ -143,13 +146,13 @@ singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_
 singleton RangeFinder method max_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method min_distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
+singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1
 
 include AP_Terrain/AP_Terrain.h
 
-depends AP_TERRAIN_AVAILABLE 1 Scripting requires terrain to be available
-
+singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
 singleton AP_Terrain alias terrain
 singleton AP_Terrain method enabled boolean
 singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
@@ -185,6 +188,9 @@ singleton AP_Vehicle method get_target_location boolean Location'Null
 singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float -FLT_MAX FLT_MAX boolean float -FLT_MAX FLT_MAX
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
+singleton AP_Vehicle method get_wp_distance_m boolean float'Null
+singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
+singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -242,6 +248,13 @@ singleton AP_Param method get boolean string float'Null
 singleton AP_Param method set boolean string float -FLT_MAX FLT_MAX
 singleton AP_Param method set_and_save boolean string float -FLT_MAX FLT_MAX
 
+include AP_Scripting/AP_Scripting_helpers.h
+userdata Parameter method init boolean string
+userdata Parameter method get boolean float'Null
+userdata Parameter method set boolean float -FLT_MAX FLT_MAX
+userdata Parameter method set_and_save boolean float -FLT_MAX FLT_MAX
+
+
 include AP_Mission/AP_Mission.h
 singleton AP_Mission alias mission
 singleton AP_Mission scheduler-semaphore
@@ -285,3 +298,14 @@ singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 include AP_Notify/ScriptingLED.h
 singleton ScriptingLED alias LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
+
+include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane alias quadplane
+singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton QuadPlane method in_vtol_mode boolean
+
+include AP_Motors/AP_MotorsMatrix.h
+singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_TYPE(APM_BUILD_ArduCopter) 
+singleton AP_MotorsMatrix alias MotorsMatrix
+singleton AP_MotorsMatrix method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
+singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)

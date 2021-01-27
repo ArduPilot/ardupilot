@@ -5,10 +5,6 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include <AP_FlashStorage/AP_FlashStorage.h>
 
-#ifndef HAL_STORAGE_FILE
-#define HAL_STORAGE_FILE "eeprom.bin"
-#endif
-
 // define which storage system to use. This allows us to test flash storage with --sitl-flash-storage
 // configure option
 #ifndef STORAGE_USE_FLASH

@@ -242,6 +242,7 @@ public:
     virtual void send_scaled_pressure3(); // allow sub to override this
     void send_sensor_offsets();
     virtual void send_simstate() const;
+    void send_sim_state() const;
     void send_ahrs();
     void send_battery2();
     void send_opticalflow();
@@ -334,6 +335,7 @@ public:
 
     virtual uint64_t capabilities() const;
     uint16_t get_stream_slowdown_ms() const { return stream_slowdown_ms; }
+    uint8_t get_last_txbuf() const { return last_txbuf; }
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
@@ -380,6 +382,7 @@ protected:
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
 
+    virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
 
     void handle_mission_request_list(const mavlink_message_t &msg);
@@ -509,8 +512,6 @@ protected:
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
-    virtual bool allow_disarm() const { return true; }
-
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
     /*
@@ -571,6 +572,8 @@ private:
 
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
+    // last reported radio buffer percent available
+    uint8_t          last_txbuf = 100;
 
     // perf counters
     AP_HAL::Util::perf_counter_t _perf_packet;
@@ -1017,6 +1020,8 @@ private:
         uint32_t start_ms;
         uint32_t last_ms;
         uint32_t last_port1_data_ms;
+        uint32_t baud1;
+        uint32_t baud2;
         uint8_t timeout_s;
         HAL_Semaphore sem;
     } _passthru;
@@ -1035,6 +1040,14 @@ GCS &gcs();
 
 // send text when we do have a GCS
 #define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+
+#elif defined(HAL_BUILD_AP_PERIPH) && !defined(STM32F1)
+
+// map send text to can_printf() on larger AP_Periph boards
+extern "C" {
+void can_printf(const char *fmt, ...);
+}
+#define GCS_SEND_TEXT(severity, format, args...) can_printf(format, ##args)
 
 #else // HAL_NO_GCS
 // empty send text when we have no GCS

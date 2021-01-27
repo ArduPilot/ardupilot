@@ -3,6 +3,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+#ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+#define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
+#endif
+
 class AP_Frsky_Backend
 {
 public:
@@ -15,6 +19,16 @@ public:
     virtual bool init();
     virtual void send() = 0;
 
+    typedef union {
+        struct PACKED {
+            uint8_t sensor;
+            uint8_t frame;
+            uint16_t appid;
+            uint32_t data;
+        };
+        uint8_t raw[8];
+    } sport_packet_t;
+
     // SPort is at 57600, D overrides this
     virtual uint32_t initial_baud() const
     {
@@ -22,14 +36,17 @@ public:
     }
 
     // get next telemetry data for external consumers of SPort data
-    virtual bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+    virtual bool get_telem_data(sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
     {
         return false;
     }
+
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     virtual bool set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
     {
         return false;
     }
+#endif
 
     virtual void queue_text_message(MAV_SEVERITY severity, const char *text) { }
 

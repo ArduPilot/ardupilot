@@ -51,11 +51,6 @@ ModeTakeoff::ModeTakeoff()
 
 bool ModeTakeoff::_enter()
 {
-    // the altitude to circle at is taken from the current altitude
-    plane.throttle_allows_nudging = true;
-    plane.auto_throttle_mode = true;
-    plane.auto_navigation_mode = true;
-
     takeoff_started = false;
 
     return true;

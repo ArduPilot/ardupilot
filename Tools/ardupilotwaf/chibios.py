@@ -292,6 +292,9 @@ def load_env_vars(env):
             print("env set %s=%s" % (k, v))
     if env.ENABLE_ASSERTS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_ASSERTS=yes'
+    if env.ENABLE_MALLOC_GUARD:
+        env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
+
 
 def setup_optimization(env):
     '''setup optimization flags for build'''

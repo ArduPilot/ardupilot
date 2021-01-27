@@ -57,148 +57,40 @@ const AP_Param::GroupInfo AP_OSD_ParamScreen::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHAN_MAX", 3, AP_OSD_ParamScreen, channel_max, 2100),
 
-    // @Param: PARAM1_EN
-    // @DisplayName: PARAM1_EN
-    // @Description: Enables display of parameter 1
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM1_X
-    // @DisplayName: PARAM1_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM1_Y
-    // @DisplayName: PARAM1_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM1
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[0], "PARAM1", 4, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
-    
-    // @Param: PARAM2_EN
-    // @DisplayName: PARAM21_EN
-    // @Description: Enables display of parameter 2
-    // @Values: 0:Disabled,1:Enabled
 
-    // @Param: PARAM2_X
-    // @DisplayName: PARAM2_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM2_Y
-    // @DisplayName: PARAM2_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM2
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[1], "PARAM2", 5, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM3_EN
-    // @DisplayName: PARAM3_EN
-    // @Description: Enables display of parameter 3
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM3_X
-    // @DisplayName: PARAM3_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM3_Y
-    // @DisplayName: PARAM3_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM3
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[2], "PARAM3", 6, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM4_EN
-    // @DisplayName: PARAM4_EN
-    // @Description: Enables display of parameter 4
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM4_X
-    // @DisplayName: PARAM4_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM4_Y
-    // @DisplayName: PARAM4_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM4
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[3], "PARAM4", 7, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM5_EN
-    // @DisplayName: PARAM5_EN
-    // @Description: Enables display of parameter 5
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM5_X
-    // @DisplayName: PARAM5_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM5_Y
-    // @DisplayName: PARAM5_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM5
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[4], "PARAM5", 8, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM6_EN
-    // @DisplayName: PARAM6_EN
-    // @Description: Enables display of parameter 6
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM6_X
-    // @DisplayName: PARAM6_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM6_Y
-    // @DisplayName: PARAM6_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM6
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[5], "PARAM6", 9, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM7_EN
-    // @DisplayName: PARAM7_EN
-    // @Description: Enables display of parameter 7
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM7_X
-    // @DisplayName: PARAM7_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM7_Y
-    // @DisplayName: PARAM7_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM7
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[6], "PARAM7", 10, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM8_EN
-    // @DisplayName: PARAM8_EN
-    // @Description: Enables display of parameter 8
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM8_X
-    // @DisplayName: PARAM8_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM8_Y
-    // @DisplayName: PARAM8_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM8
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[7], "PARAM8", 11, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
-    // @Param: PARAM9_EN
-    // @DisplayName: PARAM9_EN
-    // @Description: Enables display of parameter 8
-    // @Values: 0:Disabled,1:Enabled
-
-    // @Param: PARAM9_X
-    // @DisplayName: PARAM9_X
-    // @Description: Horizontal position on screen
-    // @Range: 0 29
-
-    // @Param: PARAM9_Y
-    // @DisplayName: PARAM9_Y
-    // @Description: Vertical position on screen
-    // @Range: 0 15
+    // @Group: PARAM9
+    // @Path: AP_OSD_ParamSetting.cpp
     AP_SUBGROUPINFO(params[8], "PARAM9", 12, AP_OSD_ParamScreen, AP_OSD_ParamSetting),
 
     // @Param: SAVE_X
@@ -297,6 +189,16 @@ AP_OSD_ParamScreen::AP_OSD_ParamScreen(uint8_t index)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+AP_OSD_ParamSetting* AP_OSD_ParamScreen::get_setting(uint8_t param_idx)
+{
+    if (param_idx >= NUM_PARAMS) {
+        return nullptr;
+    }
+    params[param_idx].update(); // make sure we are fresh
+    return &params[param_idx];
+}
+
+#if OSD_ENABLED
 void AP_OSD_ParamScreen::draw_parameter(uint8_t number, uint8_t x, uint8_t y)
 {
     bool param_blink = false;
@@ -328,8 +230,7 @@ void AP_OSD_ParamScreen::draw_parameter(uint8_t number, uint8_t x, uint8_t y)
     if (p != nullptr) {
         // grab the name of the parameter
         char name[17];
-        p->copy_name_token(setting._current_token, name, 16);
-        name[16] = 0;
+        setting.copy_name(name, 17);
 
         const AP_OSD_ParamSetting::ParamMetadata* metadata = setting.get_custom_metadata();
 
@@ -437,7 +338,7 @@ void AP_OSD_ParamScreen::modify_parameter(uint8_t number, Event ev)
     }
 }
 
-// modify which parameter is configued for the given selection
+// modify which parameter is configured for the given selection
 void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
 {
     if (number > NUM_PARAMS) {
@@ -454,7 +355,7 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
     } else {
         // going backwards is somewhat convoluted as the param code is geared for going forward
         ap_var_type type = AP_PARAM_NONE, prev_type = AP_PARAM_NONE, prev_prev_type = AP_PARAM_NONE;
-        AP_Param::ParamToken token, prev_token, prev_prev_token;
+        AP_Param::ParamToken token {}, prev_token, prev_prev_token;
 
         for (param = AP_Param::first(&token, &type);
             param && (setting._current_token.key != token.key
@@ -485,25 +386,6 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
         setting._current_token.idx = 0;
         setting._current_token.group_element = 0;
     }
-}
-
-// save all of the parameters
-void AP_OSD_ParamScreen::save_parameters()
-{
-    if (!_requires_save) {
-        return;
-    }
-
-    for (uint8_t i = 0; i < NUM_PARAMS; i++) {
-        if (params[i].enabled && (_requires_save & (1 << i))) {
-            AP_Param* p = params[i]._param;
-            if (p != nullptr) {
-                p->save();
-            }
-            params[i].save_as_new();
-        }
-    }
-    _requires_save = 0;
 }
 
 // return radio values as LOW, MIDDLE, HIGH
@@ -687,6 +569,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     }
 }
 
+#if HAL_WITH_OSD_BITMAP
 void AP_OSD_ParamScreen::draw(void)
 {
     if (!enabled || !backend) {
@@ -708,6 +591,41 @@ void AP_OSD_ParamScreen::draw(void)
     }
     // the save button
     draw_parameter(SAVE_PARAM, save_x, save_y);
+}
+#endif
+
+// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
+bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
+{
+    // currently in the OSD menu, do not allow arming
+    if (!is_readonly_screen()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "In OSD menu");
+        return false;
+    }
+
+    // if we got this far everything must be ok
+    return true;
+}
+
+#endif // OSD_ENABLED
+
+// save all of the parameters
+void AP_OSD_ParamScreen::save_parameters()
+{
+    if (!_requires_save) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < NUM_PARAMS; i++) {
+        if (params[i].enabled && (_requires_save & (1 << i))) {
+            AP_Param* p = params[i]._param;
+            if (p != nullptr) {
+                p->save();
+            }
+            params[i].save_as_new();
+        }
+    }
+    _requires_save = 0;
 }
 
 // handle OSD configuration messages
@@ -751,16 +669,3 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
 }
 
 #endif // OSD_PARAM_ENABLED
-
-// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
-{
-    // currently in the OSD menu, do not allow arming
-    if (!is_readonly_screen()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "In OSD menu");
-        return false;
-    }
-
-    // if we got this far everything must be ok
-    return true;
-}

@@ -60,6 +60,8 @@ for FrSky SPort Passthrough
 
 extern const AP_HAL::HAL& hal;
 
+AP_Frsky_SPort_Passthrough *AP_Frsky_SPort_Passthrough::singleton;
+
 bool AP_Frsky_SPort_Passthrough::init()
 {
     if (!AP_RCTelemetry::init()) {
@@ -79,9 +81,9 @@ bool AP_Frsky_SPort_Passthrough::init_serial_port()
 void  AP_Frsky_SPort_Passthrough::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data)
 {
     if (_use_external_data) {
-        external_data.frame = frame;
-        external_data.appid = appid;
-        external_data.data = data;
+        external_data.packet.frame = frame;
+        external_data.packet.appid = appid;
+        external_data.packet.data = data;
         external_data.pending = true;
         return;
     }
@@ -516,7 +518,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     // horizontal velocity in dm/s (use airspeed if available and enabled - even if not used - otherwise use groundspeed)
-    const AP_Airspeed *aspeed = _ahrs.get_airspeed();
+    const AP_Airspeed *aspeed = AP::airspeed();
     if (aspeed && aspeed->enabled()) {
         velandyaw |= prep_number(roundf(aspeed->get_airspeed() * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
     } else { // otherwise send groundspeed estimate from ahrs
@@ -545,41 +547,54 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     return attiandrng;
 }
 
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 /*
-  allow external transports (e.g. FPort), to supply telemetry data
+  fetch Sport data for an external transport, such as FPort or crossfire
+  Note: we need to create a packet array with unique packet types
+  For very big frames we might have to relax the "unique packet type per frame"
+  constraint in order to maximize bandwidth usage
  */
-bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+bool AP_Frsky_SPort_Passthrough::get_telem_data(sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
 {
-    // queue only Uplink packets
-    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
-        const AP_Frsky_SPort::sport_packet_t sp {
-            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
-            frame,
-            appid,
-            data
-        };
-
-        _SPort_bidir.rx_packet_queue.push_force(sp);
-        return true;
-    }
-    return false;
-}
-
-/*
-  fetch Sport data for an external transport, such as FPort
- */
-bool AP_Frsky_SPort_Passthrough::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
-{
-    run_wfq_scheduler();
-    if (!external_data.pending) {
+    if (!_use_external_data) {
         return false;
     }
-    frame = external_data.frame;
-    appid = external_data.appid;
-    data = external_data.data;
-    external_data.pending = false;
-    return true;
+
+    uint8_t idx = 0;
+
+    // max_size >= WFQ_LAST_ITEM
+    // get a packet per enabled type
+    if (max_size >= WFQ_LAST_ITEM) {
+        for (uint8_t i=0; i<WFQ_LAST_ITEM; i++) {
+            if (process_scheduler_entry(i)) {
+                if (external_data.pending) {
+                    packet_array[idx].frame = external_data.packet.frame;
+                    packet_array[idx].appid = external_data.packet.appid;
+                    packet_array[idx].data = external_data.packet.data;
+                    idx++;
+                    external_data.pending = false;
+                }
+            }
+        }
+    } else {
+        // max_size < WFQ_LAST_ITEM
+        // call run_wfq_scheduler(false) enough times to create a packet of up to max_size unique elements
+        uint32_t item_mask = 0;
+        for (uint8_t i=0; i<max_size; i++) {
+            // call the scheduler with the shaper "disabled"
+            const uint8_t item = run_wfq_scheduler(false);
+            if (!BIT_IS_SET(item_mask, item) && external_data.pending) {
+                // ok got some data, flip the bitmask bit to prevent adding the same packet type more than once
+                BIT_SET(item_mask, item);
+                packet_array[idx].frame = external_data.packet.frame;
+                packet_array[idx].appid = external_data.packet.appid;
+                packet_array[idx].data = external_data.packet.data;
+                idx++;
+                external_data.pending = false;
+            }
+        }
+    }
+    packet_count = idx;
+    return idx > 0;
 }
 
 /*
@@ -647,8 +662,26 @@ uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits,
     return res;
 }
 
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+/*
+  allow external transports (e.g. FPort), to supply telemetry data
+ */
+bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data)
+{
+    // queue only Uplink packets
+    if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
+        const AP_Frsky_SPort::sport_packet_t sp {
+            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
+            frame,
+            appid,
+            data
+        };
 
-
+        _SPort_bidir.rx_packet_queue.push_force(sp);
+        return true;
+    }
+    return false;
+}
 
 /*
  * Queue uplink packets in the sport rx queue
@@ -729,3 +762,11 @@ bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &tx
     return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
 }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+
+namespace AP
+{
+AP_Frsky_SPort_Passthrough *frsky_passthrough_telem()
+{
+    return AP_Frsky_SPort_Passthrough::get_singleton();
+}
+};

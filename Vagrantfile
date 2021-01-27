@@ -5,7 +5,7 @@
 # dpkg -l | grep modemmanager
 # sim_vehicle.py --map --console # in the starting directory should start a Copter simulation
 # sim_vehicle.py --debug --gdb
-# sim_vehicle.py --valgrind
+# sim_vehicle.py --debug --valgrind
 # time (cd /vagrant && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~9 minutes
 # time (cd /vagrant && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~ minutes (after building fmuv2)
 # time (cd /vagrant && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)
@@ -165,6 +165,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.name = "ArduPilot (focal)"
     end
     focal.vm.boot_timeout = 1200
+  end
+
+  # 20.10
+  config.vm.define "groovy", autostart: false do |groovy|
+    groovy.vm.box = "ubuntu/groovy64"
+    groovy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    groovy.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (groovy)"
+    end
+    groovy.vm.boot_timeout = 1200
   end
 
 end

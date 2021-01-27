@@ -32,6 +32,7 @@
 #ifndef HAL_BOOTLOADER_BUILD
 #include <AP_Logger/AP_Logger.h>
 #endif
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <hwdef.h>
 
@@ -44,6 +45,7 @@ static HAL_UARTE_DRIVER;
 static HAL_UARTF_DRIVER;
 static HAL_UARTG_DRIVER;
 static HAL_UARTH_DRIVER;
+static HAL_UARTI_DRIVER;
 #else
 static Empty::UARTDriver uartADriver;
 static Empty::UARTDriver uartBDriver;
@@ -53,6 +55,7 @@ static Empty::UARTDriver uartEDriver;
 static Empty::UARTDriver uartFDriver;
 static Empty::UARTDriver uartGDriver;
 static Empty::UARTDriver uartHDriver;
+static Empty::UARTDriver uartIDriver;
 #endif
 
 #if HAL_USE_I2C == TRUE && defined(HAL_I2C_DEVICE_LIST)
@@ -123,6 +126,7 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartFDriver,
         &uartGDriver,
         &uartHDriver,
+        &uartIDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
         &analogIn,
@@ -191,15 +195,13 @@ static void main_loop()
     ChibiOS::Shared_DMA::init();
     peripheral_power_enable();
 
-    hal.uartA->begin(115200);
+    hal.serial(0)->begin(115200);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
     ChibiOS::SPIDevice::test_clock_freq();
 #endif
 
-    hal.uartB->begin(38400);
-    hal.uartC->begin(57600);
     hal.analogin->init();
     hal.scheduler->init();
 
@@ -219,6 +221,10 @@ static void main_loop()
 
     g_callbacks->setup();
 
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    utilInstance.apply_persistent_params();
+#endif
+
 #ifdef IOMCU_FW
     stm32_watchdog_init();
 #elif !defined(HAL_BOOTLOADER_BUILD)
@@ -227,16 +233,14 @@ static void main_loop()
         stm32_watchdog_init();
     }
 
-#ifndef HAL_NO_LOGGING
     if (hal.util->was_watchdog_reset()) {
         INTERNAL_ERROR(AP_InternalError::error_t::watchdog_reset);
     }
-#endif // HAL_NO_LOGGING
 #endif // IOMCU_FW
 
     schedulerInstance.watchdog_pat();
 
-    hal.scheduler->system_initialized();
+    hal.scheduler->set_system_initialized();
 
     thread_running = true;
     chRegSetThreadName(SKETCHNAME);
@@ -257,7 +261,7 @@ static void main_loop()
           time from the main loop, so we don't need to do it again
           here
          */
-#ifndef HAL_DISABLE_LOOP_DELAY
+#if !defined(HAL_DISABLE_LOOP_DELAY) && !APM_BUILD_TYPE(APM_BUILD_Replay)
         if (!schedulerInstance.check_called_boost()) {
             hal.scheduler->delay_microseconds(50);
         }

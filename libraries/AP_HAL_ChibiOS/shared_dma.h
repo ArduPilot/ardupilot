@@ -65,6 +65,9 @@ public:
     // lock all shared DMA channels. Used on reboot
     static void lock_all(void);
 
+    // display dma contention statistics as text buffer for @SYS/dma.txt
+    static void dma_info(ExpandingString &str);
+
 private:
     dma_allocate_fn_t allocate;
     dma_allocate_fn_t deallocate;
@@ -103,4 +106,10 @@ private:
         // point to object that holds the allocation, if allocated
         Shared_DMA *obj;
     } locks[SHARED_DMA_MAX_STREAM_ID+1];
+
+    // contention statistics
+    static volatile struct dma_stats {
+        uint32_t contended_locks;
+        uint32_t uncontended_locks;
+    } *_contention_stats;
 };

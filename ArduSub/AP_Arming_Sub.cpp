@@ -66,7 +66,7 @@ bool AP_Arming_Sub::ins_checks(bool display_failure)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         char failure_msg[50] = {};
-        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        if (!AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
             check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
@@ -152,14 +152,14 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     return true;
 }
 
-bool AP_Arming_Sub::disarm(const AP_Arming::Method method)
+bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     // return immediately if we are already disarmed
     if (!sub.motors.armed()) {
         return false;
     }
 
-    if (!AP_Arming::disarm(method)) {
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
 

@@ -122,7 +122,7 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
             }
             case GIMBAL_MODE_STABILIZE: {
                 _ang_vel_dem_rads += get_ang_vel_dem_yaw(quatEst);
-                _ang_vel_dem_rads += get_ang_vel_dem_tilt(quatEst);
+                _ang_vel_dem_rads += get_ang_vel_dem_roll_tilt(quatEst);
                 _ang_vel_dem_rads += get_ang_vel_dem_feedforward(quatEst);
                 _ang_vel_dem_rads += get_ang_vel_dem_gyro_bias();
                 float ang_vel_dem_norm = _ang_vel_dem_rads.length();
@@ -230,6 +230,7 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
 void SoloGimbal::update_fast() {
     const AP_InertialSensor &ins = AP::ins();
 
+#if INS_MAX_INSTANCES > 1
     if (ins.use_gyro(0) && ins.use_gyro(1)) {
         // dual gyro mode - average first two gyros
         Vector3f dAng;
@@ -237,7 +238,9 @@ void SoloGimbal::update_fast() {
         _vehicle_delta_angles += dAng*0.5f;
         readVehicleDeltaAngle(1, dAng);
         _vehicle_delta_angles += dAng*0.5f;
-    } else {
+    } else
+#endif
+    {
         // single gyro mode - one of the first two gyros are unhealthy or don't exist
         // just read primary gyro
         Vector3f dAng;
@@ -310,7 +313,7 @@ Vector3f SoloGimbal::get_ang_vel_dem_yaw(const Quaternion &quatEst)
     return gimbalRateDemVecYaw;
 }
 
-Vector3f SoloGimbal::get_ang_vel_dem_tilt(const Quaternion &quatEst)
+Vector3f SoloGimbal::get_ang_vel_dem_roll_tilt(const Quaternion &quatEst)
 {
     // Calculate the gimbal 321 Euler angle estimates relative to earth frame
     Vector3f eulerEst = quatEst.to_vector312();
@@ -337,14 +340,22 @@ Vector3f SoloGimbal::get_ang_vel_dem_tilt(const Quaternion &quatEst)
 Vector3f SoloGimbal::get_ang_vel_dem_feedforward(const Quaternion &quatEst)
 {
     // quaternion demanded at the previous time step
-    static float lastDem;
+    static float lastDemY;
 
     // calculate the delta rotation from the last to the current demand where the demand does not incorporate the copters yaw rotation
-    float delta = _att_target_euler_rad.y - lastDem;
-    lastDem = _att_target_euler_rad.y;
+    float deltaY = _att_target_euler_rad.y - lastDemY;
+    lastDemY = _att_target_euler_rad.y;
+
+    // quaternion demanded at the previous time step
+    static float lastDemX;
+
+    // calculate the delta rotation from the last to the current demand where the demand does not incorporate the copters yaw rotation
+    float deltaX = _att_target_euler_rad.x - lastDemX;
+    lastDemX = _att_target_euler_rad.x;
 
     Vector3f gimbalRateDemVecForward;
-    gimbalRateDemVecForward.y = delta / _measurement.delta_time;
+    gimbalRateDemVecForward.x = deltaX / _measurement.delta_time;
+    gimbalRateDemVecForward.y = deltaY / _measurement.delta_time;
     return gimbalRateDemVecForward;
 }
 
@@ -380,6 +391,12 @@ void SoloGimbal::update_target(const Vector3f &newTarget)
     _att_target_euler_rad.y = _att_target_euler_rad.y + 0.02f*(newTarget.y - _att_target_euler_rad.y);
     // Update tilt
     _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90),radians(0));
+
+    // For roll angle
+    // Low-pass filter
+    _att_target_euler_rad.x = _att_target_euler_rad.x + 0.02f*(newTarget.x - _att_target_euler_rad.x);
+    // Update roll
+    _att_target_euler_rad.x = constrain_float(_att_target_euler_rad.x,radians(-30),radians(30));
 }
 
 void SoloGimbal::write_logs()

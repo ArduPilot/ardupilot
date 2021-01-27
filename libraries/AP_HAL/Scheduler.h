@@ -66,7 +66,9 @@ public:
     virtual void     register_timer_failsafe(AP_HAL::Proc,
                                              uint32_t period_us) = 0;
 
-    virtual void     system_initialized() = 0;
+    // check and set the startup state
+    virtual void     set_system_initialized() = 0;
+    virtual bool     is_system_initialized() = 0;
 
     virtual void     reboot(bool hold_in_bootloader) = 0;
 

@@ -259,7 +259,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     // When it is supported the expected response would be "e:1".
 
     // Changes the number of lost signal confirmations: 1 [1..250].
-    if (!sf20_send_and_expect("#LC,1\r\n", "lc:1")) {
+    if (!sf20_send_and_expect("#LC,20\r\n", "lc:20")) {
         return false;
     }
 

@@ -35,6 +35,7 @@
 #include <SITL/SIM_Scrimmage.h>
 #include <SITL/SIM_Webots.h>
 #include <SITL/SIM_JSON.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <signal.h>
 #include <stdio.h>
@@ -74,7 +75,7 @@ void SITL_State::_usage(void)
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
            // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
-           "\t--home|-O HOME           set start location (lat,lng,alt,yaw)\n"
+           "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
            "\t--fg|-F ADDRESS          set Flight Gear view address, defaults to 127.0.0.1\n"
@@ -90,6 +91,7 @@ void SITL_State::_usage(void)
            "\t--uartF device           set device string for UARTF\n"
            "\t--uartG device           set device string for UARTG\n"
            "\t--uartH device           set device string for UARTH\n"
+           "\t--uartI device           set device string for UARTI\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -97,7 +99,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
-           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp"
+           "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set SYSID_THISMAV\n"
         );
 }
@@ -127,6 +129,8 @@ static const struct {
     { "dodeca-hexa",        MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
+    { "deca",               MultiCopter::create },
+    { "deca-cwx",           MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
@@ -209,6 +213,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
+    const bool is_replay = APM_BUILD_TYPE(APM_BUILD_Replay);
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -223,6 +228,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTF,
         CMDLINE_UARTG,
         CMDLINE_UARTH,
+        CMDLINE_UARTI,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -260,6 +266,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartF",           true,   0, CMDLINE_UARTF},
         {"uartG",           true,   0, CMDLINE_UARTG},
         {"uartH",           true,   0, CMDLINE_UARTH},
+        {"uartI",           true,   0, CMDLINE_UARTI},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -272,6 +279,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {0, false, 0, 0}
     };
 
+    if (is_replay) {
+        model_str = "quad";
+        HALSITL::UARTDriver::_console = true;
+    }
+
     if (asprintf(&autotest_dir, SKETCHBOOK "/Tools/autotest") <= 0) {
         AP_HAL::panic("out of memory");
     }
@@ -282,11 +294,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
                     options);
-    while ((opt = gopt.getoption()) != -1) {
+    while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
         case 'w':
+#if HAL_LOGGING_FILESYSTEM_ENABLED
             AP_Param::erase_all();
+#endif
+#if HAL_LOGGING_SITL_ENABLED
             unlink(AP_Logger_SITL::filename);
+#endif
             break;
         case 'u':
             AP_Param::set_hide_disabled_groups(false);
@@ -424,7 +440,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (home_str != nullptr) {
                 Location home;
                 float home_yaw;
-                if (!parse_home(home_str, home, home_yaw)) {
+                if (strchr(home_str,',') == nullptr) {
+                    if (!lookup_location(home_str, home, home_yaw)) {
+                        ::printf("Failed to find location (%s).  Should be in locations.txt or LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
+                        exit(1);
+                    }
+                } else if (!parse_home(home_str, home, home_yaw)) {
                     ::printf("Failed to parse home string (%s).  Should be LAT,LON,ALT,HDG e.g. 37.4003371,-122.0800351,0,353\n", home_str);
                     exit(1);
                 }
@@ -534,4 +555,38 @@ bool SITL_State::parse_home(const char *home_str, Location &loc, float &yaw_degr
     return true;
 }
 
+/*
+  lookup a location in locations.txt in ROMFS
+ */
+bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw_degrees)
+{
+    const char *locations = "@ROMFS/locations.txt";
+    FileData *fd = AP::FS().load_file(locations);
+    if (fd == nullptr) {
+        ::printf("Missing %s\n", locations);
+        return false;
+    }
+    char *str = strndup((const char *)fd->data, fd->length);
+    if (!str) {
+        delete fd;
+        return false;
+    }
+    size_t len = strlen(home_str);
+    char *saveptr = nullptr;
+    for (char *s = strtok_r(str, "\r\n", &saveptr);
+         s;
+         s=strtok_r(nullptr, "\r\n", &saveptr)) {
+        if (strncasecmp(s, home_str, len) == 0 && s[len]=='=') {
+            bool ok = parse_home(&s[len+1], loc, yaw_degrees);
+            free(str);
+            delete fd;
+            return ok;
+        }
+    }
+    free(str);
+    delete fd;
+    ::printf("Failed to find location '%s'\n", home_str);
+    return false;
+}
+    
 #endif

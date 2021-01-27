@@ -22,8 +22,6 @@ public:
     // erase handling
     virtual void EraseAll() = 0;
 
-    virtual void Prep() = 0;
-
     /* Write a block of data at current offset */
     bool WriteBlock(const void *pBuffer, uint16_t size) {
         return WritePrioritisedBlock(pBuffer, size, false);
@@ -97,7 +95,7 @@ public:
     bool Write_MessageF(const char *fmt, ...);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    bool Write_Mode(uint8_t mode, const ModeReason reason = ModeReason::UNKNOWN);
+    bool Write_Mode(uint8_t mode, const ModeReason reason);
     bool Write_Parameter(const char *name, float value);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
@@ -122,11 +120,17 @@ public:
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
+    // We may need to make sure data is loggable before starting the
+    // EKF; when allow_start_ekf we should be able to log that data
+    bool allow_start_ekf() const;
+
     virtual void vehicle_was_disarmed();
 
     bool Write_Unit(const struct UnitStructure *s);
     bool Write_Multiplier(const struct MultiplierStructure *s);
     bool Write_Format_Units(const struct LogStructure *structure);
+
+    virtual void io_timer(void) {}
 
 protected:
 

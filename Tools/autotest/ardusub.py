@@ -63,12 +63,6 @@ class AutoTestSub(AutoTest):
     def default_frame(self):
         return 'vectored'
 
-    def init(self):
-        super(AutoTestSub, self).init()
-
-        # FIXME:
-        self.set_parameter("FS_GCS_ENABLE", 0)
-
     def is_sub(self):
         return True
 
@@ -237,6 +231,12 @@ class AutoTestSub(AutoTest):
         self.disarm_vehicle()
         self.progress("Manual dive OK")
 
+        m = self.mav.recv_match(type='SCALED_PRESSURE3', blocking=True)
+        if m is None:
+            raise NotAchievedException("Did not get SCALED_PRESSURE3")
+        if m.temperature != 2650:
+            raise NotAchievedException("Did not get correct TSYS01 temperature")
+
     def dive_mission(self, filename):
         self.progress("Executing mission %s" % filename)
         self.load_mission(filename)
@@ -273,7 +273,8 @@ class AutoTestSub(AutoTest):
             self.mavproxy.expect("Gripper Grabbed")
             self.mavproxy.expect("Gripper Released")
         except Exception as e:
-            self.progress("Exception caught")
+            self.progress("Exception caught: %s" % (
+                self.get_exception_stacktrace(e)))
             ex = e
         if ex is not None:
             raise ex
@@ -288,31 +289,32 @@ class AutoTestSub(AutoTest):
 
         lat = 5
         lon = 5
-        alt = 10
+        alt = -10
+
+        # send a position-control command
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            0b1111111111111000, # mask specifying use-only-lat-lon-alt
+            lat, # lat
+            lon, # lon
+            alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yawrate
+        )
 
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            # send a position-control command
-            self.mav.mav.set_position_target_global_int_send(
-                0, # timestamp
-                1, # target system_id
-                1, # target component id
-                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                0b1111111111111000, # mask specifying use-only-lat-lon-alt
-                lat, # lat
-                lon, # lon
-                alt, # alt
-                0, # vx
-                0, # vy
-                0, # vz
-                0, # afx
-                0, # afy
-                0, # afz
-                0, # yaw
-                0, # yawrate
-            )
             pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
                                       blocking=True)
             delta = self.get_distance_int(startpos, pos)
@@ -324,12 +326,22 @@ class AutoTestSub(AutoTest):
 
     def reboot_sitl(self):
         """Reboot SITL instance and wait it to reconnect."""
-        self.mavproxy.send("reboot\n")
-        self.mavproxy.expect("Init ArduSub")
-        # empty mav to avoid getting old timestamps:
-        while self.mav.recv_match(blocking=False):
-            pass
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+        self.send_reboot_command()
+        # "Init ArduSub" comes out as raw text, not a statustext
+        for i in range(2):
+            try:
+                self.wait_statustext("ArduPilot Ready", check_context=True, wallclock_timeout=True)
+            except ConnectionResetError as e:
+                pass
+        self.context_pop()
         self.initialise_after_reboot_sitl()
+
+    def apply_defaultfile_parameters(self):
+        super(AutoTestSub, self).apply_defaultfile_parameters()
+        # FIXME:
+        self.set_parameter("FS_GCS_ENABLE", 0)
 
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()

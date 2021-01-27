@@ -38,9 +38,13 @@ extern const AP_HAL::HAL& hal;
 
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::_singleton;
+
+#ifndef HAL_BUILD_AP_PERIPH
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
+#endif // HAL_BUILD_AP_PERIPH
+
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -58,76 +62,110 @@ Bitmask<SRV_Channel::k_nr_aux_servo_functions> SRV_Channels::function_mask;
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
 
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
+#if (NUM_SERVO_CHANNELS >= 1)
     // @Group: 1_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[0], "1_",  1, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 2)
     // @Group: 2_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[1], "2_",  2, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 3)
     // @Group: 3_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[2], "3_",  3, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 4)
     // @Group: 4_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[3], "4_",  4, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 5)
     // @Group: 5_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[4], "5_",  5, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 6)
     // @Group: 6_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[5], "6_",  6, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 7)
     // @Group: 7_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[6], "7_",  7, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 8)
     // @Group: 8_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[7], "8_",  8, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 9)
     // @Group: 9_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[8], "9_",  9, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 10)
     // @Group: 10_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[9], "10_",  10, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 11)
     // @Group: 11_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[10], "11_",  11, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 12)
     // @Group: 12_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[11], "12_",  12, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 13)
     // @Group: 13_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[12], "13_",  13, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 14)
     // @Group: 14_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[13], "14_",  14, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 15)
     // @Group: 15_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[14], "15_",  15, SRV_Channels, SRV_Channel),
+#endif
 
+#if (NUM_SERVO_CHANNELS >= 16)
     // @Group: 16_
     // @Path: SRV_Channel.cpp
     AP_SUBGROUPINFO(obj_channels[15], "16_",  16, SRV_Channels, SRV_Channel),
+#endif
 
+#ifndef  HAL_BUILD_AP_PERIPH
     // @Param{Plane}: _AUTO_TRIM
     // @DisplayName: Automatic servo trim
     // @Description: This enables automatic servo trim in flight. Servos will be trimed in stabilized flight modes when the aircraft is close to level. Changes to servo trim will be saved every 10 seconds and will persist between flights. The automatic trim won't go more than 20% away from a centered trim.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
     AP_GROUPINFO_FRAME("_AUTO_TRIM",  17, SRV_Channels, auto_trim, 0, AP_PARAM_FRAME_PLANE),
+#endif
 
     // @Param: _RATE
     // @DisplayName: Servo default output rate
@@ -137,6 +175,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _VOLZ_
     // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
@@ -154,6 +193,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
+#endif // HAL_BUILD_AP_PERIPH
 
     AP_GROUPEND
 };
@@ -174,12 +214,14 @@ SRV_Channels::SRV_Channels(void)
         channels[i].ch_num = i;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 /*
@@ -264,6 +306,7 @@ void SRV_Channels::push()
 {
     hal.rcout->push();
 
+#ifndef HAL_BUILD_AP_PERIPH
     // give volz library a chance to update
     volz_ptr->update();
 
@@ -277,6 +320,7 @@ void SRV_Channels::push()
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // push outputs to CAN

@@ -24,7 +24,14 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
+#include "shared_dma.h"
+#include <AP_Common/ExpandingString.h>
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+#include <AP_InertialSensor/AP_InertialSensor.h>
+#endif
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -64,7 +71,7 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
 void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 {
     if (ptr != NULL) {
-        chHeapFree(ptr);
+        free(ptr);
     }
 }
 
@@ -207,8 +214,32 @@ Util::FlashBootloader Util::flash_bootloader()
     // make sure size is multiple of 32
     fw_size = (fw_size + 31U) & ~31U;
 
+    bool uptodate = true;
     const uint32_t addr = hal.flash->getpageaddr(0);
-    if (!memcmp(fw, (const void*)addr, fw_size)) {
+
+    if (memcmp(fw, (const void*)addr, fw_size) != 0) {
+        uptodate = false;
+    }
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    // see if we should store persistent parameters along with the
+    // bootloader. We only do this on boards using a single sector for
+    // the bootloader. The persistent parameters are stored as text at
+    // the end of the sector
+    const int32_t space_available = hal.flash->getpagesize(0) - int32_t(fw_size);
+    ExpandingString persistent_params {}, old_persistent_params {};
+    if (get_persistent_params(persistent_params) &&
+        space_available >= persistent_params.get_length() &&
+        (!load_persistent_params(old_persistent_params) ||
+         strcmp(persistent_params.get_string(),
+                old_persistent_params.get_string()) != 0)) {
+        // persistent parameters have changed, we will update
+        // bootloader to allow storage of the params
+        uptodate = false;
+    }
+#endif
+
+    if (uptodate) {
         Debug("Bootloader up-to-date\n");
         AP_ROMFS::free(fw);
         return FlashBootloader::NO_CHANGE;
@@ -247,6 +278,12 @@ Util::FlashBootloader Util::flash_bootloader()
             continue;
         }
         Debug("Flash OK\n");
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+        if (persistent_params.get_length()) {
+            const uint32_t ofs = hal.flash->getpagesize(0) - persistent_params.get_length();
+            hal.flash->write(addr+ofs, persistent_params.get_string(), persistent_params.get_length());
+        }
+#endif
         hal.flash->keep_unlocked(false);
         AP_ROMFS::free(fw);
         return FlashBootloader::OK;
@@ -298,40 +335,156 @@ bool Util::was_watchdog_reset() const
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
-size_t Util::thread_info(char *buf, size_t bufsize)
+void Util::thread_info(ExpandingString &str)
 {
-  thread_t *tp;
-  size_t total = 0;
-
   // a header to allow for machine parsers to determine format
-  int n = snprintf(buf, bufsize, "ThreadsV1\n");
-  if (n <= 0) {
-      return 0;
+  const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+  str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+             &__main_stack_base__,
+             unsigned(stack_free(&__main_stack_base__)),
+             unsigned(isr_stack_size));
+
+  for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+      uint32_t total_stack;
+      if (tp->wabase == (void*)&__main_thread_stack_base__) {
+          // main thread has its stack separated from the thread context
+          total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+      } else {
+          // all other threads have their thread context pointer
+          // above the stack top
+          total_stack = uint32_t(tp) - uint32_t(tp->wabase);
+      }
+#if HAL_ENABLE_THREAD_STATISTICS
+      str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
+                 tp->name, unsigned(tp->prio), tp->wabase,
+                 stack_free(tp->wabase), total_stack, RTC2US(STM32_HSECLK, tp->stats.best),
+                 RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n))),
+                 RTC2US(STM32_HSECLK, tp->stats.worst));
+      chTMObjectInit(&tp->stats); // reset counters to zero
+#else
+      str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+                 tp->name, unsigned(tp->prio), tp->wabase,
+                 unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+#endif
   }
-  buf += n;
-  bufsize -= n;
-  total += n;
-
-  tp = chRegFirstThread();
-
-  do {
-      uint32_t stklimit = (uint32_t)tp->wabase;
-      uint8_t *p = (uint8_t *)tp->wabase;
-      while (*p == CH_DBG_STACK_FILL_VALUE) {
-          p++;
-      }
-      uint32_t stack_left = ((uint32_t)p) - stklimit;
-      n = snprintf(buf, bufsize, "%-13.13s PRI=%3u STACK_LEFT=%u\n", tp->name, unsigned(tp->prio), unsigned(stack_left));
-      if (n <= 0) {
-          break;
-      }
-      buf += n;
-      bufsize -= n;
-      total += n;
-      tp = chRegNextThread(tp);
-  } while (tp != NULL);
-
-  return total;
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
+#if CH_CFG_USE_SEMAPHORES
+// request information on dma contention
+void Util::dma_info(ExpandingString &str)
+{
+    ChibiOS::Shared_DMA::dma_info(str);
+}
+#endif
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+
+static const char *persistent_header = "{{PERSISTENT_START_V1}}\n";
+
+/*
+  create a set of persistent parameters in string form
+ */
+bool Util::get_persistent_params(ExpandingString &str) const
+{
+    str.printf("%s", persistent_header);
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    const auto *ins = AP_InertialSensor::get_singleton();
+    if (ins) {
+        ins->get_persistent_params(str);
+    }
+#endif
+    if (str.has_failed_allocation() || str.get_length() <= strlen(persistent_header)) {
+        // no data
+        return false;
+    }
+    // ensure that the length is a multiple of 32 to meet flash alignment requirements
+    while (!str.has_failed_allocation() && str.get_length() % 32 != 0) {
+        str.append(" ", 1);
+    }
+    return !str.has_failed_allocation();
+}
+
+/*
+  load a set of persistent parameters in string form from the bootloader sector
+ */
+bool Util::load_persistent_params(ExpandingString &str) const
+{
+    const uint32_t addr = hal.flash->getpageaddr(0);
+    const uint32_t size = hal.flash->getpagesize(0);
+    const char *s = (const char *)memmem((void*)addr, size,
+                                         persistent_header,
+                                         strlen(persistent_header));
+    if (s) {
+        str.append(s, (addr+size) - uint32_t(s));
+        return !str.has_failed_allocation();
+    }
+    return false;
+}
+
+/*
+  apply persistent parameters from the bootloader sector to AP_Param
+ */
+void Util::apply_persistent_params(void) const
+{
+    ExpandingString str {};
+    if (!load_persistent_params(str)) {
+        return;
+    }
+    char *s = str.get_writeable_string();
+    char *saveptr;
+    s += strlen(persistent_header);
+    uint32_t count = 0;
+    uint32_t errors = 0;
+    for (char *p = strtok_r(s, "\n", &saveptr);
+         p; p = strtok_r(nullptr, "\n", &saveptr)) {
+        char *eq = strchr(p, int('='));
+        if (eq) {
+            *eq = 0;
+            const char *pname = p;
+            const float value = atof(eq+1);
+            if (AP_Param::set_default_by_name(pname, value)) {
+                count++;
+                /*
+                  we now have a special case for INS_ACC*_ID. To
+                  support factory accelerometer calibration we need to
+                  do a save() on the ID parameters if they are not
+                  already in storage. This is needed as
+                  AP_InertialSensor determines if a calibration has
+                  been done by whether the IDs are configured in
+                  storage
+                 */
+                if (strncmp(pname, "INS_ACC", 7) == 0 &&
+                    strcmp(pname+strlen(pname)-3, "_ID") == 0) {
+                    enum ap_var_type ptype;
+                    AP_Int32 *ap = (AP_Int32 *)AP_Param::find(pname, &ptype);
+                    if (ap && ptype == AP_PARAM_INT32) {
+                        if (ap->get() != int32_t(value)) {
+                            // the accelerometer ID has changed since
+                            // this persistent data was saved. Stop
+                            // loading persistent parameters as it is
+                            // no longer valid for this board. This
+                            // can happen if the user has set
+                            // parameters to prevent loading of
+                            // specific IMU drivers, or if they have
+                            // setup an external IMU
+                            errors++;
+                            break;
+                        }
+                        if (!ap->configured_in_storage()) {
+                            ap->save();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (count) {
+        AP_Param::invalidate_count();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Loaded %u persistent parameters (%u errors)",
+                      unsigned(count), unsigned(errors));
+    }
+}
+
+#endif // HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 

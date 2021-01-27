@@ -279,7 +279,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt)
         if (_desired_accel.is_zero()) {
             if ((AP_HAL::millis()-_brake_timer) > _brake_delay * 1000.0f) {
                 float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
-                loiter_brake_accel = constrain_float(AC_AttitudeControl::sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, nav_dt), 0.0f, _brake_accel_cmss);
+                loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, nav_dt), 0.0f, _brake_accel_cmss);
             }
         } else {
             loiter_brake_accel = 0.0f;

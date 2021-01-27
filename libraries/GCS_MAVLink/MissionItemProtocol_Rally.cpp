@@ -66,6 +66,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Rally::convert_MISSION_ITEM_INT_to_RallyL
     if (cmd.z < INT16_MIN || cmd.z > INT16_MAX) {
         return MAV_MISSION_INVALID_PARAM7;
     }
+    ret = {};
     ret.lat = cmd.x;
     ret.lng = cmd.y;
     ret.alt = cmd.z;

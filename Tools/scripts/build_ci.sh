@@ -123,7 +123,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-can" ]; then
-        echo "Building navigator"
+        echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
@@ -200,6 +200,16 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --Werror --board mRoX21-777
         $waf clean
         $waf plane
+
+        # test bi-directional dshot build
+        echo "Building KakuteF7Mini"
+        $waf configure --Werror --board KakuteF7Mini
+
+        # test bi-directional dshot build and smallest flash
+        echo "Building KakuteF7"
+        $waf configure --Werror --board KakuteF7
+        $waf clean
+        $waf copter
         continue
     fi
 
@@ -231,6 +241,17 @@ for t in $CI_BUILD_TARGET; do
         echo "Building navigator"
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
+        continue
+    fi
+
+    if [ "$t" == "replay" ]; then
+        echo "Building replay"
+        $waf configure --board sitl --debug --disable-scripting
+        $waf replay
+        echo "Building AP_DAL standalone test"
+        $waf configure --board sitl --debug --disable-scripting --no-gcs
+        $waf --target tools/AP_DAL_Standalone
+        $waf clean
         continue
     fi
 

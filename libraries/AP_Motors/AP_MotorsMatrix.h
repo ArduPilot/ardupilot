@@ -17,10 +17,25 @@ public:
     /// Constructor
     AP_MotorsMatrix(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(loop_rate, speed_hz)
-    {};
+    {
+        if (_singleton != nullptr) {
+            AP_HAL::panic("AP_MotorsMatrix must be singleton");
+        }
+        _singleton = this;
+    };
+
+    // get singleton instance
+    static AP_MotorsMatrix *get_singleton() {
+        return _singleton;
+    }
 
     // init
     void                init(motor_frame_class frame_class, motor_frame_type frame_type) override;
+
+#ifdef ENABLE_SCRIPTING
+    // Init to be called from scripting
+    bool                init(uint8_t expected_num_motors);
+#endif // ENABLE_SCRIPTING
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
@@ -55,15 +70,19 @@ public:
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override { return _roll_factor[i]; }
 
+    // disable the use of motor torque to control yaw. Used when an external mechanism such
+    // as vectoring is used for yaw control
+    void                disable_yaw_torque(void) override;
+
+    // add_motor using raw roll, pitch, throttle and yaw factors
+    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
 
     // check for failed motor
     void                check_for_failed_motor(float throttle_thrust_best);
-
-    // add_motor using raw roll, pitch, throttle and yaw factors
-    void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order);
 
     // add_motor using just position and yaw_factor (or prop direction)
     void                add_motor(int8_t motor_num, float angle_degrees, float yaw_factor, uint8_t testing_order);
@@ -94,4 +113,7 @@ protected:
     // motor failure handling
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant
     uint8_t             _motor_lost_index;  // index number of the lost motor
+
+private:
+    static AP_MotorsMatrix *_singleton;
 };

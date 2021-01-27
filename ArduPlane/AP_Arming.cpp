@@ -125,7 +125,7 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         char failure_msg[50] = {};
-        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        if (!AP::ahrs().pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
             check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
@@ -136,6 +136,33 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
+    if (method == AP_Arming::Method::RUDDER) {
+        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
+
+        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
+            //parameter disallows rudder arming/disabling
+
+            // if we emit a message here then someone doing surface
+            // checks may be bothered by the message being emitted.
+            // check_failed(true, "Rudder arming disabled");
+            return false;
+        }
+
+        // if throttle is not down, then pilot cannot rudder arm/disarm
+        if (plane.get_throttle_input() != 0){
+            check_failed(true, "Non-zero throttle");
+            return false;
+        }
+
+        // if not in a manual throttle mode and not in CRUISE or FBWB
+        // modes then disallow rudder arming/disarming
+        if (plane.control_mode->does_auto_throttle() &&
+            (plane.control_mode != &plane.mode_cruise && plane.control_mode != &plane.mode_fbwb)) {
+            check_failed(true, "Mode not rudder-armable");
+            return false;
+        }
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return true;
@@ -151,7 +178,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
     }
 
 #if GEOFENCE_ENABLED == ENABLED
-    if (plane.g.fence_autoenable == 3) {
+    if (plane.g.fence_autoenable == FenceAutoEnable::WhenArmed) {
         if (!plane.geofence_set_enabled(true)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Fence: cannot enable for arming");
             return false;
@@ -203,9 +230,23 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 /*
   disarm motors
  */
-bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
+bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    if (!AP_Arming::disarm(method)) {
+    if (do_disarm_checks &&
+        method == AP_Arming::Method::RUDDER) {
+        // don't allow rudder-disarming in flight:
+        if (plane.is_flying()) {
+            // obviously this could happen in-flight so we can't warn about it
+            return false;
+        }
+        // option must be enabled:
+        if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Rudder disarm: disabled");
+            return false;
+        }
+    }
+
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
     if (plane.control_mode != &plane.mode_auto) {
@@ -214,7 +255,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
     }
 
     // suppress the throttle in auto-throttle modes
-    plane.throttle_suppressed = plane.auto_throttle_mode;
+    plane.throttle_suppressed = plane.control_mode->does_auto_throttle();
 
     // if no airmode switch assigned, ensure airmode is off:
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {
@@ -239,7 +280,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
 #if GEOFENCE_ENABLED == ENABLED
-    if (plane.g.fence_autoenable == 3) {
+    if (plane.g.fence_autoenable == FenceAutoEnable::WhenArmed) {
         plane.geofence_set_enabled(false);
     }
 #endif

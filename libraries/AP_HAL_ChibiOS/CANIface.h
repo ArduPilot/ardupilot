@@ -97,6 +97,11 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     ChibiOS::bxcan::CanType* can_;
 
+    // state for ISR RX handler. We put this in the class to avoid
+    // having to expand the stack size for all threads
+    AP_HAL::CANFrame isr_rx_frame;
+    CanRxItem isr_rx_item;
+
     CanRxItem rx_buffer[HAL_CAN_RX_QUEUE_SIZE];
     ByteBuffer rx_bytebuffer_;
     ObjectBuffer<CanRxItem> rx_queue_;
@@ -215,7 +220,7 @@ public:
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &str) override;
 #endif
     /************************************
      * Methods used inside interrupt    *

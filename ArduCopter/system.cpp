@@ -55,10 +55,6 @@ void Copter::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if GENERATOR_ENABLED
-    generator.init();
-#endif
-
 #if OSD_ENABLED == ENABLED
     osd.init();
 #endif
@@ -220,8 +216,12 @@ void Copter::init_ardupilot()
         enable_motor_output();
     }
 
-    // disable safety if requested
-    BoardConfig.init_safety();
+    // attempt to set the intial_mode, else set to STABILIZE
+    if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
+        // set mode to STABILIZE will trigger mode change notification to pilot
+        set_mode(Mode::Number::STABILIZE, ModeReason::UNAVAILABLE);
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
 
     // flag that initialisation has completed
     ap.initialised = true;
@@ -448,36 +448,6 @@ bool Copter::should_log(uint32_t mask)
 #endif
 }
 
-// return MAV_TYPE corresponding to frame class
-MAV_TYPE Copter::get_frame_mav_type()
-{
-    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
-        case AP_Motors::MOTOR_FRAME_QUAD:
-        case AP_Motors::MOTOR_FRAME_UNDEFINED:
-            return MAV_TYPE_QUADROTOR;
-        case AP_Motors::MOTOR_FRAME_HEXA:
-        case AP_Motors::MOTOR_FRAME_Y6:
-            return MAV_TYPE_HEXAROTOR;
-        case AP_Motors::MOTOR_FRAME_OCTA:
-        case AP_Motors::MOTOR_FRAME_OCTAQUAD:
-            return MAV_TYPE_OCTOROTOR;
-        case AP_Motors::MOTOR_FRAME_HELI:
-        case AP_Motors::MOTOR_FRAME_HELI_DUAL:
-        case AP_Motors::MOTOR_FRAME_HELI_QUAD:
-            return MAV_TYPE_HELICOPTER;
-        case AP_Motors::MOTOR_FRAME_TRI:
-            return MAV_TYPE_TRICOPTER;
-        case AP_Motors::MOTOR_FRAME_SINGLE:
-        case AP_Motors::MOTOR_FRAME_COAX:
-        case AP_Motors::MOTOR_FRAME_TAILSITTER:
-            return MAV_TYPE_COAXIAL;
-        case AP_Motors::MOTOR_FRAME_DODECAHEXA:
-            return MAV_TYPE_DODECAROTOR;
-    }
-    // unknown frame so return generic
-    return MAV_TYPE_GENERIC;
-}
-
 // return string corresponding to frame_class
 const char* Copter::get_frame_string()
 {
@@ -508,6 +478,8 @@ const char* Copter::get_frame_string()
             return "TAILSITTER";
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
             return "DODECA_HEXA";
+        case AP_Motors::MOTOR_FRAME_DECA:
+            return "DECA";
         case AP_Motors::MOTOR_FRAME_UNDEFINED:
         default:
             return "UNKNOWN";
@@ -527,6 +499,8 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_OCTA:
         case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+        case AP_Motors::MOTOR_FRAME_DECA:
+        case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
         default:
             motors = new AP_MotorsMatrix(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix::var_info;

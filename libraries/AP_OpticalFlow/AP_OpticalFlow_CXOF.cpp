@@ -186,8 +186,8 @@ void AP_OpticalFlow_CXOF::update(void)
         // copy average body rate to state structure
         state.bodyRate = Vector2f(gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count);
 
+        // we only apply yaw to flowRate as body rate comes from AHRS
         _applyYaw(state.flowRate);
-        _applyYaw(state.bodyRate);
     } else {
         // first frame received in some time so cannot calculate flow values
         state.flowRate.zero();

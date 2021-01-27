@@ -111,7 +111,7 @@ void loop()
         hal.console->printf(" Alt: %.2fm GSP: %.2fm/s CoG: %d SAT: %d TIM: %u/%lu STATUS: %u\n",
                             (double)(loc.alt * 0.01f),
                             (double)gps.ground_speed(),
-                            (int)gps.ground_course_cd() / 100,
+                            (int)gps.ground_course(),
                             gps.num_sats(),
                             gps.time_week(),
                             (long unsigned int)gps.time_week_ms(),
