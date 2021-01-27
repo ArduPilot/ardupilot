@@ -40,9 +40,6 @@
 // maximum number of mounts
 #define AP_MOUNT_MAX_INSTANCES          1
 
-// options (see _OPTIONS parameter)
-#define AP_MOUNT_OPTION_RELATIVE_PAN    (1<<0)
-
 // declare backend classes
 class AP_Mount_Backend;
 class AP_Mount_Servo;
@@ -192,8 +189,6 @@ protected:
         uint8_t _target_sysid;           // sysid to track
         Location _target_sysid_location; // sysid target location
         bool _target_sysid_location_set;
-
-        AP_Int8         _options;           // Options field, bit 0 = use relative pan
 
     } state[AP_MOUNT_MAX_INSTANCES];
 
