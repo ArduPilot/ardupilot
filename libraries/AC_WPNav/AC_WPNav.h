@@ -97,7 +97,9 @@ public:
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
     float get_wp_acceleration() const { return _wp_accel_cmss.get(); }
 
-    /// get_wp_destination waypoint using position vector (distance from ekf origin in cm)
+    /// get_wp_destination waypoint using position vector
+    /// x,y are distance from ekf origin in cm
+    /// z may be cm above ekf origin or terrain (see origin_and_destination_are_terrain_alt method)
     const Vector3f &get_wp_destination() const { return _destination; }
 
     /// get origin using position vector (distance from ekf origin in cm)
