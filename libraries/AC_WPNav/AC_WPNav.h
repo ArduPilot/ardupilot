@@ -106,9 +106,8 @@ public:
     bool set_wp_destination_loc(const Location& destination);
     bool set_wp_destination_next_loc(const Location& destination);
 
-    // returns wp location using location class.
-    // returns false if unable to convert from target vector to global
-    // coordinates
+    // get destination as a location.  Altitude frame will be absolute (AMSL) or above terrain
+    // returns false if unable to return a destination (for example if origin has not yet been set)
     bool get_wp_destination_loc(Location& destination) const;
 
     // returns object avoidance adjusted destination which is always the same as get_wp_destination
