@@ -45,6 +45,7 @@ public:
         MOTOR_FRAME_DODECAHEXA = 12,
         MOTOR_FRAME_HELI_QUAD = 13,
         MOTOR_FRAME_DECA = 14,
+        MOTOR_FRAME_SCRIPTING_MATRIX = 15,
     };
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -204,6 +205,8 @@ public:
                     PWM_TYPE_DSHOT1200  = 7};
     pwm_type            get_pwm_type(void) const { return (pwm_type)_pwm_type.get(); }
 
+    MAV_TYPE get_frame_mav_type() const { return _mav_type; }
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
@@ -264,6 +267,8 @@ protected:
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
     bool                _thrust_balanced;       // true when output thrust is well balanced
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
+
+    MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
 private:
 

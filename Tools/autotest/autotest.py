@@ -717,10 +717,18 @@ def list_subtests():
         tester_class = tester_class_map["test.%s" % vehicle]
         tester = tester_class("/bin/true", None)
         subtests = tester.tests()
+        sorted_list = []
+        for subtest in subtests:
+            if type(subtest) is tuple:
+                (name, description, function) = subtest
+                sorted_list.append([name, description])
+            else:
+                sorted_list.append([subtest.name, subtest.description])
+        sorted_list.sort()
+
         print("%s:" % vehicle)
-        for subtest in sorted(subtests, key=lambda x: x[0]):
-            (name, description, function) = subtest
-            print("    %s: %s" % (name, description))
+        for subtest in sorted_list:
+            print("    %s: %s" % (subtest[0], subtest[1]))
         print("")
 
 
@@ -733,9 +741,16 @@ def list_subtests_for_vehicle(vehicle_type):
         tester_class = tester_class_map["test.%s" % vehicle_type]
         tester = tester_class("/bin/true", None)
         subtests = tester.tests()
-        for subtest in sorted(subtests, key=lambda x: x[0]):
-            (name, _, _) = subtest
-            print("%s " % name, end='')
+        sorted_list = []
+        for subtest in subtests:
+            if type(subtest) is tuple:
+                (name, description, function) = subtest
+                sorted_list.append([name, description])
+            else:
+                sorted_list.append([subtest.name, subtest.description])
+        sorted_list.sort()
+        for subtest in sorted_list:
+            print("%s " % subtest[0], end='')
         print("")  # needed to clear the trailing %
 
 if __name__ == "__main__":

@@ -37,6 +37,8 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
         SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
     }
 
+    _mav_type = MAV_TYPE_COAXIAL;
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_SINGLE);
 }
