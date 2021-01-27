@@ -2053,27 +2053,30 @@ def process_line(line):
     elif a[0] == 'ROMFS_WILDCARD':
         romfs_wildcard(a[1])
     elif a[0] == 'undef':
-        print("Removing %s" % a[1])
-        config.pop(a[1], '')
-        bytype.pop(a[1], '')
-        bylabel.pop(a[1], '')
-        # also remove all occurences of defines in previous lines if any
-        for line in alllines[:]:
-            if line.startswith('define') and a[1] == line.split()[1]:
-                alllines.remove(line)
-        newpins = []
-        for pin in allpins:
-            if pin.type == a[1] or pin.label == a[1] or pin.portpin == a[1]:
-                portmap[pin.port][pin.pin] = generic_pin(pin.port, pin.pin, None, 'INPUT', [])
-                continue
-            newpins.append(pin)
-        allpins = newpins
-        if a[1] == 'IMU':
-            imu_list = []
-        if a[1] == 'COMPASS':
-            compass_list = []
-        if a[1] == 'BARO':
-            baro_list = []
+        for u in a[1:]:
+            print("Removing %s" % u)
+            config.pop(u, '')
+            bytype.pop(u, '')
+            bylabel.pop(u, '')
+            # also remove all occurences of defines in previous lines if any
+            for line in alllines[:]:
+                if line.startswith('define') and u == line.split()[1]:
+                    alllines.remove(line)
+            newpins = []
+            for pin in allpins:
+                if pin.type == u or pin.label == u or pin.portpin == u:
+                    if pin.label is not None:
+                        bylabel.pop(pin.label, '')
+                    portmap[pin.port][pin.pin] = generic_pin(pin.port, pin.pin, None, 'INPUT', [])
+                    continue
+                newpins.append(pin)
+            allpins = newpins
+            if u == 'IMU':
+                imu_list = []
+            if u == 'COMPASS':
+                compass_list = []
+            if u == 'BARO':
+                baro_list = []
     elif a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
