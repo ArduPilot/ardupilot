@@ -383,6 +383,9 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
 */
 void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 {
+    if (!enable) {
+        return;
+    }
     const int8_t min_throttle_base = min_throttle;
 
     // Initialize idle point to min_throttle on the first run
