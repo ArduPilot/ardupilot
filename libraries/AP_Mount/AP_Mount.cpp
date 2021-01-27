@@ -213,13 +213,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // @Param: _OPTIONS
-    // @DisplayName: Options field
-    // @Description: User configurable options; 0 = Enable Relative Pan on Servo Mounts
-    // @Values:  0:RelativePan
-    // @Bitmask: 0:RelativePan
-    // @User: Standard
-    AP_GROUPINFO("_OPTIONS",        24, AP_Mount, state[0]._options, 0),
+    // 24 is AVAILABLE
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -401,14 +395,6 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
-
-    // @Param: 2_OPTIONS
-    // @DisplayName: Options field for Mount 2
-    // @Description: User configurable options; 0 = Enable Relative Pan on Servo Mounts
-    // @Values:  0:RelativePan
-    // @Bitmask: 0:RelativePan
-    // @User: Standard
-    AP_GROUPINFO("2_OPTIONS",       43, AP_Mount, state[1]._options, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
     AP_GROUPEND
