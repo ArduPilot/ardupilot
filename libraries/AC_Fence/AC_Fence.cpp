@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        AC_FENCE_ACTION_RTL_AND_LAND),
 
-    // @Param{Copter, Sub}: ALT_MAX
+    // @Param{Copter, Sub}: ALT_MAX_EXT
     // @DisplayName: Fence Maximum Altitude
     // @Description: Maximum altitude allowed before geofence triggers
     // @Units: m
@@ -270,12 +270,9 @@ bool AC_Fence::conv_max_alt_frame(int newframe)
 {
     int32_t _new_max_alt_cm;
     if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame(newframe), _alt_max * 100.0f, _new_max_alt_cm)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "before change, alt_max is: %f", (float)_alt_max);
-        gcs().send_text(MAV_SEVERITY_NOTICE, "after change, alt_max is: %f", (int) _new_max_alt_cm / 100.0f);
         _alt_max = (int) _new_max_alt_cm / 100.0f;
         return true;
     } else {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Max alt frame change not accepted, current frame is..."); // Finish, return false
         return false;
     }    
 
@@ -291,9 +288,6 @@ void AC_Fence::change_max_alt(float newalt)
         diff = newalt - _alt_max_ext;
         _alt_max += diff;
     }
-
-    gcs().send_text(MAV_SEVERITY_ALERT, "Diff is: %f", diff);
-    gcs().send_text(MAV_SEVERITY_ALERT, "alt_max is: %f", (float)_alt_max);
 
     AP_Param::set_and_save_by_name("FENCE_ALT_MAX", newalt);
 }
