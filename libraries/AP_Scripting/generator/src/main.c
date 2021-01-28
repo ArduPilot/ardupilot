@@ -811,6 +811,14 @@ void handle_userdata(void) {
     handle_method(node->name, &(node->methods));
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
+  } else if (strcmp(type, keyword_alias) == 0) {
+    const char *alias = next_token();
+    if (alias == NULL) {
+      error(ERROR_SINGLETON, "Missing the name of the alias for userdata %s", node->name);
+    }
+    node->alias = (char *)allocate(strlen(alias) + 1);
+    strcpy(node->alias, alias);
+  
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -999,7 +1007,7 @@ void emit_userdata_allocators(void) {
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
     fprintf(source, "    memset(ud, 0, sizeof(%s));\n", node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
-    fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
+    fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->alias ? node->alias :  node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
     fprintf(source, "}\n");
@@ -1032,7 +1040,7 @@ void emit_userdata_checkers(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "%s * check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
-    fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
+    fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n",  node->alias ? node->alias :  node->name);
     fprintf(source, "    return (%s *)data;\n", node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
@@ -1950,7 +1958,7 @@ void emit_sandbox(void) {
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
     start_dependency(source, data->dependency);
-    fprintf(source, "    {\"%s\", new_%s},\n", data->name, data->sanatized_name);
+    fprintf(source, "    {\"%s\", new_%s},\n", data->alias ? data->alias :  data->name, data->sanatized_name);
     end_dependency(source, data->dependency);
     data = data->next;
   }
