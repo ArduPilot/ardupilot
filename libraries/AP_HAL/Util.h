@@ -190,6 +190,9 @@ public:
     // request information on dma contention
     virtual void dma_info(ExpandingString &str) {}
 
+    // request information on memory allocation
+    virtual void mem_info(ExpandingString &str) {}
+
     // load persistent parameters from bootloader sector
     virtual bool load_persistent_params(ExpandingString &str) const { return false; }
 
