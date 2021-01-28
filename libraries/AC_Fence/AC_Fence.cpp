@@ -83,9 +83,9 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: ALT_FRAME
     // @DisplayName: Fence Altitude Frame
     // @Description: Frame for min and max altitude, default is 1; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
-    // @Range: 0 1 2 3
+    // @Range: 0 3
     // @User: Standard
-    AP_GROUPINFO_FLAGS_FRAME("ALT_FRAME", 8, AC_Fence, _alt_frame, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FLAG_SETHOOKS, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+    AP_GROUPINFO_FLAGS_FRAME("ALT_FRAME", 8, AC_Fence, _alt_frame, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FLAG_SETHOOKS, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     AP_GROUPEND
 };
