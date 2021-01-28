@@ -643,23 +643,23 @@ bool AP_Param::addhook(const char *name, bool (*function)(float newvalue))
     enum ap_var_type var_type;
     AP_Param *param = find(name, &var_type, &parameter_flags);
     if (param == nullptr) {
-        ::fprintf(stderr, "Did not find %s\n", name);
+        // ::fprintf(stderr, "Did not find %s\n", name);
         return false;
     }
     if (param->_var_info == nullptr) {
-        ::fprintf(stderr, "varinfo is nullptr for %s\n", name);
+        // ::fprintf(stderr, "varinfo is nullptr for %s\n", name);
         return false;
     }
     // if (!(parameter_flags)) {  // if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
     if (!(parameter_flags & AP_PARAM_FLAG_SETHOOKS)) {
-        ::fprintf(stderr, "parameter (%s) not declared as having hooks\n", name);
+        // ::fprintf(stderr, "parameter (%s) not declared as having hooks\n", name);
         return false;
     }
     ValidationHooks *old = validation_hooks;
     validation_hooks = new ValidationHooks();
     if (validation_hooks == nullptr) {
         validation_hooks = old;
-        ::fprintf(stderr, "allocation failed for for %s\n", name);
+        // ::fprintf(stderr, "allocation failed for for %s\n", name);
         return false;
     }
     validation_hooks->name = name;
@@ -1998,16 +1998,16 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
 
 bool AP_Param::check_value(float value, const char *name) const
 {
-    ::fprintf(stderr, "check_value\n");
+    // ::fprintf(stderr, "check_value\n");
 
     for (ValidationHooks *foo = validation_hooks; foo != nullptr; foo = foo->next) {
         if (strcmp(foo->name, name) == 0) { 
             if (foo->ptr != _var_info->ptr) {
-                ::fprintf(stderr, "not my param\n");
+                // ::fprintf(stderr, "not my param\n");
                 continue;
             }
             if (!foo->function((float)value)) {
-                ::fprintf(stderr, "function says no\n");
+                // ::fprintf(stderr, "function says no\n");
                 return false;
             }
         }
