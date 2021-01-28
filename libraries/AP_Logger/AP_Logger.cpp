@@ -708,6 +708,13 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
             }
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // failing to log a block means that when we go to replay the log
+    // things will almost certainly go sour.
+    if (!ret) {
+        AP_HAL::panic("Failed to log replay block");
+    }
+#endif
     return ret;
 }
 
