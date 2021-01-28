@@ -96,6 +96,12 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
     if (!copter.flightmode->get_wp(target)) {
         return;
     }
+
+    // convert altitude frame to AMSL (this may use the terrain database)
+    if (!target.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        return;
+    }
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
