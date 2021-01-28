@@ -263,7 +263,7 @@ void AC_AutoTune_Heli::save_tuning_gains()
 
     // update GCS and log save gains event
     update_gcs(AUTOTUNE_MESSAGE_SAVED_GAINS);
-    AP::logger().Write_Event(LogEvent::AUTOTUNE_SAVEDGAINS);
+    Log_Write_Event(EVENT_AUTOTUNE_SAVEDGAINS);
 
     reset();
 }
