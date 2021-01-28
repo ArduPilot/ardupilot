@@ -1705,7 +1705,7 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
 
     // wait for dwell to start before determining gain and phase
     if (!is_zero(dwell_start_time_ms)) {
-        determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
+        determine_gain_angle(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
     }
 
     //    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
@@ -1735,7 +1735,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
     static uint16_t avg_sample_cnt;
     static bool new_target = false;
     static bool new_meas = false;
-    static bool print3 = false;
     uint32_t now = AP_HAL::millis();
 
     if (funct_reset) {
@@ -1755,7 +1754,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         phase = 0.0f;
         cycles_complete = false;
         funct_reset = false;
-        print3 = false;
         return;
     }
 
@@ -1771,7 +1769,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
     }
 
     if (now < (uint32_t) (input_start_time_ms + 4 * cycle_time_ms)) {
-        //wait for signal to stabilize for 1 cycle
+        //wait for signal to stabilize for 4 cycle
         return;
     } else if (now < (uint32_t) (input_start_time_ms + 6 * cycle_time_ms)) {
         // sum target rate and measured rate signals over next 2 cycles
@@ -1790,16 +1788,6 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         tgt_rate = tgt_rate - (sum_tgt_rate / (float) avg_sample_cnt);
         meas_rate = meas_rate - (sum_meas_rate / (float) avg_sample_cnt);
     }
-
-        if (!print3) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: avg_tgt=%f", (double)(sum_tgt_rate / (float) avg_sample_cnt));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: avg_meas=%f", (double)(sum_meas_rate / (float) avg_sample_cnt));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: sum_tgt_rate=%f", (double)(sum_tgt_rate));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: sample_cnt=%f", (double)(avg_sample_cnt));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: nowtime=%f", (double)(now * 0.001));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: starttime=%f", (double)(input_start_time_ms * 0.001));
-            print3 = true;
-        }
 
     // cycles are complete! determine gain and phase and exit
     if (max_meas_cnt > AUTOTUNE_DWELL_CYCLES + 1 && max_target_cnt > AUTOTUNE_DWELL_CYCLES + 1) {
@@ -1844,7 +1832,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
             input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
         }
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
 
     } else if (is_positive(prev_target) && !is_positive(tgt_rate) && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
         new_target = false;
@@ -1869,7 +1857,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
         if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
             output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
         }
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
     } else if (is_positive(prev_meas) && !is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
         new_meas = false;
         new_meas_time_ms = now + half_cycle_time_ms;
@@ -1904,4 +1892,183 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
     prev_meas = meas_rate;
 }
 
+// determine_gain_angle - this function receives time history data during a dwell test input and determines the gain and phase of the response to the input.
+// Once the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles and the cycles_complete flag
+// is set.  This function must be reset using the reset flag prior to the next dwell.
+void AC_AutoTune::determine_gain_angle(float tgt_angle, float meas_angle, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
+{
+    static float max_target, max_meas, prev_target, prev_meas, sum_tgt_angle, sum_meas_angle, prev_tgt_angle, prev_meas_angle;
+    static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES+1], input_ampl[AUTOTUNE_DWELL_CYCLES+1];
+    static float temp_max_target, temp_min_target, tgt_rate, meas_rate;
+    static float temp_max_meas, temp_min_meas;
+    static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES+1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES+1];
+    static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
+    static uint8_t min_target_cnt, max_target_cnt, max_meas_cnt, min_meas_cnt;
+    static uint16_t avg_sample_cnt;
+    static bool new_target = false;
+    static bool new_meas = false;
+    uint32_t now = AP_HAL::millis();
+    float dt = 0.0025;
+
+    if (funct_reset) {
+        max_target_cnt = 0;
+        min_target_cnt = 0;
+        max_meas_cnt = 0;
+        min_meas_cnt = 0;
+        input_start_time_ms = 0;
+        sum_tgt_angle = 0;
+        sum_meas_angle = 0;
+        avg_sample_cnt = 0;
+        new_tgt_time_ms = 0;
+        new_meas_time_ms = 0;
+        new_target = false;
+        new_meas = false;
+        gain = 0.0f;
+        phase = 0.0f;
+        cycles_complete = false;
+        funct_reset = false;
+        return;
+    }
+
+    uint32_t half_cycle_time_ms = 0;
+    uint32_t cycle_time_ms = 0;
+    if (!is_zero(freq)) {
+        half_cycle_time_ms = (uint32_t)(300 * 6.28 / freq);
+        cycle_time_ms = (uint32_t)(1000 * 6.28 / freq);
+    }
+
+    if (input_start_time_ms == 0) {
+        input_start_time_ms = now;
+    }
+
+    if (now < (uint32_t) (input_start_time_ms + 4 * cycle_time_ms)) {
+        //wait for signal to stabilize for 4 cycle
+        return;
+    } else if (now < (uint32_t) (input_start_time_ms + 6 * cycle_time_ms)) {
+        // sum target rate and measured rate signals over next 2 cycles
+        sum_tgt_angle += tgt_angle;
+        sum_meas_angle += meas_angle;
+        avg_sample_cnt++;
+        return;
+    } else if (now < (uint32_t) (input_start_time_ms + 6.25 * cycle_time_ms)) {
+        // give it another 1/4 cycle before starting the gain and phase calculation
+        prev_target = (tgt_angle - prev_tgt_angle) / dt;
+        prev_meas = (meas_angle - prev_meas_angle) / dt;
+        prev_tgt_angle = tgt_angle;
+        prev_meas_angle = meas_angle;
+        return;
+    }
+
+    if (avg_sample_cnt > 0) {
+        tgt_angle = tgt_angle - (sum_tgt_angle / (float) avg_sample_cnt);
+        meas_angle = meas_angle - (sum_meas_angle / (float) avg_sample_cnt);
+    }
+
+    tgt_rate = (tgt_angle - prev_tgt_angle) / dt;
+    meas_rate = (meas_angle - prev_meas_angle) / dt;
+
+    // cycles are complete! determine gain and phase and exit
+    if (max_meas_cnt > AUTOTUNE_DWELL_CYCLES + 1 && max_target_cnt > AUTOTUNE_DWELL_CYCLES + 1) {
+        float delta_time = 0.0f;
+        float sum_gain = 0.0f;
+        uint8_t cnt = 0;
+        uint8_t gcnt = 0;
+        for (int i = 0;  i < 5; i++) {
+            if (input_ampl[AUTOTUNE_DWELL_CYCLES - i] > 0) {
+                sum_gain += output_ampl[AUTOTUNE_DWELL_CYCLES - i] / input_ampl[AUTOTUNE_DWELL_CYCLES - i];
+                gcnt++;
+            }
+            float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
+            if (d_time * 0.001f < 5.0f * 6.28f / freq) {
+                delta_time += d_time;
+                cnt++;
+            }
+        }
+        if (gcnt > 0) {
+            gain = sum_gain / gcnt;
+        }
+        if (cnt > 0) {
+            delta_time = delta_time / cnt;
+        }
+        phase = freq * delta_time * 0.001f * 360.0f / 6.28f;
+        if (phase > 360.0f) {
+            phase = phase - 360.0f;
+        }
+        cycles_complete = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
+        return;
+    }
+
+    // Indicates when the target(input) is positive or negative half of the cycle to notify when the max or min should be sought
+    if (is_positive(prev_target) && !is_positive(tgt_rate) && !new_target && now > new_tgt_time_ms) {
+        new_target = true;
+        new_tgt_time_ms = now + half_cycle_time_ms;
+        // reset max_target
+        max_target = 0.0f;
+        max_target_cnt++;
+        temp_min_target = min_target;
+        if (min_target_cnt > 0 && min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            input_ampl[min_target_cnt] = temp_max_target - temp_min_target;
+        }
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_tgt_cnt=%f", (double)(max_target_cnt));
+
+    } else if (!is_positive(prev_target) && is_positive(tgt_rate) && new_target && now > new_tgt_time_ms && max_target_cnt > 0) {
+        new_target = false;
+        new_tgt_time_ms = now + half_cycle_time_ms;
+        min_target_cnt++;
+        temp_max_target = max_target;
+        if (min_target_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            temp_max_tgt_time[min_target_cnt] = max_tgt_time;
+        }
+        min_target = 0.0f;
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_tgt_cnt=%f", (double)(min_target_cnt));
+    }
+
+    // Indicates when the measured value (output) is positive or negative half of the cycle to notify when the max or min should be sought
+    if (is_positive(prev_meas) && !is_positive(meas_rate) && !new_meas && now > new_meas_time_ms && max_target_cnt > 0) {
+        new_meas = true;
+        new_meas_time_ms = now + half_cycle_time_ms;
+        // reset max_meas
+        max_meas = 0.0f;
+        max_meas_cnt++;
+        temp_min_meas = min_meas;
+        if (min_meas_cnt > 0 && min_target_cnt > 0 && min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            output_ampl[min_meas_cnt] = temp_max_meas - temp_min_meas;
+        }
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_meas_cnt=%f", (double)(max_meas_cnt));
+    } else if (!is_positive(prev_meas) && is_positive(meas_rate) && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {
+        new_meas = false;
+        new_meas_time_ms = now + half_cycle_time_ms;
+        min_meas_cnt++;
+        temp_max_meas = max_meas;
+        if (min_meas_cnt < AUTOTUNE_DWELL_CYCLES + 1) {
+            temp_max_meas_time[min_meas_cnt] = max_meas_time;
+        }
+        min_meas = 0.0f;
+        //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
+    }
+
+    if (tgt_angle > max_target && new_target) {
+        max_target = tgt_angle;
+        max_tgt_time = now;
+    }
+
+    if (tgt_angle < min_target && !new_target) {
+        min_target = tgt_angle;
+    }
+
+    if (meas_angle > max_meas && new_meas) {
+        max_meas = meas_angle;
+        max_meas_time = now;
+    }
+
+    if (meas_angle < min_meas && !new_meas) {
+        min_meas = meas_angle;
+    }
+
+    prev_target = tgt_rate;
+    prev_meas = meas_rate;
+    prev_tgt_angle = tgt_angle;
+    prev_meas_angle = meas_angle;
+}
 

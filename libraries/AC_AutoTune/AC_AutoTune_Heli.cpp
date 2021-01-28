@@ -78,7 +78,7 @@ void AC_AutoTune_Heli::test_init()
             test_freq[0] = 0.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
             // reset determine_gain function for first use in the event autotune is restarted
-            determine_gain(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
+            determine_gain_angle(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
         }
         angle_dwell_test_init(curr_test_freq);
 //        angle_dwell_test_init(5.0f);
@@ -567,7 +567,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     } */
 
     // reset determine_gain function
-    determine_gain(0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], dwell_complete, true);
+    determine_gain_angle(0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], dwell_complete, true);
 }
 
 // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
