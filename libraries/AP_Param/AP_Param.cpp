@@ -37,7 +37,6 @@
     #include <SITL/SITL.h>
 #endif
 #include <signal.h>
-#include <iostream>
 
 extern const AP_HAL::HAL &hal;
 
@@ -2002,7 +2001,7 @@ bool AP_Param::check_value(float value, const char *name) const
     ::fprintf(stderr, "check_value\n");
 
     for (ValidationHooks *foo = validation_hooks; foo != nullptr; foo = foo->next) {
-        if (std::string(foo->name) == std::string(name)) {    
+        if (strcmp(foo->name, name) == 0) { 
             if (foo->ptr != _var_info->ptr) {
                 ::fprintf(stderr, "not my param\n");
                 continue;
