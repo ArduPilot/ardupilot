@@ -179,6 +179,7 @@ singleton AP_Vehicle alias vehicle
 singleton AP_Vehicle scheduler-semaphore
 singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
 singleton AP_Vehicle method get_mode uint8_t
+singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
 singleton AP_Vehicle method get_time_flying_ms uint32_t
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
