@@ -144,7 +144,12 @@ void AP_Vehicle::setup()
     // init library used for visual position estimation
     visual_odom.init();
 #endif
+
     vtx.init();
+
+#if HAL_SMARTAUDIO_ENABLED
+    smartaudio.init();
+#endif
 
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
