@@ -942,6 +942,21 @@ struct PACKED log_PSC {
     float accel_y;
 };
 
+// position controller z-axis logging
+struct PACKED log_PSCZ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float pos_target_z;
+    float pos_z;
+    float vel_desired_z;
+    float vel_target_z;
+    float vel_z;
+    float accel_desired_z;
+    float accel_target_z;
+    float accel_z;
+    float throttle_out;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1655,6 +1670,19 @@ struct PACKED log_PSC {
 // @Field: AX: Acceleration, X-axis
 // @Field: AY: Acceleration, Y-axis
 
+// @LoggerMessage: PSCZ
+// @Description: Position Control Z-axis
+// @Field: TimeUS: Time since system startup
+// @Field: TPZ: Target position above EKF origin
+// @Field: PZ: Position above EKF origin
+// @Field: DVZ: Desired velocity Z-axis
+// @Field: TVZ: Target velocity Z-axis
+// @Field: VZ: Velocity Z-axis
+// @Field: DAZ: Desired acceleration Z-axis
+// @Field: TAZ: Target acceleration Z-axis
+// @Field: AZ: Acceleration Z-axis
+// @Field: ThO: Throttle output
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1792,7 +1820,9 @@ LOG_STRUCTURE_FROM_AHRS \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
     { LOG_PSC_MSG, sizeof(log_PSC), \
-      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }, \
+    { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
+      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002" }
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -1916,6 +1946,7 @@ enum LogMessages : uint8_t {
     LOG_SIMPLE_AVOID_MSG,
     LOG_WINCH_MSG,
     LOG_PSC_MSG,
+    LOG_PSCZ_MSG,
 
     _LOG_LAST_MSG_
 };

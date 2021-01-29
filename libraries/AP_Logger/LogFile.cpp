@@ -805,3 +805,21 @@ void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, 
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
+
+void AP_Logger::Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out)
+{
+    const struct log_PSCZ pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCZ_MSG),
+        time_us         : AP_HAL::micros64(),
+        pos_target_z    : pos_target_z * 0.01f,
+        pos_z           : pos_z * 0.01f,
+        vel_desired_z   : vel_desired_z * 0.01f,
+        vel_target_z    : vel_target_z * 0.01f,
+        vel_z           : vel_z * 0.01f,
+        accel_desired_z : accel_desired_z * 0.01f,
+        accel_target_z  : accel_target_z * 0.01f,
+        accel_z         : accel_z * 0.01f,
+        throttle_out    : throttle_out
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
