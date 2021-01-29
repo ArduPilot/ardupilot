@@ -67,9 +67,10 @@ public:
         BATT_2 =        8,  // 0x5008 Battery 2 status
         BATT_1 =        9,  // 0x5008 Battery 1 status
         PARAM =         10, // 0x5007 parameters
-        UDATA =         11, // user data
+        RPM =           11, // 0x500A rpm sensors 1 and 2
+        UDATA =         12, // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        MAV =           12, // mavlite
+        MAV =           13,  // mavlite
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         WFQ_LAST_ITEM       // must be last
     };
@@ -97,6 +98,7 @@ private:
     uint32_t calc_home(void);
     uint32_t calc_velandyaw(void);
     uint32_t calc_attiandrng(void);
+    uint32_t calc_rpm(void);
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort

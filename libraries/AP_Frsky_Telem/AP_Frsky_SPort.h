@@ -54,6 +54,7 @@ private:
         uint8_t gps_call;
         uint8_t vario_call;
         uint8_t various_call;
+        uint8_t rpm_call;
     } _SPort;
 
     static AP_Frsky_SPort *singleton;

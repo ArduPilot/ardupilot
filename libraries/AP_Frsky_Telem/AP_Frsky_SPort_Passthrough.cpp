@@ -7,6 +7,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RPM/AP_RPM.h>
 #include <GCS_MAVLink/GCS.h>
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -110,6 +111,7 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(BATT_2, 1300, 500);     // 0x5008 Battery 2 status
     set_scheduler_entry(BATT_1, 1300, 500);     // 0x5003 Battery 1 status
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
+    set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(UDATA, 5000, 200);      // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
@@ -188,6 +190,16 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case BATT_2:
         packet_ready = AP::battery().num_instances() > 1;
         break;
+    case RPM:
+        {
+            packet_ready = false;
+            const AP_RPM *rpm = AP::rpm();
+            if (rpm == nullptr) {
+                break;
+            }
+            packet_ready = rpm->num_sensors() > 0;
+        }
+        break;
     case UDATA:
         // when using fport user data is sent by scheduler
         // when using sport user data is sent responding to custom polling
@@ -253,6 +265,9 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
         break;
     case PARAM: // 0x5007 parameters
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
+        break;
+    case RPM: // 0x500A rpm sensors 1 and 2
+        send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0A, calc_rpm());
         break;
     case UDATA: // user data
         {
@@ -575,6 +590,30 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     // rangefinder measurement in cm
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
+}
+
+/*
+ * prepare rpm for sensors 1 and 2
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+uint32_t AP_Frsky_SPort_Passthrough::calc_rpm(void)
+{
+    const AP_RPM *ap_rpm = AP::rpm();
+    if (ap_rpm == nullptr) {
+        return 0;
+    }
+    uint32_t value = 0;
+    // we send: rpm_value*0.1 as 16 bits signed
+    float rpm;
+    // bits 0-15 for rpm 0
+    if (ap_rpm->get_rpm(0,rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1);
+    }
+    // bits 16-31 for rpm 1
+    if (ap_rpm->get_rpm(1,rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1) << 16;
+    }
+    return value;
 }
 
 /*

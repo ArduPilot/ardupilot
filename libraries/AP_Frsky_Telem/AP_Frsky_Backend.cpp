@@ -3,6 +3,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_RPM/AP_RPM.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -140,3 +141,21 @@ void AP_Frsky_Backend::calc_gps_position(void)
     _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS
 }
 
+/*
+ * prepare rpm data
+ * for FrSky D and SPort protocols
+ */
+bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
+{
+    const AP_RPM* rpm = AP::rpm();
+    if (rpm == nullptr) {
+        return false;
+    }
+
+    float rpm_value;
+    if (!rpm->get_rpm(instance, rpm_value)) {
+        return false;
+    }
+    value = static_cast<int32_t>(roundf(rpm_value));
+    return true;
+}
