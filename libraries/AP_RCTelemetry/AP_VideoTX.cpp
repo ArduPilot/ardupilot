@@ -59,10 +59,16 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Video Transmitter Options
-    // @Description: Video Transmitter Options.
+    // @Description: Video Transmitter Options. Pitmode puts the VTX in a low power state. Unlocked enables certain restricted frequencies and power levels. Do not enable the Unlocked option unless you have appropriate permissions in your jurisdiction to transmit at high power levels.
     // @User: Advanced
-    // @Bitmask: 0:Pitmode
+    // @Bitmask: 0:Pitmode,1:Pitmode until armed,2:Pitmode when disarmed,3:Unlocked
     AP_GROUPINFO("OPTIONS",  6, AP_VideoTX, _options, 0),
+
+    // @Param: MAX_POWER
+    // @DisplayName: Video Transmitter Max Power Level
+    // @Description: Video Transmitter Maximum Power Level. Different VTXs support different power levels, this prevents the power aux switch from requesting too high a power level. The switch supports 6 power levels and the selected power will be a subdivision between 0 and this setting.
+    // @Range: 25 1000
+    AP_GROUPINFO("MAX_POWER", 7, AP_VideoTX, _max_power_mw, 800),
 
     AP_GROUPEND
 };
@@ -104,6 +110,7 @@ bool AP_VideoTX::init(void)
     _current_power = _power_mw;
     _current_band = _band;
     _current_channel = _channel;
+    _current_frequency = _frequency_mhz;
     _current_options = _options;
     _current_enabled = _enabled;
     _initialized = true;
@@ -171,6 +178,38 @@ uint8_t AP_VideoTX::get_configured_power_dbm() const {
     }
 }
 
+// get the power "level"
+uint8_t AP_VideoTX::get_configured_power_level() const {
+    if (_power_mw < 26) {
+        return 0;
+    } else if (_power_mw < 201) {
+        return 1;
+    } else if (_power_mw < 501) {
+        return 2;
+    } else {    // 800
+        return 3;
+    }
+}
+
+// set the power "level"
+void AP_VideoTX::set_power_level(uint8_t level) {
+    switch (level) {
+    case 1:
+        _current_power = 200;
+        break;
+    case 2:
+        _current_power = 500;
+        break;
+    case 3:
+        _current_power = 800;
+        break;
+    case 0:
+    default:
+        _current_power = 25;
+        break;
+    }
+}
+
 // set the current channel
 void AP_VideoTX::set_enabled(bool enabled) {
     _current_enabled = enabled;
@@ -189,6 +228,15 @@ void AP_VideoTX::update(void)
         crsf->update();
     }
 #endif
+    // manipulate pitmode if pitmode-on-disarm or power-on-arm is set
+    if (has_option(VideoOptions::VTX_PITMODE_ON_DISARM) || has_option(VideoOptions::VTX_PITMODE_UNTIL_ARM)) {
+        if (hal.util->get_soft_armed() && has_option(VideoOptions::VTX_PITMODE)) {
+            _options &= ~uint8_t(VideoOptions::VTX_PITMODE);
+        } else if (!hal.util->get_soft_armed() && !has_option(VideoOptions::VTX_PITMODE)
+            && has_option(VideoOptions::VTX_PITMODE_ON_DISARM)) {
+            _options |= uint8_t(VideoOptions::VTX_PITMODE);
+        }
+    }
 }
 
 bool AP_VideoTX::have_params_changed() const
@@ -196,15 +244,53 @@ bool AP_VideoTX::have_params_changed() const
     return update_power()
         || update_band()
         || update_channel()
+        || update_frequency()
         || update_options();
+}
+
+// update the configured frequency to match the channel and band
+void AP_VideoTX::update_configured_frequency()
+{
+    _frequency_mhz.set_and_save(get_frequency_mhz(_band, _channel));
+}
+
+// update the configured channel and band to match the frequency
+void AP_VideoTX::update_configured_channel_and_band()
+{
+    VideoBand band;
+    uint8_t channel;
+    if (get_band_and_channel(_frequency_mhz, band, channel)) {
+        _band.set_and_save(band);
+        _channel.set_and_save(channel);
+    } else {
+        update_configured_frequency();
+    }
 }
 
 // set the current configured values if not currently set in storage
 // this is necessary so that the current settings can be seen
-void AP_VideoTX::set_defaults()
+bool AP_VideoTX::set_defaults()
 {
     if (_defaults_set) {
-        return;
+        return false;
+    }
+
+    // check that our current view of freqency matches band/channel
+    // if not then force one to be correct
+    uint16_t calced_freq = get_frequency_mhz(_current_band, _current_channel);
+    if (_current_frequency != calced_freq) {
+        if (_current_frequency > 0) {
+            VideoBand band;
+            uint8_t channel;
+            if (get_band_and_channel(_current_frequency, band, channel)) {
+                _current_band = band;
+                _current_channel = channel;
+            } else {
+                _current_frequency = calced_freq;
+            }
+        } else {
+            _current_frequency = calced_freq;
+        }
     }
 
     if (!_options.configured()) {
@@ -214,16 +300,148 @@ void AP_VideoTX::set_defaults()
         _channel.set_and_save(_current_channel);
     }
     if (!_band.configured()) {
-        _band.set_and_save(_current_band);
+        _frequency_mhz.set_and_save(_current_band);
     }
     if (!_power_mw.configured()) {
         _power_mw.set_and_save(_current_power);
     }
+    if (!_frequency_mhz.configured()) {
+        _frequency_mhz.set_and_save(_current_frequency);
+    }
+
+    // Now check that the user didn't screw up by selecting incompatible options
+    if (_frequency_mhz != get_frequency_mhz(_band, _channel)) {
+        if (_frequency_mhz > 0) {
+            update_configured_channel_and_band();
+        } else {
+            update_configured_frequency();
+        }
+    }
 
     _defaults_set = true;
+
+    announce_vtx_settings();
+
+    return true;
+}
+
+void AP_VideoTX::announce_vtx_settings() const
+{
     // Output a friendly message so the user knows the VTX has been detected
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: Freq: %dMHz, Power: %dmw, Band: %d, Chan: %d",
-        _frequency_mhz.get(), _power_mw.get(), _band.get() + 1, _channel.get() + 1);
+        _frequency_mhz.get(), has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get(),
+        _band.get() + 1, _channel.get() + 1);
+}
+
+// change the video power based on switch input
+void AP_VideoTX::change_power(int8_t position)
+{
+    if (position < 0 || position > 5) {
+        return;
+    }
+
+    uint16_t power = 0;
+    // 0 or 25
+    if (_max_power_mw < 100) {
+        switch (position) {
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                power = 25;
+                break;
+            default:
+                power = 0;
+                break;
+        }
+    }
+    // 0, 25 or 100
+    else if (_max_power_mw < 200) {
+        switch (position) {
+            case 2:
+            case 3:
+                power = 25;
+                break;
+            case 4:
+            case 5:
+                power = 100;
+                break;
+            default:
+                power = 0;
+                break;
+        }
+    }
+    // 0, 25, 100 or 200
+    else if (_max_power_mw < 500) {
+        switch (position) {
+            case 2:
+                power = 25;
+                break;
+            case 3:
+                power = 100;
+                break;
+            case 4:
+            case 5:
+                power = 200;
+                break;
+            default:
+                power = 0;
+                break;
+        }
+    }
+    // 0, 25, 100, 200 or 500
+    else if (_max_power_mw < 800) {
+        switch (position) {
+            case 1:
+                power = 25;
+                break;
+            case 2:
+                power = 100;
+                break;
+            case 3:
+                power = 200;
+                break;
+            case 4:
+            case 5:
+                power = 500;
+                break;
+            default:
+                power = 0;
+                break;
+        }
+    }
+    // full range
+    else {
+        switch (position) {
+            case 1:
+                power = 25;
+                break;
+            case 2:
+                power = 100;
+                break;
+            case 3:
+                power = 200;
+                break;
+            case 4:
+                power = 500;
+                break;
+            case 5:
+                power = _max_power_mw; // some VTX's support 1000mw
+                break;
+            default:
+                power = 0;
+                break;
+        }
+    }
+
+    if (power == 0) {
+        set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
+    } else {
+        if (has_option(VideoOptions::VTX_PITMODE)) {
+            set_configured_options(get_configured_options() & ~uint8_t(VideoOptions::VTX_PITMODE));
+        }
+        set_configured_power_mw(power);
+    }
 }
 
 namespace AP {
