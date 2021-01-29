@@ -111,9 +111,10 @@ public:
     ///     has no effect if no breaches have occurred
     void manual_recovery_start();
 
-    // Comments go here
-    // bool conv_max_alt_frame(float _old_max_alt, int32_t &new_max_alt_cm);
+    // Convert frame max altitude is in
     bool conv_max_alt_frame(int newframe);
+
+    // Adjust the max altitude
     void change_max_alt(float newalt);
 
     // methods for mavlink SYS_STATUS message (send_sys_status)

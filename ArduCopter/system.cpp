@@ -13,7 +13,7 @@ static void failsafe_check_static()
     copter.failsafe_check();
 }
 
-bool validate_fence_frame(float newframe) 
+static bool validate_fence_frame(float newframe) 
 {    
     if ((int)newframe > 3 || (int)newframe < 0) {
         return false;
@@ -22,7 +22,7 @@ bool validate_fence_frame(float newframe)
     }
 }
 
-bool chg_max_alt(float newalt)
+static bool chg_max_alt(float newalt)
 {
     AP::fence()->change_max_alt(newalt);
 
