@@ -901,8 +901,10 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-   AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
-
+    AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
+    AP::logger().Write_PSCZ(get_pos_target().z, _inav.get_position().z,
+                            get_desired_velocity().z, get_vel_target().z, _inav.get_velocity().z,
+                            _accel_desired.z, get_accel_target().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
