@@ -12,6 +12,22 @@ static void failsafe_check_static()
     plane.failsafe_check();
 }
 
+static bool validate_fence_frame(float newframe) 
+{    
+    if ((int)newframe > 3 || (int)newframe < 0) {
+        return false;
+    } else {
+        return AP::fence()->conv_max_alt_frame((int)newframe);
+    }
+}
+
+static bool chg_max_alt(float newalt)
+{
+    AP::fence()->change_max_alt(newalt);
+
+    return true;
+}
+
 void Plane::init_ardupilot()
 {
 
@@ -155,16 +171,16 @@ void Plane::init_ardupilot()
     g2.gripper.init();
 #endif
 
-    ::fprintf(stderr, "Adding hook\n");
-    if (!AP_Param::addhook("SYSID_MYGCS", validate_sysid_mygcs)) {
-        ::fprintf(stderr, "Add hook failed\n");
+    if (!AP_Param::addhook("FENCE_ALT_FRAME", validate_fence_frame)) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
     } else {
-        ::fprintf(stderr, "Added hook\n");
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
     }
-    if (!AP_Param::addhook("SYSID_THISMAV", validate_sysid_mygcs)) {
-        ::fprintf(stderr, "Add hook2 failed\n");
+    
+    if (!AP_Param::addhook("FENCE_ALT_MAX", chg_max_alt)) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
     } else {
-        ::fprintf(stderr, "Added hook2\n");
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
     }
 }
 

@@ -31,7 +31,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The identifier of the ground station in the MAVLink protocol. Don't change this unless you also modify the ground station to match.
     // @Range: 1 255
     // @User: Advanced
-    GSCALAR_SETHOOKS(sysid_my_gcs,           "SYSID_MYGCS",    255),
+    GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
