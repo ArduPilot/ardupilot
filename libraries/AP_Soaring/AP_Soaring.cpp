@@ -136,6 +136,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Description: This parameter sets the bank angle to use when thermalling. Typically 30 - 45 degrees works well.
     // @Range: 20 50
     // @User: Advanced
+    // @Units: deg
     AP_GROUPINFO("THML_BANK", 18, SoaringController, thermal_bank, 30.0),
 
     AP_GROUPEND
