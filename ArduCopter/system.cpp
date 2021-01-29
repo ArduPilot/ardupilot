@@ -15,25 +15,11 @@ static void failsafe_check_static()
 
 bool validate_fence_frame(float newframe) 
 {    
-    switch ((int)newframe) {
-        case 0:
-            ::fprintf(stderr, "Requested frame: MSL\n");
-            break;
-        case 1:
-            ::fprintf(stderr, "Requested frame: REL/HOME\n");
-            break;
-        case 2:
-            ::fprintf(stderr, "Requested frame: ORIGIN\n");
-            break;
-        case 3:
-            ::fprintf(stderr, "Requested frame: TERRAIN\n");
-            break;
-        default:
-            ::fprintf(stderr, "Unknown frame\n");
-            return false;
+    if ((int)newframe > 3 || (int)newframe < 0) {
+        return false;
+    } else {
+        return AP::fence()->conv_max_alt_frame((int)newframe);
     }
-
-    return AP::fence()->conv_max_alt_frame((int)newframe);
 }
 
 bool chg_max_alt(float newalt)
@@ -256,17 +242,16 @@ void Copter::init_ardupilot()
     // flag that initialisation has completed
     ap.initialised = true;
 
-    ::fprintf(stderr, "Adding hook\n");
     if (!AP_Param::addhook("FENCE_ALT_FRAME", validate_fence_frame)) {
-        ::fprintf(stderr, "Add hook failed\n");
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
     } else {
-        ::fprintf(stderr, "Added hook\n");
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
     }
-    ::fprintf(stderr, "Adding hook\n");
+    
     if (!AP_Param::addhook("FENCE_ALT_MAX", chg_max_alt)) {
-        ::fprintf(stderr, "Add hook failed\n");
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
     } else {
-        ::fprintf(stderr, "Added hook\n");
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
     }
 }
 

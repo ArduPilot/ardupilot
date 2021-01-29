@@ -12,18 +12,6 @@ static void failsafe_check_static()
     plane.failsafe_check();
 }
 
-bool validate_sysid_mygcs(float newvalue)
-{
-    // plane.validate_sysid_mygcs(newvalue)
-    ::fprintf(stderr, "newvalue: %f\n", newvalue);
-    if (newvalue < 1 || newvalue > 255) {
-        ::fprintf(stderr, "value out of range\n");
-        return false;
-    }
-    ::fprintf(stderr, "value OK\n");
-    return true;
-}
-
 void Plane::init_ardupilot()
 {
 
