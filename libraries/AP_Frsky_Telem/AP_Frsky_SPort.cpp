@@ -4,10 +4,13 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_RPM/AP_RPM.h>
 
 #include "AP_Frsky_SPortParser.h"
 
 #include <string.h>
+
+extern const AP_HAL::HAL& hal;
 
 AP_Frsky_SPort *AP_Frsky_SPort::singleton;
 
@@ -112,6 +115,22 @@ void AP_Frsky_SPort::send(void)
                 }
                 if (++_SPort.gps_call > 6) {
                     _SPort.gps_call = 0;
+                }
+                break;
+            case SENSOR_ID_RPM: // Sensor ID 4
+                {
+                    const AP_RPM* rpm = AP::rpm();
+                    if (rpm == nullptr) {
+                        break;
+                    }
+                    int32_t value;
+                    if (calc_rpm(_SPort.rpm_call, value)) {
+                        // use high numbered frsky sensor ids to leave low numbered free for externally attached physical frsky sensors
+                        send_sport_frame(SPORT_DATA_FRAME, 1+RPM_LAST_ID-(rpm->num_sensors()-_SPort.rpm_call), value);
+                    }
+                    if (++_SPort.rpm_call > (rpm->num_sensors()-1)) {
+                        _SPort.rpm_call = 0;
+                    }
                 }
                 break;
             case SENSOR_ID_SP2UR: // Sensor ID  6
