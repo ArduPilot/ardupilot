@@ -284,6 +284,11 @@ public:
 protected:
 
     bool _enter() override;
+
+private:
+
+    // Switch to QRTL if enabled and within radius
+    bool switch_QRTL();
 };
 
 class ModeStabilize : public Mode
