@@ -75,6 +75,9 @@ public:
 
     Tracker(void);
 
+    void arm_servos();
+    void disarm_servos();
+
 private:
     Parameters g;
 
@@ -211,8 +214,6 @@ private:
     bool get_home_eeprom(struct Location &loc);
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
     bool set_home(const Location &temp) WARN_IF_UNUSED;
-    void arm_servos();
-    void disarm_servos();
     void prepare_servos();
     void set_mode(Mode &newmode, ModeReason reason);
     bool set_mode(uint8_t new_mode, ModeReason reason) override;

@@ -83,7 +83,7 @@ private:
     void update_joint_angle_est();
 
     Vector3f get_ang_vel_dem_yaw(const Quaternion &quatEst);
-    Vector3f get_ang_vel_dem_tilt(const Quaternion &quatEst);
+    Vector3f get_ang_vel_dem_roll_tilt(const Quaternion &quatEst);
     Vector3f get_ang_vel_dem_feedforward(const Quaternion &quatEst);
     Vector3f get_ang_vel_dem_gyro_bias();
     Vector3f get_ang_vel_dem_body_lock();

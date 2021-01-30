@@ -131,6 +131,14 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAX_RADIUS", 17, SoaringController, max_radius, -1),
 
+    // @Param: THML_BANK
+    // @DisplayName: Thermalling bank angle
+    // @Description: This parameter sets the bank angle to use when thermalling. Typically 30 - 45 degrees works well.
+    // @Range: 20 50
+    // @User: Advanced
+    // @Units: deg
+    AP_GROUPINFO("THML_BANK", 18, SoaringController, thermal_bank, 30.0),
+
     AP_GROUPEND
 };
 
@@ -312,7 +320,7 @@ void SoaringController::update_thermalling()
     _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
 
     
-    _thermalability = (_ekf.X[0]*expf(-powf(_aparm.loiter_radius / _ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
+    _thermalability = (_ekf.X[0]*expf(-powf(get_thermalling_radius()/_ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
 
     _prev_update_time = AP_HAL::micros64();
 
@@ -470,6 +478,15 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
 
         return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
     }
+}
+
+float SoaringController::get_thermalling_radius() const
+{
+    // Thermalling radius is controlled by parameter SOAR_THML_BANK and true target airspeed.
+    const float target_aspd = _spdHgt.get_target_airspeed() * AP::ahrs().get_EAS2TAS();
+    const float radius = (target_aspd*target_aspd) / (GRAVITY_MSS * tanf(thermal_bank*DEG_TO_RAD));
+
+    return radius;
 }
 
 #endif // HAL_SOARING_ENABLED

@@ -220,7 +220,7 @@ public:
 
     // fetch stats text and return the size of the same,
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
-    uint32_t get_stats(char* data, uint32_t max_size) override;
+    void get_stats(ExpandingString &str) override;
 #endif
     /************************************
      * Methods used inside interrupt    *

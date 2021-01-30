@@ -40,8 +40,10 @@ public:
     enum class SourceYaw : uint8_t {
         NONE = 0,
         COMPASS = 1,
-        EXTERNAL = 2,
-        EXTERNAL_COMPASS_FALLBACK = 3
+        GPS = 2,
+        GPS_COMPASS_FALLBACK = 3,
+        EXTNAV = 6,
+        GSF = 8
     };
 
     // enum for OPTIONS parameter
@@ -88,13 +90,14 @@ public:
     void mark_configured_in_storage();
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
+    // requires_position should be true if horizontal position configuration should be checked
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
 
     // return true if ext nav is enabled on any source
     bool ext_nav_enabled(void) const;
 
-    // return true if ext yaw is enabled on any source
-    bool ext_yaw_enabled(void) const;
+    // return true if GPS yaw is enabled on any source
+    bool gps_yaw_enabled(void) const;
 
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;

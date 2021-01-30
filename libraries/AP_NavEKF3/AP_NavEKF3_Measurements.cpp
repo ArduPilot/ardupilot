@@ -113,6 +113,7 @@ void NavEKF3_core::readRangeFinder(void)
 
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
+#if EK3_FEATURE_BODY_ODOM
     // protect against NaN
     if (isnan(quality) || delPos.is_nan() || delAng.is_nan() || isnan(delTime) || posOffset.is_nan()) {
         return;
@@ -138,9 +139,10 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
     bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
     storedBodyOdm.push(bodyOdmDataNew);
-
+#endif // EK3_FEATURE_BODY_ODOM
 }
 
+#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
@@ -166,6 +168,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
     storedWheelOdm.push(wheelOdmDataNew);
 }
+#endif // EK3_FEATURE_BODY_ODOM
 
 // write the raw optical flow measurements
 // this needs to be called externally.
@@ -987,6 +990,7 @@ void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
 
 void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float posErr, float angErr, uint32_t timeStamp_ms, uint16_t delay_ms, uint32_t resetTime_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // protect against NaN
     if (pos.is_nan() || isnan(posErr)) {
         return;
@@ -1028,15 +1032,19 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         // extract yaw from the attitude
         float roll_rad, pitch_rad, yaw_rad;
         quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-
-        // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
-        const float yaw_accuracy_rad = MAX(angErr, radians(5.0f));
-        writeEulerYawAngle(yaw_rad, yaw_accuracy_rad, timeStamp_ms, 2);
+        yaw_elements extNavYawAngDataNew;
+        extNavYawAngDataNew.yawAng = yaw_rad;
+        extNavYawAngDataNew.yawAngErr = MAX(angErr, radians(5.0f)); // ensure yaw accuracy is no better than 5 degrees (some callers may send zero)
+        extNavYawAngDataNew.order = rotationOrder::TAIT_BRYAN_321; // Euler rotation order is 321 (ZYX)
+        extNavYawAngDataNew.time_ms = timeStamp_ms;
+        storedExtNavYawAng.push(extNavYawAngDataNew);
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms)
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     // sanity check for NaNs
     if (vel.is_nan() || isnan(err)) {
         return;
@@ -1062,6 +1070,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     extNavVelNew.corrected = false;
 
     storedExtNavVel.push(extNavVelNew);
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 /*
@@ -1288,7 +1297,8 @@ float NavEKF3_core::MagDeclination(void) const
 void NavEKF3_core::updateMovementCheck(void)
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
-    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL || yaw_source == AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK || !use_compass());
+    const bool runCheck = onGround && (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
+                                       yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
     if (!runCheck)
     {
         onGroundNotMoving = false;
@@ -1367,6 +1377,7 @@ void NavEKF3_core::updateMovementCheck(void)
 
 void NavEKF3_core::SampleDragData(const imu_elements &imu)
 {
+#if EK3_FEATURE_DRAG_FUSION
     // Average and down sample to 5Hz
     const float bcoef_x = frontend->_ballisticCoef_x;
     const float bcoef_y = frontend->_ballisticCoef_y;
@@ -1409,4 +1420,5 @@ void NavEKF3_core::SampleDragData(const imu_elements &imu)
         dragDownSampled.time_ms = 0;
         dragSampleTimeDelta = 0.0f;
     }
+#endif // EK3_FEATURE_DRAG_FUSION
 }

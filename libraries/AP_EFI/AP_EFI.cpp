@@ -225,8 +225,8 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         state.spark_dwell_time_ms,
         state.atmospheric_pressure_kpa,
         state.intake_manifold_pressure_kpa,
-        (state.intake_manifold_temperature - 273.0f),
-        (state.cylinder_status[0].cylinder_head_temperature - 273.0f),
+        (state.intake_manifold_temperature - C_TO_KELVIN),
+        (state.cylinder_status[0].cylinder_head_temperature - C_TO_KELVIN),
         state.cylinder_status[0].ignition_timing_deg,
         state.cylinder_status[0].injection_time_ms,
         0, 0, 0);

@@ -56,6 +56,7 @@ struct header {
   struct header *next;
   char *name; // name of the header to include (not sanatized)
   int line; // line of the file declared on
+  char *dependency;
 };
 
 struct generator_state {
@@ -255,6 +256,12 @@ void *allocate(const size_t size) {
   return data;
 }
 
+// lazy helper that allocates a storage buffer and does strcpy for us
+void string_copy(char **dest, const char * src) {
+  *dest = (char *)allocate(strlen(src) + 1);
+  strcpy(*dest, src);
+}
+
 void handle_header(void) {
   trace(TRACE_HEADER, "Parsing a header");
 
@@ -279,6 +286,22 @@ void handle_header(void) {
   node->line = state.line_num;
   node->name = (char *)allocate(strlen(name) + 1);
   strcpy(node->name, name);
+
+  // add depedns
+  char * key_word = next_token();
+  char *depends = NULL;
+  if (key_word != NULL) {
+    if (strcmp(key_word, keyword_depends) == 0) {
+        depends = strtok(NULL, "");
+        if (depends == NULL) {
+          error(ERROR_HEADER, "Expected a depends string for %s", name);
+        }
+        string_copy(&(node->dependency), depends);
+    } else {
+      error(ERROR_HEADER, "Received an unsupported keyword on a header: %s", key_word);
+    }
+  }
+
   headers = node;
 
   trace(TRACE_HEADER, "Added header %s", name);
@@ -340,26 +363,11 @@ struct userdata {
   enum userdata_type ud_type;
   uint32_t operations; // bitset of enum operation_types
   int flags; // flags from the userdata_flags enum
+  char *dependency;
 };
 
 static struct userdata *parsed_userdata;
 static struct userdata *parsed_ap_objects;
-
-
-struct dependency {
-  struct dependency * next;
-  char *symbol;    // dependency symbol to check
-  char *value;     // value to target
-  char *error_msg; // message if the check fails
-};
-
-static struct dependency *parsed_dependencies;
-
-// lazy helper that allocates a storage buffer and does strcpy for us
-void string_copy(char **dest, const char * src) {
-  *dest = (char *)allocate(strlen(src) + 1);
-  strcpy(*dest, src);
-}
 
 void sanatize_name(char **dest, char *src) {
   *dest = (char *)allocate(strlen(src) + 1);
@@ -829,8 +837,17 @@ void handle_singleton(void) {
     handle_method(node->name, &(node->methods));
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
+  } else if (strcmp(type, keyword_depends) == 0) {
+    if (node->dependency != NULL) {
+      error(ERROR_SINGLETON, "Singletons only support a single depends");
+    }
+    char *depends = strtok(NULL, "");
+    if (depends == NULL) {
+      error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
+    }
+    string_copy(&(node->dependency), depends);
   } else {
-    error(ERROR_SINGLETON, "Singletons only support aliases, methods or semaphore keyowrds (got %s)", type);
+    error(ERROR_SINGLETON, "Singletons only support aliases, methods, semaphore or depends keywords (got %s)", type);
   }
 
   // ensure no more tokens on the line
@@ -901,36 +918,6 @@ void handle_ap_object(void) {
   }
 }
 
-void handle_depends(void) {
-  trace(TRACE_DEPENDS, "Adding a dependency");
-
-  char *symbol = next_token();
-  if (symbol == NULL) {
-    error(ERROR_DEPENDS, "Expected a name symbol for the dependency");
-  }
-
-  // read value
-  char *value = next_token();
-  if (value == NULL) {
-    error(ERROR_DEPENDS, "Expected a required value for dependency on %s", symbol);
-  }
-
-  char *error_msg = strtok(NULL, "");
-  if (error_msg == NULL) {
-    error(ERROR_DEPENDS, "Expected a error message for dependency on %s", symbol);
-  }
-
-  trace(TRACE_SINGLETON, "Allocating new dependency for %s", symbol);
-  struct dependency * node = (struct dependency *)allocate(sizeof(struct dependency));
-  node->symbol = (char *)allocate(strlen(symbol) + 1);
-  strcpy(node->symbol, symbol);
-  node->value = (char *)allocate(strlen(value) + 1);
-  strcpy(node->value, value);
-  node->error_msg = (char *)allocate(strlen(error_msg) + 1);
-  strcpy(node->error_msg, error_msg);
-  node->next = parsed_dependencies;
-  parsed_dependencies = node;
-}
 void sanity_check_userdata(void) {
   struct userdata * node = parsed_userdata;
   while(node) {
@@ -941,20 +928,24 @@ void sanity_check_userdata(void) {
   }
 }
 
-void emit_headers(FILE *f) {
-  struct header *node = headers;
-  while (node) {
-    fprintf(f, "#include <%s>\n", node->name);
-    node = node->next;
+void start_dependency(FILE *f, const char *dependency) {
+  if (dependency != NULL) {
+    fprintf(f, "#if %s\n", dependency);
   }
 }
 
-void emit_dependencies(FILE *f) {
-  struct dependency *node = parsed_dependencies;
+void end_dependency(FILE *f, const char *dependency) {
+  if (dependency != NULL) {
+    fprintf(f, "#endif // %s\n", dependency);
+  }
+}
+
+void emit_headers(FILE *f) {
+  struct header *node = headers;
   while (node) {
-    fprintf(f, "#if !defined(%s) || (%s != %s)\n", node->symbol, node->symbol, node->value);
-    fprintf(f, "  #error %s\n", node->error_msg);
-    fprintf(f, "#endif // !defined(%s) || (%s != %s)\n", node->symbol, node->symbol, node->value);
+    start_dependency(f, node->dependency);
+    fprintf(f, "#include <%s>\n", node->name);
+    end_dependency(f, node->dependency);
     node = node->next;
   }
 }
@@ -962,6 +953,7 @@ void emit_dependencies(FILE *f) {
 void emit_userdata_allocators(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
@@ -970,7 +962,9 @@ void emit_userdata_allocators(void) {
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
-    fprintf(source, "}\n\n");
+    fprintf(source, "}\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
     node = node->next;
   }
 }
@@ -978,6 +972,7 @@ void emit_userdata_allocators(void) {
 void emit_ap_object_allocators(void) {
   struct userdata * node = parsed_ap_objects;
   while (node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s *));\n", node->name);
@@ -985,7 +980,9 @@ void emit_ap_object_allocators(void) {
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
-    fprintf(source, "}\n\n");
+    fprintf(source, "}\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
     node = node->next;
   }
 }
@@ -993,10 +990,13 @@ void emit_ap_object_allocators(void) {
 void emit_userdata_checkers(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "%s * check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
     fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
     fprintf(source, "    return (%s *)data;\n", node->name);
-    fprintf(source, "}\n\n");
+    fprintf(source, "}\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
     node = node->next;
   }
 }
@@ -1004,10 +1004,13 @@ void emit_userdata_checkers(void) {
 void emit_ap_object_checkers(void) {
   struct userdata * node = parsed_ap_objects;
   while (node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "%s ** check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
     fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
     fprintf(source, "    return (%s **)data;\n", node->name);
-    fprintf(source, "}\n\n");
+    fprintf(source, "}\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
     node = node->next;
   }
 }
@@ -1015,8 +1018,10 @@ void emit_ap_object_checkers(void) {
 void emit_userdata_declarations(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
+    start_dependency(header, node->dependency);
     fprintf(header, "int new_%s(lua_State *L);\n", node->sanatized_name);
     fprintf(header, "%s * check_%s(lua_State *L, int arg);\n", node->name, node->sanatized_name);
+    end_dependency(header, node->dependency);
     node = node->next;
   }
 }
@@ -1316,10 +1321,12 @@ void emit_userdata_fields() {
   struct userdata * node = parsed_userdata;
   while(node) {
     struct userdata_field *field = node->fields;
+    start_dependency(source, node->dependency);
     while(field) {
       emit_userdata_field(node, field);
       field = field->next;
     }
+    end_dependency(source, node->dependency);
     node = node->next;
   }
 }
@@ -1377,6 +1384,8 @@ int emit_references(const struct argument *arg, const char * tab) {
 
 void emit_userdata_method(const struct userdata *data, const struct method *method) {
   int arg_count = 1;
+
+  start_dependency(source, data->dependency);
 
   const char *access_name = data->alias ? data->alias : data->name;
   // bind ud early if it's a singleton, so that we can use it in the range checks
@@ -1636,7 +1645,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    return %d;\n", return_count);
   }
 
-  fprintf(source, "}\n\n");
+  fprintf(source, "}\n");
+  end_dependency(source, data->dependency);
+  fprintf(source, "\n");
+
 }
 
 const char * get_name_for_operation(enum operator_type op) {
@@ -1722,6 +1734,7 @@ void emit_userdata_methods(struct userdata *node) {
 void emit_userdata_metatables(void) {
   struct userdata * node = parsed_userdata;
   while(node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "const luaL_Reg %s_meta[] = {\n", node->sanatized_name);
 
     struct userdata_field *field = node->fields;
@@ -1745,8 +1758,9 @@ void emit_userdata_metatables(void) {
     }
 
     fprintf(source, "    {NULL, NULL}\n");
-    fprintf(source, "};\n\n");
-
+    fprintf(source, "};\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
     node = node->next;
   }
 }
@@ -1754,6 +1768,7 @@ void emit_userdata_metatables(void) {
 void emit_singleton_metatables(struct userdata *head) {
   struct userdata * node = head;
   while(node) {
+    start_dependency(source, node->dependency);
     fprintf(source, "const luaL_Reg %s_meta[] = {\n", node->sanatized_name);
 
     struct method *method = node->methods;
@@ -1763,7 +1778,9 @@ void emit_singleton_metatables(struct userdata *head) {
     }
 
     fprintf(source, "    {NULL, NULL}\n");
-    fprintf(source, "};\n\n");
+    fprintf(source, "};\n");
+    end_dependency(source, node->dependency);
+    fprintf(source, "\n");
 
     node = node->next;
   }
@@ -1772,13 +1789,16 @@ void emit_singleton_metatables(struct userdata *head) {
 void emit_enums(struct userdata * data) {
   while (data) {
     if (data->enums != NULL) {
+      start_dependency(source, data->dependency);
       fprintf(source, "struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
       struct userdata_enum *ud_enum = data->enums;
       while (ud_enum != NULL) {
         fprintf(source, "    {\"%s\", %s::%s},\n", ud_enum->name, data->name, ud_enum->name);
         ud_enum = ud_enum->next;
       }
-      fprintf(source, "    {NULL, 0}};\n\n");
+      fprintf(source, "    {NULL, 0}};\n");
+      end_dependency(source, data->dependency);
+      fprintf(source, "\n");
     }
     data = data->next;
   }
@@ -1787,11 +1807,13 @@ void emit_enums(struct userdata * data) {
 void emit_metas(struct userdata * data, char * meta_name) {
   fprintf(source, "const struct userdata_meta %s_fun[] = {\n", meta_name);
   while (data) {
+    start_dependency(source, data->dependency);
     if (data->enums) {
       fprintf(source, "    {\"%s\", %s_meta, %s_enums},\n", data->alias ? data->alias : data->name, data->name, data->sanatized_name);
     } else {
       fprintf(source, "    {\"%s\", %s_meta, NULL},\n", data->alias ? data->alias : data->name, data->sanatized_name);
     }
+    end_dependency(source, data->dependency);
     data = data->next;
   }
   fprintf(source, "};\n\n");
@@ -1886,7 +1908,9 @@ void emit_sandbox(void) {
   fprintf(source, "    const lua_CFunction fun;\n");
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
+    start_dependency(source, data->dependency);
     fprintf(source, "    {\"%s\", new_%s},\n", data->name, data->sanatized_name);
+    end_dependency(source, data->dependency);
     data = data->next;
   }
   data = parsed_ap_objects;
@@ -1983,8 +2007,6 @@ int main(int argc, char **argv) {
         handle_singleton();
       } else if (strcmp (state.token, keyword_ap_object) == 0){
         handle_ap_object();
-      } else if (strcmp (state.token, keyword_depends) == 0){
-        handle_depends();
       } else {
         error(ERROR_UNKNOWN_KEYWORD, "Expected a keyword, got: %s", state.token);
       }
@@ -2016,10 +2038,6 @@ int main(int argc, char **argv) {
   trace(TRACE_GENERAL, "Starting emission");
 
   emit_headers(source);
-
-  fprintf(source, "\n\n");
-
-  emit_dependencies(source);
 
   fprintf(source, "\n\n");
 
@@ -2062,11 +2080,10 @@ int main(int argc, char **argv) {
   free(file_name);
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
+  fprintf(header, "#include <AP_Vehicle/AP_Vehicle_Type.h> // needed for APM_BUILD_TYPE #if\n");
   emit_headers(header);
   fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
   fprintf(header, "#include <new>\n\n");
-  emit_dependencies(header);
-  fprintf(header, "\n\n");
 
   emit_userdata_declarations();
   emit_ap_object_declarations();

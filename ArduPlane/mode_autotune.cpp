@@ -3,9 +3,6 @@
 
 bool ModeAutoTune::_enter()
 {
-    plane.throttle_allows_nudging = false;
-    plane.auto_throttle_mode = false;
-    plane.auto_navigation_mode = false;
     plane.autotune_start();
 
     return true;

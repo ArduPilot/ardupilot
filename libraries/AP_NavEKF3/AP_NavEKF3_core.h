@@ -35,6 +35,7 @@
 #include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
+#include "AP_NavEKF3_feature.h"
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -125,17 +126,11 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(void) const;
 
-    // This returns the specific forces in the NED frame
-    void getAccelNED(Vector3f &accelNED) const;
-
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
-
-    // return estimated 1-sigma tilt error in radians
-    void getTiltError(float &ang) const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -322,19 +317,6 @@ public:
      7 = filter is not initialised
     */
     void getFilterFaults(uint16_t &faults) const;
-
-    /*
-    return filter timeout status as a bitmasked integer
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-     7 = unassigned
-    */
-    void getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
     return filter gps quality check status
@@ -621,10 +603,11 @@ private:
     // specifies the method to be used when fusing yaw observations
     enum class yawFusionMethod {
 	    MAGNETOMETER=0,
-	    EXTERNAL=1,
+	    GPS=1,
         GSF=2,
         STATIC=3,
         PREDICTED=4,
+        EXTNAV=5,
     };
 
     // update the navigation filter status
@@ -747,8 +730,8 @@ private:
 
     // initialise the earth magnetic field states using declination and current attitude and magnetometer measurements
 
-    // align the yaw angle for the quaternion states using the external yaw sensor
-    void alignYawAngle();
+    // align the yaw angle for the quaternion states to the given yaw angle which should be at the fusion horizon
+    void alignYawAngle(const yaw_elements &yawAngData);
 
     // update mag field states and associated variances using magnetomer and declination data
     void resetMagFieldStates();
@@ -1207,9 +1190,11 @@ private:
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
 
     // body frame odometry fusion
+#if EK3_FEATURE_BODY_ODOM
     EKF_obs_buffer_t<vel_odm_elements> storedBodyOdm;    // body velocity data buffer
     vel_odm_elements bodyOdmDataNew;       // Body frame odometry data at the current time horizon
     vel_odm_elements bodyOdmDataDelayed;  // Body  frame odometry data at the fusion time horizon
+#endif
     uint32_t lastbodyVelPassTime_ms;    // time stamp when the body velocity measurement last passed innovation consistency checks (msec)
     Vector3 bodyVelTestRatio;           // Innovation test ratios for body velocity XYZ measurements
     Vector3 varInnovBodyVel;            // Body velocity XYZ innovation variances (m/sec)^2
@@ -1219,17 +1204,18 @@ private:
     bool bodyVelFusionDelayed;          // true when body frame velocity fusion has been delayed
     bool bodyVelFusionActive;           // true when body frame velocity fusion is active
 
+#if EK3_FEATURE_BODY_ODOM
     // wheel sensor fusion
     EKF_obs_buffer_t<wheel_odm_elements> storedWheelOdm;    // body velocity data buffer
     wheel_odm_elements wheelOdmDataDelayed;   // Body  frame odometry data at the fusion time horizon
+#endif
 
-    // yaw sensor fusion
-    uint32_t yawMeasTime_ms;
-    EKF_obs_buffer_t<yaw_elements> storedYawAng;
-    yaw_elements yawAngDataNew;
-    yaw_elements yawAngDataDelayed;
-    yaw_elements yawAngDataStatic;
-
+    // GPS yaw sensor fusion
+    uint32_t yawMeasTime_ms;            // system time GPS yaw angle was last input to the data buffer
+    EKF_obs_buffer_t<yaw_elements> storedYawAng;    // GPS yaw angle buffer
+    yaw_elements yawAngDataNew;         // GPS yaw angle at the current time horizon
+    yaw_elements yawAngDataDelayed;     // GPS yaw angle at the fusion time horizon
+    yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
@@ -1281,6 +1267,7 @@ private:
         Vector3f beaconPosNED; // beacon NED position
     } *rngBcnFusionReport;
 
+#if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation
     EKF_obs_buffer_t<drag_elements> storedDrag;
     drag_elements dragSampleDelayed;
@@ -1290,6 +1277,7 @@ private:
     Vector2f innovDrag;		            // multirotor drag measurement innovation (m/sec**2)
 	Vector2f innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
 	Vector2f dragTestRatio;		        // drag innovation consistency check ratio
+#endif
     bool dragFusionEnabled;
 
     // height source selection logic
@@ -1330,6 +1318,7 @@ private:
     bool onGroundNotMoving;             // true when on the ground and not moving
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // external navigation fusion
     EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
@@ -1341,10 +1330,14 @@ private:
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
     bool extNavVelToFuse;               // true when there is new external navigation velocity to fuse
-    bool useExtNavVel;                  // true if external nav velocity should be used
     Vector3f extNavVelInnov;            // external nav velocity innovations
     Vector3f extNavVelVarInnov;         // external nav velocity innovation variances
     uint32_t extNavVelInnovTime_ms;     // system time that external nav velocity innovations were recorded (to detect timeouts)
+    EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
+    yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
+    uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
+#endif // EK3_FEATURE_EXTERNAL_NAV
+    bool useExtNavVel;                  // true if external nav velocity should be used
 
     // flags indicating severe numerical errors in innovation variance calculation for different fusion operations
     struct {
@@ -1414,6 +1407,9 @@ private:
 
     // timing statistics
     struct ekf_timing timing;
+
+    // when was attitude filter status last non-zero?
+    uint32_t last_filter_ok_ms;
     
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;

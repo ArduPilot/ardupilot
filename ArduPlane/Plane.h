@@ -572,17 +572,6 @@ private:
         uint32_t impact_timer_ms;
     } crash_state;
 
-    // true if we are in an auto-throttle mode, which means
-    // we need to run the speed/height controller
-    bool auto_throttle_mode:1;
-
-    // true if we are in an auto-navigation mode, which controls whether control input is ignored
-    // with STICK_MIXING=0
-    bool auto_navigation_mode:1;
-    
-    // this allows certain flight modes to mix RC input with throttle depending on airspeed_nudge_cm
-    bool throttle_allows_nudging:1;
-
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 	

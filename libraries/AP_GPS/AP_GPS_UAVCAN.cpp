@@ -27,6 +27,7 @@
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
+#include <ardupilot/gnss/Heading.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -35,6 +36,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
 UC_REGISTRY_BINDER(Fix2Cb, uavcan::equipment::gnss::Fix2);
 UC_REGISTRY_BINDER(AuxCb, uavcan::equipment::gnss::Auxiliary);
+UC_REGISTRY_BINDER(HeadingCb, ardupilot::gnss::Heading);
 
 AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
@@ -79,6 +81,14 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     gnss_aux = new uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary, AuxCb>(*node);
     const int gnss_aux_start_res = gnss_aux->start(AuxCb(ap_uavcan, &handle_aux_msg_trampoline));
     if (gnss_aux_start_res < 0) {
+        AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
+        return;
+    }
+
+    uavcan::Subscriber<ardupilot::gnss::Heading, HeadingCb> *gnss_heading;
+    gnss_heading = new uavcan::Subscriber<ardupilot::gnss::Heading, HeadingCb>(*node);
+    const int gnss_heading_start_res = gnss_heading->start(HeadingCb(ap_uavcan, &handle_heading_msg_trampoline));
+    if (gnss_heading_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
         return;
     }
@@ -390,6 +400,21 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
     }
 }
 
+void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
+{
+    WITH_SEMAPHORE(sem);
+
+    if (interim_state.gps_yaw_configured == false) {
+        interim_state.gps_yaw_configured = cb.msg->heading_valid;
+    }
+
+    interim_state.have_gps_yaw = cb.msg->heading_valid;
+    interim_state.gps_yaw = degrees(cb.msg->heading_rad);
+
+    interim_state.have_gps_yaw_accuracy = cb.msg->heading_accuracy_valid;
+    interim_state.gps_yaw_accuracy = degrees(cb.msg->heading_accuracy_rad);
+}
+
 void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb)
 {
     WITH_SEMAPHORE(_sem_registry);
@@ -417,6 +442,16 @@ void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node
     AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
     if (driver != nullptr) {
         driver->handle_aux_msg(cb);
+    }
+}
+
+void AP_GPS_UAVCAN::handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb)
+{
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_heading_msg(cb);
     }
 }
 

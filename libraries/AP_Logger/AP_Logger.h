@@ -3,6 +3,66 @@
 /* ************************************************************ */
 #pragma once
 
+#include <AP_Filesystem/AP_Filesystem_Available.h>
+
+// set default for HAL_LOGGING_DATAFLASH_ENABLED
+#ifndef HAL_LOGGING_DATAFLASH_ENABLED
+    #ifdef HAL_LOGGING_DATAFLASH
+        #define HAL_LOGGING_DATAFLASH_ENABLED 1
+    #else
+        #define HAL_LOGGING_DATAFLASH_ENABLED 0
+    #endif
+#endif
+
+#ifndef HAL_LOGGING_MAVLINK_ENABLED
+    #define HAL_LOGGING_MAVLINK_ENABLED 1
+#endif
+
+#ifndef HAL_LOGGING_FILESYSTEM_ENABLED
+    #if HAVE_FILESYSTEM_SUPPORT
+        #define HAL_LOGGING_FILESYSTEM_ENABLED 1
+    #else
+        #define HAL_LOGGING_FILESYSTEM_ENABLED 0
+    #endif
+#endif
+
+#ifndef HAL_LOGGING_SITL_ENABLED
+    #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        #define HAL_LOGGING_SITL_ENABLED 1
+    #else
+        #define HAL_LOGGING_SITL_ENABLED 0
+    #endif
+#endif
+
+#if HAL_LOGGING_SITL_ENABLED || HAL_LOGGING_DATAFLASH_ENABLED
+    #define HAL_LOGGING_BLOCK_ENABLED 1
+#else
+    #define HAL_LOGGING_BLOCK_ENABLED 0
+#endif
+
+// sanity checks:
+#if defined(HAL_LOGGING_DATAFLASH) && !HAL_LOGGING_DATAFLASH_ENABLED
+#error Can not default to dataflash if it is not enabled
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    #if HAL_LOGGING_DATAFLASH_ENABLED
+        #error DATAFLASH not supported on SITL; you probably mean SITL
+    #endif
+#endif
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
+
+#if !defined (HAL_BOARD_LOG_DIRECTORY)
+#error Need HAL_BOARD_LOG_DIRECTORY for filesystem backend support
+#endif
+
+#if !defined (HAVE_FILESYSTEM_SUPPORT)
+#error Need HAVE_FILESYSTEM_SUPPORT for filesystem backend support
+#endif
+
+#endif
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_DCM.h>
@@ -23,6 +83,7 @@
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
+
 
 class AP_Logger_Backend;
 class AP_AHRS;
@@ -250,8 +311,6 @@ public:
     void Write_Rally();
     void Write_Baro();
     void Write_Power(void);
-    void Write_AHRS2();
-    void Write_POS();
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
@@ -261,9 +320,6 @@ public:
     void Write_ESC(uint8_t id, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate = 0.0f);
     void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
     void Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct);
-    void Write_Attitude(const Vector3f &targets);
-    void Write_AttitudeView(AP_AHRS_View &ahrs, const Vector3f &targets);
-    void Write_Current();
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -271,19 +327,13 @@ public:
     void Write_Command(const mavlink_command_int_t &packet, MAV_RESULT result, bool was_command_long=false);
     void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    void Write_Origin(uint8_t origin_type, const Location &loc);
     void Write_RPM(const AP_RPM &rpm_sensor);
-    void Write_Rate(const AP_AHRS_View *ahrs,
-                        const AP_Motors &motors,
-                        const AC_AttitudeControl &attitude_control,
-                        const AC_PosControl &pos_control);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const RallyLocation &rally_point);
     void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored);
     void Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored);
-    void Write_AOA_SSA(AP_AHRS &ahrs);
     void Write_Beacon(AP_Beacon &beacon);
     void Write_Proximity(AP_Proximity &proximity);
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
@@ -309,6 +359,7 @@ public:
         float D;
         float FF;
         float Dmod;
+        bool  limit;
     };
 
     void Write_PID(uint8_t msg_type, const PID_Info &info);
@@ -466,7 +517,6 @@ private:
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
-    void Write_Current_instance(uint64_t time_us, uint8_t battery_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
@@ -488,9 +538,6 @@ private:
     bool seen_ids[256] = { };
     bool labels_string_is_good(const char *labels) const;
 #endif
-
-    // possibly expensive calls to start log system:
-    void Prep();
 
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;

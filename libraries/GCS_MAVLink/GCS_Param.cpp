@@ -71,7 +71,7 @@ GCS_MAVLINK::queued_param_send()
     }
     count -= async_replies_sent_count;
 
-    while (count && _queued_parameter != nullptr) {
+    while (count && _queued_parameter != nullptr && get_last_txbuf() > 50) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
 
@@ -380,7 +380,7 @@ void GCS_MAVLINK::param_io_timer(void)
     AP_Param *vp;
 
     if (req.param_index != -1) {
-        AP_Param::ParamToken token;
+        AP_Param::ParamToken token {};
         vp = AP_Param::find_by_index(req.param_index, &reply.p_type, &token);
         if (vp == nullptr) {
             return;

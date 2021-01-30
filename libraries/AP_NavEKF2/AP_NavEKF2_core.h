@@ -111,17 +111,11 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(void) const;
 
-    // This returns the specific forces in the NED frame
-    void getAccelNED(Vector3f &accelNED) const;
-
     // return body axis gyro bias estimates in rad/sec
     void getGyroBias(Vector3f &gyroBias) const;
 
     // return body axis gyro scale factor error as a percentage
     void getGyroScaleErrorPercentage(Vector3f &gyroScale) const;
-
-    // return tilt error convergence metric
-    void getTiltError(float &ang) const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -239,19 +233,6 @@ public:
      7 = filter is not initialised
     */
     void  getFilterFaults(uint16_t &faults) const;
-
-    /*
-    return filter timeout status as a bitmasked integer
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-     7 = unassigned
-    */
-    void  getFilterTimeouts(uint8_t &timeouts) const;
 
     /*
     return filter gps quality check status

@@ -298,9 +298,6 @@ private:
     bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED;
     void update_home();
 
-    // compat.cpp
-    void delay(uint32_t ms);
-
     // crash_check.cpp
     void crash_check();
 

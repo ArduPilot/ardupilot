@@ -43,8 +43,11 @@ public:
     // returns true if battery monitor provides individual cell voltages
     virtual bool has_cell_voltages() const { return false; }
 
+    // returns true if battery monitor provides temperature
+    virtual bool has_temperature() const { return false; }
+
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-    uint8_t capacity_remaining_pct() const;
+    virtual uint8_t capacity_remaining_pct() const;
 
     // return true if cycle count can be provided and fills in cycles argument
     virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
@@ -64,6 +67,10 @@ public:
 
     // reset remaining percentage to given value
     virtual bool reset_remaining(float percentage);
+
+    // logging functions 
+    void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
+    void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

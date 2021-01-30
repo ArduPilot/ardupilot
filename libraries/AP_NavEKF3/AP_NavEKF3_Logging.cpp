@@ -138,17 +138,20 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tasVar = 0;
     uint16_t _faultStatus=0;
     Vector2f offset;
-    uint8_t timeoutStatus=0;
+    const uint8_t timeoutStatus =
+        posTimeout<<0 |
+        velTimeout<<1 |
+        hgtTimeout<<2 |
+        magTimeout<<3 |
+        tasTimeout<<4;
+
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
-    getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
-    float tiltError;
-    getTiltError(tiltError);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
@@ -158,7 +161,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : tiltError,
+        tiltErr : sqrtf(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : _faultStatus,
@@ -376,8 +379,10 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
 
+#if EK3_FEATURE_BODY_ODOM
     // write debug data for body frame odometry fusion
     Log_Write_BodyOdom(time_us);
+#endif
 
     // log state variances every 0.49s
     Log_Write_State_Variances(time_us);

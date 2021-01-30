@@ -52,7 +52,7 @@ bool GCS_MAVLINK::ftp_init(void) {
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::ftp_worker, void),
-                                      "FTP", 3072, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
+                                      "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
         goto failed;
     }
 

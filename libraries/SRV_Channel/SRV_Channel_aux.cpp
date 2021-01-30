@@ -616,6 +616,9 @@ void SRV_Channels::adjust_trim(SRV_Channel::Aux_servo_function_t function, float
         }
         float change = c.reversed?-v:v;
         uint16_t new_trim = c.servo_trim;
+        if (c.servo_max <= c.servo_min) {
+            continue;
+        }
         float trim_scaled = float(c.servo_trim - c.servo_min) / (c.servo_max - c.servo_min);
         if (change > 0 && trim_scaled < 0.6f) {
             new_trim++;

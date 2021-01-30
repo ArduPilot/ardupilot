@@ -762,7 +762,7 @@ void NavEKF2_core::calcOutputStates()
     // Coefficients selected to place all three filter poles at omega
     const float CompFiltOmega = M_2PI * constrain_float(frontend->_hrt_filt_freq, 0.1f, 30.0f);
     float omega2 = CompFiltOmega * CompFiltOmega;
-    float pos_err = outputDataNew.position.z - vertCompFiltState.pos;
+    float pos_err = constrain_float(outputDataNew.position.z - vertCompFiltState.pos, -1e5, 1e5);
     float integ1_input = pos_err * omega2 * CompFiltOmega * imuDataNew.delVelDT;
     vertCompFiltState.acc += integ1_input;
     float integ2_input = delVelNav.z + (vertCompFiltState.acc + pos_err * omega2 * 3.0f) * imuDataNew.delVelDT;

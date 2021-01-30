@@ -65,7 +65,8 @@ public:
         gpio_isr                    = (1U << 25),  //0x2000000 33554432
         mem_guard                   = (1U << 26),  //0x4000000 67108864
         dma_fail                    = (1U << 27),  //0x8000000 134217728
-        __LAST__                    = (1U << 28),  // used only for sanity check
+        params_restored             = (1U << 28),  //0x10000000 268435456
+        __LAST__                    = (1U << 29),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to

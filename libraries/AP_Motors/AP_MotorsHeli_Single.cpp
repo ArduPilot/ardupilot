@@ -373,7 +373,7 @@ uint16_t AP_MotorsHeli_Single::get_motor_mask()
         mask |= 1U << AP_MOTORS_HELI_SINGLE_TAILRSC;
     }
 
-    return rc_map_mask(mask);
+    return motor_mask_to_srv_channel_mask(mask);
 }
 
 // update_motor_controls - sends commands to motor controllers

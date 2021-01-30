@@ -13,8 +13,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
-#if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Logger_File.h"
+
+#if HAL_LOGGING_FILESYSTEM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -29,10 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 #define LOGGER_PAGE_SIZE 1024UL
 
-#ifndef HAL_LOGGER_WRITE_CHUNK_SIZE
-#define HAL_LOGGER_WRITE_CHUNK_SIZE 4096
-#endif
-
 #define MB_to_B 1000000
 #define B_to_MB 0.000001
 
@@ -46,15 +43,7 @@ AP_Logger_File::AP_Logger_File(AP_Logger &front,
                                LoggerMessageWriter_DFLogStart *writer,
                                const char *log_directory) :
     AP_Logger_Backend(front, writer),
-    _write_fd(-1),
-    _read_fd(-1),
-    _log_directory(log_directory),
-    _writebuf(0),
-    _writebuf_chunk(HAL_LOGGER_WRITE_CHUNK_SIZE),
-    _perf_write(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_write")),
-    _perf_fsync(hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "DF_fsync")),
-    _perf_errors(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_errors")),
-    _perf_overruns(hal.util->perf_alloc(AP_HAL::Util::PC_COUNT, "DF_overruns"))
+    _log_directory(log_directory)
 {
     df_stats_clear();
 }
@@ -104,6 +93,8 @@ void AP_Logger_File::Init()
     if (custom_dir != nullptr){
         _log_directory = custom_dir;
     }
+
+    Prep_MinSpace();
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const
@@ -280,6 +271,11 @@ void AP_Logger_File::Prep_MinSpace()
         // don't clear space if watchdog reset, it takes too long
         return;
     }
+
+    if (!CardInserted()) {
+        return;
+    }
+
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
@@ -287,8 +283,6 @@ void AP_Logger_File::Prep_MinSpace()
     }
 
     const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
-
-    _cached_oldest_log = 0;
 
     uint16_t log_to_remove = first_log_to_remove;
 
@@ -316,6 +310,7 @@ void AP_Logger_File::Prep_MinSpace()
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
+                _cached_oldest_log = 0;
                 hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
@@ -334,36 +329,6 @@ void AP_Logger_File::Prep_MinSpace()
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
-}
-
-void AP_Logger_File::Prep() {
-    if (!NeedPrep()) {
-        return;
-    }
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-    Prep_MinSpace();
-}
-
-bool AP_Logger_File::NeedPrep()
-{
-    if (!CardInserted()) {
-        // should not have been called?!
-        return false;
-    }
-
-    const int64_t actual = disk_space_avail();
-    if (actual == -1) {
-        return false;
-    }
-
-    if (actual < (int64_t)_front._params.min_MB_free * MB_to_B) {
-        return true;
-    }
-
-    return false;
 }
 
 /*
@@ -527,7 +492,6 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 
     // if no room for entire message - drop it:
     if (space < size) {
-        hal.util->perf_count(_perf_overruns);
         _dropped++;
         return false;
     }
@@ -921,8 +885,6 @@ void AP_Logger_File::io_timer(void)
         last_io_operation = "";
     }
 
-    hal.util->perf_begin(_perf_write);
-
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -956,7 +918,6 @@ void AP_Logger_File::io_timer(void)
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
-            hal.util->perf_count(_perf_errors);
             last_io_operation = "close";
             AP::FS().close(_write_fd);
             last_io_operation = "";
@@ -995,7 +956,6 @@ void AP_Logger_File::io_timer(void)
     }
 
     write_fd_semaphore.give();
-    hal.util->perf_end(_perf_write);
 }
 
 bool AP_Logger_File::io_thread_alive() const
@@ -1025,5 +985,5 @@ bool AP_Logger_File::logging_failed() const
     return false;
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED
 

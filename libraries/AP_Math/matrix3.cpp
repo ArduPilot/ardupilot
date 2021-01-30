@@ -243,7 +243,7 @@ void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
     const float C = cosf(theta);
     const float S = sinf(theta);
     const float t = 1.0f - C;
-    const Vector3f normv = v.normalized();
+    const Vector3<T> normv = v.normalized();
     const float x = normv.x;
     const float y = normv.y;
     const float z = normv.z;
@@ -260,34 +260,6 @@ void Matrix3<T>::from_axis_angle(const Vector3<T> &v, float theta)
 }
 
 
-// only define for float
-template void Matrix3<float>::zero(void);
-template void Matrix3<float>::rotate(const Vector3<float> &g);
-template void Matrix3<float>::normalize(void);
-template void Matrix3<float>::from_euler(float roll, float pitch, float yaw);
-template void Matrix3<float>::to_euler(float *roll, float *pitch, float *yaw) const;
-template void Matrix3<float>::from_rotation(enum Rotation rotation);
-template void Matrix3<float>::from_euler312(float roll, float pitch, float yaw);
-template void Matrix3<float>::from_axis_angle(const Vector3<float> &v, float theta);
-template Vector3<float> Matrix3<float>::to_euler312(void) const;
-template Vector3<float> Matrix3<float>::operator *(const Vector3<float> &v) const;
-template Vector3<float> Matrix3<float>::mul_transpose(const Vector3<float> &v) const;
-template Matrix3<float> Matrix3<float>::operator *(const Matrix3<float> &m) const;
-template Matrix3<float> Matrix3<float>::transposed(void) const;
-template float Matrix3<float>::det() const;
-template bool Matrix3<float>::inverse(Matrix3<float>& inv) const;
-template bool Matrix3<float>::invert();
-template Vector2<float> Matrix3<float>::mulXY(const Vector3<float> &v) const;
-
-template void Matrix3<double>::zero(void);
-template void Matrix3<double>::rotate(const Vector3<double> &g);
-template void Matrix3<double>::from_euler(float roll, float pitch, float yaw);
-template void Matrix3<double>::to_euler(float *roll, float *pitch, float *yaw) const;
-template Vector3<double> Matrix3<double>::operator *(const Vector3<double> &v) const;
-template Vector3<double> Matrix3<double>::mul_transpose(const Vector3<double> &v) const;
-template Matrix3<double> Matrix3<double>::operator *(const Matrix3<double> &m) const;
-template Matrix3<double> Matrix3<double>::transposed(void) const;
-template double Matrix3<double>::det() const;
-template bool Matrix3<double>::inverse(Matrix3<double>& inv) const;
-template bool Matrix3<double>::invert();
-template Vector2<double> Matrix3<double>::mulXY(const Vector3<double> &v) const;
+// define for float and double
+template class Matrix3<float>;
+template class Matrix3<double>;

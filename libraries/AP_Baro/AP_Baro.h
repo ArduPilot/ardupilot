@@ -5,6 +5,7 @@
 #include <Filter/Filter.h>
 #include <Filter/DerivativeFilter.h>
 #include <AP_MSP/msp.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #ifndef HAL_MSP_BARO_ENABLED
 #define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
@@ -205,6 +206,10 @@ public:
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
+#endif
+    
 private:
     // singleton
     static AP_Baro *_singleton;

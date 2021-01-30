@@ -43,6 +43,10 @@ public:
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
+    static QuadPlane *get_singleton() {
+        return _singleton;
+    }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
@@ -485,6 +489,8 @@ private:
         AP_Int8  max_angle_deg;
         AP_Int8  tilt_type;
         AP_Float tilt_yaw_angle;
+        AP_Float fixed_angle;
+        AP_Float fixed_gain;
         float current_tilt;
         float current_throttle;
         bool motors_active:1;
@@ -554,8 +560,9 @@ private:
     void tiltrotor_update(void);
     void tiltrotor_continuous_update(void);
     void tiltrotor_binary_update(void);
-    void tiltrotor_vectored_yaw(void);
+    void tiltrotor_vectoring(void);
     void tiltrotor_bicopter(void);
+    float tilt_throttle_scaling(void);
     void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool is_motor_tilting(uint8_t motor) const {
@@ -649,4 +656,6 @@ public:
                                         uint8_t motor_count);
 private:
     void motor_test_stop();
+
+    static QuadPlane *_singleton;
 };

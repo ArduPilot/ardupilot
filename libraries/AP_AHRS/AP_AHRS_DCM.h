@@ -121,7 +121,8 @@ public:
     bool get_velocity_NED(Vector3f &vec) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
+    // requires_position should be true if horizontal position configuration should be checked (not used)
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
 private:
     float _ki;

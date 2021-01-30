@@ -5,6 +5,8 @@
 
 #include "AP_Logger_Backend.h"
 
+#if HAL_LOGGING_BLOCK_ENABLED
+
 #define BLOCK_LOG_VALIDATE 0
 
 class AP_Logger_Block : public AP_Logger_Backend {
@@ -16,8 +18,6 @@ public:
 
     // erase handling
     void EraseAll() override;
-
-    void Prep() override;
 
     // high level interface
     uint16_t find_last_log() override;
@@ -162,3 +162,5 @@ private:
     bool io_thread_alive() const;
     void write_log_page();
 };
+
+#endif  // HAL_LOGGING_BLOCK_ENABLED

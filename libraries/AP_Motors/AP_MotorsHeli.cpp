@@ -159,6 +159,7 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     // set flag to true so targets are initialized once aircraft is armed for first time
     _heliflags.init_targets_on_arming = true;
 
+    _mav_type = MAV_TYPE_HELICOPTER;
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)

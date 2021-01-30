@@ -94,9 +94,6 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative(int8_t instance) const;
 
-    // This returns the specific forces in the NED frame
-    void getAccelNED(Vector3f &accelNED) const;
-
     // return body axis gyro bias estimates in rad/sec for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
@@ -104,10 +101,6 @@ public:
     // return body axis gyro scale factor error as a percentage for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const;
-
-    // return tilt error convergence metric for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getTiltError(int8_t instance, float &ang) const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -226,20 +219,6 @@ public:
      7 = filter is not initialised
     */
     void  getFilterFaults(int8_t instance, uint16_t &faults) const;
-
-    /*
-    return filter timeout status as a bitmasked integer for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-     0 = position measurement timeout
-     1 = velocity measurement timeout
-     2 = height measurement timeout
-     3 = magnetometer measurement timeout
-     4 = unassigned
-     5 = unassigned
-     6 = unassigned
-     7 = unassigned
-    */
-    void  getFilterTimeouts(int8_t instance, uint8_t &timeouts) const;
 
     /*
     return filter gps quality check status for the specified instance

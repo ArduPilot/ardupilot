@@ -466,8 +466,8 @@ void FlightAxis::update(const struct sitl_input &input)
            airspeed3d.z);
 #endif
 
-    battery_voltage = state.m_batteryVoltage_VOLTS;
-    battery_current = state.m_batteryCurrentDraw_AMPS;
+    battery_voltage = MAX(state.m_batteryVoltage_VOLTS, 0);
+    battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
     rpm[0] = state.m_heliMainRotorRPM;
     rpm[1] = state.m_propRPM;
 

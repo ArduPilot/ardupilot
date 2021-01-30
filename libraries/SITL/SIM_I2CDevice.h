@@ -3,6 +3,7 @@
 #include "SIM_I2C.h"
 
 #include <SITL/SIM_Aircraft.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 namespace SITL {
 
@@ -30,6 +31,10 @@ public:
     void set_register(uint8_t reg, uint16_t value);
     void set_register(uint8_t reg, int16_t value);
 
+    uint16_t get_reg_value(uint8_t reg) {
+        return be16toh(word[reg]);
+    }
+
 protected:
 
     uint16_t word[256];
@@ -44,6 +49,9 @@ public:
     uint8_t get_register(uint8_t num) {
         return byte[(uint8_t)num];
     }
+
+    // dies if register does not have value value
+    void assert_register_value(uint8_t reg, uint8_t value);
 
 protected:
 

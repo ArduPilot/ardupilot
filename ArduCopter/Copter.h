@@ -864,7 +864,6 @@ private:
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
-    MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
     bool is_tradheli() const;

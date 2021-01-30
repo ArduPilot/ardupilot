@@ -4,6 +4,8 @@
 
 #include "AP_Logger_Block.h"
 
+#if HAL_LOGGING_BLOCK_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
@@ -57,6 +59,12 @@ void AP_Logger_Block::Init(void)
     }
 
     WITH_SEMAPHORE(sem);
+
+    if (NeedErase()) {
+        EraseAll();
+    } else {
+        validate_log_structure();
+    }
 }
 
 uint32_t AP_Logger_Block::bufferspace_available()
@@ -341,22 +349,6 @@ void AP_Logger_Block::periodic_10Hz(const uint32_t now)
     // EraseAll should only set this in the main thread
     if (new_log_pending) {
         start_new_log();
-    }
-}
-
-void AP_Logger_Block::Prep()
-{
-    if (hal.util->get_soft_armed()) {
-        // do not want to do any filesystem operations while we are e.g. flying
-        return;
-    }
-
-    WITH_SEMAPHORE(sem);
-
-    if (NeedErase()) {
-        EraseAll();
-    } else {
-        validate_log_structure();
     }
 }
 
@@ -931,3 +923,4 @@ void AP_Logger_Block::write_log_page()
     df_Write_FilePage++;
 }
 
+#endif // HAL_LOGGING_BLOCK_ENABLED

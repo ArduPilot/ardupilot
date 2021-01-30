@@ -7,6 +7,7 @@
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
+#include <Filter/LowPassFilter2p.h>
 
 class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend
 {
@@ -98,6 +99,9 @@ private:
     int _drdy_pin_num_g;
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
+    float _temperature;
+    uint8_t _temp_counter;
+    LowPassFilter2pFloat _temp_filter;
 
     // gyro whoami
     uint8_t whoami_g;

@@ -387,6 +387,7 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _rotation_a(rotation_a)
     , _rotation_g(rotation_g)
     , _rotation_gH(rotation_gH)
+    , _temp_filter(80, 1)
 {
 }
 
@@ -639,6 +640,9 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     /* Accel data ready on INT1 */
     _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA, true);
     hal.scheduler->delay(1);
+
+    // enable temperature sensor
+    _register_write_xm(CTRL_REG5_XM, _register_read_xm(CTRL_REG5_XM) | 0x80, false);
 }
 
 void AP_InertialSensor_LSM9DS0::_set_gyro_scale(gyro_scale scale)
@@ -725,7 +729,6 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     const uint8_t reg = OUT_X_L_A | 0xC0;
 
     if (!_dev_accel->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading accelerometer\n");
         return;
     }
 
@@ -734,6 +737,16 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
     _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
+
+    // read temperature every 10th sample
+    if (_temp_counter == 10) {
+        int16_t traw;
+        const uint8_t regtemp = OUT_TEMP_L_XM | 0xC0;
+        _temp_counter = 0;
+        if (_dev_accel->transfer(&regtemp, 1, (uint8_t *)&traw, sizeof(traw))) {
+            _temperature = _temp_filter.apply(traw * 0.125 + 25);
+        }
+    }
 }
 
 /*
@@ -745,7 +758,6 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     const uint8_t reg = OUT_X_L_G | 0xC0;
 
     if (!_dev_gyro->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading gyroscope\n");
         return;
     }
 
@@ -761,6 +773,7 @@ bool AP_InertialSensor_LSM9DS0::update()
 {
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
+    _publish_temperature(_accel_instance, _temperature);
 
     return true;
 }

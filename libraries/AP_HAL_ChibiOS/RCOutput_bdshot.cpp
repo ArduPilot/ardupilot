@@ -214,11 +214,12 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     // Initialise ICU channels
     bdshot_config_icu_dshot(group->pwm_drv->tim, curr_ch, group->bdshot.telem_tim_ch[curr_ch]);
 
-    uint32_t ic_channel = STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel);
     // do a little DMA dance when sharing with UP
+#if STM32_DMA_SUPPORTS_DMAMUX
     if (group->has_shared_ic_up_dma()) {
-        ic_channel = STM32_DMA_CR_CHSEL(group->dma_up_channel);
+        dmaSetRequestSource(group->dma, group->dma_ch[curr_ch].channel);
     }
+#endif
     const stm32_dma_stream_t *ic_dma =
         group->has_shared_ic_up_dma() ? group->dma : group->bdshot.ic_dma[curr_ch];
 
@@ -228,7 +229,7 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     dmaStreamSetTransactionSize(ic_dma, GCR_TELEMETRY_BIT_LEN);
     dmaStreamSetFIFO(ic_dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
     dmaStreamSetMode(ic_dma,
-                    ic_channel |
+                    STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
                     STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD |
                     STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
                     STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
@@ -372,6 +373,11 @@ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
     if (group->ic_dma_enabled()) {
         group->bdshot.ic_dma_handle[curr_telem_chan]->unlock_from_IRQ();
     }
+#if STM32_DMA_SUPPORTS_DMAMUX
+    else if (group->has_shared_ic_up_dma()) {
+        dmaSetRequestSource(group->dma, group->dma_up_channel);
+    }
+#endif
 
     // rotate to the next input channel
     group->bdshot.prev_telem_chan = group->bdshot.curr_telem_chan;
@@ -466,7 +472,7 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     if (group->in_serial_dma && irq.waiter) {
         // tell the waiting process we've done the DMA
         chEvtSignalI(irq.waiter, serial_event_mask);
-    } else if (group->bdshot.enabled) {
+    } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
         // sending is done, in 30us the ESC will send telemetry
         TOGGLE_PIN_DEBUG(55);

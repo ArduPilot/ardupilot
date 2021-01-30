@@ -130,7 +130,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 0, NavEKF3, _enable, 1, AP_PARAM_FLAG_ENABLE),
 
     // GPS measurement parameters
 
@@ -1060,17 +1060,18 @@ bool NavEKF3::healthy(void) const
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-bool NavEKF3::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+// requires_position should be true if horizontal position configuration should be checked
+bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     // check source configuration
-    if (!sources.pre_arm_check(failure_msg, failure_msg_len)) {
+    if (!sources.pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
         return false;
     }
 
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
     const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
-    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::EXTERNAL)) {
+    if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
         // yaw source is configured to use compass but MAG_CAL valid is deprecated
         AP::dal().snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
         return false;
@@ -1170,14 +1171,6 @@ float NavEKF3::getPosDownDerivative(int8_t instance) const
     return 0.0f;
 }
 
-// This returns the specific forces in the NED frame
-void NavEKF3::getAccelNED(Vector3f &accelNED) const
-{
-    if (core) {
-        core[primary].getAccelNED(accelNED);
-    }
-}
-
 // return body axis gyro bias estimates in rad/sec
 void NavEKF3::getGyroBias(int8_t instance, Vector3f &gyroBias) const
 {
@@ -1193,15 +1186,6 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getAccelBias(accelBias);
-    }
-}
-
-// return estimated 1-sigma tilt error for the specified instance in radians
-void NavEKF3::getTiltError(int8_t instance, float &ang) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getTiltError(ang);
     }
 }
 
@@ -1672,11 +1656,11 @@ void NavEKF3::convert_parameters()
     switch (_magCal.get()) {
     case 5:
         // EK3_MAG_CAL = 5 (External Yaw sensor).  We rely on effective_magCal to interpret old "5" values as "Never"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::EXTERNAL);
+        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS);
         break;
     case 6:
         // EK3_MAG_CAL = 6 (ExtYaw with Compass fallback).  We rely on effective_magCal to interpret old "6" values as "When Flying"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::EXTERNAL_COMPASS_FALLBACK);
+        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK);
         break;
     default:
         // do nothing
@@ -1763,27 +1747,6 @@ void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
         core[instance].getFilterFaults(faults);
     } else {
         faults = 0;
-    }
-}
-
-/*
-  return filter timeout status as a bitmasked integer
-  0 = position measurement timeout
-  1 = velocity measurement timeout
-  2 = height measurement timeout
-  3 = magnetometer measurement timeout
-  4 = unassigned
-  5 = unassigned
-  6 = unassigned
-  7 = unassigned
-*/
-void NavEKF3::getFilterTimeouts(int8_t instance, uint8_t &timeouts) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getFilterTimeouts(timeouts);
-    } else {
-        timeouts = 0;
     }
 }
 

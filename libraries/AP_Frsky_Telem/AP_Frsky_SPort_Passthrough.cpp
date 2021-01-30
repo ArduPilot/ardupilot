@@ -60,6 +60,8 @@ for FrSky SPort Passthrough
 
 extern const AP_HAL::HAL& hal;
 
+AP_Frsky_SPort_Passthrough *AP_Frsky_SPort_Passthrough::singleton;
+
 bool AP_Frsky_SPort_Passthrough::init()
 {
     if (!AP_RCTelemetry::init()) {
@@ -79,9 +81,9 @@ bool AP_Frsky_SPort_Passthrough::init_serial_port()
 void  AP_Frsky_SPort_Passthrough::send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data)
 {
     if (_use_external_data) {
-        external_data.frame = frame;
-        external_data.appid = appid;
-        external_data.data = data;
+        external_data.packet.frame = frame;
+        external_data.packet.appid = appid;
+        external_data.packet.data = data;
         external_data.pending = true;
         return;
     }
@@ -108,6 +110,7 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(BATT_2, 1300, 500);     // 0x5008 Battery 2 status
     set_scheduler_entry(BATT_1, 1300, 500);     // 0x5003 Battery 1 status
     set_scheduler_entry(PARAM, 1700, 1000);     // 0x5007 parameters
+    set_scheduler_entry(UDATA, 5000, 200);      // user data
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     set_scheduler_entry(MAV, 35, 25);           // mavlite
     // initialize sport sensor IDs
@@ -158,6 +161,12 @@ void AP_Frsky_SPort_Passthrough::adjust_packet_weight(bool queue_empty)
         _scheduler.packet_weight[ATTITUDE] = 45;     // attitude
     }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+    // when using fport raise user data priority if any packets are pending
+    if (_use_external_data && _sport_push_buffer.pending) {
+        _scheduler.packet_weight[UDATA] = 250;
+    } else {
+        _scheduler.packet_weight[UDATA] = 5000;   // user data
+    }
 }
 
 // WFQ scheduler
@@ -179,10 +188,15 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case BATT_2:
         packet_ready = AP::battery().num_instances() > 1;
         break;
+    case UDATA:
+        // when using fport user data is sent by scheduler
+        // when using sport user data is sent responding to custom polling
+        packet_ready = _use_external_data && _sport_push_buffer.pending;
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        case MAV:
-            packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
-            break;
+    case MAV:
+        packet_ready = !_SPort_bidir.tx_packet_queue.is_empty();
+        break;
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     default:
         packet_ready = true;
@@ -240,6 +254,15 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case PARAM: // 0x5007 parameters
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+7, calc_param());
         break;
+    case UDATA: // user data
+        {
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_use_external_data && _sport_push_buffer.pending) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
+        break;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     case MAV: // mavlite
         process_tx_queue();
@@ -274,8 +297,17 @@ void AP_Frsky_SPort_Passthrough::send(void)
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     }
     // check if we should respond to this polling byte
-    if (prev_byte == FRAME_HEAD && is_passthrough_byte(_passthrough.new_byte)) {
-        run_wfq_scheduler();
+    if (prev_byte == FRAME_HEAD) {
+        if (is_passthrough_byte(_passthrough.new_byte)) {
+            run_wfq_scheduler();
+        } else {
+            // respond to custom user data polling
+            WITH_SEMAPHORE(_sport_push_buffer.sem);
+            if (_sport_push_buffer.pending && _passthrough.new_byte == _sport_push_buffer.packet.sensor) {
+                send_sport_frame(_sport_push_buffer.packet.frame, _sport_push_buffer.packet.appid, _sport_push_buffer.packet.data);
+                _sport_push_buffer.pending = false;
+            }
+        }
     }
 }
 
@@ -546,84 +578,53 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 }
 
 /*
-  fetch Sport data for an external transport, such as FPort
+  fetch Sport data for an external transport, such as FPort or crossfire
+  Note: we need to create a packet array with unique packet types
+  For very big frames we might have to relax the "unique packet type per frame"
+  constraint in order to maximize bandwidth usage
  */
-bool AP_Frsky_SPort_Passthrough::get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+bool AP_Frsky_SPort_Passthrough::get_telem_data(sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
 {
-    run_wfq_scheduler();
-    if (!external_data.pending) {
+    if (!_use_external_data) {
         return false;
     }
-    frame = external_data.frame;
-    appid = external_data.appid;
-    data = external_data.data;
-    external_data.pending = false;
-    return true;
-}
 
-/*
- * prepare value for transmission through FrSky link
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-uint16_t AP_Frsky_SPort_Passthrough::prep_number(int32_t number, uint8_t digits, uint8_t power)
-{
-    uint16_t res = 0;
-    uint32_t abs_number = abs(number);
+    uint8_t idx = 0;
 
-    if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<1;
-        } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
+    // max_size >= WFQ_LAST_ITEM
+    // get a packet per enabled type
+    if (max_size >= WFQ_LAST_ITEM) {
+        for (uint8_t i=0; i<WFQ_LAST_ITEM; i++) {
+            if (process_scheduler_entry(i)) {
+                if (external_data.pending) {
+                    packet_array[idx].frame = external_data.packet.frame;
+                    packet_array[idx].appid = external_data.packet.appid;
+                    packet_array[idx].data = external_data.packet.data;
+                    idx++;
+                    external_data.pending = false;
+                }
+            }
         }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
-        }
-    } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
-        if (abs_number < 100) {
-            res = abs_number<<2;
-        } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
-        }
-    } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<1;
-        } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
-            res = 0x7FF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
-        }
-    } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
-        if (abs_number < 1000) {
-            res = abs_number<<2;
-        } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
-        } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
-        } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
-            res = 0xFFF;
-        }
-        if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
+    } else {
+        // max_size < WFQ_LAST_ITEM
+        // call run_wfq_scheduler(false) enough times to create a packet of up to max_size unique elements
+        uint32_t item_mask = 0;
+        for (uint8_t i=0; i<max_size; i++) {
+            // call the scheduler with the shaper "disabled"
+            const uint8_t item = run_wfq_scheduler(false);
+            if (!BIT_IS_SET(item_mask, item) && external_data.pending) {
+                // ok got some data, flip the bitmask bit to prevent adding the same packet type more than once
+                BIT_SET(item_mask, item);
+                packet_array[idx].frame = external_data.packet.frame;
+                packet_array[idx].appid = external_data.packet.appid;
+                packet_array[idx].data = external_data.packet.data;
+                idx++;
+                external_data.pending = false;
+            }
         }
     }
-    return res;
+    packet_count = idx;
+    return idx > 0;
 }
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
@@ -726,3 +727,11 @@ bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &tx
     return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
 }
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+
+namespace AP
+{
+AP_Frsky_SPort_Passthrough *frsky_passthrough_telem()
+{
+    return AP_Frsky_SPort_Passthrough::get_singleton();
+}
+};

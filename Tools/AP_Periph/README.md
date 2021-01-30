@@ -77,7 +77,7 @@ To flash the bootloader use this:
 
 To build the bootloader use this:
 
- - Tools/scripts/build_bootloader.py f103-GPS
+ - Tools/scripts/build_bootloaders.py f103-GPS
 
 the resulting bootloader will be in Tools/bootloaders
 

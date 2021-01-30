@@ -36,6 +36,7 @@
 #include "AP_GPS_UBLOX.h"
 #include "AP_GPS_MAV.h"
 #include "AP_GPS_MSP.h"
+#include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -80,7 +81,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE
     // @DisplayName: GPS type
     // @Description: GPS type
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    0, AP_GPS, _type[0], HAL_GPS_TYPE_DEFAULT),
@@ -89,7 +90,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: TYPE2
     // @DisplayName: 2nd GPS type
     // @Description: GPS type of 2nd GPS
-    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar
+    // @Values: 0:None,1:AUTO,2:uBlox,3:MTK,4:MTK19,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:UAVCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE2",   1, AP_GPS, _type[1], 0),
@@ -376,6 +377,7 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_MAV:
     case GPS_TYPE_MSP:
+    case GPS_TYPE_EXTERNAL_AHRS:
         return false;
     default:
         break;
@@ -555,6 +557,12 @@ void AP_GPS::detect_instance(uint8_t instance)
     case GPS_TYPE_MSP:
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MSP(*this, state[instance], nullptr);
+        goto found_gps;
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case GPS_TYPE_EXTERNAL_AHRS:
+        dstate->auto_detected_baud = false; // specified, not detected
+        new_gps = new AP_GPS_ExternalAHRS(*this, state[instance], nullptr);
         goto found_gps;
 #endif
     default:
@@ -802,7 +810,8 @@ void AP_GPS::update_instance(uint8_t instance)
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
-        if (state[instance].status >= GPS_OK_FIX_2D) {
+        // if GPS disabled for flight testing then don't update fix timing value
+        if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
 
@@ -1085,6 +1094,17 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     }
 }
 #endif // HAL_MSP_GPS_ENABLED
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt)
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (drivers[i] != nullptr && _type[i] == GPS_TYPE_EXTERNAL_AHRS) {
+            drivers[i]->handle_external(pkt);
+        }
+    }
+}
+#endif // HAL_EXTERNAL_AHRS_ENABLED
 
 /*
   set HIL (hardware in the loop) status for a GPS instance
@@ -1483,6 +1503,11 @@ bool AP_GPS::calc_blend_weights(void)
     // zero the blend weights
     memset(&_blend_weights, 0, sizeof(_blend_weights));
 
+
+    static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
+    // Note that the early quit below relies upon exactly 2 instances
+    // The time delta calculations below also rely upon every instance being currently detected and being parsed
+
     // exit immediately if not enough receivers to do blending
     if (state[0].status <= NO_FIX || state[1].status <= NO_FIX) {
         return false;
@@ -1491,7 +1516,7 @@ bool AP_GPS::calc_blend_weights(void)
     // Use the oldest non-zero time, but if time difference is excessive, use newest to prevent a disconnected receiver from blocking updates
     uint32_t max_ms = 0; // newest non-zero system time of arrival of a GPS message
     uint32_t min_ms = -1; // oldest non-zero system time of arrival of a GPS message
-    int16_t max_rate_ms = 0; // largest update interval of a GPS receiver
+    uint32_t max_rate_ms = 0; // largest update interval of a GPS receiver
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // Find largest and smallest times
         if (state[i].last_gps_time_ms > max_ms) {
@@ -1500,16 +1525,14 @@ bool AP_GPS::calc_blend_weights(void)
         if ((state[i].last_gps_time_ms < min_ms) && (state[i].last_gps_time_ms > 0)) {
             min_ms = state[i].last_gps_time_ms;
         }
-        if (get_rate_ms(i) > max_rate_ms) {
-            max_rate_ms = get_rate_ms(i);
-        }
+        max_rate_ms = MAX(get_rate_ms(i), max_rate_ms);
         if (isinf(state[i].speed_accuracy) ||
             isinf(state[i].horizontal_accuracy) ||
             isinf(state[i].vertical_accuracy)) {
             return false;
         }
     }
-    if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
+    if ((max_ms - min_ms) < (2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
         state[GPS_BLENDED_INSTANCE].last_gps_time_ms = min_ms;
     } else {

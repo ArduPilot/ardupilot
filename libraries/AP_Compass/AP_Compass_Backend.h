@@ -69,6 +69,10 @@ public:
     virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
 #endif
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}
+#endif
+    
 protected:
 
     /*

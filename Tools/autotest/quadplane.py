@@ -449,54 +449,59 @@ class AutoTestQuadPlane(AutoTest):
             self.set_rc_default()
 
             # magic tridge EKF type that dramatically speeds up the test
-            self.set_parameter("AHRS_EKF_TYPE", 10)
+            self.set_parameters({
+                "AHRS_EKF_TYPE": 10,
 
-            self.set_parameter("INS_LOG_BAT_MASK", 3)
-            self.set_parameter("INS_LOG_BAT_OPT", 0)
-            self.set_parameter("INS_GYRO_FILTER", 100)
-            self.set_parameter("LOG_BITMASK", 45054)
-            self.set_parameter("LOG_DISARMED", 0)
-            self.set_parameter("SIM_DRIFT_SPEED", 0)
-            self.set_parameter("SIM_DRIFT_TIME", 0)
-            # enable a noisy motor peak
-            self.set_parameter("SIM_GYR_RND", 20)
-            # enabling FFT will also enable the arming check, self-testing the functionality
-            self.set_parameter("FFT_ENABLE", 1)
-            self.set_parameter("FFT_MINHZ", 80)
-            self.set_parameter("FFT_MAXHZ", 350)
-            self.set_parameter("FFT_SNR_REF", 10)
-            self.set_parameter("FFT_WINDOW_SIZE", 128)
-            self.set_parameter("FFT_WINDOW_OLAP", 0.75)
-
+                "INS_LOG_BAT_MASK": 3,
+                "INS_LOG_BAT_OPT": 0,
+                "INS_GYRO_FILTER": 100,
+                "LOG_BITMASK": 45054,
+                "LOG_DISARMED": 0,
+                "SIM_DRIFT_SPEED": 0,
+                "SIM_DRIFT_TIME": 0,
+                # enable a noisy motor peak
+                "SIM_GYR1_RND": 20,
+                # enabling FFT will also enable the arming check: self-testing the functionality
+                "FFT_ENABLE": 1,
+                "FFT_MINHZ": 80,
+                "FFT_MAXHZ": 350,
+                "FFT_SNR_REF": 10,
+                "FFT_WINDOW_SIZE": 128,
+                "FFT_WINDOW_OLAP": 0.75,
+            });
             # Step 1: inject a very precise noise peak at 250hz and make sure the in-flight fft
             # can detect it really accurately. For a 128 FFT the frequency resolution is 8Hz so
             # a 250Hz peak should be detectable within 5%
-            self.set_parameter("SIM_VIB_FREQ_X", 250)
-            self.set_parameter("SIM_VIB_FREQ_Y", 250)
-            self.set_parameter("SIM_VIB_FREQ_Z", 250)
-
+            self.set_parameters({
+                "SIM_VIB_FREQ_X": 250,
+                "SIM_VIB_FREQ_Y": 250,
+                "SIM_VIB_FREQ_Z": 250,
+            })
             self.reboot_sitl()
 
             # find a motor peak
             self.hover_and_check_matched_frequency(-15, 100, 350, 128, 250)
 
             # Step 2: inject actual motor noise and use the standard length FFT to track it
-            self.set_parameter("SIM_VIB_MOT_MAX", 350)
-            self.set_parameter("FFT_WINDOW_SIZE", 32)
-            self.set_parameter("FFT_WINDOW_OLAP", 0.5)
-
+            self.set_parameters({
+                "SIM_VIB_MOT_MAX": 350,
+                "FFT_WINDOW_SIZE": 32,
+                "FFT_WINDOW_OLAP": 0.5,
+            })
             self.reboot_sitl()
             # find a motor peak
             freq = self.hover_and_check_matched_frequency(-15, 200, 300, 32)
 
             # Step 3: add a FFT dynamic notch and check that the peak is squashed
-            self.set_parameter("INS_LOG_BAT_OPT", 2)
-            self.set_parameter("INS_HNTCH_ENABLE", 1)
-            self.set_parameter("INS_HNTCH_FREQ", freq)
-            self.set_parameter("INS_HNTCH_REF", 1.0)
-            self.set_parameter("INS_HNTCH_ATT", 50)
-            self.set_parameter("INS_HNTCH_BW", freq/2)
-            self.set_parameter("INS_HNTCH_MODE", 4)
+            self.set_parameters({
+                "INS_LOG_BAT_OPT": 2,
+                "INS_HNTCH_ENABLE": 1,
+                "INS_HNTCH_FREQ": freq,
+                "INS_HNTCH_REF": 1.0,
+                "INS_HNTCH_ATT": 50,
+                "INS_HNTCH_BW": freq/2,
+                "INS_HNTCH_MODE": 4,
+            })
             self.reboot_sitl()
 
             self.takeoff(10, mode="QHOVER")
