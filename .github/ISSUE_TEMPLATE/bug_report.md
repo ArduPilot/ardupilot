@@ -19,12 +19,12 @@ _Please describe the problem_
 _What version was the issue encountered with_
 
 **Platform**
-[  ] All
-[  ] AntennaTracker
-[  ] Copter
-[  ] Plane
-[  ] Rover
-[  ] Submarine
++ [ ] All
++ [ ] AntennaTracker
++ [ ] Copter
++ [ ] Plane
++ [ ] Rover
++ [ ] Submarine
 
 **Airframe type**
 _What type of airframe (flying wing, glider, hex, Y6, octa etc)_
