@@ -64,6 +64,12 @@ void Copter::fence_check()
                             set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
                         }
                         break;
+                    case AC_FENCE_ACTION_SMART_RTL_OR_LAND:
+                        // Try SmartRTL, if that fails, Land
+                        if (!set_mode(Mode::Number::SMART_RTL, ModeReason::FENCE_BREACHED)) {
+                            set_mode(Mode::Number::LAND, ModeReason::FENCE_BREACHED);
+                        }
+                        break;
                     }
                 }
             }
