@@ -208,7 +208,7 @@ private:
 #if CH_CFG_USE_EVENTS == TRUE
     bool half_duplex;
     event_listener_t hd_listener;
-    bool hd_tx_active;
+    eventflags_t hd_tx_active;
     void half_duplex_setup_tx(void);
 #endif
 
