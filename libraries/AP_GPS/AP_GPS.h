@@ -288,7 +288,7 @@ public:
     }
 
     // ground speed in cm/s
-    uint32_t ground_speed_cm(void) {
+    uint32_t ground_speed_cm(void) const {
         return ground_speed() * 100;
     }
 
