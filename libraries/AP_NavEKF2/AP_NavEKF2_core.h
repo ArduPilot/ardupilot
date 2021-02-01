@@ -309,7 +309,7 @@ public:
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
     // return true when external nav data is also being used as a yaw observation
-    bool isExtNavUsedForYaw(void);
+    bool isExtNavUsedForYaw(void) const;
 
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
