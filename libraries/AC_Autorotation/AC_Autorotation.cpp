@@ -190,7 +190,7 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
 
 
 // Function to set collective and collective filter in motor library
-void AC_Autorotation::set_collective(float collective_filter_cutoff)
+void AC_Autorotation::set_collective(float collective_filter_cutoff) const
 {
     AP_Motors *motors = AP::motors();
     if (motors) {
@@ -248,7 +248,7 @@ float AC_Autorotation::get_rpm(bool update_counter)
 }
 
 
-void AC_Autorotation::Log_Write_Autorotation(void)
+void AC_Autorotation::Log_Write_Autorotation(void) const
 {
 // @LoggerMessage: AROT
 // @Description: Helicopter AutoRotation information
