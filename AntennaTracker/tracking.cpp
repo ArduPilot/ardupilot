@@ -187,7 +187,7 @@ void Tracker::tracking_manual_control(const mavlink_manual_control_t &msg)
 /**
    update_armed_disarmed - set armed LED if we have received a position update within the last 5 seconds
  */
-void Tracker::update_armed_disarmed()
+void Tracker::update_armed_disarmed() const
 {
     if (vehicle.last_update_ms != 0 && (AP_HAL::millis() - vehicle.last_update_ms) < TRACKING_TIMEOUT_MS) {
         AP_Notify::flags.armed = true;
