@@ -258,13 +258,13 @@ void AC_AutoTune::send_step_string()
     }
     switch (step) {
     case WAITING_FOR_LEVEL:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: WFL (%s) (%f > %f)", level_issue_string(), (double)(level_problem.current*0.01f), (double)(level_problem.maximum*0.01f));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Leveling (%s %4.1f > %4.1f)", level_issue_string(), (double)(level_problem.current*0.01f), (double)(level_problem.maximum*0.01f));
         return;
     case UPDATE_GAINS:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: UPDATING_GAINS");
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
         return;
     case TWITCHING:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: TWITCHING");
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Twitching");
         return;
     }
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: unknown step");
@@ -397,7 +397,7 @@ void AC_AutoTune::run()
     }
     if (pilot_override) {
         if (now - last_pilot_override_warning > 1000) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AUTOTUNE: pilot overrides active");
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: pilot overrides active");
             last_pilot_override_warning = now;
         }
     }
