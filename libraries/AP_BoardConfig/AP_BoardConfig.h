@@ -129,7 +129,7 @@ public:
     };
 
     // return safety button options. Bits are in enum board_safety_button_option
-    uint16_t get_safety_button_options(void) {
+    uint16_t get_safety_button_options(void) const {
         return uint16_t(state.safety_option.get());
     }
 
