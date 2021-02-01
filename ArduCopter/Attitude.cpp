@@ -135,7 +135,7 @@ void Copter::rotate_body_frame_to_NE(float &x, float &y)
 }
 
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
-uint16_t Copter::get_pilot_speed_dn()
+uint16_t Copter::get_pilot_speed_dn() const
 {
     if (g2.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);

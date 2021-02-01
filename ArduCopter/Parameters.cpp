@@ -1411,7 +1411,7 @@ void Copter::convert_lgr_parameters(void)
 
 #if FRAME_CONFIG == HELI_FRAME
 // handle conversion of tradheli parameters from Copter-3.6 to Copter-3.7
-void Copter::convert_tradheli_parameters(void)
+void Copter::convert_tradheli_parameters(void) const
 {
     if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
         // single heli conversion info
@@ -1585,7 +1585,7 @@ void Copter::convert_tradheli_parameters(void)
 }
 #endif
 
-void Copter::convert_fs_options_params(void)
+void Copter::convert_fs_options_params(void) const
 {
     // If FS_OPTIONS has already been configured and we don't change it.
     enum ap_var_type ptype;

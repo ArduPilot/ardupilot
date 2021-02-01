@@ -474,7 +474,7 @@ private:
     bool verify_payload_place();
     bool verify_loiter_unlimited();
     bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
-    bool verify_loiter_to_alt();
+    bool verify_loiter_to_alt() const;
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
@@ -1068,7 +1068,7 @@ public:
     RTLState state() { return _state; }
 
     // this should probably not be exposed
-    bool state_complete() { return _state_complete; }
+    bool state_complete() const { return _state_complete; }
 
     virtual bool is_landing() const override;
 
@@ -1278,7 +1278,7 @@ protected:
 
 private:
 
-    void log_data();
+    void log_data() const;
     float waveform(float time);
 
     enum class AxisType {

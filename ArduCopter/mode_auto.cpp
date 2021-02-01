@@ -1757,7 +1757,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
 // verify_loiter_to_alt - check if we have reached both destination
 // (roughly) and altitude (precisely)
-bool ModeAuto::verify_loiter_to_alt()
+bool ModeAuto::verify_loiter_to_alt() const
 {
     if (loiter_to_alt.reached_destination_xy &&
         loiter_to_alt.reached_alt) {
