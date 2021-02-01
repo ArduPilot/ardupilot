@@ -140,7 +140,7 @@ protected:
     bool get_destination_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &newdest_neu, const float wp_speed_xy, const float wp_speed_z, const uint8_t _minimum_avoid_height);
 
     // get unit vector away from the nearest obstacle
-    bool get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu);
+    bool get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu) const;
 
     // helper functions to calculate destination to get us away from obstacle
     // Note: v1 is NED
