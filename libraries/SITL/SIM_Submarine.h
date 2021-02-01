@@ -96,9 +96,9 @@ protected:
     // calculate buoyancy
     float calculate_buoyancy_acceleration();
     // calculate drag from velocity and drag coefficient
-    void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force);
+    void calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force) const;
     // calculate torque water resistance
-    void calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque);
+    void calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque) const;
     // calculate torque induced by buoyancy foams
     void calculate_buoyancy_torque(Vector3f &torque);
 

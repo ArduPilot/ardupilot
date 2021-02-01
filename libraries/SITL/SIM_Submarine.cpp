@@ -151,7 +151,7 @@ float Submarine::calculate_sea_floor_depth(const Vector3f &/*position*/)
  * $ F_D = rho * v^2 * A * C_D / 2 $
  * rho = water density (kg/m^3), V = velocity (m/s), A = area (m^2), C_D = drag_coefficient
  */
-void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force)
+void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &drag_coefficient, Vector3f &force) const
 {
     /**
      * @brief It's necessary to keep the velocity orientation from the body frame.
@@ -182,7 +182,7 @@ void Submarine::calculate_drag_force(const Vector3f &velocity, const Vector3f &d
  * @param angular_velocity Body frame velocity of fluid
  * @param drag_coefficient Rotational drag coefficient of body
  */
-void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque)
+void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque) const
 {
      /**
      * @brief It's necessary to keep the velocity orientation from the body frame.

@@ -60,7 +60,7 @@ void Parachute::update(const struct sitl_input &input)
     last_update_us = now;
 }
 
-bool Parachute::should_report()
+bool Parachute::should_report() const
 {
     if (AP_HAL::micros64() - last_report_us < report_interval) {
         return false;

@@ -52,8 +52,8 @@ private:
     float yaw_current_relative;
     float pitch_current_relative;
 
-    void update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate);
-    void update_onoff_servos(float &yaw_rate, float &pitch_rate);
+    void update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate) const;
+    void update_onoff_servos(float &yaw_rate, float &pitch_rate) const;
 };
 
 } // namespace SITL
