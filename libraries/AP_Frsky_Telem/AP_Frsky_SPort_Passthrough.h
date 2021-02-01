@@ -146,7 +146,7 @@ private:
     void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
 
     // true if we need to respond to the last polling byte
-    bool is_passthrough_byte(const uint8_t byte);
+    bool is_passthrough_byte(const uint8_t byte) const;
 
     uint8_t _paramID;
 
