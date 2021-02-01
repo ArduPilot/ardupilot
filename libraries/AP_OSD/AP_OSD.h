@@ -304,12 +304,12 @@ public:
     // initialize the setting from the configured information
     void update();
     // grab the parameter name
-    void copy_name(char* name, size_t len) {
+    void copy_name(char* name, size_t len) const {
         _param->copy_name_token(_current_token, name, len);
         if (len > 16) name[16] = 0;
     }
     // copy the name converting FOO_BAR_BAZ to FooBarBaz
-    void copy_name_camel_case(char* name, size_t len);
+    void copy_name_camel_case(char* name, size_t len) const;
     // set the ranges from static metadata
     bool set_from_metadata();
     bool set_by_name(const char* name, uint8_t config_type, float pmin=0, float pmax=0, float pincr=0);
