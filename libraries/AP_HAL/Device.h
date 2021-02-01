@@ -321,7 +321,7 @@ public:
     /**
      * return bus ID with a new devtype
      */
-    uint32_t get_bus_id_devtype(uint8_t devtype) {
+    uint32_t get_bus_id_devtype(uint8_t devtype) const {
         return change_bus_id(get_bus_id(), devtype);
     }
 
