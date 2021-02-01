@@ -202,16 +202,16 @@ private:
     void init_servos();
     void update_pitch_servo(float pitch);
     void update_pitch_position_servo(void);
-    void update_pitch_onoff_servo(float pitch);
+    void update_pitch_onoff_servo(float pitch) const;
     void update_pitch_cr_servo(float pitch);
     void update_yaw_servo(float yaw);
     void update_yaw_position_servo(void);
-    void update_yaw_onoff_servo(float yaw);
+    void update_yaw_onoff_servo(float yaw) const;
     void update_yaw_cr_servo(float yaw);
 
     // system.cpp
     void init_ardupilot() override;
-    bool get_home_eeprom(struct Location &loc);
+    bool get_home_eeprom(struct Location &loc) const;
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
     bool set_home(const Location &temp) WARN_IF_UNUSED;
     void prepare_servos();
@@ -231,7 +231,7 @@ private:
     void tracking_update_position(const mavlink_global_position_int_t &msg);
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
-    void update_armed_disarmed();
+    void update_armed_disarmed() const;
 
     // Arming/Disarming management class
     AP_Arming_Tracker arming;
