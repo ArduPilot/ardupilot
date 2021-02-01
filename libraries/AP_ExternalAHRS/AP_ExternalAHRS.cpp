@@ -361,7 +361,7 @@ bool AP_ExternalAHRS::healthy(void) const
     return (now - last_pkt1_ms < 40 && now - last_pkt2_ms < 500);
 }
 
-bool AP_ExternalAHRS::initialised(void)
+bool AP_ExternalAHRS::initialised(void) const
 {
     return last_pkt1_ms != 0 && last_pkt2_ms != 0;
 }
