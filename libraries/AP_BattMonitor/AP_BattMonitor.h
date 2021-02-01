@@ -185,7 +185,7 @@ public:
     bool overpower_detected(uint8_t instance) const;
 
     // cell voltages in millivolts
-    bool has_cell_voltages() { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
+    bool has_cell_voltages() const { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     bool has_cell_voltages(const uint8_t instance) const;
     const cells &get_cell_voltages() const { return get_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
     const cells &get_cell_voltages(const uint8_t instance) const;
