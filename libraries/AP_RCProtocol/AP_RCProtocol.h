@@ -37,8 +37,11 @@ public:
         DSM,
         SUMD,
         SRXL,
+        SRXL2,
+        CRSF,
         ST24,
         FPORT,
+        FPORT2,
         NONE    //last enum always is None
     };
     void init();
@@ -57,7 +60,7 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT);
+        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
     }
     
     uint8_t num_channels();
@@ -98,10 +101,9 @@ private:
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
-    bool _new_input = false;
+    bool _new_input;
     uint32_t _last_input_ms;
-    bool _valid_serial_prot = false;
-    uint8_t _good_frames[NONE];
+    bool _valid_serial_prot;
 
     enum config_phase {
         CONFIG_115200_8N1 = 0,

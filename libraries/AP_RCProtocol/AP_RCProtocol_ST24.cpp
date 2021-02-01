@@ -138,6 +138,8 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
         _rxpacket.crc8 = byte;
         _rxlen++;
 
+        log_data(AP_RCProtocol::ST24, AP_HAL::micros(), (const uint8_t *)&_rxpacket, _rxlen+3);
+
         if (st24_crc8((uint8_t *) & (_rxpacket.length), _rxlen) == _rxpacket.crc8) {
 
             /* decode the actual packet */
