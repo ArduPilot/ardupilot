@@ -61,7 +61,7 @@ void Rover::cruise_learn_complete()
 }
 
 // logging for cruise learn
-void Rover::log_write_cruise_learn()
+void Rover::log_write_cruise_learn() const
 {
 // @LoggerMessage: CRSE
 // @Description: Cruise Learn messages
