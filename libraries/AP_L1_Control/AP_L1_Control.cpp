@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
 /*
   Wrap AHRS yaw if in reverse - radians
  */
-float AP_L1_Control::get_yaw()
+float AP_L1_Control::get_yaw() const
 {
     if (_reverse) {
         return wrap_PI(M_PI + _ahrs.yaw);
