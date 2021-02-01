@@ -161,6 +161,7 @@ private:
     void discard_input(void);
     void event_failed(uint8_t event);
     void update_safety_options(void);
+    void send_rc_protocols(void);
 
     // CONFIG page
     struct page_config config;
@@ -223,6 +224,7 @@ private:
     uint32_t last_iocmu_timestamp_ms;
     uint32_t read_status_errors;
     uint32_t read_status_ok;
+    uint32_t last_rc_protocols;
 
     // firmware upload
     const char *fw_name = "io_firmware.bin";

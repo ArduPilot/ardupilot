@@ -558,6 +558,15 @@ bool AP_IOMCU_FW::handle_code_write()
             }
             break;
 
+        case PAGE_REG_SETUP_RC_PROTOCOLS: {
+            if (rx_io_packet.count == 2) {
+                uint32_t v;
+                memcpy(&v, &rx_io_packet.regs[0], 4);
+                AP::RC().set_rc_protocols(v);
+            }
+            break;
+        }
+
         default:
             break;
         }
@@ -642,7 +651,7 @@ void AP_IOMCU_FW::calculate_fw_crc(void)
 
     for (unsigned p = 0; p < APP_SIZE_MAX; p += 4) {
         uint32_t bytes = *(uint32_t *)(p + APP_LOAD_ADDRESS);
-        sum = crc_crc32(sum, (const uint8_t *)&bytes, sizeof(bytes));
+        sum = crc32_small(sum, (const uint8_t *)&bytes, sizeof(bytes));
     }
 
     reg_setup.crc[0] = sum & 0xFFFF;
