@@ -21,7 +21,7 @@ public:
         Ignore_UAVCAN_SoC = (1U<<0),
     };
 
-    BattMonitor_LowVoltage_Source failsafe_voltage_source(void) { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
+    BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
 
     AP_Int8  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
     AP_Int8  _volt_pin;                 /// board pin used to measure battery voltage
