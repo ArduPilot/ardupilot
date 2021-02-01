@@ -745,7 +745,7 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
 }
 
 // Write an RFND (rangefinder) packet
-void RangeFinder::Log_RFND()
+void RangeFinder::Log_RFND() const
 {
     if (_log_rfnd_bit == uint32_t(-1)) {
         return;
