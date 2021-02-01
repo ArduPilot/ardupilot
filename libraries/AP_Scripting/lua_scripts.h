@@ -99,7 +99,7 @@ private:
     int pushline(lua_State *L, int firstline);
     int incomplete(lua_State *L, int status);
     const char * get_prompt(lua_State *L, int firstline);
-    int docall(lua_State *L, int narg, int nres);
+    int docall(lua_State *L, int narg, int nres) const;
     int sandbox_ref;
 
     script_info *scripts; // linked list of scripts to be run, sorted by next run time (soonest first)
