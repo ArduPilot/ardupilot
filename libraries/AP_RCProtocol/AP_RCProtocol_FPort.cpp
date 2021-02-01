@@ -19,7 +19,6 @@
 
 #include "AP_RCProtocol_FPort.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
@@ -101,7 +100,7 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
 */
 void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if 0 // not in 4.0
     switch (frame.downlink.prim) {
         case FPORT_PRIM_DATA:
             // we've seen at least one 0x10 frame
@@ -122,9 +121,6 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
             break;
         case FPORT_PRIM_READ:
         case FPORT_PRIM_WRITE:
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL        
-            AP_Frsky_Telem::set_telem_data(frame.downlink.prim, frame.downlink.appid, le32toh_ptr(frame.downlink.data));
-#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL            
             // do not respond to 0x30 and 0x31
             return;
     }
@@ -141,22 +137,6 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
         return;
     }
 
-    /*
-      get SPort data from FRSky_Telem or send a null frame.
-      We save the data to a variable so in case we're late we'll
-      send it in the next call, this prevents corruption of
-      status text messages
-     */
-    if (!telem_data.available) {
-        uint8_t packet_count;
-        if (!AP_Frsky_Telem::get_telem_data(&telem_data.packet, packet_count, 1)) {
-            // nothing to send, send a null frame
-            telem_data.packet.frame = 0x00;
-            telem_data.packet.appid = 0x00;
-            telem_data.packet.data = 0x00;
-        }
-        telem_data.available = true;
-    }
     /*
       check that we haven't been too slow in responding to the new
       UART data. If we respond too late then we will corrupt the next
@@ -279,13 +259,11 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
     }
 
     if (frame->type == FPORT_TYPE_CONTROL && byte_input.ofs == FRAME_LEN_CONTROL + 4) {
-        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
         if (check_checksum()) {
             decode_control(*frame);
         }
         goto reset;
     } else if (frame->type == FPORT_TYPE_DOWNLINK && byte_input.ofs == FRAME_LEN_DOWNLINK + 4) {
-        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
         if (check_checksum()) {
             decode_downlink(*frame);
         }

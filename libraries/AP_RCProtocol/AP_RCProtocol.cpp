@@ -349,6 +349,12 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "ST24";
     case FPORT:
         return "FPORT";
+    case FPORT2:
+        return "FPORT2";
+    case SRXL2:
+        return "SRXL2";
+    case CRSF:
+        return "CRSF";
     case NONE:
         break;
     }
