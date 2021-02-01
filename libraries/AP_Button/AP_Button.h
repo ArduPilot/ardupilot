@@ -113,7 +113,7 @@ private:
     uint8_t get_mask(void);
 
     // send a BUTTON_CHANGE report
-    void send_report(void);
+    void send_report(void) const;
 
     // setup pins as pullup input
     void setup_pins();
