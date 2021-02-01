@@ -180,7 +180,7 @@ public:
     void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
 
     // get baro drift amount
-    float get_baro_drift_offset(void) { return _alt_offset_active; }
+    float get_baro_drift_offset(void) const { return _alt_offset_active; }
 
     // simple atmospheric model
     static void SimpleAtmosphere(const float alt, float &sigma, float &delta, float &theta);
