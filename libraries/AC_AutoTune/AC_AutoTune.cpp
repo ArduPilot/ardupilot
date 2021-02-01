@@ -52,7 +52,8 @@
 #endif
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
-#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
+#define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level (relaxes criteria)
+#define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS 5000     // level failure warning messages sent at this interval to users
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -439,10 +440,18 @@ bool AC_AutoTune::currently_level()
 {
     float threshold_mul = 1.0;
 
-    if (AP_HAL::millis() - level_start_time_ms > AUTOTUNE_LEVEL_TIMEOUT_MS) {
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - level_start_time_ms > AUTOTUNE_LEVEL_TIMEOUT_MS) {
         // after a long wait we use looser threshold, to allow tuning
         // with poor initial gains
         threshold_mul *= 2;
+    }
+
+    // display warning if vehicle fails to level
+    if ((now_ms - level_start_time_ms > AUTOTUNE_LEVEL_WARNING_INTERVAL_MS) &&
+        (now_ms - level_fail_warning_time_ms > AUTOTUNE_LEVEL_WARNING_INTERVAL_MS)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "AutoTune: failing to level, manual tune may be required");
+        level_fail_warning_time_ms = now_ms;
     }
 
     if (!check_level(LevelIssue::ANGLE_ROLL,
