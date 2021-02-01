@@ -39,7 +39,7 @@ public:
     // MAVLink methods
     void            handle_message(mavlink_channel_t chan,
                                    const mavlink_message_t &msg);
-    void            send_feedback(mavlink_channel_t chan);
+    void            send_feedback(mavlink_channel_t chan) const;
 
     // Command processing
     void            configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
