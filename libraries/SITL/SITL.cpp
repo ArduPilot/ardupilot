@@ -396,7 +396,7 @@ const AP_Param::GroupInfo SITL::var_ins[] = {
 };
     
 /* report SITL state via MAVLink SIMSTATE*/
-void SITL::simstate_send(mavlink_channel_t chan)
+void SITL::simstate_send(mavlink_channel_t chan) const
 {
     float yaw;
 
@@ -421,7 +421,7 @@ void SITL::simstate_send(mavlink_channel_t chan)
 }
 
 /* report SITL state via MAVLink SIM_STATE */
-void SITL::sim_state_send(mavlink_channel_t chan)
+void SITL::sim_state_send(mavlink_channel_t chan) const
 {
     // convert to same conventions as DCM
     float yaw = state.yawDeg;

@@ -25,7 +25,7 @@ namespace SITL {
 /*
   update function for position (normal) servos.
 */
-void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate)
+void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &pitch_rate) const
 {
     float pitch_target = pitch_input*pitch_range;
     float yaw_target = yaw_input*yaw_range;
@@ -39,7 +39,7 @@ void Tracker::update_position_servos(float delta_time, float &yaw_rate, float &p
   These servos either move at a constant rate or are still
   Returns (yaw_rate,pitch_rate) tuple
 */
-void Tracker::update_onoff_servos(float &yaw_rate, float &pitch_rate)
+void Tracker::update_onoff_servos(float &yaw_rate, float &pitch_rate) const
 {
     if (fabsf(yaw_input) < 0.1) {
         yaw_rate = 0;
