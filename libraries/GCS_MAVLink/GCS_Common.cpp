@@ -479,7 +479,7 @@ void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t &msg)
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg) const
 {
         // decode
         mavlink_mission_request_int_t packet;
@@ -492,7 +492,7 @@ void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
         prot->handle_mission_request_int(*this, packet, msg);
 }
 
-void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg) const
 {
         // decode
         mavlink_mission_request_t packet;
@@ -545,7 +545,7 @@ void GCS_MAVLINK::handle_mission_count(const mavlink_message_t &msg)
 /*
   handle a MISSION_CLEAR_ALL mavlink packet
  */
-void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t &msg) const
 {
     // decode
     mavlink_mission_clear_all_t packet;
@@ -2865,7 +2865,7 @@ void GCS_MAVLINK::send_timesync()
         );
 }
 
-void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
 {
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
@@ -3232,7 +3232,7 @@ void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
     }
 }
 
-void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
 #if OSD_PARAM_ENABLED
     AP_OSD *osd = AP::osd();
@@ -4296,7 +4296,7 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
 
-void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) {
+void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) const {
     MissionItemProtocol *prot = get_prot_for_mission_type(type);
     if (prot == nullptr) {
         return;
@@ -4999,7 +4999,7 @@ uint32_t GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(uint64_t offboard_us
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */
 bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
-                                const mavlink_message_t &msg)
+                                const mavlink_message_t &msg) const
 {
     if (msg.sysid == mavlink_system.sysid) {
         // accept packets from our own components
