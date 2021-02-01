@@ -729,6 +729,15 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+#if MODE_GUIDED_ENABLED == ENABLED
+    case MAV_CMD_NAV_LOITER_TURNS:
+        if (copter.flightmode->in_guided_mode())
+        {
+            copter.mode_guided.do_circle(packet);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED; 
+#endif
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         if (!copter.set_mode(Mode::Number::RTL, ModeReason::GCS_COMMAND)) {

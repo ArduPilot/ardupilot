@@ -681,6 +681,15 @@ void Mode::land_run_horizontal_control()
     }
 }
 
+void Mode::circle_start() {
+    // initialise circle controller
+    copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
+
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        auto_yaw.set_mode(AUTO_YAW_CIRCLE);
+    }
+}
+
 float Mode::throttle_hover() const
 {
     return motors->get_throttle_hover();

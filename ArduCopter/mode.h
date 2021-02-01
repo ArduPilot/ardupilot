@@ -95,6 +95,8 @@ public:
         // this may return bogus data:
         return pos_control->get_desired_velocity();
     }
+    // functions for circular movement
+    void circle_start();
 
 protected:
 
@@ -422,10 +424,12 @@ private:
     void spline_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
+
+    // functions for circular movement
+    void circle_run();
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd) const;
 
@@ -810,7 +814,12 @@ public:
     bool get_wp(Location &loc) override;
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     bool set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-
+    
+    // functions for circular movement
+    void do_circle(const mavlink_command_long_t &packet); 
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
+    void circle_start();
+    
     void limit_clear();
     void limit_init_time_and_pos();
     void limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
@@ -852,8 +861,15 @@ private:
     void posvel_control_run();
     void set_desired_velocity_with_accel_and_fence_limits(const Vector3f& vel_des);
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
-    bool use_pilot_yaw(void) const;
 
+    //functions for circular movement
+    void circle_run();
+    void circle_check(uint8_t count);
+
+    bool use_pilot_yaw(void) const;
+    Location loc_from_param(const mavlink_command_long_t &packet);
+    uint8_t radius_from_param(const mavlink_command_long_t &packet);
+    uint8_t turn_count=0;  
     // controls which controller is run (pos or vel):
     GuidedMode guided_mode = Guided_TakeOff;
 

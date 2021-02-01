@@ -60,8 +60,10 @@ void ModeGuided::run()
         break;
 
     case Guided_WP:
+    case Guided_CircleMoveToEdge:
         // run position controller
         pos_control_run();
+        circle_check(turn_count);
         break;
 
     case Guided_Velocity:
@@ -77,6 +79,12 @@ void ModeGuided::run()
     case Guided_Angle:
         // run angle controller
         angle_control_run();
+        break;
+    
+    case Guided_Circle:
+        // run the copter in circle
+        circle_run();
+        circle_check(turn_count);
         break;
     }
  }
@@ -444,6 +452,10 @@ void ModeGuided::pos_control_run()
         // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(wp_nav->get_roll(), wp_nav->get_pitch(), auto_yaw.yaw(), true);
     }
+
+    if (guided_mode == Guided_CircleMoveToEdge) {
+        circle_check(turn_count);
+    }
 }
 
 // guided_vel_control_run - runs the guided velocity controller
@@ -768,6 +780,159 @@ bool ModeGuided::limit_check()
     return false;
 }
 
+//loiter turns(circle) mode
+
+void ModeGuided::do_circle(const mavlink_command_long_t &packet)
+{
+    const Location circle_center = loc_from_param(packet);
+
+    // calculate radius
+    uint8_t circle_radius_m = radius_from_param(packet); // circle radius recived
+
+    //store the number of turns
+    turn_count = (uint8_t)packet.param1;
+
+    // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
+    circle_movetoedge_start(circle_center, circle_radius_m);
+}
+
+Location ModeGuided::loc_from_param(const mavlink_command_long_t &packet)
+{    
+    Location ret((int32_t)packet.param5,(int32_t)packet.param6,(int32_t)packet.param7,copter.current_loc.get_alt_frame());
+
+    // use current lat, lon if zero
+    if (ret.lat == 0 && ret.lng == 0) {
+        ret.lat = copter.current_loc.lat;
+        ret.lng = copter.current_loc.lng;
+    }
+    // use current altitude if not provided
+    if (ret.alt == 0) {
+        // set to current altitude but in command's alt frame
+        int32_t curr_alt;
+        if (copter.current_loc.get_alt_cm(ret.get_alt_frame(),curr_alt)) {
+            ret.set_alt_cm(curr_alt, ret.get_alt_frame());
+        } else {
+            // default to current altitude as alt-above-home
+            ret.set_alt_cm(copter.current_loc.alt,
+                           copter.current_loc.get_alt_frame());
+        }
+    }
+    return ret;
+
+}
+
+uint8_t ModeGuided::radius_from_param(const mavlink_command_long_t &packet)
+{
+    if ((uint8_t)packet.param3 == 0) {
+        return (uint8_t)(copter.circle_nav->get_radius()/100);
+    }
+    return (uint8_t)packet.param3;
+}
+
+void ModeGuided::circle_movetoedge_start(const Location &circle_center,float radius_m)
+{
+    // set circle center
+    copter.circle_nav->set_center(circle_center);
+
+    // set circle radius
+    if (!is_zero(radius_m)) {
+        copter.circle_nav->set_radius(radius_m * 100.0f);
+    }
+
+    // check our distance from edge of circle
+    Vector3f circle_edge_neu;
+    copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
+    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+
+    // if more than 3m then fly to edge
+    if (dist_to_edge > 300.0f) {
+        // set the state to move to the edge of the circle
+        guided_mode = Guided_CircleMoveToEdge;
+
+        // convert circle_edge_neu to Location
+        Location circle_edge(circle_edge_neu);
+
+        // convert altitude to same as command
+        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
+
+        // initialise wpnav to move to edge of circle
+        if (!wp_nav->set_wp_destination(circle_edge)) {
+            // failure to set destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+        }
+
+        // if we are outside the circle, point at the edge, otherwise hold yaw
+        const Vector3f &circle_center_neu = copter.circle_nav->get_center();
+        const Vector3f &curr_pos = inertial_nav.get_position();
+        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        // initialise yaw
+        // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+        if (auto_yaw.mode() != AUTO_YAW_ROI) {
+            if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
+                auto_yaw.set_mode_to_default(false);
+            } else {
+                // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+                auto_yaw.set_mode(AUTO_YAW_HOLD);
+            }
+        }
+    } else {
+        circle_start();
+    }
+
+}
+
+void ModeGuided::circle_start()
+{
+    guided_mode = Guided_Circle;
+    Mode::circle_start();
+}
+
+void ModeGuided::circle_run()
+{   
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // call circle controller
+    copter.failsafe_terrain_set_status(copter.circle_nav->update());
+
+    // call z-axis position controller
+    pos_control->update_z_controller();
+
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), target_yaw_rate);
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+    }
+}
+
+void ModeGuided::circle_check(uint8_t count)
+{
+    // check if we've reached the edge
+    if (mode() == Guided_CircleMoveToEdge) {
+        if (copter.wp_nav->reached_wp_destination()) {
+            // start circling
+            circle_start();
+        }
+        return ;
+    }
+    // check if we have completed circling
+    if ((mode() == Guided_Circle) || (mode() == Guided_CircleMoveToEdge)) {
+        if (fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= count) {
+            if(mode() != Guided_WP) {
+                guided_mode = Guided_WP;
+            }
+        }
+    }
+}
 
 uint32_t ModeGuided::wp_distance() const
 {
