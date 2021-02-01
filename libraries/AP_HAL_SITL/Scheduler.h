@@ -33,7 +33,7 @@ public:
 
     void reboot(bool hold_in_bootloader) override;
 
-    bool interrupts_are_blocked(void) {
+    bool interrupts_are_blocked(void) const {
         return _nested_atomic_ctr != 0;
     }
 
@@ -66,7 +66,7 @@ public:
      * threads.
      */
     // a couple of helper functions to cope with SITL's time stepping
-    bool semaphore_wait_hack_required();
+    bool semaphore_wait_hack_required() const;
 
 private:
     SITL_State *_sitlState;

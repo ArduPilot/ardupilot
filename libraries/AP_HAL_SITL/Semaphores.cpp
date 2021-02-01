@@ -31,7 +31,7 @@ bool Semaphore::give()
     return true;
 }
 
-void Semaphore::check_owner()
+void Semaphore::check_owner() const
 {
     // should probably make sure we're holding the semaphore here....
     if (owner != pthread_self()) {
