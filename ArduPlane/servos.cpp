@@ -142,7 +142,7 @@ bool Plane::suppress_throttle(void)
   SERVOn_* parameters
  */
 void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
-                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out)
+                                   SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const
 {
     // the order is setup so that non-reversed servos go "up", and
     // func1 is the "left" channel. Users can adjust with channel
@@ -378,7 +378,7 @@ void Plane::set_servos_manual_passthrough(void)
 /*
   Scale the throttle to conpensate for battery voltage drop
  */
-void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle)
+void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const
 {
     // return if not enabled, or setup incorrectly
     if (g2.fwd_thr_batt_voltage_min >= g2.fwd_thr_batt_voltage_max || !is_positive(g2.fwd_thr_batt_voltage_max)) {
