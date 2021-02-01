@@ -63,7 +63,7 @@ bool GCS_MAVLINK::signing_key_load(struct SigningKey &key)
 /*
   handle a setup_signing message
  */
-void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg)
+void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
 {
     // setting up signing key when armed generally not useful /
     // possibly not a good idea
