@@ -386,7 +386,7 @@ private:
     uint8_t _get_cal_mask();
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
-    bool _auto_reboot() { return _compass_cal_autoreboot; }
+    bool _auto_reboot() const { return _compass_cal_autoreboot; }
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -397,7 +397,7 @@ private:
       get mag field with the effects of offsets, diagonals and
       off-diagonals removed
     */
-    bool get_uncorrected_field(uint8_t instance, Vector3f &field);
+    bool get_uncorrected_field(uint8_t instance, Vector3f &field) const;
     
 #if COMPASS_CAL_ENABLED
     //keep track of which calibrators have been saved
