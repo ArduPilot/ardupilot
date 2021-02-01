@@ -323,7 +323,7 @@ void AP_Button::timer_update(void)
 /*
   send a BUTTON_CHANGE report to the GCS
  */
-void AP_Button::send_report(void)
+void AP_Button::send_report(void) const
 {
     const uint8_t mask = last_mask | pwm_state;
     const mavlink_button_change_t packet{
