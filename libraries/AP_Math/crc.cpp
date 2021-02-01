@@ -176,6 +176,21 @@ uint32_t crc_crc32(uint32_t crc, const uint8_t *buf, uint32_t size)
 	return crc;
 }
 
+// smaller (and slower) crc32 for bootloader
+uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size)
+{
+    while (size--) {
+        const uint8_t byte = *buf++;
+        crc ^= byte;
+        for (uint8_t i=0; i<8; i++) {
+            const uint32_t mask = -(crc & 1);
+            crc >>= 1;
+            crc ^= (0xEDB88320 & mask);
+        }
+    }
+    return crc;
+}
+
 /*
  * Copyright (C) 2010 Swift Navigation Inc.
  * Contact: Fergus Noble <fergus@swift-nav.com>
@@ -265,4 +280,17 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
         *hash ^= (uint64_t)buf[i];
         *hash *= FNV_1_PRIME_64;
     }
+}
+
+// simple 8 bit checksum used by FPort
+uint8_t crc_sum8(const uint8_t *p, uint8_t len)
+{
+    uint16_t sum = 0;
+    for (uint8_t i=0; i<len; i++) {
+        sum += p[i];
+        sum += sum >> 8;
+        sum &= 0xFF;              
+    }
+    sum = 0xff - ((sum & 0xff) + (sum >> 8));
+    return sum;
 }
