@@ -16,7 +16,7 @@ bool Sub::althold_init()
     // sets the maximum speed up and down returned by position controller
     pos_control.set_max_speed_z(-get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_max_accel_z(g.pilot_accel_z);
-
+    pos_control.relax_alt_hold_controllers();
     pos_control.set_target_to_stopping_point_z();
     holding_depth = true;
 
