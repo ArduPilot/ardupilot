@@ -318,7 +318,7 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan)
+void AP_Camera::send_feedback(mavlink_channel_t chan) const
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
