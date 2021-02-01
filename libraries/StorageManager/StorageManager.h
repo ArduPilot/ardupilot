@@ -102,7 +102,7 @@ public:
     void write_uint32(uint16_t loc, uint32_t value) const;
 
     // copy from one storage area to another
-    bool copy_area(const StorageAccess &source);
+    bool copy_area(const StorageAccess &source) const;
 
 private:
     const StorageManager::StorageType type;
