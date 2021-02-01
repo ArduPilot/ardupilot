@@ -43,8 +43,13 @@
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
-#define AUTOTUNE_LEVEL_ANGLE_CD             500     // angle which qualifies as level
-#define AUTOTUNE_LEVEL_RATE_RP_CD          1000     // rate which qualifies as level for roll and pitch
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ # define AUTOTUNE_LEVEL_ANGLE_CD           500     // angle which qualifies as level (Plane uses more relaxed 5deg)
+ # define AUTOTUNE_LEVEL_RATE_RP_CD        1000     // rate which qualifies as level for roll and pitch (Plane uses more relaxed 10deg/sec)
+#else
+ # define AUTOTUNE_LEVEL_ANGLE_CD           250     // angle which qualifies as level
+ # define AUTOTUNE_LEVEL_RATE_RP_CD         500     // rate which qualifies as level for roll and pitch
+#endif
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
 #define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
