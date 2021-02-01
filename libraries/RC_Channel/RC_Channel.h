@@ -350,6 +350,9 @@ public:
         return _override_timeout.get() * 1e3f;
     }
 
+    // get mask of enabled protocols
+    uint32_t enabled_protocols() const;
+
 protected:
 
     enum class Option {
@@ -372,6 +375,7 @@ private:
 
     AP_Float _override_timeout;
     AP_Int32  _options;
+    AP_Int32  _protocols;
 
     // flight_mode_channel_number must be overridden:
     virtual int8_t flight_mode_channel_number() const = 0;

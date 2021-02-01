@@ -89,5 +89,12 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Bitmask: 0:Ignore RC Receiver, 1:Ignore MAVLink Overrides, 2:Ignore Receiver Failsafe
     AP_GROUPINFO("_OPTIONS", 33, RC_CHANNELS_SUBCLASS, _options, 0),
 
+    // @Param: _PROTOCOLS
+    // @DisplayName: RC protocols enabled
+    // @Description: Bitmask of enabled RC protocols. Allows narrowing the protocol detection to only specific types of RC receivers which can avoid issues with incorrect detection. Set to 1 to enable all protocols.
+    // @User: Advanced
+    // @Bitmask: 0:All,1:PPM,2:IBUS,3:SBUS,4:SBUS_NI,5:DSM,6:SUMD,7:SRXL,8:SRXL2,9:CRSF,10:ST24,11:FPORT
+    AP_GROUPINFO("_PROTOCOLS", 34, RC_CHANNELS_SUBCLASS, _protocols, 1),
+    
     AP_GROUPEND
 };

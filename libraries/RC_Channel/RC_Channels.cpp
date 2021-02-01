@@ -201,6 +201,15 @@ void RC_Channels::read_mode_switch()
     c->read_mode_switch();
 }
 
+// return mask of enabled protocols.
+uint32_t RC_Channels::enabled_protocols() const
+{
+    if (_singleton == nullptr) {
+        // for example firmware
+        return 1U;
+    }
+    return uint32_t(_protocols.get());
+}
 
 // singleton instance
 RC_Channels *RC_Channels::_singleton;
