@@ -187,7 +187,7 @@ private:
 
     // parameter accessors to allow conversions
     float       get_critical_speed() const { return _critical_speed * 0.01; }
-    float       get_idle_output() { return _idle_output * 0.01; }
+    float       get_idle_output() const { return _idle_output * 0.01; }
     float       get_governor_disengage() { return _governor_disengage * 0.01; }
     float       get_governor_droop_response() { return _governor_droop_response * 0.01; }
     float       get_governor_tcgain() { return _governor_tcgain * 0.01; }
