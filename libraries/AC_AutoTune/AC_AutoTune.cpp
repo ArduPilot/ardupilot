@@ -1234,7 +1234,7 @@ void AC_AutoTune::save_tuning_gains()
 }
 
 // update_gcs - send message to ground station
-void AC_AutoTune::update_gcs(uint8_t message_id)
+void AC_AutoTune::update_gcs(uint8_t message_id) const
 {
     switch (message_id) {
     case AUTOTUNE_MESSAGE_STARTED:
@@ -1392,7 +1392,7 @@ void AC_AutoTune::twitching_test_angle(float angle, float rate, float angle_targ
 }
 
 // twitching_measure_acceleration - measure rate of change of measurement
-void AC_AutoTune::twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max)
+void AC_AutoTune::twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const
 {
     if (rate_measurement_max < rate_measurement) {
         rate_measurement_max = rate_measurement;
