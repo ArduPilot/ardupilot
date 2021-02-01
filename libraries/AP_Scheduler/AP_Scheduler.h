@@ -108,7 +108,7 @@ public:
     void run(uint32_t time_available);
 
     // return the number of microseconds available for the current task
-    uint16_t time_available_usec(void);
+    uint16_t time_available_usec(void) const;
 
     // return debug parameter
     uint8_t debug_flags(void) { return _debug; }
