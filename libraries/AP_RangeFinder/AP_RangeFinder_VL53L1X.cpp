@@ -402,7 +402,7 @@ uint32_t AP_RangeFinder_VL53L1X::timeoutMicrosecondsToMclks(uint32_t timeout_us,
 // Calculate macro period in microseconds (12.12 format) with given VCSEL period
 // assumes fast_osc_frequency has been read and stored
 // based on VL53L1_calc_macro_period_us()
-uint32_t AP_RangeFinder_VL53L1X::calcMacroPeriod(uint8_t vcsel_period)
+uint32_t AP_RangeFinder_VL53L1X::calcMacroPeriod(uint8_t vcsel_period) const
 {
     // from VL53L1_calc_pll_period_us()
     // fast osc frequency in 4.12 format; PLL period in 0.24 format
