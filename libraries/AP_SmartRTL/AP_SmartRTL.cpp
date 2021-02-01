@@ -36,6 +36,13 @@ const AP_Param::GroupInfo AP_SmartRTL::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("POINTS", 1, AP_SmartRTL, _points_max, SMARTRTL_POINTS_DEFAULT),
 
+    // @Param: OPTIONS
+    // @DisplayName: SmartRTL options
+    // @Description: SmartRTL maximum number of points on path. Set to 0 to disable SmartRTL.  100 points consumes about 3k of memory.
+    // @Bitmask: 2:Ignore pilot yaw
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 2, AP_SmartRTL, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -860,4 +867,10 @@ bool AP_SmartRTL::loops_overlap(const prune_loop_t &loop1, const prune_loop_t &l
     }
     // if we got here, no overlap
     return false;
+}
+
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool AP_SmartRTL::use_pilot_yaw(void) const
+{
+    return (_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
 }

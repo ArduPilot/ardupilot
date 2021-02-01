@@ -43,8 +43,16 @@ bool ModeAuto::init(bool ignore_checks)
         // clear guided limits
         copter.mode_guided.limit_clear();
 
-        // start/resume the mission (based on MIS_RESTART parameter)
-        mission.start_or_resume();
+        // don't start the mission until we have an origin
+        Location loc;
+        if (copter.ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_for_origin = false;
+        } else {
+            waiting_for_origin = true;
+        }
+
         return true;
     } else {
         return false;
@@ -103,6 +111,11 @@ void ModeAuto::run()
         break;
     }
 }
+
+bool ModeAuto::allows_arming(bool from_gcs) const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0;
+};
 
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
@@ -392,6 +405,12 @@ void ModeAuto::payload_place_start()
 
 }
 
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeAuto::use_pilot_yaw(void) const
+{
+    return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+}
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {
@@ -612,7 +631,16 @@ bool ModeAuto::get_wp(Location& destination)
 // update mission
 void ModeAuto::run_autopilot()
 {
-    mission.update();
+    Location loc;
+    if (waiting_for_origin) {
+        if (copter.ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_for_origin = false;
+        }
+    } else {
+        mission.update();
+    }
 }
 
 /*******************************************************************************
@@ -734,6 +762,11 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 //      called by auto_run at 100hz or more
 void ModeAuto::takeoff_run()
 {
+    // if the user doesn't want to raise the throttle we can set it automatically
+    // note that this can defeat the disarm check on takeoff
+    if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
+        copter.set_auto_armed(true);
+    }
     auto_takeoff_run();
 }
 
@@ -743,7 +776,7 @@ void ModeAuto::wp_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
@@ -790,8 +823,8 @@ void ModeAuto::spline_run()
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
-        // get pilot's desired yaw rat
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
+        // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
@@ -849,6 +882,16 @@ void ModeAuto::rtl_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::circle_run()
 {
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
     // call circle controller
     copter.circle_nav->update();
 
@@ -857,7 +900,7 @@ void ModeAuto::circle_run()
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), target_yaw_rate, true);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
@@ -887,7 +930,7 @@ void ModeAuto::loiter_run()
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
