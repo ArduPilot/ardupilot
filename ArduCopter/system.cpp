@@ -449,7 +449,7 @@ bool Copter::should_log(uint32_t mask)
 }
 
 // return string corresponding to frame_class
-const char* Copter::get_frame_string()
+const char* Copter::get_frame_string() const
 {
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
         case AP_Motors::MOTOR_FRAME_QUAD:
