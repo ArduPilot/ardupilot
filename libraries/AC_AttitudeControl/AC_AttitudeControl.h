@@ -470,7 +470,7 @@ protected:
 
 public:
     // log a CTRL message
-    void control_monitor_log(void);
+    void control_monitor_log(void) const;
 
     // return current RMS controller filter for each axis
     float control_monitor_rms_output_roll(void) const;
