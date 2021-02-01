@@ -28,7 +28,7 @@ public:
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
     void update_soft_armed();
-    bool get_delay_arming() { return delay_arming; };
+    bool get_delay_arming() const { return delay_arming; };
 
 protected:
     bool ins_checks(bool report) override;

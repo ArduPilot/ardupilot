@@ -146,7 +146,7 @@ void Plane::read_control_switch()
 #endif
 }
 
-uint8_t Plane::readSwitch(void)
+uint8_t Plane::readSwitch(void) const
 {
     uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition

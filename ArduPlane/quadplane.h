@@ -89,7 +89,7 @@ public:
     */
     bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
 
-    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
+    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
@@ -568,8 +568,8 @@ private:
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
     }
-    bool tiltrotor_fully_fwd(void);
-    float tilt_max_change(bool up);
+    bool tiltrotor_fully_fwd(void) const;
+    float tilt_max_change(bool up) const;
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);

@@ -377,7 +377,7 @@ public:
 
     void navigate() override;
 
-    bool get_target_heading_cd(int32_t &target_heading);
+    bool get_target_heading_cd(int32_t &target_heading) const;
 
     bool does_auto_throttle() const override { return true; }
 

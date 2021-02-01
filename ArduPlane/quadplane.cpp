@@ -2328,7 +2328,7 @@ bool QuadPlane::init_mode(void)
 /*
   handle a MAVLink DO_VTOL_TRANSITION
  */
-bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state)
+bool QuadPlane::handle_do_vtol_transition(enum MAV_VTOL_STATE state) const
 {
     if (!available()) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "VTOL not available");
