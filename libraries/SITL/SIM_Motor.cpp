@@ -121,7 +121,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
 /*
   update and return current value of a servo. Calculated as 1000..2000
  */
-uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_value)
+uint16_t Motor::update_servo(uint16_t demand, uint64_t time_usec, float &last_value) const
 {
     if (servo_rate <= 0) {
         return demand;

@@ -255,7 +255,7 @@ bool JSBSim::start_JSBSim(void)
 /*
   check for stdout from JSBSim
  */
-void JSBSim::check_stdout(void)
+void JSBSim::check_stdout(void) const
 {
     char line[100];
     ssize_t ret = ::read(jsbsim_stdout, line, sizeof(line));
@@ -269,7 +269,7 @@ void JSBSim::check_stdout(void)
 /*
   a simple function to wait for a string on jsbsim_stdout
  */
-bool JSBSim::expect(const char *str)
+bool JSBSim::expect(const char *str) const
 {
     const char *basestr = str;
     while (*str) {

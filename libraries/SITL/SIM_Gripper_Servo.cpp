@@ -114,7 +114,7 @@ void Gripper_Servo::update(const struct sitl_input &input)
     last_update_us = now;
 }
 
-bool Gripper_Servo::should_report()
+bool Gripper_Servo::should_report() const
 {
     if (AP_HAL::micros64() - last_report_us < report_interval) {
         return false;

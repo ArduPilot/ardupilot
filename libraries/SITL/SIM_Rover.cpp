@@ -42,7 +42,7 @@ SimRover::SimRover(const char *frame_str) :
 /*
   return turning circle (diameter) in meters for steering angle proportion in degrees
 */
-float SimRover::turn_circle(float steering)
+float SimRover::turn_circle(float steering) const
 {
     if (fabsf(steering) < 1.0e-6) {
         return 0;
