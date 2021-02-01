@@ -106,7 +106,7 @@ size_t MMLPlayer::next_dots()
     return ret;
 }
 
-float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots)
+float MMLPlayer::rest_duration(uint32_t rest_length, uint8_t dots) const
 {
     float whole_note_period = 240.0f / _tempo;
     if (rest_length == 0) {

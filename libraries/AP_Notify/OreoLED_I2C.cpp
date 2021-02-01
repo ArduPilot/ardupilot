@@ -701,7 +701,7 @@ void OreoLED_I2C::oreo_state::set_rgb(enum oreoled_pattern new_pattern, uint8_t 
     phase_offset = new_phase_offset;
 }
 
-bool OreoLED_I2C::oreo_state::operator==(const OreoLED_I2C::oreo_state &os)
+bool OreoLED_I2C::oreo_state::operator==(const OreoLED_I2C::oreo_state &os) const
 {
     return ((os.mode==mode) && (os.pattern==pattern) && (os.macro==macro) && (os.red==red) && (os.green==green) && (os.blue==blue)
             && (os.amplitude_red==amplitude_red) && (os.amplitude_green==amplitude_green) && (os.amplitude_blue==amplitude_blue)
