@@ -497,7 +497,7 @@ private:
     // return (possibly allocating) a log_write_fmt for a name
     const struct log_write_fmt *log_write_fmt_for_msg_type(uint8_t msg_type) const;
 
-    const struct LogStructure *structure_for_msg_type(uint8_t msg_type);
+    const struct LogStructure *structure_for_msg_type(uint8_t msg_type) const;
 
     // return a msg_type which is not currently in use (or -1 if none available)
     int16_t find_free_msg_type() const;
@@ -588,7 +588,7 @@ private:
     // can be used by other subsystems to detect if they should log data
     uint8_t _log_start_count;
 
-    bool should_handle_log_message();
+    bool should_handle_log_message() const;
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
 
     void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);

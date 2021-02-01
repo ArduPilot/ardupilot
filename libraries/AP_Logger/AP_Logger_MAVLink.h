@@ -145,7 +145,7 @@ private:
     void Write_logger_MAV(AP_Logger_MAVLink &logger);
 
     uint32_t bufferspace_available() override; // in bytes
-    uint8_t remaining_space_in_current_block();
+    uint8_t remaining_space_in_current_block() const;
     // write buffer
     uint8_t _blockcount_free;
     uint8_t _blockcount;

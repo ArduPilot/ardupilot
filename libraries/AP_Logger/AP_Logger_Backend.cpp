@@ -44,7 +44,7 @@ const struct MultiplierStructure *AP_Logger_Backend::multiplier(uint8_t num) con
     return _front.multiplier(num);
 }
 
-AP_Logger_Backend::vehicle_startup_message_Writer AP_Logger_Backend::vehicle_message_writer() {
+AP_Logger_Backend::vehicle_startup_message_Writer AP_Logger_Backend::vehicle_message_writer() const {
     return _front._vehicle_messages;
 }
 
