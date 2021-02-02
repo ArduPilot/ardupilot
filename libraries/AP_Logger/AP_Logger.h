@@ -309,7 +309,6 @@ public:
     void Write_RCOUT(void);
     void Write_RSSI();
     void Write_Rally();
-    void Write_Baro();
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
@@ -511,7 +510,6 @@ private:
     // state to help us not log unneccesary RCIN values:
     bool seen_nonzero_rcin15_or_rcin16;
 
-    void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
     void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
