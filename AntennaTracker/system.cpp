@@ -173,6 +173,8 @@ void Tracker::prepare_servos()
 
 void Tracker::set_mode(Mode &newmode, const ModeReason reason)
 {
+    control_mode_reason = reason;
+
     if (mode == &newmode) {
         // don't switch modes if we are already in the correct mode.
         return;
