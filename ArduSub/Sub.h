@@ -217,7 +217,6 @@ private:
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
     control_mode_t prev_control_mode;
-    ModeReason prev_control_mode_reason = ModeReason::UNKNOWN;
 
 #if RCMAP_ENABLED == ENABLED
     RCMapper rcmap;
