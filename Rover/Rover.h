@@ -199,7 +199,6 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, AUTO, ...
     Mode *control_mode;
-    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
     // Used to maintain the state of the previous control switch position
     // This is set to -1 when we need to re-read the switch
