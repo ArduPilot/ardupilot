@@ -120,6 +120,11 @@ private:
     };
 
     /*
+     * Limit acceleration so that change of velocity output by avoidance library is controlled
+     */
+    void limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt);
+
+    /*
      * Adjusts the desired velocity for the circular fence.
      */
     void adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, float dt);
@@ -205,6 +210,7 @@ private:
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
     AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
     AP_Float _min_alt;          // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;        // maximum accelration while simple avoidance is active
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _alt_proximity_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
