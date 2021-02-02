@@ -23,6 +23,8 @@
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 
+#define verbose_GCS 0
+
 class AC_AutoTune {
 public:
     // constructor
@@ -31,17 +33,11 @@ public:
     // main run loop
     virtual void run();
 
-    // save gained, called on disarm
-    void save_tuning_gains();
+    // save or discard gains, called on disarm
+    void disarmed(bool save);
 
     // stop tune, reverting gains
     void stop();
-
-    // reset Autotune so that gains are not saved again and autotune can be run again.
-    void reset() {
-        mode = UNINITIALISED;
-        axes_completed = 0;
-    }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -65,6 +61,12 @@ protected:
     // start tune - virtual so that vehicle code can add additional pre-conditions
     virtual bool start(void);
 
+    // reset Autotune so that gains are not saved again and autotune can be run again.
+    void reset() {
+        mode = UNINITIALISED;
+        axes_completed = 0;
+    }
+
     // return true if we have a good position estimate
     virtual bool position_ok();
 
@@ -83,6 +85,7 @@ private:
     void load_intra_test_gains();
     void load_twitch_gains();
     void update_gcs(uint8_t message_id);
+    void update_gcs_discarded_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float rate_max);
     bool roll_enabled();
     bool pitch_enabled();
     bool yaw_enabled();
@@ -100,10 +103,12 @@ private:
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
+#if verbose_GCS
     void send_step_string();
     const char *level_issue_string() const;
     const char * type_string() const;
     void announce_state_to_gcs();
+#endif
     void do_gcs_announcements();
 
     enum struct LevelIssue {

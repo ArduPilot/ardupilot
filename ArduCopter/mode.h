@@ -560,9 +560,8 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return false; }
 
-    void save_tuning_gains();
+    void disarmed(bool save);
     void stop();
-    void reset();
 
 protected:
 
