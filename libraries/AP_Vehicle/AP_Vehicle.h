@@ -76,8 +76,13 @@ public:
     // HAL::Callbacks implementation.
     void loop() override final;
 
+    // set_mode *must* set control_mode_reason
     bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
     uint8_t virtual get_mode() const = 0;
+
+    ModeReason get_control_mode_reason() const {
+        return control_mode_reason;
+    }
 
     /*
       common parameters for fixed wing aircraft
@@ -320,6 +325,8 @@ protected:
 #if OSD_ENABLED
     void publish_osd_info();
 #endif
+
+    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 private:
 
