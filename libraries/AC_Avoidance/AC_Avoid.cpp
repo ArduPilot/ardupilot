@@ -79,6 +79,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Range: 0 2
     // @User: Standard
     AP_GROUPINFO("BACKUP_SPD", 6, AC_Avoid, _backup_speed_max, 0.5f),
+    
+    // @Param: ALT_MIN
+    // @DisplayName: Avoidance minimum altitude
+    // @Description: Minimum altitude above which avoidance will start working. This requires a valid downward facing rangefinder reading to work. Set zero to disable
+    // @Units: m
+    // @Range: 0 6
+    // @User: Standard
+    AP_GROUPINFO("ALT_MIN", 7, AC_Avoid, _min_alt, 1.5f),
 
     AP_GROUPEND
 };
@@ -167,7 +175,7 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     float back_vel_down = 0.0f;
     
     // Avoidance in response to proximity sensor
-    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled && _alt_proximity_enabled) {
         // Store velocity needed to back away from physical obstacles
         Vector3f backup_vel_proximity;
         adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel_cms, backup_vel_proximity, kP_z,accel_cmss_z, dt);
