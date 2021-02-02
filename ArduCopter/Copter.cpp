@@ -475,6 +475,9 @@ void Copter::three_hz_loop()
 
     // update ch6 in flight tuning
     tuning();
+
+    // check if avoidance should be enabled based on alt
+    low_alt_avoidance();
 }
 
 // one_hz_loop - runs at 1Hz
