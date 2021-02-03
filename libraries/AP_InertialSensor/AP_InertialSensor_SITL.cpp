@@ -33,10 +33,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_SITL::detect(AP_InertialSensor &_im
 bool AP_InertialSensor_SITL::init_sensor(void)
 {
     sitl = AP::sitl();
-    if (sitl == nullptr) {
-        return false;
-    }
-    return true;
+    return sitl != nullptr;
 }
 
 // calculate a noisy noise component
