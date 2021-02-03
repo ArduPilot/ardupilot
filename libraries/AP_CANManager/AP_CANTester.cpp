@@ -615,11 +615,7 @@ bool CANTester::test_toshiba_can()
                     (long unsigned int)num_lock_cmds/num_secs,
                     (long unsigned int)num_request_data_cmds/num_secs,
                     (long unsigned int)num_motor_cmds/num_secs);
-    if (num_errors) {
-        return false;
-    } else {
-        return true;
-    }
+    return num_errors == 0;
 }
 
 bool CANTester::send_toshiba_can_reply(uint32_t cmd)
