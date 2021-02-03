@@ -64,11 +64,7 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
 void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     // check for reverse tricopter
-    if (frame_type == MOTOR_FRAME_TYPE_PLUSREV) {
-        _pitch_reversed = true;
-    } else {
-        _pitch_reversed = false;
-    }
+    _pitch_reversed = frame_type == MOTOR_FRAME_TYPE_PLUSREV;
 
     set_initialised_ok((frame_class == MOTOR_FRAME_TRI) && SRV_Channels::function_assigned(SRV_Channel::k_motor7));
 }
