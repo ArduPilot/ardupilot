@@ -469,10 +469,7 @@ bool AC_Fence::sys_status_failed() const
         // not failed if not present; can fail if present but not enabled
         return false;
     }
-    if (get_breaches() != 0) {
-        return true;
-    }
-    return false;
+    return get_breaches() != 0;
 }
 
 AC_PolyFence_loader &AC_Fence::polyfence() {
