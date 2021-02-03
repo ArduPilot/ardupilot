@@ -150,10 +150,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     _bus.sem.check_owner();
 
     // combined transfer
-    if (!_transfer(send, send_len, recv, recv_len)) {
-        return false;
-    }
-    return true;
+    return _transfer(send, send_len, recv, recv_len);
 }
 
 bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
