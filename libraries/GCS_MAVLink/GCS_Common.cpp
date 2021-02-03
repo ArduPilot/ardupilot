@@ -3711,7 +3711,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
-    bool start_stop = is_equal(packet.param1,1.0f) ? true : false;
+    bool start_stop = is_equal(packet.param1,1.0f);
     bool result = true;
     bool can_exists = false;
     uint8_t num_drivers = AP::can().get_num_drivers();
