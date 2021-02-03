@@ -110,10 +110,7 @@ bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
 
 bool AP_Logger_MAVLink::WritesOK() const
 {
-    if (!_sending_to_client) {
-        return false;
-    }
-    return true;
+    return _sending_to_client;
 }
 
 /* Write a block of data at current offset */
