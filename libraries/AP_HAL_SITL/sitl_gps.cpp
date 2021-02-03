@@ -221,9 +221,9 @@ void SITL_State::_save_gps_location(const struct gps_data *d)
 {
     static FILE *fd;
     if(fd != NULL) {
-        int status = mkfifo(gps_filename,0666);
+        mkfifo(gps_filename,0666);
         fd = ::fopen(gps_filename, "w");
-        int fileno = fileno(fd);
+//        int fileno = fileno(fd);
     }
     //int locked = flock(fileno(fd),LOCK_SH);
     if (fd != NULL) {
