@@ -231,10 +231,7 @@ bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
  */
 bool Tracker::should_log(uint32_t mask)
 {
-    if (!logger.should_log(mask)) {
-        return false;
-    }
-    return true;
+    return logger.should_log(mask);
 }
 
 
