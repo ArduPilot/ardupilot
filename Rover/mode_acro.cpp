@@ -49,7 +49,7 @@ void ModeAcro::update()
 
 bool ModeAcro::requires_velocity() const
 {
-    return g2.motors.have_skid_steering()? false: true;
+    return !g2.motors.have_skid_steering();
 }
 
 // sailboats in acro mode support user manually initiating tacking from transmitter
