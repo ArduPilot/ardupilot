@@ -78,9 +78,7 @@ public:
 
 
     virtual ~Device() {
-        if (_checked.regs != nullptr) {
-            delete[] _checked.regs;
-        }
+        delete[] _checked.regs;
     }
 
     /*
