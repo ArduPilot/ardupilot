@@ -220,7 +220,7 @@ void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned
 void SITL_State::_save_gps_location(const struct gps_data *d)
 {
     static FILE *fd;
-    if(fd != NULL) {
+    if(fd == NULL) {
         mkfifo(gps_filename,0666);
         fd = ::fopen(gps_filename, "w");
 //        int fileno = fileno(fd);
