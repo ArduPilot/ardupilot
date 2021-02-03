@@ -80,11 +80,7 @@ void NavEKF2_core::setWindMagStateLearningMode()
     }
 
     // determine if the vehicle is manoeuvring
-    if (accNavMagHoriz > 0.5f) {
-        manoeuvring = true;
-    } else {
-        manoeuvring = false;
-    }
+    manoeuvring = accNavMagHoriz > 0.5f;
 
     // Determine if learning of magnetic field states has been requested by the user
     uint8_t magCal = effective_magCal();
