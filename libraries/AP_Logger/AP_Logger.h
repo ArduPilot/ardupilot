@@ -327,9 +327,6 @@ public:
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const RallyLocation &rally_point);
-    void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
-    void Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored);
-    void Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored);
     void Write_Beacon(AP_Beacon &beacon);
     void Write_Proximity(AP_Proximity &proximity);
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
