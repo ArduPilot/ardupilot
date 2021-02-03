@@ -188,13 +188,16 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
     *time_week_ms = (epoch_seconds % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC + ((t_ms/200) * 200);
 }
 
+static char * gps_filename = "/tmp/master-gps.dat";
 void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned)
 {
     static FILE *fd;
-    fd = ::fopen("/tmp/gcs-gps.dat", "r");
+    fd = ::fopen(gps_filename, "r");
     if (fd != NULL) {
         double lat, lon, alt;
+        flockfile(fd);
         int ret = ::fscanf(fd, "%lf %lf %lf", &lat, &lon, &alt);
+        funlockfile(fd);
         ::printf("ret = %d, lat = %lf, lon = %lf, alt = %lf\n", ret, lat, lon, alt);
         ::fclose(fd);
         double earth_radius = 6378137.0;
@@ -215,12 +218,18 @@ void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned
 void SITL_State::_save_gps_location(const struct gps_data *d)
 {
     static FILE *fd;
-    fd = ::fopen("/tmp/gcs-gps.dat", "w");
+//    int status = mkfifo(gps_filename,0666);
+//    fileno(fd);
+    fd = ::fopen(gps_filename, "w");
+    //int locked = flock(fileno(fd),LOCK_SH);
     if (fd != NULL) {
+        flockfile(fd);
         ::fprintf(fd, "%lf %lf %f\n", d->latitude, d->longitude, d->altitude);
+        funlockfile(fd);
         ::printf("storing GPS = %lf %lf %f\n", d->latitude, d->longitude, d->altitude);
         ::fclose(fd);
     }
+
 }
 
 /*

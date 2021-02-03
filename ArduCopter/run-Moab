@@ -1,2 +1,3 @@
 /bin/rm -rf logs mav.tlog  mav.tlog.raw
-python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --map --console -L Moab --instance 1
+#python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --map --console -L Moab -I 0
+python3 ../Tools/autotest/sim_vehicle.py -f hexa --map --console -L Moab -I 0
