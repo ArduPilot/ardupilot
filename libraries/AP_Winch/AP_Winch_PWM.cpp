@@ -7,11 +7,7 @@ extern const AP_HAL::HAL& hal;
 bool AP_Winch_PWM::healthy() const
 {
     // return immediately if no servo is assigned to control the winch
-    if (!SRV_Channels::function_assigned(SRV_Channel::k_winch)) {
-        return false;
-    }
-
-    return true;
+    return SRV_Channels::function_assigned(SRV_Channel::k_winch);
 }
 
 void AP_Winch_PWM::update()
