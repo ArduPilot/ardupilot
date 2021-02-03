@@ -24,7 +24,7 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     // Get the cell count once, it's not likely to change in flight
     if (_cell_count == 0) {
         if (read_word(BATTMONITOR_ND_CELL_COUNT, data)) {
-            _cell_count = data;
+            _cell_count = MIN(data, max_cell_count); // never read in more cells then we can store
         } else {
             return; // something wrong, don't try anything else
         }
