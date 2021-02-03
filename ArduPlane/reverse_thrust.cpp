@@ -98,7 +98,7 @@ bool Plane::allow_reverse_thrust(void) const
     }
 
     // cope with bitwise ops above
-    return allow != false;
+    return allow;
 }
 
 /*
