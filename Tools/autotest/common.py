@@ -1488,6 +1488,17 @@ class AutoTest(ABC):
             backup_valgrind_log = ("%s-%s" % (str(int(time.time())), valgrind_log))
             shutil.move(valgrind_log, backup_valgrind_log)
 
+    def run_cmd_reboot(self):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                     1,  # confirmation
+                     1,  # reboot autopilot
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
@@ -1500,15 +1511,7 @@ class AutoTest(ABC):
             self.start_SITL(wipe=False)
         else:
             self.progress("Executing reboot command")
-            self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
-                         1,  # confirmation
-                         1,  # reboot autopilot
-                         0,
-                         0,
-                         0,
-                         0,
-                         0,
-                         0)
+            self.run_cmd_reboot()
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
     def send_cmd_enter_cpu_lockup(self):
