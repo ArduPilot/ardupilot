@@ -6,10 +6,7 @@
 bool Parameter::init(const char *name)
 {
     vp = AP_Param::find(name, &vtype);
-    if (vp == nullptr) {
-        return false;
-    }
-    return true;
+    return vp != nullptr;
 }
 
 // set a value
