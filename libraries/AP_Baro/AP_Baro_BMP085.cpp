@@ -164,11 +164,7 @@ bool AP_Baro_BMP085::_read_prom(uint16_t *prom)
         }
     }
 
-    if (all_zero) {
-        return false;
-    }
-
-    return true;
+    return !all_zero;
 }
 
 /*
