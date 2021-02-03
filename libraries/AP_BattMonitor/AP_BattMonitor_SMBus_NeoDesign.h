@@ -15,4 +15,6 @@ private:
     void timer(void) override;
 
     uint8_t _cell_count;
+
+    static const constexpr uint8_t max_cell_count = 10;
 };
