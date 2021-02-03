@@ -179,12 +179,12 @@ void AP_Button::update(void)
         // these values are the same as used in RC_Channel:
         if (pwm_state & mask) {
             // currently asserted; check to see if we should de-assert
-            if (pwm_us < RC_Channel::AUX_PWM_TRIGGER_LOW) {
+            if (pwm_us < RC_Channel::AUX_SWITCH_PWM_TRIGGER_LOW) {
                 new_pwm_state &= ~mask;
             }
         } else {
             // currently not asserted; check to see if we should assert
-            if (pwm_us > RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+            if (pwm_us > RC_Channel::AUX_SWITCH_PWM_TRIGGER_HIGH) {
                 new_pwm_state |= mask;
             }
         }
