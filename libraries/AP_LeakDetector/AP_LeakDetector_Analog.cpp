@@ -14,7 +14,7 @@ void AP_LeakDetector_Analog::read()
     if (source != NULL && leak_detector._pin[state.instance] >= 0) {
         source->set_pin(leak_detector._pin[state.instance]);
         state.status = source->voltage_average() > 2.0f;
-        state.status = state.status==leak_detector._default_reading[state.instance]?false:true;
+        state.status = state.status != leak_detector._default_reading[state.instance];
     } else {
         state.status = false;
     }
