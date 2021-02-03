@@ -223,10 +223,7 @@ void AP_WheelEncoder::Log_Write() const
 // check if an instance is healthy
 bool AP_WheelEncoder::healthy(uint8_t instance) const
 {
-    if (instance >= num_instances) {
-        return false;
-    }
-    return true;
+    return instance < num_instances;
 }
 
 // check if an instance is activated
