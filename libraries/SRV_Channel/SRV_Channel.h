@@ -196,7 +196,7 @@ public:
 
     // return true if the channel is reversed
     bool get_reversed(void) const {
-        return reversed?true:false;
+        return reversed != 0;
     }
 
     // set MIN/MAX parameters
