@@ -178,7 +178,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
     // @Param: BUZZ_VOLUME
     // @DisplayName: Buzzer volume
-    // @Description: Enable or disable the buzzer.
+    // @Description: Control the volume of the buzzer
     // @Range: 0 100
     // @Units: %
     AP_GROUPINFO("BUZZ_VOLUME", 8, AP_Notify, _buzzer_volume, 100),
