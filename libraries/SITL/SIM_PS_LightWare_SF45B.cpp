@@ -191,7 +191,7 @@ void PS_LightWare_SF45B::update_output_scan(const Location &location)
     const uint32_t samples_per_second = 1000;
     const float samples_per_ms = samples_per_second / 1000.0f;
     const uint32_t sample_count = time_delta / samples_per_ms;
-    const float degrees_per_ms = 3600 / 1000.0f;
+    const float degrees_per_ms = 1000 / 1000.0f;  // Randy reports 1 degree increments
     const float degrees_per_sample = degrees_per_ms / samples_per_ms;
 
 //    ::fprintf(stderr, "Packing %u samples in for %ums interval (%f degrees/sample)\n", sample_count, time_delta, degrees_per_sample);
