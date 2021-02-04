@@ -88,7 +88,7 @@ void ModePosHold::run()
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
 
-    // get pilot's desired yaw rate
+    // get pilot's desired yaw rate, or let the gimbal steer the vehicle
     float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // get pilot desired climb rate (for alt-hold mode and take-off)
@@ -498,12 +498,34 @@ void ModePosHold::run()
     roll = constrain_float(roll, -angle_max, angle_max);
     pitch = constrain_float(pitch, -angle_max, angle_max);
 
-    // call attitude controller
-    if ((auto_yaw.mode() != AUTO_YAW_FIXED)
-        || (target_yaw_rate > 200) || (target_yaw_rate < -200)) {
+    AP_Mount *mount = AP::mount();
+    if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal)) {
+        float angle_deg;
+        // allow the pilot to override the yaw_condition command if the commanded yaw is outside the deadband
         // the total range of target_yaw_rate is about -10000 to 10000,
         // set the deadband to 200/10000 or 2% of the total range,
-        // allow the pilot to override the yaw_condition command if the commanded yaw is outside the deadband
+        if ((target_yaw_rate > 200) || (target_yaw_rate < -200)) {
+            angle_deg = target_yaw_rate/1000.0f;
+        }
+        else {
+            angle_deg = mount->get_follow_yaw_rate();
+        }
+        int8_t direction = 1;
+        bool relative_angle = true;
+        if (angle_deg < 0.0f) {
+            angle_deg = -angle_deg;
+            direction = -1;
+        }
+        // update auto_yaw private variable _fixed_yaw
+        copter.flightmode->auto_yaw.set_fixed_yaw(
+            angle_deg,
+            0, // use default angle change rate
+            direction,
+            relative_angle);
+    }
+
+    // call attitude controller
+    if (auto_yaw.mode() != AUTO_YAW_FIXED) {
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(roll, pitch, target_yaw_rate);
     }
     else {

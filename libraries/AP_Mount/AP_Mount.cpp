@@ -427,6 +427,11 @@ void AP_Mount::init()
     // start with scaling disabled
     mount_scale_with_zoom = 1.0;
 
+    AP_Mount::yaw_encoder_readback = 0.0; // readback yaw encoder position from the gimbal
+
+    // default is gimbal yaw follows the vehicle, use yaw encoder to move gimbal with the vehicle
+    AP_Mount::mount_yaw_follow_mode = gimbal_yaw_follows_vehicle;
+
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
@@ -561,6 +566,14 @@ void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float
     // send command to backend
     _backends[instance]->set_angle_targets(roll, tilt, pan);
 }
+
+
+#define VEHICLE_YAW_SCALE 1.0f
+float AP_Mount::get_follow_yaw_rate()
+{
+    return VEHICLE_YAW_SCALE * yaw_encoder_readback;
+}
+
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
 {

@@ -610,22 +610,29 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet)
 {
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
+    AP_Mount *mount = AP::mount();
+    // if the mount doesn't do pan control or mount is in follow-the-vehicle mode, then yaw the entire vehicle instead:
     switch (packet.command) {
-#if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-        if(!copter.camera_mount.has_pan_control()) {
+        if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 (float)packet.param3 * 0.01f,
                 0.0f,
-                0,0);
+                0,
+                0);
+        }
+        else {
+            mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
+            return GCS_MAVLINK::handle_command_mount(packet);
         }
         break;
-#endif
+    case MAV_CMD_DO_MOUNT_CONFIGURE:
+        return GCS_MAVLINK::handle_command_mount(packet);
+        break;
     default:
         break;
     }
-    return GCS_MAVLINK::handle_command_mount(packet);
+    return MAV_RESULT_ACCEPTED;
 }
 
 bool GCS_MAVLINK_Copter::allow_disarm() const
@@ -681,6 +688,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 #endif
 
     case MAV_CMD_CONDITION_YAW:
+    {
+        AP_Mount *mount = AP::mount();
+
+        // switch gimbal YAW follow mode upon a vehicle YAW command
+        mount->mount_yaw_follow_mode = AP_Mount::gimbal_yaw_follows_vehicle;
+
         // param1 : target angle [0-360)
         // param2 : speed during change [deg per second]
         // param3 : direction (-1:ccw, +1:cw)
@@ -691,7 +704,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         if (is_zero(packet.param4) || is_equal(packet.param4,1.0f)) {
             float scaled_p1 = packet.param1;
             bool relative_angle = is_positive(packet.param4);
-            AP_Mount *mount = AP::mount();
             if ((relative_angle) && (mount != nullptr)) {
                 // apply zoom scaling only to the relative offset
                 scaled_p1 = scaled_p1 * mount->mount_scale_with_zoom;
@@ -704,6 +716,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+    }
 
     case MAV_CMD_DO_CHANGE_SPEED:
         // param1 : unused
@@ -900,11 +913,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 {
+    AP_Mount *mount = AP::mount();
+    // if the mount doesn't do pan control or mount is in follow-the-vehicle mode, then yaw the entire vehicle instead:
     switch (msg.msgid) {
-#if MOUNT == ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        if(!copter.camera_mount.has_pan_control()) {
-            // if the mount doesn't do pan control then yaw the entire vehicle instead:
+        if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
                 0.0f,
@@ -913,9 +926,11 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 
             break;
         }
-#endif
+        else {
+            mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
+            GCS_MAVLINK::handle_mount_message(msg);
+        }
     }
-    GCS_MAVLINK::handle_mount_message(msg);
 }
 
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)

@@ -23,6 +23,7 @@ void AP_Mount_Alexmos::update()
         return;
     }
 
+    get_angles_ext();
     read_incoming(); // read the incoming messages from the gimbal
 
     // update based on mount mode
@@ -39,9 +40,19 @@ void AP_Mount_Alexmos::update()
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+        {
+#define GIMBAL_YAW_SCALE (1.0f/20.0f)
+            AP_Mount *mount = AP::mount();
+            if (mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
+            {
+                // use yaw encoder to move yaw with the vehicle
+                _angle_ef_target_rad.z = -_current_angle.z * GIMBAL_YAW_SCALE;
+            }
+
+            // yaw angle (_current_angle.z) when gimbal follows the vehicle
             control_axis(_angle_ef_target_rad, false);
-            break;
+        }
+        break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
@@ -159,16 +170,17 @@ void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degree
     if (!target_in_degrees) {
         target_deg *= RAD_TO_DEG;
     }
+
     alexmos_parameters outgoing_buffer;
     outgoing_buffer.angle_speed.mode_roll = get_control_mode(_state._roll_input_mode);
     outgoing_buffer.angle_speed.mode_pitch = get_control_mode(_state._pitch_input_mode);
-    outgoing_buffer.angle_speed.mode_yaw = AP_MOUNT_ALEXMOS_MODE_NO_CONTROL;
+    outgoing_buffer.angle_speed.mode_yaw = get_control_mode(_state._yaw_input_mode);
     outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(target_deg.x);
     outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(target_deg.x);
     outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(target_deg.y);
     outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
-    // Deliberately not commanding target_deg.z (yaw) because we are relying on Alexmos'
-    // follow yaw mode.  Explicitly commanding yaw interferes with follow yaw mode.
+    outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(target_deg.z);
+    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
 }
 
@@ -234,6 +246,7 @@ void AP_Mount_Alexmos::parse_body()
             break;
 
         case CMD_GET_ANGLES_EXT:
+        {
             _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
             _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
             _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
@@ -249,7 +262,12 @@ void AP_Mount_Alexmos::parse_body()
             if (_state._yaw_input_mode != AP_Mount::Input_Mode_Angle_Absolute_Frame) {
                 _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw);
             }
-            break;
+
+            // make yaw encoder value visible outside the AP_Mount class
+            AP_Mount *mount = AP::mount();
+            mount->yaw_encoder_readback = _current_angle.z;
+        }
+        break;
 
         case CMD_READ_PARAMS:
             _param_read_once = true;
