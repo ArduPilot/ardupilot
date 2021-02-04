@@ -135,8 +135,13 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
         return false;
     }
 
-    // if ahrs's yaw is from the compass, wait until it has been initialised
-    if (!AP::ahrs().is_ext_nav_used_for_yaw() && !AP::ahrs().yaw_initialised()) {
+    // do not align to ahrs if it is using us as its yaw source
+    if (AP::ahrs().is_ext_nav_used_for_yaw()) {
+        return false;
+    }
+
+    // do not align until ahrs yaw initialised
+    if (!AP::ahrs().initialised() || !AP::ahrs().yaw_initialised()) {
         return false;
     }
 
