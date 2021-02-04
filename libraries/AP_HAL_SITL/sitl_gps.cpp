@@ -193,17 +193,27 @@ void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned
 {
     static FILE *fd;
     if(fd == NULL) {
+        if(::access(gps_filename,F_OK)!=0) {
+            return;
+        }
+        ::printf("opening named pipe at %s\n",gps_filename);
+//        int ifd = ::open(gps_filename,O_RDWR|O_NONBLOCK);
         fd = ::fopen(gps_filename, "r");
+//        fd = ::fdopen(ifd,"r");
     }
     if (fd != NULL) {
+//        fd_set rfds;
+//        struct timeval tv;
+//        tv.tv_sec = 0;
+//        tv.tv_usec = 10000;
+//        ::printf("checking pipe\n");
+//        int available = select(::fileno(fd), &rfds, NULL, NULL, &tv);
         double lat, lon, alt;
-//        flockfile(fd);
+//        ::printf("reading pipe\n");
         int ret = ::fscanf(fd, "%lf %lf %lf%*[\n]", &lat, &lon, &alt);
-//        funlockfile(fd);
         ::printf("ret = %d, lat = %lf, lon = %lf, alt = %lf\n", ret, lat, lon, alt);
-//        ::fclose(fd);
         double earth_radius = 6378137.0;
-        double lat_rad = radians((d->latitude + lat)*.5);
+        double lat_rad = radians((d->latitude + lat) * .5);
         double dlat = radians(d->latitude - lat) * earth_radius;
         double dlon = radians(d->longitude - lon) * earth_radius * cos(lat_rad);
         double dalt = d->altitude - alt;
@@ -212,7 +222,7 @@ void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned
         ned.d_m = -dalt;
         ned.bearing_deg = 90.0 + atan2(-dlat, dlon);
         if (ned.bearing_deg < 0) {
-                ned.bearing_deg += 360.0;
+            ned.bearing_deg += 360.0;
         }
     }
 }
@@ -223,16 +233,12 @@ void SITL_State::_save_gps_location(const struct gps_data *d)
     if(fd == NULL) {
         mkfifo(gps_filename,0666);
         fd = ::fopen(gps_filename, "w");
-//        int fileno = fileno(fd);
+        ::setlinebuf(fd);
     }
-    //int locked = flock(fileno(fd),LOCK_SH);
     if (fd != NULL) {
-//        flockfile(fd);
         ::fprintf(fd, "%lf %lf %f\n", d->latitude, d->longitude, d->altitude);
-        ::fflush(fd);
-//        funlockfile(fd);
+//        ::fflush(fd);
         ::printf("storing GPS = %lf %lf %f\n", d->latitude, d->longitude, d->altitude);
-//        ::fclose(fd);
     }
 
 }
