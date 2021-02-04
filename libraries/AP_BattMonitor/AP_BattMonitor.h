@@ -84,6 +84,7 @@ public:
         GENERATOR_ELEC             = 17,
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
+        FRSKY_SPORT                = 20,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
