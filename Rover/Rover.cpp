@@ -280,7 +280,17 @@ void Rover::gcs_failsafe_check(void)
     }
 
     // check for updates from GCS within 2 seconds
-    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", failsafe.last_heartbeat_ms != 0 && (millis() - failsafe.last_heartbeat_ms) > 2000);
+    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    bool do_failsafe = true;
+    if (gcs_last_seen_ms == 0) {
+        // we've never seen the GCS, so we never failsafe for not seeing it
+        do_failsafe = false;
+    } else if (millis() - gcs_last_seen_ms <= 2000) {
+        // we've never seen the GCS in the last couple of seconds, so all good
+        do_failsafe = false;
+    }
+
+    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", do_failsafe);
 }
 
 /*
