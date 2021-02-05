@@ -55,6 +55,7 @@
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
+#include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
@@ -256,6 +257,9 @@ private:
 
     // simulated FETtec OneWire ESCs:
     SITL::FETtecOneWireESC *fetteconewireesc;
+
+    // simulated RPLidarA1:
+    SITL::PS_RPLidarA1 *rplidara1;
 
 #if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
