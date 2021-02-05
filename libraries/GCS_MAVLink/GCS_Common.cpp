@@ -4527,6 +4527,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             }
         }
 #endif
+#ifdef HAL_AP_FETTECONEWIRE_ENABLED
+        CHECK_PAYLOAD_SIZE(ESC_TELEMETRY_1_TO_4);
+        AP_FETtecOneWire *fetteconewire = AP_FETtecOneWire::get_singleton();
+        if (fetteconewire) {
+            fetteconewire->send_esc_telemetry_mavlink(uint8_t(chan));
+        }
+#endif
         break;
     }
 
