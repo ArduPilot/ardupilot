@@ -64,11 +64,7 @@ void Helicopter::update(const struct sitl_input &input)
     // get wind vector setup
     update_wind(input);
 
-    if (input.servos[7] > 1400) {
-        motor_interlock = true;
-    } else {
-        motor_interlock = false;
-    }
+    motor_interlock = input.servos[7] > 1400;
     
     float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
     float rsc_scale = rsc/rsc_setpoint;
