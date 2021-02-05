@@ -20,6 +20,7 @@
 #include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #if !defined(NUM_SERVO_CHANNELS) && defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT) && (HAL_PWM_COUNT >= 1)
     #define NUM_SERVO_CHANNELS HAL_PWM_COUNT
@@ -550,6 +551,11 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+
+#if HAL_AP_FETTECONEWIRE_ENABLED
+    AP_FETtecOneWire fetteconwire;
+    static AP_FETtecOneWire *fetteconwire_ptr;
+#endif  // HAL_AP_FETTECONEWIRE_ENABLED
 #endif // HAL_BUILD_AP_PERIPH
 
     static uint16_t disabled_mask;
