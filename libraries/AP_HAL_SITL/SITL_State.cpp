@@ -374,6 +374,14 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         rplidara2 = new SITL::PS_RPLidarA2();
         return rplidara2;
 #endif
+#if HAL_SIM_PS_RPLIDARA1_ENABLED
+    } else if (streq(name, "rplidara1")) {
+        if (rplidara1 != nullptr) {
+            AP_HAL::panic("Only one rplidara1 at a time");
+        }
+        rplidara1 = new SITL::PS_RPLidarA1();
+        return rplidara1;
+#endif
 #if HAL_SIM_PS_TERARANGERTOWER_ENABLED
     } else if (streq(name, "terarangertower")) {
         if (terarangertower != nullptr) {
@@ -678,6 +686,11 @@ void SITL_State::_fdm_input_local(void)
     }
 #endif
 
+#if HAL_SIM_PS_RPLIDARA1_ENABLED
+    if (rplidara1 != nullptr) {
+        rplidara1->update(sitl_model->get_location());
+    }
+#endif
 #if HAL_SIM_PS_TERARANGERTOWER_ENABLED
     if (terarangertower != nullptr) {
         terarangertower->update(sitl_model->get_location());
