@@ -136,11 +136,6 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
             check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
             return false;
         }
-
-        // call parent battery checks
-        if (!AP_Arming::battery_checks(display_failure)) {
-            return false;
-        }
     }
 
     return true;
