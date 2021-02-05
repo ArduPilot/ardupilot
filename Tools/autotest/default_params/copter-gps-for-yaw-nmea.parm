@@ -1,0 +1,5 @@
+# SITL GPS-for-yaw using a single simulated NMEA GPS
+EK3_SRC1_YAW 2
+GPS_TYPE 5
+SIM_GPS_TYPE 5
+SIM_GPS_HDG 1
