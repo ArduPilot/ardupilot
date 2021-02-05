@@ -106,6 +106,8 @@ float AP_Proximity_RPLidarA2::distance_max() const
     switch (model) {
     case Model::UNKNOWN:
         return 0.0f;
+    case Model::A1:
+        return 8.0f;
     case Model::A2:
         return 16.0f;
     }
@@ -118,6 +120,8 @@ float AP_Proximity_RPLidarA2::distance_min() const
     switch (model) {
     case Model::UNKNOWN:
         return 0.0f;
+    case Model::A1:
+        return 0.2f;
     case Model::A2:
         return 0.2f;
     }
@@ -316,6 +320,9 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
 {
     Debug(1, "Received DEVICE_INFO");
     switch (_payload.device_info.model) {
+    case 0x18:
+        model = Model::A1;
+        break;
     case 0x28:
         model = Model::A2;
         break;
