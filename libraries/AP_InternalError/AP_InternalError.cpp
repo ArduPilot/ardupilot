@@ -12,6 +12,7 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
     switch (e) {
     case AP_InternalError::error_t::watchdog_reset:
     case AP_InternalError::error_t::main_loop_stuck:
+    case AP_InternalError::error_t::params_restored:
         // don't panic on these to facilitate watchdog testing
         break;
     default:
@@ -56,6 +57,9 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "stack_ovrflw",  // stack_overflow
         "imu_reset",  // imu_reset
         "gpio_isr",
+        "mem_guard",
+        "dma_fail",
+        "params_restored",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");

@@ -216,9 +216,6 @@ void Copter::setup()
     // Load the default values of variables listed in var_info[]s
     AP_Param::setup_sketch_defaults();
 
-    // setup storage layout for copter
-    StorageManager::set_layout_copter();
-
     init_ardupilot();
 
     // initialise the main loop scheduler
