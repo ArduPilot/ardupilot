@@ -202,16 +202,13 @@ public:
     private:
 
         float look_ahead_yaw();
-        float roi_yaw();
+        float roi_yaw() const;
 
         // auto flight mode's yaw mode
         uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
 
         // Yaw will point at this location if mode is set to AUTO_YAW_ROI
         Vector3f roi;
-
-        // bearing from current location to the ROI
-        float _roi_yaw;
 
         // yaw used for YAW_FIXED yaw_mode
         int32_t _fixed_yaw;
@@ -224,10 +221,6 @@ public:
 
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _rate_cds;
-
-        // used to reduce update rate to 100hz:
-        uint8_t roi_yaw_counter;
-
     };
     static AutoYaw auto_yaw;
 
