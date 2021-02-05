@@ -103,13 +103,25 @@ void AP_Proximity_RPLidarA2::update(void)
 // get maximum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_max() const
 {
-    return 16.0f;  //16m max range RPLIDAR2, if you want to support the 8m version this is the only line to change
+    switch (model) {
+    case Model::UNKNOWN:
+        return 0.0f;
+    case Model::A2:
+        return 16.0f;
+    }
+    return 0.0f;
 }
 
 // get minimum distance (in meters) of sensor
 float AP_Proximity_RPLidarA2::distance_min() const
 {
-    return 0.20f;  //20cm min range RPLIDAR2
+    switch (model) {
+    case Model::UNKNOWN:
+        return 0.0f;
+    case Model::A2:
+        return 0.2f;
+    }
+    return 0.0f;
 }
 
 void AP_Proximity_RPLidarA2::reset_rplidar()
@@ -137,6 +149,14 @@ void AP_Proximity_RPLidarA2::send_request_for_health()                          
     static const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_HEALTH};
     _uart->write(tx_buffer, 2);
     Debug(1, "Sent health request");
+}
+
+// send request for device information
+void AP_Proximity_RPLidarA2::send_request_for_device_info()
+{
+    static const uint8_t tx_buffer[2] {RPLIDAR_PREAMBLE, RPLIDAR_CMD_GET_DEVICE_INFO};
+    _uart->write(tx_buffer, 2);
+    Debug(1, "Sent device information request");
 }
 
 void AP_Proximity_RPLidarA2::consume_bytes(uint16_t count)
@@ -227,8 +247,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             // reset data ... so now we'll just drop that stuff on
             // the floor.
             consume_bytes(63);
-            send_scan_mode_request();
-//            send_request_for_health();
+            send_request_for_device_info();
             _state = State::AWAITING_RESPONSE;
             continue;
         }
@@ -250,15 +269,28 @@ void AP_Proximity_RPLidarA2::get_readings()
             static const _descriptor HEALTH_DESCRIPTOR[] {
                 RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06
             };
+            static const _descriptor DEVICE_INFO_DESCRIPTOR[] {
+                RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04
+            };
             Debug(2,"LIDAR descriptor found");
             if (memcmp((void*)&_payload[0], SCAN_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {
                 _state = State::AWAITING_SCAN_DATA;
+            } else if (memcmp((void*)&_payload[0], DEVICE_INFO_DESCRIPTOR, sizeof(_descriptor)) == 0) {
+                _state = State::AWAITING_DEVICE_INFO;
             } else if (memcmp((void*)&_payload[0], HEALTH_DESCRIPTOR, sizeof(_descriptor)) == 0) {
                 _state = State::AWAITING_HEALTH;
             } else {
                 // unknown descriptor.  Ignore it.
             }
             consume_bytes(sizeof(_descriptor));
+            break;
+
+        case State::AWAITING_DEVICE_INFO:
+            if (_byte_count < sizeof(_payload.device_info)) {
+                return;
+            }
+            parse_response_device_info();
+            consume_bytes(sizeof(_payload.device_info));
             break;
 
         case State::AWAITING_SCAN_DATA:
@@ -278,6 +310,22 @@ void AP_Proximity_RPLidarA2::get_readings()
             break;
         }
     }
+}
+
+void AP_Proximity_RPLidarA2::parse_response_device_info()
+{
+    Debug(1, "Received DEVICE_INFO");
+    switch (_payload.device_info.model) {
+    case 0x28:
+        model = Model::A2;
+        break;
+    default:
+        Debug(1, "Unknown device (%u)", _payload.device_info.model);
+    }
+    Debug(1, "firmware (%u.%u)", _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
+    Debug(1, "Hardware (%u)", _payload.device_info.hardware);
+    send_scan_mode_request();
+    _state = State::AWAITING_RESPONSE;
 }
 
 void AP_Proximity_RPLidarA2::parse_response_data()
