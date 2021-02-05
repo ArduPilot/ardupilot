@@ -216,6 +216,7 @@ class BobException(Exception):
 
 
 def kill_tasks():
+    #rrr return
     """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
     try:
