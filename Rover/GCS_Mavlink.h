@@ -38,11 +38,9 @@ private:
     void handleMessage(const mavlink_message_t &msg) override;
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override;
     void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override;
-    void handle_rc_channels_override(const mavlink_message_t &msg) override;
     bool try_send_message(enum ap_message id) override;
 
     void handle_manual_control(const mavlink_message_t &msg);
-    void handle_heartbeat(const mavlink_message_t &msg);
     void handle_set_attitude_target(const mavlink_message_t &msg);
     void handle_set_position_target_local_ned(const mavlink_message_t &msg);
     void handle_set_position_target_global_int(const mavlink_message_t &msg);
