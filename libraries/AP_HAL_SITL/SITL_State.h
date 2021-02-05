@@ -111,6 +111,14 @@ private:
         bool have_lock;
     };
 
+    struct ned_offset {
+        double n_m;
+        double e_m;
+        double d_m;
+        double bearing_deg;
+    };
+
+
 #define MAX_GPS_DELAY 100
     gps_data _gps_data[MAX_GPS_DELAY];
 
@@ -133,6 +141,9 @@ private:
     void _nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen, uint8_t instance);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
+
+    void _calculate_ned(const struct gps_data *d, struct ned_offset &ned);
+    void _save_gps_location(const struct gps_data *d);
 
     void _update_gps(double latitude, double longitude, float altitude,
                      double speedN, double speedE, double speedD,

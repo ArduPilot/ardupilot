@@ -43,6 +43,7 @@ static struct gps_state {
     uint32_t last_update; // milliseconds
 } gps_state, gps2_state;
 
+
 /*
   hook for reading from the GPS pipe
  */
@@ -187,6 +188,61 @@ static void gps_time(uint16_t *time_week, uint32_t *time_week_ms)
     *time_week_ms = (epoch_seconds % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC + ((t_ms/200) * 200);
 }
 
+static char * gps_filename = "/tmp/master-gps.data";
+void SITL_State::_calculate_ned(const struct gps_data *d, struct ned_offset &ned)
+{
+    static FILE *fd;
+    if(fd == NULL) {
+        if(::access(gps_filename,F_OK)!=0) {
+            return;
+        }
+        ::printf("opening named pipe at %s\n",gps_filename);
+//        int ifd = ::open(gps_filename,O_RDWR|O_NONBLOCK);
+        fd = ::fopen(gps_filename, "r");
+//        fd = ::fdopen(ifd,"r");
+    }
+    if (fd != NULL) {
+//        fd_set rfds;
+//        struct timeval tv;
+//        tv.tv_sec = 0;
+//        tv.tv_usec = 10000;
+//        ::printf("checking pipe\n");
+//        int available = select(::fileno(fd), &rfds, NULL, NULL, &tv);
+        double lat, lon, alt;
+//        ::printf("reading pipe\n");
+        int ret = ::fscanf(fd, "%lf %lf %lf%*[\n]", &lat, &lon, &alt);
+        ::printf("ret = %d, lat = %lf, lon = %lf, alt = %lf\n", ret, lat, lon, alt);
+        double earth_radius = 6378137.0;
+        double lat_rad = radians((d->latitude + lat) * .5);
+        double dlat = radians(d->latitude - lat) * earth_radius;
+        double dlon = radians(d->longitude - lon) * earth_radius * cos(lat_rad);
+        double dalt = d->altitude - alt;
+        ned.n_m = dlat;
+        ned.e_m = dlon;
+        ned.d_m = -dalt;
+        ned.bearing_deg = 90.0 + atan2(-dlat, dlon);
+        if (ned.bearing_deg < 0) {
+            ned.bearing_deg += 360.0;
+        }
+    }
+}
+
+void SITL_State::_save_gps_location(const struct gps_data *d)
+{
+    static FILE *fd;
+    if(fd == NULL) {
+        mkfifo(gps_filename,0666);
+        fd = ::fopen(gps_filename, "w");
+        ::setlinebuf(fd);
+    }
+    if (fd != NULL) {
+        ::fprintf(fd, "%lf %lf %f\n", d->latitude, d->longitude, d->altitude);
+//        ::fflush(fd);
+        ::printf("storing GPS = %lf %lf %f\n", d->latitude, d->longitude, d->altitude);
+    }
+
+}
+
 /*
   send a new set of GPS UBLOX packets
  */
@@ -291,6 +347,31 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
             int32_t prRes;
         } sv[SV_COUNT];
     } svinfo {};
+    struct PACKED ubx_nav_relposned_v01 { // F9P
+        uint8_t version;
+        uint8_t reserved1;
+        uint16_t ref_station_id;
+        uint32_t itow_ms; // GPS time of week in ms
+        int32_t rel_pos_n_cm;
+        int32_t rel_pos_e_cm;
+        int32_t rel_pos_d_cm;
+        int32_t rel_pos_length_cm;
+        int32_t rel_pos_heading_deg;
+        uint8_t reserved2[4];
+        int8_t rel_pos_hp_n_mm;
+        int8_t rel_pos_hp_e_mm;
+        int8_t rel_pos_hp_d_mm;
+        int8_t rel_pos_hp_length_mm;
+        uint32_t acc_n_mm;
+        uint32_t acc_e_mm;
+        uint32_t acc_d_mm;
+        uint32_t acc_length_mm;
+        uint32_t acc_heading_deg;
+        uint8_t reserved3[4];
+        uint32_t flags;
+    } relposned {};
+
+
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
@@ -298,6 +379,7 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     const uint8_t MSG_SOL = 0x6;
     const uint8_t MSG_PVT = 0x7;
     const uint8_t MSG_SVINFO = 0x30;
+    const uint8_t MSG_RELPOSNED = 0x3c;
 
     static uint32_t _next_nav_sv_info_time = 0;
 
@@ -383,12 +465,67 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
+    enum class RELPOSNED {
+        gnssFixOK          = 1U << 0,
+        diffSoln           = 1U << 1,
+        relPosValid        = 1U << 2,
+        carrSolnFloat      = 1U << 3,
+
+        carrSolnFixed      = 1U << 4,
+        isMoving           = 1U << 5,
+        refPosMiss         = 1U << 6,
+        refObsMiss         = 1U << 7,
+
+        relPosHeadingValid = 1U << 8,
+        relPosNormalized   = 1U << 9
+    };
+    const uint32_t valid_mask = static_cast<uint32_t>(RELPOSNED::relPosHeadingValid) |
+                                        static_cast<uint32_t>(RELPOSNED::relPosValid) |
+                                        static_cast<uint32_t>(RELPOSNED::gnssFixOK) |
+                                        static_cast<uint32_t>(RELPOSNED::isMoving) |
+                                        static_cast<uint32_t>(RELPOSNED::carrSolnFixed);
+    relposned.version = 0x01; // F9P
+    relposned.itow_ms = time_week_ms;
+    relposned.acc_d_mm = 20;
+    relposned.acc_e_mm = 20;
+    relposned.acc_n_mm = 20;
+    relposned.acc_heading_deg = 1;
+    relposned.acc_length_mm = 20;
+    relposned.flags = valid_mask;
+    relposned.ref_station_id = 0;
+
+    struct ned_offset ned {};
+    char* master = getenv("MASTER_DRONE");
+    if(master != NULL) {
+        _save_gps_location(d);
+    } else {
+        _calculate_ned(d, ned);
+    }
+
+    relposned.rel_pos_d_cm = (int32_t)(ned.d_m * 100);
+    relposned.rel_pos_e_cm = (int32_t)(ned.e_m * 100);
+    relposned.rel_pos_n_cm = (int32_t)(ned.n_m * 100);
+    relposned.rel_pos_hp_d_mm = 0;
+    relposned.rel_pos_hp_e_mm = 0;
+    relposned.rel_pos_hp_n_mm = 0;
+    relposned.rel_pos_hp_length_mm = 0;
+    relposned.reserved1  = 0;
+    relposned.reserved2[0]  = 0;
+    relposned.reserved2[1]  = 0;
+    relposned.reserved2[2]  = 0;
+    relposned.reserved2[3]  = 0;
+    relposned.reserved3[0]  = 0;
+    relposned.reserved3[1]  = 0;
+    relposned.reserved3[2]  = 0;
+    relposned.reserved3[3]  = 0;
+
     _gps_send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos), instance);
     _gps_send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status), instance);
     _gps_send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned), instance);
     _gps_send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol), instance);
     _gps_send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop), instance);
     _gps_send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt), instance);
+    _gps_send_ubx(MSG_RELPOSNED, (uint8_t*)&relposned, sizeof(relposned), instance);
 
     if (time_week_ms > _next_nav_sv_info_time) {
         svinfo.itow = time_week_ms;
@@ -410,6 +547,8 @@ void SITL_State::_update_gps_ubx(const struct gps_data *d, uint8_t instance)
         _next_nav_sv_info_time = time_week_ms + 10000; // 10 second delay
     }
 }
+
+
 
 /*
   MTK type simple checksum
