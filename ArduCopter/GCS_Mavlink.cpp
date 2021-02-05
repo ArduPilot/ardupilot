@@ -562,13 +562,6 @@ void GCS_MAVLINK_Copter::send_banner()
                                                  copter.motors->get_type_string());
 }
 
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
-}
-
 void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t &msg)
 {
     copter.command_ack_counter++;
@@ -999,14 +992,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
     switch (msg.msgid) {
 
-    case MAVLINK_MSG_ID_HEARTBEAT:      // MAV ID: 0
-    {
-        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg.sysid != copter.g.sysid_my_gcs) break;
-        copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        break;
-    }
-
     case MAVLINK_MSG_ID_MANUAL_CONTROL:
     {
         if (msg.sysid != copter.g.sysid_my_gcs) {
@@ -1031,8 +1016,9 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         manual_override(copter.channel_throttle, packet.z, 0, 1000, tnow);
         manual_override(copter.channel_yaw, packet.r, 1000, 2000, tnow);
 
-        // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        copter.failsafe.last_heartbeat_ms = tnow;
+        // a manual control message is considered to be a 'heartbeat'
+        // from the ground station for failsafe purposes
+        gcs().sysid_myggcs_seen(tnow);
         break;
     }
 
