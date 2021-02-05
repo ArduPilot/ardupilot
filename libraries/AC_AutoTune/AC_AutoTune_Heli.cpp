@@ -32,10 +32,12 @@
 #define AUTOTUNE_RD_MAX                  0.020f     // maximum Rate D value
 #define AUTOTUNE_RLPF_MIN                  1.0f     // minimum Rate Yaw filter value
 #define AUTOTUNE_RLPF_MAX                  20.0f     // maximum Rate Yaw filter value
-#define AUTOTUNE_RP_MIN                   0.01f     // minimum Rate P value
-#define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
+#define AUTOTUNE_RP_MIN                   0.001f     // minimum Rate P value
+#define AUTOTUNE_RP_MAX                   1.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                    10.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    3.0f     // maximum Stab P value
+#define AUTOTUNE_RFF_MAX                   1.0f     // maximum Stab P value
+#define AUTOTUNE_RFF_MIN                   0.05f     // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
 // constructor
@@ -395,22 +397,35 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
         if (!is_zero(meas_rate)) {
             tune_ff = 5730.0f * meas_command / meas_rate;
         }
-        tune_ff = constrain_float(tune_ff, 0.01, 1);
+        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
         ff_up_first_iter = false;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 1.05f * fabsf(rate_target) &&
                fabsf(meas_rate) > 0.95f * fabsf(rate_target)) {
         counter = AUTOTUNE_SUCCESS_COUNT;
         tune_ff = 0.8f * tune_ff;
+        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
         ff_up_first_iter = true;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) > 1.05f * fabsf(rate_target)) {
         tune_ff = 0.98f * tune_ff;
+        if (tune_ff <= AUTOTUNE_RFF_MIN) {
+            tune_ff = AUTOTUNE_RFF_MIN;
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            ff_up_first_iter = true;
+        }
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
         tune_ff = 1.02f * tune_ff;
+        if (tune_ff >= AUTOTUNE_RFF_MAX) {
+            tune_ff = AUTOTUNE_RFF_MAX;
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            ff_up_first_iter = true;
+        }
     } else {
         if (!is_zero(meas_rate)) {
             tune_ff = 5730.0f * meas_command / meas_rate;
         }
-        tune_ff = constrain_float(tune_ff, 0.01, 1);
+        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
     }
 }
 
@@ -520,6 +535,11 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             tune_p += gain_incr;
             curr_test_freq = freq[freq_cnt_max];
             freq[freq_cnt] = curr_test_freq;
+            if (tune_p >= AUTOTUNE_SP_MAX) {
+                tune_p = AUTOTUNE_SP_MAX;
+                counter = AUTOTUNE_SUCCESS_COUNT;
+                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            }
         } else {
             counter = AUTOTUNE_SUCCESS_COUNT;
             // reset curr_test_freq and freq_cnt for next test
