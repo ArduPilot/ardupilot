@@ -1415,6 +1415,11 @@ bool AP_GPS::calc_blend_weights(void)
         if (get_rate_ms(i) > max_rate_ms) {
             max_rate_ms = get_rate_ms(i);
         }
+        if (isinf(state[i].speed_accuracy) ||
+            isinf(state[i].horizontal_accuracy) ||
+            isinf(state[i].vertical_accuracy)) {
+            return false;
+        }
     }
     if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
@@ -1539,6 +1544,10 @@ bool AP_GPS::calc_blend_weights(void)
             }
             sum_of_all_weights += 1.0f;
         }
+    }
+
+    if (!is_positive(sum_of_all_weights)) {
+        return false;
     }
 
     // calculate an overall weight
