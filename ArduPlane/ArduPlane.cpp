@@ -252,7 +252,7 @@ void Plane::afs_fs_check(void)
 #else
     const bool fence_breached = false;
 #endif
-    afs.check(failsafe.last_heartbeat_ms, fence_breached, failsafe.AFS_last_valid_rc_ms);
+    afs.check(fence_breached, failsafe.AFS_last_valid_rc_ms);
 }
 #endif
 
