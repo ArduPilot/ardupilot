@@ -61,6 +61,7 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "mem_guard",
         "dma_fail",
         "params_restored",
+        "invalid arguments",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");
