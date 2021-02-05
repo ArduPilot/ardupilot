@@ -370,6 +370,8 @@ protected:
     // saveable rate of each stream
     AP_Int16        *streamRates;
 
+    void handle_heartbeat(const mavlink_message_t &msg) const;
+
     virtual bool persist_streamrates() const { return false; }
     void handle_request_data_stream(const mavlink_message_t &msg);
 
@@ -412,7 +414,7 @@ protected:
     void handle_param_request_list(const mavlink_message_t &msg);
     void handle_param_request_read(const mavlink_message_t &msg);
     virtual bool params_ready() const { return true; }
-    virtual void handle_rc_channels_override(const mavlink_message_t &msg);
+    void handle_rc_channels_override(const mavlink_message_t &msg);
     void handle_system_time_message(const mavlink_message_t &msg);
     void handle_common_rally_message(const mavlink_message_t &msg);
     void handle_rally_fetch_point(const mavlink_message_t &msg);
@@ -910,6 +912,16 @@ public:
         return _statustext_queue;
     }
 
+    // last time traffic was seen from my designated GCS.  traffic
+    // includes heartbeats and some manual control messages.
+    uint32_t sysid_myggcs_last_seen_time_ms() const {
+        return _sysid_mygcs_last_seen_time_ms;
+    }
+    // called when valid traffic has been seen from our GCS
+    void sysid_myggcs_seen(uint32_t seen_time_ms) {
+        _sysid_mygcs_last_seen_time_ms = seen_time_ms;
+    }
+
     void send_to_active_channels(uint32_t msgid, const char *pkt);
 
     void send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(3, 4);
@@ -1014,6 +1026,9 @@ private:
     }
 
     void update_sensor_status_flags();
+
+    // time we last saw traffic from our GCS
+    uint32_t _sysid_mygcs_last_seen_time_ms;
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL

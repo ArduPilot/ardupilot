@@ -3278,6 +3278,9 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
             RC_Channels::set_override(i, value, tnow);
         }
     }
+
+    gcs().sysid_myggcs_seen(tnow);
+
 }
 
 // allow override of RC channel values for HIL or for complete GCS
@@ -3349,12 +3352,27 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 #endif
 }
 
+void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
+{
+    // if the heartbeat is from our GCS then we don't failsafe for
+    // now...
+    if (msg.sysid == sysid_my_gcs()) {
+        gcs().sysid_myggcs_seen(AP_HAL::millis());
+    }
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
 void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
+
+    case MAVLINK_MSG_ID_HEARTBEAT: {
+        handle_heartbeat(msg);
+        break;
+    }
+
     case MAVLINK_MSG_ID_COMMAND_ACK: {
         handle_command_ack(msg);
         break;
