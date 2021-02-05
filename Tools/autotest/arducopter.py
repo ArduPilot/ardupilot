@@ -9814,6 +9814,58 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    def RPLidar(self):
+        '''plonks a Copter with a RPLidarA2 in the middle of a simulated field
+        of posts and checks that the measurements are what we expect.'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 11,
+            "PRX1_TYPE": 5,
+        })
+        self.customise_SITL_commandline([
+            "--uartF=sim:rplidara2:",
+            "--home", "51.8752066,14.6487840,0,0",  # SITL has "posts" here
+        ])
+
+        expected_distances = {
+            mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 276,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1286,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 626,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 971,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 762,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 792,
+        }
+
+        self.wait_ready_to_arm()
+
+        wanting_distances = copy.copy(expected_distances)
+        tstart = self.get_sim_time()
+        timeout = 60
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException("Did not get all distances")
+            m = self.mav.recv_match(type="DISTANCE_SENSOR",
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("Got (%s)" % str(m))
+            if m.orientation not in wanting_distances:
+                continue
+            if abs(m.current_distance - wanting_distances[m.orientation]) > 5:
+                self.progress("Wrong distance orient=%u want=%u got=%u" %
+                              (m.orientation,
+                               wanting_distances[m.orientation],
+                               m.current_distance))
+                continue
+            del wanting_distances[m.orientation]
+            self.progress("Got correct distance for orient %u" %
+                          (m.orientation))
+            if len(wanting_distances.items()) == 0:
+                break
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -9870,6 +9922,7 @@ class AutoTestCopter(AutoTest):
             self.AHRSTrimLand,
             self.GuidedYawRate,
             self.NoArmWithoutMissionItems,
+            self.RPLidar,
         ])
         return ret
 
