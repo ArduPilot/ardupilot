@@ -21,6 +21,7 @@
 #include <AP_RobotisServo/AP_RobotisServo.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
 #define NUM_SERVO_CHANNELS 16
 
@@ -529,6 +530,12 @@ private:
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
+
+#if HAL_AP_FETTECONEWIRE_ENABLED
+    AP_FETtecOneWire fetteconwire;
+    static AP_FETtecOneWire *fetteconwire_ptr;
+#endif  // HAL_AP_FETTECONEWIRE_ENABLED
+
     static uint16_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not
