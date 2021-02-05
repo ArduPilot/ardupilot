@@ -1152,17 +1152,9 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         manual_override(plane.channel_throttle, packet.z, 0, 1000, tnow);
         manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
 
-        // a manual control message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-        plane.failsafe.last_heartbeat_ms = tnow;
-        break;
-    }
-    
-    case MAVLINK_MSG_ID_HEARTBEAT:
-    {
-        // We keep track of the last time we received a heartbeat from
-        // our GCS for failsafe purposes
-        if (msg.sysid != plane.g.sysid_my_gcs) break;
-        plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
+        // a manual control message is considered to be a 'heartbeat'
+        // from the ground station for failsafe purposes
+        gcs().sysid_myggcs_seen(tnow);
         break;
     }
 
@@ -1416,13 +1408,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         break;
     } // end switch
 } // end handle mavlink
-
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Plane::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    plane.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
-}
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
 {
