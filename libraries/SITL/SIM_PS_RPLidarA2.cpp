@@ -103,6 +103,30 @@ void PS_RPLidarA2::update_input()
             set_inputstate(InputState::WAITING_FOR_PREAMBLE);
             return;
         }
+        case Command::GET_DEVICE_INFO: {
+            // consume the command:
+            memmove(_buffer, &_buffer[1], _buflen-1);
+            _buflen--;
+            send_response_descriptor(0x14, SendMode::SRSR, DataType::Unknown04);
+            // now send the device info:
+            struct PACKED _device_info {
+                uint8_t model;
+                uint8_t firmware_minor;
+                uint8_t firmware_major;
+                uint8_t hardware;
+                uint8_t serial[16];
+            } device_info;
+            device_info.model = device_info_model();
+            device_info.firmware_minor = 17;
+            device_info.firmware_major = 42;
+            device_info.hardware = 6;
+            const ssize_t ret = write_to_autopilot((const char*)&device_info, sizeof(device_info));
+            if (ret != sizeof(device_info)) {
+                abort();
+            }
+            set_inputstate(InputState::WAITING_FOR_PREAMBLE);
+            return;
+        }
         case Command::FORCE_SCAN:
             abort();
         case Command::RESET:
