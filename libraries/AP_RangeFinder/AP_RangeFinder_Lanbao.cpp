@@ -76,7 +76,7 @@ bool AP_RangeFinder_Lanbao::get_reading(uint16_t &reading_cm)
     }
     if (count > 0) {
         reading_cm = (sum_range / count) * 100;
-        return reading_cm <= LANBAO_MAX_RANGE_CM?true:false;
+        return reading_cm <= LANBAO_MAX_RANGE_CM;
     }
     return false;
 }

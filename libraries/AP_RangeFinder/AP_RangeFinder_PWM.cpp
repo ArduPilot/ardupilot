@@ -53,10 +53,7 @@ bool AP_RangeFinder_PWM::get_reading(uint16_t &reading_cm)
 
 bool AP_RangeFinder_PWM::check_pin()
 {
-    if (!pwm_source.set_pin(params.pin, "RangeFinder_PWM")) {
-        return false;
-    }
-    return true;
+    return pwm_source.set_pin(params.pin, "RangeFinder_PWM");
 }
 
 void AP_RangeFinder_PWM::check_stop_pin()
