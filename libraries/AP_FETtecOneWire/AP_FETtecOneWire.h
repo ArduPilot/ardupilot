@@ -18,6 +18,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #ifndef HAL_AP_FETTECONEWIRE_ENABLED
 #define HAL_AP_FETTECONEWIRE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH) && BOARD_FLASH_SIZE > 1024
@@ -25,21 +26,40 @@
 
 #if HAL_AP_FETTECONEWIRE_ENABLED
 
+#include <AP_Param/AP_Param.h>
+
+
+
 class AP_FETtecOneWire {
 public:
     AP_FETtecOneWire();
 
+    /* Do not allow copies */
+    AP_FETtecOneWire(const AP_FETtecOneWire &other) = delete;
+    AP_FETtecOneWire &operator=(const AP_FETtecOneWire&) = delete;
+
+    static const struct AP_Param::GroupInfo var_info[];
+
     void update();
+    void send_esc_telemetry_mavlink(uint8_t mav_chan);
+    static AP_FETtecOneWire *get_singleton() {
+        return _singleton;
+    }
 private:
     void init();
+    static AP_FETtecOneWire *_singleton;
     bool initialised;
     AP_HAL::UARTDriver *_uart;
+    AP_Int32 motor_mask;
+
     uint32_t last_send_us;
+    uint32_t last_log_ms;
     static constexpr uint32_t DELAY_TIME_US = 700;
     static constexpr uint8_t DETECT_ESC_COUNT = 4;  // TODO needed ?
-    static constexpr uint8_t MOTOR_COUNT = 4;
-    uint16_t completeTelemetry[MOTOR_COUNT][5] = {0};
-    uint16_t motorpwm[MOTOR_COUNT] = {1000};
+    static constexpr uint8_t MOTOR_COUNT_MAX = 8;
+    int8_t TelemetryAvailable = -1;
+    uint16_t completeTelemetry[MOTOR_COUNT_MAX][6] = {0};
+    uint16_t motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t TLM_request = 0;
     /*
     initialize FETtecOneWire protocol
@@ -249,8 +269,6 @@ private:
       OW_TLM_DEBUG2,
       OW_TLM_DEBUG3
     };
-    static uint8_t FETtecOneWire_ResponseLength[54];
-    static uint8_t FETtecOneWire_RequestLength[54];
 };
 #endif // HAL_AP_FETTECONEWIRE_ENABLED
 
