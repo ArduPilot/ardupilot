@@ -512,13 +512,13 @@ void Copter::allocate_motors(void)
 #endif
     }
     if (motors == nullptr) {
-        AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
+        AP_BoardConfig::config_error("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
     ahrs_view = ahrs.create_view(ROTATION_NONE);
     if (ahrs_view == nullptr) {
-        AP_HAL::panic("Unable to allocate AP_AHRS_View");
+        AP_BoardConfig::config_error("Unable to allocate AP_AHRS_View");
     }
 
     const struct AP_Param::GroupInfo *ac_var_info;
@@ -538,13 +538,13 @@ void Copter::allocate_motors(void)
     ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
-        AP_HAL::panic("Unable to allocate AttitudeControl");
+        AP_BoardConfig::config_error("Unable to allocate AttitudeControl");
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control);
     if (pos_control == nullptr) {
-        AP_HAL::panic("Unable to allocate PosControl");
+        AP_BoardConfig::config_error("Unable to allocate PosControl");
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
@@ -554,20 +554,20 @@ void Copter::allocate_motors(void)
     wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
 #endif
     if (wp_nav == nullptr) {
-        AP_HAL::panic("Unable to allocate WPNav");
+        AP_BoardConfig::config_error("Unable to allocate WPNav");
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
     loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
     if (loiter_nav == nullptr) {
-        AP_HAL::panic("Unable to allocate LoiterNav");
+        AP_BoardConfig::config_error("Unable to allocate LoiterNav");
     }
     AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
 
 #if MODE_CIRCLE_ENABLED == ENABLED
     circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
     if (circle_nav == nullptr) {
-        AP_HAL::panic("Unable to allocate CircleNav");
+        AP_BoardConfig::config_error("Unable to allocate CircleNav");
     }
     AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
 #endif
