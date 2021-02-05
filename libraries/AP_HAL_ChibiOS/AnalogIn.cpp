@@ -353,6 +353,7 @@ void AnalogIn::_timer_tick(void)
 
 AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
 {
+    WITH_SEMAPHORE(_semaphore);
     for (uint8_t j=0; j<ANALOG_MAX_CHANNELS; j++) {
         if (_channels[j] == nullptr) {
             _channels[j] = new AnalogSource(pin);
