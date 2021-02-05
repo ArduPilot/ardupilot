@@ -36,4 +36,5 @@ private:
     uint8_t _channels_number = NAVIO_ADC_MAX_CHANNELS;
     AP_HAL::AnalogSource *_board_voltage_pin = nullptr;
     AP_HAL::AnalogSource *_servorail_pin = nullptr;
+    HAL_Semaphore _semaphore;
 };

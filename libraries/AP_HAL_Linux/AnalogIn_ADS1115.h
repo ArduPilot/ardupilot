@@ -37,4 +37,5 @@ private:
     AP_ADC_ADS1115 *_adc;
     AnalogSource_ADS1115 *_channels[ADS1115_ADC_MAX_CHANNELS];
     uint32_t _last_update_timestamp;
+    HAL_Semaphore _semaphore;
 };
