@@ -11,6 +11,8 @@
 
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   Base class for RPLidar support
  */
 /*
   Simulator for the RPLidarA2 proximity sensor
@@ -55,7 +57,7 @@ rc 2 1450
 
 namespace SITL {
 
-class PS_RPLidarA2 : public SerialProximitySensor {
+class PS_RPLidar : public SerialProximitySensor {
 public:
 
     using SerialProximitySensor::SerialProximitySensor;
@@ -135,8 +137,9 @@ private:
     static const constexpr char *FIRMWARE_INFO = "R12345678901234567890123456789012345678901234567890123456789012";
     uint8_t _firmware_info_offset;
 
-    // this will be pure-virtual in a notional RPLidar base class:
-    uint8_t device_info_model() const { return 0x28; }
+    // methods for sub-classes to implement:
+    virtual uint8_t device_info_model() const = 0;
+    virtual uint8_t max_range() const = 0;
 };
 
 };
