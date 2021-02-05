@@ -13,10 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the RPLidarA2 proximity sensor
+  Simulator for the RPLidar proximity sensors
 */
 
-#include "SIM_PS_RPLidarA2.h"
+#include "SIM_PS_RPLidar.h"
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
 
@@ -26,14 +26,14 @@
 
 using namespace SITL;
 
-uint32_t PS_RPLidarA2::packet_for_location(const Location &location,
+uint32_t PS_RPLidar::packet_for_location(const Location &location,
                                            uint8_t *data,
                                            uint8_t buflen)
 {
     return 0;
 }
 
-void PS_RPLidarA2::move_preamble_in_buffer()
+void PS_RPLidar::move_preamble_in_buffer()
 {
     uint8_t i;
     for (i=0; i<_buflen; i++) {
@@ -48,7 +48,7 @@ void PS_RPLidarA2::move_preamble_in_buffer()
     _buflen = _buflen - i;
 }
 
-void PS_RPLidarA2::update_input()
+void PS_RPLidar::update_input()
 {
     const ssize_t n = read_from_autopilot(&_buffer[_buflen], ARRAY_SIZE(_buffer) - _buflen - 1);
     if (n < 0) {
@@ -159,7 +159,7 @@ void PS_RPLidarA2::update_input()
     }
 }
 
-void PS_RPLidarA2::update_output_scan(const Location &location)
+void PS_RPLidar::update_output_scan(const Location &location)
 {
     const uint32_t now = AP_HAL::millis();
     if (last_scan_output_time_ms == 0) {
@@ -186,10 +186,9 @@ void PS_RPLidarA2::update_output_scan(const Location &location)
         last_degrees_bf = current_degrees_bf;
 
 
-        const float MAX_RANGE = 16.0f;
         float distance = measure_distance_at_angle_bf(location, current_degrees_bf);
         // ::fprintf(stderr, "SIM: %f=%fm\n", current_degrees_bf, distance);
-        if (distance > MAX_RANGE) {
+        if (distance > max_range()) {
             // sensor returns zero for out-of-range
             distance = 0.0f;
         }
@@ -219,7 +218,7 @@ void PS_RPLidarA2::update_output_scan(const Location &location)
     }
 }
 
-void PS_RPLidarA2::update_output(const Location &location)
+void PS_RPLidar::update_output(const Location &location)
 {
     switch (_state) {
     case State::IDLE:
@@ -230,14 +229,14 @@ void PS_RPLidarA2::update_output(const Location &location)
     }
 }
 
-void PS_RPLidarA2::update(const Location &location)
+void PS_RPLidar::update(const Location &location)
 {
     update_input();
     update_output(location);
 }
 
 
-void PS_RPLidarA2::send_response_descriptor(uint32_t data_response_length, SendMode sendmode, DataType datatype)
+void PS_RPLidar::send_response_descriptor(uint32_t data_response_length, SendMode sendmode, DataType datatype)
 {
     const uint8_t send_buffer[] = {
         0xA5,
