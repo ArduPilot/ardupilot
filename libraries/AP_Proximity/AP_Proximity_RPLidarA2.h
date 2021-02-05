@@ -56,14 +56,17 @@ private:
         AWAITING_RESPONSE,
         AWAITING_SCAN_DATA,
         AWAITING_HEALTH,
+        AWAITING_DEVICE_INFO,
     } _state = State::RESET;
 
     // send request for something from sensor
     void send_request_for_health();
     void send_scan_mode_request();
+    void send_request_for_device_info();
 
     void parse_response_data();
     void parse_response_health();
+    void parse_response_device_info();
 
     void get_readings();
     void reset_rplidar();
@@ -84,6 +87,14 @@ private:
     float _last_angle_deg;                    ///< yaw angle (in degrees) of _last_distance_m
     float _last_distance_m;                   ///< shortest distance for _last_face
     bool _last_distance_valid;                ///< true if _last_distance_m is valid
+
+    struct PACKED _device_info {
+        uint8_t model;
+        uint8_t firmware_minor;
+        uint8_t firmware_major;
+        uint8_t hardware;
+        uint8_t serial[16];
+   };
 
     struct PACKED _sensor_scan {
         uint8_t startbit      : 1;            ///< on the first revolution 1 else 0
@@ -118,10 +129,15 @@ private:
         _sensor_health sensor_health;
         _descriptor descriptor;
         _rpi_information information;
+        _device_info device_info;
         uint8_t forced_buffer_size[128]; // just so we read(...) efficiently
     } _payload;
     static_assert(sizeof(_payload) >= 63, "Needed for parsing out reboot data");
 
+    enum class Model {
+        UNKNOWN,
+        A2,
+    } model = Model::UNKNOWN;
 
     bool make_first_byte_in_payload(uint8_t desired_byte);
 };
