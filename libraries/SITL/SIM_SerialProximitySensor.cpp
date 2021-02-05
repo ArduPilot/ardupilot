@@ -60,7 +60,7 @@ float SerialProximitySensor::measure_distance_at_angle_bf(const Location &locati
     count++;
 
     // the 1000 here is so the files don't grow unbounded
-    const bool write_debug_files = true && count < 1000;
+    const bool write_debug_files = count < 1000;
 
     FILE *rayfile = nullptr;
     if (write_debug_files) {
