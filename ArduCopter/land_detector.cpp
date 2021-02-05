@@ -77,7 +77,10 @@ void Copter::update_land_detector()
         // if we have a healthy rangefinder only allow landing detection below 2 meters
         bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
 
-        if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check) {
+        // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
+        const bool WoW_check = (landinggear.get_wow_state() == 1 || landinggear.get_wow_state() == -1);
+
+        if (motor_at_lower_limit && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < ((float)LAND_DETECTOR_TRIGGER_SEC)*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;
