@@ -164,7 +164,7 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, uint32_t last_valid_rc_ms)
+AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
 {    
     if (!_enable) {
         return;
@@ -203,6 +203,7 @@ AP_AdvancedFailsafe::check(uint32_t last_heartbeat_ms, bool geofence_breached, u
         hal.gpio->write(_manual_pin, mode==AFS_MANUAL);
     }
 
+    const uint32_t last_heartbeat_ms = gcs().sysid_myggcs_last_seen_time_ms();
     uint32_t now = AP_HAL::millis();
     bool gcs_link_ok = ((now - last_heartbeat_ms) < 10000);
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
