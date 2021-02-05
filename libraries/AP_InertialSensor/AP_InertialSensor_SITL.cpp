@@ -282,6 +282,9 @@ void AP_InertialSensor_SITL::timer_update(void)
         return;
     }
 #endif
+    if (sitl == nullptr) {
+        return;
+    }
     if (now >= next_accel_sample) {
         if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
             generate_accel();
