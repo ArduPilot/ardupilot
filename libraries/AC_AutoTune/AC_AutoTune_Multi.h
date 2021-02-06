@@ -77,6 +77,9 @@ protected:
     // returns true if rate P gain of zero is acceptable for this vehicle
     bool allow_zero_rate_p() override { return false; }
 
+    // returns true if pilot is allowed to make inputs during test
+    bool allow_pilot_rp_input() override { return false; }
+
     // get minimum rate P (for any axis)
     float get_rp_min() const override;
 

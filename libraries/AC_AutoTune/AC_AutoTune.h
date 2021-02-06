@@ -175,6 +175,9 @@ protected:
     // returns true if rate P gain of zero is acceptable for this vehicle
     virtual bool allow_zero_rate_p() = 0;
 
+    // returns true if pilot is allowed to make inputs during test
+    virtual bool allow_pilot_rp_input() = 0;
+
     // get minimum rate P (for any axis)
     virtual float get_rp_min() const = 0;
 
