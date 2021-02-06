@@ -465,12 +465,12 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: RNG_USE_HGT
     // @DisplayName: Range finder switch height percentage
-    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND_MAX_CM). This will not work unless Baro or GPS height is selected as the primary height source vis EK3_ALT_SOURCE = 0 or 2 respectively.  This feature should not be used for terrain following as it is designed  for vertical takeoff and landing with climb above  the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
-    // @Range: -1 70
+    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND_MAX_CM). This will not work unless Baro or GPS height is selected as the primary height source vis EK3_ALT_SOURCE = 0 or 2 respectively.  This feature should not be used for terrain following as it is designed  for vertical takeoff and landing with climb above  the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point. 0 disables the rangefinder.
+    // @Range: 0 70
     // @Increment: 1
     // @User: Advanced
     // @Units: %
-    AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF3, _useRngSwHgt, -1),
+    AP_GROUPINFO("RNG_USE_HGT", 42, NavEKF3, _useRngSwHgt, 0),
 
     // @Param: TERR_GRAD
     // @DisplayName: Maximum terrain gradient
