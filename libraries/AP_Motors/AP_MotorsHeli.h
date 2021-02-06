@@ -87,9 +87,6 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
     
-    // set_rpm - for rotor speed governor
-    virtual void set_rpm(float rotor_rpm) = 0;
-
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
 
