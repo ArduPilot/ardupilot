@@ -19,6 +19,7 @@
 #include "UARTDriver.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_GPS/AP_GPS_UBLOX.h>
+#include <AP_Common/NMEA.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <time.h>
@@ -653,37 +654,19 @@ void SITL_State::_update_gps_mtk19(const struct gps_data *d, uint8_t instance)
 }
 
 /*
-  NMEA checksum
- */
-uint8_t SITL_State::_gps_nmea_checksum(const char *s)
-{
-    uint8_t cs = 0;
-    const uint8_t *b = (const uint8_t *)s;
-    for (uint16_t i=1; s[i]; i++) {
-        cs ^= b[i];
-    }
-    return cs;
-}
-
-/*
   formatted print of NMEA message, with checksum appended
  */
 void SITL_State::_gps_nmea_printf(uint8_t instance, const char *fmt, ...)
 {
-    char *s = nullptr;
-    uint8_t csum;
-    char trailer[6];
-
     va_list ap;
 
     va_start(ap, fmt);
-    vasprintf(&s, fmt, ap);
+    char *s = nmea_vaprintf(fmt, ap);
     va_end(ap);
-    csum = _gps_nmea_checksum(s);
-    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)csum);
-    _gps_write((const uint8_t*)s, strlen(s), instance);
-    _gps_write((const uint8_t*)trailer, 5, instance);
-    free(s);
+    if (s != nullptr) {
+        _gps_write((const uint8_t*)s, strlen(s), instance);
+        free(s);
+    }
 }
 
 
