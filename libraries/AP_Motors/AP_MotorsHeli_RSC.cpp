@@ -136,51 +136,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     
     // Indices 14 thru 17 have been re-assigned and should not be used in the future
 
-    // @Param: GOV_TORQUE
-    // @DisplayName: Governor Torque Limiter
-    // @Description: Adjusts the engine's percentage of torque rise on autothrottle during ramp-up to governor speed. The torque rise will determine how fast the rotor speed will ramp up when the throttle switch is turned on. 30% torque rise is a good starting setting to adjust the autothrottle ramp-in for piston and turbine engines. The sequence of events engaging the governor is as follows: Throttle ramp time will engage the clutch and start the main rotor turning. The collective should be at feather pitch and the throttle curve set to provide at least 50% of normal Rrpm at feather pitch. The autothrottle torque limiter will automatically activate and start accelerating the main rotor. Note that if the engine fails to respond during autothrottle ramp-in to governed speed due to external factors such as the tail rotor suddenly drawing too much torque, or the engine is not running properly, the torque limiter will pause and wait for the condition to clear before proceeding with ramp-in to governor speed. If the autothrottle consistently fails to accelerate the main rotor during ramp-in due to engine tune or other factors, then increase the torque limiter setting. Raising the collective during runup will increase how fast the autothrottle ramps up, but may cause the helicopter to become unstable on the ground due to producing thrust before the rotor reaches full speed. NOTE: Having the throttle ramp time and throttle curve set properly is very important, so these things should be tuned using MODE Throttle Curve before using MODE AutoThrottle
-    // @Range: 10 60
-    // @Units: %
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GOV_TORQUE", 18, AP_MotorsHeli_RSC, _governor_torque, AP_MOTORS_HELI_RSC_GOVERNOR_TORQUE_DEFAULT),
-    
-    // @Param: GOV_COMP
-    // @DisplayName: Governor Torque Compensator
-    // @Description: Adjusts the autothrottle governor torque compensator that determines how fast the governor will adjust the base torque reference to compensate for changes in density altitude. If Rrpm is low or high by more than 2-5 rpm, increase this setting by 1% at a time until the governor speed matches your Rrpm setting. Setting the compensator too high can result in surging and throttle "hunting". Do not make large adjustments at one time
-    // @Range: 0 70
-    // @Units: %
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GOV_COMP", 19, AP_MotorsHeli_RSC, _governor_compensator, 25),
-
-    // @Param: GOV_DROOP
-    // @DisplayName: Governor Droop Compensator
-    // @Description: AutoThrottle governor droop response under load, normal settings of 0-50%. Higher value is quicker response to large speed changes due to load but may cause surging. Adjust this to be as aggressive as possible without getting surging or Rrpm over-run when the governor responds to large load changes on the rotor system
-    // @Range: 0 100
-    // @Units: %
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GOV_DROOP", 20, AP_MotorsHeli_RSC, _governor_droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
-
-    // @Param: GOV_FF
-    // @DisplayName: Governor Feedforward
-    // @Description: Feedforward governor gain to throttle response during sudden loading/unloading of the rotor system. If Rrpm drops excessively during full collective climb with the droop response set correctly, increase the governor feedforward. If Rrpm drops excessively under heavy load also inspect the setting for maximum collective pitch to ensure that the pitch setting corresponds to maximum available power from the engine. Setting the maximum pitch to where the rotor draws more power than the engine can produce is called over-pitching and can lead to loss of control. The governor is not able to compensate for over-pitching if the throttle is wide open and the engine can't produce more power to maintain rotor speed. So maximum collective pitch must be matched to available maximum engine power.
-    // @Range: 0 100
-    // @Units: %
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GOV_FF", 21, AP_MotorsHeli_RSC, _governor_ff, AP_MOTORS_HELI_RSC_GOVERNOR_FF_DEFAULT),
-    
-    // @Param: GOV_CLDWN    
-    // @DisplayName: AutoThrottle Cooldown Time
-    // @Description: Will provide a fast idle for engine cooldown by raising the Ground Idle speed setting by 50% for the number of seconds the timer is set for. Can be set up to 120 seconds. A setting of zero disables the fast idle. This feature will only apply after the governor and autothrottle have been engaged (throttle switch on and rotor rpm at least 100% of normal speed). Upon initial startup of the engine after arming, normal Ground Idle is used. It will provide a 50% bump to Ground Idle speed for practice autorotation to ensure the engine doesn't quit. It will provide a 50% bump to Ground Idle speed to cool down a hot engine upon landing. At any time during fast idle, disarming will shut the engine down
-    // @Range: 0 120
-    // @Units: s
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GOV_CLDWN", 22, AP_MotorsHeli_RSC, _autothrottle_cooldown, 0),
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Param: AROT_PCT
     // @DisplayName: Autorotation Throttle Percentage for External Governor
@@ -191,6 +146,51 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
 #endif
+
+    // @Param: GOV_TORQUE
+    // @DisplayName: Governor Torque Limiter
+    // @Description: Adjusts the engine's percentage of torque rise on autothrottle during ramp-up to governor speed. The torque rise will determine how fast the rotor speed will ramp up when the throttle switch is turned on. 30% torque rise is a good starting setting to adjust the autothrottle ramp-in for piston and turbine engines. The sequence of events engaging the governor is as follows: Throttle ramp time will engage the clutch and start the main rotor turning. The collective should be at feather pitch and the throttle curve set to provide at least 50% of normal Rrpm at feather pitch. The autothrottle torque limiter will automatically activate and start accelerating the main rotor. Note that if the engine fails to respond during autothrottle ramp-in to governed speed due to external factors such as the tail rotor suddenly drawing too much torque, or the engine is not running properly, the torque limiter will pause and wait for the condition to clear before proceeding with ramp-in to governor speed. If the autothrottle consistently fails to accelerate the main rotor during ramp-in due to engine tune or other factors, then increase the torque limiter setting. Raising the collective during runup will increase how fast the autothrottle ramps up, but may cause the helicopter to become unstable on the ground due to producing thrust before the rotor reaches full speed. NOTE: Having the throttle ramp time and throttle curve set properly is very important, so these things should be tuned using MODE Throttle Curve before using MODE AutoThrottle
+    // @Range: 10 60
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GOV_TORQUE", 19, AP_MotorsHeli_RSC, _governor_torque, AP_MOTORS_HELI_RSC_GOVERNOR_TORQUE_DEFAULT),
+    
+    // @Param: GOV_COMP
+    // @DisplayName: Governor Torque Compensator
+    // @Description: Adjusts the autothrottle governor torque compensator that determines how fast the governor will adjust the base torque reference to compensate for changes in density altitude. If Rrpm is low or high by more than 2-5 rpm, increase this setting by 1% at a time until the governor speed matches your Rrpm setting. Setting the compensator too high can result in surging and throttle "hunting". Do not make large adjustments at one time
+    // @Range: 0 70
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GOV_COMP", 20, AP_MotorsHeli_RSC, _governor_compensator, 25),
+
+    // @Param: GOV_DROOP
+    // @DisplayName: Governor Droop Compensator
+    // @Description: AutoThrottle governor droop response under load, normal settings of 0-50%. Higher value is quicker response to large speed changes due to load but may cause surging. Adjust this to be as aggressive as possible without getting surging or Rrpm over-run when the governor responds to large load changes on the rotor system
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GOV_DROOP", 21, AP_MotorsHeli_RSC, _governor_droop_response, AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT),
+
+    // @Param: GOV_FF
+    // @DisplayName: Governor Feedforward
+    // @Description: Feedforward governor gain to throttle response during sudden loading/unloading of the rotor system. If Rrpm drops excessively during full collective climb with the droop response set correctly, increase the governor feedforward. If Rrpm drops excessively under heavy load also inspect the setting for maximum collective pitch to ensure that the pitch setting corresponds to maximum available power from the engine. Setting the maximum pitch to where the rotor draws more power than the engine can produce is called over-pitching and can lead to loss of control. The governor is not able to compensate for over-pitching if the throttle is wide open and the engine can't produce more power to maintain rotor speed. So maximum collective pitch must be matched to available maximum engine power.
+    // @Range: 0 100
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GOV_FF", 22, AP_MotorsHeli_RSC, _governor_ff, AP_MOTORS_HELI_RSC_GOVERNOR_FF_DEFAULT),
+    
+    // @Param: GOV_CLDWN    
+    // @DisplayName: AutoThrottle Cooldown Time
+    // @Description: Will provide a fast idle for engine cooldown by raising the Ground Idle speed setting by 50% for the number of seconds the timer is set for. Can be set up to 120 seconds. A setting of zero disables the fast idle. This feature will only apply after the governor and autothrottle have been engaged (throttle switch on and rotor rpm at least 100% of normal speed). Upon initial startup of the engine after arming, normal Ground Idle is used. It will provide a 50% bump to Ground Idle speed for practice autorotation to ensure the engine doesn't quit. It will provide a 50% bump to Ground Idle speed to cool down a hot engine upon landing. At any time during fast idle, disarming will shut the engine down
+    // @Range: 0 120
+    // @Units: s
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("GOV_CLDWN", 23, AP_MotorsHeli_RSC, _autothrottle_cooldown, 0),
 
     AP_GROUPEND
 };
