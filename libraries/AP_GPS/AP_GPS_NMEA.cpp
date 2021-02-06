@@ -29,6 +29,7 @@
 ///
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/NMEA.h>
 
 #include <ctype.h>
 #include <stdint.h>
@@ -73,41 +74,6 @@ bool AP_GPS_NMEA::read(void)
         }
     }
     return parsed;
-}
-
-/*
-  formatted print of NMEA message to the port, with checksum appended
- */
-bool AP_GPS_NMEA::nmea_printf(const char *fmt, ...) const
-{
-    char *s = nullptr;
-    char trailer[6];
-    va_list ap;
-
-    va_start(ap, fmt);
-    int ret = vasprintf(&s, fmt, ap);
-    va_end(ap);
-    if (ret == -1 || s == nullptr) {
-        // allocation failed
-        return false;
-    }
-
-    // calculate the checksum
-    uint8_t cs = 0;
-    const uint8_t *b = (const uint8_t *)s+1;
-    while (*b) {
-        cs ^= *b++;
-    }
-    uint32_t len = strlen(s);
-    snprintf(trailer, sizeof(trailer), "*%02X\r\n", (unsigned)cs);
-    if (port->txspace() < len + 5) {
-        free(s);
-        return false;
-    }
-    port->write((const uint8_t*)s, len);
-    port->write((const uint8_t*)trailer, 5);
-    free(s);
-    return true;
 }
 
 bool AP_GPS_NMEA::_decode(char c)
@@ -279,7 +245,7 @@ bool AP_GPS_NMEA::_have_new_message()
     const int32_t dt_ms = now - _last_fix_ms;
     if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
         get_type() == AP_GPS::GPS_TYPE_ALLYSTAR) {
-        nmea_printf("$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
+        nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
                     1000U/gps._rate_ms[state.instance],
                     gps._rate_ms[state.instance]);
     }
