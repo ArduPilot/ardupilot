@@ -339,9 +339,9 @@ void Copter::exit_mode(Mode *&old_flightmode,
         if (mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) {
             mode_auto.mission.stop();
         }
-#if HAL_MOUNT_ENABLED
+#if MOUNT_ENABLED
         camera_mount.set_mode_to_default();
-#endif  // HAL_MOUNT_ENABLED
+#endif  // MOUNT_ENABLED
     }
 #endif
 

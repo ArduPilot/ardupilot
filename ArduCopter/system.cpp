@@ -128,7 +128,7 @@ void Copter::init_ardupilot()
     // init the optical flow sensor
     init_optflow();
 
-#if HAL_MOUNT_ENABLED
+#if MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
 #endif

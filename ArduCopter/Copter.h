@@ -485,7 +485,7 @@ private:
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
-#if HAL_MOUNT_ENABLED
+#if MOUNT_ENABLED
     AP_Mount camera_mount;
 #endif
 
