@@ -480,7 +480,10 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
         TOGGLE_PIN_DEBUG(55);
     } else {
         // non-bidir case
-        chVTSetI(&group->dma_timeout, chTimeUS2I(group->dshot_pulse_time_us + 40), dma_unlock, p);
+        // this prevents us ever having two dshot pulses too close together
+        // dshot mandates a minimum pulse separation of 40us, WS2812 mandates 50us so we
+        // pick the higher value
+        chVTSetI(&group->dma_timeout, chTimeUS2I(50), dma_unlock, p);
     }
 
     chSysUnlockFromISR();
