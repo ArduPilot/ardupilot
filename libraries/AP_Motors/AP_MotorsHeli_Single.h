@@ -61,9 +61,6 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
 
-    // set_rpm - for rotor speed governor
-    void set_rpm(float rotor_rpm) override;
-
     // get_main_rotor_speed - estimated rotor speed when no speed sensor or governor is used
     float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
 
