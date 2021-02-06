@@ -352,9 +352,6 @@ void AP_Baro_MS56XX::_calculate_5611()
     float OFF;
     float SENS;
 
-    // Formulas from manufacturer datasheet
-    // sub -15c temperature compensation is not included
-
     // we do the calculations using floating point allows us to take advantage
     // of the averaging of D1 and D1 over multiple samples, giving us more
     // precision
@@ -363,19 +360,27 @@ void AP_Baro_MS56XX::_calculate_5611()
     OFF = _cal_reg.c2 * 65536.0f + (_cal_reg.c4 * dT) / 128;
     SENS = _cal_reg.c1 * 32768.0f + (_cal_reg.c3 * dT) / 256;
 
-    if (TEMP < 0) {
+    TEMP += 2000;
+
+    if (TEMP < 2000) {
         // second order temperature compensation when under 20 degrees C
         float T2 = (dT*dT) / 0x80000000;
-        float Aux = TEMP*TEMP;
+        float Aux = sq(TEMP-2000.0);
         float OFF2 = 2.5f*Aux;
         float SENS2 = 1.25f*Aux;
+        if (TEMP < -1500) {
+            // extra compensation for temperatures below -15C
+            OFF2 += 7 * sq(TEMP+1500);
+            SENS2 += sq(TEMP+1500) * 11.0*0.5;
+        }
         TEMP = TEMP - T2;
         OFF = OFF - OFF2;
         SENS = SENS - SENS2;
     }
 
+
     float pressure = (_D1*SENS/2097152 - OFF)/32768;
-    float temperature = (TEMP + 2000) * 0.01f;
+    float temperature = TEMP * 0.01f;
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
@@ -387,9 +392,6 @@ void AP_Baro_MS56XX::_calculate_5607()
     float OFF;
     float SENS;
 
-    // Formulas from manufacturer datasheet
-    // sub -15c temperature compensation is not included
-
     // we do the calculations using floating point allows us to take advantage
     // of the averaging of D1 and D1 over multiple samples, giving us more
     // precision
@@ -398,19 +400,25 @@ void AP_Baro_MS56XX::_calculate_5607()
     OFF = _cal_reg.c2 * 131072.0f + (_cal_reg.c4 * dT) / 64;
     SENS = _cal_reg.c1 * 65536.0f + (_cal_reg.c3 * dT) / 128;
 
-    if (TEMP < 0) {
+    TEMP += 2000;
+
+    if (TEMP < 2000) {
         // second order temperature compensation when under 20 degrees C
         float T2 = (dT*dT) / 0x80000000;
-        float Aux = TEMP*TEMP;
+        float Aux = sq(TEMP-2000);
         float OFF2 = 61.0f*Aux/16.0f;
         float SENS2 = 2.0f*Aux;
+        if (TEMP < -1500) {
+            OFF2 += 15 * sq(TEMP+1500);
+            SENS2 += 8 * sq(TEMP+1500);
+        }
         TEMP = TEMP - T2;
         OFF = OFF - OFF2;
         SENS = SENS - SENS2;
     }
 
     float pressure = (_D1*SENS/2097152 - OFF)/32768;
-    float temperature = (TEMP + 2000) * 0.01f;
+    float temperature = TEMP * 0.01f;
     _copy_to_frontend(_instance, pressure, temperature);
 }
 
@@ -421,9 +429,6 @@ void AP_Baro_MS56XX::_calculate_5637()
     int64_t OFF, SENS;
     int32_t raw_pressure = _D1;
     int32_t raw_temperature = _D2;
-
-    // Formulas from manufacturer datasheet
-    // sub -15c temperature compensation is not included
 
     dT = raw_temperature - (((uint32_t)_cal_reg.c5) << 8);
     TEMP = 2000 + ((int64_t)dT * (int64_t)_cal_reg.c6) / 8388608;
@@ -437,6 +442,11 @@ void AP_Baro_MS56XX::_calculate_5637()
         int64_t OFF2 = 61 * aux / 16;
         int64_t SENS2 = 29 * aux / 16;
 
+        if (TEMP < -1500) {
+            OFF2 += 17 * sq(TEMP+1500);
+            SENS2 += 9 * sq(TEMP+1500);
+        }
+        
         TEMP = TEMP - T2;
         OFF = OFF - OFF2;
         SENS = SENS - SENS2;
@@ -455,8 +465,7 @@ void AP_Baro_MS56XX::_calculate_5837()
     int32_t raw_pressure = _D1;
     int32_t raw_temperature = _D2;
 
-    // Formulas from manufacturer datasheet
-    // sub -15c temperature compensation is not included
+    // note that MS5837 has no compensation for temperatures below -15C in the datasheet
 
     dT = raw_temperature - (((uint32_t)_cal_reg.c5) << 8);
     TEMP = 2000 + ((int64_t)dT * (int64_t)_cal_reg.c6) / 8388608;
