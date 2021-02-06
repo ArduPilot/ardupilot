@@ -96,9 +96,6 @@ public:
     // get_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
     float       get_rotor_speed() const;
     
-    // set_rotor_rpm - when speed sensor is available for governor
-    void        set_rotor_rpm(float rotor_rpm) {_rotor_rpm = (float)rotor_rpm; }
-    
     // get_governor_output
     float       get_governor_output() const { return _governor_output; }
 

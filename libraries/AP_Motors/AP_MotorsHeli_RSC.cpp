@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsHeli_RSC.h"
+#include <AP_RPM/AP_RPM.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -32,7 +33,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
 
     // @Param: MODE
     // @DisplayName: Rotor Speed Control Mode
-    // @Description: Selects the type of rotor speed control used to determine throttle output to the HeliRSC servo channel when motor interlock is enabled (throttle hold off). RC Passthrough sends the input from the RC Motor Interlock channel as throttle output.  External Gov SetPoint sends the RSC SetPoint parameter value as throttle output.  Throttle Curve uses the 5 point throttle curve to determine throttle output based on the collective output.  AutoThrottle requires a rotor speed sensor, contains an advanced autothrottle governor and is for piston and turbine engines only. WARNING: Throttle ramp time and throttle curve MUST be tuned properly using Throttle Curve mode before using AutoThrottle
+    // @Description: Selects the type of rotor speed control used to determine throttle output to the HeliRSC servo channel when motor interlock is enabled (throttle hold off). RC Passthrough sends the input from the RC Motor Interlock channel as throttle output.  External Gov SetPoint sends the RSC SetPoint parameter value as throttle output.  Throttle Curve uses the 5 point throttle curve to determine throttle output based on the collective output.  AutoThrottle requires a rotor speed sensor, contains an advanced autothrottle governor and is primarily for piston and turbine engines. WARNING: Throttle ramp time and throttle curve MUST be tuned properly using Throttle Curve mode before using AutoThrottle
     // @Values: 1:RC Passthrough, 2:External Gov SetPoint, 3:Throttle Curve, 4:AutoThrottle
     // @User: Standard
     AP_GROUPINFO("MODE", 2, AP_MotorsHeli_RSC, _rsc_mode, (int8_t)ROTOR_CONTROL_MODE_PASSTHROUGH),
@@ -137,7 +138,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
 
     // @Param: GOV_TORQUE
     // @DisplayName: Governor Torque Limiter
-    // @Description: Adjusts the engine's percentage of torque rise on autothrottle during ramp-up to governor speed. The torque rise will determine how fast the rotor speed will ramp up when the throttle switch is turned on. 30% torque rise is a good starting setting to adjust the autothrottle ramp-in for piston and turbine engines. The sequence of events engaging the governor is as follows: Throttle ramp time will engage the clutch and start the main rotor turning. The collective should be at feather pitch and the throttle curve set to provide at least 50% of normal Rrpm at feather pitch. The autothrottle torque limiter will automatically activate and start accelerating the main rotor. Note that if the engine fails to respond during autothrottle ramp-in to governed speed due to external factors such as the tail rotor suddenly drawing too much torque, or the engine is not running properly, the torque limiter will pause and wait for the condition to clear before proceeding with ramp-in to governor speed. If the autothrottle consistenly fails to accelerate the main rotor during ramp-in due to engine tune or other factors, then increase the torque limiter setting. Raising the collective during runup will increase how fast the autothrottle ramps up, but may cause the helicopter to become unstable on the ground due to producing thrust before the rotor reaches full speed. NOTE: Having the throttle ramp time and throttle curve set properly is very important, so these things should be tuned using MODE Throttle Curve before using MODE AutoThrottle
+    // @Description: Adjusts the engine's percentage of torque rise on autothrottle during ramp-up to governor speed. The torque rise will determine how fast the rotor speed will ramp up when the throttle switch is turned on. 30% torque rise is a good starting setting to adjust the autothrottle ramp-in for piston and turbine engines. The sequence of events engaging the governor is as follows: Throttle ramp time will engage the clutch and start the main rotor turning. The collective should be at feather pitch and the throttle curve set to provide at least 50% of normal Rrpm at feather pitch. The autothrottle torque limiter will automatically activate and start accelerating the main rotor. Note that if the engine fails to respond during autothrottle ramp-in to governed speed due to external factors such as the tail rotor suddenly drawing too much torque, or the engine is not running properly, the torque limiter will pause and wait for the condition to clear before proceeding with ramp-in to governor speed. If the autothrottle consistently fails to accelerate the main rotor during ramp-in due to engine tune or other factors, then increase the torque limiter setting. Raising the collective during runup will increase how fast the autothrottle ramps up, but may cause the helicopter to become unstable on the ground due to producing thrust before the rotor reaches full speed. NOTE: Having the throttle ramp time and throttle curve set properly is very important, so these things should be tuned using MODE Throttle Curve before using MODE AutoThrottle
     // @Range: 10 60
     // @Units: %
     // @Increment: 1
@@ -146,8 +147,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     
     // @Param: GOV_COMP
     // @DisplayName: Governor Torque Compensator
-    // @Description: Adjusts the autothrottle governor compensaator gain that determines how fast the governor will adjust the base torque reference to compensate for changes in density altitude. If Rrpm is low or high by more than 2-5 rpm, increase this setting by 1% at a time until the governor speed matches your Rrpm setting. Setting the compensator too high will result in surging and throttle "hunting". Do not make large adjustments at one time
-    // @Range: 0 50
+    // @Description: Adjusts the autothrottle governor torque compensator that determines how fast the governor will adjust the base torque reference to compensate for changes in density altitude. If Rrpm is low or high by more than 2-5 rpm, increase this setting by 1% at a time until the governor speed matches your Rrpm setting. Setting the compensator too high can result in surging and throttle "hunting". Do not make large adjustments at one time
+    // @Range: 0 70
     // @Units: %
     // @Increment: 1
     // @User: Standard
@@ -156,7 +157,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Param: GOV_DROOP
     // @DisplayName: Governor Droop Compensator
     // @Description: AutoThrottle governor droop response under load, normal settings of 0-50%. Higher value is quicker response to large speed changes due to load but may cause surging. Adjust this to be as aggressive as possible without getting surging or Rrpm over-run when the governor responds to large load changes on the rotor system
-    // @Range: 0 50
+    // @Range: 0 100
     // @Units: %
     // @Increment: 1
     // @User: Standard
@@ -164,7 +165,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
 
     // @Param: GOV_FF
     // @DisplayName: Governor Feedforward
-    // @Description: Feedforward governor gain to throttle response during sudden loading or unloading of the rotor system. If Rrpm drops excessively during full collective climb with the droop compensator set correctly, increase the governor feedforward. If Rrpm drops excessively under heavy load also inspect the setting for maximum collective pitch to ensure that the pitch setting corresponds to maximum available power from the engine. Setting the maximum pitch to where the rotor draws more power than the engine can produce is called over-pitching and can lead to loss of control. The governor is not able to compensate for over-pitching if the throttle is wide open and the engine can't produce more power to maintain rotor speed
+    // @Description: Feedforward governor gain to throttle response during sudden loading/unloading of the rotor system. If Rrpm drops excessively during full collective climb with the droop response set correctly, increase the governor feedforward. If Rrpm drops excessively under heavy load also inspect the setting for maximum collective pitch to ensure that the pitch setting corresponds to maximum available power from the engine. Setting the maximum pitch to where the rotor draws more power than the engine can produce is called over-pitching and can lead to loss of control. The governor is not able to compensate for over-pitching if the throttle is wide open and the engine can't produce more power to maintain rotor speed. So maximum collective pitch must be matched to available maximum engine power.
     // @Range: 0 100
     // @Units: %
     // @Increment: 1
@@ -173,7 +174,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     
     // @Param: GOV_CLDWN    
     // @DisplayName: AutoThrottle Cooldown Time
-    // @Description: Will provide a fast idle for engine cooldown by raising the Ground Idle speed setting by 50% for the number of seconds the timer is set for. Can be set up to 120 seconds. A setting of zero disables the fast idle. This feature will only apply after the governor and autothrottle have been engaged (throttle switch on and rotor rpm at least 50% of normal speed). Upon initial startup of the engine after arming, normal Ground Idle is used. It will provide a 50% bump to Ground Idle speed for practice autorotation to ensure the engine doesn't quit. It will provide a 50% bump to Ground Idle speed to cool down a hot engine upon landing. At any time during fast idle, disarming will shut the engine down
+    // @Description: Will provide a fast idle for engine cooldown by raising the Ground Idle speed setting by 50% for the number of seconds the timer is set for. Can be set up to 120 seconds. A setting of zero disables the fast idle. This feature will only apply after the governor and autothrottle have been engaged (throttle switch on and rotor rpm at least 100% of normal speed). Upon initial startup of the engine after arming, normal Ground Idle is used. It will provide a 50% bump to Ground Idle speed for practice autorotation to ensure the engine doesn't quit. It will provide a 50% bump to Ground Idle speed to cool down a hot engine upon landing. At any time during fast idle, disarming will shut the engine down
     // @Range: 0 120
     // @Units: s
     // @Increment: 1
@@ -222,6 +223,12 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 // output - update value to send to ESC/Servo
 void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
+    // _rotor_rpm available to the RSC output
+    const AP_RPM *rpm = AP_RPM::get_singleton();
+    if (!rpm->get_rpm(0, _rotor_rpm)) {
+        _rotor_rpm = -1;
+    }
+    
     float dt;
     uint64_t now = AP_HAL::micros64();
     float last_control_output = _control_output;
@@ -425,18 +432,21 @@ void AP_MotorsHeli_RSC::autothrottle_run()
 {
     float throttlecurve = calculate_throttlecurve(_collective_in);
     
-    // Normal autothrottle operation with governor
+    // autothrottle main power loop with governor
     if (_governor_engage && !_governor_fault) {
+        // calculate droop - difference between actual and desired speed
         float governor_droop = (_governor_rpm - _rotor_rpm) * get_governor_droop_response();
         _governor_output = governor_droop + ((throttlecurve - _governor_torque_reference) *  get_governor_ff());
-        if (_rotor_rpm < (_governor_rpm - 2.0f)) {   // torque compensator
-            _governor_torque_reference += get_governor_compensator();
+        if (_rotor_rpm < (_governor_rpm - 2.0f)) {
+            _governor_torque_reference += get_governor_compensator();   // torque compensator
         } else if (_rotor_rpm > (_governor_rpm + 2.0f)) {
             _governor_torque_reference -= get_governor_compensator();
         }
+    // throttle output uses droop + torque compensation to maintain proper rotor speed
     _control_output = constrain_float((_governor_torque_reference + _governor_output), throttlecurve * get_governor_ff(), 1.0f);
         // governor and speed sensor fault detection - must maintain Rrpm -3/+2%
-        // speed fault detector will allow a fault to persist for 200 contiguous governor update cycles
+        // speed fault detector will allow a fault to persist for 200 contiguous governor updates
+        // this is failsafe for bad speed sensor or severely mis-adjusted governor
         if ((_rotor_rpm <= (_governor_rpm * 0.97f)) || (_rotor_rpm >= (_governor_rpm * 1.02f))) {
             _governor_fault_count += 1.0f;
             if (_governor_fault_count > 200.0f) {
@@ -444,27 +454,33 @@ void AP_MotorsHeli_RSC::autothrottle_run()
                 _governor_engage = false;
                 _governor_output = 0.0f;
                 _governor_torque_reference = 0.0f;
-                gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Speed Range");
+                if (_rotor_rpm >= (_governor_rpm * 1.02f)) {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Overspeed");
+                } else {
+                    gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Underspeed");
+                }
             }
         } else {
-            _governor_fault_count = 0.0f;
+            _governor_fault_count = 0.0f;   // reset fault count if the fault doesn't persist
         }    
     } else if (!_governor_engage && !_governor_fault) {
+        // torque rise limiter accelerates rotor to the reference speed
+        // this limits the max torque rise the governor could call for from the main power loop
         if (_rotor_rpm >= (_governor_rpm * 0.5f)) {
-            // torque rise limiter accelerates rotor to the reference speed
             float torque_limit = (get_governor_torque() * get_governor_torque());
             _governor_output = (_rotor_rpm / _governor_rpm) * torque_limit;
             _control_output = constrain_float(throttlecurve + _governor_output, 0.0f, 1.0f);
-            _governor_torque_reference = _control_output;
+            _governor_torque_reference = _control_output;  // increment torque setting to be passed to main power loop
             if (_rotor_rpm >= (_governor_rpm - 2.0f)) {
                 _governor_engage = true;
                 _autothrottle = true;
             }
         } else {
+            // temporary use of throttle curve and ramp timer to accelerate rotor to governor min torque rise speed
             _control_output = constrain_float(get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output())), 0.0f, 1.0f);
         }
     } else {
-        // if governor has faulted use throttle curve
+        // failsafe - if governor has faulted use throttle curve
         _control_output = constrain_float(get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output())), 0.0f, 1.0f);
     }
 
