@@ -159,11 +159,6 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
-    
-#if RPM_ENABLED == ENABLED
-    // set rpm from rotor speed sensor
-    motors->set_rpm(rpm_sensor.get_rpm(0));
-#endif
 
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_PASSTHROUGH:
