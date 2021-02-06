@@ -51,7 +51,7 @@ public:
 
     // fixed IMU rate for now
     float get_IMU_rate(void) const {
-        return 50;
+        return rate.get();
     }
 
     // get serial port number, -1 for not enabled
@@ -122,8 +122,10 @@ private:
 
     void process_packet1(const uint8_t *b);
     void process_packet2(const uint8_t *b);
+    void send_config(void) const;
 
     AP_Enum<DevType> devtype;
+    AP_Int16         rate;
 
     static AP_ExternalAHRS *_singleton;
 
