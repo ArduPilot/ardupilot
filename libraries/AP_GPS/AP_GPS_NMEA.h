@@ -115,9 +115,6 @@ private:
     /// return true if we have a new set of NMEA messages
     bool _have_new_message(void);
 
-    // print a formatted NMEA message to the port
-    bool nmea_printf(const char *fmt, ...) const;
-
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     bool _is_checksum_term;                                     ///< current term is the checksum
     char _term[15];                                                     ///< buffer for the current term within the current sentence
