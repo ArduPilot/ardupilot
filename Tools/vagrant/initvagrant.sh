@@ -39,7 +39,7 @@ apt-get install -y gdb
 sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER/.screenrc
 
 # build JSB sim
-apt-get install -y libtool automake autoconf libexpat1-dev
+apt-get install -y libtool automake autoconf libexpat1-dev cmake
 #  libtool-bin
 sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
 
