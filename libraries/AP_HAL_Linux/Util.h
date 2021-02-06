@@ -50,6 +50,14 @@ public:
     void set_custom_storage_directory(const char *_custom_storage_directory) {
         custom_storage_directory = _custom_storage_directory;
     }
+    void set_custom_defaults_path(const char *_custom_defaults) {
+        custom_defaults = _custom_defaults;
+    }
+
+    // get path to custom defaults file for AP_Param
+    const char* get_custom_defaults_file() const override final {
+        return custom_defaults;
+    }
 
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;
@@ -119,6 +127,7 @@ private:
     const char *custom_log_directory = nullptr;
     const char *custom_terrain_directory = nullptr;
     const char *custom_storage_directory = nullptr;
+    const char *custom_defaults = HAL_PARAM_DEFAULTS_PATH;
     static const char *_hw_names[UTIL_NUM_HARDWARES];
 
 #ifdef ENABLE_HEAP

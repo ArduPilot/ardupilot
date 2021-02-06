@@ -311,6 +311,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
         {"module-directory",    true,  0, 'M'},
+        {"defaults",            true,  0, 'd'},
         {"help",                false,  0, 'h'},
         {0, false, 0, 0}
     };
@@ -364,6 +365,9 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
             module_path = gopt.optarg;
             break;
 #endif
+        case 'd':
+            utilInstance.set_custom_defaults_path(gopt.optarg);
+            break;
         case 'h':
             _usage();
             exit(0);
