@@ -167,7 +167,7 @@
 #include "UserParameters.h"
 #endif
 #include "Parameters.h"
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
 
@@ -532,7 +532,7 @@ private:
     AC_InputManager_Heli input_manager;
 #endif
 
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
     AP_ADSB adsb;
 
     // avoidance of adsb enabled vehicles (normally manned vehicles)
@@ -664,7 +664,7 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
 
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
 #endif
@@ -945,7 +945,7 @@ private:
 #if MODE_SYSTEMID_ENABLED == ENABLED
     ModeSystemId mode_systemid;
 #endif
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
     ModeAvoidADSB mode_avoid_adsb;
 #endif
 #if MODE_THROW_ENABLED == ENABLED

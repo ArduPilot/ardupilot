@@ -276,7 +276,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // check adsb avoidance failsafe
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
         if (copter.failsafe.adsb) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "ADSB threat detected");
             return false;
@@ -690,7 +690,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // check adsb
-#if HAL_ADSB_ENABLED
+#if ADSB_ENABLED
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
         if (copter.failsafe.adsb) {
             check_failed(ARMING_CHECK_PARAMETERS, true, "ADSB threat detected");
