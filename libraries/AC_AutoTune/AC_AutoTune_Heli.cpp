@@ -410,7 +410,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
         if (tune_ff <= AUTOTUNE_RFF_MIN) {
             tune_ff = AUTOTUNE_RFF_MIN;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
             ff_up_first_iter = true;
         }
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
@@ -418,7 +418,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
         if (tune_ff >= AUTOTUNE_RFF_MAX) {
             tune_ff = AUTOTUNE_RFF_MAX;
             counter = AUTOTUNE_SUCCESS_COUNT;
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
             ff_up_first_iter = true;
         }
     } else {
@@ -538,7 +538,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             if (tune_p >= AUTOTUNE_SP_MAX) {
                 tune_p = AUTOTUNE_SP_MAX;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
             }
         } else {
             counter = AUTOTUNE_SUCCESS_COUNT;
