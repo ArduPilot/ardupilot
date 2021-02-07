@@ -248,8 +248,10 @@ void ModeAuto::land_start(const Vector3f& destination)
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
 
 #if AC_FENCE == ENABLED
     // disable the fence on landing
@@ -1521,11 +1523,13 @@ bool ModeAuto::verify_takeoff()
     // have we reached our target altitude?
     const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // if we have reached our destination
     if (reached_wp_dest) {
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
+#endif
 
     return reached_wp_dest;
 }
