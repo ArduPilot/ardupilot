@@ -515,7 +515,9 @@ private:
 #endif
 
     // Landing Gear Controller
+#if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landinggear;
+#endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN && MODE_AUTO_ENABLED == ENABLED
@@ -770,8 +772,10 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_mix();
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // landing_gear.cpp
     void landinggear_update();
+#endif
 
     // standby.cpp
     void standby_update();
