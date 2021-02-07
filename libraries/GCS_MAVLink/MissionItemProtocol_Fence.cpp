@@ -20,10 +20,12 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
 
     MAV_CMD ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION; // initialised to avoid compiler warning
     float p1 = 0;
+    float p2 = 0;
     switch (fenceitem.type) {
     case AC_PolyFenceType::POLYGON_INCLUSION:
         ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION;
         p1 = fenceitem.vertex_count;
+        p2 = fenceitem.inclusion_group;
         break;
     case AC_PolyFenceType::POLYGON_EXCLUSION:
         ret_cmd = MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION;
@@ -39,6 +41,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
     case AC_PolyFenceType::CIRCLE_INCLUSION:
         ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION;
         p1 = fenceitem.radius;
+        p2 = fenceitem.inclusion_group;
         break;
     case AC_PolyFenceType::END_OF_STORAGE:
         return MAV_MISSION_ERROR;
@@ -46,6 +49,7 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::get_item(const GCS_MAVLINK &_link,
 
     ret_packet.command = ret_cmd;
     ret_packet.param1 = p1;
+    ret_packet.param2 = p2;
     ret_packet.x = fenceitem.loc.x;
     ret_packet.y = fenceitem.loc.y;
     ret_packet.z = 0;
@@ -76,6 +80,7 @@ static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mav
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_INCLUSION;
         ret.vertex_count = mission_item_int.param1;
+        ret.inclusion_group = mission_item_int.param2;
         break;
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_EXCLUSION;
@@ -91,6 +96,7 @@ static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_AC_PolyFenceItem(const mav
     case MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:
         ret.type = AC_PolyFenceType::CIRCLE_INCLUSION;
         ret.radius = mission_item_int.param1;
+        ret.inclusion_group = mission_item_int.param2;
         break;
     default:
         return MAV_MISSION_UNSUPPORTED;
