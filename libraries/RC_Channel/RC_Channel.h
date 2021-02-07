@@ -192,6 +192,7 @@ public:
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
         RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
+        VTX_POWER =           94, // VTX power level
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
@@ -233,6 +234,7 @@ public:
     };
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
+    bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
     virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
