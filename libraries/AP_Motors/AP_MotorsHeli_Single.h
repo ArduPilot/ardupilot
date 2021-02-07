@@ -9,7 +9,7 @@
 #include "AP_MotorsHeli_RSC.h"
 #include "AP_MotorsHeli_Swash.h"
 
-// rsc and extgyro function output channels. 
+// rsc and extgyro function output channels.
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
 #define AP_MOTORS_HELI_SINGLE_TAILRSC                          CH_7
 
@@ -69,10 +69,10 @@ public:
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
     bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
-    
+
     // get_governor_output
     float get_governor_output() const override { return _main_rotor.get_governor_output(); }
-    
+
     // get_control_output
     float get_control_output() const override{ return _main_rotor.get_control_output(); }
 

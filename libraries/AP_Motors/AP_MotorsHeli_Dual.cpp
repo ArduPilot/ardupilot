@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-    
+
     // @Param: SW_H3_PHANG
     // @DisplayName: Swash 1 H3 Generic Phase Angle Comp
     // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-    
+
     // @Param: SW2_H3_PHANG
     // @DisplayName: Swash 2 H3 Generic Phase Angle Comp
     // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
