@@ -231,7 +231,7 @@ void AP_MotorsHeli::output()
     } else {
         output_disarmed();
     }
-    
+
     output_to_motors();
 
 };

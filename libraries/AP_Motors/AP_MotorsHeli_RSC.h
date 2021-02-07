@@ -95,7 +95,7 @@ public:
 
     // get_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
     float       get_rotor_speed() const;
-    
+
     // get_governor_output
     float       get_governor_output() const { return _governor_output; }
 
@@ -116,7 +116,7 @@ public:
 
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
-    
+
     // calculate autothrottle output
     void        autothrottle_run();
 

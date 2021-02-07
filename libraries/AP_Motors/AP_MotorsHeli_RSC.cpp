@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("GOV_RPM", 13, AP_MotorsHeli_RSC, _governor_rpm, AP_MOTORS_HELI_RSC_GOVERNOR_RPM_DEFAULT),
-    
+
     // Indices 14 thru 17 have been re-assigned and should not be used in the future
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -155,7 +155,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GOV_TORQUE", 19, AP_MotorsHeli_RSC, _governor_torque, AP_MOTORS_HELI_RSC_GOVERNOR_TORQUE_DEFAULT),
-    
+
     // @Param: GOV_COMP
     // @DisplayName: Governor Torque Compensator
     // @Description: Adjusts the autothrottle governor torque compensator that determines how fast the governor will adjust the base torque reference to compensate for changes in density altitude. If Rrpm is low or high by more than 2-5 rpm, increase this setting by 1% at a time until the governor speed matches your Rrpm setting. Setting the compensator too high can result in surging and throttle "hunting". Do not make large adjustments at one time
@@ -182,8 +182,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GOV_FF", 22, AP_MotorsHeli_RSC, _governor_ff, AP_MOTORS_HELI_RSC_GOVERNOR_FF_DEFAULT),
-    
-    // @Param: GOV_CLDWN    
+
+    // @Param: GOV_CLDWN
     // @DisplayName: AutoThrottle Cooldown Time
     // @Description: Will provide a fast idle for engine cooldown by raising the Ground Idle speed setting by 50% for the number of seconds the timer is set for. Can be set up to 120 seconds. A setting of zero disables the fast idle. This feature will only apply after the governor and autothrottle have been engaged (throttle switch on and rotor rpm at least 100% of normal speed). Upon initial startup of the engine after arming, normal Ground Idle is used. It will provide a 50% bump to Ground Idle speed for practice autorotation to ensure the engine doesn't quit. It will provide a 50% bump to Ground Idle speed to cool down a hot engine upon landing. At any time during fast idle, disarming will shut the engine down
     // @Range: 0 120
@@ -201,7 +201,7 @@ void AP_MotorsHeli_RSC::init_servo()
     // setup RSC on specified channel by default
     SRV_Channels::set_aux_channel_default(_aux_fn, _default_channel);
 
-    // set servo range 
+    // set servo range
     SRV_Channels::set_range(SRV_Channels::get_motor_function(_aux_fn), 1000);
 
 }
@@ -228,7 +228,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
     if (!rpm->get_rpm(0, _rotor_rpm)) {
         _rotor_rpm = -1;
     }
-    
+
     float dt;
     uint64_t now = AP_HAL::micros64();
     float last_control_output = _control_output;
@@ -248,7 +248,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 
             // control output forced to zero
             _control_output = 0.0f;
-            
+
             // governor is forced to disengage status and ensure governor outputs are reset
             _autothrottle = false;
             _governor_engage = false;
@@ -297,7 +297,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 _control_output = get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output()));
             } else if (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
                 autothrottle_run();
-            }            
+            }
             break;
     }
 
@@ -431,7 +431,7 @@ float AP_MotorsHeli_RSC::calculate_throttlecurve(float collective_in)
 void AP_MotorsHeli_RSC::autothrottle_run()
 {
     float throttlecurve = calculate_throttlecurve(_collective_in);
-    
+
     // autothrottle main power loop with governor
     if (_governor_engage && !_governor_fault) {
         // calculate droop - difference between actual and desired speed
@@ -462,7 +462,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             }
         } else {
             _governor_fault_count = 0.0f;   // reset fault count if the fault doesn't persist
-        }    
+        }
     } else if (!_governor_engage && !_governor_fault) {
         // torque rise limiter accelerates rotor to the reference speed
         // this limits the max torque rise the governor could call for from the main power loop
