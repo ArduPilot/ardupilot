@@ -60,6 +60,7 @@ public:
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
+    virtual bool allows_save_trim() const { return false; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -275,6 +276,7 @@ public:
     void exit();
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
+    bool allows_save_trim() const override { return true; }
 
 protected:
 
@@ -1236,6 +1238,7 @@ public:
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
 
 protected:
 
