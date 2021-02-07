@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#if LANDING_GEAR_ENABLED == ENABLED
 
 // Run landing gear controller at 10Hz
 void Copter::landinggear_update()
@@ -33,3 +34,5 @@ void Copter::landinggear_update()
 
     landinggear.update(height_cm * 0.01f); // convert cm->m for update call
 }
+
+#endif // LANDING_GEAR_ENABLED
