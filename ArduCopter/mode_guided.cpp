@@ -406,8 +406,10 @@ void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
     if (wp_nav->reached_wp_destination()) {
+#if LANDING_GEAR_ENABLED == ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
+#endif
 
         // switch to position control mode but maintain current target
         const Vector3f target = wp_nav->get_wp_destination();
