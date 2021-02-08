@@ -59,7 +59,8 @@ jobs:
 
       - name: Archive buildlog artifacts
         uses: actions/upload-artifact@v2
+        if: failure()
         with:
-           name: buildlogs-for-${{ matrix.toolchain }}-${{matrix.config}}
+           name: fail-${{ matrix.toolchain }}-${{matrix.config}}
            path: /tmp/buildlogs
            retention-days: 14
