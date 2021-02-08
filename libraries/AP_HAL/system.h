@@ -25,5 +25,6 @@ uint64_t native_micros64();
 uint64_t native_millis64();
 
 void dump_stack_trace();
+void *wolfssl_realloc(void *addr, size_t size);
 
 } // namespace AP_HAL
