@@ -4513,6 +4513,35 @@ class AutoTest(ABC):
 
         self.wait_and_maintain(value_name="SpeedVector", target=speed_vector, current_value_getter=lambda: get_speed_vector(timeout), validator=lambda value2, target2: validator(value2, target2), accuracy=accuracy, timeout=timeout, **kwargs)
 
+    def get_body_frame_velocity(self):
+        gri = self.mav.recv_match(type='GPS_RAW_INT', blocking=True, timeout=1)
+        if gri is None:
+            raise NotAchievedException("No GPS_RAW_INT")
+        att = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+        if att is None:
+            raise NotAchievedException("No ATTITUDE")
+        return mavextra.gps_velocity_body(gri, att)
+
+    def wait_speed_vector_bf(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
+        """Wait for a given speed vector."""
+        def get_speed_vector(timeout2):
+            return self.get_body_frame_velocity()
+
+        def validator(value2, target2):
+            return (math.fabs(value2.x - target2.x) <= accuracy and
+                    math.fabs(value2.y - target2.y) <= accuracy and
+                    math.fabs(value2.z - target2.z) <= accuracy)
+
+        self.wait_and_maintain(
+            value_name="SpeedVectorBF",
+            target=speed_vector,
+            current_value_getter=lambda: get_speed_vector(timeout),
+            validator=lambda value2, target2: validator(value2, target2),
+            accuracy=accuracy,
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_distance(self, distance, accuracy=2, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         start = self.mav.location()
