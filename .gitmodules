@@ -21,4 +21,4 @@
 	url = git://github.com/ArduPilot/libcanard.git
 [submodule "modules/wolfssl"]
 	path = modules/wolfssl
-	url = https://github.com/wolfssl/wolfssl
+	url = https://github.com/bugobliterator/wolfssl
