@@ -20,6 +20,21 @@ OPTS="--speedup=$SPEEDUP --timeout=$TIMEOUT --debug --no-clean"
 
 rm -rf build
 
+package_is_installed() {
+    python -m pip --disable-pip-version-check show "$1" | grep -c "Version"
+}
+
+if ! package_is_installed "mavproxy"; then
+    python -m pip install --user mavproxy
+    python -m pip uninstall -y pymavlink
+fi
+
+
+if ! package_is_installed "pymavlink"; then
+    git submodule update --init --recursive
+    (cd modules/mavlink/pymavlink && MDEF="$PWD/../message_definitions" python -m pip install --user .)
+fi
+
 # Run examples
 ./waf configure --board=linux --debug
 ./waf examples

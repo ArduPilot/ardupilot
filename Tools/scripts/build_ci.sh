@@ -162,6 +162,11 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "coverage" ]; then
+        Tools/scripts/run-coverage.sh
+        continue
+    fi
+
     if [ "$t" == "examples" ]; then
         ./waf configure --board=linux --debug
         ./waf examples
