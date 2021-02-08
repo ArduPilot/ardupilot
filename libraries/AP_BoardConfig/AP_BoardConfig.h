@@ -189,6 +189,11 @@ public:
 
 #if HAL_HAVE_IMU_HEATER
     void set_imu_temp(float current_temp_c);
+
+    // heater duty cycle is as a percentage (0 to 100)
+    float get_heater_duty_cycle(void) const {
+        return heater.output;
+    }
 #endif
 
 private:
