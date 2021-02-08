@@ -643,8 +643,13 @@ void AP_GPS::detect_instance(uint8_t instance)
         if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
             if (_type[instance] == GPS_TYPE_HEMI) {
                 send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
-            } else if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
-                       _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+                        _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
+                       ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+                // we use 460800 when doing moving baseline as we need
+                // more bandwidth. We don't do this if using UART2, as
+                // in that case the RTCMv3 data doesn't go over the
+                // link to the flight controller
                 static const char blob[] = UBLOX_SET_BINARY_460800;
                 send_blob_start(instance, blob, sizeof(blob));
             } else {
@@ -667,6 +672,7 @@ void AP_GPS::detect_instance(uint8_t instance)
           the uBlox into 230400 no matter what rate it is configured
           for.
         */
+
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
@@ -675,9 +681,10 @@ void AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
 
+        const uint32_t ublox_mb_required_baud = (_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2)?230400:460800;
         if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
              _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-            _baudrates[dstate->current_baud] == 460800 &&
+            _baudrates[dstate->current_baud] == ublox_mb_required_baud &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             GPS_Role role;
             if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
