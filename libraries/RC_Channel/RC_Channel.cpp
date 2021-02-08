@@ -485,6 +485,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::EKF_YAW_RESET:
     case AUX_FUNC::GENERATOR: // don't turn generator on or off initially
     case AUX_FUNC::EKF_POS_SOURCE:
+    case AUX_FUNC::RELOCATE_MISSION:
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:
     case AUX_FUNC::SCRIPTING_3:
@@ -564,6 +565,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
     { AUX_FUNC::GENERATOR,"Generator"},
     { AUX_FUNC::ARSPD_CALIBRATE,"Calibrate Airspeed"},
+    { AUX_FUNC::RELOCATE_MISSION,"Relocate Mission"},
 };
 
 /* lookup the announcement for switch change */
@@ -1120,6 +1122,7 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         AP::ahrs().request_yaw_reset();
         break;
 
+    case AUX_FUNC::RELOCATE_MISSION:
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:
     case AUX_FUNC::SCRIPTING_3:
