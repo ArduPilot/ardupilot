@@ -24,4 +24,4 @@
 	url = https://github.com/ArduPilot/gsoap
 [submodule "modules/wolfssl"]
 	path = modules/wolfssl
-	url = https://github.com/wolfssl/wolfssl
+	url = https://github.com/bugobliterator/wolfssl
