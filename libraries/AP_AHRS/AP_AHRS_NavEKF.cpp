@@ -43,7 +43,7 @@ AP_AHRS_NavEKF::AP_AHRS_NavEKF(uint8_t flags) :
     AP_AHRS_DCM(),
     _ekf_flags(flags)
 {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // Copter and Sub force the use of EKF
     _ekf_flags |= AP_AHRS_NavEKF::FLAG_ALWAYS_USE_EKF;
 #endif
