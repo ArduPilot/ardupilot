@@ -158,7 +158,7 @@ private:
      * margin is the distance (in meters) that the vehicle should stop short of the polygon
      * stay_inside should be true for fences, false for exclusion polygons
      */
-    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, float margin, float dt, bool stay_inside);
+    void adjust_velocity_polygon(float kP, float accel_cmss, Vector2f &desired_vel_cms, Vector2f &backup_vel, const Vector2f* boundary, uint16_t num_points, float margin, float dt, bool stay_inside, bool inclusion_fence = false);
 
     /*
      * Computes distance required to stop, given current speed.
