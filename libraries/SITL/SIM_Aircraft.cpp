@@ -99,9 +99,10 @@ float Aircraft::ground_height_difference() const
         sitl->terrain_enable && terrain &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
+        h2 += local_ground_level;
         return h2 - h1;
     }
-    return 0.0f;
+    return local_ground_level;
 }
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
@@ -510,6 +511,7 @@ void Aircraft::update_model(const struct sitl_input &input)
         loc.alt = sitl->opos.alt.get() * 1.0e2;
         set_start_location(loc, sitl->opos.hdg.get());
     }
+    local_ground_level = 0.0f;
     update(input);
 }
 
@@ -879,6 +881,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 
     if (precland && precland->is_enabled()) {
         precland->update(get_location(), get_position());
+        if (precland->_over_precland_base) {
+            local_ground_level += precland->_origin_height;
+        }
     }
 
     // update RichenPower generator
