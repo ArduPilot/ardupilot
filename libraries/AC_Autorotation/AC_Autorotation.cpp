@@ -251,6 +251,7 @@ float AC_Autorotation::get_rpm(bool update_counter)
 void AC_Autorotation::Log_Write_Autorotation(void) const
 {
 // @LoggerMessage: AROT
+// @Vehicles: Copter
 // @Description: Helicopter AutoRotation information
 // @Field: TimeUS: Time since system startup
 // @Field: P: P-term for headspeed controller response
