@@ -146,6 +146,12 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
 
 void AP_CRSF_Telem::process_rf_mode_changes()
 {
+    // skip when in standalone mode
+    const AP_RCProtocol_CRSF *crsf = AP::crsf();
+    if (crsf != nullptr && crsf->is_standalone()) {
+        return;
+    }
+
     const AP_RCProtocol_CRSF::RFMode current_rf_mode = get_rf_mode();
     uint32_t now = AP_HAL::millis();
     // report a change in RF mode or a chnage of more than 10Hz if we haven't done so in the last 5s
@@ -244,6 +250,12 @@ void AP_CRSF_Telem::exit_scheduler_params_mode()
 
 void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 {
+    // skip when in standalone mode
+    const AP_RCProtocol_CRSF *crsf = AP::crsf();
+    if (crsf != nullptr && crsf->is_standalone()) {
+        return;
+    }
+
     uint32_t now_ms = AP_HAL::millis();
     setup_custom_telemetry();
 
@@ -271,19 +283,24 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     process_rf_mode_changes();
 
     switch (idx) {
-    case PARAMETERS:
-        // to get crossfire firmware version we send an RX device ping until we get a response
-        // but only if there are no other requests pending
-        if (_crsf_version.pending && _pending_request.frame_type == 0) {
-            if (_crsf_version.retry_count++ > CRSF_RX_DEVICE_PING_MAX_RETRY) {
-                _crsf_version.pending = false;
-                _crsf_version.minor = 0;
-                _crsf_version.major = 0;
-                gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: RX device ping failed");
-            } else {
-                _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
-                gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: requesting RX device info");
+    case PARAMETERS: {
+            const AP_RCProtocol_CRSF *crsf = AP::crsf();
+            // request RX device info only when called by the RC driver
+            if (crsf != nullptr && !crsf->is_standalone()) {
+                // to get crossfire firmware version we send an RX device ping until we get a response
+                // but only if there are no other requests pending
+                if (_crsf_version.pending && _pending_request.frame_type == 0) {
+                    if (_crsf_version.retry_count++ > CRSF_RX_DEVICE_PING_MAX_RETRY) {
+                        _crsf_version.pending = false;
+                        _crsf_version.minor = 0;
+                        _crsf_version.major = 0;
+                        gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: RX device ping failed");
+                    } else {
+                        _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
+                        _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+                        gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: requesting RX device info");
+                    }
+                }
             }
         }
         return _pending_request.frame_type > 0;
