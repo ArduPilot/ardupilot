@@ -107,6 +107,10 @@ void ModeSmartRTL::path_follow_run()
                 Vector3f next_dest_NED;
                 if (g2.smart_rtl.peek_point(next_dest_NED)) {
                     wp_nav->set_wp_destination_NED(dest_NED);
+                    if (g2.smart_rtl.get_num_points() == 1) {
+                        // this is the very last point, add 2m to the target alt
+                        next_dest_NED.z -= 2.0f;
+                    }
                     wp_nav->set_wp_destination_next_NED(next_dest_NED);
                 } else {
                     // this should never happen but send next point anyway
