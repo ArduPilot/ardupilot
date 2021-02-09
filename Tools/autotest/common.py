@@ -4348,18 +4348,20 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
+    def get_altitude(self, relative=False, timeout=30):
+        '''returns vehicles altitude in metres, possibly relative-to-home'''
+        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                  blocking=True,
+                                  timeout=timeout)
+        if msg is None:
+            raise MsgRcvTimeoutException("Failed to get Global Position")
+        if relative:
+            return msg.relative_alt / 1000.0  # mm -> m
+        return msg.alt / 1000.0  # mm -> m
+
     def wait_altitude(self, altitude_min, altitude_max, relative=False, timeout=30, **kwargs):
         """Wait for a given altitude range."""
         assert altitude_min <= altitude_max, "Minimum altitude should be less than maximum altitude."
-
-        def get_altitude(alt_relative=False, timeout2=30):
-            msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=timeout2)
-            if msg:
-                if alt_relative:
-                    return msg.relative_alt / 1000.0  # mm -> m
-                else:
-                    return msg.alt / 1000.0  # mm -> m
-            raise MsgRcvTimeoutException("Failed to get Global Position")
 
         def validator(value2, target2=None):
             if altitude_min <= value2 <= altitude_max:
@@ -4367,7 +4369,18 @@ class AutoTest(ABC):
             else:
                 return False
 
-        self.wait_and_maintain(value_name="Altitude", target=altitude_min, current_value_getter=lambda: get_altitude(relative, timeout), accuracy=(altitude_max - altitude_min), validator=lambda value2, target2: validator(value2, target2), timeout=timeout, **kwargs)
+        self.wait_and_maintain(
+            value_name="Altitude",
+            target=altitude_min,
+            current_value_getter=lambda: self.get_altitude(
+                relative=relative,
+                timeout=timeout,
+            ),
+            accuracy=(altitude_max - altitude_min),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs,
+        )
 
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
