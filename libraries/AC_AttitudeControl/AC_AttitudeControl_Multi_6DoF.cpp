@@ -124,6 +124,20 @@ void AC_AttitudeControl_Multi_6DoF::input_angle_step_bf_roll_pitch_yaw(float rol
     AC_AttitudeControl_Multi::input_angle_step_bf_roll_pitch_yaw(roll_angle_step_bf_cd, pitch_angle_step_bf_cd, yaw_angle_step_bf_cd);
 }
 
+// Command a Quaternion attitude with feedforward and smoothing
+// not used anywhere in current code, panic in SITL so this implementaiton is not overlooked
+void AC_AttitudeControl_Multi_6DoF::input_quaternion(Quaternion attitude_desired_quat) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    AP_HAL::panic("input_quaternion not implemented AC_AttitudeControl_Multi_6DoF");
+#endif
+
+    _motors.set_lateral(0.0f);
+    _motors.set_forward(0.0f);
+
+    AC_AttitudeControl_Multi::input_quaternion(attitude_desired_quat);
+}
+
+
 AC_AttitudeControl_Multi_6DoF *AC_AttitudeControl_Multi_6DoF::_singleton = nullptr;
 
 #endif // ENABLE_SCRIPTING

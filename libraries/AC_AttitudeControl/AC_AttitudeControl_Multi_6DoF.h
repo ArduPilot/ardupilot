@@ -20,10 +20,7 @@ public:
 
     // Command a Quaternion attitude with feedforward and smoothing
     // not used anywhere in current code, panic so this implementaiton is not overlooked
-    void input_quaternion(Quaternion attitude_desired_quat) override {
-        AP_HAL::panic("input_quaternion not implemented AC_AttitudeControl_Multi_6DoF");
-    }
-
+    void input_quaternion(Quaternion attitude_desired_quat) override;
     /*
         override input functions to attitude controller and convert desired angles into thrust angles and substitute for osset angles
     */
