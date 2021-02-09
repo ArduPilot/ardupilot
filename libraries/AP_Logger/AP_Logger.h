@@ -69,7 +69,6 @@
 #include <AP_AHRS/AP_AHRS_NavEKF.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/LogStructure.h>
@@ -77,7 +76,6 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Proximity/AP_Proximity.h>
-#include <AP_InertialSensor/AP_InertialSensor_Backend.h>
 #include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
@@ -265,6 +263,10 @@ public:
 
     /* Write a block of data at current offset */
     void WriteBlock(const void *pBuffer, uint16_t size);
+
+    /* Write block of data at current offset and return true if first backend succeeds*/
+    bool WriteBlock_first_succeed(const void *pBuffer, uint16_t size);
+
     /* Write an *important* block of data at current offset */
     void WriteCriticalBlock(const void *pBuffer, uint16_t size);
 
@@ -289,20 +291,6 @@ public:
     void Write_Event(LogEvent id);
     void Write_Error(LogErrorSubsystem sub_system,
                      LogErrorCode error_code);
-    void Write_IMU();
-    bool Write_ISBH(uint16_t seqno,
-                        AP_InertialSensor::IMU_SENSOR_TYPE sensor_type,
-                        uint8_t instance,
-                        uint16_t multiplier,
-                        uint16_t sample_count,
-                        uint64_t sample_us,
-                        float sample_rate_hz);
-    bool Write_ISBD(uint16_t isb_seqno,
-                        uint16_t seqno,
-                        const int16_t x[32],
-                        const int16_t y[32],
-                        const int16_t z[32]);
-    void Write_Vibration();
     void Write_RCIN(void);
     void Write_RCOUT(void);
     void Write_RSSI();
@@ -509,7 +497,6 @@ private:
     // state to help us not log unneccesary RCIN values:
     bool seen_nonzero_rcin15_or_rcin16;
 
-    void Write_IMU_instance(uint64_t time_us, uint8_t imu_instance);
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);

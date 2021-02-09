@@ -123,6 +123,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_GPS/LogStructure.h>
 #include <AP_NavEKF/LogStructure.h>
 #include <AP_BattMonitor/LogStructure.h>
+#include <AP_InertialSensor/LogStructure.h>
 #include <AP_AHRS/LogStructure.h>
 #include <AP_Camera/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
@@ -217,50 +218,6 @@ struct PACKED log_Message {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     char msg[64];
-};
-
-struct PACKED log_IMU {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    float gyro_x, gyro_y, gyro_z;
-    float accel_x, accel_y, accel_z;
-    uint32_t gyro_error, accel_error;
-    float temperature;
-    uint8_t gyro_health, accel_health;
-    uint16_t gyro_rate, accel_rate;
-};
-
-struct PACKED log_ISBH {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t seqno;
-    uint8_t sensor_type; // e.g. GYRO or ACCEL
-    uint8_t instance;
-    uint16_t multiplier;
-    uint16_t sample_count;
-    uint64_t sample_us;
-    float sample_rate_hz;
-};
-static_assert(sizeof(log_ISBH) < 256, "log_ISBH is over-size");
-
-struct PACKED log_ISBD {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint16_t isb_seqno;
-    uint16_t seqno; // seqno within isb_seqno
-    int16_t x[32];
-    int16_t y[32];
-    int16_t z[32];
-};
-static_assert(sizeof(log_ISBD) < 256, "log_ISBD is over-size");
-
-struct PACKED log_Vibe {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t imu;
-    float vibe_x, vibe_y, vibe_z;
-    uint32_t clipping;
 };
 
 struct PACKED log_RCIN {
@@ -837,16 +794,6 @@ struct PACKED log_PSCZ {
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
 
-#define ISBH_LABELS "TimeUS,N,type,instance,mul,smp_cnt,SampleUS,smp_rate"
-#define ISBH_FMT    "QHBBHHQf"
-#define ISBH_UNITS  "s-----sz"
-#define ISBH_MULTS  "F-----F-"
-
-#define ISBD_LABELS "TimeUS,N,seqno,x,y,z"
-#define ISBD_FMT    "QHHaaa"
-#define ISBD_UNITS  "s--ooo"
-#define ISBD_MULTS  "F--???"
-
 #define PID_LABELS "TimeUS,Tar,Act,Err,P,I,D,FF,Dmod,SRate,Limit"
 #define PID_FMT    "QfffffffffB"
 #define PID_UNITS  "s----------"
@@ -1035,24 +982,6 @@ struct PACKED log_PSCZ {
 // @Field: GyrX: measured rotation rate about X axis
 // @Field: GyrY: measured rotation rate about Y axis
 // @Field: GyrZ: measured rotation rate about Z axis
-
-// @LoggerMessage: IMU
-// @Description: Inertial Measurement Unit data
-// @Field: TimeUS: Time since system startup
-// @Field: I: IMU sensor instance number
-// @Field: GyrX: measured rotation rate about X axis
-// @Field: GyrY: measured rotation rate about Y axis
-// @Field: GyrZ: measured rotation rate about Z axis
-// @Field: AccX: acceleration along X axis
-// @Field: AccY: acceleration along Y axis
-// @Field: AccZ: acceleration along Z axis
-// @Field: EG: gyroscope error count
-// @Field: EA: accelerometer error count
-// @Field: T: IMU temperature
-// @Field: GH: gyroscope health
-// @Field: AH: accelerometer health
-// @Field: GHz: gyroscope measurement rate
-// @Field: AHz: accelerometer measurement rate
 
 // @LoggerMessage: LGR
 // @Description: Landing gear information
@@ -1385,15 +1314,6 @@ struct PACKED log_PSCZ {
 // @Field: Id: character referenced by FMTU
 // @Field: Label: Unit - SI where available
 
-// @LoggerMessage: VIBE
-// @Description: Processed (acceleration) vibration information
-// @Field: TimeUS: Time since system startup
-// @Field: IMU: Vibration instance number
-// @Field: VibeX: Primary accelerometer filtered vibration, x-axis
-// @Field: VibeY: Primary accelerometer filtered vibration, y-axis
-// @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
-// @Field: Clip: Number of clipping events on 1st accelerometer
-
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
 // @Field: TimeUS: Time since system startup
@@ -1459,8 +1379,6 @@ struct PACKED log_PSCZ {
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--"  },       \
 LOG_STRUCTURE_FROM_GPS \
-    { LOG_IMU_MSG, sizeof(log_IMU), \
-      "IMU",  "QBffffffIIfBBHH",     "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
@@ -1538,12 +1456,7 @@ LOG_STRUCTURE_FROM_CAMERA \
       "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_DSTL_MSG, sizeof(log_DSTL), \
       "DSTL", "QBfLLeccfeffff", "TimeUS,Stg,THdg,Lat,Lng,Alt,XT,Travel,L1I,Loiter,Des,P,I,D", "s??DUm--------", "F??000--------" }, \
-    { LOG_VIBE_MSG, sizeof(log_Vibe), \
-      "VIBE", "QBfffI",     "TimeUS,IMU,VibeX,VibeY,VibeZ,Clip", "s#----", "F-----" }, \
-    { LOG_ISBH_MSG, sizeof(log_ISBH), \
-      "ISBH",ISBH_FMT,ISBH_LABELS,ISBH_UNITS,ISBH_MULTS },  \
-    { LOG_ISBD_MSG, sizeof(log_ISBD), \
-      "ISBD",ISBD_FMT,ISBD_LABELS, ISBD_UNITS, ISBD_MULTS }, \
+LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
 LOG_STRUCTURE_FROM_NAVEKF2 \
 LOG_STRUCTURE_FROM_NAVEKF3 \
@@ -1614,7 +1527,6 @@ enum LogMessages : uint8_t {
     LOG_PARAMETER_MSG = 64,
     LOG_IDS_FROM_NAVEKF2,
     LOG_IDS_FROM_NAVEKF3,
-    LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
     LOG_RCIN2_MSG,
@@ -1645,6 +1557,7 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_IDS_FROM_DAL,
+    LOG_IDS_FROM_INERTIALSENSOR,
 
     LOG_ACC_MSG,
     LOG_GYR_MSG,
@@ -1656,7 +1569,6 @@ enum LogMessages : uint8_t {
     LOG_PIDN_MSG,
     LOG_PIDE_MSG,
     LOG_DSTL_MSG,
-    LOG_VIBE_MSG,
     LOG_RPM_MSG,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
@@ -1679,8 +1591,6 @@ enum LogMessages : uint8_t {
     LOG_PROXIMITY_MSG,
     LOG_DF_FILE_STATS,
     LOG_SRTL_MSG,
-    LOG_ISBH_MSG,
-    LOG_ISBD_MSG,
     LOG_PERFORMANCE_MSG,
     LOG_OPTFLOW_MSG,
     LOG_EVENT_MSG,
