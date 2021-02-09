@@ -76,6 +76,12 @@ MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
     return MAV_STATE_STANDBY;
 }
 
+void GCS_MAVLINK_Sub::send_banner()
+{
+    GCS_MAVLINK::send_banner();
+    send_text(MAV_SEVERITY_INFO, "Frame: %s", sub.motors.get_frame_string());
+}
+
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
     const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();
