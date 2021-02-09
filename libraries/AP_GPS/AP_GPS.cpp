@@ -858,7 +858,7 @@ void AP_GPS::update_instance(uint8_t instance)
     
 #ifndef HAL_BUILD_AP_PERIPH
     if (data_should_be_logged && should_log()) {
-        AP::logger().Write_GPS(instance);
+        Write_GPS(instance);
     }
 
     if (state[instance].status >= GPS_OK_FIX_3D) {
@@ -1845,7 +1845,7 @@ void AP_GPS::calc_blended_state(void)
 #ifndef HAL_BUILD_AP_PERIPH
     if (timing[GPS_BLENDED_INSTANCE].last_message_time_ms > last_blended_message_time_ms &&
         should_log()) {
-        AP::logger().Write_GPS(GPS_BLENDED_INSTANCE);
+        Write_GPS(GPS_BLENDED_INSTANCE);
     }
 #endif
 }
@@ -1915,6 +1915,57 @@ uint32_t AP_GPS::get_itow(uint8_t instance) const
         return 0;
     }
     return drivers[instance]->get_last_itow();
+}
+
+// Logging support:
+// Write an GPS packet
+void AP_GPS::Write_GPS(uint8_t i)
+{
+    const uint64_t time_us = AP_HAL::micros64();
+    const struct Location &loc = location(i);
+
+    float yaw_deg=0, yaw_accuracy_deg=0;
+    gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
+
+    const struct log_GPS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
+        time_us       : time_us,
+        instance      : i,
+        status        : (uint8_t)status(i),
+        gps_week_ms   : time_week_ms(i),
+        gps_week      : time_week(i),
+        num_sats      : num_sats(i),
+        hdop          : get_hdop(i),
+        latitude      : loc.lat,
+        longitude     : loc.lng,
+        altitude      : loc.alt,
+        ground_speed  : ground_speed(i),
+        ground_course : ground_course(i),
+        vel_z         : velocity(i).z,
+        yaw           : yaw_deg,
+        used          : (uint8_t)(AP::gps().primary_sensor() == i)
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+    /* write auxiliary accuracy information as well */
+    float hacc = 0, vacc = 0, sacc = 0;
+    horizontal_accuracy(i, hacc);
+    vertical_accuracy(i, vacc);
+    speed_accuracy(i, sacc);
+    struct log_GPA pkt2{
+        LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
+        time_us       : time_us,
+        instance      : i,
+        vdop          : get_vdop(i),
+        hacc          : (uint16_t)MIN((hacc*100), UINT16_MAX),
+        vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
+        sacc          : (uint16_t)MIN((sacc*100), UINT16_MAX),
+        yaw_accuracy  : yaw_accuracy_deg,
+        have_vv       : (uint8_t)have_vertical_velocity(i),
+        sample_ms     : last_message_time_ms(i),
+        delta_ms      : last_message_delta_time_ms(i)
+    };
+    AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
 
 namespace AP {
