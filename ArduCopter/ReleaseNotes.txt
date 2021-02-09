@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.7rc1 6-Feb-2021
+Changes from 4.0.6
+1) added automatic backup/restore of parameters in case of FRAM corruption for F7/H7 boards with 32k FRAM parameter storage
+2) fixed a bug in EKF2/EKF3 that could cause memory corruption if external naviagtion sources (such as vision based position and velocity data) is supplied before the EKF has initialised
+3) fixed a problem with low accuracy data from UAVCAN GPS modules when GPS blending is enabled
+4) fixed an arming check failure with u-blox M9 based GPS modules
+5) fixed a race condition in SmartRTL which could cause a LAND mode to be triggered
+------------------------------------------------------------------
 Copter 4.0.6 25-Jan-2021 / 4.0.6-rc2 16-Jan-2021
 Changes from 4.0.6-rc1
 1) Add support for keeping a backup of storage for last 100 boots
