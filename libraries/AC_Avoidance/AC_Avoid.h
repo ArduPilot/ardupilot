@@ -106,6 +106,7 @@ public:
 
     // return minimum alt (in meters) above which avoidance will be active
     float get_min_alt() const { return _alt_min; }
+
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
 
@@ -117,6 +118,11 @@ private:
         BEHAVIOR_SLIDE = 0,
         BEHAVIOR_STOP = 1
     };
+
+    /*
+     * Limit acceleration so that change of velocity output by avoidance library is controlled
+     */
+    void limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -204,6 +210,7 @@ private:
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
     AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
     AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;        // maximum accelration while simple avoidance is active
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
