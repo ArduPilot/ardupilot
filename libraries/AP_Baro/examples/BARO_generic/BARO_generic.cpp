@@ -29,7 +29,7 @@ const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 // create barometer object
 static AP_Baro barometer;
 #if HAL_EXTERNAL_AHRS_ENABLED
-    static AP_ExternalAHRS eAHRS;
+ static AP_ExternalAHRS eAHRS;
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 
 static uint32_t timer;
