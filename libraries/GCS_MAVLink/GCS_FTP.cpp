@@ -545,7 +545,7 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
     request.data[sizeof(request.data) - 1] = 0; // ensure the path is null terminated
 
     // open the dir
-    DIR *dir = AP::FS().opendir((char *)request.data);
+    auto *dir = AP::FS().opendir((char *)request.data);
     if (dir == nullptr) {
         ftp_error(response, FTP_ERROR::FailErrno);
         AP::FS().closedir(dir);
