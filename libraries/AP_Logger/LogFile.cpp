@@ -6,7 +6,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RSSI/AP_RSSI.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -124,58 +123,6 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
     ap->copy_name_token(token, &name[0], sizeof(name), true);
     return Write_Parameter(name, ap->cast_to_float(type));
 }
-
-// Write an GPS packet
-void AP_Logger::Write_GPS(uint8_t i)
-{
-    const AP_GPS &gps = AP::gps();
-    const uint64_t time_us = AP_HAL::micros64();
-    const struct Location &loc = gps.location(i);
-
-    float yaw_deg=0, yaw_accuracy_deg=0;
-    gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
-
-    const struct log_GPS pkt {
-        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
-        time_us       : time_us,
-        instance      : i,
-        status        : (uint8_t)gps.status(i),
-        gps_week_ms   : gps.time_week_ms(i),
-        gps_week      : gps.time_week(i),
-        num_sats      : gps.num_sats(i),
-        hdop          : gps.get_hdop(i),
-        latitude      : loc.lat,
-        longitude     : loc.lng,
-        altitude      : loc.alt,
-        ground_speed  : gps.ground_speed(i),
-        ground_course : gps.ground_course(i),
-        vel_z         : gps.velocity(i).z,
-        yaw           : yaw_deg,
-        used          : (uint8_t)(gps.primary_sensor() == i)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-
-    /* write auxiliary accuracy information as well */
-    float hacc = 0, vacc = 0, sacc = 0;
-    gps.horizontal_accuracy(i, hacc);
-    gps.vertical_accuracy(i, vacc);
-    gps.speed_accuracy(i, sacc);
-    struct log_GPA pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
-        time_us       : time_us,
-        instance      : i,
-        vdop          : gps.get_vdop(i),
-        hacc          : (uint16_t)MIN((hacc*100), UINT16_MAX),
-        vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
-        sacc          : (uint16_t)MIN((sacc*100), UINT16_MAX),
-        yaw_accuracy  : yaw_accuracy_deg,
-        have_vv       : (uint8_t)gps.have_vertical_velocity(i),
-        sample_ms     : gps.last_message_time_ms(i),
-        delta_ms      : gps.last_message_delta_time_ms(i)
-    };
-    WriteBlock(&pkt2, sizeof(pkt2));
-}
-
 
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
