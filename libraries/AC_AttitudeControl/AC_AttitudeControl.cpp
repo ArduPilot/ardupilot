@@ -212,6 +212,11 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // this function is not currently used, this is a reminder that we need to add a 6DoF implementation
+    AP_HAL::panic("input_quaternion not implemented AC_AttitudeControl_Multi_6DoF");
+#endif
+
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
