@@ -77,8 +77,8 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
-    uint8_t virtual get_mode() const = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
         return control_mode_reason;
