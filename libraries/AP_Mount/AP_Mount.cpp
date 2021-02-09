@@ -602,7 +602,7 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     float yaw_alt = packet.param3;
     MAV_MOUNT_MODE mode = (MAV_MOUNT_MODE) packet.param7;
     if(mode == MAV_MOUNT_MODE_MAVLINK_TARGETING) {
-       bool relative = ((int)packet.param6 == MAV_FRAME_BODY_FLU);
+       bool relative = ((int)packet.param6 == MAV_FRAME_LOCAL_FLU);
        if(!relative) {
             yaw_alt = degrees(wrap_PI(radians(yaw_alt*.01) - AP::ahrs().yaw))*100.0f;
        }
