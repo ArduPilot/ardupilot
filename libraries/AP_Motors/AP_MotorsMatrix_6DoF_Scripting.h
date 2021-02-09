@@ -37,6 +37,8 @@ public:
     // if the expected number of motors have been setup then set as initalized
     bool init(uint8_t expected_num_motors) override;
 
+    const char* get_frame_string() const override { return "6DoF scripting"; }
+
 protected:
     // output - sends commands to the motors
     void output_armed_stabilizing() override;
