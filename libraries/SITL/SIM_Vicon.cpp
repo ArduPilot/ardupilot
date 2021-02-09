@@ -205,6 +205,53 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             NULL, 0);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
+
+    // TO DO add Confidence Level
+    // # Confidence level value from T265: 0-3, remapped to 0 - 100: 0% - Failed / 33.3% - Low / 66.6% - Medium / 100% - High
+    // current_confidence_level = data.tracker_confidence * 33.33333f
+
+    // determine time, position, and angular deltas
+    uint64_t time_delta = now_us + time_offset_us - _pos_delta_prev_time_us;
+
+    Quaternion curr_quat;                   // Rotation to Frame_aerobody_current from Frame_earth_NED
+    curr_quat.from_euler(roll, pitch, yaw); // Rotation to Frame_earth_NED from Frame_aerobody_current
+    curr_quat = curr_quat.inverse();
+
+    Quaternion q_currAero_prevAero = curr_quat * _pos_delta_prev_quat.inverse(); // Get rotation to Frame_aerobody_current from Frame_aerobody_previous
+    float angle_delta[3] = {q_currAero_prevAero.get_euler_roll(),
+                                q_currAero_prevAero.get_euler_pitch(),
+                                q_currAero_prevAero.get_euler_yaw()};
+
+    Matrix3f m_currAero_NED;
+    curr_quat.rotation_matrix(m_currAero_NED);
+
+    Vector3f pos_delta = m_currAero_NED * (pos_corrected - _pos_delta_prev_position);
+    float postion_delta[3] = {pos_delta.x, pos_delta.y, pos_delta.z};
+
+    // send vision position delta
+    // time_usec: (usec) Current time stamp
+    // time_delta_usec: (usec) Time since last reported camera frame
+    // angle_delta [3]: (radians) Roll, pitch, yaw angles that define rotation to Frame_aerobody_current from Frame_aerobody_previous
+    // delta_position [3]: (meters) Change in position: To current position from previous position rotated to Frame_aerobody_current from Frame_earth_NED
+    // confidence: normalized confidence level [0, 100]
+    if (should_send(ViconTypeMask::VISION_POSITION_DELTA) && get_free_msg_buf_index(msg_buf_index)) {
+        mavlink_msg_vision_position_delta_pack_chan(
+            system_id,
+            component_id,
+            mavlink_ch,
+            &msg_buf[msg_buf_index].obs_msg,
+            now_us + time_offset_us,
+            time_delta,
+            angle_delta,
+            postion_delta,
+            0.0f);
+        msg_buf[msg_buf_index].time_send_us = time_send_us;
+    }
+
+    // set previous time, position, attitude
+    _pos_delta_prev_time_us = now_us + time_offset_us;
+    _pos_delta_prev_position = pos_corrected;
+    _pos_delta_prev_quat = curr_quat;
 }
 
 /*
@@ -219,4 +266,3 @@ void Vicon::update(const Location &loc, const Vector3f &position, const Vector3f
     maybe_send_heartbeat();
     update_vicon_position_estimate(loc, position, velocity, attitude);
 }
-
