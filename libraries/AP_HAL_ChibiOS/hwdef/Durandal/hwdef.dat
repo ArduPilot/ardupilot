@@ -31,7 +31,7 @@ SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 USART6 UART7 OTG2
 # default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
 define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
 
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 
 define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_CHIBIOS_FMUV5
 define HAL_CHIBIOS_ARCH_FMUV5 1
@@ -306,7 +306,6 @@ define HAL_GPIO_B_LED_PIN 92
 define HAL_GPIO_LED_ON 0
 
 # enable RAMTROM parameter storage
-define HAL_STORAGE_SIZE 16384
 define HAL_WITH_RAMTRON 1
 
 # allow to have have a dedicated safety switch pin
