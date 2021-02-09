@@ -114,7 +114,7 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         return;
     }
 
-    DIR *d = AP::FS().opendir(dirname);
+    auto *d = AP::FS().opendir(dirname);
     if (d == nullptr) {
         gcs().send_text(MAV_SEVERITY_INFO, "Lua: Could not find a scripts directory");
         return;
@@ -348,6 +348,7 @@ void lua_scripts::run(void) {
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     load_all_scripts_in_dir(L, SCRIPTING_DIRECTORY);
+    load_all_scripts_in_dir(L, "@ROMFS/scripts");
 
     while (AP_Scripting::get_singleton()->enabled()) {
 #if defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
