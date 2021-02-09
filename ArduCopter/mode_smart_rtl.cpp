@@ -82,7 +82,7 @@ void ModeSmartRTL::wait_cleanup_run()
 void ModeSmartRTL::path_follow_run()
 {
     float target_yaw_rate = 0.0f;
-    if (!copter.failsafe.radio) {
+    if (!copter.failsafe.radio && g2.smart_rtl.use_pilot_yaw()) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
