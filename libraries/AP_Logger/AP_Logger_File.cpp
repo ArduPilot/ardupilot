@@ -225,7 +225,7 @@ uint16_t AP_Logger_File::find_oldest_log()
     // relying on the min_avail_space_percent feature we could end up
     // doing a *lot* of asprintf()s and stat()s
     EXPECT_DELAY_MS(3000);
-    DIR *d = AP::FS().opendir(_log_directory);
+    auto *d = AP::FS().opendir(_log_directory);
     if (d == nullptr) {
         // SD card may have died?  On linux someone may have rm-rf-d
         return 0;
