@@ -665,6 +665,9 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
 
+    // avoidance.cpp
+    void low_alt_avoidance();
+
 #if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
