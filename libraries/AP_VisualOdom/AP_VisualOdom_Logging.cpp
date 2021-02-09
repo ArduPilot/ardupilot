@@ -4,10 +4,10 @@
 
 #include <AP_Logger/AP_Logger.h>
 
-// Write visual odometry sensor data 
+// Write visual odometry sensor data
 void AP_VisualOdom_Backend::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence)
 {
-    const struct log_VisualOdom pkt_visualodom{
+    const struct log_VisualOdom pkt_visualodom {
         LOG_PACKET_HEADER_INIT(LOG_VISUALODOM_MSG),
         time_us             : AP_HAL::micros64(),
         time_delta          : time_delta,
