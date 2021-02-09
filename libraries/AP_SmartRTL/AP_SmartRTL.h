@@ -159,7 +159,7 @@ private:
     void deactivate(SRTL_Actions action, const char *reason);
 
     // logging
-    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f());
+    void log_action(SRTL_Actions action, const Vector3f &point = Vector3f()) const;
 
     // parameters
     AP_Float _accuracy;

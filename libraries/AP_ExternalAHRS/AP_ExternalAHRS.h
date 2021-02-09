@@ -93,7 +93,7 @@ public:
 
     // accessors for AP_AHRS
     bool healthy(void) const;
-    bool initialised(void);
+    bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
     bool get_origin(Location &loc);
     bool get_location(Location &loc);

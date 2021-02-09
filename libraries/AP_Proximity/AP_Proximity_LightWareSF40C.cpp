@@ -48,9 +48,6 @@ void AP_Proximity_LightWareSF40C::update(void)
 // initialise sensor
 void AP_Proximity_LightWareSF40C::initialise()
 {
-    // initialise boundary
-    init_boundary();
-
     // exit immediately if we've sent initialisation requests in the last second
     uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - _last_request_ms) < 1000) {
@@ -321,18 +318,20 @@ void AP_Proximity_LightWareSF40C::process_message()
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            const uint8_t sector = convert_angle_to_sector(angle_deg);
+            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
 
-            // if we've entered a new sector then finish off previous sector
-            if (sector != _last_sector) {
+            // if point is on a new face then finish off previous face
+            if (face != _face) {
                 // update boundary used for avoidance
-                if (_last_sector != UINT8_MAX) {
-                    update_boundary_for_sector(_last_sector, false);
+                if (_face_distance_valid) {
+                    boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                } else {
+                    // mark previous face invalid
+                    boundary.reset_face(_face);
                 }
-                // init for new sector
-                _last_sector = sector;
-                _distance[sector] = INT16_MAX;
-                _distance_valid[sector] = false;
+                // init for new face
+                _face = face;
+                _face_distance_valid = false;
             }
 
             // check reading is not within an ignore zone
@@ -341,11 +340,10 @@ void AP_Proximity_LightWareSF40C::process_message()
                 if ((dist_cm >= dist_min_cm) && (dist_cm <= dist_max_cm)) {
                     const float dist_m = dist_cm * 0.01f;
 
-                    // update shortest distance for this sector
-                    if (dist_m < _distance[sector]) {
-                        _angle[sector] = angle_deg;
-                        _distance[sector] = dist_m;
-                        _distance_valid[sector] = true;
+                    // update shortest distance for this face
+                    if (!_face_distance_valid || dist_m < _face_distance) {
+                        _face_distance = dist_m;
+                        _face_distance_valid = true;
                     }
 
                     // calculate shortest of last few readings

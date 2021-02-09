@@ -426,7 +426,7 @@ void Sub::auto_loiter_run()
 
 // get_default_auto_yaw_mode - returns auto_yaw_mode based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
-uint8_t Sub::get_default_auto_yaw_mode(bool rtl)
+uint8_t Sub::get_default_auto_yaw_mode(bool rtl) const
 {
     switch (g.wp_yaw_behavior) {
 

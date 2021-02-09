@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
-#define HAL_LOGGING_STACK_SIZE 512
+#define HAL_LOGGING_STACK_SIZE 1024
 #endif
 
 #ifndef HAL_LOGGING_MAV_BUFSIZE
@@ -45,10 +45,14 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
-# ifdef HAL_LOGGING_DATAFLASH
+# if HAL_LOGGING_DATAFLASH_ENABLED
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
-# else
+# elif HAL_LOGGING_FILESYSTEM_ENABLED
 #  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+# elif HAL_LOGGING_MAVLINK_ENABLED
+#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::MAVLINK
+# else
+#  define HAL_LOGGING_BACKENDS_DEFAULT 0
 # endif
 #endif
 
@@ -146,7 +150,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _num_types = num_types;
     _structures = structures;
 
-#if defined(HAL_BOARD_LOG_DIRECTORY) && HAVE_FILESYSTEM_SUPPORT
+#if HAL_LOGGING_FILESYSTEM_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
@@ -163,9 +167,9 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
             _next_backend++;
         }
     }
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // HAL_LOGGING_FILESYSTEM_ENABLED
 
-#ifdef HAL_LOGGING_DATAFLASH
+#if HAL_LOGGING_DATAFLASH_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -186,7 +190,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if HAL_LOGGING_SITL_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -207,7 +211,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     }
 #endif
     // the "main" logging type needs to come before mavlink so that index 0 is correct
-#if LOGGER_MAVLINK_SUPPORT
+#if HAL_LOGGING_MAVLINK_ENABLED
     if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
         if (_next_backend == LOGGER_MAX_BACKENDS) {
             AP_HAL::panic("Too many backends");
@@ -232,8 +236,6 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
-
-    Prep();
 
     start_io_thread();
 
@@ -706,6 +708,13 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
             }
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // failing to log a block means that when we go to replay the log
+    // things will almost certainly go sour.
+    if (!ret) {
+        AP_HAL::panic("Failed to log replay block");
+    }
+#endif
     return ret;
 }
 
@@ -729,10 +738,6 @@ bool AP_Logger::CardInserted(void) {
         }
     }
     return false;
-}
-
-void AP_Logger::Prep() {
-    FOR_EACH_BACKEND(Prep());
 }
 
 void AP_Logger::StopLogging()
@@ -1109,7 +1114,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     return f;
 }
 
-const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type)
+const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type) const
 {
     for (uint16_t i=0; i<_num_types;i++) {
         const struct LogStructure *s = structure(i);
@@ -1280,7 +1285,7 @@ void AP_Logger::start_io_thread(void)
         return;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
         AP_HAL::panic("Failed to start Logger IO thread");
     }
 

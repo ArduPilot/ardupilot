@@ -21,7 +21,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define PROXIMITY_MAX_RANGE 100.0f
-#define PROXIMITY_ACCURACY 0.1f
+#define PROXIMITY_ACCURACY  0.1f        // minimum distance (in meters) between objects sent to object database
 
 // update the state of the sensor
 void AP_Proximity_AirSimSITL::update(void)
@@ -34,50 +34,45 @@ void AP_Proximity_AirSimSITL::update(void)
 
     set_status(AP_Proximity::Status::Good);
 
-    memset(_distance_valid, 0, sizeof(_distance_valid));
+    // reset all faces to default so that it can be filled with the fresh lidar data
+    boundary.reset();
+
+    // precalculate sq of min distance
+    const float distance_min_sq = sq(distance_min());
+
+    // variables used to reduce data sent to object database
+    const float accuracy_sq = sq(PROXIMITY_ACCURACY);
+    bool prev_pos_valid = false;
+    Vector2f prev_pos;
 
     for (uint16_t i=0; i<points.length; i++) {
         Vector3f &point = points.data[i];
         if (point.is_zero()) {
             continue;
         }
-        const float angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
-        const uint8_t sector = convert_angle_to_sector(angle_deg);
 
-        const Vector2f v = Vector2f(point.x, point.y);
-        const float distance_m = v.length();
+        // calculate distance to point and check larger than min distance
+        const Vector2f new_pos = Vector2f{point.x, point.y};
+        const float distance_sq = new_pos.length_squared();
+        if (distance_sq > distance_min_sq) {
 
-        if (distance_m > distance_min()) {
-            if (_last_sector == sector) {
-                if (_distance_m_last > distance_m) {
-                    _distance_m_last = distance_m;
-                    _angle_deg_last = angle_deg;
-                }
-            } else {
-                // new sector started, previous one can be updated
-                _distance_valid[_last_sector] = true;
-                _angle[_last_sector] = _angle_deg_last;
-                _distance[_last_sector] = _distance_m_last;
+            // add distance to the 3D boundary
+            const float yaw_angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
+            boundary.add_distance(yaw_angle_deg, safe_sqrt(distance_sq));
 
-                // update boundary
-                update_boundary_for_sector(_last_sector, true);
-
-                // initialize new sector
-                _last_sector = sector;
-                _distance_m_last = INT16_MAX;
-                _angle_deg_last = angle_deg;
+            // check distance from previous point to reduce amount of data sent to object database
+            if (!prev_pos_valid || ((new_pos - prev_pos).length_squared() >= accuracy_sq)) {
+                // update OA database
+                database_push(yaw_angle_deg, safe_sqrt(distance_sq));
+                // store point
+                prev_pos_valid = true;
+                prev_pos = new_pos;
             }
-        } else {
-            _distance_valid[sector] = false;
         }
     }
 
-#if 0
-    printf("npoints=%u\n", points.length);
-    for (uint16_t i=0; i<PROXIMITY_NUM_SECTORS; i++) {
-        printf("sector[%u] ang=%.1f dist=%.1f\n", i, _angle[i], _distance[i]);
-    }
-#endif
+    // update middle boundary
+    boundary.update_middle_boundary();
 }
 
 // get maximum and minimum distances (in meters) of primary sensor

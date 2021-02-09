@@ -359,12 +359,22 @@ void RC_Channel::clear_override()
 
 bool RC_Channel::has_override() const
 {
-    if (override_value <= 0) {
+    if (override_value == 0) {
         return false;
     }
 
-    const float override_timeout_ms = rc().override_timeout_ms();
-    return (override_timeout_ms < 0) || (is_positive(override_timeout_ms) && ((AP_HAL::millis() - last_override_time) < (uint32_t)override_timeout_ms));
+    uint32_t override_timeout_ms;
+    if (!rc().get_override_timeout_ms(override_timeout_ms)) {
+        // timeouts are disabled
+        return true;
+    }
+
+    if (override_timeout_ms == 0) {
+        // overrides are explicitly disabled by a zero value
+        return false;
+    }
+
+    return (AP_HAL::millis() - last_override_time < override_timeout_ms);
 }
 
 /*

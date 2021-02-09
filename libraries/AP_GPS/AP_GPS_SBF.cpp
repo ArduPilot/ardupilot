@@ -22,6 +22,7 @@
 #include "AP_GPS_SBF.h"
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
+#include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -51,6 +52,8 @@ do {                                            \
                        INVALIDCONFIG | \
                        OUTOFGEOFENCE)
 
+constexpr const char *AP_GPS_SBF::portIdentifiers[];
+constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
@@ -58,7 +61,6 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
-    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
     _config_last_ack_time = AP_HAL::millis();
 
     // if we ever parse RTK observations it will always be of type NED, so set it once
@@ -88,12 +90,12 @@ AP_GPS_SBF::read(void)
         if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
             uint32_t now = AP_HAL::millis();
             if (now > _init_blob_time) {
-                if (now > _config_last_ack_time + 2500) {
+                if (now > _config_last_ack_time + 2000) {
                     // try to enable input on the GPS port if we have not made progress on configuring it
                     Debug("SBF Sending port enable");
                     port->write((const uint8_t*)_port_enable, strlen(_port_enable));
                     _config_last_ack_time = now;
-                } else {
+                } else if (readyForCommand) {
                     char *init_str = nullptr;
                     if (!_validated_initial_sso) {
                         if (_initial_sso == nullptr) {
@@ -112,9 +114,9 @@ AP_GPS_SBF::read(void)
                     if (init_str != nullptr) {
                         Debug("SBF sending init string: %s", init_str);
                         port->write((const uint8_t*)init_str, strlen(init_str));
+                        readyForCommand = false;
                     }
                 }
-                _init_blob_time = now + 1000;
             }
         } else if (gps._raw_data == 2) { // only manage disarm/rearms when the user opts into it
             if (hal.util->get_soft_armed()) {
@@ -155,6 +157,33 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
+            } else {
+                // attempt to detect command prompt
+                portIdentifier[portLength++] = (char)temp;
+                bool foundPossiblePort = false;
+                for (const char *portId : portIdentifiers) {
+                    if (strncmp(portId, portIdentifier, MIN(portLength, 3)) == 0) {
+                        // we found one of the COM/USB/IP related ports
+                        if (portLength == 4) {
+                            // validate that we have an ascii number
+                            if (isdigit((char)temp)) {
+                                foundPossiblePort = true;
+                                break;
+                            }
+                        } else if (portLength >= sizeof(portIdentifier)) {
+                            if ((char)temp == '>') {
+                                readyForCommand = true;
+                                Debug("SBF: Ready for command");
+                            }
+                        } else {
+                            foundPossiblePort = true;
+                        }
+                        break;
+                    }
+                }
+                if (!foundPossiblePort) {
+                    portLength = 0;
+                }
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:

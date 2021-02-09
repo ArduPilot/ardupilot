@@ -25,7 +25,7 @@
 extern const AP_HAL::HAL& hal;
 
 // We avoid doing log messages when timing is critical:
-bool AP_Logger::should_handle_log_message()
+bool AP_Logger::should_handle_log_message() const
 {
     if (!WritesEnabled()) {
         // this is currently used as a proxy for "in_mavlink_delay"

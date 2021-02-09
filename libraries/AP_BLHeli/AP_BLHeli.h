@@ -71,7 +71,7 @@ public:
     }
 
     bool has_bidir_dshot(uint8_t esc_index) const {
-        return channel_bidir_dshot_mask.get() & (1 << esc_index);
+        return channel_bidir_dshot_mask.get() & (1U << motor_map[esc_index]);
     }
 
     uint16_t get_bidir_dshot_mask() const { return channel_bidir_dshot_mask.get(); }

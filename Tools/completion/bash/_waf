@@ -53,8 +53,11 @@ _waf()
     case $cur in
       --targets=*)
         cur=${cur#*=}
-        # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
-        opts=$(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
+        if [ -z "$_waf_comp_targets" ]; then
+          # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+          _waf_comp_targets=$(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
+        fi
+        opts=$_waf_comp_targets
         COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
         return 0
         ;;

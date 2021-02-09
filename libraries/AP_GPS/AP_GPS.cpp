@@ -810,7 +810,8 @@ void AP_GPS::update_instance(uint8_t instance)
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
-        if (state[instance].status >= GPS_OK_FIX_2D) {
+        // if GPS disabled for flight testing then don't update fix timing value
+        if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
 
@@ -1502,6 +1503,11 @@ bool AP_GPS::calc_blend_weights(void)
     // zero the blend weights
     memset(&_blend_weights, 0, sizeof(_blend_weights));
 
+
+    static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
+    // Note that the early quit below relies upon exactly 2 instances
+    // The time delta calculations below also rely upon every instance being currently detected and being parsed
+
     // exit immediately if not enough receivers to do blending
     if (state[0].status <= NO_FIX || state[1].status <= NO_FIX) {
         return false;
@@ -1510,7 +1516,7 @@ bool AP_GPS::calc_blend_weights(void)
     // Use the oldest non-zero time, but if time difference is excessive, use newest to prevent a disconnected receiver from blocking updates
     uint32_t max_ms = 0; // newest non-zero system time of arrival of a GPS message
     uint32_t min_ms = -1; // oldest non-zero system time of arrival of a GPS message
-    int16_t max_rate_ms = 0; // largest update interval of a GPS receiver
+    uint32_t max_rate_ms = 0; // largest update interval of a GPS receiver
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // Find largest and smallest times
         if (state[i].last_gps_time_ms > max_ms) {
@@ -1519,16 +1525,14 @@ bool AP_GPS::calc_blend_weights(void)
         if ((state[i].last_gps_time_ms < min_ms) && (state[i].last_gps_time_ms > 0)) {
             min_ms = state[i].last_gps_time_ms;
         }
-        if (get_rate_ms(i) > max_rate_ms) {
-            max_rate_ms = get_rate_ms(i);
-        }
+        max_rate_ms = MAX(get_rate_ms(i), max_rate_ms);
         if (isinf(state[i].speed_accuracy) ||
             isinf(state[i].horizontal_accuracy) ||
             isinf(state[i].vertical_accuracy)) {
             return false;
         }
     }
-    if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
+    if ((max_ms - min_ms) < (2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
         state[GPS_BLENDED_INSTANCE].last_gps_time_ms = min_ms;
     } else {

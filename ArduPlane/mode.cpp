@@ -71,9 +71,9 @@ bool Mode::enter()
         // these must be done AFTER _enter() because they use the results to set more flags
 
         // start with throttle suppressed in auto_throttle modes
-        plane.throttle_suppressed = plane.auto_throttle_mode;
+        plane.throttle_suppressed = does_auto_throttle();
 #if HAL_ADSB_ENABLED
-        plane.adsb.set_is_auto_mode(plane.auto_navigation_mode);
+        plane.adsb.set_is_auto_mode(does_auto_navigation());
 #endif
 
         // reset steering integrator on mode change
@@ -93,8 +93,8 @@ bool Mode::is_vtol_man_throttle() const
         // We are a tailsitter that has fully transitioned to Q-assisted forward flight.
         // In this case the forward throttle directly drives the vertical throttle so
         // set vertical throttle state to match the forward throttle state. Confusingly the booleans are inverted,
-        // forward throttle uses 'auto_throttle_mode' whereas vertical uses 'is_vtol_man_throttle'.
-        return !plane.auto_throttle_mode;
+        // forward throttle uses 'does_auto_throttle' whereas vertical uses 'is_vtol_man_throttle'.
+        return !does_auto_throttle();
     }
     return false;
 }

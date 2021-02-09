@@ -119,17 +119,20 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
     float tasVar = 0;
     Vector2f offset;
     uint16_t _faultStatus=0;
-    uint8_t timeoutStatus=0;
+    const uint8_t timeoutStatus =
+        posTimeout<<0 |
+        velTimeout<<1 |
+        hgtTimeout<<2 |
+        magTimeout<<3 |
+        tasTimeout<<4;
+
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
-    getFilterTimeouts(timeoutStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
-    float tiltError;
-    getTiltError(tiltError);
     const struct log_NKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_NKF4_MSG),
         time_us : time_us,
@@ -139,7 +142,7 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : (float)tiltError,
+        tiltErr : tiltErrFilt,  // tilt error convergence metric
         offsetNorth : (int8_t)(offset.x),
         offsetEast : (int8_t)(offset.y),
         faults : _faultStatus,

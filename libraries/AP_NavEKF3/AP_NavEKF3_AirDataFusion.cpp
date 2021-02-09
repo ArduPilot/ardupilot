@@ -239,10 +239,12 @@ void NavEKF3_core::SelectBetaDragFusion()
         prevBetaDragStep_ms = imuSampleTime_ms;
     }
 
+#if EK3_FEATURE_DRAG_FUSION
     // fusion of XY body frame aero specific forces is done at a slower rate and only if alternative methods of wind estimation are not available
     if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
         FuseDragForces();
     }
+#endif
 }
 
 /*
@@ -449,6 +451,7 @@ void NavEKF3_core::FuseSideslip()
     ConstrainVariances();
 }
 
+#if EK3_FEATURE_DRAG_FUSION
 /*
  * Fuse X and Y body axis specific forces using explicit algebraic equations generated with SymPy.
  * See AP_NavEKF3/derivation/main.py for derivation
@@ -718,6 +721,7 @@ void NavEKF3_core::FuseDragForces()
         }
     }
 }
+#endif // EK3_FEATURE_DRAG_FUSION
 
 /********************************************************
 *                   MISC FUNCTIONS                      *

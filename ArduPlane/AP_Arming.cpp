@@ -125,7 +125,7 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         char failure_msg[50] = {};
-        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        if (!AP::ahrs().pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
             check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }
@@ -153,14 +153,11 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
             check_failed(true, "Non-zero throttle");
             return false;
         }
+    }
 
-        // if not in a manual throttle mode and not in CRUISE or FBWB
-        // modes then disallow rudder arming/disarming
-        if (plane.auto_throttle_mode &&
-            (plane.control_mode != &plane.mode_cruise && plane.control_mode != &plane.mode_fbwb)) {
-            check_failed(true, "Mode not rudder-armable");
-            return false;
-        }
+    if (!plane.control_mode->allows_arming()) {
+        check_failed(true, "Mode does not allow arming");
+        return false;
     }
 
     //are arming checks disabled?
@@ -230,9 +227,10 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 /*
   disarm motors
  */
-bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
+bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    if (method == AP_Arming::Method::RUDDER) {
+    if (do_disarm_checks &&
+        method == AP_Arming::Method::RUDDER) {
         // don't allow rudder-disarming in flight:
         if (plane.is_flying()) {
             // obviously this could happen in-flight so we can't warn about it
@@ -245,7 +243,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
         }
     }
 
-    if (!AP_Arming::disarm(method)) {
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
     if (plane.control_mode != &plane.mode_auto) {
@@ -254,7 +252,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method)
     }
 
     // suppress the throttle in auto-throttle modes
-    plane.throttle_suppressed = plane.auto_throttle_mode;
+    plane.throttle_suppressed = plane.control_mode->does_auto_throttle();
 
     // if no airmode switch assigned, ensure airmode is off:
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr) {

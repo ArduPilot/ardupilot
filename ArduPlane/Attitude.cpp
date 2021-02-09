@@ -54,7 +54,7 @@ float Plane::get_speed_scaler(void)
  */
 bool Plane::stick_mixing_enabled(void)
 {
-    if (auto_throttle_mode && auto_navigation_mode) {
+    if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             g.stick_mixing != STICK_MIXING_VTOL_YAW &&
@@ -125,7 +125,7 @@ void Plane::stabilize_pitch(float speed_scaler)
     }
 
    // if LANDING_FLARE RCx_OPTION switch is set and in FW mode, manual throttle,throttle idle then set pitch to LAND_PITCH_CD if flight option FORCE_FLARE_ATTITUDE is set
-   if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !auto_throttle_mode && flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+    if (!quadplane.in_transition() && !control_mode->is_vtol_mode() && channel_throttle->in_trim_dz() && !control_mode->does_auto_throttle() && flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
        demanded_pitch = landing.get_pitch_cd();
    }
 

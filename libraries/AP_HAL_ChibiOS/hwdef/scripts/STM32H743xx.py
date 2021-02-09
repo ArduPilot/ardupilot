@@ -20,10 +20,11 @@ mcu = {
     # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x30000000, 288, 0), # SRAM1, SRAM2, SRAM3
-        (0x38000000,  64, 1), # SRAM4. This supports both DMA and BDMA ops
+        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x38000000,  64, 0), # SRAM4.
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x30040000,  32, 1), # SRAM3. This supports both DMA and BDMA ops.
     ],
 
     'EXPECTED_CLOCK' : 400000000,

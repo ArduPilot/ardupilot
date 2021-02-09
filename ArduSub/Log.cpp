@@ -55,14 +55,14 @@ void Sub::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control.get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    logger.Write_Attitude(targets);
+    ahrs.Write_Attitude(targets);
 
     AP::ahrs_navekf().Log_Write();
-    logger.Write_AHRS2();
+    ahrs.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Write_POS();
+    ahrs.Write_POS();
 }
 
 struct PACKED log_MotBatt {

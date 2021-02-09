@@ -31,6 +31,11 @@
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
 
+#ifndef HAL_INS_TEMPERATURE_CAL_ENABLE
+#define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
+
+
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
@@ -42,6 +47,7 @@
 #include <Filter/LowPassFilter.h>
 #include <Filter/NotchFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
+#include <AP_Math/polyfit.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
@@ -99,8 +105,11 @@ public:
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
-    bool calibrating() const { return _calibrating; }
+    bool calibrating() const;
 
+    /// calibrating - returns true if a temperature calibration is running
+    bool temperature_cal_running() const;
+    
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
@@ -423,7 +432,15 @@ public:
     // handle external AHRS data
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
 #endif
-    
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    /*
+      get a string representation of parameters that should be made
+      persistent across changes of firmware type
+     */
+    void get_persistent_params(ExpandingString &str) const;
+#endif
+
 private:
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
@@ -596,10 +613,11 @@ private:
     // are we in HIL mode?
     bool _hil_mode:1;
 
-    // are gyros or accels currently being calibrated
-    bool _calibrating:1;
-
     bool _backends_detected:1;
+
+    // are gyros or accels currently being calibrated
+    bool _calibrating_accel;
+    bool _calibrating_gyro;
 
     // the delta time in seconds for the last sample
     float _delta_time;
@@ -673,6 +691,102 @@ private:
     uint32_t _startup_ms;
 
     uint8_t imu_kill_mask;
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+public:
+    // TCal class is public for use by SITL
+    class TCal {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+        void correct_accel(float temperature, float cal_temp, Vector3f &accel) const;
+        void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
+        void sitl_apply_accel(float temperature, Vector3f &accel) const;
+        void sitl_apply_gyro(float temperature, Vector3f &accel) const;
+
+        void update_accel_learning(const Vector3f &accel);
+        void update_gyro_learning(const Vector3f &accel);
+
+        enum class Enable : uint8_t {
+            Disabled = 0,
+            Enabled = 1,
+            LearnCalibration = 2,
+        };
+
+        // add samples for learning
+        void update_accel_learning(const Vector3f &gyro, float temperature);
+        void update_gyro_learning(const Vector3f &accel, float temperature);
+        
+        // class for online learning of calibration
+        class Learn {
+        public:
+            Learn(TCal &_tcal, float _start_temp);
+
+            // state for accel/gyro (accel first)
+            struct LearnState {
+                float last_temp;
+                uint32_t last_sample_ms;
+                Vector3f sum;
+                uint32_t sum_count;
+                LowPassFilter2p<float> temp_filter;
+                // double precision is needed for good results when we
+                // span a wide range of temperatures
+                PolyFit<4, double, Vector3f> pfit;
+            } state[2];
+
+            void add_sample(const Vector3f &sample, float temperature, LearnState &state);
+            void finish_calibration(float temperature);
+            bool save_calibration(float temperature);
+            void reset(float temperature);
+            float start_temp;
+            float start_tmax;
+            uint32_t last_save_ms;
+
+            TCal &tcal;
+            uint8_t instance(void) const {
+                return tcal.instance();
+            }
+            Vector3f accel_start;
+        };
+
+        AP_Enum<Enable> enable;
+
+        // get persistent params for this instance
+        void get_persistent_params(ExpandingString &str) const;
+
+    private:
+        AP_Float temp_max;
+        AP_Float temp_min;
+        AP_Vector3f accel_coeff[3];
+        AP_Vector3f gyro_coeff[3];
+        Vector3f accel_tref;
+        Vector3f gyro_tref;
+        Learn *learn;
+
+        void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
+        Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
+
+        // get instance number
+        uint8_t instance(void) const;
+    };
+
+    // instance number for logging
+    uint8_t tcal_instance(const TCal &tc) const {
+        return &tc - &tcal[0];
+    }
+private:
+    TCal tcal[INS_MAX_INSTANCES];
+
+    enum class TCalOptions : uint8_t {
+        PERSIST_TEMP_CAL = (1U<<0),
+        PERSIST_ACCEL_CAL = (1U<<1),
+    };
+
+    // temperature that last calibration was run at
+    AP_Float caltemp_accel[INS_MAX_INSTANCES];
+    AP_Float caltemp_gyro[INS_MAX_INSTANCES];
+    AP_Int32 tcal_options;
+    bool tcal_learning;
+#endif
 };
 
 namespace AP {

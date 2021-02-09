@@ -8,7 +8,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build-gcc-ap_periph:
     runs-on: ubuntu-20.04
-    container: khancyr/ardupilot-dev-base:latest
+    container: ardupilot/ardupilot-dev-base:latest
     steps:
       # git checkout the PR
       - uses: actions/checkout@v2
@@ -54,7 +54,7 @@ jobs:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
     container: 
-      image: khancyr/ardupilot-dev-base:latest
+      image: ardupilot/ardupilot-dev-base:latest
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails

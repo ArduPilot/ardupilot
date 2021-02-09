@@ -874,9 +874,8 @@ bool CANTester::test_uavcan_esc()
 
 exit:
     // Clean up!
-    if (node != nullptr) {
-        delete node;
-    }
+    delete node;
+
     if (esc_command_listener != nullptr) {
         delete esc_command_listener;
         esc_command_listener = nullptr;

@@ -122,7 +122,7 @@ void SoloGimbal::send_controls(mavlink_channel_t chan)
             }
             case GIMBAL_MODE_STABILIZE: {
                 _ang_vel_dem_rads += get_ang_vel_dem_yaw(quatEst);
-                _ang_vel_dem_rads += get_ang_vel_dem_tilt(quatEst);
+                _ang_vel_dem_rads += get_ang_vel_dem_roll_tilt(quatEst);
                 _ang_vel_dem_rads += get_ang_vel_dem_feedforward(quatEst);
                 _ang_vel_dem_rads += get_ang_vel_dem_gyro_bias();
                 float ang_vel_dem_norm = _ang_vel_dem_rads.length();
@@ -313,7 +313,7 @@ Vector3f SoloGimbal::get_ang_vel_dem_yaw(const Quaternion &quatEst)
     return gimbalRateDemVecYaw;
 }
 
-Vector3f SoloGimbal::get_ang_vel_dem_tilt(const Quaternion &quatEst)
+Vector3f SoloGimbal::get_ang_vel_dem_roll_tilt(const Quaternion &quatEst)
 {
     // Calculate the gimbal 321 Euler angle estimates relative to earth frame
     Vector3f eulerEst = quatEst.to_vector312();
@@ -337,17 +337,25 @@ Vector3f SoloGimbal::get_ang_vel_dem_tilt(const Quaternion &quatEst)
     return gimbalRateDemVecTilt;
 }
 
-Vector3f SoloGimbal::get_ang_vel_dem_feedforward(const Quaternion &quatEst)
+Vector3f SoloGimbal::get_ang_vel_dem_feedforward(const Quaternion &quatEst) const
 {
     // quaternion demanded at the previous time step
-    static float lastDem;
+    static float lastDemY;
 
     // calculate the delta rotation from the last to the current demand where the demand does not incorporate the copters yaw rotation
-    float delta = _att_target_euler_rad.y - lastDem;
-    lastDem = _att_target_euler_rad.y;
+    float deltaY = _att_target_euler_rad.y - lastDemY;
+    lastDemY = _att_target_euler_rad.y;
+
+    // quaternion demanded at the previous time step
+    static float lastDemX;
+
+    // calculate the delta rotation from the last to the current demand where the demand does not incorporate the copters yaw rotation
+    float deltaX = _att_target_euler_rad.x - lastDemX;
+    lastDemX = _att_target_euler_rad.x;
 
     Vector3f gimbalRateDemVecForward;
-    gimbalRateDemVecForward.y = delta / _measurement.delta_time;
+    gimbalRateDemVecForward.x = deltaX / _measurement.delta_time;
+    gimbalRateDemVecForward.y = deltaY / _measurement.delta_time;
     return gimbalRateDemVecForward;
 }
 
@@ -383,6 +391,12 @@ void SoloGimbal::update_target(const Vector3f &newTarget)
     _att_target_euler_rad.y = _att_target_euler_rad.y + 0.02f*(newTarget.y - _att_target_euler_rad.y);
     // Update tilt
     _att_target_euler_rad.y = constrain_float(_att_target_euler_rad.y,radians(-90),radians(0));
+
+    // For roll angle
+    // Low-pass filter
+    _att_target_euler_rad.x = _att_target_euler_rad.x + 0.02f*(newTarget.x - _att_target_euler_rad.x);
+    // Update roll
+    _att_target_euler_rad.x = constrain_float(_att_target_euler_rad.x,radians(-30),radians(30));
 }
 
 void SoloGimbal::write_logs()
@@ -467,7 +481,7 @@ void SoloGimbal::write_logs()
     _log_del_vel.zero();
 }
 
-bool SoloGimbal::joints_near_limits()
+bool SoloGimbal::joints_near_limits() const
 {
     return fabsf(_measurement.joint_angles.x) > radians(40) || _measurement.joint_angles.y > radians(45) || _measurement.joint_angles.y < -radians(135);
 }
@@ -504,7 +518,7 @@ void SoloGimbal::_acal_save_calibrations()
     _gimbalParams.flash();
 }
 
-void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates)
+void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f& joint_rates) const
 {
     float sin_theta = sinf(_measurement.joint_angles.y);
     float cos_theta = cosf(_measurement.joint_angles.y);
@@ -519,7 +533,7 @@ void SoloGimbal::gimbal_ang_vel_to_joint_rates(const Vector3f& ang_vel, Vector3f
     joint_rates.z = sec_phi*(ang_vel.z*cos_theta-ang_vel.x*sin_theta);
 }
 
-void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel)
+void SoloGimbal::joint_rates_to_gimbal_ang_vel(const Vector3f& joint_rates, Vector3f& ang_vel) const
 {
     float sin_theta = sinf(_measurement.joint_angles.y);
     float cos_theta = cosf(_measurement.joint_angles.y);

@@ -318,7 +318,7 @@ bool AP_WindVane::start_speed_calibration()
 }
 
 // send mavlink wind message
-void AP_WindVane::send_wind(mavlink_channel_t chan)
+void AP_WindVane::send_wind(mavlink_channel_t chan) const
 {
     // exit immediately if not enabled
     if (!enabled()) {

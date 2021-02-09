@@ -13,10 +13,7 @@
 #include "AP_Frsky_MAVlite_MAVliteToSPort.h"
 #include "AP_Frsky_MAVliteMsgHandler.h"
 
-#define FRSKY_WFQ_TIME_SLOT_MAX     12U
 #define SPORT_TX_PACKET_DUPLICATES          1   // number of duplicates packets we send (fport only)
-#else
-#define FRSKY_WFQ_TIME_SLOT_MAX     11U
 #endif
 
 class AP_Frsky_SPort_Passthrough : public AP_Frsky_SPort, public AP_RCTelemetry
@@ -25,10 +22,16 @@ public:
 
     AP_Frsky_SPort_Passthrough(AP_HAL::UARTDriver *port, bool use_external_data, AP_Frsky_Parameters *&frsky_parameters) :
         AP_Frsky_SPort(port),
-        AP_RCTelemetry(FRSKY_WFQ_TIME_SLOT_MAX),
+        AP_RCTelemetry(WFQ_LAST_ITEM),
         _use_external_data(use_external_data),
         _frsky_parameters(frsky_parameters)
-    { }
+    {
+        singleton = this;
+    }
+
+    static AP_Frsky_SPort_Passthrough *get_singleton(void) {
+        return singleton;
+    }
 
     bool init() override;
     bool init_serial_port() override;
@@ -42,15 +45,35 @@ public:
 
     bool get_next_msg_chunk(void) override;
 
-    bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data) override;
+    bool get_telem_data(sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size) override;
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     bool set_telem_data(const uint8_t frame, const uint16_t appid, const uint32_t data) override;
-#endif
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 
     void queue_text_message(MAV_SEVERITY severity, const char *text) override
     {
         AP_RCTelemetry::queue_message(severity, text);
     }
+
+    enum PassthroughPacketType : uint8_t {
+        TEXT =          0,  // 0x5000 status text (dynamic)
+        ATTITUDE =      1,  // 0x5006 Attitude and range (dynamic)
+        GPS_LAT =       2,  // 0x800 GPS lat
+        GPS_LON =       3,  // 0x800 GPS lon
+        VEL_YAW =       4,  // 0x5005 Vel and Yaw
+        AP_STATUS =     5,  // 0x5001 AP status
+        GPS_STATUS =    6,  // 0x5002 GPS status
+        HOME =          7,  // 0x5004 Home
+        BATT_2 =        8,  // 0x5008 Battery 2 status
+        BATT_1 =        9,  // 0x5008 Battery 1 status
+        PARAM =         10, // 0x5007 parameters
+        RPM =           11, // 0x500A rpm sensors 1 and 2
+        UDATA =         12, // user data
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        MAV =           13,  // mavlite
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        WFQ_LAST_ITEM       // must be last
+    };
 
 protected:
 
@@ -68,23 +91,6 @@ private:
         BATT_CAPACITY_2 =     5
     };
 
-    enum PassthroughPacketType : uint8_t {
-        TEXT =          0,  // 0x5000 status text (dynamic)
-        ATTITUDE =      1,  // 0x5006 Attitude and range (dynamic)
-        GPS_LAT =       2,  // 0x800 GPS lat
-        GPS_LON =       3,  // 0x800 GPS lon
-        VEL_YAW =       4,  // 0x5005 Vel and Yaw
-        AP_STATUS =     5,  // 0x5001 AP status
-        GPS_STATUS =    6,  // 0x5002 GPS status
-        HOME =          7,  // 0x5004 Home
-        BATT_2 =        8,  // 0x5008 Battery 2 status
-        BATT_1 =        9,  // 0x5008 Battery 1 status
-        PARAM =         10, // 0x5007 parameters
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        MAV =           11,  // mavlite
-#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-    };
-
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
     uint32_t calc_param(void);
     uint32_t calc_batt(uint8_t instance);
@@ -92,14 +98,14 @@ private:
     uint32_t calc_home(void);
     uint32_t calc_velandyaw(void);
     uint32_t calc_attiandrng(void);
+    uint32_t calc_rpm(void);
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort
     bool _use_external_data;
+
     struct {
-        uint8_t frame;
-        uint16_t appid;
-        uint32_t data;
+        sport_packet_t packet;
         bool pending;
     } external_data;
 
@@ -140,10 +146,15 @@ private:
     void send_sport_frame(uint8_t frame, uint16_t appid, uint32_t data);
 
     // true if we need to respond to the last polling byte
-    bool is_passthrough_byte(const uint8_t byte);
+    bool is_passthrough_byte(const uint8_t byte) const;
 
     uint8_t _paramID;
 
     uint32_t calc_gps_status(void);
-    uint16_t prep_number(int32_t number, uint8_t digits, uint8_t power);
+
+    static AP_Frsky_SPort_Passthrough *singleton;
+};
+
+namespace AP {
+    AP_Frsky_SPort_Passthrough *frsky_passthrough_telem();
 };

@@ -54,7 +54,7 @@
 #endif
 
 #ifndef TIMER_THD_WA_SIZE
-#define TIMER_THD_WA_SIZE   2048
+#define TIMER_THD_WA_SIZE   1536
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
@@ -66,7 +66,7 @@
 #endif
 
 #ifndef STORAGE_THD_WA_SIZE
-#define STORAGE_THD_WA_SIZE 2048
+#define STORAGE_THD_WA_SIZE 1536
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE

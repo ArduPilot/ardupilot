@@ -184,6 +184,10 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
+        echo "Building CubeOrange peripheral fw"
+        $waf configure --board CubeOrange-periph
+        $waf clean
+        $waf AP_Periph
         continue
     fi
 

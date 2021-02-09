@@ -532,7 +532,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     return AP_Mission::replace_cmd( index, cmd);
 }
 
-bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet)
+bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet) const
 {
     // setting ret_packet.command = -1  and/or returning false
     //  means it contains invalid data after it leaves here.
@@ -1915,7 +1915,7 @@ uint16_t AP_Mission::num_commands_max(void) const
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // return its index.  Returns 0 if no appropriate DO_LAND_START point can
 // be found.
-uint16_t AP_Mission::get_landing_sequence_start()
+uint16_t AP_Mission::get_landing_sequence_start() const
 {
     struct Location current_loc;
 

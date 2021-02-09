@@ -273,7 +273,7 @@ void ModeSystemId::run()
 }
 
 // log system id and attitude
-void ModeSystemId::log_data()
+void ModeSystemId::log_data() const
 {
     uint8_t index = copter.ahrs.get_primary_gyro_index();
     Vector3f delta_angle;

@@ -203,7 +203,8 @@ public:
     bool healthy() const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-    bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
+    // requires_position should be true if horizontal position configuration should be checked
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // true if the AHRS has completed initialisation
     bool initialised() const override;
@@ -347,6 +348,10 @@ private:
 #endif
     };
     EKFType active_EKF_type(void) const;
+
+    // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
+    // returns false if no secondary (i.e. only using DCM)
+    bool get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;

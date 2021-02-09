@@ -40,16 +40,11 @@
 #define MEM_REGION_FLAG_FAST   2
 #define MEM_REGION_FLAG_SDCARD 4
 
-static const struct memory_region {
-    void *address;
-    uint32_t size;
-    uint32_t flags;
-} memory_regions[] = { HAL_MEMORY_REGIONS };
-
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
 #endif
 
+static const struct memory_region memory_regions[] = { HAL_MEMORY_REGIONS };
 // the first memory region is already setup as the ChibiOS
 // default heap, so we will index from 1 in the allocators
 #define NUM_MEMORY_REGIONS (sizeof(memory_regions)/sizeof(memory_regions[0]))
@@ -448,6 +443,16 @@ thread_t *thread_create_alloc(size_t size,
         }
     }
     return NULL;
+}
+
+/*
+  return heap information
+ */
+uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **regions)
+{
+    *_heaps = &heaps[0];
+    *regions = &memory_regions[0];
+    return NUM_MEMORY_REGIONS;
 }
 
 #endif // CH_CFG_USE_HEAP

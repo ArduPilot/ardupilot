@@ -359,21 +359,32 @@ bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_a
     return drivers[primary_instance]->get_horizontal_distances(prx_dist_array);
 }
 
-// get boundary points around vehicle for use by avoidance
-//   returns nullptr and sets num_points to zero if no boundary can be returned
-const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& num_points) const
-{
-    if (!valid_instance(instance)) {
-        num_points = 0;
-        return nullptr;
+// get total number of obstacles, used in GPS based Simple Avoidance
+uint8_t AP_Proximity::get_obstacle_count() const
+{   
+    if (!valid_instance(primary_instance)) {
+        return 0;
     }
-    // get boundary from backend
-    return drivers[instance]->get_boundary_points(num_points);
+    return drivers[primary_instance]->get_obstacle_count();
 }
 
-const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
+// get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
+bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {
-    return get_boundary_points(primary_instance, num_points);
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    return drivers[primary_instance]->get_obstacle(obstacle_num, vec_to_obstacle);
+}
+
+// returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
+// used in GPS based Simple Avoidance
+float AP_Proximity::distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
+{
+    if (!valid_instance(primary_instance)) {
+        return FLT_MAX;
+    }
+    return drivers[primary_instance]->distance_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
 }
 
 // get distance and angle to closest object (used for pre-arm check)
@@ -394,7 +405,7 @@ uint8_t AP_Proximity::get_object_count() const
         return 0;
     }
     // get count from backend
-    return drivers[primary_instance]->get_object_count();
+    return drivers[primary_instance]->get_horizontal_object_count();
 }
 
 // get an object's angle and distance, used for non-GPS avoidance
@@ -405,7 +416,7 @@ bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& a
         return false;
     }
     // get angle and distance from backend
-    return drivers[primary_instance]->get_object_angle_and_distance(object_number, angle_deg, distance);
+    return drivers[primary_instance]->get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
 }
 
 // get maximum and minimum distances (in meters) of primary sensor

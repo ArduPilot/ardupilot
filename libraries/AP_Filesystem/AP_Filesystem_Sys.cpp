@@ -34,10 +34,14 @@ static const SysFileList sysfs_file_list[] = {
     {"threads.txt"},
     {"tasks.txt"},
     {"dma.txt"},
+    {"memory.txt"},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt"},
     {"can0_stats.txt"},
     {"can1_stats.txt"},
+#endif
+#if !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
+    {"persistent.parm"},
 #endif
 };
 
@@ -91,6 +95,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "dma.txt") == 0) {
         hal.util->dma_info(*r.str);
     }
+    if (strcmp(fname, "memory.txt") == 0) {
+        hal.util->mem_info(*r.str);
+    }
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can_log.txt") == 0) {
@@ -106,6 +113,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         }
     }
 #endif
+    if (strcmp(fname, "persistent.parm") == 0) {
+        hal.util->load_persistent_params(*r.str);
+    }
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;

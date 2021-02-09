@@ -459,7 +459,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
     case MSP_RC:
         return msp_process_out_rc(dst);
     default:
-        return MSP_RESULT_ERROR;
+        // MSP always requires an ACK even for unsupported messages
+        return MSP_RESULT_ACK;
     }
 }
 

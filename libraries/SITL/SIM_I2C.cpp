@@ -27,6 +27,7 @@
 #include "SIM_BattMonitor_SMBus_Rotoye.h"
 #include "SIM_Airspeed_DLVR.h"
 #include "SIM_Temperature_TSYS01.h"
+#include "SIM_ICM40609.h"
 
 #include <signal.h>
 
@@ -47,10 +48,12 @@ static IgnoredI2CDevice ignored;
 
 static ToshibaLED toshibaled;
 static MaxSonarI2CXL maxsonari2cxl;
+static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
 static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
+static ICM40609 icm40609;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -58,6 +61,8 @@ struct i2c_device_at_address {
     I2CDevice &device;
 } i2c_devices[] {
     { 0, 0x70, maxsonari2cxl },
+    { 0, 0x71, maxsonari2cxl_2 },
+    { 1, 0x01, icm40609 },
     { 1, 0x55, toshibaled },
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C

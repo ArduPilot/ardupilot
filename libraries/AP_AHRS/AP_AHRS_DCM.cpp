@@ -528,7 +528,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
             yaw_deltat = (_gps.last_fix_time_ms() - _gps_last_update) * 1.0e-3f;
             _gps_last_update = _gps.last_fix_time_ms();
             new_value = true;
-            const float gps_course_rad = ToRad(_gps.ground_course_cd() * 0.01f);
+            const float gps_course_rad = ToRad(_gps.ground_course());
             const float yaw_error_rad = wrap_PI(gps_course_rad - yaw);
             yaw_error = sinf(yaw_error_rad);
 
@@ -1041,7 +1041,7 @@ bool AP_AHRS_DCM::get_position(struct Location &loc) const
     if (_flags.fly_forward && _have_position) {
         float gps_delay_sec = 0;
         _gps.get_lag(gps_delay_sec);
-        loc.offset_bearing(_gps.ground_course_cd() * 0.01f, _gps.ground_speed() * gps_delay_sec);
+        loc.offset_bearing(_gps.ground_course(), _gps.ground_speed() * gps_delay_sec);
     }
     return _have_position;
 }
@@ -1152,7 +1152,8 @@ bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-bool AP_AHRS_DCM::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
+// requires_position should be true if horizontal position configuration should be checked (not used)
+bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!healthy()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");

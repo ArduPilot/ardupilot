@@ -160,7 +160,7 @@ float AP::PerfInfo::get_filtered_time() const
     return filtered_loop_time;
 }
 
-void AP::PerfInfo::update_logging()
+void AP::PerfInfo::update_logging() const
 {
     gcs().send_text(MAV_SEVERITY_WARNING,
                     "PERF: %u/%u [%lu:%lu] F=%uHz sd=%lu Ex=%lu",

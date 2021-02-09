@@ -963,7 +963,7 @@ void ModeAuto::loiter_to_alt_run()
 
     // Compute a vertical velocity demand such that the vehicle
     // approaches the desired altitude.
-    float target_climb_rate = AC_AttitudeControl::sqrt_controller(
+    float target_climb_rate = sqrt_controller(
         -alt_error_cm,
         pos_control->get_pos_z_p().kP(),
         pos_control->get_max_accel_z(),
@@ -1558,7 +1558,7 @@ bool ModeAuto::verify_land()
 
         default:
             // this should never happen
-            // TO-DO: log an error
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             retval = true;
             break;
     }
@@ -1720,7 +1720,7 @@ bool ModeAuto::verify_payload_place()
         return true;
     default:
         // this should never happen
-        // TO-DO: log an error
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return true;
     }
     // should never get here
@@ -1757,7 +1757,7 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
 // verify_loiter_to_alt - check if we have reached both destination
 // (roughly) and altitude (precisely)
-bool ModeAuto::verify_loiter_to_alt()
+bool ModeAuto::verify_loiter_to_alt() const
 {
     if (loiter_to_alt.reached_destination_xy &&
         loiter_to_alt.reached_alt) {

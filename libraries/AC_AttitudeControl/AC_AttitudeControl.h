@@ -133,7 +133,7 @@ public:
     void inertial_frame_reset();
 
     // Command a Quaternion attitude with feedforward and smoothing
-    void input_quaternion(Quaternion attitude_desired_quat);
+    virtual void input_quaternion(Quaternion attitude_desired_quat);
 
     // Command an euler roll and pitch angle and an euler yaw rate with angular velocity feedforward and smoothing
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
@@ -147,16 +147,16 @@ public:
         float euler_pitch_angle_cd, float euler_yaw_rate_cds) {}
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
-    void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
+    virtual void input_euler_rate_roll_pitch_yaw(float euler_roll_rate_cds, float euler_pitch_rate_cds, float euler_yaw_rate_cds);
 
     // Command an angular velocity with angular velocity feedforward and smoothing
     virtual void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Command an angular velocity with angular velocity feedforward and smoothing
-    void input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Command an angular velocity with angular velocity smoothing using rate loops only with integrated rate error stabilization
-    void input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
+    virtual void input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
     // Command an angular step (i.e change) in body frame angle
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
@@ -260,19 +260,13 @@ public:
     float angle_boost() const { return _angle_boost; }
 
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-    float get_althold_lean_angle_max() const;
+    virtual float get_althold_lean_angle_max() const;
 
     // Return configured tilt angle limit in centidegrees
     float lean_angle_max() const { return _aparm.angle_max; }
 
     // Return tilt angle in degrees
     float lean_angle() const { return degrees(_thrust_angle); }
-
-    // Proportional controller with piecewise sqrt sections to constrain second derivative
-    static float sqrt_controller(float error, float p, float second_ord_lim, float dt);
-
-    // Inverse proportional controller with piecewise sqrt sections to constrain second derivative
-    static float stopping_point(float first_ord_mag, float p, float second_ord_lim);
 
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain
@@ -476,7 +470,7 @@ protected:
 
 public:
     // log a CTRL message
-    void control_monitor_log(void);
+    void control_monitor_log(void) const;
 
     // return current RMS controller filter for each axis
     float control_monitor_rms_output_roll(void) const;

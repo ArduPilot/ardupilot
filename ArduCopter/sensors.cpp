@@ -115,13 +115,13 @@ void Copter::read_rangefinder(void)
 }
 
 // return true if rangefinder_alt can be used
-bool Copter::rangefinder_alt_ok()
+bool Copter::rangefinder_alt_ok() const
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
 }
 
 // return true if rangefinder_alt can be used
-bool Copter::rangefinder_up_ok()
+bool Copter::rangefinder_up_ok() const
 {
     return (rangefinder_up_state.enabled && rangefinder_up_state.alt_healthy);
 }

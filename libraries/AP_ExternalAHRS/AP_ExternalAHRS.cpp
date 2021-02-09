@@ -100,6 +100,11 @@ AP_ExternalAHRS::AP_ExternalAHRS()
     _singleton = this;
 }
 
+#ifndef HAL_EXTERNAL_AHRS_DEFAULT
+#define HAL_EXTERNAL_AHRS_DEFAULT 0
+#endif
+
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
@@ -108,7 +113,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Description: Type of AHRS device
     // @Values: 0:None,1:VectorNav
     // @User: Standard
-    AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, float(DevType::None), AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
     AP_GROUPEND
 };
@@ -356,7 +361,7 @@ bool AP_ExternalAHRS::healthy(void) const
     return (now - last_pkt1_ms < 40 && now - last_pkt2_ms < 500);
 }
 
-bool AP_ExternalAHRS::initialised(void)
+bool AP_ExternalAHRS::initialised(void) const
 {
     return last_pkt1_ms != 0 && last_pkt2_ms != 0;
 }

@@ -24,6 +24,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef HAL_AHRS_EKF_TYPE_DEFAULT
+#define HAL_AHRS_EKF_TYPE_DEFAULT 3
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // index 0 and 1 are for old parameters that are no longer not used
@@ -127,9 +131,9 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: EKF_TYPE
     // @DisplayName: Use NavEKF Kalman filter for attitude and position estimation
     // @Description: This controls which NavEKF Kalman filter version is used for attitude and position estimation
-    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3
+    // @Values: 0:Disabled,2:Enable EKF2,3:Enable EKF3,11:ExternalAHRS
     // @User: Advanced
-    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, 2),
+    AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, HAL_AHRS_EKF_TYPE_DEFAULT),
 #endif
 
     // @Param: CUSTOM_ROLL
@@ -242,7 +246,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
     // Generate estimate of ground speed vector using GPS
     if (gotGPS) {
-        const float cog = radians(AP::gps().ground_course_cd()*0.01f);
+        const float cog = radians(AP::gps().ground_course());
         gndVelGPS = Vector2f(cosf(cog), sinf(cog)) * AP::gps().ground_speed();
     }
     // If both ADS and GPS data is available, apply a complementary filter
@@ -475,12 +479,12 @@ void AP_AHRS::Log_Write_Home_And_Origin()
 #if AP_AHRS_NAVEKF_AVAILABLE
     Location ekf_orig;
     if (get_origin(ekf_orig)) {
-        logger->Write_Origin(LogOriginType::ekf_origin, ekf_orig);
+        Write_Origin(LogOriginType::ekf_origin, ekf_orig);
     }
 #endif
 
     if (home_is_set()) {
-        logger->Write_Origin(LogOriginType::ahrs_home, _home);
+        Write_Origin(LogOriginType::ahrs_home, _home);
     }
 }
 

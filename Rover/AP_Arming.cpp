@@ -43,7 +43,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
     // always check if inertial nav has started and is ready
     char failure_msg[50] = {};
-    if (!ahrs.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(true, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
@@ -134,9 +134,9 @@ bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 /*
   disarm motors
  */
-bool AP_Arming_Rover::disarm(const AP_Arming::Method method)
+bool AP_Arming_Rover::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
-    if (!AP_Arming::disarm(method)) {
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
         return false;
     }
     if (rover.control_mode != &rover.mode_auto) {

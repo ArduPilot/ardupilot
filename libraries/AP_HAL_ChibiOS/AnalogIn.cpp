@@ -209,7 +209,7 @@ void AnalogIn::init()
     adcgrpcfg.circular = true;
     adcgrpcfg.num_channels = ADC_GRP1_NUM_CHANNELS;
     adcgrpcfg.end_cb = adccallback;
-#if defined(STM32H7)
+#if defined(STM32H7) || defined(STM32F3)
     // use 12 bits resolution to keep scaling factors the same as other boards.
     // todo: enable oversampling in cfgr2 ?
     adcgrpcfg.cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_12BITS;
@@ -224,6 +224,16 @@ void AnalogIn::init()
 #if defined(STM32H7)
         adcgrpcfg.pcsel |= (1<<chan);
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_384P5 << (3*(chan%10));
+        if (i < 4) {
+            adcgrpcfg.sqr[0] |= chan << (6*(i+1));
+        } else if (i < 9) {
+            adcgrpcfg.sqr[1] |= chan << (6*(i-4));
+        } else {
+            adcgrpcfg.sqr[2] |= chan << (6*(i-9));
+        }
+#elif defined(STM32F3)
+        adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_601P5 << (3*(chan%10));
+        // setup channel sequence
         if (i < 4) {
             adcgrpcfg.sqr[0] |= chan << (6*(i+1));
         } else if (i < 9) {

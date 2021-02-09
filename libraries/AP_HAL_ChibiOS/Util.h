@@ -21,6 +21,15 @@
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
 
+class ExpandingString;
+
+#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+// on F7 and H7 we will try to save key persistent parameters at the
+// end of the bootloader sector. This enables temperature calibration
+// data to be saved persistently in the factory
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_BUILD_AP_PERIPH) && (defined(STM32F7) || defined(STM32H7))
+#endif
+
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
@@ -66,6 +75,19 @@ public:
     // request information on dma contention
     void dma_info(ExpandingString &str) override;
 #endif
+#if CH_CFG_USE_HEAP == TRUE
+    void mem_info(ExpandingString &str) override;
+#endif
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    // apply persistent parameters to current parameters
+    void apply_persistent_params(void) const;
+#endif
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    // save/load key persistent parameters in bootloader sector
+    bool load_persistent_params(ExpandingString &str) const override;
+#endif
     
 private:
 #ifdef HAL_PWM_ALARM
@@ -98,4 +120,9 @@ private:
     // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
     // flags, so 19 available for persistent data
     static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
+
+#if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+    // save/load key persistent parameters in bootloader sector
+    bool get_persistent_params(ExpandingString &str) const;
+#endif
 };

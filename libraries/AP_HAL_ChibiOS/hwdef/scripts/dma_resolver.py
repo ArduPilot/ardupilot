@@ -11,11 +11,15 @@ dma_map = None
 
 debug = False
 
-def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, recurse=False):
+def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot_use_stream):
     global ignore_list
+    if debug:
+        print('............ Checking ', periph, dma_stream, 'without', cannot_use_stream)
     for other_periph in curr_dict:
         if other_periph != periph:
             if curr_dict[other_periph] == dma_stream:
+                if debug:
+                    print('.................... Collision', other_periph, dma_stream)
                 ignore_list.append(periph)
                 check_str = "%s(%d,%d) %s(%d,%d)" % (
                     other_periph, curr_dict[other_periph][0],
@@ -30,11 +34,19 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, recurs
                 #check if we can resolve by swapping with other periphs
                 for streamchan in dma_map[other_periph]:
                     stream = (streamchan[0], streamchan[1])
-                    if stream != curr_dict[other_periph] and check_possibility(other_periph, stream, curr_dict, dma_map, check_list, False):
-                        if not recurse:
-                            curr_dict[other_periph] = stream
+
+                    if stream != curr_dict[other_periph] and \
+                        stream not in cannot_use_stream and \
+                        check_possibility(other_periph, stream, curr_dict, dma_map, check_list, cannot_use_stream+[(dma_stream)]):
+                        curr_dict[other_periph] = stream
+                        if debug:
+                            print ('....................... Resolving', other_periph, stream)
                         return True
+                if debug:
+                    print ('....................... UnSolved !!!!!!!!', periph, dma_stream)                    
                 return False
+    if debug:
+        print ('....................... Solved ..........', periph, dma_stream)    
     return True
 
 def can_share(periph, noshare_list):
@@ -163,36 +175,18 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
                     continue
                 
                 # prevent attempts to share with other half of same peripheral
-                # also prevent sharing with Timer channels
-                others = []
                 if p.endswith('RX'):
-                    others.append(p[:-2] + 'TX')
+                    other = p[:-2] + 'TX'
                 elif p.endswith('TX'):
-                    others.append(p[:-2] + 'RX')
+                    other = p[:-2] + 'RX'
+                else:
+                    other = None
 
-                for p2 in peripheral_list:
-                    if "_CH" not in p2:
+                if other is not None and ii in idsets[other]:
+                    if len(idsets[p]) >= len(idsets[other]) and len(idsets[other]) > 0:
                         continue
-                    if "_UP" in p2 and "_CH" in p and p2[:4] == p[:4]:
-                        continue
-                    elif "_UP" in p and "_CH" in p2 and p[:4] == p2[:4]:
-                        continue
-                    elif "_CH" in p and "_CH" in p2 and p[:4] == p2[:4]:
-                        continue
-                    else:
-                        others.append(p2)
-                if debug:
-                    print ("Others for ", p, others)
-                skip_this_chan = False
-                for other in others:
-                    if ii in idsets[other]:
-                        if len(idsets[p]) >= len(idsets[other]) or len(idsets[other]) <= 1:
-                            skip_this_chan = True
-                            break
-                        idsets[other].remove(ii)
-                        dma_map[other].remove((dma,stream))
-                if skip_this_chan:
-                    continue
+                    idsets[other].remove(ii)
+                    dma_map[other].remove((dma,stream))
                 found = ii
                 break
             if found is None:
@@ -226,7 +220,7 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
     # use neighboring channels then we sometimes lose a BDMA completion interrupt. To
     # avoid this we set the BDMA available mask to 0x33, which forces the channels not to be
     # adjacent. This issue was found on a CUAV-X7, with H743 RevV.
-    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0x33, noshare_list, dma_exclude)
+    map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0x55, noshare_list, dma_exclude)
     # translate entries from map2 to "DMA controller 3", which is used for BDMA
     for p in map2.keys():
         streams = []
@@ -242,7 +236,10 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
 def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                      dma_priority='', dma_noshare=''):
     '''write out a DMA resolver header file'''
-    global dma_map, have_DMAMUX
+    global dma_map, have_DMAMUX, has_bdshot
+    timer_ch_periph = []
+
+    has_bdshot = False
 
     # form a list of DMA priorities
     priority_list = dma_priority.split()
@@ -265,6 +262,9 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
 
     if dma_map is None:
         have_DMAMUX = True
+        # ensure we don't assign dma for TIMx_CH as we share that with TIMx_UP
+        timer_ch_periph = [periph for periph in peripheral_list if "_CH" in periph]
+        dma_exclude += timer_ch_periph
         dma_map = generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude)
 
     print("Writing DMA map")
@@ -272,6 +272,8 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     curr_dict = {}
 
     for periph in peripheral_list:
+        if "_CH" in periph:
+            has_bdshot = True # the list contains a CH port
         if periph in dma_exclude:
             continue
         assigned = False
@@ -280,11 +282,18 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             print("Unknown peripheral function %s in DMA map for %s" %
                   (periph, mcu_type))
             sys.exit(1)
+
+        if debug:
+            print('\n\n.....Starting lookup for', periph)
         for streamchan in dma_map[periph]:
+            if debug:
+                print('........Possibility for', periph, streamchan)
             stream = (streamchan[0], streamchan[1])
             if check_possibility(periph, stream, curr_dict, dma_map,
-                                 check_list):
+                                 check_list, []):
                 curr_dict[periph] = stream
+                if debug:
+                    print ('....................... Setting', periph, stream)
                 assigned = True
                 break
         if assigned == False:
@@ -310,18 +319,6 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             stream = (streamchan[0], streamchan[1])
             share_ok = True
             for periph2 in stream_assign[stream]:
-                # can only share timer UP and CH streams on the same timer, everything else disallowed
-                if "_CH" in periph or "_CH" in periph2:
-                    if "_UP" in periph and "_CH" in periph2 and periph[-4:1] == periph2[-5:1]:
-                        share_ok = True
-                    elif "_UP" in periph2 and "_CH" in periph and periph2[-4:1] == periph[-5:1]:
-                        share_ok = True
-                    elif "_CH" in periph2 and "_CH" in periph and periph2[-5:1] == periph[-5:1]:
-                        share_ok = True
-                    else:
-                        share_ok = False
-                        if debug:
-                            print ("Can't share ", periph, periph2)
                 if not can_share(periph, noshare_list) or not can_share(periph2, noshare_list):
                     share_ok = False
             if share_ok:
@@ -366,6 +363,15 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
                     (chibios_dma_define_name(key)+'STREAM', dma_controller,
                         curr_dict[key][1], shared))
+            if have_DMAMUX and "_UP" in key:
+                # share the dma with rest of the _CH ports
+                for ch in range(1,5):
+                    chkey = key.replace('_UP', '_CH{}'.format(ch))
+                    if chkey not in timer_ch_periph:
+                        continue
+                    f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
+                        (chibios_dma_define_name(chkey)+'STREAM', dma_controller,
+                            curr_dict[key][1], shared))
         for streamchan in dma_map[key]:
             if stream == (streamchan[0], streamchan[1]):
                 if have_DMAMUX:
@@ -374,6 +380,15 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                     chan = streamchan[2]
                 f.write("#define %-30s %s\n" %
                         (chibios_dma_define_name(key)+'CHAN', chan))
+                if have_DMAMUX and "_UP" in key:
+                    # share the devid with rest of the _CH ports
+                    for ch in range(1,5):
+                        chkey = key.replace('_UP', '_CH{}'.format(ch))
+                        if chkey not in timer_ch_periph:
+                            continue
+                        f.write("#define %-30s %s\n" %
+                                (chibios_dma_define_name(chkey)+'CHAN', 
+                                chan.replace('_UP', '_CH{}'.format(ch))))
                 break
 
     # now generate UARTDriver.cpp DMA config lines

@@ -76,15 +76,20 @@ public:
     // HAL::Callbacks implementation.
     void loop() override final;
 
+    // set_mode *must* set control_mode_reason
     bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
     uint8_t virtual get_mode() const = 0;
+
+    ModeReason get_control_mode_reason() const {
+        return control_mode_reason;
+    }
 
     /*
       common parameters for fixed wing aircraft
      */
     struct FixedWing {
         AP_Int8 throttle_min;
-        AP_Int8 throttle_max;	
+        AP_Int8 throttle_max;
         AP_Int8 throttle_slewrate;
         AP_Int8 throttle_cruise;
         AP_Int8 takeoff_throttle_max;
@@ -95,7 +100,7 @@ public:
         AP_Int8  crash_detection_enable;
         AP_Int16 roll_limit_cd;
         AP_Int16 pitch_limit_max_cd;
-        AP_Int16 pitch_limit_min_cd;        
+        AP_Int16 pitch_limit_min_cd;
         AP_Int8  autotune_level;
         AP_Int8  stall_prevention;
         AP_Int16 loiter_radius;
@@ -313,13 +318,15 @@ protected:
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
-    
+
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
 #if OSD_ENABLED
     void publish_osd_info();
 #endif
+
+    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 private:
 

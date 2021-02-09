@@ -256,7 +256,7 @@ void AP_Scheduler::run(uint32_t time_available)
 /*
   return number of micros until the current task reaches its deadline
  */
-uint16_t AP_Scheduler::time_available_usec(void)
+uint16_t AP_Scheduler::time_available_usec(void) const
 {
     uint32_t dt = AP_HAL::micros() - _task_time_started;
     if (dt > _task_time_allowed) {

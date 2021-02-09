@@ -242,24 +242,26 @@ class AutoTestRover(AutoTest):
             spinner_ch_trim = 1510
             spinner_ch_max = 1975
 
-            self.set_parameter("SPRAY_ENABLE", 1)
+            self.set_parameters({
+                "SPRAY_ENABLE": 1,
 
-            self.set_parameter("SERVO%u_FUNCTION" % pump_ch, 22)
-            self.set_parameter("SERVO%u_MIN" % pump_ch, pump_ch_min)
-            self.set_parameter("SERVO%u_TRIM" % pump_ch, pump_ch_trim)
-            self.set_parameter("SERVO%u_MAX" % pump_ch, pump_ch_max)
+                "SERVO%u_FUNCTION" % pump_ch: 22,
+                "SERVO%u_MIN" % pump_ch: pump_ch_min,
+                "SERVO%u_TRIM" % pump_ch: pump_ch_trim,
+                "SERVO%u_MAX" % pump_ch: pump_ch_max,
 
-            self.set_parameter("SERVO%u_FUNCTION" % spinner_ch, 23)
-            self.set_parameter("SERVO%u_MIN" % spinner_ch, spinner_ch_min)
-            self.set_parameter("SERVO%u_TRIM" % spinner_ch, spinner_ch_trim)
-            self.set_parameter("SERVO%u_MAX" % spinner_ch, spinner_ch_max)
+                "SERVO%u_FUNCTION" % spinner_ch: 23,
+                "SERVO%u_MIN" % spinner_ch: spinner_ch_min,
+                "SERVO%u_TRIM" % spinner_ch: spinner_ch_trim,
+                "SERVO%u_MAX" % spinner_ch: spinner_ch_max,
 
-            self.set_parameter("SIM_SPR_ENABLE", 1)
-            self.set_parameter("SIM_SPR_PUMP", pump_ch)
-            self.set_parameter("SIM_SPR_SPIN", spinner_ch)
+                "SIM_SPR_ENABLE": 1,
+                "SIM_SPR_PUMP": pump_ch,
+                "SIM_SPR_SPIN": spinner_ch,
 
-            self.set_parameter("RC%u_OPTION" % rc_ch, 15)
-            self.set_parameter("LOG_DISARMED", 1)
+                "RC%u_OPTION" % rc_ch: 15,
+                "LOG_DISARMED": 1,
+            })
 
             self.reboot_sitl()
 
@@ -349,9 +351,7 @@ class AutoTestRover(AutoTest):
         self.load_mission(filename)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.send('switch 4\n')  # auto mode
-        self.set_rc(3, 1500)
-        self.wait_mode('AUTO')
+        self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
         self.mavproxy.expect("Mission Complete")
         self.disarm_vehicle()
@@ -573,6 +573,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Pin mask changed after relay command")
 
     def test_setting_modes_via_mavproxy_switch(self):
+        self.customise_SITL_commandline([
+            "--rc-in-port", "5502",
+        ])
         self.load_mission(self.arming_test_mission())
         self.wait_ready_to_arm()
         fnoo = [(1, 'MANUAL'),
@@ -633,12 +636,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         ex = None
         try:
-            self.set_parameter("MODE5", 1)
-            self.mavproxy.send('switch 1\n')  # random mode
-            self.wait_heartbeat()
-            self.change_mode('MANUAL')
-            self.mavproxy.send('switch 5\n')  # acro mode
-            self.wait_mode("ACRO")
+            # from mavproxy_rc.py
+            mapping = [ 0, 1165, 1295, 1425, 1555, 1685, 1815 ]
+            self.set_parameter("MODE1", 1)  # acro
+            self.set_rc(8, mapping[1])
+            self.wait_mode('ACRO')
+
             self.set_rc(9, 1000)
             self.set_rc(10, 1000)
             self.set_parameter("RC9_OPTION", 53) # steering
@@ -672,6 +675,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_rc_override_cancel(self):
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
         self.zero_throttle()
@@ -742,6 +746,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_rc_overrides(self):
         self.context_push()
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46)
@@ -993,6 +998,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_manual_control(self):
         self.context_push()
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         ex = None
         try:
             self.set_parameter("RC12_OPTION", 46) # enable/disable rc overrides
@@ -1137,13 +1143,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_sysid_enforce(self):
         '''Run the same arming code with correct then incorrect SYSID'''
+
+        if self.mav.source_system != self.mav.mav.srcSystem:
+            raise PreconditionFailedException("Expected mav.source_system and mav.srcSystem to match")
+
         self.context_push()
+        old_srcSystem = self.mav.mav.srcSystem
         ex = None
         try:
-            # if set_parameter is ever changed to not use MAVProxy
-            # this test is going to break horribly.  Sorry.
-            self.set_parameter("SYSID_MYGCS", 255) # assume MAVProxy does this!
-            self.set_parameter("SYSID_ENFORCE", 1) # assume MAVProxy does this!
+            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+            self.set_parameter("SYSID_ENFORCE", 1, add_to_context=False)
 
             self.change_mode('MANUAL')
 
@@ -1152,23 +1161,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle(timeout=5)
             self.disarm_vehicle()
 
-            # temporarily set a different system ID than MAVProxy:
-            self.progress("Attempting to arm vehicle myself")
-            old_srcSystem = self.mav.mav.srcSystem
+            self.do_timesync_roundtrip()
+
+            # should not be able to arm from a system id which is not MY_SYSID
+            self.progress("Attempting to arm vehicle from bad system-id")
+            success = None
             try:
-                self.mav.mav.srcSystem = 243
+                # temporarily set a different system ID than normal:
+                self.mav.mav.srcSystem = 72
                 self.arm_vehicle(timeout=5)
                 self.disarm_vehicle()
                 success = False
-            except AutoTestTimeoutException as e:
+            except AutoTestTimeoutException:
                 success = True
             self.mav.mav.srcSystem = old_srcSystem
             if not success:
-                raise NotAchievedException(
-                    "Managed to arm with SYSID_ENFORCE set")
+                raise NotAchievedException("Managed to arm with SYSID_ENFORCE set")
 
+            # should be able to arm from the vehicle's own components:
             self.progress("Attempting to arm vehicle from vehicle component")
-            old_srcSystem = self.mav.mav.srcSystem
             comp_arm_exception = None
             try:
                 self.mav.mav.srcSystem = 1
@@ -1184,6 +1195,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))
             ex = e
+        self.mav.mav.srcSystem = old_srcSystem
+        self.set_parameter("SYSID_ENFORCE", 0, add_to_context=False)
         self.context_pop()
         if ex is not None:
             raise ex
@@ -2156,7 +2169,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         tstart = self.get_sim_time_cached()
         last_heartbeat_sent = 0
-        got_sptgi = False
+        got_ptgi = False
         magic_waypoint_tstart = 0
         magic_waypoint_tstop = 0
         while True:
@@ -2184,9 +2197,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     print("At magic waypoint")
                     if magic_waypoint_tstart == 0:
                         magic_waypoint_tstart = self.get_sim_time_cached()
-                    sptgi = self.mav.messages.get("SET_POSITION_TARGET_GLOBAL_INT", None)
-                    if sptgi is not None:
-                        got_sptgi = True
+                    ptgi = self.mav.messages.get("POSITION_TARGET_GLOBAL_INT", None)
+                    if ptgi is not None:
+                        got_ptgi = True
                 elif mc.seq > magic_waypoint:
                     if magic_waypoint_tstop == 0:
                         magic_waypoint_tstop = self.get_sim_time_cached()
@@ -2197,9 +2210,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not stay in offboard control for correct time (want=%f got=%f)" %
                                        (offboard_expected_duration, offboard_duration))
 
-        if not got_sptgi:
-            raise NotAchievedException("Did not get sptgi message")
-        print("spgti: %s" % str(sptgi))
+        if not got_ptgi:
+            raise NotAchievedException("Did not get ptgi message")
+        print("pgti: %s" % str(ptgi))
 
     def assert_mission_count_on_link(self, mav, expected_count, target_system, target_component, mission_type):
         self.drain_mav_unparsed(mav=mav, freshen_sim_time=True)
@@ -2941,9 +2954,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                 target_component,
                                                 1)
             m = self.mav.recv_match(type="RALLY_POINT", blocking=True, timeout=1)
-            if m.target_system != 255:
+            if m.target_system != self.mav.source_system:
                 raise NotAchievedException("Bad target_system on received rally point (want=%u got=%u)" % (255, m.target_system))
-            if m.target_component != 250: # autotest's component ID
+            if m.target_component != self.mav.source_component: # autotest's component ID
                 raise NotAchievedException("Bad target_component on received rally point")
             if m.lat != item1_lat:
                 raise NotAchievedException("Bad latitude on received rally point")
@@ -4891,6 +4904,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.reboot_sitl()
             self.delay_sim_time(10)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.remove_example_script(example_script)
         self.reboot_sitl()
@@ -4933,6 +4948,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.remove_example_script(script)
 
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
         self.reboot_sitl()
 
@@ -4955,33 +4972,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
+
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+
         ex = None
         example_script = "hello_world.lua"
-        messages = []
-        def my_message_hook(mav, message):
-            if message.get_type() != 'STATUSTEXT':
-                return
-            messages.append(message)
-        self.install_message_hook(my_message_hook)
         try:
             self.set_parameter("SCR_ENABLE", 1)
             self.install_example_script(example_script)
             self.reboot_sitl()
+            self.wait_statustext('hello, world', check_context=True, timeout=30)
         except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
             ex = e
-        self.remove_example_script(example_script)
-        self.reboot_sitl()
 
-        self.remove_message_hook(my_message_hook)
+        self.remove_example_script(example_script)
+
+        self.context_pop()
+
+        self.reboot_sitl()
 
         if ex is not None:
             raise ex
-
-        # check all messages to see if we got our message
-        for m in messages:
-            if "hello, world" in m.text:
-                return # success!
-        raise NotAchievedException("Did not get expected text")
 
     def test_scripting_steering_and_throttle(self):
         self.start_subtest("Scripting square")
@@ -5427,6 +5441,73 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def test_end_mission_behavior(self, timeout=60):
+        self.context_push()
+        ex = None
+        try:
+            self.load_mission("end-mission.txt")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+            self.start_subtest("Test End Mission Behavior HOLD")
+            self.context_collect("STATUSTEXT")
+            self.change_mode("AUTO")
+            self.wait_text("Mission Complete", check_context=True, wallclock_timeout=2)
+            # On Hold we should just stop and don't update the navigation target anymore
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 15:
+                    raise AutoTestTimeoutException("Still getting POSITION_TARGET_GLOBAL_INT")
+                m = self.mav.recv_match(type="POSITION_TARGET_GLOBAL_INT",
+                                        blocking=True,
+                                        timeout=10)
+                if m is None:
+                    self.progress("No POSITION_TARGET_GLOBAL_INT received, all good !")
+                    break
+            self.context_clear_collection("STATUSTEXT")
+            self.change_mode("GUIDED")
+            self.context_collect("STATUSTEXT")
+
+            self.start_subtest("Test End Mission Behavior LOITER")
+            self.set_parameter("MIS_DONE_BEHAVE", 1)
+            self.change_mode("AUTO")
+            self.wait_text("Mission Complete", check_context=True, wallclock_timeout=2)
+            # On LOITER we should update the navigation target
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 15:
+                    raise AutoTestTimeoutException("Not getting POSITION_TARGET_GLOBAL_INT")
+                m = self.mav.recv_match(type="POSITION_TARGET_GLOBAL_INT",
+                                        blocking=True,
+                                        timeout=5)
+                if m is None:
+                    self.progress("No POSITION_TARGET_GLOBAL_INT received")
+                    continue
+                else:
+                    if self.get_sim_time_cached() - tstart > 15:
+                        self.progress("Got POSITION_TARGET_GLOBAL_INT, all good !")
+                        break
+            self.change_mode("GUIDED")
+
+            self.start_subtest("Test End Mission Behavior ACRO")
+            self.set_parameter("MIS_DONE_BEHAVE", 2)
+            self.change_mode("AUTO")
+            self.wait_mode("ACRO")
+
+            self.start_subtest("Test End Mission Behavior MANUAL")
+            self.set_parameter("MIS_DONE_BEHAVE", 3)
+            self.change_mode("AUTO")
+            self.wait_mode("MANUAL")
+            self.disarm_vehicle()
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -5625,9 +5706,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Accelerometer Calibration testing",
              self.accelcal),
 
+            ("AHRSTrim",
+             "Accelerometer trim testing",
+             self.ahrstrim),
+             
             ("AP_Proximity_MAV",
              "Test MAV proximity backend",
              self.ap_proximity_mav),
+
+            ("EndMissionBehavior",
+             "Test end mission behavior",
+             self.test_end_mission_behavior),
 
             ("LogUpload",
              "Upload logs",

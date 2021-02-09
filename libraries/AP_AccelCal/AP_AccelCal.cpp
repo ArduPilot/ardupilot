@@ -382,3 +382,9 @@ bool AP_AccelCal::gcs_vehicle_position(float position)
 
     return false;
 }
+
+// true if we are in a calibration process
+bool AP_AccelCal::running(void) const
+{
+    return _status == ACCEL_CAL_WAITING_FOR_ORIENTATION || _status == ACCEL_CAL_COLLECTING_SAMPLE;
+}

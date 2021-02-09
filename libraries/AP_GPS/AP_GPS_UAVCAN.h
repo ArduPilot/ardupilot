@@ -28,6 +28,7 @@
 class FixCb;
 class Fix2Cb;
 class AuxCb;
+class HeadingCb;
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
 public:
@@ -44,6 +45,7 @@ public:
     static void handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb);
     static void handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb);
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
+    static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
 
     void inject_data(const uint8_t *data, uint16_t len) override;
 
@@ -51,6 +53,7 @@ private:
     void handle_fix_msg(const FixCb &cb);
     void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
+    void handle_heading_msg(const HeadingCb &cb);
 
     static bool take_registry();
     static void give_registry();

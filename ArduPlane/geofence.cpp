@@ -145,7 +145,7 @@ void Plane::geofence_disable_and_send_error_msg(const char *errorMsg)
  * return true if a geo-fence has been uploaded and
  * FENCE_ACTION is 1 (not necessarily enabled)
  */
-bool Plane::geofence_present(void)
+bool Plane::geofence_present(void) const
 {
     //require at least a return point and a triangle
     //to define a geofence area:

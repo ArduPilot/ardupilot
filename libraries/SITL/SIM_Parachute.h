@@ -51,7 +51,7 @@ public:
 
     uint64_t last_update_us;
 
-    bool should_report();
+    bool should_report() const;
     bool zero_report_done = false;
 };
 

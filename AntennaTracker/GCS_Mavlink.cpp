@@ -417,23 +417,25 @@ MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro()
     return ret;
 }
 
+MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlink_command_long_t &packet)
+{
+    if (is_equal(packet.param1,1.0f)) {
+        tracker.arm_servos();
+        return MAV_RESULT_ACCEPTED;
+    }
+    if (is_zero(packet.param1))  {
+        tracker.disarm_servos();
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_UNSUPPORTED;
+}
+
 MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     // do command
     send_text(MAV_SEVERITY_INFO,"Command received: ");
 
     switch(packet.command) {
-
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        if (is_equal(packet.param1,1.0f)) {
-            tracker.arm_servos();
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_zero(packet.param1))  {
-            tracker.disarm_servos();
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_UNSUPPORTED;
 
     case MAV_CMD_DO_SET_SERVO:
         // ensure we are in servo test mode

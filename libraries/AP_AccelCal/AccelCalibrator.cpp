@@ -355,7 +355,7 @@ void AccelCalibrator::run_fit(uint8_t max_iterations, float& fitness)
             }
         }
 
-        if (!inverse(JTJ, JTJ, get_num_params())) {
+        if (!mat_inverse(JTJ, JTJ, get_num_params())) {
             return;
         }
 

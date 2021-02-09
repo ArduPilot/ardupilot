@@ -841,7 +841,7 @@ void AP_GyroFFT::write_log_messages()
 // @Field: EnZ: power spectral density bin energy of the peak on roll
 
 // write a single log message
-void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch)
+void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch) const
 {
     AP::logger().Write("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
         AP_HAL::micros64(),

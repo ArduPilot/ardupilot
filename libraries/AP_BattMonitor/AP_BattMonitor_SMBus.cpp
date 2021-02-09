@@ -84,10 +84,14 @@ bool AP_BattMonitor_SMBus::read_temp(void)
 {
     uint16_t data;
     if (read_word(BATTMONITOR_SMBUS_TEMP, data)) {
+        _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
+
         _state.temperature_time = AP_HAL::millis();
         _state.temperature = ((float)(data - 2731)) * 0.1f;
         return true;
     }
+    
+    _has_temperature = false;
 
     return false;
 }

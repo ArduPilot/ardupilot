@@ -3,8 +3,13 @@
 
 _waf() {
   typeset -A opt_args
-  local context state line curcontext="$curcontext"
+  local context state line curcontext="$curcontext" update_policy _waf_caching_policy
 
+  # This style defines the function that will be used to determine whether a cache needs rebuilding
+  zstyle -s ":completion:${curcontext}:" cache-policy update_policy
+  if [[ -z "$update_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy _waf_caching_policy
+  fi
   _arguments -C \
     '(- 1 *)--version[show version and exit]' \
     '(- 1 *)'{-h,--help}'[show help options and exit]' \
@@ -38,6 +43,13 @@ _waf() {
     esac
 }
 
+_waf_caching_policy () {
+  # rebuild if cache is more than 3 days old
+  local -a oldp
+  oldp=( "$1"(Nm+3) )
+  (( $#oldp ))
+}
+
 (( $+functions[_waf_boards] )) ||
 _waf_boards() {
   local boards; boards=( $(./waf list_boards | sed -e '$d'))
@@ -46,9 +58,15 @@ _waf_boards() {
 
 (( $+functions[_waf_targets] )) ||
 _waf_targets() {
-  # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
-  local targets; targets=( $(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' '))
-  _describe -t targets 'target' targets "$@" && ret=0
+  # Cache the list of targets available
+  if ( [[ ${+_waf_comp_targets} -eq 0 ]] || _cache_invalid WAF_TARGETS ) &&
+      ! _retrieve_cache WAF_TARGETS;
+  then
+    # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+    _waf_comp_targets=( $(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' '))
+    _store_cache WAF_TARGETS _waf_comp_targets
+  fi
+  _describe -t targets 'targets' _waf_comp_targets "$@" && ret=0
 }
 
 # TODO generate with regex from waf help

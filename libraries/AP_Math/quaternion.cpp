@@ -464,7 +464,7 @@ void Quaternion::rotate(const Vector3f &v)
 
 // convert this quaternion to a rotation vector where the direction of the vector represents
 // the axis of rotation and the length of the vector represents the angle of rotation
-void Quaternion::to_axis_angle(Vector3f &v)
+void Quaternion::to_axis_angle(Vector3f &v) const
 {
     const float l = sqrtf(sq(q2)+sq(q3)+sq(q4));
     v = Vector3f(q2,q3,q4);

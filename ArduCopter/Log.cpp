@@ -69,8 +69,8 @@ void Copter::Log_Write_Attitude()
 {
     Vector3f targets = attitude_control->get_att_target_euler_cd();
     targets.z = wrap_360_cd(targets.z);
-    logger.Write_Attitude(targets);
-    logger.Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
+    ahrs.Write_Attitude(targets);
+    ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
     if (should_log(MASK_LOG_PID)) {
         logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
@@ -83,11 +83,11 @@ void Copter::Log_Write_Attitude()
 void Copter::Log_Write_EKF_POS()
 {
     AP::ahrs_navekf().Log_Write();
-    logger.Write_AHRS2();
+    ahrs.Write_AHRS2();
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     sitl.Log_Write_SIMSTATE();
 #endif
-    logger.Write_POS();
+    ahrs.Write_POS();
 }
 
 struct PACKED log_MotBatt {
@@ -617,7 +617,7 @@ const struct LogStructure Copter::log_structure[] = {
 void Copter::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    logger.Write_MessageF("Frame: %s", get_frame_string());
+    logger.Write_MessageF("Frame: %s/%s", motors->get_frame_string(), motors->get_type_string());
     logger.Write_Mode((uint8_t)control_mode, control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();

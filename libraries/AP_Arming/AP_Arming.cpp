@@ -363,6 +363,12 @@ bool AP_Arming::ins_checks(bool report)
             return false;
         }
 
+        // no arming while doing temp cal
+        if (ins.temperature_cal_running()) {
+            check_failed(ARMING_CHECK_INS, report, "temperature cal running");
+            return false;
+        }
+        
         // check AHRS attitudes are consistent
         char failure_msg[50] = {};
         if (!AP::ahrs().attitudes_consistent(failure_msg, ARRAY_SIZE(failure_msg))) {
@@ -1204,7 +1210,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 }
 
 //returns true if disarming occurred successfully
-bool AP_Arming::disarm(const AP_Arming::Method method)
+bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (!armed) { // already disarmed
         return false;

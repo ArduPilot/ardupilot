@@ -14,7 +14,10 @@
 
 MAV_TYPE GCS_Copter::frame_type() const
 {
-    return copter.get_frame_mav_type();
+    if (copter.motors == nullptr) {
+        return MAV_TYPE_GENERIC;
+    }
+    return copter.motors->get_frame_mav_type();
 }
 
 MAV_MODE GCS_MAVLINK_Copter::base_mode() const
@@ -545,7 +548,12 @@ bool GCS_MAVLINK_Copter::params_ready() const
 void GCS_MAVLINK_Copter::send_banner()
 {
     GCS_MAVLINK::send_banner();
-    send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
+    if (copter.motors == nullptr) {
+        send_text(MAV_SEVERITY_INFO, "motors not allocated");
+        return;
+    }
+    send_text(MAV_SEVERITY_INFO, "Frame: %s/%s", copter.motors->get_frame_string(),
+                                                 copter.motors->get_type_string());
 }
 
 // a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
@@ -687,11 +695,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
         break;
     }
     return GCS_MAVLINK::handle_command_mount(packet);
-}
-
-bool GCS_MAVLINK_Copter::allow_disarm() const
-{
-    return copter.ap.land_complete;
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_long_t &packet)

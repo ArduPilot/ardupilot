@@ -109,7 +109,10 @@ private:
     uint32_t _last_reply_ms;                // system time of last valid reply
     uint32_t _last_restart_ms;              // system time we restarted the sensor
     uint32_t _last_distance_received_ms;    // system time of last distance measurement received from sensor
-    uint8_t _last_sector = UINT8_MAX;       // sector of last distance_cm
+    AP_Proximity_Boundary_3D::Face _face;   // face of _face_distance
+    float _face_distance;                   // shortest distance (in meters) on face
+    float _face_yaw_deg;                    // yaw angle (in degrees) of shortest distance on face
+    bool _face_distance_valid;              // true if face has at least one valid distance
 
     // state of sensor
     struct {

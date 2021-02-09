@@ -105,12 +105,6 @@ void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
     gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
-// return tilt error convergence metric
-void NavEKF2_core::getTiltError(float &ang) const
-{
-    ang = tiltErrFilt;
-}
-
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
 {
@@ -195,12 +189,6 @@ float NavEKF2_core::getPosDownDerivative(void) const
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     // correct for the IMU offset (EKF calculations are at the IMU)
     return vertCompFiltState.vel + velOffsetNED.z;
-}
-
-// This returns the specific forces in the NED frame
-void NavEKF2_core::getAccelNED(Vector3f &accelNED) const {
-    accelNED = velDotNED;
-    accelNED.z -= GRAVITY_MSS;
 }
 
 // return the Z-accel bias estimate in m/s^2
@@ -477,15 +465,6 @@ return filter timeout status as a bitmasked integer
  6 = unassigned
  7 = unassigned
 */
-void  NavEKF2_core::getFilterTimeouts(uint8_t &timeouts) const
-{
-    timeouts = (posTimeout<<0 |
-                velTimeout<<1 |
-                hgtTimeout<<2 |
-                magTimeout<<3 |
-                tasTimeout<<4);
-}
-
 // Return the navigation filter status message
 void  NavEKF2_core::getFilterStatus(nav_filter_status &status) const
 {
@@ -593,7 +572,7 @@ uint8_t NavEKF2_core::getFramesSincePredict(void) const
 }
 
 // return true when external nav data is also being used as a yaw observation
-bool NavEKF2_core::isExtNavUsedForYaw()
+bool NavEKF2_core::isExtNavUsedForYaw() const
 {
     return extNavUsedForYaw;
 }

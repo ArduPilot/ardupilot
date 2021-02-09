@@ -355,7 +355,7 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
     } else {
         // going backwards is somewhat convoluted as the param code is geared for going forward
         ap_var_type type = AP_PARAM_NONE, prev_type = AP_PARAM_NONE, prev_prev_type = AP_PARAM_NONE;
-        AP_Param::ParamToken token, prev_token, prev_prev_token;
+        AP_Param::ParamToken token {}, prev_token, prev_prev_token;
 
         for (param = AP_Param::first(&token, &type);
             param && (setting._current_token.key != token.key

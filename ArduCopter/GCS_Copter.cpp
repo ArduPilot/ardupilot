@@ -9,7 +9,10 @@ uint8_t GCS_Copter::sysid_this_mav() const
 
 const char* GCS_Copter::frame_string() const
 {
-    return copter.get_frame_string();
+    if (copter.motors == nullptr) {
+        return "motors not allocated";
+    }
+    return copter.motors->get_frame_string();
 }
 
 bool GCS_Copter::simple_input_active() const

@@ -117,7 +117,7 @@ private:
     void _check_connection(void);
     static bool _select_check(int );
     static void _set_nonblocking(int );
-    bool set_speed(int speed);
+    bool set_speed(int speed) const;
 
     SITL_State *_sitlState;
     uint64_t _receive_timestamp;
