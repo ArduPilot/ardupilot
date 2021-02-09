@@ -207,68 +207,6 @@ void AP_Logger::Write_RSSI()
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance)
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const Vector3f &gyro = ins.get_gyro(imu_instance);
-    const Vector3f &accel = ins.get_accel(imu_instance);
-    const struct log_IMU pkt{
-        LOG_PACKET_HEADER_INIT(LOG_IMU_MSG),
-        time_us : time_us,
-        instance: imu_instance,
-        gyro_x  : gyro.x,
-        gyro_y  : gyro.y,
-        gyro_z  : gyro.z,
-        accel_x : accel.x,
-        accel_y : accel.y,
-        accel_z : accel.z,
-        gyro_error  : ins.get_gyro_error_count(imu_instance),
-        accel_error : ins.get_accel_error_count(imu_instance),
-        temperature : ins.get_temperature(imu_instance),
-        gyro_health : (uint8_t)ins.get_gyro_health(imu_instance),
-        accel_health : (uint8_t)ins.get_accel_health(imu_instance),
-        gyro_rate : ins.get_gyro_rate_hz(imu_instance),
-        accel_rate : ins.get_accel_rate_hz(imu_instance),
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write an raw accel/gyro data packet
-void AP_Logger::Write_IMU()
-{
-    const uint64_t time_us = AP_HAL::micros64();
-
-    const AP_InertialSensor &ins = AP::ins();
-
-    uint8_t n = MAX(ins.get_accel_count(), ins.get_gyro_count());
-    for (uint8_t i=0; i<n; i++) {
-        Write_IMU_instance(time_us, i);
-    }
-}
-
-void AP_Logger::Write_Vibration()
-{
-    const AP_InertialSensor &ins = AP::ins();
-    const uint64_t time_us = AP_HAL::micros64();
-    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-        if (!ins.use_accel(i)) {
-            continue;
-        }
-
-        const Vector3f vibration = ins.get_vibration_levels(i);
-        const struct log_Vibe pkt{
-            LOG_PACKET_HEADER_INIT(LOG_VIBE_MSG),
-            time_us     : time_us,
-            imu         : i,
-            vibe_x      : vibration.x,
-            vibe_y      : vibration.y,
-            vibe_z      : vibration.z,
-            clipping  : ins.get_accel_clip_count(i)
-        };
-        WriteBlock(&pkt, sizeof(pkt));
-    }
-}
-
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
                               const MAV_RESULT result,
                               bool was_command_long)
