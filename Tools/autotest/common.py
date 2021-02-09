@@ -8671,6 +8671,31 @@ switch value'''
             return False
         return True
 
+
+    def test_frsky_passthrough_do_wants(self, wants):
+
+        tstart = self.get_sim_time_cached()
+        while len(wants):
+            self.progress("Still wanting (%s)" % ",".join([ ("0x%02x" % x) for x in wants.keys()]))
+            wants_copy = copy.copy(wants)
+            t2 = self.get_sim_time_cached()
+            if t2 - tstart > 300:
+                self.progress("Failed to get frsky data")
+                self.progress("Counts of sensor_id polls sent:")
+                frsky.dump_sensor_id_poll_counts_as_progress_messages()
+                self.progress("Counts of dataids received:")
+                frsky.dump_dataid_counts_as_progress_messages()
+                raise AutoTestTimeoutException("Failed to get frsky data")
+            frsky.update()
+            for want in wants_copy:
+                data = frsky.get_data(want)
+                if data is None:
+                    continue
+                self.progress("Checking 0x%x" % (want,))
+                if wants[want](data):
+                    self.progress("  Fulfilled")
+                    del wants[want]
+
     def test_frsky_passthrough(self):
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
         self.set_parameter("RPM_TYPE", 1) # enable RPM output
@@ -8743,12 +8768,6 @@ switch value'''
         self.wait_ready_to_arm()
 
         # we need to start the engine to get some RPM readings, we do it for plane only
-        if self.is_plane():
-            self.set_autodisarm_delay(0)
-            if not self.arm_vehicle():
-                raise NotAchievedException("Failed to ARM")
-            self.set_rc(3,1050)
-
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.
         # This, at least makes sure we're getting some of each
@@ -8764,38 +8783,28 @@ switch value'''
             #0x5008: lambda x : True, # no second battery, so this doesn't arrive
             0x5003: self.tfp_validate_battery1,
             0x5007: self.tfp_validate_params,
-            0x500A: self.tfp_validate_rpm,
         }
-        tstart = self.get_sim_time_cached()
-        while len(wants):
-            self.progress("Still wanting (%s)" % ",".join([ ("0x%02x" % x) for x in wants.keys()]))
-            wants_copy = copy.copy(wants)
-            t2 = self.get_sim_time_cached()
-            if t2 - tstart > 300:
-                self.progress("Failed to get frsky data")
-                self.progress("Counts of sensor_id polls sent:")
-                frsky.dump_sensor_id_poll_counts_as_progress_messages()
-                self.progress("Counts of dataids received:")
-                frsky.dump_dataid_counts_as_progress_messages()
-                raise AutoTestTimeoutException("Failed to get frsky data")
-            frsky.update()
-            for want in wants_copy:
-                data = frsky.get_data(want)
-                if data is None:
-                    continue
-                self.progress("Checking 0x%x" % (want,))
-                if wants[want](data):
-                    self.progress("  Fulfilled")
-                    del wants[want]
+        self.test_frsky_passthrough_do_wants(wants)
+
+        # now check RPM:
+        if self.is_plane():
+            self.set_autodisarm_delay(0)
+            if not self.arm_vehicle():
+                raise NotAchievedException("Failed to ARM")
+            self.set_rc(3,1050)
+            wants = {
+                0x500A: self.tfp_validate_rpm,
+            }
+            self.test_frsky_passthrough_do_wants(wants)
+            self.zero_throttle()
+            if not self.disarm_vehicle():
+                raise NotAchievedException("Failed to DISARM")
+
+
         self.progress("Counts of sensor_id polls sent:")
         frsky.dump_sensor_id_poll_counts_as_progress_messages()
         self.progress("Counts of dataids received:")
         frsky.dump_dataid_counts_as_progress_messages()
-        # disarm
-        if self.is_plane():
-            self.zero_throttle()
-            if not self.disarm_vehicle():
-                raise NotAchievedException("Failed to DISARM")
 
     def decode_mavlite_param_value(self, message):
         '''returns a tuple of parameter name, value'''
