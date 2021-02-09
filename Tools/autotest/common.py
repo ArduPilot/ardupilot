@@ -8672,7 +8672,7 @@ switch value'''
         return True
 
 
-    def test_frsky_passthrough_do_wants(self, wants):
+    def test_frsky_passthrough_do_wants(self, frsky, wants):
 
         tstart = self.get_sim_time_cached()
         while len(wants):
@@ -8784,7 +8784,7 @@ switch value'''
             0x5003: self.tfp_validate_battery1,
             0x5007: self.tfp_validate_params,
         }
-        self.test_frsky_passthrough_do_wants(wants)
+        self.test_frsky_passthrough_do_wants(frsky, wants)
 
         # now check RPM:
         if self.is_plane():
@@ -8795,7 +8795,7 @@ switch value'''
             wants = {
                 0x500A: self.tfp_validate_rpm,
             }
-            self.test_frsky_passthrough_do_wants(wants)
+            self.test_frsky_passthrough_do_wants(frsky, wants)
             self.zero_throttle()
             if not self.disarm_vehicle():
                 raise NotAchievedException("Failed to DISARM")
