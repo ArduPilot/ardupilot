@@ -88,6 +88,14 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ALT_MIN", 7, AC_Avoid, _alt_min, 2.0f),
 
+    // @Param: ACCEL_MAX
+    // @DisplayName: Avoidance maximum acceleration
+    // @Description: Maximum acceleration with which obstacles will be avoided with. Set zero to disable acceleration limits
+    // @Units: m/s/s
+    // @Range: 0 9
+    // @User: Standard
+    AP_GROUPINFO("ACCEL_MAX", 8, AC_Avoid, _accel_max, 3.0f),
+
     AP_GROUPEND
 };
 
@@ -166,6 +174,9 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
         return;
     }
 
+    // make a copy of input velocity, because desired_vel_cms might be changed
+    const Vector3f desired_vel_cms_original = desired_vel_cms;
+
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
@@ -224,6 +235,26 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
             }
         }
     }
+    // limit acceleration
+    limit_accel(desired_vel_cms_original, desired_vel_cms, dt);
+}
+
+// Limit acceleration so that change of velocity output by avoidance library is controlled
+void AC_Avoid::limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt)
+{
+    if (original_vel == modified_vel || is_zero(_accel_max) || !is_positive(dt)) {
+        // we can't limit accel if any of these conditions are true
+        return;
+    }
+    // max accel in cm
+    const float max_accel_cm = _accel_max * 100.0f;
+    // accel desired by avoidance library
+    const Vector3f accel = (modified_vel - original_vel)/dt;
+    if (accel.length() > max_accel_cm) {
+        // pull back on the acceleration
+        modified_vel = (accel.normalized() * max_accel_cm) * dt + original_vel;
+    }
+    return;
 }
 
 // This method is used in most Rover modes and not in Copter
