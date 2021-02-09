@@ -513,7 +513,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Value: Value
 
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB" },
+      "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s%%%%mmmmmmnn", "F222200B000BB" },
     
 // @LoggerMessage: MOTB
 // @Description: Battery information
