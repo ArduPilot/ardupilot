@@ -91,7 +91,7 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
