@@ -114,11 +114,19 @@ public:
     // false if margin < fence radius 
     bool check_inclusion_circle_margin(float margin) const;
 
+    /// return system time of last update to the exclusion circles
+    uint32_t get_inclusion_circle_update_ms() const {
+        return _load_time_ms;
+    }
+
     ///
     /// mavlink
     ///
     /// handler for polygon fence messages with GCS
     void handle_msg(class GCS_MAVLINK &link, const mavlink_message_t& msg);
+
+    // breached(Vector2f&) - returns true of pos_cm (an offset in cm from the EKF origin) breaches any fence
+    bool breached(const Vector2f& pos_cm) const WARN_IF_UNUSED;
 
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;

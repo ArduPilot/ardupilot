@@ -189,6 +189,16 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
     return true;
 }
 
+// returns true of pos_cm (an offset in cm from the EKF origin) breaches any fence
+bool AC_PolyFence_loader::breached(const Vector2f& pos_cm) const {
+    Location loc;
+    if (!AP::ahrs().get_origin(loc)) {
+        return false;
+    }
+    loc.offset(pos_cm.x * 0.01f, pos_cm.y * 0.01f);
+    return breached(loc);
+}
+
 bool AC_PolyFence_loader::breached() const
 {
     struct Location loc;
@@ -255,7 +265,7 @@ bool AC_PolyFence_loader::breached(const Location& loc) const
     // check we are inside each inclusion zone:
     for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
         const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
-        if (Polygon_outside(pos_cm, boundary.points, boundary.count)) {
+        if (Polygon_outside(pos, boundary.points_lla, boundary.count)) {
             if (!have_inclusion_groups()) {
                 return true;
             }
