@@ -4379,7 +4379,7 @@ class AutoTest(ABC):
             accuracy=(altitude_max - altitude_min),
             validator=lambda value2, target2: validator(value2, target2),
             timeout=timeout,
-            **kwargs,
+            **kwargs
         )
 
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
