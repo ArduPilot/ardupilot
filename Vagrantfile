@@ -167,6 +167,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     focal.vm.boot_timeout = 1200
   end
 
+  # 20.04 LTS
+  config.vm.define "focal-desktop", autostart: false do |focal|
+    focal.vm.box = "ubuntu/focal64"
+    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    focal.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (focal-desktop)"
+      vb.gui = true
+    end
+    focal.vm.boot_timeout = 1500
+  end
+
   # 20.10
   config.vm.define "groovy", autostart: false do |groovy|
     groovy.vm.box = "ubuntu/groovy64"
