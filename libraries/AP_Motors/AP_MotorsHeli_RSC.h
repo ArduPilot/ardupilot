@@ -27,12 +27,6 @@
 #define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    50
 #define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
 
-// RSC governor defaults
-#define AP_MOTORS_HELI_RSC_GOVERNOR_RPM_DEFAULT       1500
-#define AP_MOTORS_HELI_RSC_GOVERNOR_TORQUE_DEFAULT    30
-#define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT     25
-#define AP_MOTORS_HELI_RSC_GOVERNOR_FF_DEFAULT        50
-
 // rotor controller states
 enum RotorControlState {
     ROTOR_CONTROL_STOP = 0,
@@ -78,47 +72,34 @@ public:
     // set_critical_speed
     void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
 
-    // set_idle_output
-    void        set_idle_output(float idle_output) { _idle_output = idle_output; }
-
-    // set rotor speed governor parameters
-    void        set_governor_output(float governor_output) {_governor_output = governor_output; }
-
     // get_desired_speed
     float       get_desired_speed() const { return _desired_speed; }
 
     // set_desired_speed - this requires input to be 0-1
     void        set_desired_speed(float desired_speed) { _desired_speed = desired_speed; }
 
-    // get_control_speed
-    float       get_control_output() const { return _control_output; }
-
     // get_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
     float       get_rotor_speed() const;
 
-    // get_governor_output
+    // functions for autothrottle, throttle curve, governor, idle speed, output to servo
+    void        set_governor_output(float governor_output) {_governor_output = governor_output; }
     float       get_governor_output() const { return _governor_output; }
+    void        governor_reset();
+    float       get_control_output() const { return _control_output; }
+    void        set_idle_output(float idle_output) { _idle_output = idle_output; }
+    void        autothrottle_run();
+    void        set_throttle_curve();
 
-    // is_runup_complete
+    // functions for ramp and runup timers, runup_complete flag
+    void        set_ramp_time(int8_t ramp_time) { _ramp_time = ramp_time; }
+    void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
     bool        is_runup_complete() const { return _runup_complete; }
 
     // is_spooldown_complete
     bool        is_spooldown_complete() const { return _spooldown_complete; }
 
-    // set_ramp_time
-    void        set_ramp_time(int8_t ramp_time) { _ramp_time = ramp_time; }
-
-    // set_runup_time
-    void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
-
-    // set_throttle_curve
-    void        set_throttle_curve();
-
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
-
-    // calculate autothrottle output
-    void        autothrottle_run();
 
     // use bailout ramp time
     void        use_bailout_ramp_time(bool enable) { _use_bailout_ramp = enable; }
@@ -204,4 +185,3 @@ private:
     float       get_governor_ff() { return _governor_ff * 0.01; }
 
 };
-
