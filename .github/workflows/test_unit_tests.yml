@@ -1,4 +1,4 @@
-name: test unit tests
+name: test unit tests and Python cleanliness
 
 on: [push, pull_request, workflow_dispatch]
 # paths:
@@ -17,7 +17,8 @@ jobs:
             clang,
         ]
         config: [
-            unit-tests
+            unit-tests,
+            python-cleanliness
         ]
     steps:
       # git checkout the PR
