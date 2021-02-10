@@ -3285,7 +3285,12 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
-        handle_file_transfer_protocol(msg);
+        // check if ftp is disabled for memory savings
+        if (AP_BoardConfig::ftp_disabled()) {
+            gcs().send_text(MAV_SEVERITY::MAV_SEVERITY_ALERT, "MAVFTP not supported");
+        } else {
+            handle_file_transfer_protocol(msg);
+        }
         break;
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
