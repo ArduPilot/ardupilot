@@ -4600,6 +4600,32 @@ class AutoTest(ABC):
 
         self.wait_and_maintain(value_name="Distance to home", target=distance_min, current_value_getter=lambda: get_distance(), validator=lambda value2, target2: validator(value2, target2), accuracy=(distance_max - distance_min), timeout=timeout, **kwargs)
 
+    def wait_distance_to_nav_target(self,
+                                    distance_min,
+                                    distance_max,
+                                    timeout=10,
+                                    use_cached_nav_controller_output=False,
+                                    **kwargs):
+        """Wait for distance to home to be within specified bounds."""
+        assert distance_min <= distance_max, "Distance min should be less than distance max."
+
+        def get_distance():
+            return self.distance_to_nav_target(use_cached_nav_controller_output)
+
+        def validator(value2, target2=None):
+            return distance_min <= value2 <= distance_max
+
+        self.wait_and_maintain(
+            value_name="Distance to nav target",
+            target=distance_min,
+            current_value_getter=lambda: get_distance(),
+            validator=lambda value2,
+            target2: validator(value2, target2),
+            accuracy=(distance_max - distance_min),
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
         channel_field = "servo%u_raw" % channel
@@ -5511,6 +5537,19 @@ Also, ignores heartbeats not from our target system'''
                 break
         self.progress("Polled home position (%s)" % str(m))
         return m
+
+    def distance_to_nav_target(self, use_cached_nav_controller_output=False):
+        '''returns distance to waypoint navigation target in metres'''
+        m = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
+        if m is None or not use_cached_nav_controller_output:
+            m = self.mav.recv_match(
+                type='NAV_CONTROLLER_OUTPUT',
+                blocking=True,
+                timeout=10,
+            )
+            if m is None:
+                raise NotAchievedException("Did not get NAV_CONTROLLER_OUTPUT")
+        return m.wp_dist
 
     def distance_to_home(self, use_cached_home=False):
         m = self.mav.messages.get("HOME_POSITION", None)
