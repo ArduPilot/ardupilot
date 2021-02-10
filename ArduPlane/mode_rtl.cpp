@@ -24,6 +24,8 @@ void ModeRTL::update()
           until we have climbed by RTL_CLIMB_MIN meters
          */
         if (!plane.rtl.done_climb && (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min) {
+            plane.prev_WP_loc = plane.current_loc;
+            plane.setup_glide_slope();
             plane.rtl.done_climb = true;
         }
         if (!plane.rtl.done_climb) {
