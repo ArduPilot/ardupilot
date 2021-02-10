@@ -222,6 +222,11 @@ struct Vector2
     // find the intersection between a line segment and a circle
     // returns true if they intersect and intersection argument is updated with intersection closest to seg_start
     static bool circle_segment_intersection(const Vector2<T>& seg_start, const Vector2<T>& seg_end, const Vector2<T>& circle_center, float radius, Vector2<T>& intersection) WARN_IF_UNUSED;
+    // modification of the above method to return both intersections
+    static uint8_t circle_segment_intersections(const Vector2<T>& seg_start, const Vector2<T>& seg_end, const Vector2<T>& circle_center, float radius, Vector2<T>& intersection1, Vector2<T>& intersection2) WARN_IF_UNUSED;
+
+    // interestion points of two circles
+    static uint8_t circle_circle_intersections(Vector2<T> center1, const float r1, Vector2<T> center2, const float r2, Vector2<T>& intersection1, Vector2<T>& intersection2) WARN_IF_UNUSED;
 
     // check if a point falls on the line segment from seg_start to seg_end
     static bool point_on_segment(const Vector2<T>& point,

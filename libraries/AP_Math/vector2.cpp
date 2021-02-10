@@ -263,6 +263,108 @@ bool Vector2<T>::circle_segment_intersection(const Vector2<T>& seg_start, const 
     return false;
 }
 
+// modification of the above method to return both intersections
+template <typename T>
+uint8_t Vector2<T>::circle_segment_intersections(const Vector2<T>& seg_start, const Vector2<T>& seg_end, const Vector2<T>& circle_center, float radius, Vector2<T>& intersection1, Vector2<T>& intersection2)
+{
+    // calculate segment start and end as offsets from circle's center
+    const Vector2f seg_start_local = seg_start - circle_center;
+
+    // calculate vector from start to end
+    const Vector2f seg_end_minus_start = seg_end - seg_start;
+
+    const float a = sq(seg_end_minus_start.x) + sq(seg_end_minus_start.y);
+    const float b = 2 * ((seg_end_minus_start.x * seg_start_local.x) + (seg_end_minus_start.y * seg_start_local.y));
+    const float c = sq(seg_start_local.x) + sq(seg_start_local.y) - sq(radius);
+
+    // check for invalid data
+    if (::is_zero(a) || isnan(a) || isnan(b) || isnan(c)) {
+       return 0;
+    }
+
+    const float delta = sq(b) - (4.0f * a * c);
+
+    if (isnan(delta)) {
+       return 0;
+    }
+
+    // check for invalid delta (i.e. discriminant)
+    if (delta < 0.0f) {
+        return 0;
+    }
+
+    const float delta_sqrt = sqrtf(delta);
+    const float t1 = (-b + delta_sqrt) / (2.0f * a);
+    const float t2 = (-b - delta_sqrt) / (2.0f * a);
+
+    // Three hit cases:
+    //          -o->             --|-->  |            |  --|->
+    // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit),
+
+    // Three miss cases:
+    //       ->  o                     o ->              | -> |
+    // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
+
+    // intersection = new Vector3(E.x + t1 * d.x, secondPoint.y, E.y + t1 * d.y);
+    //   intersection.x = seg_start.x + t1 * seg_end_minus_start.x;
+    //   intersection.y = seg_start.y + t1 * seg_end_minus_start.y;
+    uint8_t num_intersect = 0;
+
+    if ((t1 >= 0.0f) && (t1 <= 1.0f)) {
+        // t1 is the intersection, and it is closer than t2 (since t1 uses -b - discriminant)
+        // Impale, Poke
+        intersection1 = seg_start + (seg_end_minus_start * t1);
+        num_intersect = 1;
+    }
+
+    // here t1 did not intersect so we are either started inside the sphere or completely past it
+    if ((t2 >= 0.0f) && (t2 <= 1.0f)) {
+        // ExitWound
+        if (num_intersect == 0) {
+            intersection1 = seg_start + (seg_end_minus_start * t2);
+        } else {
+            intersection2 = seg_start + (seg_end_minus_start * t2);
+        }
+        num_intersect++;
+    }
+
+    return num_intersect;
+}
+
+// https://math.stackexchange.com/questions/256100/how-can-i-find-the-points-at-which-two-circles-intersect
+template <typename T>
+uint8_t Vector2<T>::circle_circle_intersections(Vector2<T> center1, const float r1, Vector2<T> center2, const float r2, Vector2<T>& intersection1, Vector2<T>& intersection2)
+{
+    const float R2 = (center1 - center2).length_squared();
+    const float r1r1 = r1*r1;
+    const float r2r2 = r1*r1;
+
+    // the bit under the square root
+    const float radicand = 2.0f * (r1r1 + r2r2) / R2 - (powf(r1r1 - r2r2,2.0f)) / (R2*R2) - 1.0f;
+
+    if (is_negative(radicand)) {
+        // no real solution, no intersections
+        return 0;
+    }
+
+    // the point on the line between the two centers that is inline with the two intersection points
+    const Vector2f intersection = (center1 + center2) * 0.5f + (center2 - center1) * (r1r1 - r2r2) / (2.0f * R2);
+
+    if (::is_zero(radicand)) {
+        // circles just touching tangentially
+        intersection1 = intersection;
+        return 1;
+    }
+
+    Vector2f offset(center2.y - center1.y, center1.x - center2.x);
+    offset *= sqrtf(radicand) * 0.5f;
+
+    intersection1 = intersection + offset;
+    intersection2 = intersection - offset;
+
+    return 2;
+}
+
 // normalizes this vector
 template <typename T>
 void Vector2<T>::normalize()
