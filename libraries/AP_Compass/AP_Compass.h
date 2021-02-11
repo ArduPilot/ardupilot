@@ -354,7 +354,10 @@ public:
 #if HAL_EXTERNAL_AHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt);
 #endif
-    
+
+    // force save of current calibration as valid
+    void force_save_calibration(void);
+
 private:
     static Compass *_singleton;
 
