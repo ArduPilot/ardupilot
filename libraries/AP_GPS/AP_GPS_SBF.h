@@ -63,16 +63,21 @@ private:
     static const uint8_t SBF_PREAMBLE1 = '$';
     static const uint8_t SBF_PREAMBLE2 = '@';
 
-    bool _validated_initial_sso;
     uint8_t _init_blob_index;
     uint32_t _init_blob_time;
-    char *_initial_sso;
-    const char* _sso_normal = ", PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod, msec100\n";
+    enum class Config_State {
+        Baud_Rate,
+        SSO,
+        Blob,
+        Complete
+    };
+    Config_State config_step;
+    char *config_string;
     static constexpr const char* _initialisation_blob[] = {
-    "srd, Moderate, UAV\n",
-    "sem, PVT, 5\n",
-    "spm, Rover, all\n",
-    "sso, Stream2, Dsk1, postprocess+event+comment+ReceiverStatus, msec100\n",
+    "srd,Moderate,UAV",
+    "sem,PVT,5",
+    "spm,Rover,all",
+    "sso,Stream2,Dsk1,postprocess+event+comment+ReceiverStatus,msec100",
 #if defined (GPS_SBF_EXTRA_CONFIG)
     GPS_SBF_EXTRA_CONFIG
 #endif
