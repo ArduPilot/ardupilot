@@ -38,8 +38,8 @@ void Copter::ekf_check()
         return;
     }
 
-    // return immediately if motors are not armed, or ekf check is disabled
-    if (!motors->armed() || (g.fs_ekf_thresh <= 0.0f)) {
+    // return immediately if ekf check is disabled
+    if (g.fs_ekf_thresh <= 0.0f) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -160,6 +160,11 @@ void Copter::failsafe_ekf_event()
     // EKF failsafe event has occurred
     failsafe.ekf = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
+
+    // if disarmed take no action
+    if (!motors->armed()) {
+        return;
+    }
 
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
     if (control_mode == Mode::Number::LAND && landing_with_GPS()) {
