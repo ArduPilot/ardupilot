@@ -532,7 +532,6 @@ static void handle_safety_state(CanardInstance* ins, CanardRxTransfer* transfer)
 static void handle_arming_status(CanardInstance* ins, CanardRxTransfer* transfer)
 {
     uavcan_equipment_safety_ArmingStatus req;
-    can_printf("looking to decode a status");
     if (uavcan_equipment_safety_ArmingStatus_decode(transfer, transfer->payload_len, &req, nullptr) < 0) {
         return;
     }
