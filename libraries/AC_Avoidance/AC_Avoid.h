@@ -20,6 +20,7 @@
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
 #define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
+#define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
 
 /*
  * This class prevents the vehicle from leaving a polygon fence or hitting proximity-based obstacles
@@ -121,6 +122,7 @@ private:
 
     /*
      * Limit acceleration so that change of velocity output by avoidance library is controlled
+     * This helps reduce jerks and sudden movements in the vehicle
      */
     void limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt);
 
@@ -216,6 +218,7 @@ private:
     bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
+    Vector3f _prev_avoid_vel;       // copy of avoidance adjusted velocity
 
     static AC_Avoid *_singleton;
 };
