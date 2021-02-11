@@ -237,23 +237,41 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_cms, bool &backing_up, floa
     }
     // limit acceleration
     limit_accel(desired_vel_cms_original, desired_vel_cms, dt);
+
+    if (desired_vel_cms_original != desired_vel_cms) {
+        _last_limit_time = AP_HAL::millis();
+    }
 }
 
-// Limit acceleration so that change of velocity output by avoidance library is controlled
+/*
+* Limit acceleration so that change of velocity output by avoidance library is controlled
+* This helps reduce jerks and sudden movements in the vehicle
+*/
 void AC_Avoid::limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt)
 {
     if (original_vel == modified_vel || is_zero(_accel_max) || !is_positive(dt)) {
         // we can't limit accel if any of these conditions are true
         return;
     }
+
+    if (AP_HAL::millis() - _last_limit_time > AC_AVOID_ACCEL_TIMEOUT_MS) {
+        // reset this velocity because its been a long time since avoidance was active
+        _prev_avoid_vel = original_vel;
+    }
+
+    // acceleration demanded by avoidance
+    const Vector3f accel = (modified_vel - _prev_avoid_vel)/dt;
+
     // max accel in cm
     const float max_accel_cm = _accel_max * 100.0f;
-    // accel desired by avoidance library
-    const Vector3f accel = (modified_vel - original_vel)/dt;
+
     if (accel.length() > max_accel_cm) {
         // pull back on the acceleration
-        modified_vel = (accel.normalized() * max_accel_cm) * dt + original_vel;
+        const Vector3f accel_direction = accel.normalized();
+        modified_vel = (accel_direction * max_accel_cm) * dt + _prev_avoid_vel;
     }
+
+    _prev_avoid_vel = modified_vel;
     return;
 }
 
@@ -367,7 +385,6 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         // limit climb rate
         const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f, dt);
         climb_rate_cms = MIN(max_speed, climb_rate_cms);
-        _last_limit_time = AP_HAL::millis();
     }
 # endif
 }
@@ -436,7 +453,6 @@ void AC_Avoid::limit_velocity_2D(float kP, float accel_cmss, Vector2f &desired_v
     if (speed > max_speed) {
         // subtract difference between desired speed and maximum acceptable speed
         desired_vel_cms += limit_direction*(max_speed - speed);
-        _last_limit_time = AP_HAL::millis();
     }
 }
 
@@ -493,10 +509,6 @@ void AC_Avoid::limit_velocity_3D(float kP, float accel_cmss, Vector3f &desired_v
     // check if original z velocity is positive or negative
     if (is_negative(velocity_z_original)) {
         desired_vel_cms.z = desired_vel_cms.z * -1.0f;
-    }
-
-    if (!is_equal(desired_vel_cms.z, velocity_z_original)) {
-        _last_limit_time = AP_HAL::millis();
     }
 }
 
@@ -701,7 +713,6 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
         if (is_positive(distance_to_target)) {
             const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
             desired_vel_cms = target_direction * (MIN(desired_speed,max_speed) / distance_to_target);
-            _last_limit_time = AP_HAL::millis();
         }
       break;
     } 
@@ -717,7 +728,6 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
             // otherwise user is backing away from fence so do not apply limits
             if (stopping_point_plus_margin_dist_from_home >= dist_from_home) {
                 desired_vel_cms.zero();
-                _last_limit_time = AP_HAL::millis();
             }
         } else {
             // shorten vector without adjusting its direction
@@ -727,7 +737,6 @@ void AC_Avoid::adjust_velocity_circle_fence(float kP, float accel_cmss, Vector2f
                 const float max_speed = get_max_speed(kP, accel_cmss, distance_to_target, dt);
                 if (max_speed < desired_speed) {
                     desired_vel_cms *= MAX(max_speed, 0.0f) / desired_speed;
-                    _last_limit_time = AP_HAL::millis();
                 }
             }
         }
