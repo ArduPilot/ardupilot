@@ -545,9 +545,7 @@ public:
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
         ret.zero();
-        const AP_InertialSensor &_ins = AP::ins();
-        _ins.get_delta_velocity(ret);
-        dt = _ins.get_delta_velocity_dt();
+        AP::ins().get_delta_velocity(ret, dt);
     }
 
     // create a view
