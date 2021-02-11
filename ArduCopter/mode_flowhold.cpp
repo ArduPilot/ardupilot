@@ -369,7 +369,8 @@ void ModeFlowHold::update_height_estimate(void)
 
     // get delta velocity in body frame
     Vector3f delta_vel;
-    if (!copter.ins.get_delta_velocity(delta_vel)) {
+    float delta_vel_dt;
+    if (!copter.ins.get_delta_velocity(delta_vel, delta_vel_dt)) {
         return;
     }
 
