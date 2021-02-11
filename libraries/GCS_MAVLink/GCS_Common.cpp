@@ -3670,7 +3670,25 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         return AP::ins().simple_accel_cal();
     }
 
-    return MAV_RESULT_UNSUPPORTED;
+    /*
+      allow GCS to force an existing calibration of accel and/or
+      compass to be written as valid. This is useful when reloading
+      parameters after a full parameter erase
+     */
+    MAV_RESULT ret = MAV_RESULT_UNSUPPORTED;
+    if (is_equal(packet.param5,76.0f)) {
+        // force existing accel calibration to be accepted as valid
+        AP::ins().force_save_calibration();
+        ret = MAV_RESULT_ACCEPTED;
+    }
+
+    if (is_equal(packet.param2,76.0f)) {
+        // force existing compass calibration to be accepted as valid
+        AP::compass().force_save_calibration();
+        ret = MAV_RESULT_ACCEPTED;
+    }
+    
+    return ret;
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_long_t &packet)
