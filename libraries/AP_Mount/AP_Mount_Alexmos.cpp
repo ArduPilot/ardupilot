@@ -14,6 +14,9 @@ void AP_Mount_Alexmos::init()
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
     }
+
+    // Responsiveness of the gimbal to recenter with the vehicle
+    gimbal_yaw_scale = 1.0/20.0f;
 }
 
 // update mount position - should be called periodically
@@ -41,12 +44,11 @@ void AP_Mount_Alexmos::update()
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
         {
-#define GIMBAL_YAW_SCALE (1.0f/20.0f)
             AP_Mount *mount = AP::mount();
-            if (mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
+            if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle))
             {
                 // use yaw encoder to move yaw with the vehicle
-                _angle_ef_target_rad.z = -_current_angle.z * GIMBAL_YAW_SCALE;
+                _angle_ef_target_rad.z = -_current_angle.z * gimbal_yaw_scale;
             }
 
             // yaw angle (_current_angle.z) when gimbal follows the vehicle
@@ -265,7 +267,9 @@ void AP_Mount_Alexmos::parse_body()
 
             // make yaw encoder value visible outside the AP_Mount class
             AP_Mount *mount = AP::mount();
-            mount->yaw_encoder_readback = _current_angle.z;
+            if (mount != nullptr) {
+                mount->yaw_encoder_readback = _current_angle.z;
+            }
         }
         break;
 

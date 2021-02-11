@@ -615,24 +615,24 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     switch (packet.command) {
     case MAV_CMD_DO_MOUNT_CONTROL:
         if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
+#if MOUNT == ENABLED
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 (float)packet.param3 * 0.01f,
                 0.0f,
                 0,
                 0);
+#endif
         }
         else {
             mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
-            return GCS_MAVLINK::handle_command_mount(packet);
         }
-        break;
-    case MAV_CMD_DO_MOUNT_CONFIGURE:
-        return GCS_MAVLINK::handle_command_mount(packet);
         break;
     default:
         break;
     }
-    return MAV_RESULT_ACCEPTED;
+
+    // GCS_MAVLINK::handle_command_mount handles all mount commands and checks if mount != nullptr
+    return GCS_MAVLINK::handle_command_mount(packet);
 }
 
 bool GCS_MAVLINK_Copter::allow_disarm() const
@@ -692,7 +692,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         AP_Mount *mount = AP::mount();
 
         // switch gimbal YAW follow mode upon a vehicle YAW command
-        mount->mount_yaw_follow_mode = AP_Mount::gimbal_yaw_follows_vehicle;
+        if (mount != nullptr) {
+            mount->mount_yaw_follow_mode = AP_Mount::gimbal_yaw_follows_vehicle;
+        }
 
         // param1 : target angle [0-360)
         // param2 : speed during change [deg per second]
@@ -918,19 +920,21 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         if(!copter.camera_mount.has_pan_control() || (mount == nullptr)) {
+#if MOUNT == ENABLED
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
                 0.0f,
                 0,
                 0);
-
+#endif
             break;
         }
         else {
             mount->mount_yaw_follow_mode = AP_Mount::vehicle_yaw_follows_gimbal;
-            GCS_MAVLINK::handle_mount_message(msg);
         }
     }
+    // GCS_MAVLINK::handle_command_mount handles all mount commands and checks if mount != nullptr
+    GCS_MAVLINK::handle_mount_message(msg);
 }
 
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)

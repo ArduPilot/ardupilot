@@ -326,4 +326,7 @@ private:
 
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
+
+    // Responsiveness of the gimbal to recenter with the vehicle
+    float gimbal_yaw_scale;
 };

@@ -134,6 +134,9 @@ public:
 
     float mount_scale_with_zoom;
 
+    // responsiveness of the vehicle yaw when steered by the mount
+    float vehicle_yaw_scale;
+
     enum MountYawFollowMode {
         gimbal_yaw_follows_vehicle = 0,
         vehicle_yaw_follows_gimbal = 1
