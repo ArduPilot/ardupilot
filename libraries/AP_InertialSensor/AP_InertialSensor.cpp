@@ -2382,6 +2382,20 @@ void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 
+// force save of current calibration as valid
+void AP_InertialSensor::force_save_calibration(void)
+{
+    for (uint8_t i=0; i<_accel_count; i++) {
+        if (_accel_id[i] != 0) {
+            _accel_id[i].save();
+            // we also save the scale as the default of 1.0 may be
+            // over a stored value of 0.0
+            _accel_scale[i].save();
+            _accel_id_ok[i] = true;
+        }
+    }
+}
+
 namespace AP {
 
 AP_InertialSensor &ins()
