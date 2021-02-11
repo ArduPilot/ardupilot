@@ -2020,6 +2020,17 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 
+// force save of current calibration as valid
+void Compass::force_save_calibration(void)
+{
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state[i].dev_id != 0) {
+            _state[i].dev_id.save();
+        }
+    }
+}
+
+
 // singleton instance
 Compass *Compass::_singleton;
 
