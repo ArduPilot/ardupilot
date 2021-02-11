@@ -178,6 +178,8 @@ private:
     AP_OSD_Setting bat2used{false, 0, 0};
     AP_OSD_Setting current2{false, 0, 0};
     AP_OSD_Setting clk{false, 0, 0};
+    AP_OSD_Setting callsign{false, 0, 0};
+    AP_OSD_Setting vtx_power{false, 0, 0};
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
@@ -191,7 +193,6 @@ private:
     AP_OSD_Setting cell_volt{true, 1, 1};
     AP_OSD_Setting batt_bar{true, 1, 1};
     AP_OSD_Setting arming{true, 1, 1};
-    AP_OSD_Setting callsign{false, 0, 0};
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
@@ -248,6 +249,7 @@ private:
     void draw_clk(uint8_t x, uint8_t y);
     void draw_callsign(uint8_t x, uint8_t y);
     void draw_current2(uint8_t x, uint8_t y);
+    void draw_vtx_power(uint8_t x, uint8_t y);
 
     struct {
         bool load_attempted;
