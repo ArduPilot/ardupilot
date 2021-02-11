@@ -71,7 +71,7 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 }
 
 AP_GPS_SBF::~AP_GPS_SBF (void) {
-    free(_initial_sso);
+    free(config_string);
 }
 
 // Process all bytes available from the stream
@@ -87,7 +87,7 @@ AP_GPS_SBF::read(void)
     }
 
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
-        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        if (config_step != Config_State::Complete) {
             uint32_t now = AP_HAL::millis();
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2000) {
@@ -96,24 +96,38 @@ AP_GPS_SBF::read(void)
                     port->write((const uint8_t*)_port_enable, strlen(_port_enable));
                     _config_last_ack_time = now;
                 } else if (readyForCommand) {
-                    char *init_str = nullptr;
-                    if (!_validated_initial_sso) {
-                        if (_initial_sso == nullptr) {
-                            if (asprintf(&_initial_sso, "sso, Stream%d, COM%d%s",
-                                         (int)GPS_SBF_STREAM_NUMBER,
-                                         (int)gps._com_port[state.instance],
-                                         _sso_normal) == -1) {
-                                _initial_sso = nullptr;
-                            }
+                    if (config_string == nullptr) {
+                        switch (config_step) {
+                            case Config_State::Baud_Rate:
+                                if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
+                                             (int)gps._com_port[state.instance],
+                                             230400,
+                                             port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::SSO:
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                             (int)GPS_SBF_STREAM_NUMBER,
+                                             (int)gps._com_port[state.instance]) == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::Blob:
+                                if (asprintf(&config_string,"%s\n", (char *)_initialisation_blob[_init_blob_index]) == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::Complete:
+                              // should never reach here, why search for a config if we have fully configured already
+                              INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                              break;
                         }
-                        init_str = _initial_sso;
-                    } else {
-                        init_str = (char *)_initialisation_blob[_init_blob_index];
                     }
 
-                    if (init_str != nullptr) {
-                        Debug("SBF sending init string: %s", init_str);
-                        port->write((const uint8_t*)init_str, strlen(init_str));
+                    if (config_string != nullptr) {
+                        Debug("SBF sending init string: %s", config_string);
+                        port->write((const uint8_t*)config_string, strlen(config_string));
                         readyForCommand = false;
                     }
                 }
@@ -277,24 +291,29 @@ AP_GPS_SBF::parse(uint8_t temp)
                 if (sbf_msg.data.bytes[0] == ':') {
                     // valid command, determine if it was the one we were trying
                     // to send in the configuration sequence
-                    const char * reference_blob = nullptr;
-                    if (!_validated_initial_sso) {
-                        reference_blob = _initial_sso;
-                    } else {
-                        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-                            reference_blob = _initialisation_blob[_init_blob_index];
-                        }
-                    }
-                    if (reference_blob != nullptr) {
-                        if (!strncmp(reference_blob, (char *)(sbf_msg.data.bytes + 2),
+                    if (config_string != nullptr) {
+                        if (!strncmp(config_string, (char *)(sbf_msg.data.bytes + 2),
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
-                            if (!_validated_initial_sso) {
-                                free(_initial_sso);
-                                _initial_sso = nullptr;
-                                _validated_initial_sso = true;
-                            } else {
-                                _init_blob_index++;
+                            free(config_string);
+                            config_string = nullptr;
+                            switch (config_step) {
+                                case Config_State::Baud_Rate:
+                                    config_step = Config_State::SSO;
+                                    break;
+                                case Config_State::SSO:
+                                    config_step = Config_State::Blob;
+                                    break;
+                                case Config_State::Blob:
+                                    _init_blob_index++;
+                                    if (_init_blob_index >= ARRAY_SIZE(_initialisation_blob)) {
+                                        config_step = Config_State::Complete;
+                                    }
+                                    break;
+                                case Config_State::Complete:
+                                    // should never reach here, this implies that we validated a config string when we hadn't sent any
+                                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                                    break;
                             }
                             _config_last_ack_time = AP_HAL::millis();
                         } else {
