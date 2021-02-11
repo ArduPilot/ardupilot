@@ -179,6 +179,28 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     _this_leg_is_spline = false;
 }
 
+void AC_WPNav::set_radius(float radius)
+{
+    if (radius >= WPNAV_WP_RADIUS_MIN) {
+        _wp_radius_cm = radius;
+    }
+}
+
+void AC_WPNav::reset_radius()
+{
+    _wp_radius_cm.load();
+}
+
+void AC_WPNav::use_rangefinder(bool use)
+{
+    _rangefinder_use = use;
+}
+
+void AC_WPNav::reset_rangefinder_use()
+{
+    _rangefinder_use.load();
+}
+
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
 void AC_WPNav::set_speed_xy(float speed_cms)
 {
