@@ -1664,6 +1664,10 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     static float trim_yaw_tgt_reading = 0.0f;
     static float trim_yaw_heading_reading = 0.0f;
 
+    // adjust target attitude based on input_tc so amplitude decrease with increased frequency is minimized
+    const float freq_co = 1.0f / attitude_control->get_input_tc();
+    tgt_attitude = constrain_float(0.08725f * safe_sqrt(powf(dwell_freq,2.0) + powf(freq_co,2.0)) / freq_co, 0.08725f, 0.5235f);
+
     if (settle_time == 0) {
         target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
     } else {
