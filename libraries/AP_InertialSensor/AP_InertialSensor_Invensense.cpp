@@ -52,6 +52,13 @@ extern const AP_HAL::HAL& hal;
 #define INVENSENSE_EXT_SYNC_ENABLE 0
 #endif
 
+// code to debug unexpected register changes
+#define INVENSENSE_DEBUG_REG_CHANGE 0
+
+#if INVENSENSE_DEBUG_REG_CHANGE
+#include <GCS_MAVLink/GCS.h>
+#endif
+
 #include "AP_InertialSensor_Invensense_registers.h"
 
 #define MPU_SAMPLE_SIZE 14
@@ -424,6 +431,47 @@ bool AP_InertialSensor_Invensense::_data_ready()
 void AP_InertialSensor_Invensense::_poll_data()
 {
     _read_fifo();
+
+#if INVENSENSE_DEBUG_REG_CHANGE
+    /*
+      catch unexpected register changes on an IMU. This was used to
+      find the bug in the ICM-20602 that causes the Y accel offset
+      trim register to change value in flight
+     */
+    if (_mpu_type != Invensense_ICM20602) {
+        return;
+    }
+    static uint16_t counter;
+    if (++counter < 100) {
+        return;
+    }
+    counter = 0;
+    static bool reg_init;
+    static uint8_t reg_value[0x7f];
+    static uint8_t next_reg;
+    if (!reg_init) {
+        reg_init = true;
+        for (uint8_t i=0; i<ARRAY_SIZE(reg_value); i++) {
+            reg_value[i] = _register_read(i);
+        }
+    }
+    bool skip = false;
+    if ((next_reg >= MPUREG_ACCEL_XOUT_H && next_reg <= MPUREG_GYRO_ZOUT_L) ||
+        next_reg == MPUREG_MEM_R_W || next_reg == MPUREG_FIFO_R_W ||
+        next_reg == MPUREG_INT_STATUS ||
+        next_reg == MPUREG_FIFO_COUNTH || next_reg == MPUREG_FIFO_COUNTL) {
+        skip = true;
+    }
+    if (!skip) {
+        uint8_t v = _register_read(next_reg);
+        if (v != reg_value[next_reg]) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "change[%02x] 0x%02x -> 0x%02x",
+                          next_reg, reg_value[next_reg], v);
+            reg_value[next_reg] = v;
+        }
+    }
+    next_reg = (next_reg+1) % ARRAY_SIZE(reg_value);
+#endif // INVENSENSE_DEBUG_REG_CHANGE
 }
 
 bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_samples)
