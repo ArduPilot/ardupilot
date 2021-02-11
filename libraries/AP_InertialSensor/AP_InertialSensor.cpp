@@ -1748,8 +1748,15 @@ check_sample:
 /*
   get delta angles
  */
-bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
+bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle, float &delta_angle_dt) const
 {
+    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
+        delta_angle_dt = _delta_angle_dt[i];
+    } else {
+        delta_angle_dt = get_delta_time();
+    }
+    delta_angle_dt = MIN(delta_angle_dt, _loop_delta_t_max);
+
     if (_delta_angle_valid[i]) {
         delta_angle = _delta_angle[i];
         return true;
@@ -1765,8 +1772,15 @@ bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle) const
 /*
   get delta velocity if available
 */
-bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const
+bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const
 {
+    if (_delta_velocity_valid[i]) {
+        delta_velocity_dt = _delta_velocity_dt[i];
+    } else {
+        delta_velocity_dt = get_delta_time();
+    }
+    delta_velocity_dt = MIN(delta_velocity_dt, _loop_delta_t_max);
+
     if (_delta_velocity_valid[i]) {
         delta_velocity = _delta_velocity[i];
         return true;
@@ -1776,37 +1790,6 @@ bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity) 
     }
     return false;
 }
-
-/*
-  return delta_time for the delta_velocity
- */
-float AP_InertialSensor::get_delta_velocity_dt(uint8_t i) const
-{
-    float ret;
-    if (_delta_velocity_valid[i]) {
-        ret = _delta_velocity_dt[i];
-    } else {
-        ret = get_delta_time();
-    }
-    ret = MIN(ret, _loop_delta_t_max);
-    return ret;
-}
-
-/*
-  return delta_time for the delta_angle
- */
-float AP_InertialSensor::get_delta_angle_dt(uint8_t i) const
-{
-    float ret;
-    if (_delta_angle_valid[i] && _delta_angle_dt[i] > 0) {
-        ret = _delta_angle_dt[i];
-    } else {
-        ret = get_delta_time();
-    }
-    ret = MIN(ret, _loop_delta_t_max);
-    return ret;
-}
-
 
 /*
   support for setting accel and gyro vectors, for use by HIL
