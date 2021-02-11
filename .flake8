@@ -7,6 +7,8 @@ ignore =
     # E226: missing whitespace around arithmetic operator
     E226,
     # E261 at least two spaces before inline comment
-    E261
+    E261,
+    # W504 line break after binary operator
+    W504
 
 max-line-length = 127
