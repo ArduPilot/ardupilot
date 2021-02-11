@@ -29,6 +29,7 @@
  *  Adam M Rivera       :Auto Compass Declination
  *  Amilcar Lucas       :Camera mount library
  *  Andrew Tridgell     :General development, Mavlink Support
+ *  Andy Piper          :Harmonic notch, In-flight FFT, Bi-directional DShot, various drivers
  *  Angel Fernandez     :Alpha testing
  *  AndreasAntonopoulous:GeoFence
  *  Arthur Benemann     :DroidPlanner GCS
