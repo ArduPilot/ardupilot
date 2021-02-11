@@ -150,7 +150,8 @@ AP_AHRS_DCM::matrix_update(float _G_Dt)
     for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
         if (_ins.use_gyro(i) && healthy_count < 2) {
             Vector3f dangle;
-            if (_ins.get_delta_angle(i, dangle)) {
+            float dangle_dt;
+            if (_ins.get_delta_angle(i, dangle, dangle_dt)) {
                 healthy_count++;
                 delta_angle += dangle;
             }
@@ -652,8 +653,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
               each sensor, which prevents an aliasing effect
              */
             Vector3f delta_velocity;
-            _ins.get_delta_velocity(i, delta_velocity);
-            const float delta_velocity_dt = _ins.get_delta_velocity_dt(i);
+            float delta_velocity_dt;
+            _ins.get_delta_velocity(i, delta_velocity, delta_velocity_dt);
             if (delta_velocity_dt > 0) {
                 _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
                 // integrate the accel vector in the earth frame between GPS readings

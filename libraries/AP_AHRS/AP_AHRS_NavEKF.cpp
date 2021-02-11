@@ -2011,9 +2011,7 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
         return;
     }
     ret.zero();
-    const AP_InertialSensor &_ins = AP::ins();
-    _ins.get_delta_velocity((uint8_t)imu_idx, ret);
-    dt = _ins.get_delta_velocity_dt((uint8_t)imu_idx);
+    AP::ins().get_delta_velocity((uint8_t)imu_idx, ret, dt);
     ret -= accel_bias*dt;
     ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;
