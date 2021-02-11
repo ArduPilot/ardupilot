@@ -441,6 +441,9 @@ public:
     void get_persistent_params(ExpandingString &str) const;
 #endif
 
+    // force save of current calibration as valid
+    void force_save_calibration(void);
+
 private:
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
