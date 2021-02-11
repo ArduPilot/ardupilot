@@ -21,6 +21,7 @@
 static struct {
     uint8_t fail_count;         // number of iterations ekf or dcm have been out of tolerances
     uint8_t bad_variance : 1;   // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
+    bool has_ever_passed;       // true if the ekf checks have ever passed
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
 } ekf_check_state;
 
@@ -47,14 +48,24 @@ void Copter::ekf_check()
     }
 
     // compare compass and velocity variance vs threshold and also check
-    // if we are still navigating
-    bool is_navigating = ekf_has_relative_position() || ekf_has_absolute_position();
-    if (ekf_over_threshold() || !is_navigating) {
+    // if we has a position estimate
+    const bool over_threshold = ekf_over_threshold();
+    const bool has_position = ekf_has_relative_position() || ekf_has_absolute_position();
+    const bool checks_passed = !over_threshold && has_position;
+
+    // return if ekf checks have never passed
+    ekf_check_state.has_ever_passed |= checks_passed;
+    if (!ekf_check_state.has_ever_passed) {
+        return;
+    }
+
+    // increment or decrement counters and take action
+    if (!checks_passed) {
         // if compass is not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
-            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2) && ekf_over_threshold()) {
+            if (ekf_check_state.fail_count == (EKF_CHECK_ITERATIONS_MAX-2) && over_threshold) {
                 // we are two iterations away from declaring an EKF failsafe, ask the EKF if we can reset
                 // yaw to resolve the issue
                 ahrs.request_yaw_reset();
