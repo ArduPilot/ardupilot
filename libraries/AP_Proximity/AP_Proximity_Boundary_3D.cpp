@@ -189,11 +189,11 @@ bool AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num
     face.sector = sector;
     face.layer = layer;
 
-    uint8_t valid_sector = sector; 
+    uint8_t valid_sector = sector;
     // check for 3 adjacent sectors
-    for (uint8_t i=0; i < 2; i++) {
+    for (uint8_t i=0; i < 3; i++) {
         if (_distance_valid[layer][valid_sector]) {
-            // update boundary has manipulated this face 
+            // update boundary has manipulated this face
             return true;
         }
         valid_sector = get_next_sector(valid_sector);
