@@ -221,7 +221,8 @@ void SoloGimbal::readVehicleDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
     const AP_InertialSensor &ins = AP::ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        if (!ins.get_delta_angle(ins_index,dAng)) {
+        float dAng_dt;
+        if (!ins.get_delta_angle(ins_index,dAng, dAng_dt)) {
             dAng = ins.get_gyro(ins_index) / ins.get_loop_rate_hz();
         }
     }
