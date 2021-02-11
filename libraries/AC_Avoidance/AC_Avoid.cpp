@@ -1066,7 +1066,8 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     
     // safe_vel will be adjusted to stay away from Proximity Obstacles
     Vector3f safe_vel = Vector3f{desired_vel_body_cms.x, desired_vel_body_cms.y, desired_vel_cms.z};
-        
+    const Vector3f safe_vel_orig = safe_vel;
+
     // calc margin in cm
     const float margin_cm = MAX(_margin * 100.0f, 0.0f);
     Vector3f stopping_point; 
@@ -1075,7 +1076,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
         const float speed = safe_vel.length();
         stopping_point = safe_vel * ((2.0f + get_stopping_distance(kP, accel_cmss, speed))/speed);
     }
-    
+
     for (uint8_t i = 0; i<obstacle_num; i++) {
         // get obstacle from proximity library
         Vector3f vector_to_obstacle;
@@ -1149,6 +1150,12 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     // desired backup velocity is sum of maximum velocity component in each quadrant 
     const Vector2f desired_back_vel_cms_xy = quad_1_back_vel + quad_2_back_vel + quad_3_back_vel + quad_4_back_vel;
     const float desired_back_vel_cms_z = max_back_vel_z + min_back_vel_z;
+
+    if (safe_vel == safe_vel_orig && desired_back_vel_cms_xy.is_zero() && is_zero(desired_back_vel_cms_z)) {
+        // proximity avoidance did nothing, no point in doing the calculations below. Return early
+        backup_vel.zero();
+        return;
+    }
 
     // set modified desired velocity vector and back away velocity vector
     // vectors were in body-frame, rotate resulting vector back to earth-frame
