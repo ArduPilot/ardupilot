@@ -986,6 +986,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
 #define SYM_AH        0xF3
+#define SYM_MW        0xF4
 #define SYM_CLK       0xBC
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
