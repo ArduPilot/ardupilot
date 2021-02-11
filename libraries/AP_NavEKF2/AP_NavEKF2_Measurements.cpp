@@ -475,8 +475,8 @@ bool NavEKF2_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
-        ins.get_delta_velocity(ins_index,dVel);
-        dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
+        ins.get_delta_velocity(ins_index,dVel, dVel_dt);
+        dVel_dt = MAX(dVel_dt,1.0e-4f);
         dVel_dt = MIN(dVel_dt,1.0e-1f);
         return true;
     }
@@ -647,8 +647,8 @@ bool NavEKF2_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        ins.get_delta_angle(ins_index,dAng);
-        dAng_dt = MAX(ins.get_delta_angle_dt(ins_index),1.0e-4f);
+        ins.get_delta_angle(ins_index, dAng, dAng_dt);
+        dAng_dt = MAX(dAng_dt,1.0e-4f);
         dAng_dt = MIN(dAng_dt,1.0e-1f);
         return true;
     }
