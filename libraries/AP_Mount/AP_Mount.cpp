@@ -198,7 +198,13 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
 
-    // 20 formerly _OFF_JNT
+    // @Param: _YAW_MINALT formerly _OFF_JNT
+    // @DisplayName: Mount yaw control minimum alatitude
+    // @Description: Min altitude for threshold for mount to control aircraft yaw
+    // @Units: cm
+    // @Range: 0 100000
+    // @User: Advanced
+    AP_GROUPINFO("_YAW_MINALT", 20, AP_Mount, _min_yaw_alt_cm, 1000),
 
     // 21 formerly _OFF_ACC
 

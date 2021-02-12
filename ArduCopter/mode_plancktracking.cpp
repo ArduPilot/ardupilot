@@ -81,6 +81,8 @@ void ModePlanckTracking::run() {
                 roll_cd,
                 pitch_cd);
 
+              float min_yaw_alt_cm = (mount != nullptr ? mount->get_min_yaw_alt_cm() : 1000.f);
+
               //If we are in WINGMAN mode, the user controls yaw, even though
               //we might be getting attitude/acceleration commands
               if(copter.flightmode == &copter.mode_planckwingman && !copter.failsafe.radio)
@@ -93,7 +95,7 @@ void ModePlanckTracking::run() {
               //Some applications require a fixed yaw command when in PLANCKTRACK
               //If we are not in takeoff or landing, use the fixed yaw command from the GCS
               else if(copter.flightmode == &copter.mode_plancktracking
-                      && copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED)
+                      && copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED && copter.planck_interface.get_tag_pos().z > min_yaw_alt_cm)
               {
                   yaw_cd = copter.flightmode->auto_yaw.yaw();
                   is_yaw_rate = false;

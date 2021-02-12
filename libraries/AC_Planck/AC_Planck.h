@@ -66,6 +66,15 @@ public:
   //Get a position, velocity, yaw command
   bool get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, bool &is_yaw_rate);
 
+  //Get tag position
+  Vector3f get_tag_pos(){return _tag_est.tag_pos_cm;};
+
+  //Get tag velocity
+  Vector3f get_tag_vel(){return _tag_est.tag_vel_cms;};
+
+  //Get tag attitude
+  Vector3f get_tag_att(){return _tag_est.tag_att_cd;};
+
 private:
 
   struct
@@ -92,6 +101,14 @@ private:
     bool at_location = false;
     uint32_t timestamp_ms = 0;
   }_status;
+
+  struct
+  {
+    Vector3f tag_pos_cm = Vector3f(0,0,0);
+    Vector3f tag_vel_cms = Vector3f(0,0,0);
+    Vector3f tag_att_cd = Vector3f(0,0,0);
+    uint32_t timestamp_us = 0;
+  }_tag_est;
 
   mavlink_channel_t _chan = MAVLINK_COMM_1;
 

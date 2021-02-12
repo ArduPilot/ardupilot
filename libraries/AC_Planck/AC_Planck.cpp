@@ -118,6 +118,29 @@ void AC_Planck::handle_planck_mavlink_msg(const mavlink_channel_t &chan, const m
         break;
     }
 
+    case MAVLINK_MSG_ID_PLANCK_LANDING_TAG_ESTIMATE_NED:
+    {
+      mavlink_planck_landing_tag_estimate_ned_t pl;
+      mavlink_msg_planck_landing_tag_estimate_ned_decode(mav_msg, &pl);
+
+      //Position
+      _tag_est.tag_pos_cm.x = pl.x * 100.;
+      _tag_est.tag_pos_cm.y = pl.y * 100.;
+      _tag_est.tag_pos_cm.z = pl.z * 100.;
+
+      //velocity
+      _tag_est.tag_vel_cms.x = pl.vx * 100.;
+      _tag_est.tag_vel_cms.y = pl.vy * 100.;
+      _tag_est.tag_vel_cms.z = pl.vz * 100.;
+
+      //Attitude
+      _tag_est.tag_att_cd.x = ToDeg(pl.roll) * 100.;
+      _tag_est.tag_att_cd.y = ToDeg(pl.pitch) * 100.;
+      _tag_est.tag_att_cd.z = ToDeg(pl.yaw) * 100.;
+
+      _tag_est.timestamp_us = pl.ap_timestamp_us;
+    }
+
     default:
       break;
   }

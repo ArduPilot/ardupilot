@@ -145,6 +145,8 @@ public:
 
     float get_follow_yaw_rate();
 
+    float get_min_yaw_alt_cm() { return _min_yaw_alt_cm; };
+
 protected:
 
     float yaw_encoder_readback;
@@ -156,6 +158,9 @@ protected:
 
     // frontend parameters
     AP_Int8             _joystick_speed;    // joystick gain
+
+    // Minimum alt at which the mount can command yaw
+    AP_Float            _min_yaw_alt_cm;
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated
