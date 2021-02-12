@@ -91,6 +91,10 @@ class AutoTestTimeoutException(ErrorException):
     pass
 
 
+if sys.version_info[0] < 3:
+    ConnectionResetError = AutoTestTimeoutException
+
+
 class WaitModeTimeout(AutoTestTimeoutException):
     """Thrown when fails to achieve given mode change."""
     pass
@@ -1558,6 +1562,11 @@ class AutoTest(ABC):
             except AutoTestTimeoutException:
                 pass
             except ConnectionResetError:
+                pass
+            except socket.error:
+                pass
+            except Exception as e:
+                self.progress("Got unexpected exception (%s)" % str(type(e)))
                 pass
 
         # empty mav to avoid getting old timestamps:
