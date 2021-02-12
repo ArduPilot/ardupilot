@@ -1558,7 +1558,7 @@ class AutoTestCopter(AutoTest):
         # hover in place
         self.hover()
 
-        self.do_RTL()
+        self.do_RTL(timeout=500)
 
     # fly_super_simple - flies a circle around home for 45 seconds
     def fly_super_simple(self, timeout=45):
