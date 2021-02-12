@@ -554,34 +554,59 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
         return;
     }
 
-    AP_Proximity::Proximity_Distance_Array dist_array {};
-    proximity.get_horizontal_distances(dist_array);
+    AP_Proximity::Proximity_Distance_Array dist_array{}; // raw distances stored here
+    AP_Proximity::Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
+    for (uint8_t i = 0; i < proximity.get_num_layers(); i++) {
+        const bool active = proximity.get_active_layer_distances(i, dist_array, filt_dist_array);
+        if (!active) {
+            // nothing on this layer
+            continue;
+        }
+        float dist_up;
+        if (!proximity.get_upward_distance(dist_up)) {
+            dist_up = 0.0f;
+        }
 
-    float dist_up;
-    if (!proximity.get_upward_distance(dist_up)) {
-        dist_up = 0.0f;
+        float closest_ang = 0.0f;
+        float closest_dist = 0.0f;
+        proximity.get_closest_object(closest_ang, closest_dist);
+
+        const struct log_Proximity pkt_proximity{
+                LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                health          : (uint8_t)proximity.get_status(),
+                dist0           : filt_dist_array.distance[0],
+                dist45          : filt_dist_array.distance[1],
+                dist90          : filt_dist_array.distance[2],
+                dist135         : filt_dist_array.distance[3],
+                dist180         : filt_dist_array.distance[4],
+                dist225         : filt_dist_array.distance[5],
+                dist270         : filt_dist_array.distance[6],
+                dist315         : filt_dist_array.distance[7],
+                distup          : dist_up,
+                closest_angle   : closest_ang,
+                closest_dist    : closest_dist
+        };
+        WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
+
+        if (proximity.get_raw_log_enable()) {
+            const struct log_Proximity_raw pkt_proximity_raw{
+                LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                raw_dist0       : dist_array.distance[0],
+                raw_dist45      : dist_array.distance[1],
+                raw_dist90      : dist_array.distance[2],
+                raw_dist135     : dist_array.distance[3],
+                raw_dist180     : dist_array.distance[4],
+                raw_dist225     : dist_array.distance[5],
+                raw_dist270     : dist_array.distance[6],
+                raw_dist315     : dist_array.distance[7],
+            };
+            WriteBlock(&pkt_proximity_raw, sizeof(pkt_proximity_raw));
+        }
     }
-
-    float close_ang = 0.0f, close_dist = 0.0f;
-    proximity.get_closest_object(close_ang, close_dist);
-
-    const struct log_Proximity pkt_proximity{
-            LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
-            time_us         : AP_HAL::micros64(),
-            health          : (uint8_t)proximity.get_status(),
-            dist0           : dist_array.distance[0],
-            dist45          : dist_array.distance[1],
-            dist90          : dist_array.distance[2],
-            dist135         : dist_array.distance[3],
-            dist180         : dist_array.distance[4],
-            dist225         : dist_array.distance[5],
-            dist270         : dist_array.distance[6],
-            dist315         : dist_array.distance[7],
-            distup          : dist_up,
-            closest_angle   : close_ang,
-            closest_dist    : close_dist
-    };
-    WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
 }
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
