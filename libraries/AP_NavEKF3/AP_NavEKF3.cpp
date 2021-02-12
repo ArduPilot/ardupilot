@@ -2008,3 +2008,9 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed)
         }
     }
 }
+
+// check if the targeted yaw source is the EKF's actual yaw source
+bool NavEKF3::isYaw_Source(const AP_NavEKF_Source::SourceYaw source) const
+{
+    return (sources.getYawSource() == source);
+}

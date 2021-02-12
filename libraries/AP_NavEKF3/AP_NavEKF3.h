@@ -372,6 +372,8 @@ public:
     // parameter conversion
     void convert_parameters();
 
+    // check if the targeted yaw source is the EKF's actual yaw source
+    bool isYaw_Source(const AP_NavEKF_Source::SourceYaw source) const; 
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

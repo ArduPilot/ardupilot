@@ -631,7 +631,8 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
 #ifndef ALLOW_ARM_NO_COMPASS
     // if external source of heading is available, we can skip compass health check
-    if (!ahrs.is_ext_nav_used_for_yaw()) {
+    // skip this check if EKF's yaw source is not compass
+    if (!ahrs.is_ext_nav_used_for_yaw() && ahrs.EKF3.isYaw_Source(AP_NavEKF_Source::SourceYaw::COMPASS)) {
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
