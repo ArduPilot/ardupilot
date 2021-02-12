@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-# Dive ArduSub in SITL
+'''
+Dive ArduSub in SITL
+
+AP_FLAKE8_CLEAN
+'''
+
 from __future__ import print_function
 import os
 import sys
@@ -55,7 +60,7 @@ class AutoTestSub(AutoTest):
         return "ArduSub"
 
     def test_filepath(self):
-         return os.path.realpath(__file__)
+        return os.path.realpath(__file__)
 
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduSub_Tests/" + name + "/"
@@ -92,7 +97,9 @@ class AutoTestSub(AutoTest):
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
             if abs(m.alt - previous_altitude) > delta:
-                raise NotAchievedException("Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" % (previous_altitude, delta, m.alt))
+                raise NotAchievedException(
+                    "Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" %
+                    (previous_altitude, delta, m.alt))
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
@@ -156,7 +163,7 @@ class AutoTestSub(AutoTest):
         self.mavproxy.send('mode POSHOLD\n')
         self.wait_mode('POSHOLD')
 
-        #dive a little 
+        # dive a little
         self.set_rc(Joystick.Throttle, 1300)
         self.delay_sim_time(3)
         self.set_rc(Joystick.Throttle, 1500)
@@ -172,7 +179,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(10)
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
-            raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+            raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
 
         # Hold in 1 m/s current
         self.progress("Testing position hold in current")
@@ -181,7 +188,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(10)
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
-            raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))
+            raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
 
         # Move forward slowly in 1 m/s current
         start_pos = self.mav.location()
@@ -191,7 +198,7 @@ class AutoTestSub(AutoTest):
         distance_m = self.get_distance(start_pos, self.mav.location())
         bearing = self.get_bearing(start_pos, self.mav.location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
-            raise NotAchievedException("Position Hold was unable to move north 2 meters, moved {} at {} degrees instead".format(distance_m, bearing))
+            raise NotAchievedException("Position Hold was unable to move north 2 meters, moved {} at {} degrees instead".format(distance_m, bearing))  # noqa
         self.disarm_vehicle()
 
     def test_mot_thst_hover_ignore(self):
@@ -207,7 +214,6 @@ class AutoTestSub(AutoTest):
         for value in [0.25, 0.75]:
             self.set_parameter("MOT_THST_HOVER", value)
             self.test_alt_hold()
-
 
     def dive_manual(self):
         self.wait_ready_to_arm()
@@ -267,7 +273,7 @@ class AutoTestSub(AutoTest):
         try:
             try:
                 self.get_parameter("GRIP_ENABLE", timeout=5)
-            except NotAchievedException as e:
+            except NotAchievedException:
                 self.progress("Skipping; Gripper not enabled in config?")
                 return
 
@@ -362,7 +368,7 @@ class AutoTestSub(AutoTest):
                 batt = self.mav.recv_match(type='BATTERY_STATUS',
                                            blocking=True,
                                            timeout=1)
-            except ConnectionResetError as e:
+            except ConnectionResetError:
                 pass
             self.progress("Battery: %s" % str(batt))
             if batt is None:
@@ -379,7 +385,7 @@ class AutoTestSub(AutoTest):
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()
         ret.update({
-            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",
+            "ConfigErrorLoop": "Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247",  # noqa
         })
         return ret
 
