@@ -372,6 +372,9 @@ public:
     // parameter conversion
     void convert_parameters();
 
+    // check if GPS is a source for position/velocity
+    bool isGPS_Source() const;
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
