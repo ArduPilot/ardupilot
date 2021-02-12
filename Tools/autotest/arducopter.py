@@ -1730,10 +1730,8 @@ class AutoTestCopter(AutoTest):
             self.wait_attitude(despitch=0, desroll=0, tolerance=5)
 
             self.progress("Regaining altitude")
-            self.change_mode('STABILIZE')
-            self.set_rc(3, 1650)
+            self.change_mode('ALT_HOLD')
             self.wait_for_alt(20, max_err=40)
-            self.hover()
 
             self.progress("Flipping in pitch")
             self.set_rc(2, 1700)
