@@ -1979,11 +1979,11 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
     uint8_t i = 0;
     pwm_group *grp = find_chan(chan, i);
 
-    WITH_SEMAPHORE(grp->serial_led_mutex);
-
     if (!grp || grp->serial_nleds == 0) {
         return;
     }
+
+    WITH_SEMAPHORE(grp->serial_led_mutex);
 
     if (led == -1) {
         grp->prepared_send = true;
