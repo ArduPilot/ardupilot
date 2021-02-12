@@ -1777,6 +1777,7 @@ class AutoTest(ABC):
                         continue
                     m = re.match("\s*{(.*)[\\\]", line)
                     if m is None:
+                        state = state_outside
                         continue
                     partial_line = m.group(1)
                     linestate = linestate_within
