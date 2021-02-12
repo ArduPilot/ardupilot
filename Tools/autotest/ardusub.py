@@ -3,12 +3,17 @@
 # Dive ArduSub in SITL
 from __future__ import print_function
 import os
+import sys
 import time
 
 from pymavlink import mavutil
 
 from common import AutoTest
 from common import NotAchievedException
+from common import AutoTestTimeoutException
+
+if sys.version_info[0] < 3:
+    ConnectionResetError = AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
