@@ -75,14 +75,14 @@ static uint16_t adc_sample_channel(uint32_t channel)
 uint16_t adc_sample_vservo(void)
 {
     const uint32_t channel = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN4);
-    return adc_sample_channel(channel) * 9900 / 4096;
+    return adc_sample_channel(channel) * 9744 / 4095; // ADC full scale is reached with 3.3*(33+16.9)/16.9 = 9744mV ((33K/16K9 voltage divider)
 }
 
 /*
-  capture VRSSI in mV
+  capture VRSSI in mV (direct input, w/o voltage divider)
  */
 uint16_t adc_sample_vrssi(void)
 {
     const uint32_t channel = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN5);
-    return adc_sample_channel(channel) * 9900 / 4096;
+    return adc_sample_channel(channel) * 3300 / 4095;
 }
