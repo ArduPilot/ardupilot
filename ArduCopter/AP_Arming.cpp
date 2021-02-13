@@ -445,7 +445,12 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }
-
+    // check for copter velocity innovations
+    if (!vel_innovation_check()) {
+        check_failed(ARMING_CHECK_GPS, display_failure, "Bad Velocity");
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
         check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
@@ -552,7 +557,11 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
             return false;
         }
     }
-
+    // check for copter velocity innovations
+    if (!vel_innovation_check()) {
+        check_failed(display_failure, "Bad Velocity");
+        return false;
+    }
     // check EKF compass variance is below failsafe threshold
     float vel_variance, pos_variance, hgt_variance, tas_variance;
     Vector3f mag_variance;
@@ -933,4 +942,19 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     copter.ap.in_arming_delay = false;
 
     return true;
+}
+// check if vertical velocity innovations are less than 1m/s (0.5m/s specifically)
+bool AP_Arming_Copter::vel_innovation_check() const
+{
+    Vector3f vel,pos,mag;
+    float tas,yaw;
+    if (!copter.ahrs.get_innovations(vel, pos, mag, tas, yaw)) {
+        return false;
+    } else {
+        if ( fabsf(vel.z) <= 0.5f) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
