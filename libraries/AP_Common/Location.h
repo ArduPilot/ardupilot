@@ -2,8 +2,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-class AP_Terrain;
-
 #define LOCATION_ALT_MAX_M  83000   // maximum altitude (in meters) that can be fit into Location structure's alt field
 
 class Location
@@ -34,8 +32,6 @@ public:
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
     Location(const Vector3f &ekf_offset_neu, AltFrame frame);
     Location(const Vector3d &ekf_offset_neu, AltFrame frame);
-
-    static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
     // set altitude
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
@@ -134,7 +130,6 @@ public:
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
     
 private:
-    static AP_Terrain *_terrain;
 
     // scaling factor from 1e-7 degrees to meters at equator
     // == 1.0e-7 * DEG_TO_RAD * RADIUS_OF_EARTH

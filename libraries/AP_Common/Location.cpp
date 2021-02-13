@@ -7,8 +7,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
-AP_Terrain *Location::_terrain = nullptr;
-
 /// constructors
 Location::Location()
 {
@@ -138,7 +136,11 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
     float alt_terr_cm = 0;
     if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
 #if AP_TERRAIN_AVAILABLE
-        if (_terrain == nullptr || !_terrain->height_amsl(*this, alt_terr_cm, true)) {
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain == nullptr) {
+            return false;
+        }
+        if (!terrain->height_amsl(*this, alt_terr_cm, true)) {
             return false;
         }
         // convert terrain alt to cm
