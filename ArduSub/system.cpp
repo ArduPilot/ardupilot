@@ -83,12 +83,6 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-    // init Location class
-#if AP_TERRAIN_AVAILABLE
-    Location::set_terrain(&terrain);
-    wp_nav.set_terrain(&terrain);
-#endif
-
 #if OPTFLOW == ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
