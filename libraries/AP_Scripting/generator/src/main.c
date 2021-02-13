@@ -329,6 +329,8 @@ struct argument {
 struct method {
   struct method * next;
   char *name;
+  char *sanatized_name;  // sanatized name of the C++ singleton
+  char *alias; // (optional) used for scripting access
   int line; // line declared on
   struct type return_type;
   struct argument * arguments;
@@ -371,20 +373,26 @@ struct userdata {
 static struct userdata *parsed_userdata;
 static struct userdata *parsed_ap_objects;
 
+void sanitize_character(char **str, char character) {
+  char *position = strchr(*str, character);
+  while (position) {
+    *position = '_';
+    position = strchr(position, character);
+  }
+}
+
 void sanatize_name(char **dest, char *src) {
   *dest = (char *)allocate(strlen(src) + 1);
   strcpy(*dest, src);
-  char *position = strchr(*dest, ':');
-  while (position) {
-    *position = '_';
-    position = strchr(position, ':');
-  }
 
-  position = strchr(*dest, '.');
-  while (position) {
-    *position = '_';
-    position = strchr(position, '.');
-  }
+  sanitize_character(dest, ':');
+  sanitize_character(dest, '.');
+  sanitize_character(dest, '<');
+  sanitize_character(dest, '>');
+  sanitize_character(dest, '(');
+  sanitize_character(dest, ')');
+  sanitize_character(dest, '-');
+
 };
 
 
@@ -535,7 +543,9 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     type->type = TYPE_ENUM;
     string_copy(&(type->data.enum_name), data_type);
   } else if (type->type == TYPE_LITERAL) {
-      string_copy(&(type->data.literal), data_type);
+    string_copy(&(type->data.literal), data_type);
+  } else if (strcmp(data_type, keyword_alias) == 0) {
+    error(ERROR_USERDATA, "Cant add alias to unknown function");
   } else {
     // this must be a user data or an ap_object, check if it's already been declared as an object
     struct userdata *node = parsed_ap_objects;
@@ -661,7 +671,13 @@ void handle_method(char *parent_name, struct method **methods) {
     method = method-> next;
   }
   if (method != NULL) {
-    error(ERROR_USERDATA, "Method %s already exsists for %s (declared on %d)", name, parent_name, method->line);
+    char *token = next_token();
+    if (strcmp(token, keyword_alias) != 0) {
+      error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
+    }
+    char *alias = next_token();
+    string_copy(&(method->alias), alias);
+    return;
   }
 
   trace(TRACE_USERDATA, "Adding method %s", name);
@@ -669,6 +685,7 @@ void handle_method(char *parent_name, struct method **methods) {
   method->next = *methods;
   *methods = method;
   string_copy(&(method->name), name);
+  sanatize_name(&(method->sanatized_name), name);
   method->line = state.line_num;
 
   parse_type(&(method->return_type), TYPE_RESTRICTION_NONE, RANGE_CHECK_NONE);
@@ -1399,7 +1416,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   const char *access_name = data->alias ? data->alias : data->name;
   // bind ud early if it's a singleton, so that we can use it in the range checks
-  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->name);
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
 
@@ -1640,11 +1657,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       break;
     case TYPE_AP_OBJECT:
       fprintf(source, "    if (data == NULL) {\n");
-      fprintf(source, "        lua_pushnil(L);\n");
-      fprintf(source, "    } else {\n");
-      fprintf(source, "        new_%s(L);\n", method->return_type.data.ud.sanatized_name);
-      fprintf(source, "        *check_%s(L, -1) = data;\n", method->return_type.data.ud.sanatized_name);
+      fprintf(source, "        return 0;\n");
       fprintf(source, "    }\n");
+      fprintf(source, "    new_%s(L);\n", method->return_type.data.ud.sanatized_name);
+      fprintf(source, "    *check_%s(L, -1) = data;\n", method->return_type.data.ud.sanatized_name);
       break;
     case TYPE_NONE:
     case TYPE_LITERAL:
@@ -1757,7 +1773,7 @@ void emit_userdata_metatables(void) {
 
     struct method *method = node->methods;
     while(method) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", method->name, node->sanatized_name, method->name);
+      fprintf(source, "    {\"%s\", %s_%s},\n", method->alias ? method->alias :  method->name, node->sanatized_name, method->sanatized_name);
       method = method->next;
     }
 
@@ -1785,7 +1801,7 @@ void emit_singleton_metatables(struct userdata *head) {
 
     struct method *method = node->methods;
     while (method) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", method->name, node->sanatized_name, method->name);
+      fprintf(source, "    {\"%s\", %s_%s},\n", method->alias ? method->alias :  method->name, node->sanatized_name, method->name);
       method = method->next;
     }
 
