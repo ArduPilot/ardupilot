@@ -287,7 +287,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     switch(id) {
 
     case MSG_TERRAIN:
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         copter.terrain.send_request(chan);
 #endif
@@ -469,7 +469,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_WIND,
     MSG_RANGEFINDER,
     MSG_DISTANCE_SENSOR,
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     MSG_TERRAIN,
 #endif
     MSG_BATTERY2,
@@ -1249,7 +1249,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
         copter.terrain.handle_data(chan, msg);
 #endif
         break;
@@ -1329,7 +1329,7 @@ uint64_t GCS_MAVLINK_Copter::capabilities() const
             MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT |
             MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION |
             MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
             (copter.terrain.enabled() ? MAV_PROTOCOL_CAPABILITY_TERRAIN : 0) |
 #endif
             GCS_MAVLINK::capabilities());

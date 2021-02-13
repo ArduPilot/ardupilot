@@ -13,7 +13,6 @@
 //#define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
 //#define AC_AVOID_ENABLED      DISABLED            // disable stop-at-fence library
 //#define AC_OAPATHPLANNER_ENABLED DISABLED         // disable path planning around obstacles
-//#define AC_TERRAIN            DISABLED            // disable terrain library
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space

@@ -658,11 +658,7 @@
  #define AC_RALLY   ENABLED
 #endif
 
-#ifndef AC_TERRAIN
- #define AC_TERRAIN ENABLED
-#endif
-
-#if AC_TERRAIN && !AC_RALLY
+#if AP_TERRAIN_AVAILABLE && !AC_RALLY
  #error Terrain relies on Rally which is disabled
 #endif
 
@@ -694,7 +690,7 @@
   #error ModeAuto requires ModeRTL which is disabled
 #endif
 
-#if AC_TERRAIN && !MODE_AUTO_ENABLED
+#if AP_TERRAIN_AVAILABLE && !MODE_AUTO_ENABLED
   #error Terrain requires ModeAuto which is disabled
 #endif
 
