@@ -68,7 +68,8 @@ def _depends_on_vehicle(bld, source_node):
         bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
     if path.startswith(bld.env.BUILDROOT) or path.startswith("build.tmp.binaries/"):
         _depends_on_vehicle_cache[path] = False
-    if path.startswith("build/"):
+
+    if path.startswith("build/") or path.startswith(bld.env.BUILDROOT):
         # allow vehicle dependend #if in cpp generated in build/
         # only scripting bindings currently
         _depends_on_vehicle_cache[path] = True
