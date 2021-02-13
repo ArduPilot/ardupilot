@@ -519,6 +519,10 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     attribute[0] = 0;
   }
 
+  if ((type->access == ACCESS_REFERENCE) && ((type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0)) {
+      error(ERROR_USERDATA, "Only support refences access will 'Null or 'Ref keyword");
+  }
+
   if (strcmp(data_type, keyword_boolean) == 0) {
     type->type = TYPE_BOOLEAN;
   } else if (strcmp(data_type, keyword_float) == 0) {
@@ -1578,7 +1582,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       case TYPE_ENUM:
       case TYPE_USERDATA:
       case TYPE_AP_OBJECT:
-        fprintf(source, "            data_%d", arg_count + ((arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) ? NULLABLE_ARG_COUNT_BASE : 0));
+        fprintf(source, "            %sdata_%d", (arg->type.access == ACCESS_REFERENCE)?"&":"", arg_count + ((arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) ? NULLABLE_ARG_COUNT_BASE : 0));
         break;
       case TYPE_LITERAL:
         fprintf(source, "            %s", arg->type.data.literal);
