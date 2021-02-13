@@ -746,7 +746,7 @@ void AC_AttitudeControl::shift_ef_yaw_target(float yaw_shift_cd)
     _attitude_target_quat = _attitude_target_update_quat * _attitude_target_quat;
 }
 
-// Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
+// Shifts the target attitude to maintain the current error in the event of an EKF reset
 void AC_AttitudeControl::inertial_frame_reset()
 {
     // Retrieve quaternion vehicle attitude
