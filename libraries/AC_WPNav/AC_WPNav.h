@@ -31,9 +31,6 @@ public:
     /// Constructor
     AC_WPNav(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const AC_AttitudeControl& attitude_control);
 
-    /// provide pointer to terrain database
-    void set_terrain(AP_Terrain* terrain_ptr) { _terrain = terrain_ptr; }
-
     /// provide rangefinder altitude
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
 
@@ -230,7 +227,6 @@ protected:
     const AP_AHRS_View&     _ahrs;
     AC_PosControl&          _pos_control;
     const AC_AttitudeControl& _attitude_control;
-    AP_Terrain              *_terrain;
 
     // parameters
     AP_Float    _wp_speed_cms;          // default maximum horizontal speed in cm/s during missions
