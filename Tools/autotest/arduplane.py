@@ -101,13 +101,17 @@ class AutoTestPlane(AutoTest):
         self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
-        self.set_rc(3, 1600)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({
+            3: 1600,
+            4: 1500,
+        })
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
-        self.set_rc(2, 1100)
-        self.set_rc(3, 2000)
+        self.set_rc_from_map({
+            2: 1100,
+            3: 2000,
+        })
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
