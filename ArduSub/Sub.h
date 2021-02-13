@@ -372,7 +372,7 @@ private:
 #endif
 
     // terrain handling
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain{mission};
 #endif
 
