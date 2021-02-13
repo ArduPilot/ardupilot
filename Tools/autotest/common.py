@@ -1230,6 +1230,7 @@ class AutoTest(ABC):
         self.timesync_number = 137
         self.last_progress_sent_as_statustext = None
         self.last_heartbeat_time_ms = None
+        self.thismav_heartbeat = None
         self.last_heartbeat_time_wc_s = 0
         self.in_drain_mav = False
         self.tlog = None
@@ -4203,16 +4204,18 @@ class AutoTest(ABC):
         '''change vehicle flightmode'''
         self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
-        self.send_cmd_do_set_mode(mode)
         tstart = self.get_sim_time()
         while not self.mode_is(mode):
-            custom_num = self.mav.messages['HEARTBEAT'].custom_mode
+            custom_num = None
+            if self.thismav_heartbeat is not None:
+                custom_num = self.thismav_heartbeat.custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))
             if (timeout is not None and
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
             self.send_cmd_do_set_mode(mode)
+            self.wait_heartbeat()
         self.progress("Got mode %s" % mode)
 
     def capable(self, capability):
@@ -4254,11 +4257,17 @@ class AutoTest(ABC):
 
     def get_mode_from_mode_mapping(self, mode):
         """Validate and return the mode number from a string or int."""
-        mode_map = self.mav.mode_mapping()
+        if self.thismav_heartbeat is None:
+            raise Exception("Can't get mode map before a good heartbeat")
+        mav_type = self.thismav_heartbeat.type
+        mav_autopilot = self.thismav_heartbeat.autopilot
+        mode_map = self.mode_mapping_for_mav_type_and_autopilot(
+            mav_type,
+            mav_autopilot
+        )
         if mode_map is None:
-            mav_type = self.mav.messages['HEARTBEAT'].type
-            mav_autopilot = self.mav.messages['HEARTBEAT'].autopilot
-            raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" % (mav_type, mav_autopilot))
+            raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" %
+                                 (mav_type, mav_autopilot))
         if isinstance(mode, str):
             if mode in mode_map:
                 return mode_map.get(mode)
@@ -4266,6 +4275,39 @@ class AutoTest(ABC):
             return mode
         self.progress("Available modes '%s'" % mode_map)
         raise ErrorException("Unknown mode '%s'" % mode)
+
+    # this has been copied in from pymavlink; when the equivalent
+    # method exists on pymavlink this can be removed:
+    def mode_mapping_for_mav_type_and_autopilot(self, mav_type, mav_autopilot):
+        '''return dictionary mapping mode names to numbers, or None if unknown'''
+        if mav_autopilot == mavutil.mavlink.MAV_AUTOPILOT_PX4:
+            return px4_map
+        if mav_type is None:
+            return None
+        map = None
+        if mav_type in [mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                        mavutil.mavlink.MAV_TYPE_HELICOPTER,
+                        mavutil.mavlink.MAV_TYPE_HEXAROTOR,
+                        mavutil.mavlink.MAV_TYPE_OCTOROTOR,
+                        mavutil.mavlink.MAV_TYPE_DODECAROTOR,
+                        mavutil.mavlink.MAV_TYPE_COAXIAL,
+                        mavutil.mavlink.MAV_TYPE_DECAROTOR,
+                        mavutil.mavlink.MAV_TYPE_TRICOPTER]:
+            map = mavutil.mode_mapping_acm
+        if mav_type == mavutil.mavlink.MAV_TYPE_FIXED_WING:
+            map = mavutil.mode_mapping_apm
+        if mav_type == mavutil.mavlink.MAV_TYPE_GROUND_ROVER:
+            map = mavutil.mode_mapping_rover
+        if mav_type == mavutil.mavlink.MAV_TYPE_SURFACE_BOAT:
+            map = mavutil.mode_mapping_rover # for the time being
+        if mav_type == mavutil.mavlink.MAV_TYPE_ANTENNA_TRACKER:
+            map = mavutil.mode_mapping_tracker
+        if mav_type == mavutil.mavlink.MAV_TYPE_SUBMARINE:
+            map = mavutil.mode_mapping_sub
+        if map is None:
+            return None
+        inv_map = dict((a, b) for (b, a) in map.items())
+        return inv_map
 
     def run_cmd_do_set_mode(self,
                             mode,
@@ -5073,6 +5115,11 @@ Also, ignores heartbeats not from our target system'''
             if m is None:
                 continue
             if m.get_srcSystem() == self.sysid_thismav():
+                # keep a copy of our heartbeat around so long as its
+                # not generic...
+                if (m.type != mavutil.mavlink.MAV_TYPE_GENERIC and
+                    m.autopilot == mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA):
+                    self.thismav_heartbeat = m
                 break
 
     def wait_ekf_happy(self, timeout=30, require_absolute=True):
