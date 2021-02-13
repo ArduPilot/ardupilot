@@ -103,7 +103,8 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
         return AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER;
     }
 #if AP_TERRAIN_AVAILABLE
-    if ((_terrain != nullptr) && _terrain->enabled()) {
+    const AP_Terrain *terrain = AP::terrain();
+    if (terrain != nullptr && terrain->enabled()) {
         return AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE;
     } else {
         return AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE;
@@ -575,7 +576,9 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terr_alt = 0.0f;
-        if (_terrain != nullptr && _terrain->height_above_terrain(terr_alt, true)) {
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr &&
+            terrain->height_above_terrain(terr_alt, true)) {
             offset_cm = _inav.get_altitude() - (terr_alt * 100.0f);
             return true;
         }
