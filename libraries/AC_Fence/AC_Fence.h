@@ -168,8 +168,10 @@ private:
     uint8_t         _breached_fences;       // bitmask holding the fence type that was breached (i.e. AC_FENCE_TYPE_ALT_MIN, AC_FENCE_TYPE_CIRCLE)
     uint32_t        _breach_time;           // time of last breach in milliseconds
     uint16_t        _breach_count;          // number of times we have breached the fence
+    uint32_t _last_breach_notify_sent_ms;  // last time we sent a message about newly-breaching the fences
 
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
+
 
     AC_PolyFence_loader _poly_loader{_total}; // polygon fence
 };

@@ -401,7 +401,14 @@ void AC_Fence::record_breach(uint8_t fence_type)
 {
     // if we haven't already breached a limit, update the breach time
     if (!_breached_fences) {
-        _breach_time = AP_HAL::millis();
+        const uint32_t now = AP_HAL::millis();
+        _breach_time = now;
+
+        // emit a message indicated we're newly-breached, but not too often
+        if (now - _last_breach_notify_sent_ms > 1000) {
+            _last_breach_notify_sent_ms = now;
+            gcs().send_message(MSG_FENCE_STATUS);
+        }
     }
 
     // update breach count
