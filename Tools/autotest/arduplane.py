@@ -780,8 +780,7 @@ class AutoTestPlane(AutoTest):
 
             self.progress("Flaps OK")
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         if ex:
@@ -948,8 +947,7 @@ class AutoTestPlane(AutoTest):
             self.wait_statustext("Long event on", check_context=True)
             self.wait_mode("RTL")
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1016,8 +1014,7 @@ class AutoTestPlane(AutoTest):
             self.wait_statustext("Gripper Released", timeout=60)
             self.wait_statustext("Auto disarmed", timeout=60)
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         if ex is not None:
@@ -1157,8 +1154,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Expected zero points remaining")
 
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.mavproxy.send('fence clear\n')
         if ex is not None:
@@ -1210,8 +1206,7 @@ class AutoTestPlane(AutoTest):
             self.reboot_sitl()
 
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.mavproxy.send('fence clear\n')
         if ex is not None:
@@ -1250,8 +1245,7 @@ class AutoTestPlane(AutoTest):
             self.mavproxy.send("rally list\n")
             self.test_fence_breach_circle_at(loc)
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.mavproxy.send('rally clear\n')
         if ex is not None:
@@ -1483,8 +1477,7 @@ class AutoTestPlane(AutoTest):
                                     blocking=True,
                                     timeout=5)
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
 
         if m is not None:
             raise NotAchievedException("Received unexpected RANGEFINDER msg")
@@ -1518,8 +1511,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("No RFND messages in log")
 
         except Exception as e:
-            self.progress("Exception caught:")
-            self.progress(self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -1659,8 +1651,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Got collision message when I shouldn't have")
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -2292,7 +2283,7 @@ class AutoTestPlane(AutoTest):
             self.disarm_vehicle()
 
         except Exception as e:
-            self.progress("Caught exception: %s" % self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.remove_message_hook(statustext_hook)
