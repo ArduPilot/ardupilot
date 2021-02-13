@@ -22,6 +22,7 @@ char keyword_semaphore[]           = "semaphore";
 char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
+char keyword_literal[]             = "literal";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -345,6 +346,7 @@ struct userdata_field {
 enum userdata_flags {
   UD_FLAG_SEMAPHORE         = (1U << 0),
   UD_FLAG_SCHEDULER_SEMAPHORE = (1U << 1),
+  UD_FLAG_LITERAL = (1U << 2),
 };
 
 struct userdata_enum {
@@ -376,6 +378,12 @@ void sanatize_name(char **dest, char *src) {
   while (position) {
     *position = '_';
     position = strchr(position, ':');
+  }
+
+  position = strchr(*dest, '.');
+  while (position) {
+    *position = '_';
+    position = strchr(position, '.');
   }
 };
 
@@ -846,8 +854,10 @@ void handle_singleton(void) {
       error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
     }
     string_copy(&(node->dependency), depends);
+  } else if (strcmp(type, keyword_literal) == 0) {
+    node->flags |= UD_FLAG_LITERAL;
   } else {
-    error(ERROR_SINGLETON, "Singletons only support aliases, methods, semaphore or depends keywords (got %s)", type);
+    error(ERROR_SINGLETON, "Singletons only support aliases, methods, semaphore, depends or literal keywords (got %s)", type);
   }
 
   // ensure no more tokens on the line
@@ -1393,7 +1403,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   // emit comments on expected arg/type
   struct argument *arg = method->arguments;
 
-  if (data->ud_type == UD_SINGLETON) {
+  if ((data->ud_type == UD_SINGLETON) && !(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
       fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
       fprintf(source, "    if (ud == nullptr) {\n");
@@ -1445,8 +1455,10 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     arg = arg->next;
   }
 
+  const char *ud_name = (data->flags & UD_FLAG_LITERAL)?data->name:"ud";
+
   if (data->flags & UD_FLAG_SEMAPHORE) {
-    fprintf(source, "    ud->get_semaphore().take_blocking();\n");
+    fprintf(source, "    %s->get_semaphore().take_blocking();\n", ud_name);
   }
 
   if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
@@ -1457,23 +1469,23 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   switch (method->return_type.type) {
     case TYPE_STRING:
-      fprintf(source, "    const char * data = ud->%s(", method->name);
+      fprintf(source, "    const char * data = %s->%s(", ud_name, method->name);
       static_cast = FALSE;
       break;
     case TYPE_ENUM:
-      fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.enum_name, method->name);
+      fprintf(source, "    const %s &data = %s->%s(", method->return_type.data.enum_name, ud_name, method->name);
       static_cast = FALSE;
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = ud->%s(", method->return_type.data.ud.name, method->name);
+      fprintf(source, "    const %s &data = %s->%s(", method->return_type.data.ud.name, ud_name, method->name);
       static_cast = FALSE;
       break;
     case TYPE_AP_OBJECT:
-      fprintf(source, "    %s *data = ud->%s(", method->return_type.data.ud.name, method->name);
+      fprintf(source, "    %s *data = %s->%s(", method->return_type.data.ud.name, ud_name, method->name);
       static_cast = FALSE;
       break;
     case TYPE_NONE:
-      fprintf(source, "    ud->%s(", method->name);
+      fprintf(source, "    %s->%s(", ud_name, method->name);
       static_cast = FALSE;
       break;
     case TYPE_LITERAL:
@@ -1526,7 +1538,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         error(ERROR_USERDATA, "Unexpected type");
         break;
     }
-    fprintf(source, "    const %s data = static_cast<%s>(ud->%s(", var_type_name, var_type_name, method->name);
+    fprintf(source, "    const %s data = static_cast<%s>(%s->%s(", var_type_name, var_type_name, ud_name, method->name);
   }
 
   if (arg_count != 2) {
@@ -1573,7 +1585,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
-    fprintf(source, "    ud->get_semaphore().give();\n");
+    fprintf(source, "    %s->get_semaphore().give();\n", ud_name);
   }
 
   if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
