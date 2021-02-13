@@ -175,7 +175,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,          10,    100),
 #endif
-#if AC_TERRAIN == ENABLED
+#if AP_TERRAIN_AVAILABLE
     SCHED_TASK(terrain_update,        10,    100),
 #endif
 #if GRIPPER_ENABLED == ENABLED

@@ -248,7 +248,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 }
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
                 if (!copter.terrain.enabled()) {
                     check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "terrain disabled");
                     return false;
