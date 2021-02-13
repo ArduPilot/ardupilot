@@ -1877,7 +1877,11 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.context_pop()
-        self.reboot_sitl()
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characterstics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle:
+        self.reset_SITL_commandline()
 
         if ex is not None:
             raise ex
