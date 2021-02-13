@@ -796,7 +796,7 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=5400,
+                      default=None,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--frame",
@@ -897,6 +897,14 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    if opts.timeout is None:
+        opts.timeout = 5400
+        # adjust if we're running in a regime which may slow us down e.g. Valgrind
+        if opts.valgrind:
+            opts.timeout *= 10
+        elif opts.gdb:
+            opts.timeout = None
 
     steps = [
         'prerequisites',
@@ -1007,7 +1015,8 @@ if __name__ == "__main__":
 
     # ensure we catch timeouts
     signal.signal(signal.SIGALRM, alarm_handler)
-    signal.alarm(opts.timeout)
+    if opts.timeout is not None:
+        signal.alarm(opts.timeout)
 
     if opts.list:
         for step in steps:
