@@ -151,6 +151,7 @@ public:
         SerialProtocol_ADSB = 35,
         SerialProtocol_AHRS = 36,
         SerialProtocol_SmartAudio = 37,
+        SerialProtocol_IBUS_Telem = 38,                //IBus telemetry data i.e. via telemetry port of FS-i6ab
         SerialProtocol_NumProtocols                    // must be the last value
     };
 

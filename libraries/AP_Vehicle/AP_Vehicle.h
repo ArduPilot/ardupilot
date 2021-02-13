@@ -46,6 +46,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
+#include <AP_IBus_Telem/AP_IBus_Telem.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -273,6 +274,10 @@ protected:
     AP_Button button;
     RangeFinder rangefinder;
 
+#if HAL_IBUS_TELEM_ENABLED
+    //telemetry
+    AP_IBus_Telem ibus_telem;
+#endif
     AP_RSSI rssi;
 #if HAL_RUNCAM_ENABLED
     AP_RunCam runcam;
