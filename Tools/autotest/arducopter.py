@@ -487,8 +487,7 @@ class AutoTestCopter(AutoTest):
 
             self.wait_disarmed()
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -875,8 +874,7 @@ class AutoTestCopter(AutoTest):
         try:
             self.test_battery_failsafe(timeout=timeout)
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.set_parameter('BATT_LOW_VOLT', 0)
@@ -1748,8 +1746,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter('SIM_SPEEDUP', old_speedup)
             self.do_RTL()
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
         sr = self.sitl_streamrate()
@@ -1819,8 +1816,7 @@ class AutoTestCopter(AutoTest):
                     raise NotAchievedException("Alt should be limited by EKF optical flow limits")
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.set_rc(2, 1500)
@@ -1879,8 +1875,7 @@ class AutoTestCopter(AutoTest):
         try:
             self.fly_autotune_switch_body()
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -2186,8 +2181,7 @@ class AutoTestCopter(AutoTest):
             else:
                 raise NotAchievedException("Detected peak %.1f Hz %.2f dB" % (freq, peakdB))
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
             self.disarm_vehicle(force=True)
 
@@ -2282,8 +2276,7 @@ class AutoTestCopter(AutoTest):
                     break
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -2364,8 +2357,7 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
@@ -2524,8 +2516,7 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Did not see expected RFND message")
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -2580,8 +2571,7 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
         self.context_pop()
@@ -2630,8 +2620,7 @@ class AutoTestCopter(AutoTest):
             self.wait_rtl_complete()
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
         self.context_pop()
@@ -2800,7 +2789,7 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Did not see expected PL message")
 
         except Exception as e:
-            self.progress("Exception caught (%s)" % str(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.zero_throttle()
@@ -3161,8 +3150,7 @@ class AutoTestCopter(AutoTest):
                 self.wait_mode(name)
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -3188,8 +3176,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(10, 1000) # this re-polls the mode switch
             self.wait_mode("CIRCLE")
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -3506,8 +3493,7 @@ class AutoTestCopter(AutoTest):
             self.wait_disarmed()
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -3565,8 +3551,7 @@ class AutoTestCopter(AutoTest):
             self.wait_statustext("Gripper Grabbed", timeout=60)
             self.wait_statustext("Gripper Released", timeout=60)
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             self.change_mode('LAND')
             ex = e
         self.context_pop()
@@ -3586,8 +3571,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1500)
             self.wait_altitude(10, 3000, relative=True)
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.do_RTL()
@@ -3903,8 +3887,7 @@ class AutoTestCopter(AutoTest):
                 self.context_pop()
 
             except Exception as e:
-                self.progress("Exception caught: %s" % (
-                    self.get_exception_stacktrace(e)))
+                self.print_exception_caught(e)
                 self.context_pop()
                 raise e
 
@@ -4088,8 +4071,7 @@ class AutoTestCopter(AutoTest):
                 raise
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
 
@@ -4210,7 +4192,8 @@ class AutoTestCopter(AutoTest):
                     raise NotAchievedException("Double-notch peak was higher than single-notch peak %fdB > %fdB" % (peakdb2, peakdb1))
 
             except Exception as e:
-                self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
+                self.print_exception_caught(e)
+                self.progress("Exception caught in %s loop" % (loop,))
                 if loop != "second":
                     continue
                 ex = e
@@ -4397,7 +4380,8 @@ class AutoTestCopter(AutoTest):
                 self.reboot_sitl()
 
             except Exception as e:
-                self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
+                self.print_exception_caught(e)
+                self.progress("Exception caught in %s loop" % (loop, ))
                 if loop != "second":
                     continue
                 ex = e
@@ -4550,7 +4534,7 @@ class AutoTestCopter(AutoTest):
                 self.reboot_sitl()
 
             except Exception as e:
-                self.progress("Exception caught in %s loop: %s" % (loop, self.get_exception_stacktrace(e)))
+                self.progress("Exception caught in %s loop" % (loop, ))
                 if loop != "second":
                     continue
                 ex = e
@@ -4733,8 +4717,7 @@ class AutoTestCopter(AutoTest):
             self.loiter_to_ne(start.x + 5, start.y - 10, start.z + 10)
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -4828,8 +4811,7 @@ class AutoTestCopter(AutoTest):
                     raise NotAchievedException("Failed to maintain takeoff alt")
             self.progress("takeoff OK")
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.land_and_disarm()
@@ -4984,8 +4966,7 @@ class AutoTestCopter(AutoTest):
                 self.OBSTACLE_DISTANCE_3D_test_angle(angle)
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
@@ -5007,8 +4988,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(10, 2000)
             self.check_avoidance_corners()
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")
@@ -5105,8 +5085,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("FENCE_ENABLE", 1)
             self.check_avoidance_corners()
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.clear_fence()
@@ -5261,8 +5240,7 @@ class AutoTestCopter(AutoTest):
             self.land_and_disarm()
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -5302,8 +5280,7 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.mavproxy.send("fence clear\n")
@@ -5382,8 +5359,7 @@ class AutoTestCopter(AutoTest):
             self.land_and_disarm()
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -5518,8 +5494,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("DISARM_DELAY", 10)
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
@@ -5689,8 +5664,7 @@ class AutoTestCopter(AutoTest):
                 if len(wanted_distances.keys()) == 0:
                     break
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -5811,8 +5785,7 @@ class AutoTestCopter(AutoTest):
             self.disarm_vehicle()
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.reboot_sitl()
@@ -5926,8 +5899,7 @@ class AutoTestCopter(AutoTest):
 
             self.context_pop()
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.reboot_sitl()
@@ -6059,8 +6031,7 @@ class AutoTestCopter(AutoTest):
                 raise NotAchievedException("Changed to ALT_HOLD with no altitude estimate")
 
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)
@@ -6090,8 +6061,7 @@ class AutoTestCopter(AutoTest):
 
         except Exception as e:
             self.disarm_vehicle(force=True)
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         if ex is not None:
@@ -6853,8 +6823,7 @@ class AutoTestHeli(AutoTestCopter):
                     raise NotAchievedException("Failed to maintain takeoff alt")
             self.progress("takeoff OK")
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.land_and_disarm()
@@ -6892,8 +6861,7 @@ class AutoTestHeli(AutoTestCopter):
 
             self.progress("takeoff OK")
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.land_and_disarm()
