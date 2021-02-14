@@ -332,12 +332,13 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
         }
     } else {
         // If no origin has been defined for the EKF or it is not estimating position, then we cannot
-        //  use its position states so return a raw GPS reading if available and return false
+        //  use its position states so return a raw GPS reading if available
         if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
             const struct Location &gpsloc = gps.location(selected_gps);
             loc = gpsloc;
             loc.relative_alt = 0;
             loc.terrain_alt = 0;
+            return true;
         }
         return false;
     }
