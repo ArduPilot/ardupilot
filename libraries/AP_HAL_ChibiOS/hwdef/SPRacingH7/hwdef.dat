@@ -11,12 +11,15 @@ APJ_BOARD_ID 1027
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
-FLASH_SIZE_KB 2048
 
 STM32_ST_USE_TIMER 2
 
+# 16mb QSPI flash less space for SSBL and other housekeeping
+FLASH_SIZE_KB 14336
+# QSPI memory mapped to 0x90100000
+FLASH_BASE_ADDRESS 0x90100000
 # bootloader takes first sector
-FLASH_RESERVE_START_KB 128
+#FLASH_RESERVE_START_KB 128
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -154,5 +157,5 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define BOARD_PWM_COUNT_DEFAULT 111
+define BOARD_PWM_COUNT_DEFAULT 11
 define STM32_PWM_USE_ADVANCED TRUE

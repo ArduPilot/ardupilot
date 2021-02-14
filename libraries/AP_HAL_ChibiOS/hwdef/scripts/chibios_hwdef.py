@@ -884,7 +884,7 @@ def write_ldscript(fname):
     # ram layout
     ram_map = get_mcu_config('RAM_MAP', True)
 
-    flash_base = 0x08000000 + flash_reserve_start * 1024
+    flash_base = get_config('FLASH_BASE_ADDRESS', default=0x08000000, type=int) + flash_reserve_start * 1024
 
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
