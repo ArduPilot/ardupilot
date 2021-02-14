@@ -121,6 +121,7 @@ AP_HW_H31_PIXC4_JETSON               1032
 AP_HW_CUBEORANGE_JOEY                1033
 AP_HW_SIERRAF9PGPS_PERIPH            1034
 AP_HW_HolybroGPS                     1035
+AP_HW_SPRACINGH7                     1036
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
