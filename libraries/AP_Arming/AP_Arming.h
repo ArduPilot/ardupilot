@@ -121,7 +121,7 @@ public:
 
     // method that was last used for disarm; invalid unless the
     // vehicle has been disarmed at least once.
-    Method last_disarm_method() const { return _last_disarm_method; } 
+    Method last_disarm_method() const { return _last_disarm_method; }
 
 protected:
 
@@ -200,6 +200,8 @@ protected:
 
     void Log_Write_Arm(bool forced, AP_Arming::Method method);
     void Log_Write_Disarm(AP_Arming::Method method);
+
+    void log_issue(const nav_filter_status &status, const nav_gps_status &gpsstatus) const;
 
 private:
 

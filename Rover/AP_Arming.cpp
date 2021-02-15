@@ -58,6 +58,12 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
     if (!rover.ekf_position_ok()) {
         // vehicle level position estimate checks
         check_failed(display_failure, "Need Position Estimate");
+        nav_filter_status status;
+        nav_gps_status gpsstatus;
+        if (rover.ahrs.get_filter_status(status)) {
+            rover.ahrs.EKF3.getFilterGpsStatus(-1, gpsstatus);
+            log_issue(status, gpsstatus);
+        }
         return false;
     }
 

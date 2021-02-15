@@ -529,6 +529,12 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         if (!copter.position_ok()) {
             // vehicle level position estimate checks
             check_failed(display_failure, "Need Position Estimate");
+            nav_filter_status filtstatus;
+            nav_gps_status gpsstatus;
+            if (ahrs.get_filter_status(filtstatus)) {
+                copter.ahrs.EKF3.getFilterGpsStatus(-1, gpsstatus);
+                log_issue(filtstatus, gpsstatus);
+            }
             return false;
         }
     } else {
