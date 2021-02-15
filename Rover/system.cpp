@@ -40,6 +40,9 @@ void Rover::init_ardupilot()
     // Initialise RPM sensor
     rpm_sensor.init();
 
+    // Initialize Particle Matter Sensor
+    sngcja5.init();
+
     rssi.init();
 
     g2.airspeed.init();

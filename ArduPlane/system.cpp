@@ -75,6 +75,8 @@ void Plane::init_ardupilot()
     osd.init();
 #endif
 
+    sngcja5.init();
+
 #if LOGGING_ENABLED == ENABLED
     log_init();
 #endif

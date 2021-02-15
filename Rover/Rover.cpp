@@ -74,6 +74,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,      update,         10,   75),
 #endif
     SCHED_TASK(rpm_update,             10,    100),
+    SCHED_TASK_CLASS(AP_PM_SNGCJA5,       &rover.sngcja5,          update,          1,  100),
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200),
 #endif

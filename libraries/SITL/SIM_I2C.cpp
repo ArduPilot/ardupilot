@@ -21,6 +21,7 @@
 #include <SITL/SITL.h>
 
 #include "SIM_I2C.h"
+#include "SIM_SN_GCJA5.h"
 #include "SIM_ToshibaLED.h"
 #include "SIM_MaxSonarI2CXL.h"
 #include "SIM_BattMonitor_SMBus_Maxell.h"
@@ -54,6 +55,7 @@ static Rotoye rotoye;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 static ICM40609 icm40609;
+static SN_GCJA5 sn_gcja5;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -63,6 +65,7 @@ struct i2c_device_at_address {
     { 0, 0x70, maxsonari2cxl },
     { 0, 0x71, maxsonari2cxl_2 },
     { 1, 0x01, icm40609 },
+    { 1, 0x33, sn_gcja5 },  // SN-GCJA5 particle matter sensor
     { 1, 0x55, toshibaled },
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C

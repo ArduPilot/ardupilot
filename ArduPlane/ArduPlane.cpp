@@ -68,6 +68,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(one_second_loop,         1,    400),
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(rpm_update,             10,    100),
+    SCHED_TASK_CLASS(AP_PM_SNGCJA5,            &plane.sngcja5,       update,      1,  100),
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     SCHED_TASK(airspeed_ratio_update,   1,    100),
 #endif // AP_AIRSPEED_AUTOCAL_ENABLE

@@ -67,6 +67,8 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_ParticleMatter/AP_PM_SNGCJA5.h>        // Particle Matter Sensor
+
 
 // Configuration
 #include "defines.h"
@@ -550,6 +552,9 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
+    // AP_Particle_Matter Sensor
+    AP_PM_SNGCJA5 sngcja5;
+    
 #if FRAME_CONFIG == HELI_FRAME
     // Mode filter to reject RC Input glitches.  Filter size is 5, and it draws the 4th element, so it can reject 3 low glitches,
     // and 1 high glitch.  This is because any "off" glitches can be highly problematic for a helicopter running an ESC

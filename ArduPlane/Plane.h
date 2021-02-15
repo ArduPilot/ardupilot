@@ -85,6 +85,7 @@
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
+#include <AP_ParticleMatter/AP_PM_SNGCJA5.h>
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -285,6 +286,8 @@ private:
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
 #endif
+
+    AP_PM_SNGCJA5 sngcja5;
 
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO

@@ -44,6 +44,7 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>          // Optical Flow library
 #include <AP_Param/AP_Param.h>
+#include <AP_ParticleMatter/AP_PM_SNGCJA5.h>        // Particle Matter Sensor
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
@@ -263,6 +264,9 @@ private:
     ModeFollow mode_follow;
     ModeSimple mode_simple;
 
+    // AP_Particle_Matter Sensor
+    AP_PM_SNGCJA5 sngcja5;
+    
     // cruise throttle and speed learning
     typedef struct {
         LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);

@@ -178,6 +178,9 @@ void Copter::init_ardupilot()
     rpm_sensor.init();
 #endif
 
+    // Initialize Particle Matter Sensor
+    sngcja5.init();
+
 #if MODE_AUTO_ENABLED == ENABLED
     // initialise mission library
     mode_auto.mission.init();
