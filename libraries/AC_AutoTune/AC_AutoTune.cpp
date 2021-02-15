@@ -48,12 +48,9 @@
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750     // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
 #define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
-#define AUTOTUNE_RP_ACCEL_MIN           4000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN            1000.0f     // Minimum acceleration for Yaw
 #define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
 #define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
 
@@ -69,12 +66,19 @@
 #define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // minimum target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
 
+// ifdef is not working.  Modified multi values to reflect heli requirements
 #ifdef HELI_BUILD
 // heli defines
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U    // timeout for tuning mode's testing step
+#define AUTOTUNE_RP_ACCEL_MIN           20000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN            10000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 #else
 // Frame specific defaults
-#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U    // timeout for tuning mode's testing step
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U    // timeout for tuning mode's testing step
+#define AUTOTUNE_RP_ACCEL_MIN           20000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN            10000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 #endif // HELI_BUILD
 
 // second table of user settable parameters for quadplanes, this
