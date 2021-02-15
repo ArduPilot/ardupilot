@@ -80,7 +80,7 @@ void AC_AutoTune_Heli::test_init()
             test_freq[0] = 0.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
             // reset determine_gain function for first use in the event autotune is restarted
-            determine_gain_angle(0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], dwell_complete, true);
+            determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], test_accel_max, dwell_complete, true);
         }
         angle_dwell_test_init(curr_test_freq);
 //        angle_dwell_test_init(5.0f);
@@ -194,6 +194,7 @@ void AC_AutoTune_Heli::load_test_gains()
     case ROLL:
         if (tune_type == SP_UP) {
             attitude_control->get_rate_roll_pid().kI(orig_roll_ri);
+            attitude_control->set_accel_roll_max(500000.0f);
         } else {
             attitude_control->get_rate_roll_pid().kI(0.0f);
         }
@@ -203,6 +204,7 @@ void AC_AutoTune_Heli::load_test_gains()
     case PITCH:
         if (tune_type == SP_UP) {
             attitude_control->get_rate_pitch_pid().kI(orig_pitch_ri);
+            attitude_control->set_accel_pitch_max(500000.0f);
         } else {
             attitude_control->get_rate_pitch_pid().kI(0.0f);
         }
@@ -214,6 +216,9 @@ void AC_AutoTune_Heli::load_test_gains()
         attitude_control->get_rate_yaw_pid().kD(tune_yaw_rd);
         attitude_control->get_rate_yaw_pid().ff(tune_yaw_rff);
         attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
+        if (tune_type == SP_UP) {
+            attitude_control->set_accel_yaw_max(500000.0f);
+        }
         break;
     }
 }
@@ -226,7 +231,7 @@ void AC_AutoTune_Heli::save_tuning_gains()
     AC_AutoTune::save_tuning_gains();
 
     // sanity check the rate P values
-    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && !is_zero(tune_roll_rp)) {
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled()) {
         // rate roll gains
         attitude_control->get_rate_roll_pid().ff(tune_roll_rff);
         attitude_control->get_rate_roll_pid().kI(tune_roll_rff*AUTOTUNE_FFI_RATIO_FINAL);
@@ -237,7 +242,7 @@ void AC_AutoTune_Heli::save_tuning_gains()
         orig_roll_ri = attitude_control->get_rate_roll_pid().kI();
     }
 
-    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && !is_zero(tune_pitch_rp)) {
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled()) {
         // rate pitch gains
         attitude_control->get_rate_pitch_pid().ff(tune_pitch_rff);
         attitude_control->get_rate_pitch_pid().kI(tune_pitch_rff*AUTOTUNE_FFI_RATIO_FINAL);
@@ -359,12 +364,15 @@ void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
     switch (test_axis) {
     case ROLL:
         updating_angle_p_up(tune_roll_sp, test_freq, test_gain, test_phase, freq_cnt);
+//        test_accel_max = tune_roll_accel;
         break;
     case PITCH:
         updating_angle_p_up(tune_pitch_sp, test_freq, test_gain, test_phase, freq_cnt);
+//        test_accel_max = tune_pitch_accel;
         break;
     case YAW:
         updating_angle_p_up(tune_yaw_sp, test_freq, test_gain, test_phase, freq_cnt);
+//        test_accel_max = tune_yaw_accel;
         break;
     }
 }
@@ -517,30 +525,64 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
 void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
 {
     float test_freq_incr = 0.5f * 3.14159f * 2.0f;
-//    static uint8_t prev_good_frq_cnt;
     float max_gain = 2.1f;
     float gain_incr = 0.5f;
-
+    static float phase_max;
+    static float prev_gain;
+    static bool find_peak;
     if (freq_cnt < 12) {
         if (freq_cnt == 0) {
             freq_cnt_max = 0;
         } else if (gain[freq_cnt] > gain[freq_cnt_max]) {
             freq_cnt_max = freq_cnt;
+            phase_max = phase[freq_cnt];
+            prev_gain = gain[freq_cnt];
         }
         freq_cnt++;
-        freq[freq_cnt] = freq[freq_cnt-1] + test_freq_incr;
-        curr_test_freq = freq[freq_cnt];
-    } else {
-        if (gain[freq_cnt] < max_gain && tune_p < AUTOTUNE_SP_MAX) {
-            tune_p += gain_incr;
-            curr_test_freq = freq[freq_cnt_max];
-            freq[freq_cnt] = curr_test_freq;
-            if (tune_p >= AUTOTUNE_SP_MAX) {
-                tune_p = AUTOTUNE_SP_MAX;
-                counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            }
+        if (freq_cnt == 12) {
+            freq[freq_cnt] = freq[freq_cnt_max];
+            curr_test_freq = freq[freq_cnt];
         } else {
+            freq[freq_cnt] = freq[freq_cnt-1] + test_freq_incr;
+            curr_test_freq = freq[freq_cnt];
+        }
+    }
+
+    // once finished with sweep of frequencies, cnt = 12 is used to then tune for max response gain
+    if (freq_cnt >= 12) {
+        if (gain[freq_cnt] < max_gain && tune_p < AUTOTUNE_SP_MAX && !find_peak) {
+            // keep increasing tuning gain unless phase changes or max response gain is acheived
+            if (phase[freq_cnt]-phase_max > 20.0f && phase[freq_cnt] < 210.0f) {
+                freq[freq_cnt] += 0.5 * test_freq_incr;
+                find_peak = true;
+            } else {
+                tune_p += gain_incr;
+                freq[freq_cnt] = freq[freq_cnt_max];
+                if (tune_p >= AUTOTUNE_SP_MAX) {
+                    tune_p = AUTOTUNE_SP_MAX;
+                    counter = AUTOTUNE_SUCCESS_COUNT;
+                    AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                }
+            }
+            curr_test_freq = freq[freq_cnt];
+            prev_gain = gain[freq_cnt];
+        } else if (find_peak) {
+            // fine the frequency where the response gain is maximum
+            if (gain[freq_cnt] > prev_gain) {
+                freq[freq_cnt] += 0.5 * test_freq_incr;
+            } else {
+                find_peak = false;
+                phase_max = phase[freq_cnt];
+            }
+            curr_test_freq = freq[freq_cnt];
+            prev_gain = gain[freq_cnt];
+        } else {
+            // adjust tuning gain so max response gain is not exceeded
+            if (prev_gain < max_gain && gain[freq_cnt] > max_gain) {
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tune_p=%f prgain=%f gain=%f", (double)(tune_p), (double)(prev_gain), (double)(gain[freq_cnt]));
+                float adj_factor = (max_gain - gain[freq_cnt]) / (gain[freq_cnt] - prev_gain);
+                tune_p = tune_p + gain_incr * adj_factor; 
+            }
             counter = AUTOTUNE_SUCCESS_COUNT;
             // reset curr_test_freq and freq_cnt for next test
             curr_test_freq = freq[0];
@@ -548,46 +590,8 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
         }
     }
 
-
-/*    if (frq_cnt < 12) {
-        if (frq_cnt == 0) {
-            freq_cnt_max = 0;
-        } else if (phase[frq_cnt] <= 180.0f && !is_zero(phase[frq_cnt])) {
-            prev_good_frq_cnt = frq_cnt;
-        } else if (frq_cnt > 1 && phase[frq_cnt] > phase[frq_cnt-1] + 360.0f && !is_zero(phase[frq_cnt])) {
-            if (phase[frq_cnt] - 360.0f < 180.0f) {
-                prev_good_frq_cnt = frq_cnt;
-            }
-            //        } else if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
-            //            frq_cnt = 11;
-        }
-        frq_cnt++;
-        if (frq_cnt == 12) {
-            freq[frq_cnt] = freq[prev_good_frq_cnt];
-            curr_test_freq = freq[frq_cnt];
-        } else {
-            freq[frq_cnt] = freq[frq_cnt-1] + test_freq_incr;
-            curr_test_freq = freq[frq_cnt];
-        }
-    } else {
-        if ((gain[frq_cnt] < max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f) && tune_p < AUTOTUNE_SP_MAX) {
-            tune_p += 0.5f;
-        } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] > 180.0f) {
-            curr_test_freq = curr_test_freq - 0.5 * test_freq_incr;
-            freq[frq_cnt] = curr_test_freq;
-        } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] < 160.0f) {
-            curr_test_freq = curr_test_freq + 0.5 * test_freq_incr;
-            freq[frq_cnt] = curr_test_freq;
-        } else if (gain[frq_cnt] >= max_gain || tune_p >= AUTOTUNE_SP_MAX) {
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            // reset curr_test_freq and frq_cnt for next test
-            curr_test_freq = freq[0];
-            frq_cnt = 0;
-        }
-    } */
-
     // reset determine_gain function
-    determine_gain_angle(0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], dwell_complete, true);
+    determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], test_accel_max, dwell_complete, true);
 }
 
 // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
@@ -639,31 +643,31 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
 
 void AC_AutoTune_Heli::Log_AutoTune()
 {
-    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+/*    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
         switch (axis) {
         case ROLL:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_roll_rff,  tune_roll_rp, tune_roll_rd, tune_roll_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_roll_rff,  tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
             break;
         case PITCH:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_pitch_rff, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_pitch_rff, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
             break;
         case YAW:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_yaw_rff, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_yaw_rff, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
             break;
         }
-    } else {
+    } else {  */
         switch (axis) {
         case ROLL:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_roll_rff,  tune_roll_rp, tune_roll_rd, tune_roll_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_roll_rff,  tune_roll_rp, tune_roll_rd, tune_roll_sp, test_accel_max);
             break;
         case PITCH:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_pitch_rff, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_pitch_rff, tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, test_accel_max);
             break;
         case YAW:
-            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_yaw_rff, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp);
+            Log_Write_AutoTune(axis, tune_type, test_freq[freq_cnt], test_gain[freq_cnt], test_phase[freq_cnt], tune_yaw_rff, tune_yaw_rp, tune_yaw_rd, tune_yaw_sp, test_accel_max);
             break;
         }
-    }
+//    }
 }
 
 void AC_AutoTune_Heli::Log_AutoTuneDetails()
@@ -684,16 +688,17 @@ void AC_AutoTune_Heli::Log_AutoTuneDetails()
 // @Field: RP: new rate gain P term
 // @Field: RD: new rate gain D term
 // @Field: SP: new angle P term
+// @Field: ACC: new max accel term
 
 // Write an Autotune data packet
-void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp)
+void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel)
 {
     AP::logger().Write(
         "ATNH",
-        "TimeUS,Axis,TuneStep,Freq,Gain,Phase,RFF,RP,RD,SP",
-        "s---------",
-        "F--000----",
-        "QBBfffffff",
+        "TimeUS,Axis,TuneStep,Freq,Gain,Phase,RFF,RP,RD,SP,ACC",
+        "s----------",
+        "F--000-----",
+        "QBBffffffff",
         AP_HAL::micros64(),
         axis,
         tune_step,
@@ -703,7 +708,8 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, floa
         new_gain_rff,
         new_gain_rp,
         new_gain_rd,
-        new_gain_sp);
+        new_gain_sp,
+        max_accel);
 }
 
 // Write an Autotune data packet

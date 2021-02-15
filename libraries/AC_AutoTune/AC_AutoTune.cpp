@@ -856,6 +856,7 @@ void AC_AutoTune::load_intra_test_gains()
         attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
         attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
         attitude_control->get_angle_roll_p().kP(orig_roll_sp);
+        attitude_control->set_accel_roll_max(orig_roll_accel);
     }
     if (pitch_enabled()) {
         attitude_control->get_rate_pitch_pid().kP(orig_pitch_rp);
@@ -864,6 +865,7 @@ void AC_AutoTune::load_intra_test_gains()
         attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
         attitude_control->get_rate_pitch_pid().filt_T_hz(orig_pitch_fltt);
         attitude_control->get_angle_pitch_p().kP(orig_pitch_sp);
+        attitude_control->set_accel_pitch_max(orig_pitch_accel);
     }
     if (yaw_enabled()) {
         attitude_control->get_rate_yaw_pid().kP(orig_yaw_rp);
@@ -873,6 +875,7 @@ void AC_AutoTune::load_intra_test_gains()
         attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
         attitude_control->get_rate_yaw_pid().filt_E_hz(orig_yaw_rLPF);
         attitude_control->get_angle_yaw_p().kP(orig_yaw_sp);
+        attitude_control->set_accel_yaw_max(orig_yaw_accel);
     }
 }
 
@@ -937,7 +940,7 @@ void AC_AutoTune::save_tuning_gains()
     }
 
     // sanity check the rate P values
-    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && !is_zero(tune_roll_rp)) {
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && (!is_zero(tune_roll_rp) || allow_zero_rate_p())) {
         // rate roll gains
         attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
         attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
@@ -956,7 +959,7 @@ void AC_AutoTune::save_tuning_gains()
         orig_roll_accel = attitude_control->get_accel_roll_max();
     }
 
-    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && !is_zero(tune_pitch_rp)) {
+    if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && (!is_zero(tune_pitch_rp) || allow_zero_rate_p())) {
         // rate pitch gains
         attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
         attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
@@ -1709,7 +1712,7 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
 
     // wait for dwell to start before determining gain and phase
     if (!is_zero(dwell_start_time_ms)) {
-        determine_gain_angle(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
+        determine_gain_angle(command_out, filt_target_rate, rotation_rate, dwell_freq, dwell_gain, dwell_phase, test_accel_max, dwell_complete, false);
     }
 
     //    if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
@@ -1718,8 +1721,9 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
         step = UPDATE_GAINS;
         settle_time = 200;
         // announce results of dwell and update
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(dwell_freq), (double)(dwell_gain), (double)(dwell_phase));
-
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(dwell_freq), (double)(dwell_gain));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f acc=%f", (double)(dwell_phase), (double)(test_accel_max));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: SP_BO=%f time=%f", (double)(AUTOTUNE_SP_BACKOFF), (double)(AUTOTUNE_TESTING_STEP_TIMEOUT_MS));
     }
 }
 
@@ -1899,11 +1903,11 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
 // determine_gain_angle - this function receives time history data during a dwell test input and determines the gain and phase of the response to the input.
 // Once the designated number of cycles are complete, the average of the gain and phase are determined over the last 5 cycles and the cycles_complete flag
 // is set.  This function must be reset using the reset flag prior to the next dwell.
-void AC_AutoTune::determine_gain_angle(float tgt_angle, float meas_angle, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset)
+void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset)
 {
     static float max_target, max_meas, prev_target, prev_meas, sum_tgt_angle, sum_meas_angle, prev_tgt_angle, prev_meas_angle;
     static float min_target, min_meas, output_ampl[AUTOTUNE_DWELL_CYCLES+1], input_ampl[AUTOTUNE_DWELL_CYCLES+1];
-    static float temp_max_target, temp_min_target, tgt_rate, meas_rate;
+    static float temp_max_target, temp_min_target, tgt_rate, meas_rate, max_meas_rate, max_command;
     static float temp_max_meas, temp_min_meas;
     static uint32_t temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES+1], temp_max_meas_time[AUTOTUNE_DWELL_CYCLES+1];
     static uint32_t max_tgt_time, max_meas_time, new_tgt_time_ms, new_meas_time_ms, input_start_time_ms;
@@ -1931,6 +1935,8 @@ void AC_AutoTune::determine_gain_angle(float tgt_angle, float meas_angle, float 
         phase = 0.0f;
         cycles_complete = false;
         funct_reset = false;
+        max_meas_rate = 0.0f;
+        max_command = 0.0f;
         return;
     }
 
@@ -1997,6 +2003,14 @@ void AC_AutoTune::determine_gain_angle(float tgt_angle, float meas_angle, float 
         phase = freq * delta_time * 0.001f * 360.0f / 6.28f;
         if (phase > 360.0f) {
             phase = phase - 360.0f;
+        }
+        float dwell_max_accel = freq * max_meas_rate * 5730.0f;
+        if (!is_zero(max_command)) {
+            // normalize accel for input size
+            dwell_max_accel = dwell_max_accel / (2.0f * max_command);
+        }
+        if (dwell_max_accel > max_accel) {
+            max_accel = dwell_max_accel;
         }
         cycles_complete = true;
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cycles completed");
@@ -2068,6 +2082,15 @@ void AC_AutoTune::determine_gain_angle(float tgt_angle, float meas_angle, float 
 
     if (meas_angle < min_meas && !new_meas) {
         min_meas = meas_angle;
+    }
+
+    if (now > (uint32_t)(input_start_time_ms + 7.0f * cycle_time_ms) && now < (uint32_t)(input_start_time_ms + 9.0f * cycle_time_ms)) {
+        if (meas_rate > max_meas_rate) {
+            max_meas_rate = meas_rate;
+        }
+        if (command > max_command) {
+            max_command = command;
+        }
     }
 
     prev_target = tgt_rate;

@@ -357,7 +357,7 @@ protected:
     void determine_gain(float tgt_rate, float meas_rate, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
 
     // determines the gain and phase for a dwell
-    void determine_gain_angle(float tgt_angle, float meas_angle, float freq, float &gain, float &phase, bool &cycles_complete, bool funct_reset);
+    void determine_gain_angle(float command, float tgt_angle, float meas_angle, float freq, float &gain, float &phase, float &max_accel, bool &cycles_complete, bool funct_reset);
 
     uint8_t  ff_test_phase;                         // phase of feedforward test
     float    test_command_filt;                     // filtered commanded output
