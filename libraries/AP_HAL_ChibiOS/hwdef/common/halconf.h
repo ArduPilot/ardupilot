@@ -69,6 +69,13 @@
 #endif
 
 /**
+ * @brief   Enables the CAN subsystem.
+ */
+#if !defined(HAL_USE_WSPI) || defined(__DOXYGEN__)
+#define HAL_USE_WSPI                 FALSE
+#endif
+
+/**
  * @brief   Enables the cryptographic subsystem.
  */
 #if !defined(HAL_USE_CRY) || defined(__DOXYGEN__)

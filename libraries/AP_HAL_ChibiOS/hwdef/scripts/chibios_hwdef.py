@@ -30,7 +30,7 @@ f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
 f1_vtypes = ['CRL', 'CRH', 'ODR']
 f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
-af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
+af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'QUADSPI', 'OTG', 'JT', 'TIM', 'CAN']
 
 default_gpio = ['INPUT', 'FLOATING']
 
@@ -367,6 +367,15 @@ class generic_pin(object):
              self.label.endswith('_D3') or
              self.label.endswith('_CMD'))):
             v = "PULLUP"
+        # generate pullups for QUADSPI
+        if self.type.startswith('QUADSPI') and (
+            self.label.endswith('_IO0') or
+             self.label.endswith('_IO1') or
+             self.label.endswith('_IO2') or
+             self.label.endswith('_IO3') or
+             self.label.endswith('_NCS') or
+             self.label.endswith('_CLK')):
+            v = "PULLUP"
         for e in self.extra:
             if e in values:
                 v = e
@@ -680,6 +689,9 @@ def write_mcu_config(f):
         f.write('#define HAL_STDOUT_SERIAL %s\n\n' % get_config('STDOUT_SERIAL'))
         f.write('// baudrate used for stdout (printf)\n')
         f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % get_config('STDOUT_BAUDRATE', type=int))
+    if have_type_prefix('QUADSPI'):
+        f.write('#define HAL_USE_WSPI TRUE\n')
+        f.write('#define STM32_WSPI_USE_QUADSPI1 TRUE\n')
     if have_type_prefix('SDIO'):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
@@ -1944,6 +1956,8 @@ def build_peripheral_list():
                     peripherals.append(ptx)
 
         if type.startswith('ADC'):
+            peripherals.append(type)
+        if type.startswith('QUADSPI'):
             peripherals.append(type)
         if type.startswith('SDIO') or type.startswith('SDMMC'):
             if not mcu_series.startswith("STM32H7"):
