@@ -91,10 +91,13 @@ AP_GPS_SBF::read(void)
             uint32_t now = AP_HAL::millis();
             if (now > _init_blob_time) {
                 if (now > _config_last_ack_time + 2000) {
-                    // try to enable input on the GPS port if we have not made progress on configuring it
-                    Debug("SBF Sending port enable");
-                    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
-                    _config_last_ack_time = now;
+                    const size_t port_enable_len = strlen(_port_enable);
+                    if (port_enable_len <= port->txspace()) {
+                        // try to enable input on the GPS port if we have not made progress on configuring it
+                        Debug("SBF Sending port enable");
+                        port->write((const uint8_t*)_port_enable, port_enable_len);
+                        _config_last_ack_time = now;
+                    }
                 } else if (readyForCommand) {
                     if (config_string == nullptr) {
                         switch (config_step) {
@@ -126,9 +129,12 @@ AP_GPS_SBF::read(void)
                     }
 
                     if (config_string != nullptr) {
-                        Debug("SBF sending init string: %s", config_string);
-                        port->write((const uint8_t*)config_string, strlen(config_string));
-                        readyForCommand = false;
+                        const size_t config_length = strlen(config_string);
+                        if (config_length <= port->txspace()) {
+                            Debug("SBF sending init string: %s", config_string);
+                            port->write((const uint8_t*)config_string, config_length);
+                            readyForCommand = false;
+                        }
                     }
                 }
             }
