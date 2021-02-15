@@ -22,7 +22,6 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
-#include <AP_Terrain/AP_Terrain.h>
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
@@ -243,7 +242,6 @@ protected:
 
     bool use_smoothing;
 
-    AP_Terrain *terrain;
     float ground_height_difference() const;
 
     virtual bool on_ground() const;
