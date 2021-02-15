@@ -33,6 +33,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Declination/AP_Declination.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 using namespace SITL;
 
@@ -63,8 +64,6 @@ Aircraft::Aircraft(const char *frame_str) :
         sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
     }
 
-    terrain = AP::terrain();
-
     // init rangefinder array to -1 to signify no data
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++){
         rangefinder_m[i] = -1.0f;
@@ -94,14 +93,18 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
 */
 float Aircraft::ground_height_difference() const
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
     float h1, h2;
     if (sitl &&
-        sitl->terrain_enable && terrain &&
+        terrain != nullptr &&
+        sitl->terrain_enable &&
         terrain->height_amsl(home, h1, false) &&
         terrain->height_amsl(location, h2, false)) {
         h2 += local_ground_level;
         return h2 - h1;
     }
+#endif
     return local_ground_level;
 }
 
