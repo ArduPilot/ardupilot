@@ -174,21 +174,15 @@ void ShipSim::send_report(void)
     Location loc = home;
     loc.offset(ship.position.x, ship.position.y);
 
-    int32_t alt;
-    bool have_alt = false;
+    int32_t alt = home.alt;  // assume home altitude
 
 #if AP_TERRAIN_AVAILABLE
     auto terrain = AP::terrain();
     float height;
     if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height, true)) {
         alt = height * 1000;
-        have_alt = true;
     }
 #endif
-    if (!have_alt) {
-        // assume home altitude
-        alt = home.alt;
-    }
 
     Vector2f vel(ship.speed, 0);
     vel.rotate(radians(ship.heading_deg));
