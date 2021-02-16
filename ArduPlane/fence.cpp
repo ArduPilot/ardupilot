@@ -89,13 +89,6 @@ void Plane::fence_check()
                 }
             }
 
-
-            //! TODO: Update setting of guided location
-            /*
-                fence_state->guided_lat = guided_WP_loc.lat;
-                fence_state->guided_lng = guided_WP_loc.lng;
-            */
-
             if (fence.get_action() != AC_FENCE_ACTION_RTL_AND_LAND) {
                 setup_terrain_target_alt(guided_WP_loc);
                 set_guided_WP();
