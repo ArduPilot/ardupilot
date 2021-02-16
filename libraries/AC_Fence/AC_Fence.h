@@ -193,7 +193,7 @@ private:
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
-    AP_Float        _ret_altitude;          // return to this altitude
+    AP_Int16        _ret_altitude;          // return to this altitude
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
