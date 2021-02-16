@@ -77,7 +77,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     // calculate a random time offset to the time sent in the message
     // simulates a time difference between the remote computer and autopilot
     if (time_offset_us == 0) {
-        time_offset_us = (unsigned(random()) % 7000) * 1000000ULL;
+        time_offset_us = (unsigned(random()) % 7000) * 1000ULL;
         printf("time_offset_us %llu\n", (long long unsigned)time_offset_us);
     }
 
@@ -104,7 +104,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         // create observations at 20ms intervals (matches EKF max rate)
         return;
     }
-
+    last_observation_usec = now_us;
+    
     // failure simulation
     if (_sitl->vicon_fail.get() != 0) {
         return;
