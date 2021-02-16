@@ -1296,6 +1296,85 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_fence_ret_rally(self):
+        """ Tests the FENCE_RET_RALLY flag, either returning to fence return point,
+            or rally point """
+        target_system = 1
+        target_component = 1
+        self.progress("Testing FENCE_ACTION_RTL with fence rally point")
+
+        self.wait_ready_to_arm()
+        self.homeloc = self.mav.location()
+
+        # Grab a location for fence return point, and upload it.
+        fence_loc = self.home_position_as_mav_location()
+        self.location_offset_ne(fence_loc, 50, 50)
+        fence_return_mission_items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT,
+                0, # current
+                0, # autocontinue
+                0, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(fence_loc.lat *1e7), # latitude
+                int(fence_loc.lng *1e7), # longitude
+                0, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE
+            )
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                            fence_return_mission_items)
+        self.delay_sim_time(1)
+
+        # Grab a location for rally point, and upload it.
+        rally_loc = self.home_position_as_mav_location()
+        self.location_offset_ne(rally_loc, -50, -50)
+        self.set_parameter("RALLY_TOTAL", 1)
+        self.mav.mav.rally_point_send(target_system,
+                                        target_component,
+                                        0, # sequence number
+                                        1, # total count
+                                        int(rally_loc.lat * 1e7),
+                                        int(rally_loc.lng * 1e7),
+                                        15,
+                                        0, # "break" alt?!
+                                        0, # "land dir"
+                                        0) # flags
+        self.delay_sim_time(1)
+
+        return_radius = 100
+        return_alt = 80
+        self.set_parameter("RTL_RADIUS", return_radius)
+        self.set_parameter("FENCE_ACTION", 5) # Set Fence Action to Guided
+        self.set_parameter("FENCE_TYPE", 8)   # Only use fence floor
+        self.set_parameter("FENCE_RET_ALT", return_alt)
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+        
+        self.takeoff(alt=50, alt_max=300)
+        # Trigger fence breach, fly to rally location
+        self.set_parameter("FENCE_RET_RALLY", 1)
+        self.set_parameter("FENCE_ALT_MIN", 60)
+        self.wait_circling_point_with_radius(rally_loc, return_radius)
+        self.set_parameter("FENCE_ALT_MIN", 0) # Clear fence breach
+
+        # Fly up before re-triggering fence breach. Fly to fence return point
+        self.change_altitude(self.homeloc.alt+30)
+        self.set_parameter("FENCE_RET_RALLY", 0)
+        self.set_parameter("FENCE_ALT_MIN", 60)
+        self.wait_altitude(altitude_min=return_alt-3,
+                        altitude_max=return_alt+3,
+                        relative=True)
+        self.wait_circling_point_with_radius(fence_loc, return_radius)
+        self.do_fence_disable() # Disable fence so we can land
+        self.fly_home_land_and_disarm() # Pack it up, we're going home.
+
     def test_parachute(self):
         self.set_rc(9, 1000)
         self.set_parameter("CHUTE_ENABLED", 1)
@@ -2516,6 +2595,10 @@ class AutoTestPlane(AutoTest):
             ("FenceRTLRally",
              "Test Fence RTL Rally",
              self.test_fence_rtl_rally),
+
+            ("FenceRetRally",
+             "Test Fence Ret_Rally",
+             self.test_fence_ret_rally),
 
             ("FenceAltCeilFloor",
              "Tests the fence ceiling and floor",
