@@ -9,6 +9,8 @@ ignore =
     # E261 at least two spaces before inline comment
     E261,
     # W504 line break after binary operator
-    W504
+    W504,
+    # E203 whitespace before ':'
+    E203
 
 max-line-length = 127
