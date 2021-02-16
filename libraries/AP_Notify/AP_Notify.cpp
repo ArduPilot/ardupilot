@@ -188,6 +188,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Description: The number of Serial LED's to use for notifications (NeoPixel's and ProfiLED)
     // @Range: 1 32
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, NOTIFY_LED_LEN_DEFAULT),
 
     AP_GROUPEND
