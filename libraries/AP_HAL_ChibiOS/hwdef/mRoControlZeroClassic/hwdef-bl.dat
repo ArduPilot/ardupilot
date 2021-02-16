@@ -1,18 +1,15 @@
 ###########################################################################################################################################################
-# mRo Pixracer Pro Flight Controller
-# STM32H743IIK6
-# 8 PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
-# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
-# Exposed JST GH Connectors: GPS UART+I2C connector, 6 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, I2C, Power with analog current and voltage sense
-# 3 IMUs (ICM20602 6DOF, ICM20948 9DOF, BMI088 6DOF)
-# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG, USB-C
+# hw definition file for processing by chibios_hwdef.py
+# STM32H743ZIT6
+# mRo Control Zero Classic flight controller
+# 12x PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
+# A Dual CAN based flight controller
+# 3x IMUs (BMI088 6DOF, ICM20602 6DOF, ICM20948 9DOF)
+# Baro, FRAM (256kb), SDCARD Socket, JTAG
+# 5x UARTs (2x with hardware flow control), 2x CAN, 1x SPI, 2x I2C
 # Onboard 3 color LED and buzzer
-# Uncased weight and dimensions:
-# Weight (with headers): 11.3g (.40oz)
-# Length: 36mm (1.42in)
-# Width:  36mm (1.42in)
-# Mounting holes: 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
-# M10064C - Initial Release
+# Identical case and connector layout to the original 3DR / mRo Pixhawk
+# M10048B - Initial Release
 ###########################################################################################################################################################
 
 # MCU class and specific type
@@ -25,7 +22,7 @@ USB_STRING_MANUFACTURER "mRo"
 OSCILLATOR_HZ 24000000
 
 # board ID for firmware load
-APJ_BOARD_ID 1017
+APJ_BOARD_ID 1022
 
 FLASH_SIZE_KB 2048
 
@@ -35,7 +32,7 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 128
 
-PB11 LED_BOOTLOADER OUTPUT
+PB4 LED_BOOTLOADER OUTPUT
 
 # define all 3 to make LED output White.
 PB1 LED_ACTIVITY OUTPUT
@@ -57,10 +54,11 @@ define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
 
 # Add CS pins to ensure they are high in bootloader
-PC2 ICM_20602_CS CS
 PD7 BARO_CS CS
-PD10 FRAM_CS CS SPEED_VERYLOW NODMA
+PD10 FRAM_CS CS SPEED_VERYLOW
 PE15 ICM_20948_CS CS
+PF0 BMI088_ACCEL_CS CS
 PF10 BMI088_GYRO_CS CS
-PF6 BMI088_ACCEL_CS CS
+PG3 ICM_20602_CS CS
 PG9 EXT_SPI_CS CS
+#PG10 EXT_SPI_CS CS
