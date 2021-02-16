@@ -244,6 +244,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     }
 
     // set previous position & attitude
+    last_observation_usec = now_us;
     _position_prev = pos_corrected;
     _attitude_prev = attitude_curr;
 }
