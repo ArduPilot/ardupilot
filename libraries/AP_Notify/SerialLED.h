@@ -39,11 +39,5 @@ protected:
 private:
     uint16_t enable_mask;
 
-    // perdiodic tick to re-init
-    uint32_t    _last_init_ms;
-
-    // periodic callback
-    void timer();
-
     HAL_Semaphore _sem;
 };
