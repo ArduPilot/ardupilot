@@ -6083,6 +6083,69 @@ class AutoTestCopter(AutoTest):
         print("log difference: %s" % str(log_difference))
         return log_difference[0]
 
+    def test_gps_blending(self):
+        '''ensure we get dataflash log messages for blended instance'''
+
+        self.context_push()
+
+        ex = None
+
+        try:
+            # configure:
+            self.set_parameter("GPS_TYPE2", 1)
+            self.set_parameter("SIM_GPS2_TYPE", 1)
+            self.set_parameter("SIM_GPS2_DISABLE", 0)
+            self.set_parameter("GPS_AUTO_SWITCH", 2)
+            self.reboot_sitl()
+
+            # ensure we're seeing the second GPS:
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise NotAchievedException("Did not get good GPS2_RAW message")
+                m = self.mav.recv_match(type='GPS2_RAW', blocking=True, timeout=1)
+                self.progress("%s" % str(m))
+                if m is None:
+                    continue
+                if m.lat == 0:
+                    continue
+                break
+
+            # create a log we can expect blended data to appear in:
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(5)
+            self.disarm_vehicle()
+
+            # inspect generated log for messages:
+            dfreader = self.dfreader_for_current_onboard_log()
+            wanted = set([0, 1, 2])
+            while True:
+                m = dfreader.recv_match(type="GPS") # disarmed
+                if m is None:
+                    break
+                try:
+                    wanted.remove(m.I)
+                except KeyError:
+                    continue
+                if len(wanted) == 0:
+                    break
+
+            if len(wanted):
+                raise NotAchievedException("Did not get all three GPS types")
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_callisto(self):
         self.customise_SITL_commandline([
             "--defaults", ','.join(self.model_defaults_filepath('ArduCopter', 'Callisto'))
@@ -6499,6 +6562,10 @@ class AutoTestCopter(AutoTest):
             Test("EKFSource",
                  "Check EKF Source Prearms work",
                  self.test_ekf_source),
+
+            Test("GPSBlending",
+                 "Test GPS Blending",
+                 self.test_gps_blending),
 
             Test("DataFlash",
                  "Test DataFlash Block backend",
