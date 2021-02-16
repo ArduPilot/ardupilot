@@ -373,6 +373,7 @@ void NavEKF3_core::setAidingMode()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
+#if EK3_FEATURE_EXTERNAL_NAV
             } else if (readyToUseExtNav()) {
                 // we are commencing aiding using external nav
                 posResetSource = resetDataSource::EXTNAV;
@@ -386,6 +387,7 @@ void NavEKF3_core::setAidingMode()
                 hgtMea = -extNavDataDelayed.pos.z;
                 posDownObsNoise = sq(constrain_float(extNavDataDelayed.posErr, 0.1f, 10.0f));
                 ResetHeight();
+#endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
             // clear timeout flags as a precaution to avoid triggering any additional transitions
@@ -459,6 +461,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 // return true if the filter is ready to start using body frame odometry measurements
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
+#if EK3_FEATURE_BODY_ODOM
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
         !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
         // exit immediately if sources not configured to fuse external nav or wheel encoders
@@ -476,6 +479,9 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
     return (visoDataGood || wencDataGood)
             && tiltAlignComplete
             && delAngBiasLearned;
+#else
+    return false;
+#endif // EK3_FEATURE_BODY_ODOM
 }
 
 // return true if the filter to be ready to use gps
@@ -501,11 +507,15 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 // return true if the filter is ready to use external nav data
 bool NavEKF3_core::readyToUseExtNav(void) const
 {
+#if EK3_FEATURE_EXTERNAL_NAV
     if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) {
         return false;
     }
 
     return tiltAlignComplete && extNavDataToFuse;
+#else
+    return false;
+#endif // EK3_FEATURE_EXTERNAL_NAV
 }
 
 // return true if we should use the compass
@@ -528,12 +538,14 @@ bool NavEKF3_core::use_compass(void) const
 bool NavEKF3_core::using_external_yaw(void) const
 {
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
+        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
+    }
+#endif
     if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS || yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
         yaw_source == AP_NavEKF_Source::SourceYaw::GSF || !use_compass()) {
         return imuSampleTime_ms - last_gps_yaw_fusion_ms < 5000 || imuSampleTime_ms - lastSynthYawTime_ms < 5000;
-    }
-    if (yaw_source == AP_NavEKF_Source::SourceYaw::EXTNAV) {
-        return ((imuSampleTime_ms - last_extnav_yaw_fusion_ms < 5000) || (imuSampleTime_ms - lastSynthYawTime_ms < 5000));
     }
     return false;
 }

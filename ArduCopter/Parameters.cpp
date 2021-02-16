@@ -864,7 +864,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 6:Heli, 7:Tri, 8:SingleCopter, 9:CoaxCopter, 10:BiCopter, 11:Heli_Dual, 12:DodecaHexa, 13:HeliQuad, 14:Deca, 15:Scripting Matrix, 16:6DoF Scripting
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),
@@ -1241,24 +1241,20 @@ void Copter::convert_pid_parameters(void)
 #endif
 
     // scale PID gains
-    uint8_t table_size = ARRAY_SIZE(pid_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&pid_conversion_info[i], pid_scaler);
+    for (const auto &info : pid_conversion_info) {
+        AP_Param::convert_old_parameter(&info, pid_scaler);
     }
     // reduce IMAX into -1 ~ +1 range
-    table_size = ARRAY_SIZE(imax_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&imax_conversion_info[i], 1.0f/4500.0f);
+    for (const auto &info : imax_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 1.0f/4500.0f);
     }
     // convert angle controller gain and filter without scaling
-    table_size = ARRAY_SIZE(angle_and_filt_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&angle_and_filt_conversion_info[i], 1.0f);
+    for (const auto &info : angle_and_filt_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 1.0f);
     }
     // convert throttle parameters (multicopter only)
-    table_size = ARRAY_SIZE(throttle_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&throttle_conversion_info[i], 0.001f);
+    for (const auto &info : throttle_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 0.001f);
     }
     // convert RC_FEEL_RP to ATC_INPUT_TC
     const AP_Param::ConversionInfo rc_feel_rp_conversion_info = { Parameters::k_param_rc_feel_rp, 0, AP_PARAM_INT8, "ATC_INPUT_TC" };
@@ -1267,9 +1263,8 @@ void Copter::convert_pid_parameters(void)
         AP_Param::set_default_by_name(rc_feel_rp_conversion_info.new_name, (1.0f / (2.0f + rc_feel_rp_old.get() * 0.1f)));
     }
     // convert loiter parameters
-    table_size = ARRAY_SIZE(loiter_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&loiter_conversion_info[i], 1.0f);
+    for (const auto &info : loiter_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 1.0f);
     }
 
     // TradHeli default parameters
@@ -1416,7 +1411,7 @@ void Copter::convert_lgr_parameters(void)
 
 #if FRAME_CONFIG == HELI_FRAME
 // handle conversion of tradheli parameters from Copter-3.6 to Copter-3.7
-void Copter::convert_tradheli_parameters(void)
+void Copter::convert_tradheli_parameters(void) const
 {
     if (g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI) {
         // single heli conversion info
@@ -1590,7 +1585,7 @@ void Copter::convert_tradheli_parameters(void)
 }
 #endif
 
-void Copter::convert_fs_options_params(void)
+void Copter::convert_fs_options_params(void) const
 {
     // If FS_OPTIONS has already been configured and we don't change it.
     enum ap_var_type ptype;

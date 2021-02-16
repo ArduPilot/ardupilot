@@ -18,10 +18,10 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
-    float get_P() {
+    float get_P() const {
         return output_P;
     }
-    float get_I() {
+    float get_I() const {
         return integrator;
     }
 

@@ -321,7 +321,9 @@ void Scheduler::_timer_thread(void *arg)
         sched->_run_timers();
 
         // process any pending RC output requests
-        hal.rcout->timer_tick();
+        if (sched->is_system_initialized()) {
+            hal.rcout->timer_tick();
+        }
 
         if (sched->in_expected_delay()) {
             sched->watchdog_pat();

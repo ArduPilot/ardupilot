@@ -103,6 +103,7 @@ public:
         bool waiting_for_throw;   // true when copter is in THROW mode and waiting to detect the user hand launch
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
+        bool temp_cal_running;    // true if a temperature calibration is running
     };
 
     /// notify_events_type - bitmask of active events.
@@ -125,6 +126,9 @@ public:
         uint32_t tune_next              : 3;    // tuning switched to next parameter
         uint32_t tune_save              : 1;    // tuning saved parameters
         uint32_t tune_error             : 1;    // tuning controller error
+        uint32_t initiated_temp_cal     : 1;    // 1 when temperature calibration starts
+        uint32_t temp_cal_saved         : 1;    // 1 when temperature calibration was just saved
+        uint32_t temp_cal_failed        : 1;    // 1 when temperature calibration has just failed
     };
 
     // The notify flags and values are static to allow direct class access

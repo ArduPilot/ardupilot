@@ -2,7 +2,7 @@ class VehicleInfo(object):
 
     def __init__(self):
         """
-        make_target: option passed to make to create binaries.  Usually sitl, and "-debug" may be appended if -D is passed to sim_vehicle.py
+        waf_target: option passed to waf's --target to create binary
         default_params_filename: filename of default parameters file.  Taken to be relative to autotest dir.
         extra_mavlink_cmds: extra parameters that will be passed to mavproxy
         """
@@ -29,91 +29,75 @@ class VehicleInfo(object):
                 "extra_mavlink_cmds": "param fetch frame; param set FRAME 1;",
             },
             "bfx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-bfx.parm" ],
             },
             "djix": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-djix.parm" ],
             },
             "cwx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-cwx.parm" ],
             },
             "hexa": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-hexa.parm" ],
             },
             "hexa-cwx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
             "hexa-dji": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
              "octa-cwx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
             "octa-quad-cwx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
             "octa-quad": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octaquad.parm" ],
             },
             "octa": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-octa.parm" ],
             },
             "octa-dji": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
             "deca": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-deca.parm" ],
             },
             "deca-cwx": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
             "tri": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-tri.parm" ],
             },
             "y6": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-y6.parm" ],
             },
             "dodeca-hexa": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-dodecahexa.parm" ],
@@ -135,33 +119,27 @@ class VehicleInfo(object):
             },
             # HELICOPTER
             "heli": {
-                "make_target": "sitl-heli",
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
             },
             "heli-dual": {
-                "make_target": "sitl-heli-dual",
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": ["default_params/copter-heli.parm",
                                             "default_params/copter-heli-dual.parm"],
             },
             "heli-compound": {
-                "make_target": "sitl-heli-compound",
                 "waf_target": "bin/arducopter-heli",
             },
             "singlecopter": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm",
             },
             "coaxcopter": {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter-single.parm",
                                             "default_params/copter-coax.parm"],
             },
             "scrimmage-copter" : {
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
             },
@@ -170,7 +148,6 @@ class VehicleInfo(object):
             },
             "Callisto": {
                 "model": "octa-quad:@ROMFS/models/Callisto.json",
-                "make_target": "sitl",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "models/Callisto.param"],
@@ -182,27 +159,22 @@ class VehicleInfo(object):
         "frames": {
             # PLANE
             "quadplane-tilttri": {
-                "make_target": "sitl",
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tilttri.parm",
             },
             "quadplane-tilttrivec": {
-                "make_target": "sitl",
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tilttrivec.parm",
             },
             "quadplane-tilthvec": {
-                "make_target": "sitl",
                 "waf_target": "bin/arduplane",
                 "default_params_filename": ["default_params/plane.parm", "default_params/quadplane-tilthvec.parm"],
             },
             "quadplane-tri": {
-                "make_target": "sitl",
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-tri.parm",
             },
             "quadplane-cl84" : {
-                "make_target" : "sitl",
                 "waf_target" : "bin/arduplane",
                 "default_params_filename": "default_params/quadplane-cl84.parm",
             },
@@ -257,7 +229,6 @@ class VehicleInfo(object):
                 "default_params_filename": "default_params/plane-jsbsim.parm",
             },
             "scrimmage-plane" : {
-                "make_target": "sitl",
                 "waf_target": "bin/arduplane",
                 "default_params_filename": "default_params/plane.parm",
             },
@@ -376,14 +347,11 @@ class VehicleInfo(object):
         if (ret["model"].find("xplane") != -1 or ret["model"].find("flightaxis") != -1):
             ret["sitl-port"] = False
 
-        if "make_target" not in ret:
-            ret["make_target"] = "sitl"
 
         if "waf_target" not in ret:
             ret["waf_target"] = self.default_waf_target(vehicle)
 
         if opts.build_target is not None:
-            ret["make_target"] = opts.build_target
             ret["waf_target"] = opts.build_target
 
         return ret

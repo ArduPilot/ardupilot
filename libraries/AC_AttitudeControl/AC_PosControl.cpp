@@ -568,7 +568,7 @@ void AC_PosControl::run_z_controller()
     }
 
     // calculate _vel_target.z using from _pos_error.z using sqrt controller
-    _vel_target.z = AC_AttitudeControl::sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
+    _vel_target.z = sqrt_controller(_pos_error.z, _p_pos_z.kP(), _accel_z_cms, _dt);
 
     // check speed limits
     // To-Do: check these speed limits here or in the pos->rate controller
@@ -629,11 +629,10 @@ void AC_PosControl::run_z_controller()
     _accel_target.z += _accel_desired.z;
 
 
-    // the following section calculates a desired throttle needed to achieve the acceleration target
-    float z_accel_meas;         // actual acceleration
 
     // Calculate Earth Frame Z acceleration
-    z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+    const float z_accel_meas = get_z_accel_cmss();
+
 
     // ensure imax is always large enough to overpower hover throttle
     if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
@@ -902,8 +901,10 @@ void AC_PosControl::write_log()
     float accel_x, accel_y;
     lean_angles_to_accel(accel_x, accel_y);
 
-   AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
-
+    AP::logger().Write_PSC(get_pos_target(), _inav.get_position(), get_vel_target(), _inav.get_velocity(), get_accel_target(), accel_x, accel_y);
+    AP::logger().Write_PSCZ(get_pos_target().z, _inav.get_position().z,
+                            get_desired_velocity().z, get_vel_target().z, _inav.get_velocity().z,
+                            _accel_desired.z, get_accel_target().z, get_z_accel_cmss(), _attitude_control.get_throttle_in());
 }
 
 /// init_vel_controller_xyz - initialise the velocity controller - should be called once before the caller attempts to use the controller
@@ -1037,7 +1038,7 @@ void AC_PosControl::run_xy_controller(float dt)
             _pos_target.y = curr_pos.y + _pos_error.y;
         }
 
-        _vel_target = sqrt_controller(_pos_error, kP, _accel_cms);
+        _vel_target = sqrt_controller_3D(_pos_error, kP, _accel_cms);
     }
 
     // add velocity feed-forward
@@ -1114,12 +1115,9 @@ void AC_PosControl::run_xy_controller(float dt)
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
 void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const
 {
-    float accel_right, accel_forward;
-
     // rotate accelerations into body forward-right frame
-    // todo: this should probably be based on the desired heading not the current heading
-    accel_forward = accel_x_cmss * _ahrs.cos_yaw() + accel_y_cmss * _ahrs.sin_yaw();
-    accel_right = -accel_x_cmss * _ahrs.sin_yaw() + accel_y_cmss * _ahrs.cos_yaw();
+    const float accel_forward = accel_x_cmss * _ahrs.cos_yaw() + accel_y_cmss * _ahrs.sin_yaw();
+    const float accel_right = -accel_x_cmss * _ahrs.sin_yaw() + accel_y_cmss * _ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
     pitch_target = atanf(-accel_forward / (GRAVITY_MSS * 100.0f)) * (18000.0f / M_PI);
@@ -1206,20 +1204,8 @@ void AC_PosControl::check_for_ekf_z_reset()
     }
 }
 
-/// limit vector to a given length, returns true if vector was limited
-bool AC_PosControl::limit_vector_length(float& vector_x, float& vector_y, float max_length)
-{
-    float vector_length = norm(vector_x, vector_y);
-    if ((vector_length > max_length) && is_positive(vector_length)) {
-        vector_x *= (max_length / vector_length);
-        vector_y *= (max_length / vector_length);
-        return true;
-    }
-    return false;
-}
-
 /// Proportional controller with piecewise sqrt sections to constrain second derivative
-Vector3f AC_PosControl::sqrt_controller(const Vector3f& error, float p, float second_ord_lim)
+Vector3f AC_PosControl::sqrt_controller_3D(const Vector3f& error, float p, float second_ord_lim)
 {
     if (second_ord_lim < 0.0f || is_zero(second_ord_lim) || is_zero(p)) {
         return Vector3f(error.x * p, error.y * p, error.z);

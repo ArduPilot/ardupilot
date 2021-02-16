@@ -7,6 +7,8 @@ bool ModeRTL::_enter()
     plane.do_RTL(plane.get_RTL_altitude());
     plane.rtl.done_climb = false;
 
+    switch_QRTL();
+
     return true;
 }
 
@@ -22,6 +24,8 @@ void ModeRTL::update()
           until we have climbed by RTL_CLIMB_MIN meters
          */
         if (!plane.rtl.done_climb && (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min) {
+            plane.prev_WP_loc = plane.current_loc;
+            plane.setup_glide_slope();
             plane.rtl.done_climb = true;
         }
         if (!plane.rtl.done_climb) {
@@ -33,22 +37,8 @@ void ModeRTL::update()
 
 void ModeRTL::navigate()
 {
-    uint16_t qrtl_radius = abs(plane.g.rtl_radius);
-    if (qrtl_radius == 0) {
-        qrtl_radius = abs(plane.aparm.loiter_radius);
-    }
 
-    if (plane.quadplane.available() && plane.quadplane.rtl_mode == 1 &&
-        (plane.nav_controller->reached_loiter_target() ||
-         plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
-         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) &&
-        AP_HAL::millis() - plane.last_mode_change_ms > 1000) {
-        /*
-          for a quadplane in RTL mode we switch to QRTL when we
-          are within the maximum of the stopping distance and the
-          RTL_RADIUS
-         */
-        plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
+    if ((AP_HAL::millis() - plane.last_mode_change_ms > 1000) && switch_QRTL()) {
         return;
     }
 
@@ -88,3 +78,30 @@ void ModeRTL::navigate()
     plane.update_loiter(radius);
 }
 
+
+// Switch to QRTL if enabled and within radius
+bool ModeRTL::switch_QRTL()
+{
+    if (!plane.quadplane.available() || (plane.quadplane.rtl_mode != 1)) {
+        return false;
+    }
+
+    uint16_t qrtl_radius = abs(plane.g.rtl_radius);
+    if (qrtl_radius == 0) {
+        qrtl_radius = abs(plane.aparm.loiter_radius);
+    }
+
+    if (plane.nav_controller->reached_loiter_target() ||
+         plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
+         plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
+        /*
+          for a quadplane in RTL mode we switch to QRTL when we
+          are within the maximum of the stopping distance and the
+          RTL_RADIUS
+         */
+        plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
+        return true;
+    }
+
+    return false;
+}

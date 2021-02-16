@@ -191,6 +191,7 @@ public:
         EKF_POS_SOURCE =      90, // change EKF position source between primary, secondary and tertiary sources
         ARSPD_CALIBRATE=      91, // calibrate airspeed ratio 
         FBWA =                92, // Fly-By-Wire-A
+        RELOCATE_MISSION =    93, // used in separate branch MISSION_RELATIVE
 
         // entries from 100 onwards are expected to be developer
         // options used for testing
@@ -239,11 +240,20 @@ public:
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
+    // pwm value above which we condider that Radio min value is invalid
+    static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
+    // pwm value under which we condider that Radio max value is invalid
+    static const uint16_t RC_CALIB_MAX_LIMIT_PWM = 1700;
+
+    // pwm value above which the switch/button will be invoked:
+    static const uint16_t AUX_SWITCH_PWM_TRIGGER_HIGH = 1800;
+    // pwm value below which the switch/button will be disabled:
+    static const uint16_t AUX_SWITCH_PWM_TRIGGER_LOW = 1200;
 
     // pwm value above which the option will be invoked:
-    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1800;
+    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1700;
     // pwm value below which the option will be disabled:
-    static const uint16_t AUX_PWM_TRIGGER_LOW = 1200;
+    static const uint16_t AUX_PWM_TRIGGER_LOW = 1300;
 
 protected:
 
@@ -403,6 +413,11 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::FPORT_PAD));
     }
 
+    // returns true if we should pass through data for crsf telemetry
+    bool crsf_custom_telemetry(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::CRSF_CUSTOM_TELEMETRY));
+    }
+
     // should a channel reverse option affect aux switches
     bool switch_reverse_allowed(void) const {
         return get_singleton() != nullptr && (_options & uint32_t(Option::ALLOW_SWITCH_REV));
@@ -464,14 +479,15 @@ public:
 protected:
 
     enum class Option {
-        IGNORE_RECEIVER       = (1 << 0), // RC receiver modules
-        IGNORE_OVERRIDES      = (1 << 1), // MAVLink overrides
-        IGNORE_FAILSAFE       = (1 << 2), // ignore RC failsafe bits
-        FPORT_PAD             = (1 << 3), // pad fport telem output
-        LOG_DATA              = (1 << 4), // log rc input bytes
-        ARMING_CHECK_THROTTLE = (1 << 5), // run an arming check for neutral throttle
-        ARMING_SKIP_CHECK_RPY = (1 << 6), // skip the an arming checks for the roll/pitch/yaw channels
-        ALLOW_SWITCH_REV      = (1 << 7), // honor the reversed flag on switches
+        IGNORE_RECEIVER         = (1U << 0), // RC receiver modules
+        IGNORE_OVERRIDES        = (1U << 1), // MAVLink overrides
+        IGNORE_FAILSAFE         = (1U << 2), // ignore RC failsafe bits
+        FPORT_PAD               = (1U << 3), // pad fport telem output
+        LOG_DATA                = (1U << 4), // log rc input bytes
+        ARMING_CHECK_THROTTLE   = (1U << 5), // run an arming check for neutral throttle
+        ARMING_SKIP_CHECK_RPY   = (1U << 6), // skip the an arming checks for the roll/pitch/yaw channels
+        ALLOW_SWITCH_REV        = (1U << 7), // honor the reversed flag on switches
+        CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
     };
 
     void new_override_received() {

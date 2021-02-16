@@ -120,8 +120,8 @@ void AC_AttitudeControl_TS::input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool 
     //    _attitude_target_euler_angle.y = euler_pitch;
 
     // Set rate feedforward requests to zero
-    _attitude_target_euler_rate = Vector3f(0.0f, 0.0f, 0.0f);
-    _attitude_target_ang_vel = Vector3f(0.0f, 0.0f, 0.0f);
+    _attitude_target_euler_rate.zero();
+    _attitude_target_ang_vel.zero();
 
     // Compute attitude error
     error_quat = attitude_vehicle_quat.inverse() * _attitude_target_quat;

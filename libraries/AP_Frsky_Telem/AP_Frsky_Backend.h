@@ -19,6 +19,16 @@ public:
     virtual bool init();
     virtual void send() = 0;
 
+    typedef union {
+        struct PACKED {
+            uint8_t sensor;
+            uint8_t frame;
+            uint16_t appid;
+            uint32_t data;
+        };
+        uint8_t raw[8];
+    } sport_packet_t;
+
     // SPort is at 57600, D overrides this
     virtual uint32_t initial_baud() const
     {
@@ -26,7 +36,7 @@ public:
     }
 
     // get next telemetry data for external consumers of SPort data
-    virtual bool get_telem_data(uint8_t &frame, uint16_t &appid, uint32_t &data)
+    virtual bool get_telem_data(sport_packet_t* packet_array, uint8_t &packet_count, const uint8_t max_size)
     {
         return false;
     }
@@ -48,6 +58,7 @@ protected:
 
     void calc_nav_alt(void);
     void calc_gps_position(void);
+    bool calc_rpm(const uint8_t instance, int32_t &value) const;
 
     float get_vspeed_ms(void);
 
@@ -98,6 +109,7 @@ protected:
     static const uint8_t BYTESTUFF_D               = 0x5D;
 
     // FrSky data IDs;
+    static const uint16_t RPM_LAST_ID               = 0x050F;
     static const uint16_t GPS_LONG_LATI_FIRST_ID    = 0x0800;
     static const uint16_t DIY_FIRST_ID              = 0x5000;
 
@@ -111,6 +123,7 @@ protected:
     static const uint8_t SENSOR_ID_VARIO           = 0x00; // Sensor ID  0
     static const uint8_t SENSOR_ID_FAS             = 0x22; // Sensor ID  2
     static const uint8_t SENSOR_ID_GPS             = 0x83; // Sensor ID  3
+    static const uint8_t SENSOR_ID_RPM             = 0xE4; // Sensor ID  4
     static const uint8_t SENSOR_ID_SP2UR           = 0xC6; // Sensor ID  6
     static const uint8_t SENSOR_ID_27              = 0x1B; // Sensor ID 27
 

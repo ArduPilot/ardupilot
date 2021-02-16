@@ -71,6 +71,7 @@ void MissionItemProtocol::handle_mission_count(
     if (packet.count > max_items()) {
         // FIXME: different items take up different storage space!
         send_mission_ack(_link, msg, MAV_MISSION_NO_SPACE);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Only %u items are supported", (unsigned)max_items());
         return;
     }
 

@@ -39,7 +39,7 @@ void AC_AttitudeControl::control_monitor_update(void)
 /*
   log a CRTL message
  */
-void AC_AttitudeControl::control_monitor_log(void)
+void AC_AttitudeControl::control_monitor_log(void) const
 {
 // @LoggerMessage: CTRL
 // @Description: Attitude Control oscillation monitor diagnostics

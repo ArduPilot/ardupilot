@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
+#include <AP_HAL/Semaphores.h>
 #include "shared_dma.h"
 #include "ch.h"
 #include "hal.h"
@@ -199,6 +200,12 @@ private:
       RECV_COMPLETE = 4
     };
 
+    struct PACKED SerialLed {
+      uint8_t red;
+      uint8_t green;
+      uint8_t blue;
+    };
+
     /*
       DShot handling
      */
@@ -248,10 +255,16 @@ private:
         uint32_t dshot_pulse_time_us;
         uint32_t dshot_pulse_send_time_us;
         virtual_timer_t dma_timeout;
-        uint8_t serial_nleds;
+
+        // serial LED support
+        volatile uint8_t serial_nleds;
         uint8_t clock_mask;
-        bool serial_led_pending;
-        bool prepared_send;
+        volatile bool serial_led_pending;
+        volatile bool prepared_send;
+        HAL_Semaphore serial_led_mutex;
+        // structure to hold serial LED data until it can be transferred
+        // to the DMA buffer
+        SerialLed* serial_led_data[4];
 
         // serial output
         struct {
@@ -412,6 +425,8 @@ private:
     // iomcu output mode (pwm, oneshot or oneshot125)
     enum output_mode iomcu_mode = MODE_PWM_NORMAL;
 
+    volatile bool _initialised;
+
     bool is_bidir_dshot_enabled() const { return _bdshot.mask != 0; }
 
     // find a channel group given a channel number
@@ -446,7 +461,9 @@ private:
       return true if send was successful
     */
     bool serial_led_send(pwm_group &group);
-    bool serial_led_pending;
+    void serial_led_set_single_rgb_data(pwm_group& group, uint8_t idx, uint8_t led, uint8_t red, uint8_t green, uint8_t blue);
+    void fill_DMA_buffer_serial_led(pwm_group& group);
+    volatile bool serial_led_pending;
 
     void dma_allocate(Shared_DMA *ctx);
     void dma_deallocate(Shared_DMA *ctx);

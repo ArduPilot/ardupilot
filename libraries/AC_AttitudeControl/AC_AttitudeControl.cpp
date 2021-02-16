@@ -212,6 +212,11 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 // Command a Quaternion attitude with feedforward and smoothing
 void AC_AttitudeControl::input_quaternion(Quaternion attitude_desired_quat)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // this function is not currently used, this is a reminder that we need to add a 6DoF implementation
+    AP_HAL::panic("input_quaternion not implemented AC_AttitudeControl_Multi_6DoF");
+#endif
+
     // calculate the attitude target euler angles
     _attitude_target_quat.to_euler(_attitude_target_euler_angle.x, _attitude_target_euler_angle.y, _attitude_target_euler_angle.z);
 
@@ -259,7 +264,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
 
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
@@ -310,7 +315,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw(float euler_roll_angle
 
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
 
         // When acceleration limiting and feedforward are enabled, the sqrt controller is used to compute an euler
         // angular velocity that will cause the euler angle to smoothly stop at the input angle with limited deceleration
@@ -365,7 +370,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
 
     if (_rate_bf_ff_enabled) {
         // translate the roll pitch and yaw acceleration limits to the euler axis
-        Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
+        const Vector3f euler_accel = euler_accel_limit(_attitude_target_euler_angle, Vector3f(get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()));
 
         // When acceleration limiting is enabled, the input shaper constrains angular acceleration, slewing
         // the output rate towards the input rate.
@@ -547,11 +552,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Compute the angular velocity target from the attitude error
     _rate_target_ang_vel = update_ang_vel_target_from_att_error(attitude_error_vector);
 
-    // Add feedforward term that attempts to ensure that roll and pitch errors rotate with the body frame rather than the reference frame.
-    // todo: this should probably be a matrix that couples yaw as well.
-    _rate_target_ang_vel.x += constrain_float(attitude_error_vector.y, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
-    _rate_target_ang_vel.y += -constrain_float(attitude_error_vector.x, -M_PI / 4, M_PI / 4) * _ahrs.get_gyro().z;
-
+    // ensure angular velocity does not go over configured limits
     ang_vel_limit(_rate_target_ang_vel, radians(_ang_vel_roll_max), radians(_ang_vel_pitch_max), radians(_ang_vel_yaw_max));
 
     // Add the angular velocity feedforward, rotated into vehicle frame
@@ -592,14 +593,14 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the att_from_quat quaternion to the att_to_quat quaternion.
 // The first rotation corrects the thrust vector and the second rotation corrects the heading vector.
-void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat, const Quaternion& att_from_quat, Vector3f& att_diff_angle, float& thrust_vec_dot)
+void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target_quat, const Quaternion& attitude_vehicle_quat, Vector3f& attitude_error_vector, float& thrust_error_angle)
 {
     Matrix3f att_to_rot_matrix; // rotation from the target body frame to the inertial frame.
-    att_to_quat.rotation_matrix(att_to_rot_matrix);
+    attitude_target_quat.rotation_matrix(att_to_rot_matrix);
     Vector3f att_to_thrust_vec = att_to_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
 
     Matrix3f att_from_rot_matrix; // rotation from the current body frame to the inertial frame.
-    att_from_quat.rotation_matrix(att_from_rot_matrix);
+    attitude_vehicle_quat.rotation_matrix(att_from_rot_matrix);
     Vector3f att_from_thrust_vec = att_from_rot_matrix * Vector3f(0.0f, 0.0f, 1.0f);
 
     // the dot product is used to calculate the current lean angle for use of external functions
@@ -609,44 +610,44 @@ void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& att_to_quat,
     Vector3f thrust_vec_cross = att_from_thrust_vec % att_to_thrust_vec;
 
     // the dot product is used to calculate the angle between the target and desired thrust vectors
-    thrust_vec_dot = acosf(constrain_float(att_from_thrust_vec * att_to_thrust_vec, -1.0f, 1.0f));
+    thrust_error_angle = acosf(constrain_float(att_from_thrust_vec * att_to_thrust_vec, -1.0f, 1.0f));
 
     // Normalize the thrust rotation vector
     float thrust_vector_length = thrust_vec_cross.length();
-    if (is_zero(thrust_vector_length) || is_zero(thrust_vec_dot)) {
+    if (is_zero(thrust_vector_length) || is_zero(thrust_error_angle)) {
         thrust_vec_cross = Vector3f(0, 0, 1);
-        thrust_vec_dot = 0.0f;
+        thrust_error_angle = 0.0f;
     } else {
         thrust_vec_cross /= thrust_vector_length;
     }
     Quaternion thrust_vec_correction_quat;
-    thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_vec_dot);
+    thrust_vec_correction_quat.from_axis_angle(thrust_vec_cross, thrust_error_angle);
 
     // Rotate thrust_vec_correction_quat to the att_from frame
-    thrust_vec_correction_quat = att_from_quat.inverse() * thrust_vec_correction_quat * att_from_quat;
+    thrust_vec_correction_quat = attitude_vehicle_quat.inverse() * thrust_vec_correction_quat * attitude_vehicle_quat;
 
     // calculate the remaining rotation required after thrust vector is rotated transformed to the att_from frame
-    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse() * att_from_quat.inverse() * att_to_quat;
+    Quaternion yaw_vec_correction_quat = thrust_vec_correction_quat.inverse() * attitude_vehicle_quat.inverse() * attitude_target_quat;
 
     // calculate the angle error in x and y.
     Vector3f rotation;
     thrust_vec_correction_quat.to_axis_angle(rotation);
-    att_diff_angle.x = rotation.x;
-    att_diff_angle.y = rotation.y;
+    attitude_error_vector.x = rotation.x;
+    attitude_error_vector.y = rotation.y;
 
     // calculate the angle error in z (x and y should be zero here).
     yaw_vec_correction_quat.to_axis_angle(rotation);
-    att_diff_angle.z = rotation.z;
+    attitude_error_vector.z = rotation.z;
 
     // Todo: Limit roll an pitch error based on output saturation and maximum error.
 
     // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
     // Currently the limit is based on the maximum acceleration using the linear part of the SQRT controller.
     // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
-    if (!is_zero(_p_angle_yaw.kP()) && fabsf(att_diff_angle.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
-        att_diff_angle.z = constrain_float(wrap_PI(att_diff_angle.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
-        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f, 0.0f, att_diff_angle.z));
-        att_to_quat = att_from_quat * thrust_vec_correction_quat * yaw_vec_correction_quat;
+    if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error_vector.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
+        attitude_error_vector.z = constrain_float(wrap_PI(attitude_error_vector.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
+        yaw_vec_correction_quat.from_axis_angle(Vector3f(0.0f, 0.0f, attitude_error_vector.z));
+        attitude_target_quat = attitude_vehicle_quat * thrust_vec_correction_quat * yaw_vec_correction_quat;
     }
 }
 
@@ -845,69 +846,6 @@ float AC_AttitudeControl::get_althold_lean_angle_max() const
 {
     // convert to centi-degrees for public interface
     return MAX(ToDeg(_althold_lean_angle_max), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN) * 100.0f;
-}
-
-// Proportional controller with piecewise sqrt sections to constrain second derivative
-float AC_AttitudeControl::sqrt_controller(float error, float p, float second_ord_lim, float dt)
-{
-    float correction_rate;
-    if (is_negative(second_ord_lim) || is_zero(second_ord_lim)) {
-        // second order limit is zero or negative.
-        correction_rate = error * p;
-    } else if (is_zero(p)) {
-        // P term is zero but we have a second order limit.
-        if (is_positive(error)) {
-            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error));
-        } else if (is_negative(error)) {
-            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error));
-        } else {
-            correction_rate = 0.0f;
-        }
-    } else {
-        // Both the P and second order limit have been defined.
-        float linear_dist = second_ord_lim / sq(p);
-        if (error > linear_dist) {
-            correction_rate = safe_sqrt(2.0f * second_ord_lim * (error - (linear_dist / 2.0f)));
-        } else if (error < -linear_dist) {
-            correction_rate = -safe_sqrt(2.0f * second_ord_lim * (-error - (linear_dist / 2.0f)));
-        } else {
-            correction_rate = error * p;
-        }
-    }
-    if (!is_zero(dt)) {
-        // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
-        return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
-    } else {
-        return correction_rate;
-    }
-}
-
-// Inverse proportional controller with piecewise sqrt sections to constrain second derivative
-float AC_AttitudeControl::stopping_point(float first_ord_mag, float p, float second_ord_lim)
-{
-    if (is_positive(second_ord_lim) && !is_zero(second_ord_lim) && is_zero(p)) {
-        return (first_ord_mag * first_ord_mag) / (2.0f * second_ord_lim);
-    } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && !is_zero(p)) {
-        return first_ord_mag / p;
-    } else if ((is_negative(second_ord_lim) || is_zero(second_ord_lim)) && is_zero(p)) {
-        return 0.0f;
-    }
-
-    // calculate the velocity at which we switch from calculating the stopping point using a linear function to a sqrt function
-    float linear_velocity = second_ord_lim / p;
-
-    if (fabsf(first_ord_mag) < linear_velocity) {
-        // if our current velocity is below the cross-over point we use a linear function
-        return first_ord_mag / p;
-    } else {
-        float linear_dist = second_ord_lim / sq(p);
-        float overshoot = (linear_dist * 0.5f) + sq(first_ord_mag) / (2.0f * second_ord_lim);
-        if (is_positive(first_ord_mag)) {
-            return overshoot;
-        } else {
-            return -overshoot;
-        }
-    }
 }
 
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps

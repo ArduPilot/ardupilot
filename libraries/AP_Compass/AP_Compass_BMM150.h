@@ -45,8 +45,8 @@ private:
     bool init();
     void _update();
     bool _load_trim_values();
-    int16_t _compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2);
-    int16_t _compensate_z(int16_t z, uint32_t rhall);
+    int16_t _compensate_xy(int16_t xy, uint32_t rhall, int32_t txy1, int32_t txy2) const;
+    int16_t _compensate_z(int16_t z, uint32_t rhall) const;
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 

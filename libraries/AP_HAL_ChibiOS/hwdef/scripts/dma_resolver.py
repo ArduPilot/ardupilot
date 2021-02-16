@@ -11,11 +11,15 @@ dma_map = None
 
 debug = False
 
-def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, recurse=False):
+def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot_use_stream):
     global ignore_list
+    if debug:
+        print('............ Checking ', periph, dma_stream, 'without', cannot_use_stream)
     for other_periph in curr_dict:
         if other_periph != periph:
             if curr_dict[other_periph] == dma_stream:
+                if debug:
+                    print('.................... Collision', other_periph, dma_stream)
                 ignore_list.append(periph)
                 check_str = "%s(%d,%d) %s(%d,%d)" % (
                     other_periph, curr_dict[other_periph][0],
@@ -30,11 +34,19 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, recurs
                 #check if we can resolve by swapping with other periphs
                 for streamchan in dma_map[other_periph]:
                     stream = (streamchan[0], streamchan[1])
-                    if stream != curr_dict[other_periph] and check_possibility(other_periph, stream, curr_dict, dma_map, check_list, False):
-                        if not recurse:
-                            curr_dict[other_periph] = stream
+
+                    if stream != curr_dict[other_periph] and \
+                        stream not in cannot_use_stream and \
+                        check_possibility(other_periph, stream, curr_dict, dma_map, check_list, cannot_use_stream+[(dma_stream)]):
+                        curr_dict[other_periph] = stream
+                        if debug:
+                            print ('....................... Resolving', other_periph, stream)
                         return True
+                if debug:
+                    print ('....................... UnSolved !!!!!!!!', periph, dma_stream)                    
                 return False
+    if debug:
+        print ('....................... Solved ..........', periph, dma_stream)    
     return True
 
 def can_share(periph, noshare_list):
@@ -270,11 +282,18 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             print("Unknown peripheral function %s in DMA map for %s" %
                   (periph, mcu_type))
             sys.exit(1)
+
+        if debug:
+            print('\n\n.....Starting lookup for', periph)
         for streamchan in dma_map[periph]:
+            if debug:
+                print('........Possibility for', periph, streamchan)
             stream = (streamchan[0], streamchan[1])
             if check_possibility(periph, stream, curr_dict, dma_map,
-                                 check_list):
+                                 check_list, []):
                 curr_dict[periph] = stream
+                if debug:
+                    print ('....................... Setting', periph, stream)
                 assigned = True
                 break
         if assigned == False:

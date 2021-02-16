@@ -103,9 +103,6 @@ float AP_Proximity_RPLidarA2::distance_min() const
 
 bool AP_Proximity_RPLidarA2::initialise()
 {
-    // initialise boundary
-    init_boundary();
-
     if (!_initialised) {
         reset_rplidar();            // set to a known state
         Debug(1, "LIDAR initialised");
@@ -315,27 +312,30 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg)) {
-                    const uint8_t sector = convert_angle_to_sector(angle_deg);
-                    if (distance_m > distance_min()) {
-                        if (_last_sector == sector) {
-                            if (_distance_m_last > distance_m) {
-                                _distance_m_last = distance_m;
-                                _angle_deg_last  = angle_deg;
-                            }
+                    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+
+                    if (face != _last_face) {
+                        // distance is for a new face, the previous one can be updated now
+                        if (_last_distance_valid) {
+                            boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
                         } else {
-                            // a new sector started, the previous one can be updated now
-                            _angle[_last_sector] = _angle_deg_last;
-                            _distance[_last_sector] = _distance_m_last;
-                            _distance_valid[_last_sector] = true;
-                            // update boundary used for avoidance
-                            update_boundary_for_sector(_last_sector, true);
-                            // initialize the new sector
-                            _last_sector     = sector;
-                            _distance_m_last = distance_m;
-                            _angle_deg_last  = angle_deg;
+                            // reset distance from last face
+                            boundary.reset_face(face);
                         }
-                    } else {
-                        _distance_valid[sector] = false;
+
+                        // initialize the new face
+                        _last_face = face;
+                        _last_distance_valid = false;
+                    }
+                    if (distance_m > distance_min()) {
+                        // update shortest distance
+                        if (!_last_distance_valid || (distance_m < _last_distance_m)) {
+                            _last_distance_m = distance_m;
+                            _last_distance_valid = true;
+                            _last_angle_deg = angle_deg;
+                        }
+                        // update OA database
+                        database_push(_last_angle_deg, _last_distance_m);
                     }
                 }
             } else {

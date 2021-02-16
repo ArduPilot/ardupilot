@@ -1214,6 +1214,7 @@ def write_UART_config(f):
         tx_line = make_line(dev + '_TX')
         rx_line = make_line(dev + '_RX')
         rts_line = make_line(dev + '_RTS')
+        cts_line = make_line(dev + '_CTS')
         if rts_line != "0":
             have_rts_cts = True
             f.write('#define HAL_HAVE_RTSCTS_SERIAL%u\n' % uart_serial_num[dev])
@@ -1234,10 +1235,10 @@ def write_UART_config(f):
                 "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SD%u, %u, false, "
                 % (dev, n, n))
             if mcu_series.startswith("STM32F1"):
-                f.write("%s, %s, %s, " % (tx_line, rx_line, rts_line))
+                f.write("%s, %s, %s, %s, " % (tx_line, rx_line, rts_line, cts_line))
             else:
-                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, %s, %s, " %
-                        (dev, dev, tx_line, rx_line, rts_line))
+                f.write("STM32_%s_RX_DMA_CONFIG, STM32_%s_TX_DMA_CONFIG, %s, %s, %s, %s, " %
+                        (dev, dev, tx_line, rx_line, rts_line, cts_line))
 
             # add inversion pins, if any
             f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
@@ -2053,27 +2054,30 @@ def process_line(line):
     elif a[0] == 'ROMFS_WILDCARD':
         romfs_wildcard(a[1])
     elif a[0] == 'undef':
-        print("Removing %s" % a[1])
-        config.pop(a[1], '')
-        bytype.pop(a[1], '')
-        bylabel.pop(a[1], '')
-        # also remove all occurences of defines in previous lines if any
-        for line in alllines[:]:
-            if line.startswith('define') and a[1] == line.split()[1]:
-                alllines.remove(line)
-        newpins = []
-        for pin in allpins:
-            if pin.type == a[1] or pin.label == a[1] or pin.portpin == a[1]:
-                portmap[pin.port][pin.pin] = generic_pin(pin.port, pin.pin, None, 'INPUT', [])
-                continue
-            newpins.append(pin)
-        allpins = newpins
-        if a[1] == 'IMU':
-            imu_list = []
-        if a[1] == 'COMPASS':
-            compass_list = []
-        if a[1] == 'BARO':
-            baro_list = []
+        for u in a[1:]:
+            print("Removing %s" % u)
+            config.pop(u, '')
+            bytype.pop(u, '')
+            bylabel.pop(u, '')
+            # also remove all occurences of defines in previous lines if any
+            for line in alllines[:]:
+                if line.startswith('define') and u == line.split()[1]:
+                    alllines.remove(line)
+            newpins = []
+            for pin in allpins:
+                if pin.type == u or pin.label == u or pin.portpin == u:
+                    if pin.label is not None:
+                        bylabel.pop(pin.label, '')
+                    portmap[pin.port][pin.pin] = generic_pin(pin.port, pin.pin, None, 'INPUT', [])
+                    continue
+                newpins.append(pin)
+            allpins = newpins
+            if u == 'IMU':
+                imu_list = []
+            if u == 'COMPASS':
+                compass_list = []
+            if u == 'BARO':
+                baro_list = []
     elif a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
@@ -2088,6 +2092,7 @@ def process_file(filename):
     except Exception:
         error("Unable to open file %s" % filename)
     for line in f.readlines():
+        line = line.split('#')[0] # ensure we discard the comments
         line = line.strip()
         if len(line) == 0 or line[0] == '#':
             continue

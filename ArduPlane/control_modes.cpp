@@ -139,14 +139,14 @@ void Plane::read_control_switch()
 
 #if PARACHUTE == ENABLED
     if (g.parachute_channel > 0) {
-        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= 1700) {
+        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
             parachute_manual_release();
         }
     }
 #endif
 }
 
-uint8_t Plane::readSwitch(void)
+uint8_t Plane::readSwitch(void) const
 {
     uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition

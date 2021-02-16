@@ -342,6 +342,9 @@ protected:
     //          init_takeoff
     void run_z_controller();
 
+    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
+    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f; }
+
     ///
     /// xy controller private methods
     ///
@@ -362,11 +365,8 @@ protected:
     /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
     float calc_leash_length(float speed_cms, float accel_cms, float kP) const;
 
-    /// limit vector to a given length, returns true if vector was limited
-    static bool limit_vector_length(float& vector_x, float& vector_y, float max_length);
-
     /// Proportional controller with piecewise sqrt sections to constrain second derivative
-    static Vector3f sqrt_controller(const Vector3f& error, float p, float second_ord_lim);
+    static Vector3f sqrt_controller_3D(const Vector3f& error, float p, float second_ord_lim);
 
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();

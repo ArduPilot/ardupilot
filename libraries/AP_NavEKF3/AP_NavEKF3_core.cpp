@@ -116,6 +116,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.opticalflow_enabled() && !storedOF.init(flow_buffer_length)) {
         return false;
     }
+#if EK3_FEATURE_BODY_ODOM
     if(frontend->sources.ext_nav_enabled() && !storedBodyOdm.init(obs_buffer_length)) {
         return false;
     }
@@ -123,6 +124,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         // initialise to same length of IMU to allow for multiple wheel sensors
         return false;
     }
+#endif // EK3_FEATURE_BODY_ODOM
     if(frontend->sources.gps_yaw_enabled() && !storedYawAng.init(obs_buffer_length)) {
         return false;
     }
@@ -134,6 +136,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
     }
+#if EK3_FEATURE_EXTERNAL_NAV
     if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
         return false;
     }
@@ -143,15 +146,18 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
         return false;
     }
+#endif // EK3_FEATURE_EXTERNAL_NAV
     if(!storedIMU.init(imu_buffer_length)) {
         return false;
     }
     if(!storedOutput.init(imu_buffer_length)) {
         return false;
     }
+#if EK3_FEATURE_DRAG_FUSION
     if (!storedDrag.init(obs_buffer_length)) {
         return false;
     }
+#endif
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
                     (unsigned)imu_index,
@@ -372,9 +378,11 @@ void NavEKF3_core::InitialiseVariables()
     bcnPosOffsetNED.zero();
     bcnOriginEstInit = false;
 
+#if EK3_FEATURE_BODY_ODOM
     // body frame displacement fusion
     memset((void *)&bodyOdmDataNew, 0, sizeof(bodyOdmDataNew));
     memset((void *)&bodyOdmDataDelayed, 0, sizeof(bodyOdmDataDelayed));
+#endif
     lastbodyVelPassTime_ms = 0;
     memset(&bodyVelTestRatio, 0, sizeof(bodyVelTestRatio));
     memset(&varInnovBodyVel, 0, sizeof(varInnovBodyVel));
@@ -389,6 +397,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
     memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion
     extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
@@ -399,6 +408,7 @@ void NavEKF3_core::InitialiseVariables()
     extNavVelToFuse = false;
     useExtNavVel = false;
     extNavVelMeasTime_ms = 0;
+#endif
 
     // zero data buffers
     storedIMU.reset();
@@ -408,10 +418,14 @@ void NavEKF3_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
+#if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();
     storedWheelOdm.reset();
+#endif
+#if EK3_FEATURE_EXTERNAL_NAV
     storedExtNav.reset();
     storedExtNavVel.reset();
+#endif
 
     // initialise pre-arm message
     dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "EKF3 still initialising");
@@ -452,7 +466,9 @@ void NavEKF3_core::InitialiseVariablesMag()
     magFieldLearned = false;
     storedMag.reset();
     storedYawAng.reset();
+#if EK3_FEATURE_EXTERNAL_NAV
     storedExtNavYawAng.reset();
+#endif
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
 }
@@ -672,8 +688,10 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Update states using optical flow data
         SelectFlowFusion();
 
+#if EK3_FEATURE_BODY_ODOM
         // Update states using body frame odometry data
         SelectBodyOdomFusion();
+#endif
 
         // Update states using airspeed data
         SelectTasFusion();

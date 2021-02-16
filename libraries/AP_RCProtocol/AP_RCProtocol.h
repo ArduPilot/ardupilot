@@ -45,7 +45,7 @@ public:
         NONE    //last enum always is None
     };
     void init();
-    bool valid_serial_prot()
+    bool valid_serial_prot() const
     {
         return _valid_serial_prot;
     }

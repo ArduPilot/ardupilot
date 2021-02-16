@@ -110,7 +110,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 float Variometer::calculate_aircraft_sinkrate(float phi,
                                              const float polar_K,
                                              const float polar_CD0,
-                                             const float polar_B)
+                                             const float polar_B) const
 {
     // Remove aircraft sink rate
     float CL0;  // CL0 = 2*W/(rho*S*V^2)

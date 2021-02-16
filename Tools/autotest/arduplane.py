@@ -13,6 +13,7 @@ from common import AutoTest
 from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
+from pymavlink.rotmat import Vector3
 
 import operator
 
@@ -100,13 +101,17 @@ class AutoTestPlane(AutoTest):
         self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
-        self.set_rc(3, 1600)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({
+            3: 1600,
+            4: 1500,
+        })
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
-        self.set_rc(2, 1100)
-        self.set_rc(3, 2000)
+        self.set_rc_from_map({
+            2: 1100,
+            3: 2000,
+        })
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
@@ -692,7 +697,7 @@ class AutoTestPlane(AutoTest):
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def fly_home_land_and_disarm(self, timeout=120):
         filename = "flaps.txt"
@@ -1152,9 +1157,9 @@ class AutoTestPlane(AutoTest):
             self.assert_fence_sys_status(True, True, True)
             self.mavproxy.send("fence clear\n")
             self.mavproxy.expect("fence removed")
+            self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, False, False, True)
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
-            self.assert_fence_sys_status(False, False, True)
 
         except Exception as e:
             self.progress("Exception caught:")
@@ -1357,6 +1362,7 @@ class AutoTestPlane(AutoTest):
         self.wait_disarmed(timeout=120)
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.wait_ready_to_arm()
         self.gpi = None
         self.simstate = None
         self.last_print = 0
@@ -1424,6 +1430,49 @@ class AutoTestPlane(AutoTest):
     def deadreckoning(self):
         self.deadreckoning_main()
         self.deadreckoning_main(disable_airspeed_sensor=True)
+
+    def rtl_climb_min(self):
+        self.wait_ready_to_arm()
+        rtl_climb_min = 100
+        self.set_parameter("RTL_CLIMB_MIN", rtl_climb_min)
+        takeoff_alt = 50
+        self.takeoff(alt=takeoff_alt)
+        self.change_mode('CRUISE')
+        self.wait_distance_to_home(1000, 1500, timeout=60)
+        post_cruise_alt = self.get_altitude(relative=True)
+        self.change_mode('RTL')
+        expected_alt = self.get_parameter("ALT_HOLD_RTL")/100.0
+        if expected_alt == -1:
+            expected_alt = self.get_altitude(relative=True)
+
+        # ensure we're about half-way-down at the half-way-home stage:
+        self.wait_distance_to_nav_target(
+            0,
+            500,
+            timeout=120,
+        )
+        alt = self.get_altitude(relative=True)
+        expected_halfway_alt = expected_alt + (post_cruise_alt + rtl_climb_min - expected_alt)/2.0
+        if abs(alt - expected_halfway_alt) > 30:
+            raise NotAchievedException("Not half-way-down and half-way-home (want=%f got=%f" %
+                                       (expected_halfway_alt, alt))
+        self.progress("Half-way-down at half-way-home (want=%f vs got=%f)" %
+                      (expected_halfway_alt, alt))
+
+        rtl_radius = self.get_parameter("RTL_RADIUS")
+        if rtl_radius == 0:
+            rtl_radius = self.get_parameter("WP_LOITER_RAD")
+        self.wait_distance_to_nav_target(
+            0,
+            rtl_radius,
+            timeout=120,
+        )
+        alt = self.get_altitude(relative=True)
+        if abs(alt - expected_alt) > 10:
+            raise NotAchievedException(
+                "Expected to have %fm altitude at end of RTL (got %f)" %
+                (expected_alt, alt))
+        self.fly_home_land_and_disarm()
 
     def sample_enable_parameter(self):
         return "Q_ENABLE"
@@ -1890,24 +1939,200 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
         self.fly_mission("ap1.txt")
 
+    def get_accelvec(self, m):
+        return Vector3(m.xacc, m.yacc, m.zacc) * 0.001 * 9.81
+
+    def get_gyrovec(self, m):
+        return Vector3(m.xgyro, m.ygyro, m.zgyro) * 0.001 * math.degrees(1)
+
+    def test_imu_tempcal(self):
+        self.progress("Setting up SITL temperature profile")
+        self.set_parameters({
+            "SIM_IMUT1_ENABLE" : 1,
+            "SIM_IMUT1_ACC1_X" : 120000.000000,
+            "SIM_IMUT1_ACC1_Y" : -190000.000000,
+            "SIM_IMUT1_ACC1_Z" : 1493.864746,
+            "SIM_IMUT1_ACC2_X" : -51.624416,
+            "SIM_IMUT1_ACC2_Y" : 10.364172,
+            "SIM_IMUT1_ACC2_Z" : -7878.000000,
+            "SIM_IMUT1_ACC3_X" : -0.514242,
+            "SIM_IMUT1_ACC3_Y" : 0.862218,
+            "SIM_IMUT1_ACC3_Z" : -234.000000,
+            "SIM_IMUT1_GYR1_X" : -5122.513817,
+            "SIM_IMUT1_GYR1_Y" : -3250.470428,
+            "SIM_IMUT1_GYR1_Z" : -2136.346676,
+            "SIM_IMUT1_GYR2_X" : 30.720505,
+            "SIM_IMUT1_GYR2_Y" : 17.778447,
+            "SIM_IMUT1_GYR2_Z" : 0.765997,
+            "SIM_IMUT1_GYR3_X" : -0.003572,
+            "SIM_IMUT1_GYR3_Y" : 0.036346,
+            "SIM_IMUT1_GYR3_Z" : 0.015457,
+            "SIM_IMUT1_TMAX"   : 70.0,
+            "SIM_IMUT1_TMIN"   : -20.000000,
+            "SIM_IMUT2_ENABLE" : 1,
+            "SIM_IMUT2_ACC1_X" : -160000.000000,
+            "SIM_IMUT2_ACC1_Y" : 198730.000000,
+            "SIM_IMUT2_ACC1_Z" : 27812.000000,
+            "SIM_IMUT2_ACC2_X" : 30.658159,
+            "SIM_IMUT2_ACC2_Y" : 32.085022,
+            "SIM_IMUT2_ACC2_Z" : 1572.000000,
+            "SIM_IMUT2_ACC3_X" : 0.102912,
+            "SIM_IMUT2_ACC3_Y" : 0.229734,
+            "SIM_IMUT2_ACC3_Z" : 172.000000,
+            "SIM_IMUT2_GYR1_X" : 3173.925644,
+            "SIM_IMUT2_GYR1_Y" : -2368.312836,
+            "SIM_IMUT2_GYR1_Z" : -1796.497177,
+            "SIM_IMUT2_GYR2_X" : 13.029696,
+            "SIM_IMUT2_GYR2_Y" : -10.349280,
+            "SIM_IMUT2_GYR2_Z" : -15.082653,
+            "SIM_IMUT2_GYR3_X" : 0.004831,
+            "SIM_IMUT2_GYR3_Y" : -0.020528,
+            "SIM_IMUT2_GYR3_Z" : 0.009469,
+            "SIM_IMUT2_TMAX"   : 70.000000,
+            "SIM_IMUT2_TMIN"   : -20.000000,
+            "SIM_IMUT_END"     : 45.000000,
+            "SIM_IMUT_START"   : 3.000000,
+            "SIM_IMUT_TCONST"  : 75.000000,
+            "SIM_DRIFT_SPEED"  : 0,
+            "INS_GYR_CAL"      : 0,
+        })
+
+        self.set_parameter("SIM_IMUT_FIXED", 12)
+        self.progress("Running accel cal")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0,0,0,0,4,0,0,
+                     timeout=5)
+        self.progress("Running gyro cal")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0,0,0,0,1,0,0,
+                     timeout=5)
+        self.set_parameters({
+            "SIM_IMUT_FIXED" : 0,
+            "INS_TCAL1_ENABLE" : 2,
+            "INS_TCAL1_TMAX" : 42,
+            "INS_TCAL2_ENABLE" : 2,
+            "INS_TCAL2_TMAX" : 42,
+            "SIM_SPEEDUP" : 200,
+            })
+        self.set_streamrate(1)
+        self.set_parameter("LOG_DISARMED", 1)
+        self.reboot_sitl()
+
+        self.progress("Waiting for IMU temperature")
+        self.assert_reach_imu_temperature(43, timeout=600)
+
+        if self.get_parameter("INS_TCAL1_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL1 did not complete")
+        if self.get_parameter("INS_TCAL2_ENABLE") != 1.0:
+            raise NotAchievedException("TCAL2 did not complete")
+
+        self.progress("Logging with calibration enabled")
+        self.reboot_sitl()
+
+        self.assert_reach_imu_temperature(43, timeout=600)
+
+        self.progress("Testing with compensation enabled")
+
+        test_temperatures = range(10,45,5)
+        corrected = {}
+        uncorrected = {}
+
+        for temp in test_temperatures:
+            self.progress("Testing temperature %.1f" % temp)
+            self.set_parameter("SIM_IMUT_FIXED", temp)
+            self.delay_sim_time(2)
+            for msg in ['RAW_IMU', 'SCALED_IMU2']:
+                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
+                if m is None:
+                    raise NotAchievedException(msg)
+                temperature = m.temperature*0.01
+
+                if abs(temperature - temp) > 0.2:
+                    raise NotAchievedException("incorrect %s temperature %.1f should be %.1f" % (msg, temperature, temp))
+
+                accel = self.get_accelvec(m)
+                gyro = self.get_gyrovec(m)
+                accel2 = accel + Vector3(0,0,9.81)
+
+                corrected[temperature] = (accel2, gyro)
+
+        self.progress("Testing with compensation disabled")
+        self.set_parameter("INS_TCAL1_ENABLE", 0)
+        self.set_parameter("INS_TCAL2_ENABLE", 0)
+
+        gyro_threshold = 0.2
+        accel_threshold = 0.2
+
+        for temp in test_temperatures:
+            self.progress("Testing temperature %.1f" % temp)
+            self.set_parameter("SIM_IMUT_FIXED", temp)
+            self.wait_heartbeat()
+            self.wait_heartbeat()
+            for msg in ['RAW_IMU', 'SCALED_IMU2']:
+                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
+                if m is None:
+                    raise NotAchievedException(msg)
+                temperature = m.temperature*0.01
+
+                if abs(temperature - temp) > 0.2:
+                    raise NotAchievedException("incorrect %s temperature %.1f should be %.1f" % (msg, temperature, temp))
+
+                accel = self.get_accelvec(m)
+                gyro = self.get_gyrovec(m)
+
+                accel2 = accel + Vector3(0,0,9.81)
+                uncorrected[temperature] = (accel2, gyro)
+
+        for temp in test_temperatures:
+            (accel, gyro) = corrected[temp]
+            self.progress("Corrected gyro at %.1f %s" % (temp, gyro))
+            self.progress("Corrected accel at %.1f %s" % (temp, accel))
+
+        for temp in test_temperatures:
+            (accel, gyro) = uncorrected[temp]
+            self.progress("Uncorrected gyro at %.1f %s" % (temp, gyro))
+            self.progress("Uncorrected accel at %.1f %s" % (temp, accel))
+            
+        bad_value = False
+        for temp in test_temperatures:
+            (accel, gyro) = corrected[temp]
+            if gyro.length() > gyro_threshold:
+                raise NotAchievedException("incorrect corrected at %.1f gyro %s" % (temp, gyro))
+
+            if accel.length() > accel_threshold:
+                raise NotAchievedException("incorrect corrected at %.1f accel %s" % (temp, accel))
+
+            (accel, gyro) = uncorrected[temp]
+            if gyro.length() > gyro_threshold*2:
+                bad_value = True
+
+            if accel.length() > accel_threshold*2:
+                bad_value = True
+
+        if not bad_value:
+            raise NotAchievedException("uncompensated IMUs did not vary enough")
+
+        
     def ekf_lane_switch(self):
 
         self.context_push()
         ex = None
 
         # new lane swtich available only with EK3
-        self.set_parameter("EK3_ENABLE", 1)
-        self.set_parameter("EK2_ENABLE", 0)
-        self.set_parameter("AHRS_EKF_TYPE", 3)
-        self.set_parameter("EK3_AFFINITY", 15) # enable affinity for all sensors
-        self.set_parameter("EK3_IMU_MASK", 3) # use only 2 IMUs
-        self.set_parameter("GPS_TYPE2", 1)
-        self.set_parameter("SIM_GPS2_DISABLE", 0)
-        self.set_parameter("SIM_BARO_COUNT", 2)
-        self.set_parameter("SIM_BAR2_DISABLE", 0)
-        self.set_parameter("ARSPD2_TYPE", 2)
-        self.set_parameter("ARSPD2_USE", 1)
-        self.set_parameter("ARSPD2_PIN", 2)
+        self.set_parameters({
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+            "EK3_AFFINITY": 15, # enable affinity for all sensors
+            "EK3_IMU_MASK": 3, # use only 2 IMUs
+            "GPS_TYPE2": 1,
+            "SIM_GPS2_DISABLE": 0,
+            "SIM_BARO_COUNT": 2,
+            "SIM_BAR2_DISABLE": 0,
+            "ARSPD2_TYPE": 2,
+            "ARSPD2_USE": 1,
+            "ARSPD2_PIN": 2,
+        })
 
         # some parameters need reboot to take effect
         self.reboot_sitl()
@@ -1965,10 +2190,12 @@ class AutoTestPlane(AutoTest):
             self.context_collect("STATUSTEXT")
             # create a GPS velocity error by adding a random 2m/s noise on each axis
             def sim_gps_verr():
-                self.set_parameter("SIM_GPS_VERR_X", self.get_parameter("SIM_GPS_VERR_X") + 2)
-                self.set_parameter("SIM_GPS_VERR_Y", self.get_parameter("SIM_GPS_VERR_Y") + 2)
-                self.set_parameter("SIM_GPS_VERR_Z", self.get_parameter("SIM_GPS_VERR_Z") + 2)
-            self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=sim_gps_verr(), check_context=True)
+                self.set_parameters({
+                    "SIM_GPS_VERR_X": self.get_parameter("SIM_GPS_VERR_X") + 2,
+                    "SIM_GPS_VERR_Y": self.get_parameter("SIM_GPS_VERR_Y") + 2,
+                    "SIM_GPS_VERR_Z": self.get_parameter("SIM_GPS_VERR_Z") + 2,
+                })
+            self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=sim_gps_verr, check_context=True)
             if self.lane_switches != [1, 0, 1]:
                 raise NotAchievedException("Expected lane switch 1, got %s" % str(self.lane_switches[-1]))
             # Cleanup
@@ -2021,7 +2248,7 @@ class AutoTestPlane(AutoTest):
                     0,
                     0
                 )
-            self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=change_speed(), check_context=True)
+            self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=change_speed, check_context=True)
             if self.lane_switches != [1, 0, 1, 0, 1]:
                 raise NotAchievedException("Expected lane switch 1, got %s" % str(self.lane_switches[-1]))
             # Cleanup
@@ -2191,6 +2418,14 @@ class AutoTestPlane(AutoTest):
             ("AirspeedDrivers",
              "Test AirSpeed drivers",
              self.test_airspeed_drivers),
+
+            ("RTL_CLIMB_MIN",
+             "Test RTL_CLIMB_MIN",
+             self.rtl_climb_min),
+
+            ("IMUTempCal",
+             "Test IMU temperature calibration",
+             self.test_imu_tempcal),
 
             ("LogUpload",
              "Log upload",

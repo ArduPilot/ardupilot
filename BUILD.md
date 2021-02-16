@@ -67,10 +67,10 @@ list some basic and more used commands as example.
     ```sh
     ./waf configure --board bebop --static # Bebop or Bebop2
     ./waf configure --board edge           # emlid edge
-    ./waf configure --board fmuv3          # Pixhawk2/Cube using ChibiOS
+    ./waf configure --board fmuv3          # 3DR Pixhawk 2 boards
     ./waf configure --board navio2         # emlid navio2
     ./waf configure --board Pixhawk1       # Pixhawk1
-    ./waf configure --board CubeBlack      # Pixhawk2
+    ./waf configure --board CubeBlack      # Hex/ProfiCNC Cube Black (formerly known as Pixhawk 2.1)
     ./waf configure --board Pixracer       # Pixracer
     ./waf configure --board skyviper-v2450 # SkyRocket's SkyViper GPS drone using ChibiOS
     ./waf configure --board sitl           # software-in-the-loop simulator

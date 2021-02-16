@@ -54,7 +54,7 @@ uint32_t AP_Logger_MAVLink::bufferspace_available() {
     return (_blockcount_free * 200 + remaining_space_in_current_block());
 }
 
-uint8_t AP_Logger_MAVLink::remaining_space_in_current_block() {
+uint8_t AP_Logger_MAVLink::remaining_space_in_current_block() const {
     // note that _current_block *could* be NULL ATM.
     return (MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN - _latest_block_len);
 }

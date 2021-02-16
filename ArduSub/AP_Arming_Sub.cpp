@@ -66,7 +66,7 @@ bool AP_Arming_Sub::ins_checks(bool display_failure)
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_INS)) {
         char failure_msg[50] = {};
-        if (!AP::ahrs().pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        if (!AP::ahrs().pre_arm_check(false, failure_msg, sizeof(failure_msg))) {
             check_failed(ARMING_CHECK_INS, display_failure, "AHRS: %s", failure_msg);
             return false;
         }

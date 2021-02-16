@@ -1156,9 +1156,9 @@ bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
     bool switch_reversed = reversed && rc().switch_reverse_allowed();
     
-    if (in < AUX_PWM_TRIGGER_LOW) {
+    if (in < AUX_SWITCH_PWM_TRIGGER_LOW) {
         ret = switch_reversed ? AuxSwitchPos::HIGH : AuxSwitchPos::LOW;
-    } else if (in > AUX_PWM_TRIGGER_HIGH) {
+    } else if (in > AUX_SWITCH_PWM_TRIGGER_HIGH) {
         ret = switch_reversed ? AuxSwitchPos::LOW : AuxSwitchPos::HIGH;
     } else {
         ret = AuxSwitchPos::MIDDLE;

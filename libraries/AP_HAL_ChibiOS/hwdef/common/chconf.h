@@ -53,6 +53,21 @@
 #define CH_DBG_SYSTEM_STATE_CHECK TRUE
 #undef CH_DBG_ENABLE_STACK_CHECK
 #define CH_DBG_ENABLE_STACK_CHECK TRUE
+
+// Generate assertions on a GPIO pin
+#ifdef HAL_GPIO_PIN_FAULT
+#ifndef _FROM_ASM_
+#ifdef __cplusplus
+extern "C" {
+#endif
+  void fault_printf(const char *fmt, ...);
+#ifdef __cplusplus
+}
+#endif
+#endif
+#define osalDbgAssert(c, remark) do { if (!(c)) { fault_printf("%s:%d: %s", __FILE__, __LINE__, remark ); chDbgAssert(c, remark); } } while (0)
+#endif
+
 #endif
 
 #if HAL_ENABLE_THREAD_STATISTICS

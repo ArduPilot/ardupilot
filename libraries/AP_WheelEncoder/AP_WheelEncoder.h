@@ -70,7 +70,7 @@ public:
     void update(void);
 
     // log data to logger
-    void Log_Write();
+    void Log_Write() const;
 
     // return the number of wheel encoder sensor instances
     uint8_t num_sensors(void) const { return num_instances; }

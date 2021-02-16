@@ -42,6 +42,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>     // Mission command library
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
+#include <AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h> // 6DoF Attitude control library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library for traditional helicopter
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 #include <AP_Motors/AP_Motors.h>          // AP Motors library
@@ -378,7 +379,6 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode::Number control_mode;
-    ModeReason control_mode_reason = ModeReason::UNKNOWN;
     Mode::Number prev_control_mode;
 
     RCMapper rcmap;
@@ -663,7 +663,10 @@ private:
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
-    uint16_t get_pilot_speed_dn();
+    uint16_t get_pilot_speed_dn() const;
+
+    // avoidance.cpp
+    void low_alt_avoidance();
 
 #if HAL_ADSB_ENABLED
     // avoidance_adsb.cpp
@@ -817,8 +820,8 @@ private:
     void load_parameters(void) override;
     void convert_pid_parameters(void);
     void convert_lgr_parameters(void);
-    void convert_tradheli_parameters(void);
-    void convert_fs_options_params(void);
+    void convert_tradheli_parameters(void) const;
+    void convert_fs_options_params(void) const;
 
     // precision_landing.cpp
     void init_precland();
@@ -839,8 +842,8 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
-    bool rangefinder_alt_ok();
-    bool rangefinder_up_ok();
+    bool rangefinder_alt_ok() const;
+    bool rangefinder_up_ok() const;
     void rpm_update();
     void init_optflow();
     void update_optical_flow(void);
@@ -864,8 +867,7 @@ private:
     bool ekf_alt_ok() const;
     void update_auto_armed();
     bool should_log(uint32_t mask);
-    MAV_TYPE get_frame_mav_type();
-    const char* get_frame_string();
+    const char* get_frame_string() const;
     void allocate_motors(void);
     bool is_tradheli() const;
 

@@ -97,9 +97,7 @@ AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UART
 AP_GPS_UBLOX::~AP_GPS_UBLOX()
 {
 #if GPS_MOVING_BASELINE
-    if (rtcm3_parser) {
-        delete rtcm3_parser;
-    }
+    delete rtcm3_parser;
 #endif
 }
 

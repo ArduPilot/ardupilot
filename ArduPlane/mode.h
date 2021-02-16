@@ -63,6 +63,9 @@ public:
     // returns a string for this flightmode, exactly 4 bytes
     virtual const char *name4() const = 0;
 
+    // returns true if the vehicle can be armed in this mode
+    virtual bool allows_arming() const { return true; }
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -281,6 +284,11 @@ public:
 protected:
 
     bool _enter() override;
+
+private:
+
+    // Switch to QRTL if enabled and within radius
+    bool switch_QRTL();
 };
 
 class ModeStabilize : public Mode
@@ -315,8 +323,12 @@ public:
     const char *name() const override { return "INITIALISING"; }
     const char *name4() const override { return "INIT"; }
 
+    bool _enter() override { return false; }
+
     // methods that affect movement of the vehicle in this mode
     void update() override { }
+
+    bool allows_arming() const override { return false; }
 
     bool allows_throttle_nudging() const override { return true; }
 
@@ -375,7 +387,7 @@ public:
 
     void navigate() override;
 
-    bool get_target_heading_cd(int32_t &target_heading);
+    bool get_target_heading_cd(int32_t &target_heading) const;
 
     bool does_auto_throttle() const override { return true; }
 
@@ -449,8 +461,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
-
 protected:
 
     bool _enter() override;
@@ -470,8 +480,6 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
-
 protected:
 
     bool _enter() override;
@@ -490,7 +498,7 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
+    bool allows_arming() const override { return false; }
 
 protected:
 
@@ -510,7 +518,7 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool does_auto_throttle() const override { return true; }
+    bool allows_arming() const override { return false; }
 
 protected:
 
@@ -550,8 +558,6 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
-
-    bool does_auto_throttle() const override { return true; }
 
 protected:
 

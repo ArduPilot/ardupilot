@@ -1290,6 +1290,6 @@ private:
     uint16_t encodeTimeout(uint32_t timeout_mclks);
     uint32_t timeoutMclksToMicroseconds(uint32_t timeout_mclks, uint32_t macro_period_us);
     uint32_t timeoutMicrosecondsToMclks(uint32_t timeout_us, uint32_t macro_period_us);
-    uint32_t calcMacroPeriod(uint8_t vcsel_period);
+    uint32_t calcMacroPeriod(uint8_t vcsel_period) const;
     bool setupManualCalibration(void);
 };

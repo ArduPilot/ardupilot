@@ -35,6 +35,15 @@ void *malloc_sdcard_dma(size_t size);
 void *malloc_fastmem(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
 
+struct memory_region {
+    void *address;
+    uint32_t size;
+    uint32_t flags;
+};
+#if CH_CFG_USE_HEAP == TRUE
+uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **regions);
+#endif
+
 // flush all dcache
 void memory_flush_all(void);
     

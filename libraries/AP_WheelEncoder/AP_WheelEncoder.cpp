@@ -202,7 +202,7 @@ void AP_WheelEncoder::update(void)
 }
 
 // log wheel encoder information
-void AP_WheelEncoder::Log_Write()
+void AP_WheelEncoder::Log_Write() const
 {
     // return immediately if no wheel encoders are enabled
     if (!enabled(0) && !enabled(1)) {

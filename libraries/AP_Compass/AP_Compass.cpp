@@ -1246,17 +1246,18 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_BMM150,
                     AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
         break;
-    case AP_BoardConfig::VRX_BOARD_BRAIN54: {
+    case AP_BoardConfig::VRX_BOARD_BRAIN54:
+    case AP_BoardConfig::VRX_BOARD_BRAIN51: {
         // external i2c bus
         ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                     true, ROTATION_ROLL_180));
-    }
+
         // internal i2c bus
-    ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
-                false, ROTATION_YAW_270));
+        ADD_BACKEND(DRIVER_HMC5843, AP_Compass_HMC5843::probe(GET_I2C_DEVICE(0, HAL_COMPASS_HMC5843_I2C_ADDR),
+                    false, ROTATION_YAW_270));
+    }
     break;
 
-    case AP_BoardConfig::VRX_BOARD_BRAIN51:
     case AP_BoardConfig::VRX_BOARD_BRAIN52:
     case AP_BoardConfig::VRX_BOARD_BRAIN52E:
     case AP_BoardConfig::VRX_BOARD_CORE10:
@@ -2018,6 +2019,17 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
+
+// force save of current calibration as valid
+void Compass::force_save_calibration(void)
+{
+    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_state[i].dev_id != 0) {
+            _state[i].dev_id.save();
+        }
+    }
+}
+
 
 // singleton instance
 Compass *Compass::_singleton;

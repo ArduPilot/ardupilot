@@ -45,7 +45,7 @@ private:
     float skid_turn_rate = 140.0f;
     bool skid_steering;
 
-    float turn_circle(float steering);
+    float turn_circle(float steering) const;
     float calc_yaw_rate(float steering, float speed);
     float calc_lat_accel(float steering_angle, float speed);
 };

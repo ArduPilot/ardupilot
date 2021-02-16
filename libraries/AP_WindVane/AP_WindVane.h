@@ -89,7 +89,7 @@ public:
     bool start_speed_calibration();
 
     // send mavlink wind message
-    void send_wind(mavlink_channel_t chan);
+    void send_wind(mavlink_channel_t chan) const;
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];

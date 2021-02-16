@@ -449,6 +449,10 @@ void ModeAuto::exit_mission()
         return;
     }
 
+    if (g2.mis_done_behave == MIS_DONE_BEHAVE_MANUAL && rover.set_mode(rover.mode_manual, ModeReason::MISSION_END)) {
+        return;
+    }
+
     start_stop();
 }
 
@@ -664,7 +668,7 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
-bool ModeAuto::verify_RTL()
+bool ModeAuto::verify_RTL() const
 {
     return reached_destination();
 }

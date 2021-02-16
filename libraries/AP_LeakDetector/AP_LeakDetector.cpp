@@ -84,8 +84,6 @@ void AP_LeakDetector::init()
             _state[i].instance = i;
             _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
             break;
-#else
-#pragma message("Board does not support LeakDetection")
 #endif
         default:
             _drivers[i] = NULL;

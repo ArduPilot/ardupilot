@@ -360,6 +360,7 @@ suplementary_test_binary_map = {
     "test.CAN": "sitl_periph_gps.AP_Periph",
 }
 
+from common import Test
 def run_specific_test(step, *args, **kwargs):
     t = split_specific_test_step(step)
     if t is None:
@@ -372,8 +373,10 @@ def run_specific_test(step, *args, **kwargs):
 
     print("Got %s" % str(tester))
     for a in tester.tests():
-        print("Got %s" % (a[0]))
-        if a[0] == test:
+        if not hasattr(a, 'name'):
+            a = Test(a[0], a[1], a[2])
+        print("Got %s" % (a.name))
+        if a.name == test:
             return tester.run_tests([a])
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
@@ -714,10 +717,18 @@ def list_subtests():
         tester_class = tester_class_map["test.%s" % vehicle]
         tester = tester_class("/bin/true", None)
         subtests = tester.tests()
+        sorted_list = []
+        for subtest in subtests:
+            if type(subtest) is tuple:
+                (name, description, function) = subtest
+                sorted_list.append([name, description])
+            else:
+                sorted_list.append([subtest.name, subtest.description])
+        sorted_list.sort()
+
         print("%s:" % vehicle)
-        for subtest in sorted(subtests, key=lambda x: x[0]):
-            (name, description, function) = subtest
-            print("    %s: %s" % (name, description))
+        for subtest in sorted_list:
+            print("    %s: %s" % (subtest[0], subtest[1]))
         print("")
 
 
@@ -730,9 +741,16 @@ def list_subtests_for_vehicle(vehicle_type):
         tester_class = tester_class_map["test.%s" % vehicle_type]
         tester = tester_class("/bin/true", None)
         subtests = tester.tests()
-        for subtest in sorted(subtests, key=lambda x: x[0]):
-            (name, _, _) = subtest
-            print("%s " % name, end='')
+        sorted_list = []
+        for subtest in subtests:
+            if type(subtest) is tuple:
+                (name, description, function) = subtest
+                sorted_list.append([name, description])
+            else:
+                sorted_list.append([subtest.name, subtest.description])
+        sorted_list.sort()
+        for subtest in sorted_list:
+            print("%s " % subtest[0], end='')
         print("")  # needed to clear the trailing %
 
 if __name__ == "__main__":
@@ -778,7 +796,7 @@ if __name__ == "__main__":
                       action='store_true',
                       help='enable experimental tests')
     parser.add_option("--timeout",
-                      default=5400,
+                      default=None,
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--frame",
@@ -879,6 +897,14 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    if opts.timeout is None:
+        opts.timeout = 5400
+        # adjust if we're running in a regime which may slow us down e.g. Valgrind
+        if opts.valgrind:
+            opts.timeout *= 10
+        elif opts.gdb:
+            opts.timeout = None
 
     steps = [
         'prerequisites',
@@ -989,7 +1015,8 @@ if __name__ == "__main__":
 
     # ensure we catch timeouts
     signal.signal(signal.SIGALRM, alarm_handler)
-    signal.alarm(opts.timeout)
+    if opts.timeout is not None:
+        signal.alarm(opts.timeout)
 
     if opts.list:
         for step in steps:

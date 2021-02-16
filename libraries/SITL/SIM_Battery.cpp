@@ -71,7 +71,7 @@ static const struct {
 /*
   use table to get resting voltage from remaining capacity
  */
-float Battery::get_resting_voltage(float charge_pct)
+float Battery::get_resting_voltage(float charge_pct) const
 {
     const float max_cell_voltage = soc_table[0].volt_per_cell;
     for (uint8_t i=1; i<ARRAY_SIZE(soc_table); i++) {

@@ -88,10 +88,15 @@ public:
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
 
-    // get boundary points around vehicle for use by avoidance
-    //   returns nullptr and sets num_points to zero if no boundary can be returned
-    const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
-    const Vector2f* get_boundary_points(uint16_t& num_points) const;
+    // get total number of obstacles, used in GPS based Simple Avoidance
+    uint8_t get_obstacle_count() const;
+    
+    // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
+    bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const;
+    
+    // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
+    // returns FLT_MAX if it's an invalid instance.
+    float distance_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings

@@ -43,6 +43,10 @@ public:
     
     QuadPlane(AP_AHRS_NavEKF &_ahrs);
 
+    static QuadPlane *get_singleton() {
+        return _singleton;
+    }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
@@ -85,7 +89,7 @@ public:
     */
     bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
 
-    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
+    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
@@ -184,8 +188,8 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AP_Int8 frame_class;
-    AP_Int8 frame_type;
+    AP_Enum<AP_Motors::motor_frame_class> frame_class;
+    AP_Enum<AP_Motors::motor_frame_type> frame_type;
     
     AP_MotorsMulticopter *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
@@ -564,8 +568,8 @@ private:
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt.tilt_mask.get()) & (1U<<motor));
     }
-    bool tiltrotor_fully_fwd(void);
-    float tilt_max_change(bool up);
+    bool tiltrotor_fully_fwd(void) const;
+    float tilt_max_change(bool up) const;
 
     void afs_terminate(void);
     bool guided_mode_enabled(void);
@@ -652,4 +656,6 @@ public:
                                         uint8_t motor_count);
 private:
     void motor_test_stop();
+
+    static QuadPlane *_singleton;
 };

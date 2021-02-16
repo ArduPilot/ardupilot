@@ -214,10 +214,8 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
     control_mode_t control_mode;
-    ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
     control_mode_t prev_control_mode;
-    ModeReason prev_control_mode_reason = ModeReason::UNKNOWN;
 
 #if RCMAP_ENABLED == ENABLED
     RCMapper rcmap;
@@ -418,7 +416,7 @@ private:
     void update_altitude();
     float get_smoothing_gain();
     void get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max);
-    float get_pilot_desired_yaw_rate(int16_t stick_angle);
+    float get_pilot_desired_yaw_rate(int16_t stick_angle) const;
     void check_ekf_yaw_reset();
     float get_roi_yaw();
     float get_look_ahead_yaw();
@@ -477,7 +475,7 @@ private:
     void auto_nav_guided_run();
     bool auto_loiter_start();
     void auto_loiter_run();
-    uint8_t get_default_auto_yaw_mode(bool rtl);
+    uint8_t get_default_auto_yaw_mode(bool rtl) const;
     void set_auto_yaw_mode(uint8_t yaw_mode);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
     void set_auto_yaw_roi(const Location &roi_location);
@@ -557,7 +555,7 @@ private:
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
-    bool rangefinder_alt_ok(void);
+    bool rangefinder_alt_ok(void) const;
 #if OPTFLOW == ENABLED
     void init_optflow();
 #endif
@@ -627,7 +625,7 @@ private:
     bool surface_init(void);
     void surface_run();
 
-    uint16_t get_pilot_speed_dn();
+    uint16_t get_pilot_speed_dn() const;
 
     void convert_old_parameters(void);
     bool handle_do_motor_test(mavlink_command_long_t command);

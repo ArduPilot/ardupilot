@@ -289,9 +289,7 @@ private:
     // This is the state of the flight control system
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
-    ModeReason control_mode_reason = ModeReason::UNKNOWN;
     Mode *previous_mode = &mode_initializing;
-    ModeReason previous_mode_reason = ModeReason::UNKNOWN;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
@@ -787,7 +785,7 @@ private:
     void update_load_factor(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
-    int32_t get_RTL_altitude();
+    int32_t get_RTL_altitude() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
@@ -801,7 +799,7 @@ private:
     void reset_offset_altitude(void);
     void set_offset_altitude_location(const Location &loc);
     bool above_location_current(const Location &loc);
-    void setup_terrain_target_alt(Location &loc);
+    void setup_terrain_target_alt(Location &loc) const;
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
@@ -904,7 +902,7 @@ private:
 
     // control_modes.cpp
     void read_control_switch();
-    uint8_t readSwitch(void);
+    uint8_t readSwitch(void) const;
     void reset_control_switch();
     void autotune_start(void);
     void autotune_restore(void);
@@ -925,7 +923,7 @@ private:
     Vector2l get_fence_point_with_index(uint8_t i) const;
     void set_fence_point_with_index(const Vector2l &point, unsigned i);
     void geofence_load(void);
-    bool geofence_present(void);
+    bool geofence_present(void) const;
     void geofence_update_pwm_enabled_state();
     bool geofence_set_enabled(bool enable);
     bool geofence_enabled(void);
@@ -1040,13 +1038,13 @@ private:
     void servos_auto_trim(void);
     void servos_twin_engine_mix();
     void force_flare();
-    void throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle);
+    void throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) const;
     void throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle);
     void throttle_slew_limit(SRV_Channel::Aux_servo_function_t func);
     bool suppress_throttle(void);
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
-                                SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out);
+                                SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const;
     void flaperon_update(int8_t flap_percent);
 
     // is_flying.cpp

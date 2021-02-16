@@ -9,7 +9,7 @@
 /*
   calculate maximum tilt change as a proportion from 0 to 1 of tilt
  */
-float QuadPlane::tilt_max_change(bool up)
+float QuadPlane::tilt_max_change(bool up) const
 {
     float rate;
     if (up || tilt.max_rate_down_dps <= 0) {
@@ -310,7 +310,7 @@ void QuadPlane::tilt_compensate(float *thrust, uint8_t num_motors)
 /*
   return true if the rotors are fully tilted forward
  */
-bool QuadPlane::tiltrotor_fully_fwd(void)
+bool QuadPlane::tiltrotor_fully_fwd(void) const
 {
     if (tilt.tilt_mask <= 0) {
         return false;

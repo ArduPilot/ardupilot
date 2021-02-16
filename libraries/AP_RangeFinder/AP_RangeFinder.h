@@ -212,7 +212,7 @@ private:
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
 
     uint32_t _log_rfnd_bit = -1;
-    void Log_RFND();
+    void Log_RFND() const;
 };
 
 namespace AP {

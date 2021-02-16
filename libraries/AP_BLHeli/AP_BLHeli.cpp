@@ -1451,9 +1451,9 @@ void AP_BLHeli::read_telemetry_packet(void)
         && td.timestamp_ms - last_log_ms[last_telem_esc] > 100) {
 
         if (has_bidir_dshot(last_telem_esc)) {
-            trpm = hal.rcout->get_erpm(last_telem_esc);
-            if (trpm != 0xFFFF) {
-                trpm = trpm * 200 / motor_poles;
+            const uint16_t erpm = hal.rcout->get_erpm(last_telem_esc);
+            if (erpm != 0xFFFF) {   // don't log invalid values
+                trpm = erpm * 200 / motor_poles;
             }
             terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
         }
@@ -1503,17 +1503,17 @@ void AP_BLHeli::log_bidir_telemetry(void)
 
         if (has_bidir_dshot(last_telem_esc)) {
             uint16_t trpm = hal.rcout->get_erpm(last_telem_esc);
-            if (trpm != 0xFFFF) {
+            const float terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
+            if (trpm != 0xFFFF) {    // don't log invalid values as they are never used
                 trpm = trpm * 200 / motor_poles;
-            }
-            float terr = hal.rcout->get_erpm_error_rate(last_telem_esc);
 
-            logger->Write_ESC(uint8_t(last_telem_esc),
-                      AP_HAL::micros64(),
-                      trpm*100U,
-                      0, 0, 0, 0,
-                      terr);
-            last_log_ms[last_telem_esc] = now;
+                logger->Write_ESC(uint8_t(last_telem_esc),
+                        AP_HAL::micros64(),
+                        trpm*100U,
+                        0, 0, 0, 0,
+                        terr);
+                last_log_ms[last_telem_esc] = now;
+            }
 
             if (debug_level >= 2) {
                 hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());

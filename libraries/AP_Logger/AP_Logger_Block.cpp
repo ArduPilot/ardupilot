@@ -261,7 +261,7 @@ void AP_Logger_Block::StartLogFile(uint16_t FileNumber)
     df_Write_FilePage = 1;
 }
 
-uint16_t AP_Logger_Block::GetFileNumber()
+uint16_t AP_Logger_Block::GetFileNumber() const
 {
     return df_FileNumber;
 }
