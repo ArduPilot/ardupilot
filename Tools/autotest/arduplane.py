@@ -1147,7 +1147,9 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("FENCE_ALT_MIN", 50)
             self.set_parameter("FENCE_TYPE", 8) # Enables minimum altitude breaches
             self.do_fence_enable()
+            self.delay_sim_time(2) # Allow breach to propagate
             self.assert_fence_enabled()
+
             self.try_arm(False, "vehicle outside fence")
             self.do_fence_disable()
             self.set_parameter("FENCE_ALT_MIN", default_fence_alt_min)
@@ -1156,19 +1158,21 @@ class AutoTestPlane(AutoTest):
             self.progress("Test arming while vehicle outside of inclusion zone")
             self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
             locs = [
-                mavutil.location(1, 1.0, 0, 0),
+                mavutil.location(1.0,   1.0,   0, 0),
                 mavutil.location(1.0,   1.001, 0, 0),
                 mavutil.location(1.001, 1.001, 0, 0),
-                mavutil.location(1.001, 1.0, 0, 0)
+                mavutil.location(1.001, 1.0,   0, 0)
             ]
             self.upload_fences_from_locations(
             mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-            [
-                locs
-            ])
+                [
+                    locs
+                ]
+            )
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
+            self.delay_sim_time(2) # Allow breach to propagate
             self.try_arm(False, "vehicle outside fence")
             self.do_fence_disable()
             self.clear_fence()
@@ -1184,19 +1188,17 @@ class AutoTestPlane(AutoTest):
             ]
             self.upload_fences_from_locations(
             mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-            [
-                locs
-            ])
+                [
+                    locs
+                ]
+            )
             self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
             self.do_fence_enable()
             self.assert_fence_enabled()
+            self.delay_sim_time(2) # Allow breach to propagate
             self.try_arm(False, "vehicle outside fence")
             self.do_fence_disable()
             self.clear_fence()
-
-
-                
-
 
         except Exception as e:
             self.print_exception_caught(e)
@@ -1356,7 +1358,7 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("FENCE_RET_ALT", return_alt)
         self.do_fence_enable()
         self.assert_fence_enabled()
-        
+
         self.takeoff(alt=50, alt_max=300)
         # Trigger fence breach, fly to rally location
         self.set_parameter("FENCE_RET_RALLY", 1)
@@ -2504,7 +2506,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm(timeout=150)
 
     def test_fence_disable_under_breach_action(self):
-        """ Fence breach will cause the vehicle to enter guided mode. 
+        """ Fence breach will cause the vehicle to enter guided mode.
             Upon breach clear, check the vehicle is in the expected mode"""
         self.set_parameter("FENCE_ALT_MIN", 50) # Sets the fence floor
         self.set_parameter("FENCE_TYPE", 8)     # Only use fence floor for breaches
