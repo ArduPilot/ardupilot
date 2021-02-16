@@ -109,6 +109,30 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIR_DISABLE", 9, AP_Scripting, _dir_disable, 0),
 
+    // @Param: USER5
+    // @DisplayName: Scripting User Parameter5
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER5", 10, AP_Scripting, _user[4], 0.0),
+
+    // @Param: USER6
+    // @DisplayName: Scripting User Parameter6
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER6", 11, AP_Scripting, _user[5], 0.0),
+
+    // @Param: USER7
+    // @DisplayName: Scripting User Parameter7
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER7", 12, AP_Scripting, _user[6], 0.0),
+
+    // @Param: USER8
+    // @DisplayName: Scripting User Parameter8
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER8", 13, AP_Scripting, _user[7], 0.0),
+
     AP_GROUPEND
 };
 
