@@ -371,7 +371,7 @@ void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 //        test_accel_max = tune_pitch_accel;
         break;
     case YAW:
-        updating_angle_p_up(tune_yaw_sp, test_freq, test_gain, test_phase, freq_cnt);
+        updating_angle_p_up_yaw(tune_yaw_sp, test_freq, test_gain, test_phase, freq_cnt);
 //        test_accel_max = tune_yaw_accel;
         break;
     }
@@ -590,6 +590,60 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
         }
     }
 
+    // reset determine_gain function
+    determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], test_accel_max, dwell_complete, true);
+}
+
+void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
+{
+    float test_freq_incr = 0.5f * 3.14159f * 2.0f;
+    static uint8_t prev_good_frq_cnt;
+    float max_gain = 1.2f;
+
+    if (frq_cnt < 12) {
+        if (frq_cnt == 0) {
+            freq_cnt_max = 0;
+        } else if (phase[frq_cnt] <= 180.0f && !is_zero(phase[frq_cnt])) {
+            prev_good_frq_cnt = frq_cnt;
+        } else if (frq_cnt > 1 && phase[frq_cnt] > phase[frq_cnt-1] + 360.0f && !is_zero(phase[frq_cnt])) {
+            if (phase[frq_cnt] - 360.0f < 180.0f) {
+                prev_good_frq_cnt = frq_cnt;
+            }
+        } else if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
+            frq_cnt = 11;
+        }
+        frq_cnt++;
+        if (frq_cnt == 12) {
+            freq[frq_cnt] = freq[prev_good_frq_cnt];
+            curr_test_freq = freq[frq_cnt];
+        } else {
+            freq[frq_cnt] = freq[frq_cnt-1] + test_freq_incr;
+            curr_test_freq = freq[frq_cnt];
+        }
+    }
+
+    // once finished with sweep of frequencies, cnt = 12 is used to then tune for max response gain
+    if (freq_cnt >= 12) {
+        if (gain[frq_cnt] < max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f && tune_p < AUTOTUNE_SP_MAX) {
+            tune_p += 0.5f;
+            if (tune_p >= AUTOTUNE_SP_MAX) {
+                tune_p = AUTOTUNE_SP_MAX;
+                counter = AUTOTUNE_SUCCESS_COUNT;
+                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            }
+        } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] > 180.0f) {
+            curr_test_freq = curr_test_freq - 0.5 * test_freq_incr;
+            freq[frq_cnt] = curr_test_freq;
+        } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] < 160.0f) {
+            curr_test_freq = curr_test_freq + 0.5 * test_freq_incr;
+            freq[frq_cnt] = curr_test_freq;
+        } else {
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            // reset curr_test_freq and frq_cnt for next test
+            curr_test_freq = freq[0];
+            frq_cnt = 0;
+        }
+    }
     // reset determine_gain function
     determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], test_accel_max, dwell_complete, true);
 }
