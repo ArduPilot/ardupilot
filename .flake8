@@ -11,6 +11,8 @@ ignore =
     # W504 line break after binary operator
     W504,
     # E203 whitespace before ':'
-    E203
+    E203,
+    # E221 multiple spaces before operator
+    E221
 
 max-line-length = 127
