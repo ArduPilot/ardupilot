@@ -1122,7 +1122,7 @@ class AutoTestPlane(AutoTest):
             # test a rather unfortunate behaviour:
             self.progress("Killing a live fence with fence-clear")
             self.load_fence("CMAC-fence.txt")
-            self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL)
+            self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
             self.clear_fence()
@@ -1141,6 +1141,61 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("FENCE_TYPE", 2) # tin can
             self.assert_fence_sys_status(True, False, True)
 
+            # Test cannot arm if outside of fence and fence is enabled
+            self.progress("Test Arming while vehicle below FENCE_ALT_MIN")
+            default_fence_alt_min = self.get_parameter("FENCE_ALT_MIN")
+            self.set_parameter("FENCE_ALT_MIN", 50)
+            self.set_parameter("FENCE_TYPE", 8) # Enables minimum altitude breaches
+            self.do_fence_enable()
+            self.assert_fence_enabled()
+            self.try_arm(False, "vehicle outside fence")
+            self.do_fence_disable()
+            self.set_parameter("FENCE_ALT_MIN", default_fence_alt_min)
+
+            # Test arming outside inclusion zone
+            self.progress("Test arming while vehicle outside of inclusion zone")
+            self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
+            locs = [
+                mavutil.location(1, 1.0, 0, 0),
+                mavutil.location(1.0,   1.001, 0, 0),
+                mavutil.location(1.001, 1.001, 0, 0),
+                mavutil.location(1.001, 1.0, 0, 0)
+            ]
+            self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                locs
+            ])
+            self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
+            self.do_fence_enable()
+            self.assert_fence_enabled()
+            self.try_arm(False, "vehicle outside fence")
+            self.do_fence_disable()
+            self.clear_fence()
+
+            self.progress("Test arming while vehicle inside exclusion zone")
+            self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
+            home_loc = self.mav.location()
+            locs = [
+                mavutil.location(home_loc.lat - 0.001, home_loc.lng - 0.001, 0, 0),
+                mavutil.location(home_loc.lat - 0.001, home_loc.lng + 0.001, 0, 0),
+                mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
+                mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
+            ]
+            self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+            [
+                locs
+            ])
+            self.delay_sim_time(10) # let fence check run so it loads-from-eeprom
+            self.do_fence_enable()
+            self.assert_fence_enabled()
+            self.try_arm(False, "vehicle outside fence")
+            self.do_fence_disable()
+            self.clear_fence()
+
+
+                
 
 
         except Exception as e:
@@ -2369,8 +2424,29 @@ class AutoTestPlane(AutoTest):
         
         self.fly_home_land_and_disarm(timeout=150)
 
+    def test_fence_disable_under_breach_action(self):
+        """ Fence breach will cause the vehicle to enter guided mode. 
+            Upon breach clear, check the vehicle is in the expected mode"""
+        self.set_parameter("FENCE_ALT_MIN", 50) # Sets the fence floor
+        self.set_parameter("FENCE_TYPE", 8)     # Only use fence floor for breaches
+        self.wait_ready_to_arm()
 
-        
+        def attempt_fence_breached_disable(start_mode, end_mode, expected_mode, action):
+            self.set_parameter("FENCE_ACTION", action)   # Set Fence Action to Guided
+            self.change_mode(start_mode)
+            self.arm_vehicle()
+            self.do_fence_enable()
+            self.assert_fence_enabled()
+            self.wait_mode(expected_mode)
+            self.do_fence_disable()
+            self.assert_fence_disabled()
+            self.wait_mode(end_mode)
+            self.disarm_vehicle(force=True)
+
+        attempt_fence_breached_disable(start_mode="FBWA", end_mode="RTL", expected_mode="RTL", action=1)
+        attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=5)
+        attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
+
 
     def tests(self):
         '''return list of all tests'''
@@ -2444,6 +2520,10 @@ class AutoTestPlane(AutoTest):
             ("FenceAltCeilFloor",
              "Tests the fence ceiling and floor",
              self.test_fence_alt_ceil_floor),
+
+            ("FenceDisableUnderAction",
+             "Tests Disabling fence while undergoing action caused by breach",
+             self.test_fence_disable_under_breach_action),
 
             ("ADSB",
              "Test ADSB",
