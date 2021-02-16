@@ -3023,7 +3023,16 @@ void GCS_MAVLINK::handle_vision_position_delta(const mavlink_message_t &msg)
     if (visual_odom == nullptr) {
         return;
     }
-    visual_odom->handle_vision_position_delta_msg(msg);
+
+    mavlink_vision_position_delta_t m;
+    mavlink_msg_vision_position_delta_decode(&msg, &m);
+
+    const uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, VISION_POSITION_DELTA));
+    const Vector3f angle_delta = {m.angle_delta[0], m.angle_delta[1], m.angle_delta[2]} ;
+    const Vector3f position_delta = {m.position_delta[0], m.position_delta[1], m.position_delta[2]};
+
+    visual_odom->handle_vision_position_delta_estimate(m.time_usec, timestamp_ms, m.time_delta_usec, angle_delta, position_delta,  m.confidence);
+
 #endif
 }
 
