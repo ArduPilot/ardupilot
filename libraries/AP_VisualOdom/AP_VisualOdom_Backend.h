@@ -27,14 +27,14 @@ public:
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() const;
 
-    // consume vision_position_delta mavlink messages
-    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
-
     // consume vision position estimate data and send to EKF. distances in meters
     virtual void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter) = 0;
 
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) = 0;
+
+    // consume vision delta angle and position estimate data and send to EKF, rotation vector (rad) to curr_FRAME_BODY_FRD from prev_FRAME_BODY_FRD, delta distance (m) rotated to curr_FRAME_BODY_FRD
+    void handle_vision_position_delta_estimate(const uint64_t remote_time_us, const uint32_t time_ms, const uint64_t time_delta_usec, const Vector3f &angle_delta, const Vector3f &position_delta, const float confidence);
 
     // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
     virtual void align_sensor_to_vehicle() {}
@@ -65,4 +65,3 @@ protected:
 };
 
 #endif
-

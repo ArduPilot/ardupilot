@@ -156,8 +156,8 @@ bool AP_VisualOdom::healthy() const
     return _driver->healthy();
 }
 
-// consume vision_position_delta mavlink messages
-void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &msg)
+// consume vision delta angle and position estimate data and send to EKF, rotation vector (rad) to curr_FRAME_BODY_FRD from prev_FRAME_BODY_FRD, delta distance (m) rotated to curr_FRAME_BODY_FRD
+void AP_VisualOdom::handle_vision_position_delta_estimate(const uint64_t remote_time_us, const uint32_t time_ms, const uint64_t time_delta_usec, const Vector3f &angle_delta, const Vector3f &position_delta, const float confidence)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -166,7 +166,7 @@ void AP_VisualOdom::handle_vision_position_delta_msg(const mavlink_message_t &ms
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_position_delta_msg(msg);
+        _driver->handle_vision_position_delta_estimate(remote_time_us, time_ms, time_delta_usec, angle_delta, position_delta, confidence);
     }
 }
 

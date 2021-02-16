@@ -80,8 +80,8 @@ public:
     // return yaw measurement noise in rad
     float get_yaw_noise() const { return _yaw_noise; }
 
-    // consume vision_position_delta mavlink messages
-    void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+    // consume vision delta angle and position estimate data and send to EKF, rotation vector (rad) to curr_FRAME_BODY_FRD from prev_FRAME_BODY_FRD, delta distance (m) rotated to curr_FRAME_BODY_FRD
+    void handle_vision_position_delta_estimate(const uint64_t remote_time_us, const uint32_t time_ms, const uint64_t time_delta_usec, const Vector3f &angle_delta, const Vector3f &position_delta, const float confidence);
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians

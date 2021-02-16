@@ -38,28 +38,25 @@ bool AP_VisualOdom_Backend::healthy() const
     return ((AP_HAL::millis() - _last_update_ms) < AP_VISUALODOM_TIMEOUT_MS);
 }
 
-// consume vision_position_delta mavlink messages
-void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_message_t &msg)
+void AP_VisualOdom_Backend::handle_vision_position_delta_estimate(const uint64_t remote_time_us, const uint32_t time_ms, const uint64_t time_delta_usec,
+                                    const Vector3f &angle_delta, const Vector3f &position_delta, const float confidence)
 {
-    // decode message
-    mavlink_vision_position_delta_t packet;
-    mavlink_msg_vision_position_delta_decode(&msg, &packet);
-
+    Vector3f angle_d = angle_delta;
+    Vector3f position_d = position_delta;
+    
     // apply rotation to angle and position delta
     const enum Rotation rot = _frontend.get_orientation();
-    Vector3f angle_delta = Vector3f(packet.angle_delta[0], packet.angle_delta[1], packet.angle_delta[2]);
-    angle_delta.rotate(rot);
-    Vector3f position_delta = Vector3f(packet.position_delta[0], packet.position_delta[1], packet.position_delta[2]);
-    position_delta.rotate(rot);
+    angle_d.rotate(rot);
+    position_d.rotate(rot);
 
     const uint32_t now_ms = AP_HAL::millis();
     _last_update_ms = now_ms;
 
     // send to EKF
-    const float time_delta_sec = packet.time_delta_usec / 1000000.0f;
-    AP::ahrs_navekf().writeBodyFrameOdom(packet.confidence,
-                                         position_delta,
-                                         angle_delta,
+    const float time_delta_sec = time_delta_usec / 1000000.0f;
+    AP::ahrs_navekf().writeBodyFrameOdom(confidence,
+                                         position_d,
+                                         angle_d,
                                          time_delta_sec,
                                          now_ms,
                                          _frontend.get_delay_ms(),
@@ -67,9 +64,9 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
 
     // log sensor data
     Write_VisualOdom(time_delta_sec,
-                                  angle_delta,
-                                  position_delta,
-                                  packet.confidence);
+                                  angle_d,
+                                  position_d,
+                                  confidence);
 }
 
 // returns the system time of the last reset if reset_counter has not changed
