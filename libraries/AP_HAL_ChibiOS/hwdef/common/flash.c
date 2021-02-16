@@ -78,6 +78,14 @@
 #define STM32_FLASH_DISABLE_ISR 0
 #endif
 
+#ifndef FLASH_SR_CRCRDERR
+#define FLASH_SR_CRCRDERR               0x10000000U
+#endif
+
+#ifndef FLASH_CCR_CLR_CRCRDERR
+#define FLASH_CCR_CLR_CRCRDERR          0x10000000U
+#endif
+
 // the 2nd bank of flash needs to be handled differently
 #define STM32_FLASH_BANK2_START (STM32_FLASH_BASE+0x00080000)
 
@@ -515,6 +523,50 @@ failed:
     return success;
 }
 
+static bool stm32_flash_crc_check_h7(uint8_t sector)
+{
+    stm32_flash_unlock();
+
+    volatile uint32_t *CRCCR, *CCR, *SR;
+
+    if (sector < 8) {
+        CRCCR = &FLASH->CRCCR1;
+        CCR = &FLASH->CCR1;
+        SR = &FLASH->SR1;
+    } else {
+        CRCCR = &FLASH->CRCCR2;
+        CCR = &FLASH->CCR2;
+        SR = &FLASH->SR2;
+    }
+
+    uint32_t crccr = *CRCCR;
+
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_CLEAN_CRC, FLASH_CRCCR_CLEAN_CRC); // clear CRC flag
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_CRC_BURST, FLASH_CRCCR_CRC_BURST_3); // burst size
+
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_CRC_SECT, sector); // select the sector
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_ADD_SECT, FLASH_CRCCR_ADD_SECT);
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_CRC_BY_SECT, FLASH_CRCCR_CRC_BY_SECT);
+
+    MODIFY_REG(*CRCCR, FLASH_CRCCR_START_CRC, FLASH_CRCCR_START_CRC); // start check
+
+    // wait for completion
+    while (*SR & FLASH_SR_CRC_BUSY) {
+    }
+
+    bool result = true;
+
+    if (*SR & (FLASH_SR_INCERR | FLASH_SR_CRCRDERR | FLASH_SR_SNECCERR | FLASH_SR_DBECCERR)) {
+        result = false;
+        *CCR |= (FLASH_CCR_CLR_INCERR | FLASH_CCR_CLR_CRCRDERR | FLASH_CCR_CLR_SNECCERR | FLASH_CCR_CLR_DBECCERR);
+    }
+
+    *CRCCR = crccr;
+
+    stm32_flash_lock();
+
+    return result;
+}
 #endif // STM32H7
 
 #if defined(STM32F4) || defined(STM32F7)
@@ -689,6 +741,15 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     return stm32_flash_write_h7(addr, buf, count);
 #else
 #error "Unsupported MCU"
+#endif
+}
+
+bool stm32_flash_crc_check(uint8_t sector)
+{
+#if defined(STM32H7)
+    return stm32_flash_crc_check_h7(sector);
+#else
+    return true;
 #endif
 }
 

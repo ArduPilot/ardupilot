@@ -332,6 +332,10 @@ void Storage::_flash_load(void)
 
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
 
+    if (!stm32_flash_crc_check(STORAGE_FLASH_PAGE) || !stm32_flash_crc_check(STORAGE_FLASH_PAGE + 1)) {
+       INTERNAL_ERROR(AP_InternalError::error_t::flash_fail);
+    }
+
     if (!_flash.init()) {
         AP_HAL::panic("Unable to init flash storage");
     }
