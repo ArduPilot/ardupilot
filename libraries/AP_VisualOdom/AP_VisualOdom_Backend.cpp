@@ -49,18 +49,18 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_estimate(const uint64_t
     angle_d.rotate(rot);
     position_d.rotate(rot);
 
-    const uint32_t now_ms = AP_HAL::millis();
-    _last_update_ms = now_ms;
-
     // send to EKF
     const float time_delta_sec = time_delta_usec / 1000000.0f;
     AP::ahrs_navekf().writeBodyFrameOdom(confidence,
                                          position_d,
                                          angle_d,
                                          time_delta_sec,
-                                         now_ms,
+                                         time_ms,
                                          _frontend.get_delay_ms(),
                                          _frontend.get_pos_offset());
+
+    // record time for health monitoring
+    _last_update_ms = AP_HAL::millis();
 
     // log sensor data
     Write_VisualOdom(time_delta_sec,
