@@ -26,7 +26,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
-#include <AP_RCTelemetry/AP_VideoTX.h>
+#include "AP_VideoTX.h"
 
 #define SMARTAUDIO_BUFFER_CAPACITY 5
 
