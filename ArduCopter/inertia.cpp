@@ -8,9 +8,10 @@ void Copter::read_inertia()
 
     // pull position from ahrs
     Location loc;
-    ahrs.get_position(loc);
-    current_loc.lat = loc.lat;
-    current_loc.lng = loc.lng;
+    if (ahrs.get_position(loc)) {
+        current_loc.lat = loc.lat;
+        current_loc.lng = loc.lng;
+    }
 
     // exit immediately if we do not have an altitude estimate
     if (!inertial_nav.get_filter_status().flags.vert_pos) {
