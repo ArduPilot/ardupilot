@@ -37,7 +37,6 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
 #endif
-#include <signal.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -210,7 +209,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
             return false;
         }
         if (group_shift != 0 && idx == 0) {
-            // great idx 0 as 63 for duplicates. See group_id()
+            // treat idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
         if (used_mask & (1ULL<<idx)) {

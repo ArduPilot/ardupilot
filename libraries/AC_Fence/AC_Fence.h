@@ -46,6 +46,10 @@ public:
         _poly_loader.init();
         AP_Param::set_and_save_by_name("FENCE_ALT_MAX", AC_FENCE_ALT_MAX_DEFAULT);
         AP_Param::set_and_save_by_name("FENCE_ALT_FRAME", AC_FENCE_ALT_FRAME_DEFAULT);
+
+        // gcs().send_text(MAV_SEVERITY_CRITICAL, "Boot value is: %f", (double) _alt_max_ext);
+
+        // AC_Fence().conv_max_alt_frame_boot();
     }
 
     // get singleton instance
@@ -114,6 +118,9 @@ public:
     // Convert frame max altitude is in
     bool conv_max_alt_frame(int newframe);
 
+    // Convert alt max on bootup if necessary
+    bool conv_max_alt_frame_boot();
+
     // Adjust the max altitude
     void change_max_alt(float newalt);
 
@@ -149,7 +156,7 @@ private:
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(const char* &fail_msg) const;
     bool pre_arm_check_circle(const char* &fail_msg) const;
-    bool pre_arm_check_alt(const char* &fail_msg)  const;
+    bool pre_arm_check_alt(const char* &fail_msg) const;
 
     // parameters
     AP_Int8         _enabled;               // top level enable/disable control

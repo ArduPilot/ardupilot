@@ -268,10 +268,32 @@ bool AC_Fence::check_fence_alt_max()
 bool AC_Fence::conv_max_alt_frame(int newframe) 
 {
     int32_t _new_max_alt_cm;
-    if (fenceloc.get_spec_alt_cm(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame(newframe), _alt_max * 100.0f, _new_max_alt_cm)) {
+    if (fenceloc.convert_altitude_frame(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame(newframe), _alt_max * 100.0f, _new_max_alt_cm)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Previous altitude: %f", (double)_alt_max);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "New altitude: %f", (double)_new_max_alt_cm / 100.0f);
+        
         _alt_max = (int) _new_max_alt_cm / 100.0f;
         return true;
     } else {
+        return false;
+    }    
+
+    return true;
+}
+
+bool AC_Fence::conv_max_alt_frame_boot()
+{
+    int32_t _new_max_alt_cm;
+    if (fenceloc.convert_altitude_frame(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame::ABOVE_HOME, _alt_max_ext * 100.0f, _new_max_alt_cm)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Previous altitude: %f", (double)_alt_max);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "New altitude: %f", (double)_new_max_alt_cm / 100.0f);
+        
+        
+        _alt_max = (int) _new_max_alt_cm / 100.0f;
+        return true;
+    } else {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "I'm not executing at bootup");
+
         return false;
     }    
 

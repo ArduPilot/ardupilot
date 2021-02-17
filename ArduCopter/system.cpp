@@ -15,11 +15,23 @@ static void failsafe_check_static()
 
 static bool validate_fence_frame(float newframe) 
 {    
-    if ((int)newframe > 3 || (int)newframe < 0) {
-        return false;
-    } else {
-        return AP::fence()->conv_max_alt_frame((int)newframe);
-    }
+    switch((int)newframe) {
+        case 0:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 1:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 2:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 3:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        default:
+            return false;
+            break;
+    } 
 }
 
 static bool chg_max_alt(float newalt)
