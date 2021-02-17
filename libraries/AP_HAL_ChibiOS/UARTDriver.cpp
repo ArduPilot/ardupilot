@@ -79,7 +79,7 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 #ifndef HAL_UART_RX_STACK_SIZE
-#define HAL_UART_RX_STACK_SIZE 1024
+#define HAL_UART_RX_STACK_SIZE 768
 #endif
 
 UARTDriver::UARTDriver(uint8_t _serial_num) :
