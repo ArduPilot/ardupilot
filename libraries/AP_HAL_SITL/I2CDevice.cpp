@@ -172,6 +172,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
     }
 
     if (recv && recv_len != 0) {
+        msgs[nmsgs].bus = _bus.bus;
         msgs[nmsgs].addr = _address;
         msgs[nmsgs].flags = I2C_M_RD;
         msgs[nmsgs].buf = recv;
