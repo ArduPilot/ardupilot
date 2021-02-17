@@ -1335,9 +1335,9 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
     { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
     { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
-    { Parameters::k_param_fence_action,       0,      AP_PARAM_INT8, "FENCE_ACTION"},
-    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
     { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
+    // { Parameters::k_param_fence_action,       0,      AP_PARAM_INT8, "FENCE_ACTION"},
+    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
 };
 
 void Plane::load_parameters(void)
@@ -1409,6 +1409,50 @@ void Plane::load_parameters(void)
         RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
         if (soar_ch != nullptr && !soar_ch->option.configured()) {
             soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
+        }
+    }
+
+    // Convert fence to RCx_OPTION
+    AP_Int8 fence_enable_ch;
+    AP_Param::ConversionInfo fence_channel_info = {
+        Parameters::k_param_fence_channel,
+        0,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&fence_channel_info, &fence_enable_ch) && fence_enable_ch.get() != 0) {
+        RC_Channel *fence_ch = rc().channel(fence_enable_ch - 1);
+        if (fence_ch != nullptr && !fence_ch->option.configured()) {
+            fence_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FENCE); // save the new param
+        }
+    }
+
+    AP_Int8 fence_action_old;
+    AP_Param::ConversionInfo fence_action_info_old = {
+        Parameters::k_param_fence_action,
+        0,
+        AP_PARAM_INT8,
+        "FENCE_ACTION"
+    };
+    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
+        enum ap_var_type ptype;
+        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
+        uint8_t fence_action_new_val;
+        if(fence_action_new && !fence_action_new->configured()) {
+            switch(fence_action_old.get()) {
+                case 0: // FENCE_ACTION_NONE
+                case 2: // FENCE_ACTION_REPORT_ONLY
+                default:
+                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    break;
+                case 1: // FENCE_ACTION_GUIDED
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    break;
+                case 3: // FENCE_ACTION_GUIDED_THR_PASS
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    break;
+            }
+            fence_action_new->set_and_save((int8_t)fence_action_new_val);
         }
     }
 
