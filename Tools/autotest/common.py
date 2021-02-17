@@ -1722,6 +1722,9 @@ class AutoTest(ABC):
         ])
 
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
+
+        self.reset_SITL_commandline()
+
         fail = False
         for param in parameters.keys():
             if param.startswith("SIM_"):
