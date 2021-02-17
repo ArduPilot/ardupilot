@@ -146,16 +146,17 @@ void AP_BattMonitor_UAVCAN::read()
     _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
 }
 
-/// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-uint8_t AP_BattMonitor_UAVCAN::capacity_remaining_pct() const
+/// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
 {
     if ((uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC)) ||
         _soc > 100) {
         // a UAVCAN battery monitor may not be able to supply a state of charge. If it can't then
         // the user can set the option to use current integration in the backend instead.
-        return AP_BattMonitor_Backend::capacity_remaining_pct();
+        return AP_BattMonitor_Backend::capacity_remaining_pct(percentage);
     }
-    return _soc;
+    percentage = _soc;
+    return true;
 }
 
 #endif
