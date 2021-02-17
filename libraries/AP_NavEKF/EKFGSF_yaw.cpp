@@ -577,22 +577,6 @@ float EKFGSF_yaw::gaussianDensity(const uint8_t mdl_idx) const
     return normDist;
 }
 
-bool EKFGSF_yaw::getLogData(float &yaw_composite, float &yaw_composite_variance, float yaw[N_MODELS_EKFGSF], float innov_VN[N_MODELS_EKFGSF], float innov_VE[N_MODELS_EKFGSF], float weight[N_MODELS_EKFGSF]) const
-{
-    if (vel_fuse_running) {
-        yaw_composite = GSF.yaw;
-        yaw_composite_variance = GSF.yaw_variance;
-        for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
-            yaw[mdl_idx] = EKF[mdl_idx].X[2];
-            innov_VN[mdl_idx] = EKF[mdl_idx].innov[0];
-            innov_VE[mdl_idx] = EKF[mdl_idx].innov[1];
-            weight[mdl_idx] = GSF.weights[mdl_idx];
-        }
-        return true;
-    }
-    return false;
-}
-
 void EKFGSF_yaw::forceSymmetry(const uint8_t mdl_idx)
 {
     float P01 = 0.5f * (EKF[mdl_idx].P[0][1] + EKF[mdl_idx].P[1][0]);
