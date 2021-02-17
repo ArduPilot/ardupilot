@@ -151,6 +151,7 @@ public:
     friend class ModeGuided;
     friend class ModeInitializing;
     friend class ModeManual;
+    friend class ModeStallRecovery;
     friend class ModeQStabilize;
     friend class ModeQHover;
     friend class ModeQLoiter;
@@ -274,6 +275,7 @@ private:
     ModeGuided mode_guided;
     ModeInitializing mode_initializing;
     ModeManual mode_manual;
+    ModeStallRecovery mode_stallrecovery;
     ModeQStabilize mode_qstabilize;
     ModeQHover mode_qhover;
     ModeQLoiter mode_qloiter;
@@ -571,6 +573,9 @@ private:
     } crash_state;
 
     // this controls throttle suppression in auto modes
+    // true if the aircraft is currently stalled
+    bool is_stalled:1;
+
     bool throttle_suppressed;
 	
     // reduce throttle to eliminate battery over-current

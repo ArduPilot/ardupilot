@@ -43,6 +43,7 @@ public:
         QAUTOTUNE     = 22,
         QACRO         = 23,
         THERMAL       = 24,
+        STALLRECOVERY = 25,
     };
 
     // Constructor
@@ -256,9 +257,36 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool _enter() override;
+    void _exit() override;
+
 protected:
 
+
     void _exit() override;
+};
+
+class ModeStallRecovery : public Mode
+{
+public:
+    Number mode_number() const override { return Number::STALLRECOVERY; }
+    const char *name() const override { return "STALL"; }
+    const char *name4() const override { return "STALL"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+protected:
+    bool _enter() override;
+    void _exit() override;
+
+private:
+    const char* gcsStrHeader = "Stall: ";
+    uint32_t start_ms;
+
+    void set_servo_behavior();
+    bool is_recovered_early();
+    void resume_previous_mode();
 };
 
 

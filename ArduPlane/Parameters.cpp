@@ -1317,6 +1317,95 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Param: STALL_THR1
+    // @DisplayName: Stall throttle
+    // @Description: The throttle to apply when stalled
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_THR1", 29, ParametersG2, stall_recovery_throttle1, 100),
+
+    // @Param: STALL_ELEV
+    // @DisplayName: Stall recovery elevator
+    // @Description: The fixed elevator percent (not degree) to apply when trying to recovery from a stall. Usually negative for pitch down. This is a percent because the stabilization is not running so it's not trying to hold a desired pitch angle, we're just applying a little down pitch command
+    // @Units: %
+    // @Range: -100 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_ELEV", 30, ParametersG2, stall_recovery_elevator, -10),
+
+    // @Param: STALL_DUR1
+    // @DisplayName: Stall recovery duration1 max
+    // @Description: The maximum duration that we'll attempt to recover from a stall before leveling wings. Use -1 to never timeout.
+    // @Units: s
+    // @Range: -1, 30000
+    // @Increment: 100
+    // @User: Advanced
+    AP_GROUPINFO("STALL_DUR1MAX", 31, ParametersG2, stall_recovery_duration1_max, 10.0f),
+
+    // @Param: STALL_DUR2
+    // @DisplayName: Stall recovery duration2 max
+    // @Description: The maximum duration that we'll attempt to level wings after a stall to gain airspeed before resuming previous mode. Use -1 to never timeout.
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_DUR2MAX", 32, ParametersG2, stall_recovery_duration2_max, 10.0f),
+
+    // @Param: STALL_ALGORITHM1
+    // @DisplayName: Stall recovery algorithm1
+    // @Description: Stall recovery algorithm1.
+    // @User: Advanced
+    AP_GROUPINFO("STALL_ALGORITHM1", 33, ParametersG2, stall_recovery_algorithm1, 0),
+
+    // @Param: STALL_ALGORITHM2
+    // @DisplayName: Stall recovery algorithm2
+    // @Description: Stall recovery algorithm2.
+    // @User: Advanced
+    AP_GROUPINFO("STALL_ALGORITHM2", 34, ParametersG2, stall_recovery_algorithm2, 0),
+
+    // @Param: STALL_THR2
+    // @DisplayName: Stall recovery throttle
+    // @Description: The throttle to apply when trying to recovery from a stall while leveling the wings. Use -1 for auto controlled throttle, otherwise its a fixed percent.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_THR2", 35, ParametersG2, stall_recovery_throttle2, 100),
+
+    // @Param: STALL_DUR1MIN
+    // @DisplayName: Stall recovery duration1 min
+    // @Description: The minimum duration that we'll force a stall recovery before attempting to level the wings. Use -1 to disable.
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: .1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_DUR1MIN", 36, ParametersG2, stall_recovery_duration1_min, 2.0f),
+
+    // @Param: STALL_DUR2MIN
+    // @DisplayName: Stall recovery duration2 min
+    // @Description: The minimum duration that we'll force attempt to level wings after a stall before we allow a timeout to happen. Use -1 to disable.
+    // @Units: s
+    // @Range: -1, 30
+    // @Increment: .1
+    // @User: Advanced
+    AP_GROUPINFO("STALL_DUR2MIN", 37, ParametersG2, stall_recovery_duration2_min, 2.0f),
+
+    // @Param: STALL_SPIN_RATE
+    // @DisplayName: Stall recovery
+    // @Description: Stall recovery
+    // @User: Advanced
+    // @Units: deg/s
+    AP_GROUPINFO("STALL_SPIN_RATE", 38, ParametersG2, stall_recovery_spin_rate, -1),
+
+    // @Param: STALL_SINK_RATE
+    // @DisplayName: Stall recovery
+    // @Description: Stall recovery
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("STALL_SINK_RATE", 39, ParametersG2, stall_recovery_sink_rate, -1),
+
     AP_GROUPEND
 };
 
