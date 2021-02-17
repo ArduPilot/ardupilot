@@ -1725,7 +1725,10 @@ void AP_Periph_FW::can_battery_update(void)
         }
 
         pkt.state_of_health_pct = UAVCAN_EQUIPMENT_POWER_BATTERYINFO_STATE_OF_HEALTH_UNKNOWN;
-        pkt.state_of_charge_pct = battery.lib.capacity_remaining_pct(i);
+        uint8_t percentage = 0;
+        if (battery.lib.capacity_remaining_pct(percentage, i)) {
+            pkt.state_of_charge_pct = percentage;
+        }
         pkt.model_instance_id = i+1;
 
 #if !defined(HAL_PERIPH_BATTERY_SKIP_NAME)
