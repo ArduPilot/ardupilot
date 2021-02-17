@@ -430,14 +430,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(planck_land_kp_z, "PLANCK_LAND_KP_Z",                 PLANCK_LAND_KP_ALT),
 
-    // @Param: PLANCK_NOM_KP_Z
-    // @DisplayName: Nominal KP alt
-    // @Description: Alt proportional gain used when not in Planck Land
-    // @Units: 1/s
-    // @Range: 0 100000
-    // @User: Advanced
-    GSCALAR(planck_nom_kp_z, "PLANCK_NOM_KP_Z",                 PLANCK_NOM_KP_ALT),
-
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
     // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.

@@ -6,6 +6,10 @@ bool ModePlanckLand::init(bool ignore_checks){
     if(copter.ap.land_complete)
       return false;
 
+    if(copter.pos_control->get_pos_z_p().kP().get() != _kpz_nom){
+      _kpz_nom = copter.pos_control->get_pos_z_p().kP().get();
+    }
+
     if(!copter.planck_interface.ready_for_land()) {
       return false;
     }
@@ -19,6 +23,12 @@ bool ModePlanckLand::init(bool ignore_checks){
       return true;
     }
     return false;
+}
+
+// perform cleanup required when leaving planck land mode
+void ModePlanckLand::exit()
+{
+    copter.pos_control->get_pos_z_p().kP(_kpz_nom);
 }
 
 void ModePlanckLand::run(){

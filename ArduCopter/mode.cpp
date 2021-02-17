@@ -377,6 +377,10 @@ void Copter::exit_mode(Mode *&old_flightmode,
     }
 #endif
 
+    if (old_flightmode == &mode_planckland || old_flightmode == &mode_planckrtb) {
+        mode_planckland.exit();
+    }
+
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_flightmode == &mode_acro) {

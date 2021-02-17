@@ -1538,6 +1538,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    bool is_landing() const override { return _is_landing; }
 
 protected:
 
@@ -1561,8 +1562,11 @@ public:
     bool allows_arming(bool from_gcs) const override { return false; }
     bool is_autopilot() const override { return true; }
     bool requires_planck() const override { return true; }
+    void exit();
 
 protected:
+
+    float _kpz_nom = 1;
 
     const char *name() const override { return "PLANCKLAND"; }
     const char *name4() const override { return "PLND"; }

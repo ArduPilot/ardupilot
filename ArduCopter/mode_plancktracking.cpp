@@ -5,8 +5,6 @@ bool ModePlanckTracking::init_without_RTB_request(bool ignore_checks) {
     //just use GUIDED_NOGPS, as we don't want to require the use of GPS for
     //GPS-denied operation.  Subsequent commands will be accel/attitude based.
 
-    copter.pos_control->get_pos_z_p().kP(g.planck_nom_kp_z);
-
     if(!copter.position_ok() && copter.planck_interface.get_tag_tracking_state()) {
       //Set the angle to zero and a zero z rate; this prevents an initial drop
       ModeGuided::set_angle(Quaternion(),0,true,0);
