@@ -60,7 +60,7 @@
 #endif
 
 #ifndef RCOUT_THD_WA_SIZE
-#define RCOUT_THD_WA_SIZE    1024
+#define RCOUT_THD_WA_SIZE    512
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
@@ -72,11 +72,11 @@
 #endif
 
 #ifndef STORAGE_THD_WA_SIZE
-#define STORAGE_THD_WA_SIZE 1536
+#define STORAGE_THD_WA_SIZE 1024
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#define MONITOR_THD_WA_SIZE 768
+#define MONITOR_THD_WA_SIZE 512
 #endif
 
 /* Scheduler implementation: */
