@@ -223,11 +223,11 @@ public:
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
-    void send_distance_sensor() const;
+    void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
     virtual void send_rangefinder() const;
-    void send_proximity() const;
+    void send_proximity();
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
@@ -839,6 +839,11 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
+
+    // if we've ever sent a DISTANCE_SENSOR message out of an
+    // orientation we continue to send it out, even if it is not
+    // longer valid.
+    uint8_t proximity_ever_valid_bitmask;
 
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)
