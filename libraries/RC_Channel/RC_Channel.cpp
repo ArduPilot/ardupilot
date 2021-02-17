@@ -44,7 +44,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
-#include <AP_RCTelemetry/AP_VideoTX.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
