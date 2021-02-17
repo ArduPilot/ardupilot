@@ -396,7 +396,7 @@ class AutoTestRover(AutoTest):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Mission Complete", timeout=600)
         self.disarm_vehicle()
         self.progress("Mission OK")
 
@@ -405,9 +405,9 @@ class AutoTestRover(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.expect("Gripper Grabbed")
-        self.mavproxy.expect("Gripper Released")
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Gripper Grabbed", timeout=60)
+        self.wait_statustext("Gripper Released", timeout=60)
+        self.wait_statustext("Mission Complete", timeout=60)
         self.disarm_vehicle()
 
     def do_get_banner(self):
@@ -550,7 +550,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                       (m.wp_dist, wp_dist_min,))
 
         # wait for mission to complete
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Mission Complete", timeout=60)
 
         # the EKF doesn't pull us down to 0 speed:
         self.wait_groundspeed(0, 0.5, timeout=600)
@@ -586,7 +586,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_rc(3, 1550)
             self.wait_distance_to_home(25, 100000, timeout=60)
             self.change_mode("RTL")
-            self.mavproxy.expect("APM: Reached destination")
+            self.wait_statustext("Reached destination", timeout=60)
             # now enable avoidance and make sure we can't:
             self.set_rc(10, 2000)
             self.change_mode("ACRO")

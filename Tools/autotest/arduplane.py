@@ -538,7 +538,7 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
-        self.mavproxy.expect("Auto disarmed")
+        self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
 
     def fly_do_reposition(self):
@@ -1018,9 +1018,9 @@ class AutoTestPlane(AutoTest):
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.mavproxy.expect("Gripper Grabbed")
-            self.mavproxy.expect("Gripper Released")
-            self.mavproxy.expect("Auto disarmed")
+            self.wait_statustext("Gripper Grabbed", timeout=60)
+            self.wait_statustext("Gripper Released", timeout=60)
+            self.wait_statustext("Auto disarmed", timeout=60)
         except Exception as e:
             self.progress("Exception caught:")
             self.progress(self.get_exception_stacktrace(e))
@@ -1275,7 +1275,7 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.expect("BANG")
+        self.wait_statustext("BANG", timeout=60)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
@@ -1294,7 +1294,7 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Diving")
         self.set_rc(2, 2000)
-        self.mavproxy.expect("BANG")
+        self.wait_statustext("BANG", timeout=60)
 
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -1513,7 +1513,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
             if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
                 raise NotAchievedException("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" % (rf.distance, gpi.relative_alt/1000.0))
-            self.mavproxy.expect("Auto disarmed")
+            self.wait_statustext("Auto disarmed", timeout=60)
 
             self.progress("Ensure RFND messages in log")
             if not self.current_onboard_log_contains_message("RFND"):
