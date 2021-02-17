@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
     // @Group: VTX_
-    // @Path: ../AP_RCTelemetry/AP_VideoTX.cpp
+    // @Path: ../AP_VideoTX/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
 
 #if HAL_MSP_ENABLED
