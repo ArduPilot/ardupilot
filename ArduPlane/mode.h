@@ -257,11 +257,7 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
-    bool _enter() override;
-    void _exit() override;
-
 protected:
-
 
     void _exit() override;
 };
@@ -276,6 +272,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool does_auto_throttle() const override { return auto_throttle; }
+
 protected:
     bool _enter() override;
     void _exit() override;
@@ -283,6 +281,7 @@ protected:
 private:
     const char* gcsStrHeader = "Stall: ";
     uint32_t start_ms;
+    bool auto_throttle;
 
     void set_servo_behavior();
     bool is_recovered_early();

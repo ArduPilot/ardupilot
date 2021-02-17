@@ -3,9 +3,7 @@
 
 bool ModeStallRecovery::_enter()
 {
-    plane.throttle_allows_nudging = false;
-    plane.auto_throttle_mode = false;
-    plane.auto_navigation_mode = false;
+    auto_throttle = false;
 
     start_ms = AP_HAL::millis();
 
@@ -162,7 +160,7 @@ void ModeStallRecovery::set_servo_behavior()
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, scaled_elev);
 
         throttle = plane.g2.stall_recovery_throttle1;
-        plane.auto_throttle_mode = false;
+        auto_throttle = false;
 
     } else {
         // hold wings level
@@ -172,9 +170,9 @@ void ModeStallRecovery::set_servo_behavior()
         // assign throttle. Negative means auto-throttle
         throttle = plane.g2.stall_recovery_throttle2;
         if (throttle < 0) {
-            plane.auto_throttle_mode = true;
+            auto_throttle = true;
         } else {
-            plane.auto_throttle_mode = false;
+            auto_throttle = false;
         }
     }
 
@@ -184,7 +182,7 @@ void ModeStallRecovery::set_servo_behavior()
         // the throttle while on the ground testing the feature
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
 
-    } else if (plane.auto_throttle_mode) {
+    } else if (auto_throttle) {
         plane.calc_throttle();
 
     } else {
