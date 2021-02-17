@@ -8487,7 +8487,7 @@ switch value'''
             raise NotAchievedException("Did not receive GPS_RAW_INT")
         tstart = self.get_sim_time()
         while True:
-            now = self.get_sim_time()
+            now = self.get_sim_time_cached()
             if now - tstart > 20:
                 raise NotAchievedException("NMEA output not updating?!")
             gps2 = self.mav.recv_match(type="GPS2_RAW", blocking=True, timeout=1)
