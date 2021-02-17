@@ -1724,10 +1724,6 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
         settle_time = 200;
-        // announce results of dwell and update
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(dwell_freq), (double)(dwell_gain));
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f acc=%f", (double)(dwell_phase), (double)(test_accel_max));
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: SP_BO=%f time=%f", (double)(AUTOTUNE_SP_BACKOFF), (double)(AUTOTUNE_TESTING_STEP_TIMEOUT_MS));
     }
 }
 
@@ -1813,7 +1809,7 @@ void AC_AutoTune::determine_gain(float tgt_rate, float meas_rate, float freq, fl
                 gcnt++;
             }
             float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
-            if (d_time * 0.001f < 5.0f * 6.28f / freq) {
+            if (d_time  < 2.0f * (float)cycle_time_ms) {
                 delta_time += d_time;
                 cnt++;
             }
@@ -1993,7 +1989,7 @@ void AC_AutoTune::determine_gain_angle(float command, float tgt_angle, float mea
                 gcnt++;
             }
             float d_time = (float)(temp_max_meas_time[AUTOTUNE_DWELL_CYCLES - i] - temp_max_tgt_time[AUTOTUNE_DWELL_CYCLES - i]);
-            if (d_time * 0.001f < 5.0f * 6.28f / freq) {
+            if (d_time < 2.0f * (float)cycle_time_ms) {
                 delta_time += d_time;
                 cnt++;
             }

@@ -36,8 +36,8 @@
 #define AUTOTUNE_RP_MAX                   1.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                    10.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    3.0f     // maximum Stab P value
-#define AUTOTUNE_RFF_MAX                   1.0f     // maximum Stab P value
-#define AUTOTUNE_RFF_MIN                   0.05f     // maximum Stab P value
+#define AUTOTUNE_RFF_MAX                   0.5f     // maximum Stab P value
+#define AUTOTUNE_RFF_MIN                   0.025f    // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
 // constructor
@@ -359,7 +359,8 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 {
     // announce results of dwell and update
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]));
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]));
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: phase=%f accel=%f", (double)(test_phase[freq_cnt]), (double)(test_accel_max));
 
     switch (test_axis) {
     case ROLL:
@@ -410,7 +411,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 1.05f * fabsf(rate_target) &&
                fabsf(meas_rate) > 0.95f * fabsf(rate_target)) {
         counter = AUTOTUNE_SUCCESS_COUNT;
-        tune_ff = 0.8f * tune_ff;
+        tune_ff = 0.95f * tune_ff;
         tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
         ff_up_first_iter = true;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) > 1.05f * fabsf(rate_target)) {
@@ -579,7 +580,6 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
         } else {
             // adjust tuning gain so max response gain is not exceeded
             if (prev_gain < max_gain && gain[freq_cnt] > max_gain) {
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tune_p=%f prgain=%f gain=%f", (double)(tune_p), (double)(prev_gain), (double)(gain[freq_cnt]));
                 float adj_factor = (max_gain - gain[freq_cnt]) / (gain[freq_cnt] - prev_gain);
                 tune_p = tune_p + gain_incr * adj_factor; 
             }
