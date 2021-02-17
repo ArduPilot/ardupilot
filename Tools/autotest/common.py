@@ -5273,10 +5273,18 @@ Also, ignores heartbeats not from our target system'''
 
     def start_mavproxy(self):
         self.progress("Starting MAVProxy")
+
+        # determine a good pexpect timeout for reading MAVProxy's
+        # output; some regmes may require longer timeouts.
+        pexpect_timeout=60
+        if self.valgrind:
+            pexpect_timeout *= 10
+
         self.mavproxy = util.start_MAVProxy_SITL(
             self.vehicleinfo_key(),
             logfile=self.mavproxy_logfile,
-            options=self.mavproxy_options())
+            options=self.mavproxy_options(),
+            pexpect_timeout=pexpect_timeout)
         self.mavproxy.expect('Telemetry log: (\S+)\r\n')
         self.logfile = self.mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
