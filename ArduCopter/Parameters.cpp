@@ -421,6 +421,16 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
+
+    // @Param: PLANCK_LAND_KP_Z
+    // @DisplayName: Planck Angle Timeout
+    // @Description: Time above PLANCK_ANGLE_MAX before triggering failsafe
+    // @Units: milliseconds
+    // @Range: 0 60000
+    // @User: Advanced
+    GSCALAR(planck_land_kp_z, "PLANCK_LAND_KP_Z",                 PLANCK_LAND_KP_ALT),
+
+
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
     // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.

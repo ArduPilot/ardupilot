@@ -792,3 +792,11 @@
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Planck Items
+//
+// Planck Land kP alt
+#ifndef PLANCK_LAND_KP_ALT
+ #define PLANCK_LAND_KP_ALT          .1     // Proportional alt gain used in planck land
+#endif
