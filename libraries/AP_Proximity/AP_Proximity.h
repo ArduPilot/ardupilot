@@ -64,6 +64,12 @@ public:
     struct Proximity_Distance_Array {
         uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
         float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
+        bool valid(uint8_t offset) const {
+            // returns true if the distance stored at offset is valid
+            return (offset < 8 && (offset_valid & (1U<<offset)));
+        };
+
+        uint8_t offset_valid; // bitmask
     };
 
     // detect and initialise any available proximity sensors
