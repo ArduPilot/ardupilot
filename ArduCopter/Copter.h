@@ -608,6 +608,12 @@ private:
         RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
+
+    enum class FlightOptions {
+        DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
+        DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
                                                       Failsafe_Action_Land,

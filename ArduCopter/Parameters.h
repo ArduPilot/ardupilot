@@ -642,6 +642,8 @@ public:
     AP_Int32 rtl_options;
 #endif
 
+    AP_Int32 flight_options;
+
 };
 
 extern const AP_Param::Info        var_info[];
