@@ -799,4 +799,5 @@
 // Planck Land kP alt
 #ifndef PLANCK_LAND_KP_ALT
  #define PLANCK_LAND_KP_ALT          .1     // Proportional alt gain used in planck land
+ #define PLANCK_NOM_KP_ALT           1
 #endif
