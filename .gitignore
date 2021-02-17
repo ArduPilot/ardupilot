@@ -14,7 +14,9 @@
 /Tools/autotest/jsbsim_start_0.xml
 /Tools/autotest/rover-ch7_mission.txt
 /tmp/*
+# Exclude all bins but allow font bins
 *.bin
+!font*.bin
 *.d
 *.dfu
 *.dll
