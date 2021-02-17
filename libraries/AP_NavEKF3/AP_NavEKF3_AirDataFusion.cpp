@@ -461,7 +461,7 @@ void NavEKF3_core::FuseDragForces()
 {
     // drag model parameters
     const float bcoef_x = frontend->_ballisticCoef_x;
-    const float bcoef_y = frontend->_ballisticCoef_x;
+    const float bcoef_y = frontend->_ballisticCoef_y;
     const float mcoef = frontend->_momentumDragCoef.get();
     const bool using_bcoef_x = bcoef_x > 1.0f;
     const bool using_bcoef_y = bcoef_y > 1.0f;
