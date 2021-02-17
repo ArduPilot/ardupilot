@@ -696,6 +696,8 @@ private:
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
     bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
     bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
+
+    bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP

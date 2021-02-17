@@ -44,6 +44,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_RCTelemetry/AP_VideoTX.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -408,15 +409,15 @@ void RC_Channel::reset_mode_switch()
     read_mode_switch();
 }
 
-void RC_Channel::read_mode_switch()
+// read a 6 position switch
+bool RC_Channel::read_6pos_switch(int8_t& position)
 {
-    // calculate position of flight mode switch
+    // calculate position of 6 pos switch
     const uint16_t pulsewidth = get_radio_in();
     if (pulsewidth <= 900 || pulsewidth >= 2200) {
-        return;  // This is an error condition
+        return false;  // This is an error condition
     }
 
-    modeswitch_pos_t position;
     if      (pulsewidth < 1231) position = 0;
     else if (pulsewidth < 1361) position = 1;
     else if (pulsewidth < 1491) position = 2;
@@ -424,12 +425,20 @@ void RC_Channel::read_mode_switch()
     else if (pulsewidth < 1750) position = 4;
     else position = 5;
 
-    if (!debounce_completed((int8_t)position)) {
-        return;
+    if (!debounce_completed(position)) {
+        return false;
     }
 
-    // set flight mode and simple mode setting
-    mode_switch_changed(position);
+    return true;
+}
+
+void RC_Channel::read_mode_switch()
+{
+    int8_t position;
+    if (read_6pos_switch(position)) {
+        // set flight mode and simple mode setting
+        mode_switch_changed(modeswitch_pos_t(position));
+    }
 }
 
 bool RC_Channel::debounce_completed(int8_t position) 
@@ -493,6 +502,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::VTX_POWER:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
@@ -589,7 +599,15 @@ bool RC_Channel::read_aux()
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
+    } else if (_option == AUX_FUNC::VTX_POWER) {
+        int8_t position;
+        if (read_6pos_switch(position)) {
+            AP::vtx().change_power(position);
+            return true;
+        }
+        return false;
     }
+
     AuxSwitchPos new_position;
     if (!read_3pos_switch(new_position)) {
         return false;
@@ -1156,9 +1174,9 @@ bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
     bool switch_reversed = reversed && rc().switch_reverse_allowed();
     
-    if (in < AUX_PWM_TRIGGER_LOW) {
+    if (in < AUX_SWITCH_PWM_TRIGGER_LOW) {
         ret = switch_reversed ? AuxSwitchPos::HIGH : AuxSwitchPos::LOW;
-    } else if (in > AUX_PWM_TRIGGER_HIGH) {
+    } else if (in > AUX_SWITCH_PWM_TRIGGER_HIGH) {
         ret = switch_reversed ? AuxSwitchPos::LOW : AuxSwitchPos::HIGH;
     } else {
         ret = AuxSwitchPos::MIDDLE;

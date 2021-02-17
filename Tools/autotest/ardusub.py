@@ -3,12 +3,17 @@
 # Dive ArduSub in SITL
 from __future__ import print_function
 import os
+import sys
 import time
 
 from pymavlink import mavutil
 
 from common import AutoTest
 from common import NotAchievedException
+from common import AutoTestTimeoutException
+
+if sys.version_info[0] < 3:
+    ConnectionResetError = AutoTestTimeoutException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -271,8 +276,8 @@ class AutoTestSub(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.change_mode('AUTO')
-            self.mavproxy.expect("Gripper Grabbed")
-            self.mavproxy.expect("Gripper Released")
+            self.wait_statustext("Gripper Grabbed", timeout=60)
+            self.wait_statustext("Gripper Released", timeout=60)
         except Exception as e:
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))

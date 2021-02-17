@@ -342,6 +342,9 @@ protected:
     //          init_takeoff
     void run_z_controller();
 
+    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
+    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f; }
+
     ///
     /// xy controller private methods
     ///

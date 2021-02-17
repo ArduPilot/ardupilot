@@ -63,6 +63,7 @@ failed:
     ftp.requests = nullptr;
     delete ftp.replies;
     ftp.replies = nullptr;
+    gcs().send_text(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
 
     return false;
 }

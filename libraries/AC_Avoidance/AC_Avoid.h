@@ -20,6 +20,7 @@
 
 #define AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS    500     // if limiting is active if last limit is happend in the last x ms
 #define AC_AVOID_MIN_BACKUP_BREACH_DIST     10.0f   // vehicle will backaway if breach is greater than this distance in cm
+#define AC_AVOID_ACCEL_TIMEOUT_MS           200     // stored velocity used to calculate acceleration will be reset if avoidance is active after this many ms
 
 /*
  * This class prevents the vehicle from leaving a polygon fence or hitting proximity-based obstacles
@@ -82,6 +83,7 @@ public:
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
     bool proximity_avoidance_enabled() const { return _proximity_enabled; }
+    void proximity_alt_avoidance_enable(bool on_off) { _proximity_alt_enabled = on_off; }
 
     // helper functions
 
@@ -103,6 +105,9 @@ public:
     // return margin (in meters) that the vehicle should stay from objects
     float get_margin() const { return _margin; }
 
+    // return minimum alt (in meters) above which avoidance will be active
+    float get_min_alt() const { return _alt_min; }
+
     // return true if limiting is active
     bool limits_active() const {return (AP_HAL::millis() - _last_limit_time) < AC_AVOID_ACTIVE_LIMIT_TIMEOUT_MS;};
 
@@ -114,6 +119,12 @@ private:
         BEHAVIOR_SLIDE = 0,
         BEHAVIOR_STOP = 1
     };
+
+    /*
+     * Limit acceleration so that change of velocity output by avoidance library is controlled
+     * This helps reduce jerks and sudden movements in the vehicle
+     */
+    void limit_accel(const Vector3f &original_vel, Vector3f &modified_vel, float dt);
 
     /*
      * Adjusts the desired velocity for the circular fence.
@@ -200,10 +211,14 @@ private:
     AP_Float _margin;           // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;          // avoidance behaviour (slide or stop)
     AP_Float _backup_speed_max; // Maximum speed that will be used to back away (in m/s)
+    AP_Float _alt_min;          // alt below which Proximity based avoidance is turned off
+    AP_Float _accel_max;        // maximum accelration while simple avoidance is active
 
     bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
+    bool _proximity_alt_enabled = true; // true if proximity sensor based avoidance is enabled based on altitude
     uint32_t _last_limit_time;      // the last time a limit was active
     uint32_t _last_log_ms;          // the last time simple avoidance was logged
+    Vector3f _prev_avoid_vel;       // copy of avoidance adjusted velocity
 
     static AC_Avoid *_singleton;
 };

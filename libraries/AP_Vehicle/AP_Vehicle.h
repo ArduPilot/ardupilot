@@ -45,6 +45,7 @@
 #include <AP_MSP/AP_MSP.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_VideoTX/AP_SmartAudio.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -77,8 +78,8 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    bool virtual set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
-    uint8_t virtual get_mode() const = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
         return control_mode_reason;
@@ -317,6 +318,10 @@ protected:
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
+#endif
+    
+#if HAL_SMARTAUDIO_ENABLED
+    AP_SmartAudio smartaudio;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];

@@ -246,7 +246,6 @@ private:
         Shared_DMA *dma_handle;
         uint32_t *dma_buffer;
         uint16_t dma_buffer_len;
-        bool have_lock;
         bool pwm_started;
         uint32_t bit_width_mul;
         uint32_t rc_frequency;
@@ -475,7 +474,8 @@ private:
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(void *p);
     bool mode_requires_dma(enum output_mode mode) const;
-    bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length, bool choose_high);
+    bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
+      const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
     static bool is_dshot_protocol(const enum output_mode mode);

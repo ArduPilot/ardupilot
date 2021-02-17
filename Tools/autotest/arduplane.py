@@ -101,13 +101,17 @@ class AutoTestPlane(AutoTest):
         self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
-        self.set_rc(3, 1600)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({
+            3: 1600,
+            4: 1500,
+        })
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
-        self.set_rc(2, 1100)
-        self.set_rc(3, 2000)
+        self.set_rc_from_map({
+            2: 1100,
+            3: 2000,
+        })
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=30, relative=relative)
@@ -534,7 +538,7 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
-        self.mavproxy.expect("Auto disarmed")
+        self.wait_statustext("Auto disarmed", timeout=60)
         self.progress("Mission OK")
 
     def fly_do_reposition(self):
@@ -1014,9 +1018,9 @@ class AutoTestPlane(AutoTest):
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.mavproxy.expect("Gripper Grabbed")
-            self.mavproxy.expect("Gripper Released")
-            self.mavproxy.expect("Auto disarmed")
+            self.wait_statustext("Gripper Grabbed", timeout=60)
+            self.wait_statustext("Gripper Released", timeout=60)
+            self.wait_statustext("Auto disarmed", timeout=60)
         except Exception as e:
             self.progress("Exception caught:")
             self.progress(self.get_exception_stacktrace(e))
@@ -1271,7 +1275,7 @@ class AutoTestPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.expect("BANG")
+        self.wait_statustext("BANG", timeout=60)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
@@ -1290,7 +1294,7 @@ class AutoTestPlane(AutoTest):
 
         self.progress("Diving")
         self.set_rc(2, 2000)
-        self.mavproxy.expect("BANG")
+        self.wait_statustext("BANG", timeout=60)
 
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -1427,6 +1431,49 @@ class AutoTestPlane(AutoTest):
         self.deadreckoning_main()
         self.deadreckoning_main(disable_airspeed_sensor=True)
 
+    def rtl_climb_min(self):
+        self.wait_ready_to_arm()
+        rtl_climb_min = 100
+        self.set_parameter("RTL_CLIMB_MIN", rtl_climb_min)
+        takeoff_alt = 50
+        self.takeoff(alt=takeoff_alt)
+        self.change_mode('CRUISE')
+        self.wait_distance_to_home(1000, 1500, timeout=60)
+        post_cruise_alt = self.get_altitude(relative=True)
+        self.change_mode('RTL')
+        expected_alt = self.get_parameter("ALT_HOLD_RTL")/100.0
+        if expected_alt == -1:
+            expected_alt = self.get_altitude(relative=True)
+
+        # ensure we're about half-way-down at the half-way-home stage:
+        self.wait_distance_to_nav_target(
+            0,
+            500,
+            timeout=120,
+        )
+        alt = self.get_altitude(relative=True)
+        expected_halfway_alt = expected_alt + (post_cruise_alt + rtl_climb_min - expected_alt)/2.0
+        if abs(alt - expected_halfway_alt) > 30:
+            raise NotAchievedException("Not half-way-down and half-way-home (want=%f got=%f" %
+                                       (expected_halfway_alt, alt))
+        self.progress("Half-way-down at half-way-home (want=%f vs got=%f)" %
+                      (expected_halfway_alt, alt))
+
+        rtl_radius = self.get_parameter("RTL_RADIUS")
+        if rtl_radius == 0:
+            rtl_radius = self.get_parameter("WP_LOITER_RAD")
+        self.wait_distance_to_nav_target(
+            0,
+            rtl_radius,
+            timeout=120,
+        )
+        alt = self.get_altitude(relative=True)
+        if abs(alt - expected_alt) > 10:
+            raise NotAchievedException(
+                "Expected to have %fm altitude at end of RTL (got %f)" %
+                (expected_alt, alt))
+        self.fly_home_land_and_disarm()
+
     def sample_enable_parameter(self):
         return "Q_ENABLE"
 
@@ -1466,7 +1513,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
             if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
                 raise NotAchievedException("rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" % (rf.distance, gpi.relative_alt/1000.0))
-            self.mavproxy.expect("Auto disarmed")
+            self.wait_statustext("Auto disarmed", timeout=60)
 
             self.progress("Ensure RFND messages in log")
             if not self.current_onboard_log_contains_message("RFND"):
@@ -1858,7 +1905,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Mission OK")
 
     def test_airspeed_drivers(self):
-        self.set_parameter("ARSPD2_TYPE", 7)
+        self.set_parameter("ARSPD_BUS", 2)
+        self.set_parameter("ARSPD_TYPE", 7)  # DLVR
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -2371,6 +2419,10 @@ class AutoTestPlane(AutoTest):
             ("AirspeedDrivers",
              "Test AirSpeed drivers",
              self.test_airspeed_drivers),
+
+            ("RTL_CLIMB_MIN",
+             "Test RTL_CLIMB_MIN",
+             self.rtl_climb_min),
 
             ("IMUTempCal",
              "Test IMU temperature calibration",

@@ -676,6 +676,10 @@ private:
 
     // used for flight testing with GPS yaw loss
     bool _force_disable_gps_yaw;
+
+    // logging support
+    void Write_GPS(uint8_t instance);
+
 };
 
 namespace AP {

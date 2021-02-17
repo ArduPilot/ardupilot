@@ -315,7 +315,9 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             sercfg.irq_cb = rx_irq_cb;
 #endif // HAL_UART_NODMA
-            sercfg.cr2 |= USART_CR2_STOP1_BITS;
+            if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
+                sercfg.cr2 |= USART_CR2_STOP1_BITS;
+            }
             sercfg.ctx = (void*)this;
 
             sdStart((SerialDriver*)sdef.serial, &sercfg);
@@ -829,6 +831,19 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
     if (tx_len == 0) {
         return;
     }
+
+    if (_flow_control != FLOW_CONTROL_DISABLE &&
+        sdef.cts_line != 0 &&
+        palReadLine(sdef.cts_line)) {
+        // we are using hw flow control and the CTS line is high. We
+        // will hold off trying to transmit until the CTS line goes
+        // low to indicate the receiver has space. We do this before
+        // we take the DMA lock to prevent a high CTS line holding a
+        // DMA channel that may be needed by another device
+        tx_len = 0;
+        return;
+    }
+
     if (!dma_handle->lock_nonblock()) {
         tx_len = 0;
         return;
@@ -986,7 +1001,9 @@ void UARTDriver::half_duplex_setup_tx(void)
 #ifdef HAVE_USB_SERIAL
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
-        hd_tx_active = true;
+        // half-duplex transmission is done when both the output is empty and the transmission is ended
+        // if we only wait for empty output the line can be setup for receive too soon losing data bits
+        hd_tx_active = CHN_TRANSMISSION_END | CHN_OUTPUT_EMPTY;
         SerialDriver *sd = (SerialDriver*)(sdef.serial);
         sdStop(sd);
         sercfg.cr3 &= ~USART_CR3_HDSEL;
@@ -1006,16 +1023,18 @@ void UARTDriver::_timer_tick(void)
     if (!_initialised) return;
 
 #ifdef HAVE_USB_SERIAL
-    if (hd_tx_active && (chEvtGetAndClearFlags(&hd_listener) & CHN_OUTPUT_EMPTY) != 0) {
-        /*
-          half-duplex transmit has finished. We now re-enable the
-          HDSEL bit for receive
-         */
-        SerialDriver *sd = (SerialDriver*)(sdef.serial);
-        sdStop(sd);
-        sercfg.cr3 |= USART_CR3_HDSEL;
-        sdStart(sd, &sercfg);
-        hd_tx_active = false;
+    if (hd_tx_active) {
+        hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
+        if (!hd_tx_active) {
+            /*
+                half-duplex transmit has finished. We now re-enable the
+                HDSEL bit for receive
+            */
+            SerialDriver *sd = (SerialDriver*)(sdef.serial);
+            sdStop(sd);
+            sercfg.cr3 |= USART_CR3_HDSEL;
+            sdStart(sd, &sercfg);
+        }
     }
 #endif
 
@@ -1290,12 +1309,15 @@ void UARTDriver::set_stop_bits(int n)
 
     switch (n) {
     case 1:
-        sercfg.cr2 = _cr2_options | USART_CR2_STOP1_BITS;
+        _cr2_options &= ~USART_CR2_STOP2_BITS;
+        _cr2_options |= USART_CR2_STOP1_BITS;
         break;
     case 2:
-        sercfg.cr2 = _cr2_options | USART_CR2_STOP2_BITS;
+        _cr2_options &= ~USART_CR2_STOP1_BITS;
+        _cr2_options |= USART_CR2_STOP2_BITS;
         break;
     }
+    sercfg.cr2 = _cr2_options;
 
     sdStart((SerialDriver*)sdef.serial, &sercfg);
 #ifndef HAL_UART_NODMA
@@ -1409,6 +1431,7 @@ bool UARTDriver::set_options(uint16_t options)
         }
     } else {
         cr2 &= ~USART_CR2_RXINV;
+        _cr2_options &= ~USART_CR2_RXINV;
         if (rx_line != 0) {
             palLineSetPushPull(rx_line, PAL_PUSHPULL_PULLUP);
         }
@@ -1421,6 +1444,7 @@ bool UARTDriver::set_options(uint16_t options)
         }
     } else {
         cr2 &= ~USART_CR2_TXINV;
+        _cr2_options &= ~USART_CR2_TXINV;
         if (tx_line != 0) {
             palLineSetPushPull(tx_line, PAL_PUSHPULL_PULLUP);
         }
@@ -1431,6 +1455,7 @@ bool UARTDriver::set_options(uint16_t options)
         _cr2_options |= USART_CR2_SWAP;
     } else {
         cr2 &= ~USART_CR2_SWAP;
+        _cr2_options &= ~USART_CR2_SWAP;
     }
 #else // STM32F4
     // F4 can do inversion by GPIO if enabled in hwdef.dat, using
@@ -1462,7 +1487,7 @@ bool UARTDriver::set_options(uint16_t options)
             chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
                                        &hd_listener,
                                        EVT_TRANSMIT_END,
-                                       CHN_OUTPUT_EMPTY);
+                                       CHN_OUTPUT_EMPTY | CHN_TRANSMISSION_END);
             half_duplex = true;
         }
 #ifndef HAL_UART_NODMA
@@ -1475,6 +1500,7 @@ bool UARTDriver::set_options(uint16_t options)
         rx_dma_enabled = tx_dma_enabled = false;
     } else {
         cr3 &= ~USART_CR3_HDSEL;
+        _cr3_options &= ~USART_CR3_HDSEL;
     }
 
     set_pushpull(options);

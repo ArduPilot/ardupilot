@@ -113,16 +113,16 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
     }
-    
+
     //Assume object is angle and pitch bearing and distance meters away from the vehicle 
     Vector3f object_3D;
-    object_3D.offset_bearing(wrap_180(angle), wrap_180(pitch), distance);	
+    object_3D.offset_bearing(wrap_180(angle), wrap_180(pitch * -1.0f), distance);
     const Vector3f rotated_object_3D = body_to_ned * object_3D;
-    
+
     //Calculate the position vector from origin
     Vector3f temp_pos = current_pos + rotated_object_3D;
     //Convert the vector to a NEU frame from NED
     temp_pos.z = temp_pos.z * -1.0f;
-    
+
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }

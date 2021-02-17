@@ -6,7 +6,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RSSI/AP_RSSI.h>
-#include <AP_GPS/AP_GPS.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -124,58 +123,6 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
     ap->copy_name_token(token, &name[0], sizeof(name), true);
     return Write_Parameter(name, ap->cast_to_float(type));
 }
-
-// Write an GPS packet
-void AP_Logger::Write_GPS(uint8_t i)
-{
-    const AP_GPS &gps = AP::gps();
-    const uint64_t time_us = AP_HAL::micros64();
-    const struct Location &loc = gps.location(i);
-
-    float yaw_deg=0, yaw_accuracy_deg=0;
-    gps.gps_yaw_deg(i, yaw_deg, yaw_accuracy_deg);
-
-    const struct log_GPS pkt {
-        LOG_PACKET_HEADER_INIT(LOG_GPS_MSG),
-        time_us       : time_us,
-        instance      : i,
-        status        : (uint8_t)gps.status(i),
-        gps_week_ms   : gps.time_week_ms(i),
-        gps_week      : gps.time_week(i),
-        num_sats      : gps.num_sats(i),
-        hdop          : gps.get_hdop(i),
-        latitude      : loc.lat,
-        longitude     : loc.lng,
-        altitude      : loc.alt,
-        ground_speed  : gps.ground_speed(i),
-        ground_course : gps.ground_course(i),
-        vel_z         : gps.velocity(i).z,
-        yaw           : yaw_deg,
-        used          : (uint8_t)(gps.primary_sensor() == i)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-
-    /* write auxiliary accuracy information as well */
-    float hacc = 0, vacc = 0, sacc = 0;
-    gps.horizontal_accuracy(i, hacc);
-    gps.vertical_accuracy(i, vacc);
-    gps.speed_accuracy(i, sacc);
-    struct log_GPA pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
-        time_us       : time_us,
-        instance      : i,
-        vdop          : gps.get_vdop(i),
-        hacc          : (uint16_t)MIN((hacc*100), UINT16_MAX),
-        vacc          : (uint16_t)MIN((vacc*100), UINT16_MAX),
-        sacc          : (uint16_t)MIN((sacc*100), UINT16_MAX),
-        yaw_accuracy  : yaw_accuracy_deg,
-        have_vv       : (uint8_t)gps.have_vertical_velocity(i),
-        sample_ms     : gps.last_message_time_ms(i),
-        delta_ms      : gps.last_message_delta_time_ms(i)
-    };
-    WriteBlock(&pkt2, sizeof(pkt2));
-}
-
 
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
@@ -572,64 +519,6 @@ void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write visual odometry sensor data
-void AP_Logger::Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence)
-{
-    const struct log_VisualOdom pkt_visualodom{
-        LOG_PACKET_HEADER_INIT(LOG_VISUALODOM_MSG),
-        time_us             : AP_HAL::micros64(),
-        time_delta          : time_delta,
-        angle_delta_x       : angle_delta.x,
-        angle_delta_y       : angle_delta.y,
-        angle_delta_z       : angle_delta.z,
-        position_delta_x    : position_delta.x,
-        position_delta_y    : position_delta.y,
-        position_delta_z    : position_delta.z,
-        confidence          : confidence
-    };
-    WriteBlock(&pkt_visualodom, sizeof(log_VisualOdom));
-}
-
-// Write visual position sensor data.  x,y,z are in meters, angles are in degrees
-void AP_Logger::Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored)
-{
-    const struct log_VisualPosition pkt_visualpos {
-        LOG_PACKET_HEADER_INIT(LOG_VISUALPOS_MSG),
-        time_us         : AP_HAL::micros64(),
-        remote_time_us  : remote_time_us,
-        time_ms         : time_ms,
-        pos_x           : x,
-        pos_y           : y,
-        pos_z           : z,
-        roll            : roll,
-        pitch           : pitch,
-        yaw             : yaw,
-        pos_err         : pos_err,
-        ang_err         : ang_err,
-        reset_counter   : reset_counter,
-        ignored         : (uint8_t)ignored
-    };
-    WriteBlock(&pkt_visualpos, sizeof(log_VisualPosition));
-}
-
-// Write visual velocity sensor data, velocity in NED meters per second
-void AP_Logger::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored)
-{
-    const struct log_VisualVelocity pkt_visualvel {
-        LOG_PACKET_HEADER_INIT(LOG_VISUALVEL_MSG),
-        time_us         : AP_HAL::micros64(),
-        remote_time_us  : remote_time_us,
-        time_ms         : time_ms,
-        vel_x           : vel.x,
-        vel_y           : vel.y,
-        vel_z           : vel.z,
-        vel_err         : vel_err,
-        reset_counter   : reset_counter,
-        ignored         : (uint8_t)ignored
-    };
-    WriteBlock(&pkt_visualvel, sizeof(log_VisualVelocity));
-}
-
 // Write beacon sensor (position) data
 void AP_Logger::Write_Beacon(AP_Beacon &beacon)
 {
@@ -802,6 +691,24 @@ void AP_Logger::Write_PSC(const Vector3f &pos_target, const Vector3f &position, 
         accel_target_y  : accel_target.y * 0.01f,
         accel_x         : accel_x * 0.01f,
         accel_y         : accel_y * 0.01f
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
+void AP_Logger::Write_PSCZ(float pos_target_z, float pos_z, float vel_desired_z, float vel_target_z, float vel_z, float accel_desired_z, float accel_target_z, float accel_z, float throttle_out)
+{
+    const struct log_PSCZ pkt{
+        LOG_PACKET_HEADER_INIT(LOG_PSCZ_MSG),
+        time_us         : AP_HAL::micros64(),
+        pos_target_z    : pos_target_z * 0.01f,
+        pos_z           : pos_z * 0.01f,
+        vel_desired_z   : vel_desired_z * 0.01f,
+        vel_target_z    : vel_target_z * 0.01f,
+        vel_z           : vel_z * 0.01f,
+        accel_desired_z : accel_desired_z * 0.01f,
+        accel_target_z  : accel_target_z * 0.01f,
+        accel_z         : accel_z * 0.01f,
+        throttle_out    : throttle_out
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

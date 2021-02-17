@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import copy
 import math
+import operator
 import os
 import shutil
 import sys
@@ -295,6 +296,48 @@ class AutoTestRover(AutoTest):
             # this is somewhat empirical...
             self.wait_servo_channel_value(pump_ch, 1695, timeout=60)
 
+            self.progress("Turning it off again")
+            self.set_rc(rc_ch, 1000)
+            self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+
+            self.start_subtest("Sprayer Mission")
+            self.load_mission("sprayer-mission.txt")
+            self.change_mode("AUTO")
+#            self.send_debug_trap()
+            self.progress("Waiting for sprayer to start")
+            self.wait_servo_channel_value(pump_ch, 1300, timeout=60, comparator=operator.gt)
+            self.progress("Waiting for sprayer to stop")
+            self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=120)
+
+            self.start_subtest("Checking mavlink commands")
+            self.change_mode("MANUAL")
+            self.progress("Starting Sprayer")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
+                         1,  # p1
+                         0,  # p2
+                         0,  # p3
+                         0,  # p4
+                         0,  # p5
+                         0,  # p6
+                         0,  # p7
+            );
+            self.progress("Testing speed-ramping")
+            self.set_rc(3, 1700) # start driving forward
+            self.wait_servo_channel_value(pump_ch, 1690, timeout=60, comparator=operator.gt)
+            self.start_subtest("Stopping Sprayer")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
+                         0,  # p1
+                         0,  # p2
+                         0,  # p3
+                         0,  # p4
+                         0,  # p5
+                         0,  # p6
+                         0,  # p7
+            );
+            self.wait_servo_channel_value(pump_ch, pump_ch_min)
+            self.set_rc(3, 1000) # start driving forward
+
             self.progress("Sprayer OK")
         except Exception as e:
             self.progress("Caught exception: %s" %
@@ -353,7 +396,7 @@ class AutoTestRover(AutoTest):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist=5)
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Mission Complete", timeout=600)
         self.disarm_vehicle()
         self.progress("Mission OK")
 
@@ -362,9 +405,9 @@ class AutoTestRover(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.expect("Gripper Grabbed")
-        self.mavproxy.expect("Gripper Released")
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Gripper Grabbed", timeout=60)
+        self.wait_statustext("Gripper Released", timeout=60)
+        self.wait_statustext("Mission Complete", timeout=60)
         self.disarm_vehicle()
 
     def do_get_banner(self):
@@ -507,7 +550,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                       (m.wp_dist, wp_dist_min,))
 
         # wait for mission to complete
-        self.mavproxy.expect("Mission Complete")
+        self.wait_statustext("Mission Complete", timeout=60)
 
         # the EKF doesn't pull us down to 0 speed:
         self.wait_groundspeed(0, 0.5, timeout=600)
@@ -543,7 +586,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_rc(3, 1550)
             self.wait_distance_to_home(25, 100000, timeout=60)
             self.change_mode("RTL")
-            self.mavproxy.expect("APM: Reached destination")
+            self.wait_statustext("Reached destination", timeout=60)
             # now enable avoidance and make sure we can't:
             self.set_rc(10, 2000)
             self.change_mode("ACRO")

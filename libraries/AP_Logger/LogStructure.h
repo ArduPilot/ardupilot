@@ -120,10 +120,12 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_DAL/LogStructure.h>
 #include <AP_NavEKF2/LogStructure.h>
 #include <AP_NavEKF3/LogStructure.h>
+#include <AP_GPS/LogStructure.h>
 #include <AP_BattMonitor/LogStructure.h>
 #include <AP_AHRS/LogStructure.h>
 #include <AP_Camera/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
+#include <AP_VisualOdom/LogStructure.h>
 
 // structure used to define logging format
 struct LogStructure {
@@ -208,38 +210,6 @@ struct PACKED log_Error {
   uint8_t error_code;
 };
 
-struct PACKED log_GPS {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    uint8_t  status;
-    uint32_t gps_week_ms;
-    uint16_t gps_week;
-    uint8_t  num_sats;
-    uint16_t hdop;
-    int32_t  latitude;
-    int32_t  longitude;
-    int32_t  altitude;
-    float    ground_speed;
-    float    ground_course;
-    float    vel_z;
-    float    yaw;
-    uint8_t  used;
-};
-
-struct PACKED log_GPA {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    uint16_t vdop;
-    uint16_t hacc;
-    uint16_t vacc;
-    uint16_t sacc;
-    float    yaw_accuracy;
-    uint8_t  have_vv;
-    uint32_t sample_ms;
-    uint16_t delta_ms;
-};
 
 struct PACKED log_Message {
     LOG_PACKET_HEADER;
@@ -372,51 +342,6 @@ struct PACKED log_POWR {
     uint16_t flags;
     uint16_t accumulated_flags;
     uint8_t safety_and_arm;
-};
-
-// visual odometry sensor data
-struct PACKED log_VisualOdom {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float time_delta;
-    float angle_delta_x;
-    float angle_delta_y;
-    float angle_delta_z;
-    float position_delta_x;
-    float position_delta_y;
-    float position_delta_z;
-    float confidence;
-};
-
-// visual position data
-struct PACKED log_VisualPosition {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint64_t remote_time_us;
-    uint32_t time_ms;
-    float pos_x;
-    float pos_y;
-    float pos_z;
-    float roll;     // degrees
-    float pitch;    // degrees
-    float yaw;      // degrees
-    float pos_err;  // meters
-    float ang_err;  // radians
-    uint8_t reset_counter;
-    uint8_t ignored;
-};
-
-struct PACKED log_VisualVelocity {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint64_t remote_time_us;
-    uint32_t time_ms;
-    float vel_x;
-    float vel_y;
-    float vel_z;
-    float vel_err;
-    uint8_t reset_counter;
-    uint8_t ignored;
 };
 
 struct PACKED log_Cmd {
@@ -554,72 +479,6 @@ struct PACKED log_TERRAIN {
     float current_height;
     uint16_t pending;
     uint16_t loaded;
-};
-
-/*
-  UBlox logging
- */
-struct PACKED log_Ubx1 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    uint16_t noisePerMS;
-    uint8_t  jamInd;
-    uint8_t  aPower;
-    uint16_t agcCnt;
-    uint32_t config;
-};
-
-struct PACKED log_Ubx2 {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    int8_t   ofsI;
-    uint8_t  magI;
-    int8_t   ofsQ;
-    uint8_t  magQ;
-};
-
-struct PACKED log_GPS_RAW {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    int32_t iTOW;
-    int16_t week;
-    uint8_t numSV;
-    uint8_t sv;
-    double cpMes;
-    double prMes;
-    float doMes;
-    int8_t mesQI;
-    int8_t cno;
-    uint8_t lli;
-};
-
-struct PACKED log_GPS_RAWH {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    double rcvTow;
-    uint16_t week;
-    int8_t leapS;
-    uint8_t numMeas;
-    uint8_t recStat;
-};
-
-struct PACKED log_GPS_RAWS {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    double prMes;
-    double cpMes;
-    float doMes;
-    uint8_t gnssId;
-    uint8_t svId;
-    uint8_t freqId;
-    uint16_t locktime;
-    uint8_t cno;
-    uint8_t prStdev;
-    uint8_t cpStdev;
-    uint8_t doStdev;
-    uint8_t trkStat;
 };
 
 struct PACKED log_Esc {
@@ -942,6 +801,21 @@ struct PACKED log_PSC {
     float accel_y;
 };
 
+// position controller z-axis logging
+struct PACKED log_PSCZ {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float pos_target_z;
+    float pos_z;
+    float vel_desired_z;
+    float vel_target_z;
+    float vel_z;
+    float accel_desired_z;
+    float accel_target_z;
+    float accel_z;
+    float throttle_out;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1135,75 +1009,6 @@ struct PACKED log_PSC {
 // @Field: UnitIds: each character refers to a UNIT message.  The unit at an offset corresponds to the field at the same offset in FMT.Format
 // @Field: MultIds: each character refers to a MULT message.  The multiplier at an offset corresponds to the field at the same offset in FMT.Format
 
-// @LoggerMessage: GPA
-// @Description: GPS accuracy information
-// @Field: I: GPS instance number
-// @Field: TimeUS: Time since system startup
-// @Field: VDop: vertical degree of procession
-// @Field: HAcc: horizontal position accuracy
-// @Field: VAcc: vertical position accuracy
-// @Field: SAcc: speed accuracy
-// @Field: YAcc: yaw accuracy
-// @Field: VV: true if vertical velocity is available
-// @Field: SMS: time since system startup this sample was taken
-// @Field: Delta: system time delta between the last two reported positions
-
-// @LoggerMessage: GPS
-// @Description: Information received from GNSS systems attached to the autopilot
-// @Field: TimeUS: Time since system startup
-// @Field: I: GPS instance number
-// @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
-// @Field: GMS: milliseconds since start of GPS Week
-// @Field: GWk: weeks since 5 Jan 1980
-// @Field: NSats: number of satellites visible
-// @Field: HDop: horizontal precision
-// @Field: Lat: latitude
-// @Field: Lng: longitude
-// @Field: Alt: altitude
-// @Field: Spd: ground speed
-// @Field: GCrs: ground course
-// @Field: VZ: vertical speed
-// @Field: Yaw: vehicle yaw
-// @Field: U: boolean value indicating whether this GPS is in use
-
-// @LoggerMessage: GRAW
-// @Description: Raw uBlox data
-// @Field: TimeUS: Time since system startup
-// @Field: WkMS: receiver TimeOfWeek measurement
-// @Field: Week: GPS week
-// @Field: numSV: number of space vehicles seen
-// @Field: sv: space vehicle number of first vehicle
-// @Field: cpMes: carrier phase measurement
-// @Field: prMes: pseudorange measurement
-// @Field: doMes: Doppler measurement
-// @Field: mesQI: measurement quality index
-// @Field: cno: carrier-to-noise density ratio
-// @Field: lli: loss of lock indicator
-
-// @LoggerMessage: GRXH
-// @Description: Raw uBlox data - header
-// @Field: TimeUS: Time since system startup
-// @Field: rcvTime: receiver TimeOfWeek measurement
-// @Field: week: GPS week
-// @Field: leapS: GPS leap seconds
-// @Field: numMeas: number of space-vehicle measurements to follow
-// @Field: recStat: receiver tracking status bitfield
-
-// @LoggerMessage: GRXS
-// @Description: Raw uBlox data - space-vehicle data
-// @Field: TimeUS: Time since system startup
-// @Field: prMes: Pseudorange measurement
-// @Field: cpMes: Carrier phase measurement
-// @Field: doMes: Doppler measurement
-// @Field: gnss: GNSS identifier
-// @Field: sv: Satellite identifier
-// @Field: freq: GLONASS frequency slot
-// @Field: lock: carrier phase locktime counter
-// @Field: cno: carrier-to-noise density ratio
-// @Field: prD: estimated pseudorange measurement standard deviation
-// @Field: cpD: estimated carrier phase measurement standard deviation
-// @Field: doD: estimated Doppler measurement standard deviation
-// @Field: trk: tracking status bitfield
 
 // @LoggerMessage: GYR
 // @Description: IMU gyroscope data
@@ -1542,25 +1347,6 @@ struct PACKED log_PSC {
 // @Field: SysID: system ID this data is for
 // @Field: RTT: round trip time for this system
 
-// @LoggerMessage: UBX1
-// @Description: uBlox-specific GPS information (part 1)
-// @Field: TimeUS: Time since system startup
-// @Field: Instance: GPS instance number
-// @Field: noisePerMS: noise level as measured by GPS
-// @Field: jamInd: jamming indicator; higher is more likely jammed
-// @Field: aPower: antenna power indicator; 2 is don't know
-// @Field: agcCnt: automatic gain control monitor
-// @Field: config: bitmask for messages which haven't been seen
-
-// @LoggerMessage: UBX2
-// @Description: uBlox-specific GPS information (part 2)
-// @Field: TimeUS: Time since system startup
-// @Field: Instance: GPS instance number
-// @Field: ofsI: imbalance of I part of complex signal
-// @Field: magI: magnitude of I part of complex signal
-// @Field: ofsQ: imbalance of Q part of complex signal
-// @Field: magQ: magnitude of Q part of complex signal
-
 // @LoggerMessage: UNIT
 // @Description: Message mapping from single character to SI unit
 // @Field: TimeUS: Time since system startup
@@ -1575,46 +1361,6 @@ struct PACKED log_PSC {
 // @Field: VibeY: Primary accelerometer filtered vibration, y-axis
 // @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
 // @Field: Clip: Number of clipping events on 1st accelerometer
-
-// @LoggerMessage: VISO
-// @Description: Visual Odometry
-// @Field: TimeUS: System time
-// @Field: dt: Time period this data covers
-// @Field: AngDX: Angular change for body-frame roll axis
-// @Field: AngDY: Angular change for body-frame pitch axis
-// @Field: AngDZ: Angular change for body-frame z axis
-// @Field: PosDX: Position change for body-frame X axis (Forward-Back)
-// @Field: PosDY: Position change for body-frame Y axis (Right-Left)
-// @Field: PosDZ: Position change for body-frame Z axis (Down-Up)
-// @Field: conf: Confidence
-
-// @LoggerMessage: VISP
-// @Description: Vision Position
-// @Field: TimeUS: System time
-// @Field: RTimeUS: Remote system time
-// @Field: CTimeMS: Corrected system time
-// @Field: PX: Position X-axis (North-South)
-// @Field: PY: Position Y-axis (East-West)
-// @Field: PZ: Position Z-axis (Down-Up)
-// @Field: Roll: Roll lean angle
-// @Field: Pitch: Pitch lean angle
-// @Field: Yaw: Yaw angle
-// @Field: PErr: Position estimate error
-// @Field: AErr: Attitude estimate error
-// @Field: Rst: Position reset counter
-// @Field: Ign: Ignored
-
-// @LoggerMessage: VISV
-// @Description: Vision Velocity
-// @Field: TimeUS: System time
-// @Field: RTimeUS: Remote system time
-// @Field: CTimeMS: Corrected system time
-// @Field: VX: Velocity X-axis (North-South)
-// @Field: VY: Velocity Y-axis (East-West)
-// @Field: VZ: Velocity Z-axis (Down-Up)
-// @Field: VErr: Velocity estimate error
-// @Field: Rst: Velocity reset counter
-// @Field: Ign: Ignored
 
 // @LoggerMessage: WENC
 // @Description: Wheel encoder measurements
@@ -1655,6 +1401,19 @@ struct PACKED log_PSC {
 // @Field: AX: Acceleration, X-axis
 // @Field: AY: Acceleration, Y-axis
 
+// @LoggerMessage: PSCZ
+// @Description: Position Control Z-axis
+// @Field: TimeUS: Time since system startup
+// @Field: TPZ: Target position above EKF origin
+// @Field: PZ: Position above EKF origin
+// @Field: DVZ: Desired velocity Z-axis
+// @Field: TVZ: Target velocity Z-axis
+// @Field: VZ: Velocity Z-axis
+// @Field: DAZ: Desired acceleration Z-axis
+// @Field: TAZ: Target acceleration Z-axis
+// @Field: AZ: Acceleration Z-axis
+// @Field: ThO: Throttle output
+
 // messages for all boards
 #define LOG_BASE_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1667,10 +1426,7 @@ struct PACKED log_PSC {
       "MULT", "Qbd",      "TimeUS,Id,Mult", "s--","F--" },   \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
      "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--"  },       \
-    { LOG_GPS_MSG, sizeof(log_GPS), \
-      "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" }, \
-    { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QBCCCCfBIH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta", "s#mmmnd-ss", "F-BBBB0-CC" }, \
+LOG_STRUCTURE_FROM_GPS \
     { LOG_IMU_MSG, sizeof(log_IMU), \
       "IMU",  "QBffffffIIfBBHH",     "TimeUS,I,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,EG,EA,T,GH,AH,GHz,AHz", "s#EEEooo--O--zz", "F-000000-----00" }, \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
@@ -1721,16 +1477,6 @@ LOG_STRUCTURE_FROM_CAMERA \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
-    { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
-      "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  }, \
-    { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \
-      "UBX2", "QBbBbB", "TimeUS,Instance,ofsI,magI,ofsQ,magQ", "s#----", "F-----" }, \
-    { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
-      "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "s--S-------", "F--0-------" }, \
-    { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
-      "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" }, \
-    { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
-      "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" }, \
     { LOG_ESC_MSG, sizeof(log_Esc), \
       "ESC",  "QBeCCcHcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAO-O%", "F-BBBB-B-" }, \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
@@ -1771,12 +1517,7 @@ LOG_STRUCTURE_FROM_AHRS \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHH",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf", "s#----s-", "F-000-C-" },   \
-    { LOG_VISUALODOM_MSG, sizeof(log_VisualOdom), \
-      "VISO", "Qffffffff", "TimeUS,dt,AngDX,AngDY,AngDZ,PosDX,PosDY,PosDZ,conf", "ssrrrmmm-", "FF000000-" }, \
-    { LOG_VISUALPOS_MSG, sizeof(log_VisualPosition), \
-      "VISP", "QQIffffffffBB", "TimeUS,RTimeUS,CTimeMS,PX,PY,PZ,Roll,Pitch,Yaw,PErr,AErr,Rst,Ign", "sssmmmddhmd--", "FFC00000000--" }, \
-    { LOG_VISUALVEL_MSG, sizeof(log_VisualVelocity), \
-      "VISV", "QQIffffBB", "TimeUS,RTimeUS,CTimeMS,VX,VY,VZ,VErr,Rst,Ign", "sssnnnn--", "FFC0000--" }, \
+LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow), \
       "OF",   "QBffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY", "s-EEnn", "F-0000" }, \
     { LOG_WHEELENCODER_MSG, sizeof(log_WheelEncoder), \
@@ -1792,7 +1533,9 @@ LOG_STRUCTURE_FROM_AHRS \
     { LOG_WINCH_MSG, sizeof(log_Winch), \
       "WINC", "QBBBBBfffHfb", "TimeUS,Heal,ThEnd,Mov,Clut,Mode,DLen,Len,DRate,Tens,Vcc,Temp", "s-----mmn?vO", "F-----000000" }, \
     { LOG_PSC_MSG, sizeof(log_PSC), \
-      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }
+      "PSC", "Qffffffffffff", "TimeUS,TPX,TPY,PX,PY,TVX,TVY,VX,VY,TAX,TAY,AX,AY", "smmmmnnnnoooo", "F000000000000" }, \
+    { LOG_PSCZ_MSG, sizeof(log_PSCZ), \
+      "PSCZ", "Qfffffffff", "TimeUS,TPZ,PZ,DVZ,TVZ,VZ,DAZ,TAZ,AZ,ThO", "smmnnnooo%", "F000000002" }
 
 // @LoggerMessage: SBPH
 // @Description: Swift Health Data
@@ -1831,7 +1574,6 @@ enum LogMessages : uint8_t {
     LOG_PARAMETER_MSG = 64,
     LOG_IDS_FROM_NAVEKF2,
     LOG_IDS_FROM_NAVEKF3,
-    LOG_GPS_MSG,
     LOG_IMU_MSG,
     LOG_MESSAGE_MSG,
     LOG_RCIN_MSG,
@@ -1848,25 +1590,22 @@ enum LogMessages : uint8_t {
     LOG_ATRP_MSG,
     LOG_IDS_FROM_CAMERA,
     LOG_TERRAIN_MSG,
-    LOG_GPS_UBX1_MSG,
-    LOG_GPS_UBX2_MSG,
     LOG_ESC_MSG,
     LOG_CSRV_MSG,
     LOG_CESC_MSG,
     LOG_ARSP_MSG,
     LOG_IDS_FROM_BATTMONITOR,
     LOG_MAG_MSG,
-    LOG_MODE_MSG,
-    LOG_GPS_RAW_MSG,
 
-    // LOG_GPS_RAWH_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
-    LOG_GPS_RAWH_MSG,
+    LOG_IDS_FROM_GPS,
+
+    // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
+    LOG_MODE_MSG,
 
     LOG_FORMAT_MSG = 128, // this must remain #128
 
     LOG_IDS_FROM_DAL,
 
-    LOG_GPS_RAWS_MSG,
     LOG_ACC_MSG,
     LOG_GYR_MSG,
     LOG_PIDR_MSG,
@@ -1877,7 +1616,6 @@ enum LogMessages : uint8_t {
     LOG_DSTL_MSG,
     LOG_VIBE_MSG,
     LOG_RPM_MSG,
-    LOG_GPA_MSG,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
@@ -1894,8 +1632,7 @@ enum LogMessages : uint8_t {
     LOG_MSG_SBPEVENT,
 
     LOG_RALLY_MSG,
-    LOG_VISUALODOM_MSG,
-    LOG_VISUALPOS_MSG,
+    LOG_IDS_FROM_VISUALODOM,
     LOG_BEACON_MSG,
     LOG_PROXIMITY_MSG,
     LOG_DF_FILE_STATS,
@@ -1912,16 +1649,16 @@ enum LogMessages : uint8_t {
     LOG_ARM_DISARM_MSG,
     LOG_OA_BENDYRULER_MSG,
     LOG_OA_DIJKSTRA_MSG,
-    LOG_VISUALVEL_MSG,
     LOG_SIMPLE_AVOID_MSG,
     LOG_WINCH_MSG,
     LOG_PSC_MSG,
+    LOG_PSCZ_MSG,
 
     _LOG_LAST_MSG_
 };
 
 static_assert(_LOG_LAST_MSG_ <= 255, "Too many message formats");
-static_assert(LOG_GPS_RAWH_MSG < 128, "Duplicate message format IDs");
+static_assert(LOG_MODE_MSG < 128, "Duplicate message format IDs");
 
 enum LogOriginType {
     ekf_origin = 0,
