@@ -315,7 +315,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
 // proximity sensor ones.
-void GCS_MAVLINK::send_distance_sensor() const
+void GCS_MAVLINK::send_distance_sensor()
 {
     RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder == nullptr) {
@@ -369,7 +369,7 @@ void GCS_MAVLINK::send_rangefinder() const
             s->voltage_mv() * 0.001f);
 }
 
-void GCS_MAVLINK::send_proximity() const
+void GCS_MAVLINK::send_proximity()
 {
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity == nullptr) {
@@ -387,6 +387,13 @@ void GCS_MAVLINK::send_proximity() const
             for (uint8_t i = 0; i < PROXIMITY_MAX_DIRECTION; i++) {
                 if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
                     return;
+                }
+                if (dist_array.valid(i)) {
+                    proximity_ever_valid_bitmask |= (1U << i);
+                } else if (!(proximity_ever_valid_bitmask & (1U << i))) {
+                    // we've never sent this distance out, so we don't
+                    // need to send an invalid one.
+                    continue;
                 }
                 mavlink_msg_distance_sensor_send(
                         chan,
