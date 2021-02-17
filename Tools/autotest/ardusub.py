@@ -276,8 +276,8 @@ class AutoTestSub(AutoTest):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.change_mode('AUTO')
-            self.mavproxy.expect("Gripper Grabbed")
-            self.mavproxy.expect("Gripper Released")
+            self.wait_statustext("Gripper Grabbed", timeout=60)
+            self.wait_statustext("Gripper Released", timeout=60)
         except Exception as e:
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))

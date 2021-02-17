@@ -5863,7 +5863,7 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy_load_module("sitl_calibration")
             self.mavproxy_load_module("calibration")
             self.mavproxy_load_module("relay")
-            self.mavproxy.expect("is using GPS")
+            self.wait_statustext("is using GPS", timeout=60)
             self.mavproxy.send("accelcalsimple\n")
             self.mavproxy.expect("Calibrated")
             # disable it to not interfert with calibration acceptation
