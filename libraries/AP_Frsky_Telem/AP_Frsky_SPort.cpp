@@ -66,8 +66,12 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_FAS: // Sensor ID  2
                 switch (_SPort.fas_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining as %
-                    break;
+                    {
+                        uint8_t percentage = 0;
+                        IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
+                        send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(percentage)); // send battery remaining
+                        break;
+                    }
                 case 1:
                     send_sport_frame(SPORT_DATA_FRAME, VFAS_ID, (uint16_t)roundf(_battery.voltage() * 100.0f)); // send battery voltage in cV
                     break;
