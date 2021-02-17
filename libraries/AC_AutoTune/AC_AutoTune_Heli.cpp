@@ -562,7 +562,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
                 if (tune_p >= AUTOTUNE_SP_MAX) {
                     tune_p = AUTOTUNE_SP_MAX;
                     counter = AUTOTUNE_SUCCESS_COUNT;
-                    AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                    Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
                 }
             }
             curr_test_freq = freq[freq_cnt];
@@ -629,7 +629,7 @@ void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float
             if (tune_p >= AUTOTUNE_SP_MAX) {
                 tune_p = AUTOTUNE_SP_MAX;
                 counter = AUTOTUNE_SUCCESS_COUNT;
-                AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+                Log_Write_Event(EVENT_AUTOTUNE_REACHED_LIMIT);
             }
         } else if (gain[frq_cnt] < max_gain && phase[frq_cnt] > 180.0f) {
             curr_test_freq = curr_test_freq - 0.5 * test_freq_incr;
