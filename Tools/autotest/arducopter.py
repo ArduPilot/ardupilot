@@ -5736,6 +5736,40 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_gsf(self):
+        '''test the Gaussian Sum filter'''
+        ex = None
+        self.context_push()
+        try:
+            self.set_parameter("EK2_ENABLE", 1)
+            self.reboot_sitl()
+            self.takeoff(20, mode='LOITER')
+            self.set_rc(2, 1400)
+            self.delay_sim_time(5)
+            self.set_rc(2, 1500)
+            self.progress("Path: %s" % self.current_onboard_log_filepath())
+            dfreader = self.dfreader_for_current_onboard_log()
+            self.do_RTL()
+        except Exception as e:
+            self.progress("Caught exception: %s" %
+                          self.get_exception_stacktrace(e))
+            ex = e
+
+        self.context_pop()
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+        # ensure log messages present
+        want = set(["XKY0", "XKY1", "NKY0", "NKY1"])
+        still_want = want
+        while len(still_want):
+            m = dfreader.recv_match(type=want)
+            if m is None:
+                raise NotAchievedException("Did not get %s" % t)
+            still_want.remove(m.get_type())
+
     def fly_rangefinder_mavlink(self):
         self.fly_rangefinder_mavlink_distance_sensor()
 
@@ -6562,6 +6596,10 @@ class AutoTestCopter(AutoTest):
             Test("EKFSource",
                  "Check EKF Source Prearms work",
                  self.test_ekf_source),
+
+            Test("GSF",
+                 "Check GSF",
+                 self.test_gsf),
 
             Test("GPSBlending",
                  "Test GPS Blending",
