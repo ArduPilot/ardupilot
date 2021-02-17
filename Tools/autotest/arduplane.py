@@ -1905,7 +1905,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Mission OK")
 
     def test_airspeed_drivers(self):
-        self.set_parameter("ARSPD2_TYPE", 7)
+        self.set_parameter("ARSPD_BUS", 2)
+        self.set_parameter("ARSPD_TYPE", 7)  # DLVR
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.arm_vehicle()
