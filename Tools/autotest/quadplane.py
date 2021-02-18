@@ -275,7 +275,7 @@ class AutoTestQuadPlane(AutoTest):
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         # wait for blood sample here
-        self.mavproxy.send('wp set 20\n')
+        self.set_current_waypoint(20)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
@@ -343,7 +343,7 @@ class AutoTestQuadPlane(AutoTest):
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
-        self.mavproxy.send('wp set 7\n')
+        self.set_current_waypoint(7)
         self.wait_disarmed(timeout=timeout)
 
     def wait_level_flight(self, accuracy=5, timeout=30):

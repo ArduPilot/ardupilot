@@ -410,7 +410,7 @@ class AutoTestCopter(AutoTest):
             self.progress("save_mission_to_file failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
+        self.set_current_waypoint(1)
         self.change_mode('AUTO')
         self.wait_waypoint(0, num_wp-1, timeout=500)
         self.progress("test: MISSION COMPLETE: passed!")
@@ -1450,7 +1450,7 @@ class AutoTestCopter(AutoTest):
             self.show_gps_and_sim_positions(True)
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
+        self.set_current_waypoint(1)
 
         self.change_mode("STABILIZE")
         self.wait_ready_to_arm()
@@ -1971,7 +1971,7 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("load copter_mission failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
+        self.set_current_waypoint(1)
 
         self.change_mode("LOITER")
         self.wait_ready_to_arm()
@@ -5551,9 +5551,7 @@ class AutoTestCopter(AutoTest):
         self.delay_sim_time(2)
         self.load_mission("copter_loiter_to_alt.txt")
         set_wp = 4
-        self.mavproxy.send("wp set %u\n" % set_wp)
-        self.delay_sim_time(1)
-        self.drain_mav()
+        self.set_current_waypoint(set_wp)
         self.wait_current_waypoint(set_wp, timeout=10)
         self.progress("Reset mission")
         self.set_rc(7, 2000)
@@ -6783,7 +6781,7 @@ class AutoTestHeli(AutoTestCopter):
             raise NotAchievedException("load copter_AVC2013_mission failed")
 
         self.progress("Fly AVC mission from 1 to %u" % num_wp)
-        self.mavproxy.send('wp set 1\n')
+        self.set_current_waypoint(1)
 
         # wait for motor runup
         self.delay_sim_time(20)
