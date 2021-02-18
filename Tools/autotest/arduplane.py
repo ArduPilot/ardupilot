@@ -408,8 +408,7 @@ class AutoTestPlane(AutoTest):
         self.change_altitude(self.homeloc.alt+300)
         self.set_rc(2, 1500)
 
-        self.mavproxy.send("mode STABILIZE\n")
-        self.wait_mode('STABILIZE')
+        self.change_mode('STABILIZE')
 
         while count > 0:
             self.progress("Starting roll")
@@ -436,8 +435,7 @@ class AutoTestPlane(AutoTest):
         self.change_altitude(self.homeloc.alt+300)
         self.set_rc(2, 1500)
 
-        self.mavproxy.send("mode ACRO\n")
-        self.wait_mode('ACRO')
+        self.change_mode('ACRO')
 
         while count > 0:
             self.progress("Starting roll")
@@ -454,8 +452,7 @@ class AutoTestPlane(AutoTest):
 
         self.wait_level_flight()
 
-        self.mavproxy.send("mode ACRO\n")
-        self.wait_mode('ACRO')
+        self.change_mode('ACRO')
 
         count = 2
         while count > 0:
@@ -475,8 +472,7 @@ class AutoTestPlane(AutoTest):
 
     def test_FBWB(self, mode='FBWB'):
         """Fly FBWB or CRUISE mode."""
-        self.mavproxy.send("mode %s\n" % mode)
-        self.wait_mode(mode)
+        self.change_mode(mode)
         self.set_rc(3, 1700)
         self.set_rc(2, 1500)
 
