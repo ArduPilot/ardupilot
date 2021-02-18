@@ -814,8 +814,10 @@ class SPortToMAVlite(object):
 
 
 class FRSkySPort(FRSky):
-    def __init__(self, destination_address, verbose=True):
+    def __init__(self, destination_address, verbose=True, get_time=time.time):
         super(FRSkySPort, self).__init__(destination_address)
+
+        self.get_time = get_time
 
         self.state_SEND_POLL = "sendpoll"
         self.state_WANT_FRAME_TYPE = "want_frame_type"
@@ -955,11 +957,11 @@ class FRSkySPort(FRSky):
         return ret
 
     def check_poll(self):
-        now = time.time()
-        if now - self.poll_sent > 2:
-            if self.state != self.state_WANT_FRAME_TYPE:
-                raise ValueError("Expected to be wanting a frame type when repolling")
+        now = self.get_time()
+        if now - self.poll_sent > 20:
             self.progress("Re-polling")
+            if self.state != self.state_WANT_FRAME_TYPE:
+                raise ValueError("Expected to be wanting a frame type when repolling (state=%s)" % str(self.state))
             self.state = self.state_SEND_POLL
 
         if self.state == self.state_SEND_POLL:
@@ -1138,8 +1140,9 @@ class FRSkySPort(FRSky):
 
 
 class FRSkyPassThrough(FRSkySPort):
-    def __init__(self, destination_address):
-        super(FRSkyPassThrough, self).__init__(destination_address)
+    def __init__(self, destination_address, get_time=time.time):
+        super(FRSkyPassThrough, self).__init__(destination_address,
+                                               get_time=get_time)
 
         self.sensors_to_poll = [self.SENSOR_ID_27]
 
@@ -4310,11 +4313,7 @@ class AutoTest(ABC):
             if remaining <= 0:
                 raise AutoTestTimeoutException("Failed to change mode")
             self.run_cmd_do_set_mode(mode, timeout=10)
-            m = self.mav.recv_match(type='HEARTBEAT',
-                                    blocking=True,
-                                    timeout=5)
-            if m is None:
-                raise ErrorException("Heartbeat not received")
+            m = self.wait_heartbeat()
             self.progress("Got mode=%u want=%u" % (m.custom_mode, want_custom_mode))
             if m.custom_mode == want_custom_mode:
                 return
@@ -4330,11 +4329,7 @@ class AutoTest(ABC):
                 raise AutoTestTimeoutException("Failed to change mode")
             self.mavproxy.send("long DO_SET_MODE %u %u\n" %
                                (base_mode, custom_mode))
-            m = self.mav.recv_match(type='HEARTBEAT',
-                                    blocking=True,
-                                    timeout=5)
-            if m is None:
-                raise ErrorException("Did not receive heartbeat")
+            m = self.wait_heartbeat()
             if m.custom_mode == custom_mode:
                 return True
 
@@ -5088,7 +5083,7 @@ Also, ignores heartbeats not from our target system'''
             if m is None:
                 continue
             if m.get_srcSystem() == self.sysid_thismav():
-                break
+                return m
 
     def wait_ekf_happy(self, timeout=30, require_absolute=True):
         """Wait for EKF to be happy"""
@@ -8846,13 +8841,7 @@ switch value'''
         # batt_failsafe = self.bit_extract(value, 9, 1)
         # ekf_failsafe = self.bit_extract(value, 10, 2)
         # imu_temp = self.bit_extract(value, 26, 6) + 19 # IMU temperature: 0 means temp =< 19, 63 means temp => 82
-        heartbeat = self.mav.recv_match(
-            type='HEARTBEAT',
-            blocking=True,
-            timeout=1
-        )
-        if heartbeat is None:
-            raise NotAchievedException("Did not get HEARTBEAT message")
+        heartbeat = self.wait_heartbeat()
         mav_flight_mode = heartbeat.custom_mode
         self.progress(" mode=%u heartbeat=%u" % (flight_mode, mav_flight_mode))
         if mav_flight_mode == flight_mode:
@@ -8971,13 +8960,7 @@ switch value'''
         self.progress("received param (0x%02x) (id=%u value=%u)" %
                       (value, param_id, param_value))
         frame_type = param_value
-        hb = self.mav.recv_match(
-            type='HEARTBEAT',
-            blocking=True,
-            timeout=1,
-        )
-        if hb is None:
-            raise NotAchievedException("Did not get HEARTBEAT message")
+        hb = self.wait_heartbeat()
         hb_type = hb.type
         self.progress("validate_params: HEARTBEAT type==%f frsky==%f param_id=%u" % (hb_type, frame_type, param_id))
         if param_id != 1:
@@ -9033,7 +9016,8 @@ switch value'''
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
-        frsky = FRSkyPassThrough(("127.0.0.1", 6735))
+        frsky = FRSkyPassThrough(("127.0.0.1", 6735),
+                                 get_time=self.get_sim_time_cached)
 
         # waiting until we are ready to arm should ensure our wanted
         # statustext doesn't get blatted out of the ArduPilot queue by
@@ -9149,11 +9133,15 @@ switch value'''
     def read_message_via_mavlite(self, frsky, sport_to_mavlite):
         '''read bytes from frsky mavlite stream, trying to form up a mavlite
         message'''
-        tstart = self.get_sim_time_cached()
+        self.drain_mav(quiet=True)
+        tstart = self.get_sim_time()
         while True:
             self.drain_mav(quiet=True)
             tnow = self.get_sim_time_cached()
-            if tnow - tstart > 30:
+            timeout = 30
+            if self.valgrind:
+                timeout *= 10
+            if tnow - tstart > timeout:
                 raise NotAchievedException("Did not get parameter via mavlite")
             frsky.update()
             if sport_to_mavlite.state == sport_to_mavlite.state_MESSAGE_RECEIVED:
@@ -9163,7 +9151,8 @@ switch value'''
                 return message
 
     def read_parameter_via_mavlite(self, frsky, sport_to_mavlite, name):
-        tstart = self.get_sim_time_cached()
+        self.drain_mav(quiet=True)
+        tstart = self.get_sim_time()
         while True:
             tnow = self.get_sim_time_cached()
             if tnow - tstart > 30:
@@ -9448,13 +9437,7 @@ switch value'''
     def tfs_validate_tmp1(self, value):
         self.progress("validating tmp1 (0x%02x)" % value)
         tmp1 = value
-        heartbeat = self.mav.recv_match(
-            type='HEARTBEAT',
-            blocking=True,
-            timeout=1
-        )
-        if heartbeat is None:
-            raise NotAchievedException("Did not get HEARTBEAT message")
+        heartbeat = self.wait_heartbeat()
         heartbeat_tmp1 = heartbeat.custom_mode
         self.progress("GLOBAL_POSITION_INT custom_mode==%f frsky==%f" % (heartbeat_tmp1, tmp1))
         if heartbeat_tmp1 == tmp1:
