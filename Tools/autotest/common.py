@@ -4269,6 +4269,23 @@ class AutoTest(ABC):
                         mavutil.mavlink.enums["MAV_RESULT"][m.result].name))
                 break
 
+    def set_current_waypoint_using_mav_cmd_do_set_mission_current(
+            self,
+            seq,
+            target_sysid=1,
+            target_compid=1):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+                     seq,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=1,
+                     target_sysid=target_sysid,
+                     target_compid=target_compid)
+
     def set_current_waypoint_using_mission_set_current(self,
                                                        seq,
                                                        target_sysid=1,
