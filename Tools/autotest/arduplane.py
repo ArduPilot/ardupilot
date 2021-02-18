@@ -1158,13 +1158,13 @@ class AutoTestPlane(AutoTest):
             self.progress("Test arming while vehicle outside of inclusion zone")
             self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
             locs = [
-                mavutil.location(1.0,   1.0,   0, 0),
-                mavutil.location(1.0,   1.001, 0, 0),
+                mavutil.location(1.000, 1.000, 0, 0),
+                mavutil.location(1.000, 1.001, 0, 0),
                 mavutil.location(1.001, 1.001, 0, 0),
-                mavutil.location(1.001, 1.0,   0, 0)
+                mavutil.location(1.001, 1.000, 0, 0)
             ]
             self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
                 [
                     locs
                 ]
@@ -1187,7 +1187,7 @@ class AutoTestPlane(AutoTest):
                 mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
             ]
             self.upload_fences_from_locations(
-            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
                 [
                     locs
                 ]
@@ -1324,14 +1324,14 @@ class AutoTestPlane(AutoTest):
                 0, # p2
                 0, # p3
                 0, # p4
-                int(fence_loc.lat *1e7), # latitude
-                int(fence_loc.lng *1e7), # longitude
+                int(fence_loc.lat * 1e7), # latitude
+                int(fence_loc.lng * 1e7), # longitude
                 0, # altitude
                 mavutil.mavlink.MAV_MISSION_TYPE_FENCE
             )
         ]
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                                            fence_return_mission_items)
+                                           fence_return_mission_items)
         self.delay_sim_time(1)
 
         # Grab a location for rally point, and upload it.
@@ -1339,15 +1339,15 @@ class AutoTestPlane(AutoTest):
         self.location_offset_ne(rally_loc, -50, -50)
         self.set_parameter("RALLY_TOTAL", 1)
         self.mav.mav.rally_point_send(target_system,
-                                        target_component,
-                                        0, # sequence number
-                                        1, # total count
-                                        int(rally_loc.lat * 1e7),
-                                        int(rally_loc.lng * 1e7),
-                                        15,
-                                        0, # "break" alt?!
-                                        0, # "land dir"
-                                        0) # flags
+                                      target_component,
+                                      0, # sequence number
+                                      1, # total count
+                                      int(rally_loc.lat * 1e7),
+                                      int(rally_loc.lng * 1e7),
+                                      15,
+                                      0, # "break" alt?!
+                                      0, # "land dir"
+                                      0) # flags
         self.delay_sim_time(1)
 
         return_radius = 100
@@ -1371,8 +1371,8 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("FENCE_RET_RALLY", 0)
         self.set_parameter("FENCE_ALT_MIN", 60)
         self.wait_altitude(altitude_min=return_alt-3,
-                        altitude_max=return_alt+3,
-                        relative=True)
+                           altitude_max=return_alt+3,
+                           relative=True)
         self.wait_circling_point_with_radius(fence_loc, return_radius)
         self.do_fence_disable() # Disable fence so we can land
         self.fly_home_land_and_disarm() # Pack it up, we're going home.
@@ -2492,7 +2492,6 @@ class AutoTestPlane(AutoTest):
         if (not (m.onboard_control_sensors_health & fence_bit)):
             raise NotAchievedException("Fence breach did not clear")
 
-
         self.progress("Fly below floor and check for breach")
         self.change_altitude(self.homeloc.alt + cruise_alt - 80)
 
@@ -2502,7 +2501,7 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Fence Floor did not breach")
 
         self.do_fence_disable()
-        
+
         self.fly_home_land_and_disarm(timeout=150)
 
     def test_fence_disable_under_breach_action(self):
@@ -2527,7 +2526,6 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="RTL", expected_mode="RTL", action=1)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=5)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
-
 
     def tests(self):
         '''return list of all tests'''
