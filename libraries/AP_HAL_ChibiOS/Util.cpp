@@ -357,14 +357,14 @@ void Util::thread_info(ExpandingString &str)
       }
 #if HAL_ENABLE_THREAD_STATISTICS
       str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u MIN=%4u AVG=%4u MAX=%4u\n",
-                 tp->name, unsigned(tp->prio), tp->wabase,
+                 tp->name, unsigned(tp->realprio), tp->wabase,
                  unsigned(stack_free(tp->wabase)), unsigned(total_stack), unsigned(RTC2US(STM32_HSECLK, tp->stats.best)),
                  unsigned(RTC2US(STM32_HSECLK, uint32_t(tp->stats.cumulative / uint64_t(tp->stats.n)))),
                  unsigned(RTC2US(STM32_HSECLK, tp->stats.worst)));
       chTMObjectInit(&tp->stats); // reset counters to zero
 #else
       str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
-                 tp->name, unsigned(tp->prio), tp->wabase,
+                 tp->name, unsigned(tp->realprio), tp->wabase,
                  unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
   }

@@ -80,7 +80,7 @@ static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fa
             pd.fault_addr = fault_addr;
             thread_t *tp = chThdGetSelfX();
             if (tp) {
-                pd.fault_thd_prio = tp->prio;
+                pd.fault_thd_prio = tp->hdr.pqueue.prio;
                 // get first 4 bytes of the name, but only of first fault
                 if (tp->name && pd.thread_name4[0] == 0) {
                     strncpy_noterm(pd.thread_name4, tp->name, 4);

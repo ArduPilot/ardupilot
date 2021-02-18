@@ -120,7 +120,7 @@ void UARTDriver::uart_thread()
         // change the thread priority if requested - if unbuffered it should only have higher priority than the owner so that
         // handoff occurs immediately
         if (mask & EVT_TRANSMIT_UNBUFFERED) {
-            chThdSetPriority(unbuffered_writes ? MIN(_uart_owner_thd->prio + 1, APM_UART_UNBUFFERED_PRIORITY) : APM_UART_PRIORITY);
+            chThdSetPriority(unbuffered_writes ? MIN(_uart_owner_thd->realprio + 1, APM_UART_UNBUFFERED_PRIORITY) : APM_UART_PRIORITY);
         }
 #ifndef HAL_UART_NODMA
         osalDbgAssert(!dma_handle || !dma_handle->is_locked(), "DMA handle is already locked");

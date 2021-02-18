@@ -241,6 +241,7 @@
 #define STM32_RTCPRE_VALUE                  8
 #ifndef STM32_CKPERSEL
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
+#endif
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL2_R_CK
 #define STM32_QSPISEL                       STM32_QSPISEL_HCLK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
@@ -519,6 +520,8 @@
 #define STM32_UART_UART7_DMA_PRIORITY       0
 #define STM32_UART_UART8_DMA_PRIORITY       0
 #define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+
+#define STM32_IRQ_LPUART1_PRIORITY          12
 
 /*
  * USB driver system settings.
