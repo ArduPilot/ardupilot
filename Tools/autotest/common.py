@@ -1550,8 +1550,15 @@ class AutoTest(ABC):
         if self.valgrind:
             self.reboot_check_valgrind_log()
             self.progress("Stopping and restarting SITL")
-            self.stop_SITL()
-            self.start_SITL(wipe=False)
+            if getattr(self, 'valgrind_restart_customisations', None) is not None:
+                self.customise_SITL_commandline(
+                    self.valgrind_restart_customisations,
+                    model=self.valgrind_restart_model,
+                    defaults_filepath=self.valgrind_restart_defaults_filepath,
+                )
+            else:
+                self.stop_SITL()
+                self.start_SITL(wipe=False)
         else:
             self.progress("Executing reboot command")
             self.run_cmd_reboot()
@@ -2115,6 +2122,13 @@ class AutoTest(ABC):
         if m is None:
             raise NotAchievedException("No RC_CHANNELS message after restarting SITL")
 
+        # stash our arguments in case we need to preserve them in
+        # reboot_sitl with Valgrind active:
+        if self.valgrind:
+            self.valgrind_restart_model = model
+            self.valgrind_restart_defaults_filepath = defaults_filepath
+            self.valgrind_restart_customisations = customisations
+
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
@@ -2122,6 +2136,10 @@ class AutoTest(ABC):
         self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
         self.apply_defaultfile_parameters()
+        try:
+            del self.valgrind_restart_customisations
+        except Exception:
+            pass
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
