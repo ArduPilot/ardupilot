@@ -8662,7 +8662,7 @@ switch value'''
         self.progress("### m: %s" % str(m))
         if not (m.state & mask):
             raise NotAchievedException("Bit not set in mask (got=%u want=%u)" % (m.state, mask))
-        m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=1)
+        m2 = self.mav.recv_match(type='BUTTON_CHANGE', blocking=True, timeout=10)
         if m2 is None:
             raise NotAchievedException("Did not get repeat message")
         self.progress("### m2: %s" % str(m2))
