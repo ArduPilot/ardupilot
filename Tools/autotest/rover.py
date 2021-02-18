@@ -3556,6 +3556,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
 
     def test_gcs_mission(self):
+        '''check MAVProxy's waypoint handling of missions'''
         target_system = 1
         target_component = 1
         self.mavproxy.send('wp clear\n')
