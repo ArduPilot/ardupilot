@@ -482,6 +482,10 @@ public:
 
     uint32_t last_input_ms() const { return last_update_ms; };
 
+    void do_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos) {
+        rc_channel(0)->do_aux_function(ch_option, pos);
+    }
+
 protected:
 
     enum class Option {
