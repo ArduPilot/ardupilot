@@ -5738,6 +5738,17 @@ class AutoTestCopter(AutoTest):
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 
+    def test_aux_functions_in_mission(self):
+        self.load_mission("aux_functions.txt")
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.set_rc(3, 1500)
+        self.wait_mode('ALT_HOLD')
+        self.change_mode('AUTO')
+        self.wait_rtl_complete()
+
     def fly_rangefinder_drivers_fly(self, rangefinders):
         '''ensure rangefinder gives height-above-ground'''
         self.change_mode('GUIDED')
@@ -6542,6 +6553,10 @@ class AutoTestCopter(AutoTest):
             ("AuxSwitchOptions",
              "Test random aux mode options",
              self.test_aux_switch_options),
+
+            ("AuxFunctionsInMission",
+             "Test use of auxilliary functions in missions",
+             self.test_aux_functions_in_mission),
 
             ("AutoTune",
              "Fly AUTOTUNE mode",
