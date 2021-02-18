@@ -148,6 +148,12 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    // AUX_FUNCTION command structure
+    struct PACKED AuxFunction {
+        uint16_t function;  // from RC_Channel::AUX_FUNC
+        uint8_t switchpos;  // from RC_Channel::AuxSwitchPos
+    };
+
     // high altitude balloon altitude wait
     struct PACKED Altitude_Wait {
         float altitude; // meters
@@ -240,6 +246,9 @@ public:
 
         // do-gripper
         Gripper_Command gripper;
+
+        // arbitrary aux function
+        AuxFunction auxfunction;
 
         // do-guided-limits
         Guided_Limits_Command guided_limits;
@@ -691,6 +700,7 @@ private:
     static HAL_Semaphore _rsem;
 
     // mission items common to all vehicles:
+    bool start_command_do_aux_function(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
