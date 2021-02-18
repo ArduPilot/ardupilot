@@ -5440,6 +5440,7 @@ Also, ignores heartbeats not from our target system'''
 
 #        self.progress("Waiting for Parameters")
 #        self.mavproxy.expect('Received [0-9]+ parameters')
+        self.expect_list_add(self.mavproxy)
 
     def start_SITL(self, **sitl_args):
         start_sitl_args = {
@@ -5497,12 +5498,6 @@ Also, ignores heartbeats not from our target system'''
         self.start_mavproxy()
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
-
-        self.expect_list_clear()
-        if self.sup_prog is not None:
-            self.expect_list_extend([self.sitl, self.mavproxy])
-        else:
-            self.expect_list_extend([self.sitl, self.mavproxy, self.sup_prog])
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
