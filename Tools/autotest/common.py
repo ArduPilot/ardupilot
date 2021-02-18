@@ -5263,7 +5263,7 @@ class AutoTest(ABC):
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
-    
+
     def assert_fence_enabled(self, timeout=2):
         # Check fence is enabled
         m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=timeout)
