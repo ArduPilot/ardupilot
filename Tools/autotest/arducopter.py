@@ -4768,8 +4768,11 @@ class AutoTestCopter(AutoTest):
         # arm in Stabilize and attempt to switch to Loiter
         self.change_mode('STABILIZE')
         self.arm_vehicle()
-        self.mavproxy.send("mode LOITER\n")
-        self.mavproxy.expect("requires position")
+        self.context_collect('STATUSTEXT')
+        self.run_cmd_do_set_mode(
+            "LOITER",
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.wait_statustext("requires position", check_context=True)
         self.disarm_vehicle()
         self.context_pop()
         self.reboot_sitl()
