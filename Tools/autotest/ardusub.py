@@ -106,8 +106,7 @@ class AutoTestSub(AutoTest):
         """
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.mavproxy.send('mode ALT_HOLD\n')
-        self.wait_mode('ALT_HOLD')
+        self.change_mode('ALT_HOLD')
 
         msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
         if msg is None:
@@ -160,8 +159,7 @@ class AutoTestSub(AutoTest):
         self.arm_vehicle()
         # point North
         self.reach_heading_manual(0)
-        self.mavproxy.send('mode POSHOLD\n')
-        self.wait_mode('POSHOLD')
+        self.change_mode('POSHOLD')
 
         # dive a little
         self.set_rc(Joystick.Throttle, 1300)
@@ -278,7 +276,7 @@ class AutoTestSub(AutoTest):
                 return
 
             self.load_mission("sub-gripper-mission.txt")
-            self.mavproxy.send('mode loiter\n')
+            self.change_mode('LOITER')
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.change_mode('AUTO')
