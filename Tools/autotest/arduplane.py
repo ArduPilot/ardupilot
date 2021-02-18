@@ -705,7 +705,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
-        self.mavproxy.send('wp set 7\n')
+        self.set_current_waypoint(7)
         self.drain_mav()
         # TODO: reflect on file to find this magic waypoint number?
         #        self.wait_waypoint(7, num_wp-1, timeout=500) # we
@@ -759,7 +759,7 @@ class AutoTestPlane(AutoTest):
 
             self.progress("Flying mission %s" % filename)
             self.load_mission(filename)
-            self.mavproxy.send('wp set 1\n')
+            self.set_current_waypoint(1)
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -1019,7 +1019,7 @@ class AutoTestPlane(AutoTest):
         ex = None
         try:
             self.load_mission("plane-gripper-mission.txt")
-            self.mavproxy.send("wp set 1\n")
+            self.set_current_waypoint(1)
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -1277,7 +1277,7 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("SIM_PARA_PIN", 9)
 
         self.load_mission("plane-parachute-mission.txt")
-        self.mavproxy.send("wp set 1\n")
+        self.set_current_waypoint(1)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -1507,7 +1507,7 @@ class AutoTestPlane(AutoTest):
 
             '''ensure rangefinder gives height-above-ground'''
             self.load_mission("plane-gripper-mission.txt") # borrow this
-            self.mavproxy.send("wp set 1\n")
+            self.set_current_waypoint(1)
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -1816,7 +1816,7 @@ class AutoTestPlane(AutoTest):
 
         self.load_mission('CMAC-soar.txt')
 
-        self.mavproxy.send("wp set 1\n")
+        self.set_current_waypoint(1)
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -1923,7 +1923,7 @@ class AutoTestPlane(AutoTest):
 
     def fly_terrain_mission(self):
 
-        self.mavproxy.send("wp set 1\n")
+        self.set_current_waypoint(1)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
