@@ -5863,10 +5863,8 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy = self.start_mavproxy()
 
         self.expect_list_clear()
-        if len(self.sup_prog):
-            self.expect_list_extend([self.sitl, self.mavproxy])
-        else:
-            self.expect_list_extend([self.sitl, self.mavproxy] + self.sup_prog)
+        self.expect_list_extend([self.sitl, self.mavproxy])
+        self.expect_list_extend(self.sup_prog)
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
