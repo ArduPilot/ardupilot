@@ -1,6 +1,10 @@
-#!/usr/bin/env python
+'''
+Fly ArduPlane QuadPlane in SITL
 
-# Fly ArduPlane QuadPlane in SITL
+AP_FLAKE8_CLEAN
+
+'''
+
 from __future__ import print_function
 import os
 import numpy
@@ -11,7 +15,6 @@ from pymavlink import mavutil
 from common import AutoTest
 from common import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
 
-from pysim import vehicleinfo
 import operator
 
 
@@ -64,7 +67,7 @@ class AutoTestQuadPlane(AutoTest):
         pass
 
     def defaults_filepath(self):
-        return self.model_defaults_filepath("ArduPlane",self.frame)
+        return self.model_defaults_filepath("ArduPlane", self.frame)
 
     def is_plane(self):
         return True
@@ -108,7 +111,7 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_servo_channel_value(5, min_pwm, comparator=operator.eq)
 
         """set Q_OPTIONS bit AIRMODE"""
-        airmode_option_bit = (1<<9)
+        airmode_option_bit = (1 << 9)
         self.set_parameter("Q_OPTIONS", airmode_option_bit)
 
         armdisarm_option = 41
@@ -164,7 +167,24 @@ class AutoTestQuadPlane(AutoTest):
         self.set_parameter("AHRS_TRIM_X", math.radians(-60))
         self.wait_roll(60, 1)
         # test all modes except QSTABILIZE, QACRO, AUTO and QAUTOTUNE
-        for mode in ('QLOITER', 'QHOVER', 'CIRCLE', 'STABILIZE', 'TRAINING', 'ACRO', 'FBWA', 'FBWB', 'CRUISE', 'AUTOTUNE', 'RTL', 'LOITER', 'AVOID_ADSB', 'GUIDED', 'QLAND', 'QRTL'):
+        for mode in (
+                'ACRO',
+                'AUTOTUNE',
+                'AVOID_ADSB',
+                'CIRCLE',
+                'CRUISE',
+                'FBWA',
+                'FBWB',
+                'GUIDED',
+                'LOITER',
+                'QHOVER',
+                'QLAND',
+                'QLOITER',
+                'QRTL',
+                'RTL',
+                'STABILIZE',
+                'TRAINING',
+        ):
             self.progress("Testing %s mode" % mode)
             self.change_mode(mode)
             self.zero_throttle()
@@ -230,7 +250,6 @@ class AutoTestQuadPlane(AutoTest):
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
             self.disarm_vehicle()
             self.wait_ready_to_arm()
-
 
     def test_motor_mask(self):
         """Check operation of output_motor_mask"""
@@ -314,7 +333,7 @@ class AutoTestQuadPlane(AutoTest):
             self.mavproxy.send('disarm\n')
             try:
                 self.wait_text("AutoTune: Saved gains for Roll Pitch Yaw", timeout=0.5)
-            except AutoTestTimeoutException as e:
+            except AutoTestTimeoutException:
                 continue
             break
         self.wait_disarmed()
@@ -468,7 +487,7 @@ class AutoTestQuadPlane(AutoTest):
                 "FFT_SNR_REF": 10,
                 "FFT_WINDOW_SIZE": 128,
                 "FFT_WINDOW_OLAP": 0.75,
-            });
+            })
             # Step 1: inject a very precise noise peak at 250hz and make sure the in-flight fft
             # can detect it really accurately. For a 128 FFT the frequency resolution is 8Hz so
             # a 250Hz peak should be detectable within 5%
