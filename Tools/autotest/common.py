@@ -62,10 +62,6 @@ MAV_FRAMES_TO_TEST = [
     mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
 ]
 
-# a list of pexpect objects to read while waiting for
-# messages. This keeps the output to stdout flowing
-expect_list = []
-
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
@@ -1242,6 +1238,8 @@ class AutoTest(ABC):
         self.rc_thread_should_quit = False
         self.rc_queue = Queue.Queue()
 
+        self.expect_list = []
+
     def __del__(self):
         if self.rc_thread is not None:
             self.progress("Joining thread in __del__")
@@ -2183,24 +2181,20 @@ class AutoTest(ABC):
     #################################################
     def expect_list_clear(self):
         """clear the expect list."""
-        global expect_list
-        for p in expect_list[:]:
-            expect_list.remove(p)
+        for p in self.expect_list[:]:
+            self.expect_list.remove(p)
 
     def expect_list_extend(self, list_to_add):
         """Extend the expect list."""
-        global expect_list
-        expect_list.extend(list_to_add)
+        self.expect_list.extend(list_to_add)
 
     def expect_list_add(self, item):
         """Extend the expect list."""
-        global expect_list
-        expect_list.extend([item])
+        self.expect_list.extend([item])
 
     def expect_list_remove(self, item):
         """Remove item from the expect list."""
-        global expect_list
-        expect_list.remove(item)
+        self.expect_list.remove(item)
 
     def heartbeat_interval_ms(self):
         c = self.context_get()
@@ -2244,8 +2238,7 @@ class AutoTest(ABC):
                                             0)
 
     def drain_all_pexpects(self):
-        global expect_list
-        for p in expect_list:
+        for p in self.expect_list:
             util.pexpect_drain(p)
 
     def idle_hook(self, mav):
@@ -2279,8 +2272,7 @@ class AutoTest(ABC):
 
     def expect_callback(self, e):
         """Called when waiting for a expect pattern."""
-        global expect_list
-        for p in expect_list:
+        for p in self.expect_list:
             if p == e:
                 continue
             util.pexpect_drain(p)
