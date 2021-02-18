@@ -6568,8 +6568,11 @@ Also, ignores heartbeats not from our target system'''
                     self.mavproxy.expect(r"Active Rate\([0-9]+s\):([0-9]+[.][0-9]+)")
                     rate = float(self.mavproxy.match.group(1))
                     self.progress("Rate: %f" % rate)
-                    if rate < 50:
-                        raise NotAchievedException("Exceptionally low transfer rate")
+                    desired_rate = 50
+                    if self.valgrind:
+                        desired_rate /= 10
+                    if rate < desired_rate:
+                        raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
             self.disarm_vehicle()
         except Exception as e:
             self.progress("Exception caught: %s" %
