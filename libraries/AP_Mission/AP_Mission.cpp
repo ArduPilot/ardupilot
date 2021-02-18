@@ -300,6 +300,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_PARACHUTE:
     case MAV_CMD_DO_SPRAYER:
+    case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
         return true;
     default:
@@ -316,6 +317,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
 
     gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
     switch (cmd.id) {
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return start_command_do_aux_function(cmd);
     case MAV_CMD_DO_GRIPPER:
         return start_command_do_gripper(cmd);
     case MAV_CMD_DO_SET_SERVO:
@@ -1027,6 +1030,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                         // action 0=disable, 1=enable
         break;
 
+    case MAV_CMD_DO_AUX_FUNCTION:
+        cmd.content.auxfunction.function = packet.param1;
+        cmd.content.auxfunction.switchpos = packet.param2;
+        break;
+
     case MAV_CMD_DO_PARACHUTE:                         // MAV ID: 208
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
@@ -1477,6 +1485,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_DO_SPRAYER:
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable
+        break;
+
+    case MAV_CMD_DO_AUX_FUNCTION:
+        packet.param1 = cmd.content.auxfunction.function;
+        packet.param2 = cmd.content.auxfunction.switchpos;
         break;
 
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
@@ -2247,6 +2260,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "Parachute";
     case MAV_CMD_DO_SPRAYER:
         return "Sprayer";
+    case MAV_CMD_DO_AUX_FUNCTION:
+        return "AuxFunction";
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
     case MAV_CMD_DO_WINCH:
