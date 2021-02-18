@@ -4073,6 +4073,20 @@ class AutoTest(ABC):
                         mavutil.mavlink.enums["MAV_RESULT"][m.result].name))
                 break
 
+    def set_current_waypoint_using_mission_set_current(self,
+                                                       seq,
+                                                       target_sysid=1,
+                                                       target_compid=1):
+        self.mav.mav.mission_set_current_send(target_sysid,
+                                              target_compid,
+                                              seq)
+        self.wait_current_waypoint(seq, timeout=10)
+
+    def set_current_waypoint(self, seq, target_sysid=1, target_compid=1):
+        return self.set_current_waypoint_using_mission_set_current(seq,
+                                                                   target_sysid,
+                                                                   target_compid)
+
     def verify_parameter_values(self, parameter_stuff, max_delta=0.0):
         bad = ""
         for param in parameter_stuff:
