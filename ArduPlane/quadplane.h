@@ -597,6 +597,7 @@ private:
         OPTION_DELAY_ARMING=(1<<11),
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
+        OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
     };
 
     AP_Float takeoff_failure_scalar;
