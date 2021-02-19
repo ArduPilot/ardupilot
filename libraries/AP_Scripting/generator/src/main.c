@@ -1397,7 +1397,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       // fetch and check the singleton pointer
       fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
       fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return luaL_argerror(L, %d, \"%s not supported on this firmware\");\n", arg_count, access_name);
+      fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", arg_count, access_name);
       fprintf(source, "    }\n\n");
   }
 
@@ -1956,6 +1956,13 @@ void emit_argcheck_helper(void) {
   fprintf(source, "}\n\n");
 }
 
+void emit_not_supported_helper(void) {
+  fprintf(source, "static int not_supported_error(lua_State *L, int arg, const char* name) {\n");
+  fprintf(source, "    char error_msg[50];\n");
+  fprintf(source, "    snprintf(error_msg, sizeof(error_msg), \"%%s not supported on this firmware\", name);\n");
+  fprintf(source, "    return luaL_argerror(L, arg, error_msg);\n");
+  fprintf(source, "}\n\n");
+}
 
 char * output_path = NULL;
 
@@ -2042,6 +2049,8 @@ int main(int argc, char **argv) {
   fprintf(source, "\n\n");
 
   emit_argcheck_helper();
+
+  emit_not_supported_helper();
 
   emit_userdata_allocators();
 

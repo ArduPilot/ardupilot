@@ -259,6 +259,12 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "python-cleanliness" ]; then
+        echo "Checking Python code cleanliness"
+        ./Tools/scripts/run_flake8.py
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
