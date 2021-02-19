@@ -534,6 +534,8 @@ private:
     Vector3f _last_delta_angle[INS_MAX_INSTANCES];
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
     Vector3f _ang_accel[INS_MAX_INSTANCES];
+    LowPassFilterVector3f _ang_accel_filter[INS_MAX_INSTANCES];
+    AP_Float _ang_accel_filter_cuttoff;
     Vector3f _gyro_prev[INS_MAX_INSTANCES];
 
     // bitmask indicating if a sensor is doing sensor-rate sampling:
