@@ -560,18 +560,6 @@ private:
                                                          // queued send
     uint32_t                    _queued_parameter_send_time_ms;
 
-    /// Count the number of reportable parameters.
-    ///
-    /// Not all parameters can be reported via MAVlink.  We count the number
-    // that are
-    /// so that we can report to a GCS the number of parameters it should
-    // expect when it
-    /// requests the full set.
-    ///
-    /// @return         The number of reportable parameters.
-    ///
-    uint16_t                    packet_drops;
-
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
     // last reported radio buffer percent available
