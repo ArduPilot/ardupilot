@@ -252,6 +252,7 @@ void ModeAuto::land_start(const Vector3f& destination)
     copter.landinggear.deploy_for_landing();
 
 #if AC_FENCE == ENABLED
+    // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
 }
