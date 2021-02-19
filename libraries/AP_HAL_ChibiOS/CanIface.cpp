@@ -366,6 +366,9 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+    if (mode_ != FilteredMode) {
+        return false;
+    }
     if (num_configs <= NumFilters && filter_configs != nullptr) {
         CriticalSectionLocker lock;
 
@@ -779,6 +782,9 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
         hal.can[self_index_] = this;
 #endif
     }
+
+    bitrate_ = bitrate;
+    mode_ = mode;
 
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = new CANIface(0);
