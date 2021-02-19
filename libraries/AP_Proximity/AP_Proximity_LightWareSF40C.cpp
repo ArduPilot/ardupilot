@@ -335,11 +335,10 @@ void AP_Proximity_LightWareSF40C::process_message()
             }
 
             // check reading is not within an ignore zone
-            if (!ignore_reading(angle_deg)) {
+            const float dist_m = dist_cm * 0.01f;
+            if (!ignore_reading(angle_deg, dist_m)) {
                 // check distance reading is valid
                 if ((dist_cm >= dist_min_cm) && (dist_cm <= dist_max_cm)) {
-                    const float dist_m = dist_cm * 0.01f;
-
                     // update shortest distance for this face
                     if (!_face_distance_valid || dist_m < _face_distance) {
                         _face_distance = dist_m;

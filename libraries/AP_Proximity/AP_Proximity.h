@@ -155,6 +155,9 @@ public:
     bool sensor_enabled() const;
     bool sensor_failed() const;
 
+    // set alt as read from downward facing rangefinder. Tilt is already adjusted for
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
+
 private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
@@ -176,6 +179,7 @@ private:
     AP_Int16 _ignore_angle_deg[PROXIMITY_MAX_IGNORE];   // angle (in degrees) of area that should be ignored by sensor (i.e. leg shows up)
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
     AP_Int8 _raw_log_enable;                            // enable logging raw distances
+    AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
 
     void detect_instance(uint8_t instance);
 };
