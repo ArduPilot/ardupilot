@@ -56,8 +56,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
-    return fence_checks(display_failure)
-        & parameter_checks(display_failure)
+    return parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure)
         & oa_checks(display_failure)
