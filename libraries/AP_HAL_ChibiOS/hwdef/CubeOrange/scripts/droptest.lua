@@ -54,6 +54,9 @@ function ground_course()
    if gps:status(0) >= 3 and gps:ground_speed(0) > 20 then
       return gps:ground_course(0)
    end
+   if gps:status(1) >= 3 and gps:ground_speed(1) > 20 then
+      return gps:ground_course(1)
+   end
    -- use mission direction
    local cnum = mission:get_current_nav_index()
    local N = mission:num_commands()
@@ -177,6 +180,9 @@ function get_position()
       loc = gps:location(0)
    end
    if not loc then
+      loc = gps:location(1)
+   end
+   if not loc then
       return nil
    end
    return loc
@@ -295,6 +301,9 @@ function set_standby()
       -- maybe LOITER mode if no GPS lock?
    end
    local gps_status = gps:status(0)
+   if gps_status == 0 then
+      gps_status = gps:status(1)
+   end
    if gps_status == 0 then
       -- red flash slow for no GPS
       notify:handle_rgb(255,0,0,2)
