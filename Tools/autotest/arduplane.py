@@ -178,8 +178,7 @@ class AutoTestPlane(AutoTest):
     def fly_LOITER(self, num_circles=4):
         """Loiter where we are."""
         self.progress("Testing LOITER for %u turns" % num_circles)
-        self.mavproxy.send('loiter\n')
-        self.wait_mode('LOITER')
+        self.change_mode('LOITER')
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
@@ -196,8 +195,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
 
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
             raise NotAchievedException("Failed to maintain altitude")
@@ -207,8 +205,7 @@ class AutoTestPlane(AutoTest):
     def fly_CIRCLE(self, num_circles=1):
         """Circle where we are."""
         self.progress("Testing CIRCLE for %u turns" % num_circles)
-        self.mavproxy.send('mode CIRCLE\n')
-        self.wait_mode('CIRCLE')
+        self.change_mode('CIRCLE')
 
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         initial_alt = m.alt
@@ -225,8 +222,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Final altitude %u initial %u\n" %
                       (final_alt, initial_alt))
 
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
             raise NotAchievedException("Failed to maintain altitude")
@@ -252,8 +248,7 @@ class AutoTestPlane(AutoTest):
 
     def change_altitude(self, altitude, accuracy=30):
         """Get to a given altitude."""
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
         alt_error = self.mav.messages['VFR_HUD'].alt - altitude
         if alt_error > 0:
             self.set_rc(2, 2000)
@@ -389,14 +384,12 @@ class AutoTestPlane(AutoTest):
                                                       yaw_rate_radians,
                                                       thrust)
         except Exception as e:
-            self.mavproxy.send('mode FBWA\n')
-            self.wait_mode('FBWA')
+            self.change_mode('FBWA')
             self.set_rc(3, 1700)
             raise e
 
         # back to FBWA
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
         self.set_rc(3, 1700)
         self.wait_level_flight()
 
@@ -422,8 +415,7 @@ class AutoTestPlane(AutoTest):
         self.wait_roll(0, accuracy=5)
 
         # back to FBWA
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
         self.set_rc(3, 1700)
         return self.wait_level_flight()
 
@@ -447,8 +439,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(1, 1500)
 
         # back to FBWA
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
 
         self.wait_level_flight()
 
@@ -465,8 +456,7 @@ class AutoTestPlane(AutoTest):
         self.set_rc(2, 1500)
 
         # back to FBWA
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
         self.set_rc(3, 1700)
         return self.wait_level_flight()
 
@@ -524,8 +514,7 @@ class AutoTestPlane(AutoTest):
                       (final_alt, initial_alt))
 
         # back to FBWA
-        self.mavproxy.send('mode FBWA\n')
-        self.wait_mode('FBWA')
+        self.change_mode('FBWA')
 
         if abs(final_alt - initial_alt) > 20:
             raise NotAchievedException("Failed to maintain altitude")
