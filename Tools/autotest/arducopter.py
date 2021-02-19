@@ -1721,7 +1721,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter('SIM_SPEEDUP', 1)
             self.progress("Flipping in roll")
             self.set_rc(1, 1700)
-            self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
+            self.send_cmd_do_set_mode('FLIP') # don't wait for success
             self.wait_attitude(despitch=0, desroll=45, tolerance=30)
             self.wait_attitude(despitch=0, desroll=90, tolerance=30)
             self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
@@ -1737,7 +1737,7 @@ class AutoTestCopter(AutoTest):
 
             self.progress("Flipping in pitch")
             self.set_rc(2, 1700)
-            self.mavproxy.send('mode FLIP\n') # don't wait for heartbeat!
+            self.send_cmd_do_set_mode('FLIP') # don't wait for success
             self.wait_attitude(despitch=45, desroll=0, tolerance=30)
             # can't check roll here as it flips from 0 to -180..
             self.wait_attitude(despitch=90, tolerance=30)
@@ -3556,19 +3556,18 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.load_mission("copter-gripper-mission.txt")
-            self.mavproxy.send('mode loiter\n')
+            self.change_mode('LOITER')
             self.wait_ready_to_arm()
             self.assert_vehicle_location_is_at_startup_location()
             self.arm_vehicle()
-            self.mavproxy.send('mode auto\n')
-            self.wait_mode('AUTO')
+            self.change_mode('AUTO')
             self.set_rc(3, 1500)
             self.wait_statustext("Gripper Grabbed", timeout=60)
             self.wait_statustext("Gripper Released", timeout=60)
         except Exception as e:
             self.progress("Exception caught: %s" % (
                 self.get_exception_stacktrace(e)))
-            self.mavproxy.send('mode land\n')
+            self.change_mode('LAND')
             ex = e
         self.context_pop()
         self.wait_disarmed()
@@ -3580,7 +3579,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.load_mission("copter-spline-last-waypoint.txt")
-            self.mavproxy.send('mode loiter\n')
+            self.change_mode('LOITER')
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.change_mode('AUTO')
