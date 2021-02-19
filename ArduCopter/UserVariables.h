@@ -21,8 +21,6 @@ uint32_t ch10_timer;
 uint32_t ch11_timer;
 uint32_t ch12_timer;
 
-int8_t speed_setting;
-
 bool cam_button_pressed;
 bool ch9_button_pressed;
 bool ch10_button_pressed;
@@ -82,14 +80,8 @@ enum vehicle_state{
 }spirit_state;
 
 
- struct Location roi_1;
- struct Location roi_2;
+// struct Location roi_1;
 
-
-enum gimbal_state{
-	rc_target,
-	roi_point,
-}viewpro_state;
 
 #if WII_CAMERA == 1
 WiiCamera           ircam;

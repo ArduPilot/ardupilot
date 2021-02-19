@@ -24,6 +24,8 @@ bool ModeBrake::init(bool ignore_checks)
 
     _timeout_ms = 0;
 
+    copter.camera_mount.enable_RC_control(true);
+
     return true;
 }
 

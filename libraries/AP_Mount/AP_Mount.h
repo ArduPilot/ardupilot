@@ -110,12 +110,6 @@ public:
     void set_angle_targets(float roll, float tilt, float pan) { set_angle_targets(_primary, roll, tilt, pan); }
     void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
 
-   // void set_speed_targets(uint8_t instance, float tilt, float pan);
-   // void set_speed_targets(float tilt, float pan) { set_speed_targets(_primary, tilt, pan); }
-
-    //void set_zoom(uint8_t instance, bool zoom_in, bool zoom_out);
-    //void set_zoom(bool zoom_in, bool zoom_out) { set_zoom(_primary, zoom_in, zoom_out); }
-
 
     void enable_RC_control(uint8_t instance, bool en);
     void enable_RC_control(bool en) { enable_RC_control(_primary, en); }
@@ -136,6 +130,23 @@ public:
 
     void toggle_PIP(uint8_t instance);
     void toggle_PIP() { toggle_PIP(_primary); }
+
+    void turn_camera_off(uint8_t instance);
+    void turn_camera_off() { toggle_PIP(_primary); }
+
+    void take_picture(uint8_t instance);
+    void take_picture() { take_picture(_primary); }
+
+
+    void flip_image(uint8_t instance, bool flip);
+    void flip_image(bool flip) { flip_image(_primary, flip); }
+
+    void center_yaw(uint8_t instance);
+    void center_yaw() { center_yaw(_primary); }
+
+
+
+
 
 
     void enable_follow(uint8_t instance, bool en);

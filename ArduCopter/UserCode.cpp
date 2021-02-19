@@ -14,8 +14,6 @@ void Copter::userhook_init()
 	killswitch_counter = 0;
 
 	//Herelink Gimbal Control Variables
-	ap.gimbal_control_active = false;
-	speed_setting = 1;
 	function_counter = 0;
 	cam_button_debounce_timer = 0;
 
@@ -45,15 +43,14 @@ void Copter::userhook_init()
 
 	// startup spirit state
 	spirit_state = disarm;
-	viewpro_state = rc_target;
 
-	gimbal_pan_spd = 0.0;
-	gimbal_tilt_spd = 0.0;
+	gimbal_pan_spd = 0.0; //not used
+	gimbal_tilt_spd = 0.0; //not used
 
 	zoom_in = false;
 	zoom_out  = false;
 	zoom_stop = true;
-	camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
+	camera_mount.set_mode_to_default();
 
 
 	/*
@@ -124,6 +121,14 @@ AP_Mission::Mission_Command cmd_roi;
     	auto_config();
     }
 
+/*
+   if(g.top_cam){
+	   camera_mount.flip_image(true);
+   }else{
+	   camera_mount.flip_image(false);
+   }
+*/
+
 }
 #endif
 
@@ -150,34 +155,32 @@ void Copter::userhook_50Hz()
 
 	motors->set_aft_rotor_RPM((float)rpm_sensor.get_rpm(1));
 
+
+	// Don't do this logging
+	/*
 	float pitch_offset = motors->get_pitch_rpm_offset();
 	float roll_offset = motors->get_roll_rpm_offset();
 	float hover_rpm = motors->get_hover_RPM();
-
 	Log_Write_Vehicle_State(pitch_offset, roll_offset, hover_rpm);
+	 */
 
-
-	//Call topple sense
-if(motors->armed()){
-	topple_sense();
-}
+		//Call topple sense
+	if(motors->armed()){
+		topple_sense();
+	}
 
 
 	// State Machine
 
 	if(!motors->armed()){
 		spirit_state = disarm;
-		viewpro_state = rc_target;
-		//camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 
-	// the rest considers the vehicle to be armed
-		//always move through spoolup
+	//the rest considers the vehicle to be armed
+	//always move through spoolup
 	}else if(spirit_state == disarm){
 
 		hal.gpio->write(52, false);
 		hal.gpio->write(53, true);
-
-		camera_mount.set_mode(MAV_MOUNT_MODE_NEUTRAL);
 
 		spirit_state = spoolup;
 		spoolup_watcher = AP_HAL::millis16();
@@ -191,7 +194,6 @@ if(motors->armed()){
 
 		spirit_state = hover;
 	//	camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
-		viewpro_state = rc_target;
 
 	}else if((spirit_state == hover or spirit_state == landing) and ap.land_complete){
 
@@ -245,7 +247,6 @@ if(motors->armed()){
 			if(_fwd_rpm >= 1000.0f and _aft_rpm >= 1000.0f){  //fully spun up
 				motors->spoolup_complete(true);
 				spirit_state = land;
-				//gcs().send_text(MAV_SEVERITY_INFO,"landed");
 				timer_trigger = false;
 
 			}else if((AP_HAL::millis16() - spoolup_timer) > (uint16_t)(g.spool_delta*1000)){
@@ -270,9 +271,6 @@ if(motors->armed()){
 
 
 	case hover:
-
-
-		//Gimbal control logic for hover
 
 
 		//////// Determine if we are landing //////
@@ -334,8 +332,6 @@ void Copter::userhook_MediumLoop()
 	}
 
 
-	 //logger.ROI_logging();
-
 }
 #endif
 
@@ -345,9 +341,9 @@ void Copter::userhook_SlowLoop()
     // put your 3.3Hz code here
 
 	if(g.herelink_enable){
+
 		Decode_Buttons();
-	}else{
-		copter.ap.gimbal_control_active = false;
+
 	}
 
 
@@ -379,6 +375,13 @@ void Copter::userhook_SuperSlowLoop()
 		hal.gpio->write(52, false);
 	}
 
+/*
+	   if(g.top_cam){
+		   camera_mount.flip_image(true);
+	   }else{
+		   camera_mount.flip_image(false);
+	   }
+*/
 }
 #endif
 
@@ -655,11 +658,20 @@ void Copter::Decode_Buttons(){
 
 		camera_mount.toggle_record(camera_type);
 
+		//camera_mount.flip_image(true);
+
+	//	camera_mount.take_picture();
+
 		short_press_flag_ch7 = false;
+
+
+
+
 
 		}
 
 		if(long_press_flag_ch7){
+
 
 			camera_mount.toggle_camera_state(camera_type);
 
@@ -671,7 +683,7 @@ void Copter::Decode_Buttons(){
 
 	if(short_press_flag_ch9){
 
-
+		//camera_mount.center_yaw();
 		camera_mount.toggle_PIP();
 		short_press_flag_ch9 = false;
 
@@ -681,7 +693,8 @@ void Copter::Decode_Buttons(){
 
 		if(long_press_flag_ch9){
 
-			camera_mount.toggle_tracking();
+			//camera_mount.toggle_tracking();
+			camera_mount.center_yaw();
 			long_press_flag_ch9 = false;
 
 
@@ -692,6 +705,9 @@ void Copter::Decode_Buttons(){
 			AP_Notify::events.user_mode_change = 1;
 
 
+
+
+			/*
 			if(camera_mount.get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
 
 				camera_mount.set_mode(MAV_MOUNT_MODE_GPS_POINT);
@@ -705,6 +721,11 @@ void Copter::Decode_Buttons(){
 				camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 			}
 
+			*/
+
+			camera_mount.set_mode(MAV_MOUNT_MODE_GPS_POINT);
+
+
 			short_press_flag_ch10 = false;
 
 		}
@@ -715,6 +736,8 @@ void Copter::Decode_Buttons(){
 
 			camera_mount.set_camera_point_ROI(ahrs.get_yaw());
 
+			 gcs().send_text(MAV_SEVERITY_INFO,"ROI Selected");
+
 			long_press_flag_ch10 = false;
 
 		}
@@ -723,7 +746,9 @@ void Copter::Decode_Buttons(){
 		if(short_press_flag_ch11){
 			short_press_flag_ch11 = false;
 			if(flight_mode_switch){
-				copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
+				//copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::GCS_COMMAND);
+				copter.set_mode((Mode::Number)copter.flight_modes[1].get(), ModeReason::GCS_COMMAND);
+
 				 AP_Notify::events.user_mode_change = 1;
 				flight_mode_switch = false;
 			}else{
@@ -739,7 +764,7 @@ void Copter::Decode_Buttons(){
 
 		if(long_press_flag_ch11){
 			long_press_flag_ch11 = false;
-			copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND);
+			copter.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND);
 		}
 
 }
@@ -818,15 +843,15 @@ void Copter::auto_config(){
 
 		vehicle_weight = 7.0 + g.payload_weight;
 		vehicle_weight = constrain_float(vehicle_weight, 8.0, 13.5);
-		attitude_control->get_rate_pitch_pid().imax(0.35);
-		attitude_control->get_rate_roll_pid().imax(0.35);
+		attitude_control->get_rate_pitch_pid().imax(0.5);
+		attitude_control->get_rate_roll_pid().imax(0.5);
 
 	}else if(g.battery_number == 2){
 
 		vehicle_weight = 10.0 + g.payload_weight;
 		vehicle_weight = constrain_float(vehicle_weight, 10.0, 14.0);
-		attitude_control->get_rate_pitch_pid().imax(0.5);
-		attitude_control->get_rate_roll_pid().imax(0.5);
+		attitude_control->get_rate_pitch_pid().imax(0.6);
+		attitude_control->get_rate_roll_pid().imax(0.6);
 
 	}else{
 

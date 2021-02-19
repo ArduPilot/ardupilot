@@ -63,6 +63,8 @@ bool ModePosHold::init(bool ignore_checks)
     wind_comp_roll = 0.0f;
     wind_comp_pitch = 0.0f;
 
+    copter.camera_mount.enable_RC_control(false);
+
     return true;
 }
 

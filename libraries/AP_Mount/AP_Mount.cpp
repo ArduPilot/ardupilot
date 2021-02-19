@@ -645,6 +645,56 @@ void AP_Mount::set_camera_point_ROI(uint8_t instance, float yaw)
 
 
 
+
+
+void AP_Mount::flip_image(uint8_t instance, bool flip)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->flip_image(flip);
+}
+
+
+
+
+void AP_Mount::center_yaw(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->center_yaw();
+}
+
+
+void AP_Mount::turn_camera_off(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->turn_camera_off();
+}
+
+
+
+void AP_Mount::take_picture(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->take_picture();
+}
+
+
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount::enable_follow(uint8_t instance, bool en)
 {

@@ -177,6 +177,14 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     	//angles_to_target_deg.y = ToDeg(atan2f(target_distance, GPS_vector_z));
     	float tan_ratio = target_distance / GPS_vector_z;
     	angles_to_target_deg.y = 90.0f - ToDeg(atanf(tan_ratio));
+
+
+    	if(command_flags.flip_image){
+
+    		//angles_to_target_deg.y = 180.0f - angles_to_target_deg.y;
+
+    	}
+
     }
 
 /*
@@ -251,10 +259,22 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 	float tilt_angle;
 	float pan_angle;
 
-	tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
+
+	if(!command_flags.flip_image){
+
+		tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
+		tilt_angle = 90.0f - tilt_angle;
+
+	}else{
+
+		tilt_angle = constrain_float(_camera_tilt_angle, 90.1f, 179.9f);
+		tilt_angle = tilt_angle - 90.1f;
+
+		tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
+
+	}
 
 
-	tilt_angle = 90.0f - tilt_angle;
 
 	float distance = tanf(radians(tilt_angle))*((float)_frontend._current_loc.alt / 100.0f);
 
@@ -332,8 +352,51 @@ void AP_Mount_Backend::toggle_camera_state(bool type){
 		command_flags.toggle_tracking_video_state = true;
 
 	}else{
+
 		command_flags.change_state = true;
 	}
 
 }
 
+
+
+void AP_Mount_Backend::flip_image(bool flip){
+
+	order_flip = true;
+
+	if(flip){
+
+		command_flags.flip_image = true;
+
+	}else{
+
+		command_flags.flip_image = false;
+
+	}
+
+}
+
+
+
+void AP_Mount_Backend::center_yaw(){
+
+
+	command_flags.center_yaw = true;
+
+
+}
+
+
+void AP_Mount_Backend::turn_camera_off(){
+
+
+	command_flags.turn_camera_off = true;
+
+
+}
+
+void AP_Mount_Backend::take_picture(){
+
+
+	command_flags.take_picture = true;
+}

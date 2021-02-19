@@ -843,5 +843,10 @@ bool AP_Arming_Copter::disarm()
 
     copter.ap.in_arming_delay = false;
 
+    //Turn off ViewPro camera
+    copter.camera_mount.turn_camera_off();
+
+
+
     return true;
 }

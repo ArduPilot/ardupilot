@@ -272,6 +272,11 @@ enum zoom_state{
 	ZOOM_STOP,
 }current_zoom_state;
 
+enum rec_state{
+	REC_ON,
+	REC_OFF,
+}current_rec_state;
+
 
 struct query_flags {
     bool angles;
@@ -282,8 +287,11 @@ struct query_flags {
 
 
     uint8_t pip_state;
+    uint8_t color_state;
 	bool is_recording;
 	bool state_is_video;
+	bool pip_change_hold;
+	bool color_change_hold;
 
 
 uint16_t _zoom_level;

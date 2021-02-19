@@ -7,7 +7,7 @@
 
 
 
-#define CAM_SPD_MAX 50.0
+#define CAM_SPD_MAX 30.0
 #define CAM_SPD_MIN 2.0
 
 extern const AP_HAL::HAL& hal;
@@ -34,7 +34,39 @@ void AP_Mount_ViewPro::init()
     is_recording = false;
     is_tracking = false;
     pip_state = 0;
+    color_state = 0;
     state_is_video = true;
+    is_connected = false;
+
+    yaw_timeout_counter = 0;
+
+
+	command_flags.change_state = false;
+	command_flags.take_picture = false;
+	command_flags.center_yaw = false;
+	command_flags.toggle_video = false;
+	command_flags.stop_video = false;
+	command_flags.color_change = false;
+	command_flags.IR_zoom = false;
+	command_flags.toggle_video_tracking = false;
+	command_flags.toggle_tracking = false;
+	command_flags.toggle_tracking_video_state = false;
+	command_flags.toggle_pip = false;
+	command_flags.toggle_track = false;
+	command_flags.flip_image = false;
+	ir_zoom_level = 1;
+	mode_change_flag = false;
+	yaw_timeout = false;
+	yaw_center_reset_flag = false;
+
+	pip_change_hold = false;
+	color_change_hold = false;
+
+	current_rec_state = REC_OFF;
+
+	tracking_camera_on = false;
+	tracking_camera_off = false;
+	tracking_camera_pic = false;
 
 }
 
@@ -46,12 +78,21 @@ void AP_Mount_ViewPro::update()
         return;
     }
 
-
-   // _frontend.f_lat = _lat;
-   // _frontend.f_long = _long;
-   // _frontend.f_roi_pan = _roi_pan;
-
     read_incoming(); // read the incoming messages from the gimbal
+
+//Center yaw if switched to manual flight (!_RC_control_enable) and you are not currently tracking a GPS point
+
+    if((get_mode() == MAV_MOUNT_MODE_RC_TARGETING) and !_RC_control_enable){
+    	//set command if we just switched from RC control and to RC_targeting with the gimbal
+    	if(yaw_center_reset_flag){
+    		command_flags.center_yaw = true;
+    	}
+    	//set reset flag false so we don't keep sending
+    	yaw_center_reset_flag = false;
+
+    }else{
+    	yaw_center_reset_flag = true;
+    }
 
 
     // update based on mount mode
@@ -84,42 +125,50 @@ void AP_Mount_ViewPro::update()
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
-            // update targets using pilot's rc inputs
-           // update_targets_from_rc();
 
-        		update_target_spd_from_rc();
-        		update_zoom_focus_from_rc();
-
+        	// update gimbal motion speed targets using pilot's rc inputs
+        	update_target_spd_from_rc();
+        	update_zoom_focus_from_rc();
             break;
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
+        {
             if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
                 calc_angle_to_location(_state._roi_target, _angle_ef_target_deg, true, true);
+            }
+
+
+            //while in GPS POINT, can switch to RC_Targeting if any gimbal motion controls are used
+        	const RC_Channel *pan_ch = rc().channel(CH_1);
+        	const RC_Channel *tilt_ch = rc().channel(CH_2);
+        	const RC_Channel *tilt_wheel_ch = rc().channel(CH_6);
+
+            if(!is_zero(tilt_wheel_ch->norm_input_dz()) or (_RC_control_enable and (!is_zero(pan_ch->norm_input_dz()) or !is_zero(tilt_ch->norm_input_dz())))){
+            	set_mode(MAV_MOUNT_MODE_RC_TARGETING);
             }
 
             update_zoom_focus_from_rc();
 
             break;
+        }
 
         default:
             // we do not know this mode so do nothing
             break;
-
     }
 
 
-
-    //Debugging
+    //Debugging Code
 /*
     if((AP_HAL::millis() - _last_send) > 100){
 
     	hal.console->print("\n");
     	hal.console->print("\n");
-    	hal.console->printf("zoom:%ul", _zoom_level)  ;
-    	hal.console->print("   ");
-    	hal.console->printf("tilt:%f", _camera_tilt_angle)  ;
-    	hal.console->print("   ");
+    //	hal.console->printf("zoom:%ul", _zoom_level)  ;
+    //	hal.console->print("   ");
+    //	hal.console->printf("tilt:%f", _camera_tilt_angle)  ;
+    //	hal.console->print("   ");
     	hal.console->printf("pan:%f", _camera_pan_angle)  ;
     	hal.console->print("\n");
     	hal.console->print("\n");
@@ -130,31 +179,30 @@ void AP_Mount_ViewPro::update()
 
     if(get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
 
-    	if((AP_HAL::millis() - _last_send) > 100){
+    	if((AP_HAL::millis() - _last_send) > 50){
 			send_targeting_cmd();
     		}
 
 
 			return;
 
-    }else if(get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING){
+    }else if(get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING or get_mode() == MAV_MOUNT_MODE_NEUTRAL){
 
-    	if((AP_HAL::millis() - _last_send) > 300){
-    		//Do Nothing
+    	if((AP_HAL::millis() - _last_send) > 100){
+    		send_targeting_cmd();
     	}
 
     	return;
 
     }else if(get_mode() == MAV_MOUNT_MODE_GPS_POINT){
 
-    	if((AP_HAL::millis() - _last_send) > 300){
+    	if((AP_HAL::millis() - _last_send) > 100){
     		send_targeting_cmd();
     	}
 
-    }else if((AP_HAL::millis() - _last_send) > 300){
-    	send_targeting_cmd();
-    	}
     }
+
+}
 
 // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
 bool AP_Mount_ViewPro::has_pan_control() const
@@ -179,7 +227,7 @@ void AP_Mount_ViewPro::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_ViewPro::send_mount_status(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y, _current_angle.x, _current_angle.z);
+    mavlink_msg_mount_status_send(chan, 0, 0, _camera_tilt_angle, 0, _camera_pan_angle);
 }
 
 bool AP_Mount_ViewPro::can_send(bool with_control) {
@@ -200,9 +248,13 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 	/// Send any open command requests//////
 	////////////////////////////////////////
 
+	//one time commands trigger flags that persist until they are sent.
+	//only one command is sent per cycle and no gimbal motion commands are sent.
+
 	uint8_t* buf_cmd;
 	uint8_t buf_size;
 
+	//toggle between picture mode or record mode
 	if(command_flags.change_state){
 
 		static cmd_6_byte_struct cmd_change_video_state;
@@ -225,12 +277,70 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 	        _port->write(buf_cmd[i]);
 	    }
 
+	    //Don't repeat command
 	    command_flags.change_state = false;
+
+	   // command_flags.toggle_tracking_video_state = true;
+		//tracking_camera_off = false;
+		//tracking_camera_on = false;
+		//tracking_camera_pic = true;
+
+
+		//setup command for tracking cameras
+		command_flags.toggle_tracking_video_state = true;
+
+		if(current_rec_state == REC_OFF){
+			tracking_camera_off = false;
+			tracking_camera_on = true;
+			tracking_camera_pic = false;
+		}else{
+			tracking_camera_off = true;
+			tracking_camera_on = false;
+			tracking_camera_pic = false;
+		}
+
+	    _last_send = AP_HAL::millis();
 
 	    return;
 
+	}else if(command_flags.turn_camera_off){
+
+
+		static cmd_6_byte_struct cmd_camera_off;
+
+		cmd_camera_off.byte1 = 0x81;
+		cmd_camera_off.byte2 = 0x01;
+		cmd_camera_off.byte3 = 0x04;
+		cmd_camera_off.byte4 = 0x68;
+		cmd_camera_off.byte5 = 0x03;
+		cmd_camera_off.byte6 = 0xFF;
+
+		buf_size = sizeof(cmd_camera_off);
+		buf_cmd = (uint8_t*)&cmd_camera_off;
+
+		if ((size_t)_port->txspace() < buf_size) {
+			return;
+		}
+
+		for (uint8_t i = 0;  i != buf_size ; i++) {
+			_port->write(buf_cmd[i]);
+		}
+
+		command_flags.turn_camera_off = false;
+
+
+		//setup command for tracking cameras
+		command_flags.toggle_tracking_video_state = true;
+		tracking_camera_off = true;
+		tracking_camera_on = false;
+		tracking_camera_pic = false;
+		_last_send = AP_HAL::millis();
+		return;
+
+
 
 	}else if(command_flags.toggle_tracking_video_state){
+
 
 		static cmd_48_byte_struct cmd_toggle_tracking_video_state;
 
@@ -283,25 +393,42 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		cmd_toggle_tracking_video_state.byte47 = 0x00;
 		cmd_toggle_tracking_video_state.byte48 = 0x00;
 
+		if(tracking_camera_off){
+			cmd_toggle_tracking_video_state.byte7 = 0x00;
+			tracking_camera_off = false;
+			current_rec_state = REC_OFF;
+		}else if(tracking_camera_on){
+			cmd_toggle_tracking_video_state.byte7 = 0x01;
+			cmd_toggle_tracking_video_state.byte8 = 0x58;
+			cmd_toggle_tracking_video_state.byte9 = 0x02;
+			tracking_camera_on = false;
+			current_rec_state = REC_ON;
+		}else if(tracking_camera_pic){
+			cmd_toggle_tracking_video_state.byte7 = 0x02;
+			tracking_camera_pic = false;
+		}
 
-			uint8_t* buf_take_picture = (uint8_t*)&cmd_toggle_tracking_video_state;
-			uint16_t sum_take_picture = 0;
+		//Setup buffer and send
+		uint8_t* buf_take_picture = (uint8_t*)&cmd_toggle_tracking_video_state;
+		uint16_t sum_take_picture = 0;
 
-			for (uint8_t i = 0;  i < 47 ; i++) {
-				sum_take_picture += buf_take_picture[i];
-			}
+		for (uint8_t i = 0;  i < 47 ; i++) {
+			sum_take_picture += buf_take_picture[i];
+		}
 
-			cmd_toggle_tracking_video_state.byte48 = (uint8_t)(sum_take_picture % 256);
+		cmd_toggle_tracking_video_state.byte48 = (uint8_t)(sum_take_picture % 256);
 
-			if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_video_state)) {
-				return;
-			}
+		if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_video_state)) {
+			return;
+		}
 
-			for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_video_state) ; i++) {
-				_port->write(buf_take_picture[i]);
-			}
+		for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_video_state) ; i++) {
+			_port->write(buf_take_picture[i]);
+		}
 
+		_last_send = AP_HAL::millis();
 		command_flags.toggle_tracking_video_state = false;
+
 		return;
 
 
@@ -328,7 +455,7 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 	    }
 
 	    command_flags.center_yaw = false;
-
+	    _last_send = AP_HAL::millis();
 	    return;
 
 	}else if(command_flags.toggle_video){
@@ -355,6 +482,8 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 	    command_flags.toggle_video = false;
 
+	   command_flags.toggle_video_tracking = true;
+	    _last_send = AP_HAL::millis();
 	    return;
 
 	} else if(command_flags.toggle_video_tracking){
@@ -368,7 +497,7 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 			cmd_toggle_tracking_video_on_off.byte4 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte5 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte6 = 0x7C;
-			cmd_toggle_tracking_video_on_off.byte7 = 0x00;
+			cmd_toggle_tracking_video_on_off.byte7 = 0x02;
 			cmd_toggle_tracking_video_on_off.byte8 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte9 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte10 = 0x00;
@@ -410,16 +539,16 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 			cmd_toggle_tracking_video_on_off.byte46 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte47 = 0x00;
 			cmd_toggle_tracking_video_on_off.byte48 = 0x00;
-
+/*
 
 			if(is_recording){
-				cmd_toggle_tracking_video_on_off.byte7 = 0x04;
+				cmd_toggle_tracking_video_on_off.byte7 = 0x05;
 				is_recording = false;
 			}else{
-				cmd_toggle_tracking_video_on_off.byte7 = 0x05;
+				cmd_toggle_tracking_video_on_off.byte7 = 0x04;
 				is_recording = true;
 			}
-
+*/
 
 			uint8_t* buf_tracking_video_control = (uint8_t*)&cmd_toggle_tracking_video_on_off;
 			uint16_t sum_tracking_video_control = 0;
@@ -439,7 +568,7 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 			}
 
 		command_flags.toggle_video_tracking = false;
-
+		_last_send = AP_HAL::millis();
 		return;
 
 	}else if(command_flags.toggle_tracking){
@@ -497,38 +626,38 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		cmd_toggle_tracking_on_off.byte48 = 0x00;
 
 
-				if(is_tracking){
-					cmd_toggle_tracking_on_off.byte6 = 0x71;
-					cmd_toggle_tracking_on_off.byte12 = 0x01;
-					cmd_toggle_tracking_on_off.byte14 = 0x3C;
-					is_tracking = false;
-				}else{
-					cmd_toggle_tracking_on_off.byte6 = 0x00;
-					cmd_toggle_tracking_on_off.byte12 = 0x00;
-					cmd_toggle_tracking_on_off.byte14 = 0x00;
-					is_tracking = true;
-				}
+		if(is_tracking){
+			cmd_toggle_tracking_on_off.byte6 = 0x71;
+			cmd_toggle_tracking_on_off.byte12 = 0x01;
+			cmd_toggle_tracking_on_off.byte14 = 0x38;
+			is_tracking = false;
+		}else{
+			cmd_toggle_tracking_on_off.byte6 = 0x00;
+			cmd_toggle_tracking_on_off.byte12 = 0x00;
+			cmd_toggle_tracking_on_off.byte14 = 0x00;
+			is_tracking = true;
+		}
 
 
-				uint8_t* buf_tracking_control = (uint8_t*)&cmd_toggle_tracking_on_off;
-				uint16_t sum_tracking_control = 0;
+		uint8_t* buf_tracking_control = (uint8_t*)&cmd_toggle_tracking_on_off;
+		uint16_t sum_tracking_control = 0;
 
-				for (uint8_t i = 0;  i < 47 ; i++) {
-					sum_tracking_control += buf_tracking_control[i];
-				}
+		for (uint8_t i = 0;  i < 47 ; i++) {
+			sum_tracking_control += buf_tracking_control[i];
+		}
 
-				cmd_toggle_tracking_on_off.byte48 = (uint8_t)(sum_tracking_control % 256);
+		cmd_toggle_tracking_on_off.byte48 = (uint8_t)(sum_tracking_control % 256);
 
-				if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_on_off)) {
-					return;
-				}
+		if ((size_t)_port->txspace() < sizeof(cmd_toggle_tracking_on_off)) {
+			return;
+		}
 
-				for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_on_off) ; i++) {
-					_port->write(buf_tracking_control[i]);
-				}
+		for (uint8_t i = 0;  i != sizeof(cmd_toggle_tracking_on_off) ; i++) {
+			_port->write(buf_tracking_control[i]);
+		}
 
 			command_flags.toggle_tracking = false;
-
+			_last_send = AP_HAL::millis();
 			return;
 
 	}else if(command_flags.toggle_pip){
@@ -586,24 +715,49 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		cmd_toggle_pip.byte48 = 0x00;
 
 
-				if(pip_state == 0){
 
+		pip_state++;
+
+		if(pip_state >= 4 ){
+			pip_state = 0;
+		}
+
+
+				if(pip_state == 0){
 					// EO+IR(pip)
 
 				}else if(pip_state == 1){
-
 					//IR
 					cmd_toggle_pip.byte15 = 0x01;
 
 				}else if(pip_state == 2){
-
 					//IR+EO(pip)
 					cmd_toggle_pip.byte15 = 0x02;
 
 				}else{
-
 					//EO
 					cmd_toggle_pip.byte15 = 0x03;
+				}
+
+
+
+				if(color_state == 0){
+					// Gray
+
+				}else if(color_state == 1){
+					//Color 1
+					cmd_toggle_pip.byte7 = 0x01;
+
+				}else if(color_state == 2){
+					//Color 2
+					cmd_toggle_pip.byte7 = 0x02;
+
+				}else if(color_state == 3){
+					//Color 3
+					cmd_toggle_pip.byte7 = 0x03;
+
+				}else{
+					cmd_toggle_pip.byte7 = 0x04;
 				}
 
 
@@ -626,18 +780,258 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 				}
 
 
-		pip_state++;
 
-		if(pip_state >= 4 ){
-			pip_state = 0;
-		}
 
 		command_flags.toggle_pip = false;
-
+		_last_send = AP_HAL::millis();
 		return;
 
-	}else if(_zooming_state_change){
+	}else if(command_flags.color_change){
 
+
+		static cmd_48_byte_struct cmd_toggle_color;
+
+				cmd_toggle_color.byte1 = 0x7E;
+				cmd_toggle_color.byte2 = 0x7E;
+				cmd_toggle_color.byte3 = 0x44;
+				cmd_toggle_color.byte4 = 0x00;
+				cmd_toggle_color.byte5 = 0x00;
+				cmd_toggle_color.byte6 = 0x78;
+				cmd_toggle_color.byte7 = 0x00;
+				cmd_toggle_color.byte8 = 0x00;
+				cmd_toggle_color.byte9 = 0x00;
+				cmd_toggle_color.byte10 = 0x00;
+				cmd_toggle_color.byte11 = 0x00;
+				cmd_toggle_color.byte12 = 0x00;
+				cmd_toggle_color.byte13 = 0x00;
+				cmd_toggle_color.byte14 = 0x00;
+				cmd_toggle_color.byte15 = 0x00;
+				cmd_toggle_color.byte16 = 0x00;
+				cmd_toggle_color.byte17 = 0x00;
+				cmd_toggle_color.byte18 = 0x00;
+				cmd_toggle_color.byte19 = 0x00;
+				cmd_toggle_color.byte20 = 0x00;
+				cmd_toggle_color.byte21 = 0x00;
+				cmd_toggle_color.byte22 = 0x00;
+				cmd_toggle_color.byte23 = 0x00;
+				cmd_toggle_color.byte24 = 0x00;
+				cmd_toggle_color.byte25 = 0x00;
+				cmd_toggle_color.byte26 = 0x00;
+				cmd_toggle_color.byte27 = 0x00;
+				cmd_toggle_color.byte28 = 0x00;
+				cmd_toggle_color.byte29 = 0x00;
+				cmd_toggle_color.byte30 = 0x00;
+				cmd_toggle_color.byte31 = 0x00;
+				cmd_toggle_color.byte32 = 0x00;
+				cmd_toggle_color.byte33 = 0x00;
+				cmd_toggle_color.byte34 = 0x00;
+				cmd_toggle_color.byte35 = 0x00;
+				cmd_toggle_color.byte36 = 0x00;
+				cmd_toggle_color.byte37 = 0x00;
+				cmd_toggle_color.byte38 = 0x00;
+				cmd_toggle_color.byte39 = 0x00;
+				cmd_toggle_color.byte40 = 0x00;
+				cmd_toggle_color.byte41 = 0x00;
+				cmd_toggle_color.byte42 = 0x00;
+				cmd_toggle_color.byte43 = 0x00;
+				cmd_toggle_color.byte44 = 0x00;
+				cmd_toggle_color.byte45 = 0x00;
+				cmd_toggle_color.byte46 = 0x00;
+				cmd_toggle_color.byte47 = 0x00;
+				cmd_toggle_color.byte48 = 0x00;
+
+
+				color_state++;
+
+				if(color_state >= 5 ){
+					color_state = 0;
+				}
+
+
+						if(color_state == 0){
+							// Gray
+
+						}else if(color_state == 1){
+							//Color 1
+							cmd_toggle_color.byte7 = 0x01;
+
+						}else if(color_state == 2){
+							//Color 2
+							cmd_toggle_color.byte7 = 0x02;
+
+						}else if(color_state == 3){
+							//Color 3
+							cmd_toggle_color.byte7 = 0x03;
+
+						}else{
+							cmd_toggle_color.byte7 = 0x04;
+						}
+
+
+						if(pip_state == 0){
+							// EO+IR(pip)
+
+						}else if(pip_state == 1){
+							//IR
+							cmd_toggle_color.byte15 = 0x01;
+
+						}else if(pip_state == 2){
+							//IR+EO(pip)
+							cmd_toggle_color.byte15 = 0x02;
+
+						}else{
+							//EO
+							cmd_toggle_color.byte15 = 0x03;
+						}
+
+
+
+						uint8_t* buf_color_control = (uint8_t*)&cmd_toggle_color;
+						uint16_t sum_color_control = 0;
+
+						for (uint8_t i = 0;  i < 47 ; i++) {
+							sum_color_control += buf_color_control[i];
+						}
+
+						cmd_toggle_color.byte48 = (uint8_t)(sum_color_control % 256);
+
+						if ((size_t)_port->txspace() < sizeof(cmd_toggle_color)) {
+							return;
+						}
+
+						for (uint8_t i = 0;  i != sizeof(cmd_toggle_color) ; i++) {
+							_port->write(buf_color_control[i]);
+						}
+
+
+
+
+				command_flags.color_change = false;
+
+				_last_send = AP_HAL::millis();
+				return;
+
+
+
+
+	}else if(order_flip){
+
+		static cmd_48_byte_struct cmd_flip_image;
+
+		cmd_flip_image.byte1 = 0x7E;
+		cmd_flip_image.byte2 = 0x7E;
+		cmd_flip_image.byte3 = 0x44;
+		cmd_flip_image.byte4 = 0x00;
+		cmd_flip_image.byte5 = 0x00;
+		cmd_flip_image.byte6 = 0x91;
+		cmd_flip_image.byte7 = 0x00;
+		cmd_flip_image.byte8 = 0x00;
+		cmd_flip_image.byte9 = 0x00;
+		cmd_flip_image.byte10 = 0x00;
+		cmd_flip_image.byte11 = 0x00;
+		cmd_flip_image.byte12 = 0x00;
+		cmd_flip_image.byte13 = 0x00;
+		cmd_flip_image.byte14 = 0x00;
+		cmd_flip_image.byte15 = 0x00;
+		cmd_flip_image.byte16 = 0x00;
+		cmd_flip_image.byte17 = 0x00;
+		cmd_flip_image.byte18 = 0x00;
+		cmd_flip_image.byte19 = 0x00;
+		cmd_flip_image.byte20 = 0x00;
+		cmd_flip_image.byte21 = 0x00;
+		cmd_flip_image.byte22 = 0x00;
+		cmd_flip_image.byte23 = 0x00;
+		cmd_flip_image.byte24 = 0x00;
+		cmd_flip_image.byte25 = 0x00;
+		cmd_flip_image.byte26 = 0x00;
+		cmd_flip_image.byte27 = 0x00;
+		cmd_flip_image.byte28 = 0x00;
+		cmd_flip_image.byte29 = 0x00;
+		cmd_flip_image.byte30 = 0x00;
+		cmd_flip_image.byte31 = 0x00;
+		cmd_flip_image.byte32 = 0x00;
+		cmd_flip_image.byte33 = 0x00;
+		cmd_flip_image.byte34 = 0x00;
+		cmd_flip_image.byte35 = 0x00;
+		cmd_flip_image.byte36 = 0x00;
+		cmd_flip_image.byte37 = 0x00;
+		cmd_flip_image.byte38 = 0x00;
+		cmd_flip_image.byte39 = 0x00;
+		cmd_flip_image.byte40 = 0x00;
+		cmd_flip_image.byte41 = 0x00;
+		cmd_flip_image.byte42 = 0x00;
+		cmd_flip_image.byte43 = 0x00;
+		cmd_flip_image.byte44 = 0x00;
+		cmd_flip_image.byte45 = 0x00;
+		cmd_flip_image.byte46 = 0x00;
+		cmd_flip_image.byte47 = 0x00;
+		cmd_flip_image.byte48 = 0x00;
+
+
+		if(command_flags.flip_image){
+
+			cmd_flip_image.byte7 = 0xC0;
+			cmd_flip_image.byte48 = 0x91;
+
+		}else{
+
+
+			cmd_flip_image.byte7 = 0x80;
+			cmd_flip_image.byte48 = 0x51;
+
+		}
+
+
+		uint8_t* buf_image_flip = (uint8_t*)&cmd_flip_image;
+
+
+		if ((size_t)_port->txspace() < sizeof(cmd_flip_image)) {
+			return;
+		}
+
+		for (uint8_t i = 0;  i != sizeof(cmd_flip_image) ; i++) {
+			_port->write(buf_image_flip[i]);
+		}
+
+
+		static	cmd_6_byte_struct EO_image_flip;
+
+		EO_image_flip.byte1 = 0x81;
+		EO_image_flip.byte2 = 0x01;
+		EO_image_flip.byte3 = 0x04;
+		EO_image_flip.byte4 = 0x66;
+		EO_image_flip.byte5 = 0x00;
+		EO_image_flip.byte6 = 0xFF;
+
+
+		if(command_flags.flip_image){
+
+			EO_image_flip.byte5 = 0x02;
+
+		}else{
+
+
+			EO_image_flip.byte5 = 0x03;
+
+		}
+
+
+		uint8_t* buf_image_flip_EO = (uint8_t*)&EO_image_flip;
+
+
+		if ((size_t)_port->txspace() < sizeof(EO_image_flip)) {
+			return;
+		}
+
+		for (uint8_t i = 0;  i != sizeof(EO_image_flip) ; i++) {
+			_port->write(buf_image_flip_EO[i]);
+		}
+
+
+		order_flip = false;
+
+
+	}else if(_zooming_state_change){
 
 		static cmd_6_byte_struct cmd_set_zoom_data;
 
@@ -667,8 +1061,143 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 	  	    }
 
 	  	  _zooming_state_change = false;
+	      command_flags.IR_zoom = true;
+	  	  _last_send = AP_HAL::millis();
 
 	  	  return;
+
+	}else if(command_flags.IR_zoom){
+
+
+		static cmd_48_byte_struct cmd_IR_zoom;
+
+		cmd_IR_zoom.byte1 = 0x7E;
+		cmd_IR_zoom.byte2 = 0x7E;
+		cmd_IR_zoom.byte3 = 0x44;
+		cmd_IR_zoom.byte4 = 0x00;
+		cmd_IR_zoom.byte5 = 0x00;
+		cmd_IR_zoom.byte6 = 0x7D;
+		cmd_IR_zoom.byte7 = 0x83;
+		cmd_IR_zoom.byte8 = 0x00;
+		cmd_IR_zoom.byte9 = 0x00;
+		cmd_IR_zoom.byte10 = 0x00;
+		cmd_IR_zoom.byte11 = 0x00;
+		cmd_IR_zoom.byte12 = 0x00;
+		cmd_IR_zoom.byte13 = 0x00;
+		cmd_IR_zoom.byte14 = 0x00;
+		cmd_IR_zoom.byte15 = 0x00;
+		cmd_IR_zoom.byte16 = 0x00;
+		cmd_IR_zoom.byte17 = 0x00;
+		cmd_IR_zoom.byte18 = 0x00;
+		cmd_IR_zoom.byte19 = 0x00;
+		cmd_IR_zoom.byte20 = 0x00;
+		cmd_IR_zoom.byte21 = 0x00;
+		cmd_IR_zoom.byte22 = 0x00;
+		cmd_IR_zoom.byte23 = 0x00;
+		cmd_IR_zoom.byte24 = 0x00;
+		cmd_IR_zoom.byte25 = 0x00;
+		cmd_IR_zoom.byte26 = 0x00;
+		cmd_IR_zoom.byte27 = 0x00;
+		cmd_IR_zoom.byte28 = 0x00;
+		cmd_IR_zoom.byte29 = 0x00;
+		cmd_IR_zoom.byte30 = 0x00;
+		cmd_IR_zoom.byte31 = 0x00;
+		cmd_IR_zoom.byte32 = 0x00;
+		cmd_IR_zoom.byte33 = 0x00;
+			cmd_IR_zoom.byte34 = 0x00;
+			cmd_IR_zoom.byte35 = 0x00;
+			cmd_IR_zoom.byte36 = 0x00;
+			cmd_IR_zoom.byte37 = 0x00;
+			cmd_IR_zoom.byte38 = 0x00;
+			cmd_IR_zoom.byte39 = 0x00;
+			cmd_IR_zoom.byte40 = 0x00;
+			cmd_IR_zoom.byte41 = 0x00;
+			cmd_IR_zoom.byte42 = 0x00;
+			cmd_IR_zoom.byte43 = 0x00;
+			cmd_IR_zoom.byte44 = 0x00;
+			cmd_IR_zoom.byte45 = 0x00;
+			cmd_IR_zoom.byte46 = 0x00;
+			cmd_IR_zoom.byte47 = 0x00;
+			cmd_IR_zoom.byte48 = 0x00;
+
+
+			if(current_zoom_state == ZOOM_IN){
+
+				if(ir_zoom_level == 1){
+
+					cmd_IR_zoom.byte7 = 0x82;
+					ir_zoom_level++;
+
+				}else if(ir_zoom_level == 2){
+
+					cmd_IR_zoom.byte7 = 0x83;
+					ir_zoom_level++;
+
+				}else if(ir_zoom_level == 3){
+
+					cmd_IR_zoom.byte7 = 0x84;
+					ir_zoom_level++;
+
+				}else{
+
+					cmd_IR_zoom.byte7 = 0x84;
+
+				}
+
+			}else if(current_zoom_state == ZOOM_OUT){
+
+				if(ir_zoom_level == 4){
+
+					cmd_IR_zoom.byte7 = 0x83;
+					ir_zoom_level--;
+
+				}else if(ir_zoom_level == 3){
+
+					cmd_IR_zoom.byte7 = 0x82;
+					ir_zoom_level--;
+
+				}else if(ir_zoom_level == 2){
+
+					cmd_IR_zoom.byte7 = 0x81;
+					ir_zoom_level--;
+
+				}else{
+
+					cmd_IR_zoom.byte7 = 0x81;
+
+				}
+
+			}else{
+
+				command_flags.IR_zoom = false;
+				return;
+			}
+
+
+
+			uint16_t ir_sum = 0;
+			uint8_t* buf_IR_zoom = (uint8_t*)&cmd_IR_zoom;
+
+
+			for (uint8_t i = 0;  i < 47 ; i++) {
+				ir_sum	+= buf_IR_zoom[i];
+			}
+
+			cmd_IR_zoom.byte48 = (uint8_t)(ir_sum % 256);
+
+
+			if ((size_t)_port->txspace() < sizeof(cmd_IR_zoom)) {
+				return;
+			}
+
+			for (uint8_t i = 0;  i != sizeof(cmd_IR_zoom) ; i++) {
+				_port->write(buf_IR_zoom[i]);
+			}
+
+
+		command_flags.IR_zoom = false;
+		return;
+
 	}
 
 
@@ -685,6 +1214,26 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 		case MAV_MOUNT_MODE_RETRACT:
 		case MAV_MOUNT_MODE_NEUTRAL:
+
+
+			cmd_set_data.header1 = 0xFF;
+			cmd_set_data.header2 = 0x01;
+			cmd_set_data.header3 = 0x0F;
+			cmd_set_data.header4 = 0x10;
+			cmd_set_data.RM = 0x00;
+			cmd_set_data.PM = 0x00;
+			cmd_set_data.YM = 0x00;
+			cmd_set_data.Rs = (int)0;
+			cmd_set_data.Ra = (int)0;
+			cmd_set_data.Ps = (int)0;
+			cmd_set_data.Pa = (int)0;
+			cmd_set_data.Ys = (int)0;
+			cmd_set_data.Ya = (int)0;
+			cmd_set_data.crc = 0x00;
+
+			break;
+
+		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		case MAV_MOUNT_MODE_GPS_POINT:
 
 			_pitch_value = _angle_ef_target_deg.y / 0.021972;
@@ -707,7 +1256,6 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 			break;
 
-		case MAV_MOUNT_MODE_MAVLINK_TARGETING:
 		case MAV_MOUNT_MODE_RC_TARGETING:
 
 			_pitch_value = _speed_ef_target_deg.y / 0.12207;
@@ -727,6 +1275,21 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		    cmd_set_data.Ys = (int)_yaw_value;
 		    cmd_set_data.Ya = (int)0;
 		    cmd_set_data.crc = 0;
+
+
+		    if(is_zero(_pitch_value) and  !_RC_control_enable){
+			    cmd_set_data.PM = 0x00;
+			    cmd_set_data.YM = 0x00;
+			    cmd_set_data.Rs = (int)0;
+			    cmd_set_data.Ra = (int)0;
+			    cmd_set_data.Ps = (int)0;
+			    cmd_set_data.Pa = (int)0;
+			    cmd_set_data.Ys = (int)0;
+			    cmd_set_data.Ya = (int)0;
+			    cmd_set_data.crc = 0x00;
+
+		    }
+
 
 			break;
 
@@ -778,7 +1341,9 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 	}else if(get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
 
-		if(( is_zero(_pitch_value) and is_zero(_yaw_value) and current_zoom_state == ZOOM_STOP)){
+		//if(( is_zero(_pitch_value) and is_zero(_yaw_value) and current_zoom_state == ZOOM_STOP)){
+
+		if(current_zoom_state == ZOOM_STOP){
 
 			static cmd_5_byte_struct query_angles;
 
@@ -833,127 +1398,6 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 }
 
 
-/*
-
-// send_target_angles
-void AP_Mount_ViewPro::send_zoom()
-{
-
-// if we are not zooming and our current state is STOP, do nothing
-	if(!_zoom_in and !_zoom_out and current_zoom_state == ZOOM_STOP){
-		return;
-	}
-
-
-// if we are currently zooming update zoom position
-
-	 static cmd_5_byte_struct cmd_ask_zoom_data;
-	 uint8_t* buf;
-
-	if((_zoom_in or _zoom_out) and (current_zoom_state == ZOOM_IN or current_zoom_state == ZOOM_OUT)){
-
-		//request zoom state
-	    cmd_ask_zoom_data.byte1 = 0x81;
-	    cmd_ask_zoom_data.byte2 = 0x09;
-	    cmd_ask_zoom_data.byte3 = 0x04;
-	    cmd_ask_zoom_data.byte4 = 0x47;
-	    cmd_ask_zoom_data.byte5 = 0xFF;
-
-	    buf = (uint8_t*)&cmd_ask_zoom_data;
-
-	    for (uint8_t i = 0;  i != sizeof(cmd_ask_zoom_data) ; i++) {
-	        _port->write(buf[i]);
-	    }
-
-	    //Set reply flags
-	    _reply_type =  ReplyType_Zoom_DATA;
-        _reply_counter = 0;
-        _reply_length = 7;
-
-		return;
-	}
-
-
-//If the zoom command is changing
-
-	static cmd_6_byte_struct cmd_set_zoom_data;
-
-	cmd_set_zoom_data.byte1 = 0x81;
-	cmd_set_zoom_data.byte2 = 0x01;
-	cmd_set_zoom_data.byte3 = 0x04;
-	cmd_set_zoom_data.byte4 = 0x07;
-	cmd_set_zoom_data.byte6 = 0xFF;
-
-
-	if(_zoom_in){
-		cmd_set_zoom_data.byte5 = 0x27;
-		current_zoom_state = ZOOM_IN;
-	}else if(_zoom_out){
-		cmd_set_zoom_data.byte5 = 0x37;
-		current_zoom_state = ZOOM_OUT;
-	}else{
-		cmd_set_zoom_data.byte5 = 0x00;
-		current_zoom_state = ZOOM_STOP;
-	}
-
-
-    if ((size_t)_port->txspace() <= sizeof(cmd_set_zoom_data)) {
-        return;
-    }
-
-
-
-    buf = (uint8_t*)&cmd_set_zoom_data;
-
-  	    for (uint8_t i = 0;  i != sizeof(cmd_set_zoom_data) ; i++) {
-  	        _port->write(buf[i]);
-  	    }
-
-
-    // store time of send
-    _last_send = AP_HAL::millis();
-
-}
-
-*/
-
-/*
-
-void AP_Mount_ViewPro::ctrl_camera(){
-
-
-	 static cmd_7_byte_struct cmd_ask_follow_data;
-	uint8_t* buf;
-
-
-			//request zoom state
-	cmd_ask_follow_data.byte1 = 0x3E;
-	cmd_ask_follow_data.byte2 = 0x40;
-	cmd_ask_follow_data.byte3 = 0x02;
-	cmd_ask_follow_data.byte4 = 0x42;
-	cmd_ask_follow_data.byte5 = 0x01;
-	cmd_ask_follow_data.byte6 = 0x1F;
-	cmd_ask_follow_data.byte7 = 0x20;
-
-		    buf = (uint8_t*)&cmd_ask_follow_data;
-
-		    for (uint8_t i = 0;  i != sizeof(cmd_ask_follow_data) ; i++) {
-		        _port->write(buf[i]);
-		    }
-
-		    //Set reply flags
-		  //  _reply_type =  ReplyType_Zoom_DATA;
-	      //  _reply_counter = 0;
-	      //  _reply_length = 7;
-
-
-
-}
-
-
-*/
-
-
 
 void AP_Mount_ViewPro::read_incoming() {
     uint8_t data;
@@ -975,7 +1419,16 @@ void AP_Mount_ViewPro::read_incoming() {
             continue;
         }
 
+
+
         _buffer[_reply_counter++] = data;
+
+
+
+        if(!is_connected){
+        	if(_reply_counter > 12){  is_connected = true;	}
+        }
+
 
         if (_reply_counter == _reply_length) {
             parse_reply();
@@ -1022,16 +1475,18 @@ void AP_Mount_ViewPro::parse_reply() {
         	hal.console->print("\n");
         	hal.console->printf("byte3:%x", _buffer.zoom_data.byte3)  ;
         	hal.console->print("\n");
-        	hal.console->printf("byte4:%x", _buffer.zoom_data.byte4)  ;
+        	hal.console->p
+        	rintf("byte4:%x", _buffer.zoom_data.byte4)  ;
         	hal.console->print("\n");
         	hal.console->printf("byte5:%x", _buffer.zoom_data.byte5)  ;
         	hal.console->print("\n");
         	hal.console->printf("byte6:%x", _buffer.zoom_data.byte6)  ;
+
         	hal.console->print("\n");
         	hal.console->printf("zoom:%ul", _zoom_level)  ;
         	hal.console->print("\n");
         	hal.console->print("\n");
-        	*/
+*/
 
             break;
 
@@ -1039,13 +1494,13 @@ void AP_Mount_ViewPro::parse_reply() {
 
         	_camera_tilt_angle = (_buffer.angle_data.pitch_ang)*0.0219726;
         	_camera_pan_angle = (_buffer.angle_data.yaw_rel_ang)*0.0219726;
-/*
-        	hal.console->print("\n");
-        	hal.console->printf("tilt:%f", _camera_tilt_angle)  ;
-        	hal.console->print("\n");
-        	hal.console->printf("pan:%f", _camera_pan_angle)  ;
-        	hal.console->print("\n");
-*/
+
+        	//hal.console->print("\n");
+        //	hal.console->printf("tilt:%f", _camera_tilt_angle)  ;
+        //	hal.console->print("\n");
+        //	hal.console->printf("pan:%f", _camera_pan_angle)  ;
+        //	hal.console->print("\n");
+
             break;
 
 
@@ -1065,32 +1520,45 @@ void AP_Mount_ViewPro::parse_reply() {
 
             break;
 
-
         default:
             break;
     }
 }
 
 
-
 void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 
 		if(!_RC_control_enable){
-			_zoom_in = false;
-			_zoom_out = false;
-			_zooming_state_change =false;
-			_zoom_level = 0;
-			current_zoom_state = ZOOM_STOP;
+
+			if(_zoom_level != 0){
+
+				_zoom_out = true;
+				_zoom_in = false;
+				current_zoom_state = ZOOM_OUT;
+				_zooming_state_change = true;
+
+			}else{
+
+				_zoom_in = false;
+				_zoom_out = false;
+				_zooming_state_change = false;
+				_zoom_level = 0;
+				_zooming_state_change = false;
+				current_zoom_state = ZOOM_STOP;
+
+			}
+
 			return;
+
 		}
 
 		const RC_Channel *zoom_ch = rc().channel(CH_3);
-		//const RC_Channel *focus_ch = rc().channel(CH_4);
+		const RC_Channel *pip_color = rc().channel(CH_4);
 
 		float zoom_value = zoom_ch->norm_input_dz();
-		//float focus_value = focus_ch->norm_input_dz();
+		float pip_color_value = pip_color->norm_input_dz();
 
-		if(zoom_value < -0.5){
+		if(zoom_value < -0.4){
 			_zoom_in = false;
 			_zoom_out = true;
 
@@ -1099,9 +1567,10 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 				_zooming_state_change = true;
 			}
 
+			//Don't trigger _zooming_state_change again
 			current_zoom_state = ZOOM_OUT;
 
-		}else if(zoom_value > 0.5){
+		}else if(zoom_value > 0.4){
 			_zoom_in = true;
 			_zoom_out = false;
 
@@ -1110,6 +1579,7 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 				_zooming_state_change = true;
 			}
 
+			//Don't trigger _zooming_state_change again
 			current_zoom_state = ZOOM_IN;
 
 		}else{
@@ -1125,8 +1595,41 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 		}
 
 
-}
 
+
+		if(pip_color_value < -0.4){
+
+
+			if(!pip_change_hold){
+				command_flags.color_change = true;
+			}
+
+			pip_change_hold = true;
+
+
+		}else if(pip_color_value > 0.4){
+
+
+			if(!color_change_hold){
+			command_flags.toggle_pip = true;
+
+			}
+
+			color_change_hold = true;
+
+		}else{
+
+			color_change_hold = false;
+			pip_change_hold = false;
+
+		}
+
+
+
+
+
+
+}
 
 
 void AP_Mount_ViewPro::update_target_spd_from_rc(){
@@ -1140,6 +1643,11 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 		_speed_ef_target_deg.y = 0;
 	}else{
 		_speed_ef_target_deg.y = -CAM_SPD_MAX + ((tilt_wheel_ch->norm_input_dz() + 1) * CAM_SPD_MAX);
+		_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+
+		if(command_flags.flip_image){
+			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+		}
 	}
 
 
@@ -1168,8 +1676,21 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 	//Keep scroll wheel available even in autonomous modes
 	if(is_zero(tilt_wheel_ch->norm_input_dz())){
 		_speed_ef_target_deg.y = -spd_factor + ((tilt_ch->norm_input_dz() + 1) * spd_factor);
+
+		if(command_flags.flip_image){
+			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+		}
+
 	}else{
+
 		_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+
+
+		if(command_flags.flip_image){
+			_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+		}
+
+
 	}
 
 }

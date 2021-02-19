@@ -198,20 +198,14 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
 void Copter::radio_passthrough_to_motors()
 {
 
-	if(!copter.ap.gimbal_control_active){
+
     motors->set_radio_passthrough(channel_roll->norm_input(),
                                   channel_pitch->norm_input(),
                                   channel_throttle->get_control_in_zero_dz()*0.001f,
                                   channel_yaw->norm_input());
-	}else{
 
-	    motors->set_radio_passthrough(0,
-	                                  0,
-	                                  channel_throttle->get_control_in_zero_dz()*0.001f,
-	                                  channel_yaw->norm_input());
-
-	}
 }
+
 
 /*
   return the throttle input for mid-stick as a control-in value

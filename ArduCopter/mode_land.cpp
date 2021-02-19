@@ -34,6 +34,12 @@ bool ModeLand::init(bool ignore_checks)
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
 
+    if(g.land_repositioning){
+    	copter.camera_mount.enable_RC_control(false);
+    }else{
+    	copter.camera_mount.enable_RC_control(true);
+    }
+
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
@@ -102,6 +108,7 @@ void ModeLand::nogps_run()
 
             // get pilot desired lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max());
+
         }
 
         // get pilot's desired yaw rate

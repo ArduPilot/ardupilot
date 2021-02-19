@@ -757,38 +757,13 @@ void ModeAuto::wp_run()
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
 
-        //If disarmed, still allow gimbal control
-    	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control();
-    	}
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
 
-///////////////////////////////////////////////
 
-    if (copter.ap.gimbal_control_active){
-        	copter.Spirit_Gimbal_Control();
-        	target_yaw_rate = 0;
-        }else{
-            if (!copter.failsafe.radio) {
-                // get pilot's desired yaw rate
-                target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-                if (!is_zero(target_yaw_rate)) {
-                    auto_yaw.set_mode(AUTO_YAW_HOLD);
-                }
-            }
-    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
-    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
-    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
-    	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
-        }
-
-//////////////////////////////
-
-    /*
     if (!copter.failsafe.radio) {
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
@@ -796,9 +771,7 @@ void ModeAuto::wp_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
-    */
 
-////////////////////////////////////////////
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -828,39 +801,11 @@ void ModeAuto::spline_run()
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
 
-        //If disarmed, still allow gimbal control
-    	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control();
-    	}
         return;
     }
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
-
-
-    ///////////////////////////////////////////////
-
-        if (copter.ap.gimbal_control_active){
-            	copter.Spirit_Gimbal_Control();
-            	target_yaw_rate = 0;
-            }else{
-                if (!copter.failsafe.radio) {
-                    // get pilot's desired yaw rat
-                    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-                    if (!is_zero(target_yaw_rate)) {
-                        auto_yaw.set_mode(AUTO_YAW_HOLD);
-                    }
-                }
-        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
-        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
-        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
-        	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
-            }
-
-    //////////////////////////////
-
-        /*
 
 
     if (!copter.failsafe.radio) {
@@ -870,8 +815,7 @@ void ModeAuto::spline_run()
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
-*/
-//////////////////////////////////
+
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -903,10 +847,6 @@ void ModeAuto::land_run()
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
 
-        //If disarmed, still allow gimbal control
-    	if (copter.ap.gimbal_control_active){
-    		copter.Spirit_Gimbal_Control();
-    	}
         return;
     }
 
@@ -935,29 +875,17 @@ void ModeAuto::circle_run()
     // call z-axis position controller
     pos_control->update_z_controller();
 
-	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control();
-	}
-
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
 
 			// roll & pitch from waypoint controller, yaw rate from pilot
-		   if(!copter.ap.gimbal_control_active){
 			attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), copter.circle_nav->get_yaw(), true);
-		   }else{
-			   attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), 0.0f, true);
-		   }
 
        } else {
 
-		   if(!copter.ap.gimbal_control_active){
 			   // roll, pitch from waypoint controller, yaw heading from auto_heading()
-			    attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
-		   }else{
-			   attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), 0.0f, true);
-    }
-}
+			   attitude_control->input_euler_angle_roll_pitch_yaw(copter.circle_nav->get_roll(), copter.circle_nav->get_pitch(), auto_yaw.yaw(), true);
+       }
 
 }
 
@@ -980,42 +908,18 @@ void ModeAuto::loiter_run()
         make_safe_spool_down();
         wp_nav->wp_and_spline_init();
 
-		if (copter.ap.gimbal_control_active){
-			copter.Spirit_Gimbal_Control();
-		}
-
         return;
     }
 
     // accept pilot input of yaw
     float target_yaw_rate = 0;
 
-    /////////////////////////////////////////////////////////////
 
-    if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control();
-		target_yaw_rate = 0;
-	}else{
-	    if (!copter.failsafe.radio) {
-	        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-	    }
-
-	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_tilt, 1500);
-	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_pan, 1500);
-	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_zoom, 1500);
-	  	SRV_Channels::set_output_pwm(SRV_Channel::k_gimbal_focus, 1500);
-
-	}
-
-    ////////////////////////////////////////
-    /*
-     *
     if (!copter.failsafe.radio) {
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
 
-    */
-	//////////////////////////////
+
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -1032,9 +936,6 @@ void ModeAuto::loiter_run()
 void ModeAuto::loiter_to_alt_run()
 {
 
-	if (copter.ap.gimbal_control_active){
-		copter.Spirit_Gimbal_Control();
-	}
 
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (is_disarmed_or_landed() || !motors->get_interlock()) {

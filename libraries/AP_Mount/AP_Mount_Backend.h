@@ -87,6 +87,8 @@ public:
 	 virtual void toggle_camera_state(bool type);
 
 
+	 virtual void take_picture();
+
 	 virtual void toggle_tracking();
 
 	virtual void enable_follow(bool en);
@@ -94,6 +96,12 @@ public:
 	virtual void set_camera_point_ROI(float yaw);
 
 	virtual void toggle_PIP();
+
+	virtual void center_yaw();
+
+	virtual void turn_camera_off();
+
+	virtual void flip_image(bool flip);
 
 
     float _lat, _long, _roi_pan;
@@ -144,6 +152,14 @@ protected:
     bool is_tracking;
     bool is_video_mode;
     bool is_connected;
+    bool order_flip;
+    bool mode_change_flag;
+    bool yaw_timeout;
+    bool yaw_center_reset_flag;
+    uint16_t yaw_timeout_counter;
+
+    uint16_t button_timer;
+    uint8_t ir_zoom_level;
 
 
     struct command_flags {
@@ -151,12 +167,22 @@ protected:
     	bool take_picture;
     	bool center_yaw;
     	bool toggle_video;
+    	bool stop_video;
+    	bool color_change;
+    	bool IR_zoom;
     	bool toggle_video_tracking;
     	bool toggle_tracking;
     	bool toggle_tracking_video_state;
     	bool toggle_pip;
     	bool toggle_track;
+    	bool flip_image;
+    	bool turn_camera_off;
     	}  command_flags;
+
+
+    	bool tracking_camera_on;
+    	bool tracking_camera_off;
+    	bool tracking_camera_pic;
 
 
 
