@@ -238,8 +238,6 @@ void Plane::calc_gndspeed_undershoot()
 {
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
-	// Modified from comparing GPS track with Yaw angle (which is only valid if Heading is perfectly aligned with Wind - almost never happens in real-life)
-	// instead use Bearing to Next WP - Tested - change suggested by GitUser nagygergely1975 (@gmail.com) - awaiting expert Devs opinion before accepting changes
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
 		if (!(current_loc.same_latlon_as(next_WP_loc)))
 		{
