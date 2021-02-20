@@ -160,7 +160,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TKOFF_ROTATE_SPD
     // @DisplayName: Takeoff rotate speed
-    // @Description: This parameter sets the airspeed at which the aircraft will "rotate", setting climb pitch specified in the mission. If TKOFF_ROTATE_SPD is zero then the climb pitch will be used as soon as takeoff is started. For hand launch and catapult launches a TKOFF_ROTATE_SPD of zero should be set. For all ground launches TKOFF_ROTATE_SPD should be set above the stall speed, usually by about 10 to 30 percent
+    // @Description: This parameter sets the airspeed at which the aircraft will "rotate", setting climb pitch specified in the mission. If TKOFF_ROTATE_SPD is zero then the climb pitch will be used as soon as takeoff is started. For hand launch and catapult launches a TKOFF_ROTATE_SPD of zero should be set. For all ground launches TKOFF_ROTATE_SPD should be set above the stall speed, usually by about 10 to 30 percent. During the run, use TKOFF_GND_PITCH to keep the aircraft on the runway while below this airspeed.
     // @Units: m/s
     // @Range: 0 30
     // @Increment: 0.1
