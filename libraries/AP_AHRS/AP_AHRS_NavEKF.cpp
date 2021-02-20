@@ -688,18 +688,23 @@ bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
     // estimate it via nav velocity and wind estimates
     Vector3f nav_vel;
     float true_airspeed;
-    if (ret && have_inertial_nav() && get_velocity_NED(nav_vel)) {
-        Vector3f true_airspeed_vec = nav_vel - wind_vel;
-        true_airspeed = true_airspeed_vec.length();
-        float gnd_speed = nav_vel.length();
-        if (_wind_max > 0) {
-            float tas_lim_lower = MAX(0.0f, (gnd_speed - _wind_max));
-            float tas_lim_upper = MAX(tas_lim_lower, (gnd_speed + _wind_max));
-            true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
+    if (ret && have_inertial_nav()) {
+        if (get_velocity_NED(nav_vel)) {
+            Vector3f true_airspeed_vec = nav_vel - wind_vel;
+            true_airspeed = true_airspeed_vec.length();
+            float gnd_speed = nav_vel.length();
+            if (_wind_max > 0) {
+                float tas_lim_lower = MAX(0.0f, (gnd_speed - _wind_max));
+                float tas_lim_upper = MAX(tas_lim_lower, (gnd_speed + _wind_max));
+                true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
+            } else {
+                true_airspeed = MAX(0.0f, true_airspeed);
+            }
+            airspeed_ret = true_airspeed / get_EAS2TAS();
         } else {
-            true_airspeed = MAX(0.0f, true_airspeed);
+            // fallback to DCM if airspeed estimate if EKF has wind but no velocity estimate
+            ret = AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
         }
-        airspeed_ret = true_airspeed / get_EAS2TAS();
     }
 
     return ret;
