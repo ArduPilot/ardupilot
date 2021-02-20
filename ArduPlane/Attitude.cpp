@@ -431,7 +431,7 @@ void Plane::stabilize()
     if (get_throttle_input() == 0 &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
-        gps.ground_speed() < 3) {
+        ahrs.groundspeed() < 3) {
         // we are low, with no climb rate, and zero throttle, and very
         // low ground speed. Zero the attitude controller
         // integrators. This prevents integrator buildup pre-takeoff.
@@ -440,7 +440,7 @@ void Plane::stabilize()
         yawController.reset_I();
 
         // if moving very slowly also zero the steering integrator
-        if (gps.ground_speed() < 1) {
+        if (ahrs.groundspeed() < 1) {
             steerController.reset_I();            
         }
     }
