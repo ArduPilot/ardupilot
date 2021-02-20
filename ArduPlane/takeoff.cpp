@@ -133,19 +133,26 @@ void Plane::takeoff_calc_roll(void)
     // during takeoff use the level flight roll limit to prevent large
     // wing strike. Slowly allow for more roll as we get higher above
     // the takeoff altitude
-    float roll_limit = roll_limit_cd*0.01f;
-    float baro_alt = barometer.get_altitude();
-    // below 5m use the LEVEL_ROLL_LIMIT
-    const float lim1 = 5;    
-    // at 15m allow for full roll
-    const float lim2 = 15;
-    if ((baro_alt < auto_state.baro_takeoff_alt+lim1) || (auto_state.highest_airspeed < g.takeoff_rotate_speed)) {
-        roll_limit = g.level_roll_limit;
-    } else if (baro_alt < auto_state.baro_takeoff_alt+lim2) {
-        float proportion = (baro_alt - (auto_state.baro_takeoff_alt+lim1)) / (lim2 - lim1);
-        roll_limit = (1-proportion) * g.level_roll_limit + proportion * roll_limit;
+    int32_t takeoff_roll_limit_cd = roll_limit_cd;
+
+    if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
+        // before Vrotate (aka, on the ground)
+        takeoff_roll_limit_cd = g.level_roll_limit * 100;
+    } else {
+        // lim1 - below altitude TKOFF_LVL_ALT, restrict roll to LEVEL_ROLL_LIMIT
+        // lim2 - above altitude (TKOFF_LVL_ALT * 3) allow full flight envelope of LIM_ROLL_CD
+        // In between lim1 and lim2 use a scaled roll limit.
+        // The *3 scheme should scale reasonably with both small and large aircraft
+        const float lim1 = MAX(mode_takeoff.level_alt, 0);
+        const float lim2 = MIN(mode_takeoff.level_alt*3, mode_takeoff.target_alt);
+        const float current_baro_alt = barometer.get_altitude();
+
+        takeoff_roll_limit_cd = linear_interpolate(g.level_roll_limit*100, roll_limit_cd,
+                                        current_baro_alt,
+                                        auto_state.baro_takeoff_alt+lim1, auto_state.baro_takeoff_alt+lim2);
     }
-    nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit*100UL, roll_limit*100UL);
+
+    nav_roll_cd = constrain_int32(nav_roll_cd, -takeoff_roll_limit_cd, takeoff_roll_limit_cd);
 }
 
         
