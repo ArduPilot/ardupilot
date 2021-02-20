@@ -5031,9 +5031,8 @@ class AutoTestCopter(AutoTest):
             while True:
                 if self.armed():
                     break
-                if self.get_sim_time() - tstart > 60:
+                if self.get_sim_time_cached() - tstart > 60:
                     raise AutoTestTimeoutException("Did not arm")
-                self.delay_sim_time(0.1)
                 self.mav.mav.distance_sensor_send(
                     0,  # time_boot_ms
                     10, # min_distance cm
@@ -5052,6 +5051,7 @@ class AutoTestCopter(AutoTest):
                               0,
                               0,
                               0)
+                self.wait_heartbeat()
             self.takeoff(15, mode='LOITER')
             self.progress("Poking vehicle; should avoid")
             def shove(a, b):
