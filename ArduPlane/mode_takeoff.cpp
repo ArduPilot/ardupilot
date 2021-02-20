@@ -16,12 +16,12 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
 
     // @Param: LVL_ALT
     // @DisplayName: Takeoff mode altitude level altitude
-    // @Description: This is the altitude below which wings are held level for TAKEOFF mode
+    // @Description: This is the altitude below which the wings are held level for TAKEOFF and AUTO modes. Below this altitude, roll demand is restricted to LEVEL_ROLL_LIMIT. Normal-flight roll restriction resumes above TKOFF_LVL_ALT*2 or TKOFF_ALT, whichever is lower. Roll limits are scaled while between those altitudes for a smooth transition.
     // @Range: 0 50
     // @Increment: 1
     // @Units: m
     // @User: Standard
-    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 20),
+    AP_GROUPINFO("LVL_ALT", 2, ModeTakeoff, level_alt, 5),
 
     // @Param: LVL_PITCH
     // @DisplayName: Takeoff mode altitude initial pitch

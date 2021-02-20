@@ -737,12 +737,12 @@ public:
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
+    AP_Int16 target_alt;
+    AP_Int16 level_alt;
     AP_Float ground_pitch;
 
 protected:
-    AP_Int16 target_alt;
     AP_Int16 target_dist;
-    AP_Int16 level_alt;
     AP_Int8 level_pitch;
 
     bool takeoff_started;
