@@ -1467,13 +1467,13 @@ class AutoTestCopter(AutoTest):
         self.fly_fence_autoenable_arm_disarm()
 
     def fly_fence_floor_enabled_landing(self):
-        """fly_fence_floor_enabled_landing.
-        """
+        """ fly_fence_floor_enabled_landing. Ensures we can initiate and complete
+        an RTL while the fence is enabled. """
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
         self.progress("Test Landing while fence floor enabled")
         self.set_parameter("AVOID_ENABLE", 0)
-        self.set_parameter("FENCE_AUTOENABLE", 1)
+        self.set_parameter("FENCE_AUTOENABLE", 0)
         self.set_parameter("FENCE_TYPE", 15)
         self.set_parameter("FENCE_ALT_MIN", 10)
         self.set_parameter("FENCE_ALT_MAX", 20)
@@ -1484,6 +1484,7 @@ class AutoTestCopter(AutoTest):
         self.user_takeoff(alt_min=15)
 
         # Check fence is enabled
+        self.do_fence_enable()
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
