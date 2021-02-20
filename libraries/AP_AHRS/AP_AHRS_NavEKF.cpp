@@ -2554,43 +2554,6 @@ bool AP_AHRS_NavEKF::get_variances(float &velVar, float &posVar, float &hgtVar, 
     return false;
 }
 
-bool AP_AHRS_NavEKF::yaw_alignment_complete(void) const
-{
-    switch (ekf_type()) {
-    case EKFType::NONE:
-        // We are not using an EKF so no data
-        return true;
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        // not provided
-        return true;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE: {
-        // use EKF to get variance
-        return EKF3.yawAlignmentComplete();
-    }
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case EKFType::SITL:
-        // not provided
-        return true;
-#endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
-    case EKFType::EXTERNAL:
-        // not provided
-        return false;
-#endif
-    }
-
-    return false;
-}
-
 // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
 // returns true on success and results are placed in innovations and variances arguments
 bool AP_AHRS_NavEKF::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
