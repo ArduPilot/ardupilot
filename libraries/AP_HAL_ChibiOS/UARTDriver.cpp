@@ -75,7 +75,7 @@ static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 #endif
 
 #ifndef HAL_UART_STACK_SIZE
-#define HAL_UART_STACK_SIZE 256
+#define HAL_UART_STACK_SIZE 320
 #endif
 
 #ifndef HAL_UART_RX_STACK_SIZE
