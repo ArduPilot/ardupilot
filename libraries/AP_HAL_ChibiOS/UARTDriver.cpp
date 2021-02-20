@@ -67,7 +67,7 @@ static const eventmask_t EVT_TRANSMIT_DATA_READY = EVENT_MASK(2);
 static const eventmask_t EVT_TRANSMIT_UNBUFFERED = EVENT_MASK(3);
 
 #ifndef HAL_UART_MIN_TX_SIZE
-#define HAL_UART_MIN_TX_SIZE 1024
+#define HAL_UART_MIN_TX_SIZE 512
 #endif
 
 #ifndef HAL_UART_MIN_RX_SIZE
@@ -243,8 +243,14 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (sdef.is_usb) {
         // give more buffer space for log download on USB
-        min_tx_buffer *= 4;
+        min_tx_buffer *= 2;
     }
+
+#if HAL_MEM_CLASS >= HAL_MEM_CLASS_500
+    // on boards with plenty of memory we can use larger buffers
+    min_tx_buffer *= 2;
+    min_rx_buffer *= 2;
+#endif
 
     // on PX4 we have enough memory to have a larger transmit and
     // receive buffer for all ports. This means we don't get delays
