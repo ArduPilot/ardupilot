@@ -43,16 +43,42 @@ public:
     // returns true if battery monitor provides individual cell voltages
     virtual bool has_cell_voltages() const { return false; }
 
+    // returns true if battery monitor provides temperature
+    virtual bool has_temperature() const { return false; }
+
     /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-    uint8_t capacity_remaining_pct() const;
+    virtual uint8_t capacity_remaining_pct() const;
+
+    // return true if cycle count can be provided and fills in cycles argument
+    virtual bool get_cycle_count(uint16_t &cycles) const { return false; }
+
+    /// get voltage with sag removed (based on battery current draw and resistance)
+    /// this will always be greater than or equal to the raw voltage
+    float voltage_resting_estimate() const;
 
     // update battery resistance estimate and voltage_resting_estimate
     void update_resistance_estimate();
+
+    // updates failsafe timers, and returns what failsafes are active
+    virtual AP_BattMonitor::Failsafe update_failsafes(void);
+
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(char * buffer, size_t buflen) const;
+
+    // reset remaining percentage to given value
+    virtual bool reset_remaining(float percentage);
+
+    // logging functions 
+    void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
+    void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end
     AP_BattMonitor::BattMonitor_State   &_state;    // reference to this instances state (held in the front-end)
     AP_BattMonitor_Params               &_params;   // reference to this instances parameters (held in the front-end)
+
+    // checks what failsafes could be triggered
+    void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
 
 private:
     // resistance estimate

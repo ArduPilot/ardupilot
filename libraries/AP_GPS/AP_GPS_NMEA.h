@@ -53,12 +53,13 @@ class AP_GPS_NMEA : public AP_GPS_Backend
     friend class AP_GPS_NMEA_Test;
 
 public:
-	AP_GPS_NMEA(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
+
+    using AP_GPS_Backend::AP_GPS_Backend;
 
     /// Checks the serial receive buffer for characters,
     /// attempts to parse NMEA data and updates internal state
     /// accordingly.
-    bool        read();
+    bool        read() override;
 
 	static bool _detect(struct NMEA_detect_state &state, uint8_t data);
 
@@ -66,10 +67,12 @@ public:
 
 private:
     /// Coding for the GPS sentences that the parser handles
-    enum _sentence_types {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
+    enum _sentence_types : uint8_t {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
         _GPS_SENTENCE_RMC = 32,
         _GPS_SENTENCE_GGA = 64,
         _GPS_SENTENCE_VTG = 96,
+        _GPS_SENTENCE_HDT = 128,
+        _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -80,13 +83,6 @@ private:
     ///					an update to the GPS state
     ///
     bool                        _decode(char c);
-
-    /// Return the numeric value of an ascii hex character
-    ///
-    /// @param	a		The character to be converted
-    /// @returns		The value of the character as a hex digit
-    ///
-    int16_t                     _from_hex(char a);
 
     /// Parses the @p as a NMEA-style decimal number with
     /// up to 3 decimal digits.
@@ -119,13 +115,18 @@ private:
     /// return true if we have a new set of NMEA messages
     bool _have_new_message(void);
 
+    // print a formatted NMEA message to the port
+    bool nmea_printf(const char *fmt, ...) const;
+
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     bool _is_checksum_term;                                     ///< current term is the checksum
     char _term[15];                                                     ///< buffer for the current term within the current sentence
     uint8_t _sentence_type;                                     ///< the sentence type currently being processed
     uint8_t _term_number;                                       ///< term index within the current sentence
     uint8_t _term_offset;                                       ///< character offset with the term being received
+    uint16_t _sentence_length;
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
+    bool _sentence_done;                                        ///< set when a sentence has been fully decoded
 
     // The result of parsing terms within a message is stored temporarily until
     // the message is completely processed and the checksum validated.
@@ -137,13 +138,18 @@ private:
     int32_t _new_altitude;                                      ///< altitude parsed from a term
     int32_t _new_speed;                                                 ///< speed parsed from a term
     int32_t _new_course;                                        ///< course parsed from a term
+    float   _new_gps_yaw;                                        ///< yaw parsed from a term
     uint16_t _new_hdop;                                                 ///< HDOP parsed from a term
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
     uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
 
-    uint32_t _last_RMC_ms = 0;
-    uint32_t _last_GGA_ms = 0;
-    uint32_t _last_VTG_ms = 0;
+    uint32_t _last_RMC_ms;
+    uint32_t _last_GGA_ms;
+    uint32_t _last_VTG_ms;
+    uint32_t _last_HDT_ms;
+    uint32_t _last_PHD_12_ms;
+    uint32_t _last_PHD_26_ms;
+    uint32_t _last_fix_ms;
 
     /// @name	Init strings
     ///			In ::init, an attempt is made to configure the GPS
@@ -156,4 +162,31 @@ private:
     //@}
 
     static const char _initialisation_blob[];
+
+    /*
+      the $PHD message is an extension from AllyStar that gives
+      vertical velocity and more accuracy estimates. It is designed as
+      a mapping from ublox UBX protocol messages to NMEA. So class 1,
+      message 12 is a mapping to NMEA of the NAV-VELNED UBX message
+      and contains the same fields. Class 1 message 26 is called
+      "NAV-PVERR", but does not correspond to a UBX message
+
+      example:
+        $PHD,01,12,TIIITTITT,,245808000,0,0,0,0,0,10260304,0,0*27
+        $PHD,01,26,TTTTTTT,,245808000,877,864,1451,11,11,17*17
+     */
+    struct {
+        uint8_t msg_class;
+        uint8_t msg_id;
+        uint32_t itow;
+        int32_t fields[8];
+    } _phd;
 };
+
+#define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
+        "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
+        "$JASC,GPGGA,5\r\n" /* GGA at 5Hz */                            \
+        "$JASC,GPRMC,5\r\n" /* RMC at 5Hz */                            \
+        "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
+        "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
+        "$JMODE,SBASR,YES\r\n" /* Enable SBAS */

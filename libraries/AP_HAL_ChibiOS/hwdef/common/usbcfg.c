@@ -23,7 +23,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "hal.h"
@@ -31,10 +31,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "usbcfg.h"
+// #pragma GCC optimize("O0")
 
-#pragma GCC optimize("O0")
-
-#ifdef HAL_USB_PRODUCT_ID
+#if defined(HAL_USB_PRODUCT_ID) && !HAL_HAVE_DUAL_USB_CDC
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
@@ -178,63 +178,17 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
-
-// start of 12 byte CPU ID
-#ifndef UDID_START
-#define UDID_START	0x1FFF7A10
-#endif
-
-/*
-  handle substitution of variables in strings for USB descriptors
- */
-static char *string_substitute(const char *str)
-{
-    uint8_t new_len = strlen(str);
-    if (strstr(str, "%BOARD%")) {
-        new_len += strlen(HAL_BOARD_NAME) - 7;
-    }
-    if (strstr(str, "%SERIAL%")) {
-        new_len += 24 - 8;
-    }
-    char *str2 = malloc(new_len+1);
-    char *p = str2;
-    while (*str) {
-        char c = *str;
-        if (c == '%') {
-            if (strcmp(str, "%BOARD%") == 0) {
-                memcpy(p, HAL_BOARD_NAME, strlen(HAL_BOARD_NAME));
-                str += 7;
-                p += strlen(HAL_BOARD_NAME);
-                continue;
-            }
-            if (strcmp(str, "%SERIAL%") == 0) {
-                const char *hex = "0123456789ABCDEF";
-                const uint8_t *cpu_id = (const uint8_t *)UDID_START;
-                uint8_t i;
-                for (i=0; i<12; i++) {
-                    *p++ = hex[(cpu_id[i]>>4)&0xF];
-                    *p++ = hex[cpu_id[i]&0xF];
-                }
-                str += 8;
-                continue;
-            }
-        }
-        *p++ = *str++;
-    }
-    *p = 0;
-    return str2;
-}
-
+static uint8_t vcom_buffers[3][2+2*USB_DESC_MAX_STRLEN];
 
 /*
   dynamically allocate a USB descriptor string
  */
-static void setup_usb_string(USBDescriptor *desc, const char *str)
+static void setup_usb_string(USBDescriptor *desc, const char *str, uint8_t *b)
 {
-    char *str2 = string_substitute(str);
+    char str2[USB_DESC_MAX_STRLEN];
+    string_substitute(str, str2);
     uint8_t len = strlen(str2);
     desc->ud_size = 2+2*len;
-    uint8_t *b = (uint8_t *)calloc(1, desc->ud_size);
     desc->ud_string = (const uint8_t *)b;
     b[0] = USB_DESC_BYTE(desc->ud_size);
     b[1] = USB_DESC_BYTE(USB_DESCRIPTOR_STRING);
@@ -243,9 +197,6 @@ static void setup_usb_string(USBDescriptor *desc, const char *str)
         b[2+i*2] = str2[i];
         b[2+i*2+1] = 0;
     }
-    if (str2 != str) {
-        free(str2);
-    }
 }
 
 /*
@@ -253,9 +204,9 @@ static void setup_usb_string(USBDescriptor *desc, const char *str)
  */
 void setup_usb_strings(void)
 {
-    setup_usb_string(&vcom_strings[1], HAL_USB_STRING_MANUFACTURER);
-    setup_usb_string(&vcom_strings[2], HAL_USB_STRING_PRODUCT);
-    setup_usb_string(&vcom_strings[3], HAL_USB_STRING_SERIAL);
+    setup_usb_string(&vcom_strings[1], HAL_USB_STRING_MANUFACTURER, vcom_buffers[0]);
+    setup_usb_string(&vcom_strings[2], HAL_USB_STRING_PRODUCT, vcom_buffers[1]);
+    setup_usb_string(&vcom_strings[3], HAL_USB_STRING_SERIAL, vcom_buffers[2]);
 }
 
 /*
@@ -403,7 +354,7 @@ const USBConfig usbcfg = {
 /*
  * Serial over USB driver configuration.
  */
-const SerialUSBConfig serusbcfg = {
+const SerialUSBConfig serusbcfg1 = {
   &USBD1,
   USBD1_DATA_REQUEST_EP,
   USBD1_DATA_AVAILABLE_EP,

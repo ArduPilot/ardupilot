@@ -19,6 +19,7 @@ public:
     {
         return _flow_control;
     }
+    virtual void set_parity(int v) override;
 
 private:
     void _disable_crlf();

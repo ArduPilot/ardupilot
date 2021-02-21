@@ -26,8 +26,8 @@ AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend) :
 {
 }
 
-// set vehicle position:
-// pos should be in the beacon's local frame in meters
+// set vehicle position
+// pos should be in meters in NED frame from the beacon's local origin
 // accuracy_estimate is also in meters
 void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy_estimate)
 {
@@ -36,7 +36,7 @@ void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy
     _frontend.veh_pos_ned = correct_for_orient_yaw(pos);
 }
 
-// set individual beacon distance in meters
+// set individual beacon distance from vehicle in meters in NED frame
 void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float distance)
 {
     // sanity check instance
@@ -54,8 +54,8 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
     _frontend.beacon_state[beacon_instance].healthy = true;
 }
 
-// configure beacon's position in meters from origin
-// pos should be in the beacon's local frame (meters)
+// set beacon's position
+// pos should be in meters in NED from the beacon's local origin
 void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vector3f& pos)
 {
     // sanity check instance

@@ -56,9 +56,9 @@
 #define I2C_RDRW_IOCTL_MAX_MSGS 42
 #endif
 
-namespace Linux {
+extern const AP_HAL::HAL& hal;
 
-static const AP_HAL::HAL &hal = AP_HAL::get_HAL();
+namespace Linux {
 
 /*
  * TODO: move to Util or other upper class to be used by others
@@ -105,7 +105,7 @@ I2CBus::~I2CBus()
 
 void I2CBus::start_cb()
 {
-    sem.take(HAL_SEMAPHORE_BLOCK_FOREVER);
+    sem.take_blocking();
 }
 
 void I2CBus::end_cb()
@@ -417,4 +417,28 @@ void I2CDeviceManager::teardown()
     }
 }
 
+/*
+  get mask of bus numbers for all configured I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask(void) const
+{
+    return HAL_LINUX_I2C_BUS_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured internal I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_internal(void) const
+{
+    return HAL_LINUX_I2C_INTERNAL_BUS_MASK;
+}
+
+/*
+  get mask of bus numbers for all configured external I2C buses
+*/
+uint32_t I2CDeviceManager::get_bus_mask_external(void) const
+{
+    return HAL_LINUX_I2C_EXTERNAL_BUS_MASK;
+}
+    
 }

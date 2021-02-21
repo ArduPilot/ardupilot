@@ -1,7 +1,17 @@
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "RCInput.h"
+#include <SITL/SITL.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
+#ifdef SFML_JOYSTICK
+  #ifdef HAVE_SFML_GRAPHICS_HPP
+    #include <SFML/Window/Joystick.hpp>
+  #elif HAVE_SFML_GRAPHIC_H
+    #include <SFML/Window/Joystick.h>
+  #endif
+#endif // SFML_JOYSTICK
 
 using namespace HALSITL;
 
@@ -9,11 +19,19 @@ extern const AP_HAL::HAL& hal;
 
 void RCInput::init()
 {
-    clear_overrides();
+    AP::RC().init();
 }
 
 bool RCInput::new_input()
 {
+    if (!using_rc_protocol) {
+        if (AP::RC().new_input()) {
+            using_rc_protocol = true;
+        }
+    }
+    if (using_rc_protocol) {
+        return AP::RC().new_input();
+    }
     if (_sitlState->new_rc_input) {
         _sitlState->new_rc_input = false;
         return true;
@@ -23,19 +41,34 @@ bool RCInput::new_input()
 
 uint16_t RCInput::read(uint8_t ch)
 {
-    if (ch >= SITL_RC_INPUT_CHANNELS) {
+    if (using_rc_protocol) {
+        return AP::RC().read(ch);
+    }
+    if (ch >= num_channels()) {
         return 0;
     }
-    if (_override[ch]) {
-        return _override[ch];
+#ifdef SFML_JOYSTICK
+    SITL::SITL *_sitl = AP::sitl();
+    if (_sitl) {
+        const sf::Joystick::Axis axis = sf::Joystick::Axis(_sitl->sfml_joystick_axis[ch].get());
+        const unsigned int stickID = _sitl->sfml_joystick_id;
+        if (sf::Joystick::hasAxis(stickID, axis)) {
+            return (constrain_float(sf::Joystick::getAxisPosition(stickID, axis) + 100, 0, 200) * 5) + 1000;
+        } else {
+            return 0;
+        }
+    } else {
+      return 0;
     }
+#else
     return _sitlState->pwm_input[ch];
+#endif
 }
 
 uint8_t RCInput::read(uint16_t* periods, uint8_t len)
 {
-    if (len > SITL_RC_INPUT_CHANNELS) {
-        len = SITL_RC_INPUT_CHANNELS;
+    if (len > num_channels()) {
+        len = num_channels();
     }
     for (uint8_t i=0; i < len; i++) {
         periods[i] = read(i);
@@ -43,34 +76,20 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len)
+uint8_t RCInput::num_channels()
 {
-    bool res = false;
-    if (len > SITL_RC_INPUT_CHANNELS) {
-        len = SITL_RC_INPUT_CHANNELS;
+    if (using_rc_protocol) {
+        return AP::RC().num_channels();
     }
-    for (uint8_t i = 0; i < len; i++) {
-        res |= set_override(i, overrides[i]);
+    SITL::SITL *_sitl = AP::sitl();
+    if (_sitl) {
+#ifdef SFML_JOYSTICK
+        return (sf::Joystick::isConnected(_sitl->sfml_joystick_id.get())) ? ARRAY_SIZE(_sitl->sfml_joystick_axis) : 0;
+#else
+        return MIN(_sitl->rc_chancount.get(), SITL_RC_INPUT_CHANNELS);
+#endif // SFML_JOYSTICK
     }
-    return res;
+    return SITL_RC_INPUT_CHANNELS;
 }
 
-bool RCInput::set_override(uint8_t channel, int16_t override)
-{
-    if (override < 0) {
-        return false;  /* -1: no change. */
-    }
-    if (channel < SITL_RC_INPUT_CHANNELS) {
-        _override[channel] = static_cast<uint16_t>(override);
-        if (override != 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void RCInput::clear_overrides()
-{
-    memset(_override, 0, sizeof(_override));
-}
 #endif

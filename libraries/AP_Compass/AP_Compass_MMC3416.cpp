@@ -21,7 +21,7 @@
 #include <utility>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -41,15 +41,14 @@ extern const AP_HAL::HAL &hal;
 // datasheet says 50ms min for refill
 #define MIN_DELAY_SET_RESET 50
 
-AP_Compass_Backend *AP_Compass_MMC3416::probe(Compass &compass,
-                                              AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
-    AP_Compass_MMC3416 *sensor = new AP_Compass_MMC3416(compass, std::move(dev), force_external, rotation);
+    AP_Compass_MMC3416 *sensor = new AP_Compass_MMC3416(std::move(dev), force_external, rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -58,12 +57,10 @@ AP_Compass_Backend *AP_Compass_MMC3416::probe(Compass &compass,
     return sensor;
 }
 
-AP_Compass_MMC3416::AP_Compass_MMC3416(Compass &compass,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+AP_Compass_MMC3416::AP_Compass_MMC3416(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                        bool _force_external,
                                        enum Rotation _rotation)
-    : AP_Compass_Backend(compass)
-    , dev(std::move(_dev))
+    : dev(std::move(_dev))
     , force_external(_force_external)
     , rotation(_rotation)
 {
@@ -71,9 +68,7 @@ AP_Compass_MMC3416::AP_Compass_MMC3416(Compass &compass,
 
 bool AP_Compass_MMC3416::init()
 {
-    if (!dev->get_semaphore()->take(0)) {
-        return false;
-    }
+    dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
     
@@ -95,7 +90,12 @@ bool AP_Compass_MMC3416::init()
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
-    compass_instance = register_compass();
+    dev->set_device_type(DEVTYPE_MMC3416);
+    if (!register_compass(dev->get_bus_id(), compass_instance)) {
+        return false;
+    }
+    
+    set_dev_id(compass_instance, dev->get_bus_id());
 
     printf("Found a MMC3416 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
     
@@ -105,9 +105,6 @@ bool AP_Compass_MMC3416::init()
         set_external(compass_instance, true);
     }
     
-    dev->set_device_type(DEVTYPE_MMC3416);
-    set_dev_id(compass_instance, dev->get_bus_id());
-
     dev->set_retries(1);
     
     // call timer() at 100Hz
@@ -223,11 +220,20 @@ void AP_Compass_MMC3416::timer()
             have_initial_offset = true;
         } else {
             // low pass changes to the offset
-            offset = offset * 0.95 + new_offset * 0.05;
+            offset = offset * 0.95f + new_offset * 0.05f;
         }
 
 #if 0
-        DataFlash_Class::instance()->Log_Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
+// @LoggerMessage: MMO
+// @Description: MMC3416 compass data
+// @Field: TimeUS: Time since system startup
+// @Field: Nx: new measurement X axis
+// @Field: Ny: new measurement Y axis
+// @Field: Nz: new measurement Z axis
+// @Field: Ox: new offset X axis
+// @Field: Oy: new offset Y axis
+// @Field: Oz: new offset Z axis
+        AP::logger().Write("MMO", "TimeUS,Nx,Ny,Nz,Ox,Oy,Oz", "Qffffff",
                                                AP_HAL::micros64(),
                                                (double)new_offset.x,
                                                (double)new_offset.y,
@@ -240,7 +246,8 @@ void AP_Compass_MMC3416::timer()
                offset.x, offset.y, offset.z);
 #endif
 
-        accumulate_field(field);
+        last_sample_ms = AP_HAL::millis();
+        accumulate_sample(field, compass_instance);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
             state = STATE_REFILL1;
@@ -266,7 +273,8 @@ void AP_Compass_MMC3416::timer()
         field *= -counts_to_milliGauss;
         field += offset;
 
-        accumulate_field(field);
+        last_sample_ms = AP_HAL::millis();
+        accumulate_sample(field, compass_instance);
 
         // we stay in STATE_MEASURE_WAIT3 for measure_count_limit cycles
         if (measure_count++ >= measure_count_limit) {
@@ -282,52 +290,7 @@ void AP_Compass_MMC3416::timer()
     }
 }
 
-/*
-  accumulate a field
- */
-void AP_Compass_MMC3416::accumulate_field(Vector3f &field)
-{
-#if 0
-    DataFlash_Class::instance()->Log_Write("MMC", "TimeUS,X,Y,Z", "Qfff",
-                                           AP_HAL::micros64(),
-                                           (double)field.x,
-                                           (double)field.y,
-                                           (double)field.z);
-#endif
-    /* rotate raw_field from sensor frame to body frame */
-    rotate_field(field, compass_instance);
-        
-    /* publish raw_field (uncorrected point sample) for calibration use */
-    publish_raw_field(field, compass_instance);
-        
-    /* correct raw_field for known errors */
-    correct_field(field, compass_instance);
-        
-    if (_sem->take(0)) {
-        accum += field;
-        accum_count++;
-        _sem->give();
-    }
-
-    last_sample_ms = AP_HAL::millis();
-}
-
 void AP_Compass_MMC3416::read()
 {
-    if (!_sem->take(0)) {
-        return;
-    }
-    if (accum_count == 0) {
-        _sem->give();
-        return;
-    }
-
-    accum /= accum_count;
-
-    publish_filtered_field(accum, compass_instance);
-    
-    accum.zero();
-    accum_count = 0;
-    
-    _sem->give();
+    drain_accumulated_samples(compass_instance);
 }

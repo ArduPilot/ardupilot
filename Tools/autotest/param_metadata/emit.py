@@ -18,7 +18,7 @@ class Emit:
     def start_libraries(self):
         pass
 
-    def emit(self, g, f):
+    def emit(self, g):
         pass
 
     def set_annotate_with_vehicle(self, value):

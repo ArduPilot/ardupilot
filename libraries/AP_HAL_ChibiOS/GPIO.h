@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -26,38 +26,82 @@
 #define HAL_GPIO_LED_OFF 1
 #endif
 
+/*
+  pin types for alternative configuration
+ */
+enum class PERIPH_TYPE : uint8_t {
+    UART_RX,
+    UART_TX,
+    I2C_SDA,
+    I2C_SCL,
+    OTHER,
+};
+
 class ChibiOS::GPIO : public AP_HAL::GPIO {
 public:
     GPIO();
-    void    init();
-    void    pinMode(uint8_t pin, uint8_t output);
-    int8_t  analogPinToDigitalPin(uint8_t pin);
-    uint8_t read(uint8_t pin);
-    void    write(uint8_t pin, uint8_t value);
-    void    toggle(uint8_t pin);
+    void    init() override;
+    void    pinMode(uint8_t pin, uint8_t output) override;
+    uint8_t read(uint8_t pin) override;
+    void    write(uint8_t pin, uint8_t value) override;
+    void    toggle(uint8_t pin) override;
 
     /* Alternative interface: */
-    AP_HAL::DigitalSource* channel(uint16_t n);
+    AP_HAL::DigitalSource* channel(uint16_t n) override;
 
-    /* Interrupt interface: */
-    bool    attach_interrupt(uint8_t interrupt_num, AP_HAL::Proc p,
-            uint8_t mode);
+    /* Interrupt interface - fast, for RCOutput and SPI radios */
+    bool    attach_interrupt(uint8_t interrupt_num,
+                             AP_HAL::Proc p,
+                             INTERRUPT_TRIGGER_TYPE mode) override;
+
+    /* Interrupt interface - for AP_HAL::GPIO */
+    bool    attach_interrupt(uint8_t pin,
+                             irq_handler_fn_t fn,
+                             INTERRUPT_TRIGGER_TYPE mode) override;
 
     /* return true if USB cable is connected */
     bool    usb_connected(void) override;
 
     void set_usb_connected() { _usb_connected = true; }
+
+    /* attach interrupt via ioline_t */
+    bool _attach_interrupt(ioline_t line, AP_HAL::Proc p, uint8_t mode);
+
+    /*
+      block waiting for a pin to change. A timeout of 0 means wait
+      forever. Return true on pin change, false on timeout
+     */
+    bool wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us) override;
+
+#ifndef IOMCU_FW
+    // timer tick
+    void timer_tick(void) override;
+#endif
+
+    /*
+      resolve an ioline to take account of alternative configurations
+     */
+    static ioline_t resolve_alt_config(ioline_t base, PERIPH_TYPE ptype, uint8_t instance);
+
 private:
-    bool _usb_connected = false;
+    bool _usb_connected;
+    bool _ext_started;
+
+    bool _attach_interruptI(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
+    bool _attach_interrupt(ioline_t line, palcallback_t cb, void *p, uint8_t mode);
+#ifdef HAL_PIN_ALT_CONFIG
+    void setup_alt_config(void);
+    static uint8_t alt_config;
+#endif
 };
 
 class ChibiOS::DigitalSource : public AP_HAL::DigitalSource {
 public:
-    DigitalSource(uint8_t v);
-    void    mode(uint8_t output);
-    uint8_t read();
-    void    write(uint8_t value);
-    void    toggle();
+    DigitalSource(ioline_t line);
+    void    mode(uint8_t output) override;
+    uint8_t read() override;
+    void    write(uint8_t value) override;
+    void    toggle() override;
 private:
-    uint8_t _v;
+    ioline_t line;
 };

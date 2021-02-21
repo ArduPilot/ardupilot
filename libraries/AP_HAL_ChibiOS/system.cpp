@@ -11,17 +11,36 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include <stdarg.h>
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include "hwdef/common/watchdog.h"
+#include "hwdef/common/stm32_util.h"
 
 #include <ch.h>
 #include "hal.h"
 #include <hrt.h>
+
+#if CH_CFG_ST_RESOLUTION == 16
+static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
+#elif CH_CFG_ST_RESOLUTION == 32
+static_assert(sizeof(systime_t) == 4, "expected 32 bit systime_t");
+#endif
+
+#if defined(HAL_EXPECTED_SYSCLOCK)
+#ifdef STM32_SYS_CK
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value");
+#elif defined(STM32_HCLK)
+static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value");
+#else
+#error "unknown system clock"
+#endif
+#endif
 
 extern const AP_HAL::HAL& hal;
 extern "C"
@@ -38,11 +57,41 @@ typedef enum  {
 
 void *__dso_handle;
 
-void __cxa_pure_virtual(void);    
+void __cxa_pure_virtual(void);
 void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
 
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
+
+/*
+  save watchdog data for a hard fault
+ */
+static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr)
+{
+#ifndef HAL_BOOTLOADER_BUILD
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    if (using_watchdog) {
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        if (pd.fault_type == 0) {
+            // don't overwrite earlier fault
+            pd.fault_line = line;
+            pd.fault_type = fault_type;
+            pd.fault_addr = fault_addr;
+            thread_t *tp = chThdGetSelfX();
+            if (tp) {
+                pd.fault_thd_prio = tp->prio;
+                // get first 4 bytes of the name, but only of first fault
+                if (tp->name && pd.thread_name4[0] == 0) {
+                    strncpy_noterm(pd.thread_name4, tp->name, 4);
+                }
+            }
+            pd.fault_icsr = SCB->ICSR;
+            pd.fault_lr = lr;
+        }
+        stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    }
+#endif
+}
 
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
@@ -57,6 +106,10 @@ void HardFault_Handler(void) {
     //For HardFault/BusFault this is the address that was accessed causing the error
     uint32_t faultAddress = SCB->BFAR;
     (void)faultAddress;
+    bool forced = SCB->HFSR & SCB_HFSR_FORCED_Msk;
+    (void)forced;
+    uint32_t cfsr = SCB->CFSR;
+    (void)cfsr;
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
     bool isFaultPrecise = ((SCB->CFSR >> SCB_CFSR_BUSFAULTSR_Pos) & (1 << 1) ? true : false);
@@ -69,10 +122,42 @@ void HardFault_Handler(void) {
     (void)isFaultOnUnstacking;
     (void)isFaultOnStacking;
     (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
+#ifdef HAL_GPIO_PIN_FAULT
+    while (true) {
+        // forced means that another kind of unhandled fault got escalated to a hardfault
+        if (faultType == BusFault) {
+            fault_printf("BUSFAULT\n");
+        } else if (forced) {
+            fault_printf("FORCED HARDFAULT\n");
+        } else {
+            fault_printf("HARDFAULT(%d)\n", int(faultType));
+        }
+        fault_printf("CSFR=0x%08x\n", cfsr);
+        fault_printf("CUR=0x%08x\n", ch.rlist.current);
+        if (ch.rlist.current) {
+            fault_printf("NAME=%s\n", ch.rlist.current->name);
+        }
+        fault_printf("FA=0x%08x\n", faultAddress);
+        fault_printf("PC=0x%08x\n", ctx.pc);
+        fault_printf("LR=0x%08x\n", ctx.lr_thd);
+        fault_printf("R0=0x%08x\n", ctx.r0);
+        fault_printf("R1=0x%08x\n", ctx.r1);
+        fault_printf("R2=0x%08x\n", ctx.r2);
+        fault_printf("R3=0x%08x\n", ctx.r3);
+        fault_printf("R12=0x%08x\n", ctx.r12);
+        fault_printf("XPSR=0x%08x\n", ctx.xpsr);
+        fault_printf("\n\n");
+    }
+#endif
     //Cause debugger to stop. Ignored if no debugger is attached
     while(1) {}
 }
 
+// For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
+// ChibiOS does not do this by default
 void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
 
 void UsageFault_Handler(void);
@@ -85,6 +170,7 @@ void UsageFault_Handler(void) {
     //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
     FaultType faultType = (FaultType)__get_IPSR();
     (void)faultType;
+    uint32_t faultAddress = SCB->BFAR;
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
     bool isUndefinedInstructionFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 0) ? true : false);
@@ -99,6 +185,9 @@ void UsageFault_Handler(void) {
     (void)isNoCoprocessorFault;
     (void)isUnalignedAccessFault;
     (void)isDivideByZeroFault;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
     //Cause debugger to stop. Ignored if no debugger is attached
     while(1) {}
 }
@@ -128,8 +217,12 @@ void MemManage_Handler(void) {
     (void)isExceptionUnstackingFault;
     (void)isExceptionStackingFault;
     (void)isFaultAddressValid;
+
+    save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
+
     while(1) {}
 }
+
 }
 namespace AP_HAL {
 
@@ -139,6 +232,7 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
+#ifndef HAL_BOOTLOADER_BUILD
     va_list ap;
 
     va_start(ap, errormsg);
@@ -146,27 +240,70 @@ void panic(const char *errormsg, ...)
     va_end(ap);
 
     hal.scheduler->delay_microseconds(10000);
-    while(1) {}
+    while (1) {
+        va_start(ap, errormsg);
+        vprintf(errormsg, ap);
+        va_end(ap);
+        hal.scheduler->delay(500);
+    }
+#else
+    // we don't support variable args in bootlaoder
+    chSysHalt(errormsg);
+    // we will never get here, this just to silence a warning
+    while (1) {}
+#endif
 }
 
 uint32_t micros()
 {
-    return micros64() & 0xFFFFFFFF;
+    return hrt_micros32();
 }
 
 uint32_t millis()
 {
-    return millis64() & 0xFFFFFFFF;
+    return hrt_millis32();
+}
+
+uint16_t millis16()
+{
+    return hrt_millis32() & 0xFFFF;
 }
 
 uint64_t micros64()
 {
-    return hrt_micros();
+    return hrt_micros64();
 }
 
 uint64_t millis64()
 {
-    return micros64() / 1000;
+    return hrt_micros64() / 1000U;
 }
+
+
+uint32_t native_micros()
+{
+    return micros();
+}
+
+uint32_t native_millis()
+{
+    return millis();
+}
+
+uint16_t native_millis16()
+{
+    return millis16();
+}
+
+uint64_t native_micros64()
+{
+    return micros64();
+}
+
+uint64_t native_millis64()
+{
+    return millis64();
+}
+
 
 } // namespace AP_HAL

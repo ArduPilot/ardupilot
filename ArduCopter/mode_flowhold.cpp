@@ -4,11 +4,11 @@
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
 
 /*
-  implement FLOWHOLD mode, for position hold using opttical flow
+  implement FLOWHOLD mode, for position hold using optical flow
   without rangefinder
  */
 
-const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
+const AP_Param::GroupInfo ModeFlowHold::var_info[] = {
     // @Param: _XY_P
     // @DisplayName: FlowHold P gain
     // @Description: FlowHold (horizontal) P gain.
@@ -30,28 +30,36 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Increment: 10
     // @Units: cdeg
     // @User: Advanced
-    AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, Copter::ModeFlowHold, AC_PI_2D),
+
+    // @Param: _XY_FILT_HZ
+    // @DisplayName: FlowHold filter on input to control
+    // @Description: FlowHold (horizontal) filter on input to control
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+    AP_SUBGROUPINFO(flow_pi_xy, "_XY_",  1, ModeFlowHold, AC_PI_2D),
 
     // @Param: _FLOW_MAX
     // @DisplayName: FlowHold Flow Rate Max
     // @Description: Controls maximum apparent flow rate in flowhold
     // @Range: 0.1 2.5
     // @User: Standard
-    AP_GROUPINFO("_FLOW_MAX", 2, Copter::ModeFlowHold, flow_max, 0.6),
+    AP_GROUPINFO("_FLOW_MAX", 2, ModeFlowHold, flow_max, 0.6),
 
     // @Param: _FILT_HZ
     // @DisplayName: FlowHold Filter Frequency
     // @Description: Filter frequency for flow data
     // @Range: 1 100
+    // @Units: Hz
     // @User: Standard
-    AP_GROUPINFO("_FILT_HZ", 3, Copter::ModeFlowHold, flow_filter_hz, 5),
+    AP_GROUPINFO("_FILT_HZ", 3, ModeFlowHold, flow_filter_hz, 5),
 
     // @Param: _QUAL_MIN
     // @DisplayName: FlowHold Flow quality minimum
     // @Description: Minimum flow quality to use flow position hold
     // @Range: 0 255
     // @User: Standard
-    AP_GROUPINFO("_QUAL_MIN", 4, Copter::ModeFlowHold, flow_min_quality, 10),
+    AP_GROUPINFO("_QUAL_MIN", 4, ModeFlowHold, flow_min_quality, 10),
 
     // 5 was FLOW_SPEED
 
@@ -61,12 +69,12 @@ const AP_Param::GroupInfo Copter::ModeFlowHold::var_info[] = {
     // @Range: 1 30
     // @User: Standard
     // @Units: deg/s
-    AP_GROUPINFO("_BRAKE_RATE", 6, Copter::ModeFlowHold, brake_rate_dps, 8),
-    
+    AP_GROUPINFO("_BRAKE_RATE", 6, ModeFlowHold, brake_rate_dps, 8),
+
     AP_GROUPEND
 };
 
-Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
+ModeFlowHold::ModeFlowHold(void) : Mode()
 {
     AP_Param::setup_object_defaults(this, var_info);            
 }
@@ -74,22 +82,15 @@ Copter::ModeFlowHold::ModeFlowHold(void) : Mode()
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
 // flowhold_init - initialise flowhold controller
-bool Copter::ModeFlowHold::init(bool ignore_checks)
+bool ModeFlowHold::init(bool ignore_checks)
 {
-#if FRAME_CONFIG == HELI_FRAME
-    // do not allow helis to enter Flow Hold if the Rotor Runup is not complete
-    if (!ignore_checks && !motors->rotor_runup_complete()){
-        return false;
-    }
-#endif
-
     if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
         return false;
     }
 
     // initialize vertical speeds and leash lengths
-    copter.pos_control->set_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
-    copter.pos_control->set_accel_z(copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
+    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // initialise position and desired velocity
     if (!copter.pos_control->is_active_z()) {
@@ -102,26 +103,23 @@ bool Copter::ModeFlowHold::init(bool ignore_checks)
     quality_filtered = 0;
     flow_pi_xy.reset_I();
     limited = false;
-    
-    // stop takeoff if running
-    copter.takeoff_stop();
 
     flow_pi_xy.set_dt(1.0/copter.scheduler.get_loop_rate_hz());
 
     // start with INS height
     last_ins_height = copter.inertial_nav.get_altitude() * 0.01;
     height_offset = 0;
-    
+
     return true;
 }
 
 /*
   calculate desired attitude from flow sensor. Called when flow sensor is healthy
  */
-void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
+void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 {
     uint32_t now = AP_HAL::millis();
-    
+
     // get corrected raw flow rate
     Vector2f raw_flow = copter.optflow.flowRate() - copter.optflow.bodyRate();
 
@@ -140,7 +138,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
     sensor_flow *= constrain_float(height_estimate, height_min, height_max);
 
     // rotate controller input to earth frame
-    Vector2f input_ef = copter.ahrs.rotate_body_to_earth2D(sensor_flow);
+    Vector2f input_ef = copter.ahrs.body_to_earth2D(sensor_flow);
 
     // run PI controller
     flow_pi_xy.set_input(input_ef);
@@ -165,7 +163,7 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
 #endif
         }
     }
-    
+
     if (!stick_input && !braking) {
         // get I term
         if (limited) {
@@ -192,12 +190,11 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
         ef_output.zero();
     }
 
-    
     ef_output += xy_I;
     ef_output *= copter.aparm.angle_max;
 
     // convert to body frame
-    bf_angles += copter.ahrs.rotate_earth_to_body2D(ef_output);
+    bf_angles += copter.ahrs.earth_to_body2D(ef_output);
 
     // set limited flag to prevent integrator windup
     limited = fabsf(bf_angles.x) > copter.aparm.angle_max || fabsf(bf_angles.y) > copter.aparm.angle_max;
@@ -206,8 +203,20 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
     bf_angles.x = constrain_float(bf_angles.x, -copter.aparm.angle_max, copter.aparm.angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -copter.aparm.angle_max, copter.aparm.angle_max);
 
+// @LoggerMessage: FHLD
+// @Description: FlowHold mode messages
+// @URL: https://ardupilot.org/copter/docs/flowhold-mode.html
+// @Field: TimeUS: Time since system startup
+// @Field: SFx: Filtered flow rate, X-Axis
+// @Field: SFy: Filtered flow rate, Y-Axis
+// @Field: Ax: Target lean angle, X-Axis
+// @Field: Ay: Target lean angle, Y-Axis
+// @Field: Qual: Flow sensor quality. If this value falls below FHLD_QUAL_MIN parameter, FlowHold will act just like AltHold.
+// @Field: Ix: Integral part of PI controller, X-Axis
+// @Field: Iy: Integral part of PI controller, Y-Axis
+
     if (log_counter++ % 20 == 0) {
-        DataFlash_Class::instance()->Log_Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffffff",
+        AP::logger().Write("FHLD", "TimeUS,SFx,SFy,Ax,Ay,Qual,Ix,Iy", "Qfffffff",
                                                AP_HAL::micros64(),
                                                (double)sensor_flow.x, (double)sensor_flow.y,
                                                (double)bf_angles.x, (double)bf_angles.y,
@@ -218,19 +227,18 @@ void Copter::ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stic
 
 // flowhold_run - runs the flowhold controller
 // should be called at 100hz or more
-void Copter::ModeFlowHold::run()
+void ModeFlowHold::run()
 {
-    FlowHoldModeState flowhold_state;
     float takeoff_climb_rate = 0.0f;
 
     update_height_estimate();
-    
+
     // initialize vertical speeds and acceleration
-    copter.pos_control->set_speed_z(-copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
-    copter.pos_control->set_accel_z(copter.g.pilot_accel_z);
+    copter.pos_control->set_max_speed_z(-get_pilot_speed_dn(), copter.g.pilot_speed_up);
+    copter.pos_control->set_max_accel_z(copter.g.pilot_accel_z);
 
     // apply SIMPLE mode transform to pilot inputs
-    copter.update_simple_mode();
+    update_simple_mode();
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
@@ -239,20 +247,13 @@ void Copter::ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate = copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in());
-    target_climb_rate = constrain_float(target_climb_rate, -copter.g2.pilot_speed_dn, copter.g.pilot_speed_up);
+    target_climb_rate = constrain_float(target_climb_rate, -get_pilot_speed_dn(), copter.g.pilot_speed_up);
 
     // get pilot's desired yaw rate
     float target_yaw_rate = copter.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
-    
-    if (!copter.motors->armed() || !copter.motors->get_interlock()) {
-        flowhold_state = FlowHold_MotorStopped;
-    } else if (copter.takeoff_state.running || takeoff_triggered(target_climb_rate)) {
-        flowhold_state = FlowHold_Takeoff;
-    } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
-        flowhold_state = FlowHold_Landed;
-    } else {
-        flowhold_state = FlowHold_Flying;
-    }
+
+    // Flow Hold State Machine Determination
+    AltHoldModeState flowhold_state = get_alt_hold_state(target_climb_rate);
 
     if (copter.optflow.healthy()) {
         const float filter_constant = 0.95;
@@ -260,17 +261,69 @@ void Copter::ModeFlowHold::run()
     } else {
         quality_filtered = 0;
     }
-    
+
+    // Flow Hold State Machine
+    switch (flowhold_state) {
+
+    case AltHold_MotorStopped:
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+        copter.attitude_control->reset_rate_controller_I_terms();
+        copter.attitude_control->set_yaw_target_to_current_heading();
+        copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        flow_pi_xy.reset_I();
+        break;
+
+    case AltHold_Takeoff:
+        // set motors to full range
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+        // initiate take-off
+        if (!takeoff.running()) {
+            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+        }
+
+        // get take-off adjusted pilot and takeoff climb rates
+        takeoff.get_climb_rates(target_climb_rate, takeoff_climb_rate);
+
+        // get avoidance adjusted climb rate
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        // call position controller
+        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
+        copter.pos_control->add_takeoff_climb_rate(takeoff_climb_rate, copter.G_Dt);
+        break;
+
+    case AltHold_Landed_Ground_Idle:
+        attitude_control->set_yaw_target_to_current_heading();
+        FALLTHROUGH;
+
+    case AltHold_Landed_Pre_Takeoff:
+        attitude_control->reset_rate_controller_I_terms_smoothly();
+        pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        break;
+
+    case AltHold_Flying:
+        copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+        // adjust climb rate using rangefinder
+        target_climb_rate = copter.surface_tracking.adjust_climb_rate(target_climb_rate);
+
+        // get avoidance adjusted climb rate
+        target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
+
+        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
+        break;
+    }
+
+    // flowhold attitude target calculations
     Vector2f bf_angles;
 
     // calculate alt-hold angles
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
     float angle_max = copter.attitude_control->get_althold_lean_angle_max();
-    copter.get_pilot_desired_lean_angles(roll_in, pitch_in,
-                                         bf_angles.x, bf_angles.y,
-                                         angle_max);
-    
+    get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max());
+
     if (quality_filtered >= flow_min_quality &&
         AP_HAL::millis() - copter.arm_time_ms > 3000) {
         // don't use for first 3s when we are just taking off
@@ -283,115 +336,37 @@ void Copter::ModeFlowHold::run()
     }
     bf_angles.x = constrain_float(bf_angles.x, -angle_max, angle_max);
     bf_angles.y = constrain_float(bf_angles.y, -angle_max, angle_max);
-            
-    // Flow Hold State Machine
-    switch (flowhold_state) {
-
-    case FlowHold_MotorStopped:
-
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SHUT_DOWN);
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
-#if FRAME_CONFIG == HELI_FRAME    
-        // force descent rate and call position controller
-        copter.pos_control->set_alt_target_from_climb_rate(-abs(copter.g.land_speed), copter.G_Dt, false);
-#else
-        copter.attitude_control->reset_rate_controller_I_terms();
-        copter.attitude_control->set_yaw_target_to_current_heading();
-        copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-#endif
-        flow_pi_xy.reset_I();
-        copter.pos_control->update_z_controller();
-        break;
-
-    case FlowHold_Takeoff:
-        // set motors to full range
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-
-        // initiate take-off
-        if (!copter.takeoff_state.running) {
-            copter.takeoff_timer_start(constrain_float(copter.g.pilot_takeoff_alt,0.0f,1000.0f));
-            // indicate we are taking off
-            copter.set_land_complete(false);
-            // clear i terms
-            copter.set_throttle_takeoff();
-        }
-
-        // get take-off adjusted pilot and takeoff climb rates
-        copter.takeoff_get_climb_rates(target_climb_rate, takeoff_climb_rate);
-
-        // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
-
-        // call attitude controller
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
-
-        // call position controller
-        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
-        copter.pos_control->add_takeoff_climb_rate(takeoff_climb_rate, copter.G_Dt);
-        copter.pos_control->update_z_controller();
-        break;
-
-    case FlowHold_Landed:
-        // set motors to spin-when-armed if throttle below deadzone, otherwise full range (but motors will only spin at min throttle)
-        if (target_climb_rate < 0.0f) {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_SPIN_WHEN_ARMED);
-        } else {
-            copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
-        }
-
-        copter.attitude_control->reset_rate_controller_I_terms();
-        copter.attitude_control->set_yaw_target_to_current_heading();
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
-        copter.pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
-        copter.pos_control->update_z_controller();
-        break;
-
-    case FlowHold_Flying:
-        copter.motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
 
 #if AC_AVOID_ENABLED == ENABLED
-        // apply avoidance
-        copter.avoid.adjust_roll_pitch(bf_angles.x, bf_angles.y, copter.aparm.angle_max);
+    // apply avoidance
+    copter.avoid.adjust_roll_pitch(bf_angles.x, bf_angles.y, copter.aparm.angle_max);
 #endif
 
-        // call attitude controller
-        copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate, copter.get_smoothing_gain());
+    // call attitude controller
+    copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(bf_angles.x, bf_angles.y, target_yaw_rate);
 
-        // adjust climb rate using rangefinder
-        if (copter.rangefinder_alt_ok()) {
-            // if rangefinder is ok, use surface tracking
-            target_climb_rate = copter.get_surface_tracking_climb_rate(target_climb_rate, copter.pos_control->get_alt_target(), copter.G_Dt);
-        }
-
-        // get avoidance adjusted climb rate
-        target_climb_rate = copter.get_avoidance_adjusted_climbrate(target_climb_rate);
-
-        // call position controller
-        copter.pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, copter.G_Dt, false);
-        copter.pos_control->update_z_controller();
-        break;
-    }
+    // call z-axis position controller
+    pos_control->update_z_controller();
 }
-
 
 /*
   update height estimate using integrated accelerometer ratio with optical flow
  */
-void Copter::ModeFlowHold::update_height_estimate(void)
+void ModeFlowHold::update_height_estimate(void)
 {
     float ins_height = copter.inertial_nav.get_altitude() * 0.01;
 
 #if 1
     // assume on ground when disarmed, or if we have only just started spooling the motors up
     if (!hal.util->get_soft_armed() ||
-        copter.motors->get_desired_spool_state() != AP_Motors::DESIRED_THROTTLE_UNLIMITED ||
+        copter.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED ||
         AP_HAL::millis() - copter.arm_time_ms < 1500) {
         height_offset = -ins_height;
         last_ins_height = ins_height;
         return;
     }
 #endif
-        
+
     // get delta velocity in body frame
     Vector3f delta_vel;
     if (!copter.ins.get_delta_velocity(delta_vel)) {
@@ -403,7 +378,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
     delta_vel = rotMat * delta_vel;
     delta_velocity_ne.x += delta_vel.x;
     delta_velocity_ne.y += delta_vel.y;
-    
+
     if (!copter.optflow.healthy()) {
         // can't update height model with no flow sensor
         last_flow_ms = AP_HAL::millis();
@@ -418,18 +393,18 @@ void Copter::ModeFlowHold::update_height_estimate(void)
         height_offset = 0;
         return;
     }
-    
+
     if (copter.optflow.last_update() == last_flow_ms) {
         // no new flow data
         return;
     }
 
     // convert delta velocity back to body frame to match the flow sensor
-    Vector2f delta_vel_bf = copter.ahrs.rotate_earth_to_body2D(delta_velocity_ne);
+    Vector2f delta_vel_bf = copter.ahrs.earth_to_body2D(delta_velocity_ne);
 
     // and convert to an rate equivalent, to be comparable to flow
     Vector2f delta_vel_rate(-delta_vel_bf.y, delta_vel_bf.x);
-    
+
     // get body flow rate in radians per second
     Vector2f flow_rate_rps = copter.optflow.flowRate() - copter.optflow.bodyRate();
 
@@ -448,7 +423,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
       basic equation is:
       height_m = delta_velocity_mps / delta_flowrate_rps;
      */
-    
+
     // get delta_flowrate_rps
     Vector2f delta_flowrate = flow_rate_rps - last_flow_rate_rps;
     last_flow_rate_rps = flow_rate_rps;
@@ -465,7 +440,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
       for each axis update the height estimate
      */
     float delta_height = 0;
-    uint8_t total_weight=0;
+    uint8_t total_weight = 0;
     float height_estimate = ins_height + height_offset;
 
     for (uint8_t i=0; i<2; i++) {
@@ -487,7 +462,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
     if (total_weight > 0) {
         delta_height /= total_weight;
     }
-    
+
     if (delta_height < 0) {
         // bias towards lower heights, as we'd rather have too low
         // gain than have oscillation. This also compensates a bit for
@@ -500,7 +475,7 @@ void Copter::ModeFlowHold::update_height_estimate(void)
 
     // apply a simple filter
     height_offset = 0.8 * height_offset + 0.2 * new_offset;
-    
+
     if (ins_height + height_offset < height_min) {
         // height estimate is never allowed below the minimum
         height_offset = height_min - ins_height;
@@ -508,8 +483,22 @@ void Copter::ModeFlowHold::update_height_estimate(void)
 
     // new height estimate for logging
     height_estimate = ins_height + height_offset;
-    
-    DataFlash_Class::instance()->Log_Write("FXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
+
+// @LoggerMessage: FHXY
+// @Description: Height estimation using optical flow sensor 
+// @Field: TimeUS: Time since system startup
+// @Field: DFx: Delta flow rate, X-Axis
+// @Field: DFy: Delta flow rate, Y-Axis
+// @Field: DVx: Integrated delta velocity rate, X-Axis
+// @Field: DVy: Integrated delta velocity rate, Y-Axis
+// @Field: Hest: Estimated Height
+// @Field: DH: Delta Height
+// @Field: Hofs: Height offset
+// @Field: InsH: Height estimate from inertial navigation library
+// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
+// @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
+
+    AP::logger().Write("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",
                                            AP_HAL::micros64(),
                                            (double)delta_flowrate.x,
                                            (double)delta_flowrate.y,
@@ -521,11 +510,9 @@ void Copter::ModeFlowHold::update_height_estimate(void)
                                            (double)ins_height,
                                            (double)last_ins_height,
                                            dt_ms);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_0, AP_HAL::millis(), "HEST", height_estimate);
-    mavlink_msg_named_value_float_send(MAVLINK_COMM_1, AP_HAL::millis(), "HEST", height_estimate);
+    gcs().send_named_float("HEST", height_estimate);
     delta_velocity_ne.zero();
     last_ins_height = ins_height;
 }
 
 #endif // OPTFLOW == ENABLED
-

@@ -1,0 +1,5 @@
+PRX_TYPE         12
+OA_TYPE          1
+OA_LOOKAHEAD     10
+OA_MARGIN_MAX    3
+OA_DB_OUTPUT     2

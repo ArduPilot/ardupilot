@@ -45,7 +45,7 @@ class MDEmit(Emit):
     def start_libraries(self):
         pass
 
-    def emit(self, g, f):
+    def emit(self, g):
         nparam = False # Flag indicating this is a parameter group with redundant information (ie RCn_, SERVOn_)
         
         if g.name == 'ArduSub':
@@ -98,6 +98,8 @@ class MDEmit(Emit):
                         t += "\n|:---:|:---:|"
                         for value in values:
                             v = value.split(':')
+                            if len(v) != 2:
+                                raise ValueError("Bad value (%s)" % v)
                             t += "\n|%s|%s|" % (v[0], v[1])
                     else:
                         t += "\n\n- %s: %s" % (field, param.__dict__[field])

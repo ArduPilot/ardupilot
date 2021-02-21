@@ -1,0 +1,114 @@
+name: test ap_periph
+
+on: [push, pull_request, workflow_dispatch]
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+
+jobs:
+  build-gcc-ap_periph:
+    runs-on: ubuntu-20.04
+    container: ardupilot/ardupilot-dev-base:latest
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: install 32-bit libraries
+        run: |
+          dpkg --add-architecture i386
+          apt-get update
+          apt-get install -y gcc-multilib g++-multilib
+
+      - name: build sitl_periph_gps
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl_periph_gps
+          ./waf build --target bin/AP_Periph
+          ccache -s
+          ccache -z
+
+  autotest-can:
+    needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
+    runs-on: ubuntu-20.04
+    container: 
+      image: ardupilot/ardupilot-dev-base:latest
+      options: --privileged
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            sitltest-can,
+        ]
+
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      # Put ccache into github cache for faster build
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "::set-output name=timestamp::${NOW}"
+      - name: ccache cache files
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
+      - name: setup ccache
+        run: |
+          mkdir -p ~/.ccache
+          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+          echo "compression_level = 6" >> ~/.ccache/ccache.conf
+          echo "max_size = 400M" >> ~/.ccache/ccache.conf
+          ccache -s
+          ccache -z
+      - name: install 32-bit libraries
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
+      - name: setup can-utils
+        run: |
+          kernel_ver=`uname -r`
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
+          sudo apt-get update
+          sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
+          sudo modprobe vcan
+          sudo ip link add dev vcan0 type vcan
+          sudo ip link set up vcan0
+      - name: test ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          kernel_ver=`uname -r`
+          if [ "$kernel_ver" = "5.4.0-1032-azure" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh

@@ -48,16 +48,15 @@
  * and https://github.com/adafruit/Adafruit-PWM-Servo-Driver-Library/issues/11
  */
 #define PCA9685_INTERNAL_CLOCK (1.04f * 25000000.f)
-#define PCA9685_EXTERNAL_CLOCK 24576000.f
 
 using namespace Linux;
 
 #define PWM_CHAN_COUNT 16
 
-static const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+extern const AP_HAL::HAL& hal;
 
 RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                   bool external_clock,
+                                   uint32_t external_clock,
                                    uint8_t channel_offset,
                                    int16_t oe_pin_number) :
     _dev(std::move(dev)),
@@ -68,10 +67,11 @@ RCOutput_PCA9685::RCOutput_PCA9685(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
     _channel_offset(channel_offset),
     _oe_pin_number(oe_pin_number)
 {
-    if (_external_clock)
-        _osc_clock = PCA9685_EXTERNAL_CLOCK;
-    else
+    if (_external_clock > 0) {
+        _osc_clock = _external_clock;
+    } else {
         _osc_clock = PCA9685_INTERNAL_CLOCK;
+    }
 }
 
 RCOutput_PCA9685::~RCOutput_PCA9685()
@@ -96,7 +96,7 @@ void RCOutput_PCA9685::init()
 
 void RCOutput_PCA9685::reset_all_channels()
 {
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
         return;
     }
 
@@ -117,7 +117,7 @@ void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
         write(i, _pulses_buffer[i]);
     }
 
-    if (!_dev->get_semaphore()->take(10)) {
+    if (!_dev || !_dev->get_semaphore()->take(10)) {
         return;
     }
 
@@ -133,7 +133,7 @@ void RCOutput_PCA9685::set_freq(uint32_t chmask, uint16_t freq_hz)
      * different from @freq_hz due to rounding/ceiling. We use ceil() rather
      * than round() so the resulting frequency is never greater than @freq_hz
      */
-    uint8_t prescale = ceil(_osc_clock / (4096 * freq_hz)) - 1;
+    uint8_t prescale = ceilf(_osc_clock / (4096 * freq_hz)) - 1;
     _frequency = _osc_clock / (4096 * (prescale + 1));
 
     /* Write prescale value to match frequency */
@@ -225,7 +225,7 @@ void RCOutput_PCA9685::push()
         *d++ = length >> 8;
     }
 
-    if (!_dev->get_semaphore()->take_nonblocking()) {
+    if (!_dev || !_dev->get_semaphore()->take_nonblocking()) {
         return;
     }
 

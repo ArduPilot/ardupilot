@@ -21,6 +21,7 @@ static RCOutput rcoutDriver;
 static Scheduler schedulerInstance;
 static Util utilInstance;
 static OpticalFlow opticalFlowDriver;
+static Flash flashDriver;
 
 HAL_Empty::HAL_Empty() :
     AP_HAL::HAL(
@@ -30,6 +31,9 @@ HAL_Empty::HAL_Empty() :
         nullptr,            /* no uartD */
         nullptr,            /* no uartE */
         nullptr,            /* no uartF */
+        nullptr,            /* no uartG */
+        nullptr,            /* no uartH */
+        nullptr,            /* no uartI */
         &spiDeviceManager,
         &analogIn,
         &storageDriver,
@@ -39,8 +43,9 @@ HAL_Empty::HAL_Empty() :
         &rcoutDriver,
         &schedulerInstance,
         &utilInstance,
-        &opticalFlowDriver),
-    _member(new EmptyPrivateMember(123))
+        &opticalFlowDriver,
+        &flashDriver,
+        nullptr)            /* no DSP */
 {}
 
 void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
@@ -51,11 +56,11 @@ void HAL_Empty::run(int argc, char* const argv[], Callbacks* callbacks) const
      * up to the programmer to do this in the correct order.
      * Scheduler should likely come first. */
     scheduler->init();
-    uartA->begin(115200);
+    serial(0)->begin(115200);
     _member->init();
 
     callbacks->setup();
-    scheduler->system_initialized();
+    scheduler->set_system_initialized();
 
     for (;;) {
         callbacks->loop();

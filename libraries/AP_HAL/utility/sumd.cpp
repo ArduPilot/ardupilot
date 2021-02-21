@@ -45,6 +45,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <AP_Math/crc.h>
 #include "sumd.h"
 
 #define SUMD_MAX_CHANNELS	32
@@ -116,18 +117,6 @@ static uint8_t _rxlen;
 static ReceiverFcPacketHoTT _rxpacket;
 
 
-static uint16_t sumd_crc16(uint16_t crc, uint8_t value)
-{
-	int i;
-	crc ^= (uint16_t)value << 8;
-
-	for (i = 0; i < 8; i++) {
-		crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
-	}
-
-	return crc;
-}
-
 static uint8_t sumd_crc8(uint8_t crc, uint8_t value)
 {
 	crc += value;
@@ -153,7 +142,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 			_crc16 = 0x0000;
 			_crc8 = 0x00;
 			_crcOK = false;
-			_crc16 = sumd_crc16(_crc16, byte);
+			_crc16 = crc_xmodem_update(_crc16, byte);
 			_crc8 = sumd_crc8(_crc8, byte);
 			_decode_state = SUMD_DECODE_STATE_GOT_HEADER;
 
@@ -176,7 +165,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 			}
 
 			if (_sumd) {
-				_crc16 = sumd_crc16(_crc16, byte);
+				_crc16 = crc_xmodem_update(_crc16, byte);
 
 			} else {
 				_crc8 = sumd_crc8(_crc8, byte);
@@ -199,7 +188,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 			_rxpacket.length = byte;
 
 			if (_sumd) {
-				_crc16 = sumd_crc16(_crc16, byte);
+				_crc16 = crc_xmodem_update(_crc16, byte);
 
 			} else {
 				_crc8 = sumd_crc8(_crc8, byte);
@@ -222,7 +211,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 		_rxpacket.sumd_data[_rxlen] = byte;
 
 		if (_sumd) {
-			_crc16 = sumd_crc16(_crc16, byte);
+			_crc16 = crc_xmodem_update(_crc16, byte);
 
 		} else {
 			_crc8 = sumd_crc8(_crc8, byte);
@@ -360,7 +349,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 
 			for (i = 4; i < _rxpacket.length; i++) {
 				if (_debug) {
-					printf("ch[%d] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
+					printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
 					       ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
 					       ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3);
 				}

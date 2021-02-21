@@ -45,7 +45,7 @@ AP_BattMonitor_Analog::read()
         if (_state.last_time_micros != 0 && dt < 2000000.0f) {
             // .0002778 is 1/3600 (conversion to hours)
             float mah = _state.current_amps * dt * 0.0000002778f;
-            _state.current_total_mah += mah;
+            _state.consumed_mah += mah;
             _state.consumed_wh  += 0.001f * mah * _state.voltage;
         }
 
@@ -57,5 +57,5 @@ AP_BattMonitor_Analog::read()
 /// return true if battery provides current info
 bool AP_BattMonitor_Analog::has_current() const
 {
-    return (_params.type() == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT);
+    return ((AP_BattMonitor::Type)_params._type.get() == AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT);
 }

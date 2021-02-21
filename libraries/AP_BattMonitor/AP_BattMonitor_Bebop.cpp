@@ -214,7 +214,7 @@ void AP_BattMonitor_Bebop::read(void)
     _state.voltage = vbat;
     _state.last_time_micros = tnow;
     _state.healthy = true;
-    _state.current_total_mah = capacity - (remaining * capacity) / 100.0f;
+    _state.consumed_mah = capacity - (remaining * capacity) / 100.0f;
 }
 
 #endif

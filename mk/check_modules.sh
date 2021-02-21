@@ -65,7 +65,7 @@ cat <<EOF
 
 You need to run 'git submodule update'
 
-Please see http://dev.ardupilot.org/wiki/git-submodules/
+Please see https://dev.ardupilot.org/wiki/git-submodules/
 EOF
             exit 1
         }

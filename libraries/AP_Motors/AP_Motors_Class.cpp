@@ -13,12 +13,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- *       AP_Motors.cpp - ArduCopter motors library
- *       Code by RandyMackay. DIYDrones.com
- *
- */
-
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -26,46 +20,49 @@
 
 extern const AP_HAL::HAL& hal;
 
+// singleton instance
+AP_Motors *AP_Motors::_singleton;
+
 // Constructor
 AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _loop_rate(loop_rate),
     _speed_hz(speed_hz),
-    _roll_in(0.0f),
-    _pitch_in(0.0f),
-    _yaw_in(0.0f),
-    _throttle_in(0.0f),
-    _throttle_avg_max(0.0f),
     _throttle_filter(),
-    _spool_desired(DESIRED_SHUT_DOWN),
-    _batt_voltage(0.0f),
-    _batt_current(0.0f),
-    _air_density_ratio(1.0f),
-    _motor_fast_mask(0)
+    _spool_desired(DesiredSpoolState::SHUT_DOWN),
+    _spool_state(SpoolState::SHUT_DOWN),
+    _air_density_ratio(1.0f)
 {
-    // init other flags
-    _flags.armed = false;
-    _flags.interlock = false;
-    _flags.initialised_ok = false;
+    _singleton = this;
 
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
     _throttle_filter.reset(0.0f);
 
     // init limit flags
-    limit.roll_pitch = true;
+    limit.roll = true;
+    limit.pitch = true;
     limit.yaw = true;
     limit.throttle_lower = true;
     limit.throttle_upper = true;
+    _thrust_boost = false;
+    _thrust_balanced = true;
 };
 
 void AP_Motors::armed(bool arm)
 {
-    if (_flags.armed != arm) {
-        _flags.armed = arm;
+    if (_armed != arm) {
+        _armed = arm;
         AP_Notify::flags.armed = arm;
         if (!arm) {
             save_params_on_disarm();
         }
+    }
+};
+
+void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
+{
+    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
+        _spool_desired = spool;
     }
 };
 
@@ -83,22 +80,17 @@ void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float
  */
 void AP_Motors::rc_write(uint8_t chan, uint16_t pwm)
 {
-    if (_pwm_type == PWM_TYPE_ONESHOT125 && (_motor_fast_mask & (1U<<chan))) {
-        // OneShot125 uses a PWM range from 125 to 250 usec
-        pwm /= 8;
-        /*
-          OneShot125 ESCs can be confused by pulses below 125 or above
-          250, making them fail the pulse type auto-detection. This
-          happens at least with BLHeli
-        */
-        if (pwm < 125) {
-            pwm = 125;
-        } else if (pwm > 250) {
-            pwm = 250;
-        }
-    }
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm(function, pwm);
+}
+
+/*
+  write to an output channel for an angle actuator
+ */
+void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
+{
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_scaled(function, angle_cd);
 }
 
 /*
@@ -109,16 +101,39 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
     if (freq_hz > 50) {
         _motor_fast_mask |= mask;
     }
-    mask = rc_map_mask(mask);
+
+    mask = motor_mask_to_srv_channel_mask(mask);
     hal.rcout->set_freq(mask, freq_hz);
-    if ((_pwm_type == PWM_TYPE_ONESHOT ||
-         _pwm_type == PWM_TYPE_ONESHOT125) &&
-        freq_hz > 50 &&
-        mask != 0) {
-        // tell HAL to do immediate output
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_ONESHOT);
-    } else if (_pwm_type == PWM_TYPE_BRUSHED) {
-        hal.rcout->set_output_mode(AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+
+    switch (pwm_type(_pwm_type.get())) {
+    case PWM_TYPE_ONESHOT:
+        if (freq_hz > 50 && mask != 0) {
+            hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        }
+        break;
+    case PWM_TYPE_ONESHOT125:
+        if (freq_hz > 50 && mask != 0) {
+            hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
+        }
+        break;
+    case PWM_TYPE_BRUSHED:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
+        break;
+    case PWM_TYPE_DSHOT150:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
+        break;
+    case PWM_TYPE_DSHOT300:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
+        break;
+    case PWM_TYPE_DSHOT600:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
+        break;
+    case PWM_TYPE_DSHOT1200:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
+        break;
+    default:
+        hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_NORMAL);
+        break;
     }
 }
 
@@ -127,11 +142,11 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
   SERVOn_FUNCTION mappings, and allowing for multiple outputs per
   motor number
  */
-uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
+uint32_t AP_Motors::motor_mask_to_srv_channel_mask(uint32_t mask) const
 {
     uint32_t mask2 = 0;
-    for (uint8_t i=0; i<32; i++) {
-        uint32_t bit = 1UL<<i;
+    for (uint8_t i = 0; i < 32; i++) {
+        uint32_t bit = 1UL << i;
         if (mask & bit) {
             SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
             mask2 |= SRV_Channels::get_output_channel_mask(function);
@@ -140,54 +155,33 @@ uint32_t AP_Motors::rc_map_mask(uint32_t mask) const
     return mask2;
 }
 
-// convert input in -1 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_1to1(float input, const SRV_Channel *servo)
-{
-    int16_t ret;
-
-    input = constrain_float(input, -1.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = -input;
-    }
-
-    if (input >= 0.0f) {
-        ret = ((input * (servo->get_output_max() - servo->get_trim())) + servo->get_trim());
-    } else {
-        ret = ((input * (servo->get_trim() - servo->get_output_min())) + servo->get_trim());
-    }
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
-}
-
-// convert input in 0 to +1 range to pwm output
-int16_t AP_Motors::calc_pwm_output_0to1(float input, const SRV_Channel *servo)
-{
-    int16_t ret;
-
-    input = constrain_float(input, 0.0f, 1.0f);
-
-    if (servo->get_reversed()) {
-        input = 1.0f-input;
-    }
-
-    ret = input * (servo->get_output_max() - servo->get_output_min()) + servo->get_output_min();
-
-    return constrain_int16(ret, servo->get_output_min(), servo->get_output_max());
-}
-
 /*
   add a motor, setting up default output function as needed
  */
 void AP_Motors::add_motor_num(int8_t motor_num)
 {
     // ensure valid motor number is provided
-    if( motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS ) {
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
         uint8_t chan;
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
         }
+    }
+}
+
+    // set limit flag for pitch, roll and yaw
+void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
+{
+    limit.roll = flag;
+    limit.pitch = flag;
+    limit.yaw = flag;
+}
+
+namespace AP {
+    AP_Motors *motors()
+    {
+        return AP_Motors::get_singleton();
     }
 }

@@ -19,17 +19,41 @@
 //
 #pragma once
 
-#include <stdarg.h>
-
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Namespace.h>
 
-#include "Stream.h"
+#include <stdarg.h>
+#include <unistd.h>
 
-class AP_HAL::BetterStream : public AP_HAL::Stream {
+class AP_HAL::BetterStream {
 public:
-    BetterStream(void) {}
 
-    virtual void printf(const char *, ...) FMT_PRINTF(2, 3) = 0;
-    virtual void vprintf(const char *, va_list) = 0;
+    virtual void printf(const char *, ...) FMT_PRINTF(2, 3);
+    virtual void vprintf(const char *, va_list);
+
+    void print(const char *str) { write(str); }
+    void println(const char *str) { printf("%s\r\n", str); }
+
+    virtual size_t write(uint8_t) = 0;
+    virtual size_t write(const uint8_t *buffer, size_t size) = 0;
+    size_t write(const char *str);
+
+    virtual uint32_t available() = 0;
+
+    /* return value for read():
+     * -1 if nothing available, uint8_t value otherwise. */
+    virtual int16_t read() = 0;
+
+    // no base-class implementation to force descendants to
+    // do things efficiently.  Looping over 2^32-1 bytes would be bad.
+    // returns false if discard failed (e.g. port locked)
+    virtual bool discard_input() = 0; // discard all bytes available for reading
+
+    // returns -1 on error (e.g. port locked), number of bytes read
+    // otherwise
+    virtual ssize_t read(uint8_t *buffer, uint16_t count);
+
+    /* NB txspace was traditionally a member of BetterStream in the
+     * FastSerial library. As far as concerns go, it belongs with available() */
+    virtual uint32_t txspace() = 0;
 };

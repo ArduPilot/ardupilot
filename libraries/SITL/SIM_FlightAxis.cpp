@@ -27,8 +27,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <DataFlash/DataFlash.h>
-#include "pthread.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -40,9 +39,21 @@ using namespace SITL;
 static const struct {
     const char *name;
     float value;
+    bool save;
 } sim_defaults[] = {
+    { "BRD_OPTIONS", 0},
     { "AHRS_EKF_TYPE", 10 },
     { "INS_GYR_CAL", 0 },
+    { "BATT_MONITOR", 4 },
+    { "RC1_MIN", 1000, true },
+    { "RC1_MAX", 2000, true },
+    { "RC2_MIN", 1000, true },
+    { "RC2_MAX", 2000, true },
+    { "RC3_MIN", 1000, true },
+    { "RC3_MAX", 2000, true },
+    { "RC4_MIN", 1000, true },
+    { "RC4_MAX", 2000, true },
+    { "RC2_REVERSED", 1 }, // interlink has reversed rc2
     { "SERVO1_MIN", 1000 },
     { "SERVO1_MAX", 2000 },
     { "SERVO2_MIN", 1000 },
@@ -72,10 +83,11 @@ static const struct {
 };
 
 
-FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
-    Aircraft(home_str, frame_str)
+FlightAxis::FlightAxis(const char *frame_str) :
+    Aircraft(frame_str)
 {
     use_time_sync = false;
+    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
@@ -85,50 +97,16 @@ FlightAxis::FlightAxis(const char *home_str, const char *frame_str) :
     }
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
         AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
-    }
-
-    /* Create the thread that will be waiting for data from FlightAxis */
-    mutex = hal.util->new_semaphore();
-
-    int ret = pthread_create(&thread, NULL, update_thread, this);
-    if (ret != 0) {
-        AP_HAL::panic("SIM_FlightAxis: failed to create thread");
+        if (sim_defaults[i].save) {
+            enum ap_var_type ptype;
+            AP_Param *p = AP_Param::find(sim_defaults[i].name, &ptype);
+            if (!p->configured()) {
+                p->save();
+            }
+        }
     }
 }
     
-/*
-  update thread trampoline
- */
-void *FlightAxis::update_thread(void *arg)
-{
-    FlightAxis *flightaxis = (FlightAxis *)arg;
-
-#ifdef __CYGWIN__
-    //Cygwin doesn't support pthread_setname_np
-#elif defined(__APPLE__) && defined(__MACH__)
-    pthread_setname_np("ardupilot-flightaxis");
-#else
-    pthread_setname_np(pthread_self(), "ardupilot-flightaxis");
-#endif
-    
-    flightaxis->update_loop();
-    return nullptr;
-}
-
-/*
-  main update loop
- */
-void FlightAxis::update_loop(void)
-{
-    while (true) {
-        struct sitl_input new_input;
-        mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
-        new_input = last_input;
-        mutex->give();
-        exchange_data(new_input);
-    }
-}
-
 /*
   extremely primitive SOAP parser that assumes the format used by FlightAxis
 */
@@ -167,7 +145,7 @@ void FlightAxis::parse_reply(const char *reply)
 /*
   make a SOAP request, returning body of reply
  */
-char *FlightAxis::soap_request(const char *action, const char *fmt, ...)
+bool FlightAxis::soap_request_start(const char *action, const char *fmt, ...)
 {
     va_list ap;
     char *req1;
@@ -176,15 +154,18 @@ char *FlightAxis::soap_request(const char *action, const char *fmt, ...)
     vasprintf(&req1, fmt, ap);
     va_end(ap);
 
-    //printf("%s\n", req1);
-
     // open SOAP socket to FlightAxis
-    SocketAPM sock(false);
-    if (!sock.connect(controller_ip, controller_port)) {
+    delete sock;
+
+    sock = new SocketAPM(false);
+    if (!sock->connect(controller_ip, controller_port)) {
+        ::printf("connect failed\n");
+        delete sock;
+        sock = nullptr;
         free(req1);
-        return nullptr;
+        return false;
     }
-    sock.set_blocking(false);
+    sock->set_blocking(false);
 
     char *req;
     asprintf(&req, R"(POST / HTTP/1.1
@@ -196,18 +177,31 @@ Connection: Keep-Alive
 %s)",
              action,
              (unsigned)strlen(req1), req1);
-    sock.send(req, strlen(req));
+    sock->send(req, strlen(req));
     free(req1);
     free(req);
-    char reply[10000];
-    memset(reply, 0, sizeof(reply));
-    ssize_t ret = sock.recv(reply, sizeof(reply)-1, 1000);
-    if (ret <= 0) {
-        printf("No data\n");
+    return true;
+}
+
+char *FlightAxis::soap_request_end(uint32_t timeout_ms)
+{
+    if (!sock) {
         return nullptr;
     }
-    char *p = strstr(reply, "Content-Length: ");
+    if (!sock->pollin(timeout_ms)) {
+        return nullptr;
+    }
+    sock->set_blocking(true);
+    ssize_t ret = sock->recv(replybuf, sizeof(replybuf)-1, 1000);
+    if (ret <= 0) {
+        return nullptr;
+    }
+    replybuf[ret] = 0;
+
+    char *p = strstr(replybuf, "Content-Length: ");
     if (p == nullptr) {
+        delete sock;
+        sock = nullptr;
         printf("No Content-Length\n");
         return nullptr;
     }
@@ -217,57 +211,66 @@ Connection: Keep-Alive
     char *body = strstr(p, "\r\n\r\n");
     if (body == nullptr) {
         printf("No body\n");
+        delete sock;
+        sock = nullptr;
         return nullptr;
     }
     body += 4;
 
     // get the rest of the body
-    int32_t expected_length = content_length + (body - reply);
-    if (expected_length >= (int32_t)sizeof(reply)) {
+    int32_t expected_length = content_length + (body - replybuf);
+    if (expected_length >= (int32_t)sizeof(replybuf)) {
         printf("Reply too large %i\n", expected_length);
+        delete sock;
+        sock = nullptr;
         return nullptr;
     }
     while (ret < expected_length) {
-        ssize_t ret2 = sock.recv(&reply[ret], sizeof(reply)-(1+ret), 100);
+        ssize_t ret2 = sock->recv(&replybuf[ret], sizeof(replybuf)-(1+ret), 1000);
         if (ret2 <= 0) {
+            delete sock;
+            sock = nullptr;
             return nullptr;
         }
         // nul terminate
-        reply[ret+ret2] = 0;
+        replybuf[ret+ret2] = 0;
         ret += ret2;
     }
-    return strdup(reply);
+    delete sock;
+    sock = nullptr;
+    return strdup(replybuf);
 }
-
 
 
 void FlightAxis::exchange_data(const struct sitl_input &input)
 {
-    if (!controller_started ||
-        is_zero(state.m_flightAxisControllerIsActive) ||
-        !is_zero(state.m_resetButtonHasBeenPressed)) {
+    if (!sock &&
+        (!controller_started ||
+         is_zero(state.m_flightAxisControllerIsActive) ||
+         !is_zero(state.m_resetButtonHasBeenPressed))) {
         printf("Starting controller at %s\n", controller_ip);
         // call a restore first. This allows us to connect after the aircraft is changed in RealFlight
-        char *reply = soap_request("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
+        soap_request_start("RestoreOriginalControllerDevice", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <RestoreOriginalControllerDevice><a>1</a><b>2</b></RestoreOriginalControllerDevice>
 </soap:Body>
 </soap:Envelope>)");
-        free(reply);
-        reply = soap_request("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
+        soap_request_end(1000);
+        soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <InjectUAVControllerInterface><a>1</a><b>2</b></InjectUAVControllerInterface>
 </soap:Body>
 </soap:Envelope>)");
-        free(reply);
+        soap_request_end(1000);
         activation_frame_counter = frame_counter;
         controller_started = true;
     }
 
-    float scaled_servos[8];
-    for (uint8_t i=0; i<8; i++) {
+    // maximum number of servos to send is 12 with new FlightAxis
+    float scaled_servos[12];
+    for (uint8_t i=0; i<ARRAY_SIZE(scaled_servos); i++) {
         scaled_servos[i] = (input.servos[i] - 1000) / 1000.0f;
     }
 
@@ -292,13 +295,17 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
         scaled_servos[1] = constrain_float(pitch_rate + 0.5, 0, 1);
     }
 
-
-    char *reply = soap_request("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+    if (!sock) {
+        soap_request_start("ExchangeData", R"(<?xml version='1.0' encoding='UTF-8'?><soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
 <soap:Body>
 <ExchangeData>
 <pControlInputs>
-<m-selectedChannels>255</m-selectedChannels>
+<m-selectedChannels>4095</m-selectedChannels>
 <m-channelValues-0to1>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
+<item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
 <item>%.4f</item>
@@ -319,10 +326,19 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
                                scaled_servos[4],
                                scaled_servos[5],
                                scaled_servos[6],
-                               scaled_servos[7]);
+                               scaled_servos[7],
+                               scaled_servos[8],
+                               scaled_servos[9],
+                               scaled_servos[10],
+                               scaled_servos[11]);
+    }
+
+    char *reply = nullptr;
+    if (sock) {
+        reply = soap_request_end(0);
+    }
 
     if (reply) {
-        mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
         double lastt_s = state.m_currentPhysicsTime_SEC;
         parse_reply(reply);
         double dt = state.m_currentPhysicsTime_SEC - lastt_s;
@@ -333,7 +349,6 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
             average_frame_time_s = average_frame_time_s * 0.98 + dt * 0.02;
         }
         socket_frame_counter++;
-        mutex->give();
         free(reply);
     }
 }
@@ -344,17 +359,15 @@ void FlightAxis::exchange_data(const struct sitl_input &input)
  */
 void FlightAxis::update(const struct sitl_input &input)
 {
-    mutex->take(HAL_SEMAPHORE_BLOCK_FOREVER);
-    
     last_input = input;
-    
+    exchange_data(input);
+
     double dt_seconds = state.m_currentPhysicsTime_SEC - last_time_s;
     if (dt_seconds < 0) {
         // cope with restarting RealFlight while connected
         initial_time_s = time_now_us * 1.0e-6f;
         last_time_s = state.m_currentPhysicsTime_SEC;
         position_offset.zero();
-        mutex->give();
         return;
     }
     if (dt_seconds < 0.00001f) {
@@ -364,16 +377,12 @@ void FlightAxis::update(const struct sitl_input &input)
             delta_time = average_frame_time_s - extrapolated_s;
         }
         if (delta_time <= 0) {
-            usleep(1000);
-            mutex->give();
             return;
         }
         time_now_us += delta_time * 1.0e6;
         extrapolate_sensors(delta_time);
         update_position();
         update_mag_field_bf();
-        mutex->give();
-        usleep(delta_time*1.0e6);
         extrapolated_s += delta_time;
         report_FPS();
         return;
@@ -387,7 +396,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     /*
-      the queternion convention in realflight seems to have Z negative
+      the quaternion convention in realflight seems to have Z negative
      */
     Quaternion quat(state.m_orientationQuaternion_W,
                     state.m_orientationQuaternion_Y,
@@ -406,12 +415,14 @@ void FlightAxis::update(const struct sitl_input &input)
                         state.m_aircraftPositionX_MTR,
                         -state.m_altitudeASL_MTR - home.alt*0.01);
 
-    accel_body(state.m_accelerationBodyAX_MPS2,
-               state.m_accelerationBodyAY_MPS2,
-               state.m_accelerationBodyAZ_MPS2);
+    accel_body = {
+        float(state.m_accelerationBodyAX_MPS2),
+        float(state.m_accelerationBodyAY_MPS2),
+        float(state.m_accelerationBodyAZ_MPS2)
+    };
 
     // accel on the ground is nasty in realflight, and prevents helicopter disarm
-    if (state.m_isTouchingGround) {
+    if (!is_zero(state.m_isTouchingGround)) {
         Vector3f accel_ef = (velocity_ef - last_velocity_ef) / dt_seconds;
         accel_ef.z -= GRAVITY_MSS;
         accel_body = dcm.transposed() * accel_ef;
@@ -424,23 +435,45 @@ void FlightAxis::update(const struct sitl_input &input)
     accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
     // offset based on first position to account for offset in RF world
-    if (position_offset.is_zero() || state.m_resetButtonHasBeenPressed) {
+    if (position_offset.is_zero() || !is_zero(state.m_resetButtonHasBeenPressed)) {
         position_offset = position;
     }
     position -= position_offset;
 
     airspeed = state.m_airspeed_MPS;
-    airspeed_pitot = state.m_airspeed_MPS;
 
-    battery_voltage = state.m_batteryVoltage_VOLTS;
-    battery_current = state.m_batteryCurrentDraw_AMPS;
-    rpm1 = state.m_heliMainRotorRPM;
-    rpm2 = state.m_propRPM;
+    /* for pitot airspeed we need the airspeed along the X axis. We
+       can't get that from m_airspeed_MPS, so instead we calculate it
+       from wind vector and ground speed
+     */
+    Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
+    Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
+    Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
+
+    if (last_imu_rotation != ROTATION_NONE) {
+        airspeed3d = airspeed3d * sitl->ahrs_rotation_inv;
+    }
+    airspeed_pitot = MAX(airspeed3d.x,0);
+
+#if 0
+    printf("WIND: %.1f %.1f %.1f AS3D %.1f %.1f %.1f\n",
+           state.m_windX_MPS,
+           state.m_windY_MPS,
+           state.m_windZ_MPS,
+           airspeed3d.x,
+           airspeed3d.y,
+           airspeed3d.z);
+#endif
+
+    battery_voltage = MAX(state.m_batteryVoltage_VOLTS, 0);
+    battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
+    rpm[0] = state.m_heliMainRotorRPM;
+    rpm[1] = state.m_propRPM;
 
     /*
-      the interlink interface supports 8 input channels
+      the interlink interface supports 12 input channels
      */
-    rcin_chan_count = 8;
+    rcin_chan_count = 12;
     for (uint8_t i=0; i<rcin_chan_count; i++) {
         rcin[i] = state.rcin[i];
     }
@@ -464,7 +497,6 @@ void FlightAxis::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-    mutex->give();
 
     report_FPS();
 }
@@ -475,7 +507,7 @@ void FlightAxis::update(const struct sitl_input &input)
 void FlightAxis::report_FPS(void)
 {
     if (frame_counter++ % 1000 == 0) {
-        if (last_frame_count_s != 0) {
+        if (!is_zero(last_frame_count_s)) {
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;

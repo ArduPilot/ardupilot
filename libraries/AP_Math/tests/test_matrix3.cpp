@@ -17,6 +17,11 @@
 
 #include "math_test.h"
 
+// given we are in the Math library, you're epected to know what
+// you're doing when directly comparing floats:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+
 #define AP_EXPECT_IDENTITY_MATRIX(m_) {\
     EXPECT_NEAR(1.0f, m_.a.x, 1.0e-6); \
     EXPECT_NEAR(0.0f, m_.a.y, 1.0e-6); \
@@ -105,3 +110,5 @@ INSTANTIATE_TEST_CASE_P(NonInvertibleMatrices,
                         ::testing::ValuesIn(non_invertible));
 
 AP_GTEST_MAIN()
+
+#pragma GCC diagnostic pop

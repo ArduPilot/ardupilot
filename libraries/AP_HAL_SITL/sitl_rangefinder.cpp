@@ -6,7 +6,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
 
 #include "AP_HAL_SITL.h"
 #include "AP_HAL_SITL_Namespace.h"
@@ -63,6 +63,11 @@ void SITL_State::_update_rangefinder(float range_value)
         if (!is_zero(_sitl->sonar_glitch) && _sitl->sonar_glitch >= (rand_float() + 1.0f) / 2.0f) {
             voltage = 5.0f;
         }
+    }
+
+    // if not populated also fill out the STIL rangefinder array
+    if (is_equal(_sitl->state.rangefinder_m[0],-1.0f)) {
+        _sitl->state.rangefinder_m[0] = altitude;
     }
 
     sonar_pin_value = 1023 * (voltage / 5.0f);

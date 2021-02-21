@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+_waf()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    # don't complet =
+    _init_completion -n = || return
+
+    # TODO: generate for waf help
+    opts="-h"
+    opts+=" -j "
+    opts+=" -v "
+
+    opts+=" AP_Periph"
+    opts+=" copter"
+    opts+=" heli"
+    opts+=" plane"
+    opts+=" rover"
+    opts+=" sub"
+    opts+=" antennatracker"
+    opts+=" tools"
+    opts+=" examples"
+    opts+=" bootloader"
+    opts+=" iofirmware"
+    opts+=" list"
+    opts+=" all"
+    opts+=" build"
+    opts+=" configure"
+    opts+=" clean"
+    opts+=" distclean"
+
+    # Prevent word reuse TODO: add -vvv case
+    lim=$((COMP_CWORD - 1))
+    for i in $( seq 0 $lim )
+    do
+        if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+          opts=${opts//${COMP_WORDS[i]}/}
+          opts=${opts//--${COMP_WORDS[i]}/}
+        fi
+    done
+
+    case $prev in
+      --board)
+        opts=$(./waf list_boards | sed -e '$d')
+        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        return 0
+        ;;
+    esac
+
+    case $cur in
+      --targets=*)
+        cur=${cur#*=}
+        if [ -z "$_waf_comp_targets" ]; then
+          # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
+          _waf_comp_targets=$(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
+        fi
+        opts=$_waf_comp_targets
+        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        return 0
+        ;;
+    esac
+
+    COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+    [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
+}
+
+
+complete -F _waf waf

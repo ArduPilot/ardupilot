@@ -55,7 +55,7 @@ void QuadPlane::motor_test_output()
         break;
 
     case MOTOR_TEST_THROTTLE_PILOT:
-        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)plane.channel_throttle->get_control_in()*0.01f;
+        pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)plane.get_throttle_input()*0.01f;
         break;
 
     default:
@@ -66,7 +66,7 @@ void QuadPlane::motor_test_output()
     // sanity check throttle values
     if (pwm >= MOTOR_TEST_PWM_MIN && pwm <= MOTOR_TEST_PWM_MAX ) {
         // turn on motor to specified pwm vlaue
-        motors->output_test(motor_test.seq, pwm);
+        motors->output_test_seq(motor_test.seq, pwm);
     } else {
         motor_test_stop();
     }

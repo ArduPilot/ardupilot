@@ -136,7 +136,7 @@ def _build_summary(bld):
             if not t:
                 continue
             n = t.outputs[0]
-            tg.build_summary['binary'] = n
+            tg.build_summary['binary'] = str(n)
 
         nodes.append(n)
         filtered_taskgens.append(tg)
@@ -209,13 +209,17 @@ def options(opt):
 
     g.add_option('--summary-all',
         action='store_true',
-        help='''
-Print build summary for all targets. By default, only information about the
-first %d targets will be printed.
+        help='''Print build summary for all targets. By default, only
+information about the first %d targets will be printed.
 ''' % MAX_TARGETS)
 
 def configure(cfg):
-    cfg.find_toolchain_program('size', mandatory=False)
+    size_name = 'size'
+
+    if cfg.env.TOOLCHAIN != 'native':
+        size_name = cfg.env.TOOLCHAIN + '-' + size_name
+
+    cfg.find_program(size_name, var='SIZE', mandatory=False)
 
     if not cfg.env.BUILD_SUMMARY_HEADER:
         cfg.env.BUILD_SUMMARY_HEADER = [

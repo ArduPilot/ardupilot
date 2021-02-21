@@ -1,4 +1,5 @@
 #include "DataFlashFileReader.h"
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <fcntl.h>
 #include <string.h>
@@ -12,42 +13,31 @@
 #define PRIu64 "llu"
 #endif
 
-// flogged from AP_Hal_Linux/system.cpp; we don't want to use stopped clock here
-uint64_t now() {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return 1.0e6*((ts.tv_sec + (ts.tv_nsec*1.0e-9)));
-}
-
-DataFlashFileReader::DataFlashFileReader() :
-    start_micros(now())
+AP_LoggerFileReader::AP_LoggerFileReader()
 {}
 
-DataFlashFileReader::~DataFlashFileReader()
+AP_LoggerFileReader::~AP_LoggerFileReader()
 {
-    const uint64_t micros = now();
-    const uint64_t delta = micros - start_micros;
     ::printf("Replay counts: %" PRIu64 " bytes  %u entries\n", bytes_read, message_count);
-    ::printf("Replay rates: %" PRIu64 " bytes/second  %" PRIu64 " messages/second\n", bytes_read*1000000/delta, message_count*1000000/delta);
 }
 
-bool DataFlashFileReader::open_log(const char *logfile)
+bool AP_LoggerFileReader::open_log(const char *logfile)
 {
-    fd = ::open(logfile, O_RDONLY|O_CLOEXEC);
+    fd = AP::FS().open(logfile, O_RDONLY);
     if (fd == -1) {
         return false;
     }
     return true;
 }
 
-ssize_t DataFlashFileReader::read_input(void *buffer, const size_t count)
+ssize_t AP_LoggerFileReader::read_input(void *buffer, const size_t count)
 {
-    uint64_t ret = ::read(fd, buffer, count);
+    uint64_t ret = AP::FS().read(fd, buffer, count);
     bytes_read += ret;
     return ret;
 }
 
-void DataFlashFileReader::format_type(uint16_t type, char dest[5])
+void AP_LoggerFileReader::format_type(uint16_t type, char dest[5])
 {
     const struct log_Format &f = formats[type];
     memset(dest,0,5);
@@ -56,12 +46,12 @@ void DataFlashFileReader::format_type(uint16_t type, char dest[5])
     }
     strncpy(dest, f.name, 4);
 }
-void DataFlashFileReader::get_packet_counts(uint64_t dest[])
+void AP_LoggerFileReader::get_packet_counts(uint64_t dest[])
 {
     memcpy(dest, packet_counts, sizeof(packet_counts));
 }
 
-bool DataFlashFileReader::update(char type[5])
+bool AP_LoggerFileReader::update()
 {
     uint8_t hdr[3];
     if (read_input(hdr, 3) != 3) {
@@ -72,6 +62,12 @@ bool DataFlashFileReader::update(char type[5])
         return false;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // running on stm32 is slow enough it is nice to see progress
+    if (message_count % 500 == 0) {
+        ::printf("line %u pkt 0x%02x t=%u\n", message_count, hdr[2], AP_HAL::millis());
+    }
+#endif
     packet_counts[hdr[2]]++;
 
     if (hdr[2] == LOG_FORMAT_MSG) {
@@ -81,16 +77,9 @@ bool DataFlashFileReader::update(char type[5])
             return false;
         }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
-        strncpy(type, "FMT", 3);
-        type[3] = 0;
 
         message_count++;
         return handle_log_format_msg(f);
-    }
-
-    if (!done_format_msgs) {
-        done_format_msgs = true;
-        end_format_msgs();
     }
 
     const struct log_Format &f = formats[hdr[2]];
@@ -108,9 +97,6 @@ bool DataFlashFileReader::update(char type[5])
         return false;
     }
 
-    strncpy(type, f.name, 4);
-    type[4] = 0;
-
     message_count++;
-    return handle_msg(f,msg);
+    return handle_msg(f, msg);
 }

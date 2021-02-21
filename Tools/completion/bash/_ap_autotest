@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+_ap_autotest() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD - 1]}"
+  # don't complet =
+  _init_completion -n = || return
+
+  # get the calling program, remove anything after the space == all commands arguments
+  local caller
+  caller=$(echo $@ | sed 's/ .*//g')
+  opts=$($caller --list | sed -n -e '/^build/p' -e '/^test/p' -e '/^run/p')
+  tests=$($caller --list-vehicles-test | sed -n '/Copter/p')
+  opts+=$(compgen -W "${tests}" -P "test.")
+
+  # Prevent word reuse
+  lim=$((COMP_CWORD - 1))
+  for i in $(seq 0 $lim); do
+    if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+      opts=${opts//${COMP_WORDS[i]}/}
+      opts=${opts//--${COMP_WORDS[i]}/}
+    fi
+  done
+
+  case $cur in
+    test.*.*)
+      local supported_vehicle_list
+      supported_vehicle_list=$($caller --list-vehicles | sed -n '/Copter/p')
+      local vehicle
+      # get the part before the last dot
+      lcur=${cur%.*}
+      # search for the right vehicle name in the list
+      # TODO : just extract the caracters between the two dot with bash and use python to extract the right subtests
+      for v in $supported_vehicle_list
+      do
+        if [[ ${lcur} == *"$v"* ]]
+        then
+          vehicle=$v
+          break
+        fi
+      done
+      azr=$($caller --list-subtests-for-vehicle "${vehicle}")
+      # append back the last dot
+      lcur="${lcur}."
+      opts=$(compgen -W "${azr}" -P "${lcur}")
+      COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+      ;;
+  esac
+
+  COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+  [[ ${COMPREPLY-} == *. ]] && compopt -o nospace
+  [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
+}
+
+complete -F _ap_autotest autotest.py

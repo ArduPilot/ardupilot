@@ -21,7 +21,7 @@ public:
     
     void set_voltage(float _voltage) {
         // simple low-pass on voltage
-        voltage = 0.9 * voltage + 0.1 * _voltage;
+        voltage = 0.9f * voltage + 0.1f * _voltage;
     }
 
     void calibration_start(void);
@@ -52,9 +52,6 @@ private:
         
     // battery voltage
     float voltage;
-
-    // what rcout channel is being calibrated
-    uint8_t channel;
 
     // is calibration running?
     bool running;

@@ -300,8 +300,10 @@ class MagcalController(CalController):
         if m.get_type() == 'MAG_CAL_REPORT':
             # NOTE: This may be not the ideal way to handle it
             if m.compass_id in self.last_progress:
-                del self.last_progress[m.compass_id]
-            if not self.last_progress:
+                # this is set to None so we can ensure we don't get
+                # progress reports for completed compasses.
+                self.last_progress[m.compass_id] = None
+            if len(self.last_progress.values()) and all(progress == None for progress in self.last_progress.values()):
                 self.stop()
             return
 
@@ -320,6 +322,8 @@ class MagcalController(CalController):
             return
 
         last = self.last_progress[m.compass_id]
+        if last is None:
+            raise Exception("Received progress message for completed compass")
 
         dt = t - self.rotation_start_time
         if dt > self.max_full_turns * self.full_turn_time:
@@ -334,7 +338,7 @@ class MagcalController(CalController):
             m.stuck = False
 
         for p in self.last_progress.values():
-            if not p.stuck:
+            if p is not None and not p.stuck:
                 break
         else:
             self.next_rotation()

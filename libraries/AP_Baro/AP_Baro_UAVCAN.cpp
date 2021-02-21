@@ -1,115 +1,196 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include "AP_Baro_UAVCAN.h"
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
 
-#if HAL_OS_POSIX_IO
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#endif
+#include <AP_CANManager/AP_CANManager.h>
+#include <AP_UAVCAN/AP_UAVCAN.h>
+
+#include <uavcan/equipment/air_data/StaticPressure.hpp>
+#include <uavcan/equipment/air_data/StaticTemperature.hpp>
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_baro_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { printf(fmt, ##args); }} while (0)
+#define LOG_TAG "Baro"
+
+//UAVCAN Frontend Registry Binder
+UC_REGISTRY_BINDER(PressureCb, uavcan::equipment::air_data::StaticPressure);
+UC_REGISTRY_BINDER(TemperatureCb, uavcan::equipment::air_data::StaticTemperature);
+
+AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[] = {0};
+HAL_Semaphore AP_Baro_UAVCAN::_sem_registry;
 
 /*
   constructor - registers instance at top Baro driver
  */
 AP_Baro_UAVCAN::AP_Baro_UAVCAN(AP_Baro &baro) :
     AP_Baro_Backend(baro)
-{
-    _sem_baro = hal.util->new_semaphore();
-}
+{}
 
-AP_Baro_UAVCAN::~AP_Baro_UAVCAN()
+void AP_Baro_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
-    if (_initialized) {
-        if (hal.can_mgr[_manager] != nullptr) {
-            AP_UAVCAN *ap_uavcan = hal.can_mgr[_manager]->get_UAVCAN();
-            if (ap_uavcan != nullptr) {
-                ap_uavcan->remove_baro_listener(this);
-                debug_baro_uavcan(2, "AP_Baro_UAVCAN destructed\n\r");
-            }
-        }
+    if (ap_uavcan == nullptr) {
+        return;
+    }
+
+    auto* node = ap_uavcan->get_node();
+
+    uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure, PressureCb> *pressure_listener;
+    pressure_listener = new uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure, PressureCb>(*node);
+    // Msg Handler
+    const int pressure_listener_res = pressure_listener->start(PressureCb(ap_uavcan, &handle_pressure));
+    if (pressure_listener_res < 0) {
+        AP_HAL::panic("UAVCAN Baro subscriber start problem\n\r");
+    }
+
+    uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature, TemperatureCb> *temperature_listener;
+    temperature_listener = new uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature, TemperatureCb>(*node);
+    // Msg Handler
+    const int temperature_listener_res = temperature_listener->start(TemperatureCb(ap_uavcan, &handle_temperature));
+    if (temperature_listener_res < 0) {
+        AP_HAL::panic("UAVCAN Baro subscriber start problem\n\r");
     }
 }
 
-AP_Baro_Backend *AP_Baro_UAVCAN::probe(AP_Baro &baro)
+AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
 {
-    AP_Baro_UAVCAN *sensor = nullptr;
+    WITH_SEMAPHORE(_sem_registry);
 
-    if (AP_BoardConfig_CAN::get_can_num_ifaces() != 0) {
-        for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-            if (hal.can_mgr[i] != nullptr) {
-                AP_UAVCAN *uavcan = hal.can_mgr[i]->get_UAVCAN();
-                if (uavcan != nullptr) {
-                    uint8_t freebaro = uavcan->find_smallest_free_baro_node();
-                    if (freebaro != UINT8_MAX) {
-                        sensor = new AP_Baro_UAVCAN(baro);
-                        if (sensor->register_uavcan_baro(i, freebaro)) {
-                            debug_baro_uavcan(2, "AP_Baro_UAVCAN probed, drv: %d, node: %d\n\r", i, freebaro);
-                            return sensor;
-                        } else {
-                            delete sensor;
-                            sensor = nullptr;
-                        }
-                    }
+    AP_Baro_UAVCAN* backend = nullptr;
+    for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
+        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
+            backend = new AP_Baro_UAVCAN(baro);
+            if (backend == nullptr) {
+                AP::can().log_text(AP_CANManager::LOG_ERROR,
+                            LOG_TAG,
+                            "Failed register UAVCAN Baro Node %d on Bus %d\n",
+                            _detected_modules[i].node_id,
+                            _detected_modules[i].ap_uavcan->get_driver_index());
+            } else {
+                _detected_modules[i].driver = backend;
+                backend->_pressure = 0;
+                backend->_pressure_count = 0;
+                backend->_ap_uavcan = _detected_modules[i].ap_uavcan;
+                backend->_node_id = _detected_modules[i].node_id;
+
+                backend->_instance = backend->_frontend.register_sensor();
+                backend->set_bus_id(backend->_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                                                                                    _detected_modules[i].ap_uavcan->get_driver_index(),
+                                                                                    backend->_node_id, 0));
+
+                AP::can().log_text(AP_CANManager::LOG_INFO,
+                            LOG_TAG,
+                            "Registered UAVCAN Baro Node %d on Bus %d\n",
+                            _detected_modules[i].node_id,
+                            _detected_modules[i].ap_uavcan->get_driver_index());
+            }
+            break;
+        }
+    }
+    return backend;
+}
+
+AP_Baro_UAVCAN* AP_Baro_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, bool create_new)
+{
+    if (ap_uavcan == nullptr) {
+        return nullptr;
+    }
+    for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
+        if (_detected_modules[i].driver != nullptr &&
+            _detected_modules[i].ap_uavcan == ap_uavcan && 
+            _detected_modules[i].node_id == node_id) {
+            return _detected_modules[i].driver;
+        }
+    }
+    
+    if (create_new) {
+        bool already_detected = false;
+        //Check if there's an empty spot for possible registeration
+        for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
+            if (_detected_modules[i].ap_uavcan == ap_uavcan && _detected_modules[i].node_id == node_id) {
+                //Already Detected
+                already_detected = true;
+                break;
+            }
+        }
+        if (!already_detected) {
+            for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
+                if (_detected_modules[i].ap_uavcan == nullptr) {
+                    _detected_modules[i].ap_uavcan = ap_uavcan;
+                    _detected_modules[i].node_id = node_id;
+                    break;
                 }
             }
         }
     }
 
-    return sensor;
+    return nullptr;
+}
+
+
+void AP_Baro_UAVCAN::_update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count)
+{
+    *accum += val;
+    *count += 1;
+    if (*count == max_count) {
+        *count = max_count / 2;
+        *accum = *accum / 2;
+    }
+}
+
+void AP_Baro_UAVCAN::handle_pressure(AP_UAVCAN* ap_uavcan, uint8_t node_id, const PressureCb &cb)
+{
+    AP_Baro_UAVCAN* driver;
+    {
+        WITH_SEMAPHORE(_sem_registry);
+        driver = get_uavcan_backend(ap_uavcan, node_id, true);
+        if (driver == nullptr) {
+            return;
+        }
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        _update_and_wrap_accumulator(&driver->_pressure, cb.msg->static_pressure, &driver->_pressure_count, 32);
+        driver->new_pressure = true;
+    }
+}
+
+void AP_Baro_UAVCAN::handle_temperature(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TemperatureCb &cb)
+{
+    AP_Baro_UAVCAN* driver;
+    {
+        WITH_SEMAPHORE(_sem_registry);
+        driver = get_uavcan_backend(ap_uavcan, node_id, false);
+        if (driver == nullptr) {
+            return;
+        }
+    }
+    {
+        WITH_SEMAPHORE(driver->_sem_baro);
+        driver->_temperature = cb.msg->static_temperature - C_TO_KELVIN;
+    }
 }
 
 // Read the sensor
 void AP_Baro_UAVCAN::update(void)
 {
-    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _copy_to_frontend(_instance, _pressure, _temperature);
+    float pressure = 0;
+
+    WITH_SEMAPHORE(_sem_baro);
+    if (new_pressure) {
+        if (_pressure_count != 0) {
+            pressure = _pressure / _pressure_count;
+            _pressure_count = 0;
+            _pressure = 0;
+        }
+        _copy_to_frontend(_instance, pressure, _temperature);
+
 
         _frontend.set_external_temperature(_temperature);
-        _sem_baro->give();
+        new_pressure = false;
     }
 }
 
-void AP_Baro_UAVCAN::handle_baro_msg(float pressure, float temperature)
-{
-    if (_sem_baro->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _pressure = pressure;
-        _temperature = temperature - 273.15f;
-        _last_timestamp = AP_HAL::micros64();
-        _sem_baro->give();
-    }
-}
-
-bool AP_Baro_UAVCAN::register_uavcan_baro(uint8_t mgr, uint8_t node)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-
-        if (ap_uavcan != nullptr) {
-            _manager = mgr;
-
-            if (ap_uavcan->register_baro_listener_to_node(this, node))
-            {
-                _instance = _frontend.register_sensor();
-                debug_baro_uavcan(2, "AP_Baro_UAVCAN loaded\n\r");
-
-                _initialized = true;
-
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-#endif // HAL_WITH_UAVCAN
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
 

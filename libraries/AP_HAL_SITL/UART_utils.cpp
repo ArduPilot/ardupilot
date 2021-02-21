@@ -19,9 +19,14 @@
 
 #include "UARTDriver.h"
 
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__)
+#define USE_TERMIOS
+#endif
+
+#ifdef USE_TERMIOS
 #include <termios.h>
 #else
+#include <asm/ioctls.h>
 #include <asm/termbits.h>
 #endif
 
@@ -30,12 +35,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-bool HALSITL::UARTDriver::set_speed(int speed)
+bool HALSITL::UARTDriver::set_speed(int speed) const
 {
     if (_fd < 0) {
         return false;
     }
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#ifdef USE_TERMIOS
     struct termios t;
     tcgetattr(_fd, &t);
     cfsetspeed(&t, speed);
@@ -68,7 +73,7 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
     if (_fd < 0) {
         return;
     }
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#ifdef USE_TERMIOS
     struct termios t;
 
     tcgetattr(_fd, &t);
@@ -93,7 +98,7 @@ void HALSITL::UARTDriver::configure_parity(uint8_t v)
         t.c_cflag &= ~PARENB;
     }
 
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#ifdef USE_TERMIOS
     tcsetattr(_fd, TCSANOW, &t);
 #else
     ioctl(_fd, TCSETS2, &t);
@@ -105,7 +110,7 @@ void HALSITL::UARTDriver::set_stop_bits(int n)
     if (_fd < 0) {
         return;
     }
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#ifdef USE_TERMIOS
     struct termios t;
 
     tcgetattr(_fd, &t);
@@ -123,7 +128,7 @@ void HALSITL::UARTDriver::set_stop_bits(int n)
         t.c_cflag &= ~CSTOPB;
     }
 
-#if defined(__CYGWIN__) || defined(__APPLE__)
+#ifdef USE_TERMIOS
     tcsetattr(_fd, TCSANOW, &t);
 #else
     ioctl(_fd, TCSETS2, &t);

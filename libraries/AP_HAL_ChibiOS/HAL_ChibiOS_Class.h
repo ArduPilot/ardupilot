@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
@@ -20,7 +20,7 @@
 
 #include <AP_HAL_Empty/AP_HAL_Empty_Namespace.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Namespace.h>
-#include <halconf.h>
+#include "hwdef/common/halconf.h"
 #ifdef USE_POSIX
 #include <ff.h>
 #endif
@@ -35,5 +35,7 @@ public:
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 };
 void hal_chibios_set_priority(uint8_t priority);
-
+#if HAL_NUM_CAN_IFACES
+typedef ChibiOS::CANIface HAL_CANIface;
+#endif
 thread_t* get_main_thread(void);

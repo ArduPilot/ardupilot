@@ -1,21 +1,7 @@
 #pragma once
 
-// Command/Waypoint/Location Options Bitmask
-//--------------------
-#define MASK_OPTIONS_RELATIVE_ALT       (1<<0)          // 1 = Relative
-                                                        // altitude
-
 // Controller modes
 // ----------------
-
-enum ControlMode {
-    MANUAL=0,
-    STOP=1,
-    SCAN=2,
-    SERVO_TEST=3,
-    AUTO=10,
-    INITIALISING=16
-};
 
 enum ServoType {
     SERVO_TYPE_POSITION=0,
@@ -29,11 +15,9 @@ enum AltSource {
 	ALT_SOURCE_GPS_VEH_ONLY=2
 };
 
-enum mode_reason_t {
-    MODE_REASON_INITIALISED = 0,
-    MODE_REASON_STARTUP,
-    MODE_REASON_SERVOTEST,
-    MODE_REASON_GCS_COMMAND,
+enum class PWMDisarmed {
+    ZERO = 0,
+    TRIM,
 };
 
 //  Filter

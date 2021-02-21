@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See http://dev.ardupilot.org for details
+   Please contribute your ideas! See https://dev.ardupilot.org for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
+#include <AP_Math/AP_Math.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <stdio.h>
 
 #define FLASHSTORAGE_DEBUG 0
@@ -45,7 +47,7 @@ AP_FlashStorage::AP_FlashStorage(uint8_t *_mem_buffer,
 bool AP_FlashStorage::init(void)
 {
     debug("running init()\n");
-    
+
     // start with empty memory buffer
     memset(mem_buffer, 0, storage_size);
 
@@ -57,8 +59,8 @@ bool AP_FlashStorage::init(void)
         if (!flash_read(i, 0, (uint8_t *)&header[i], sizeof(header[i]))) {
             return false;
         }
-        bool bad_header = (header[i].signature != signature);
-        enum SectorState state = (enum SectorState)header[i].state;
+        bool bad_header = !header[i].signature_ok();
+        enum SectorState state = header[i].get_state();
         if (state != SECTOR_STATE_AVAILABLE &&
             state != SECTOR_STATE_IN_USE &&
             state != SECTOR_STATE_FULL) {
@@ -72,7 +74,7 @@ bool AP_FlashStorage::init(void)
     }
 
     // work out the first sector to read from using sector states
-    enum SectorState states[2] {(enum SectorState)header[0].state, (enum SectorState)header[1].state};
+    enum SectorState states[2] {header[0].get_state(), header[1].get_state()};
     uint8_t first_sector;
 
     if (states[0] == states[1]) {
@@ -119,7 +121,7 @@ bool AP_FlashStorage::init(void)
     // erase any sectors marked full
     for (uint8_t i=0; i<2; i++) {
         if (states[i] == SECTOR_STATE_FULL) {
-            if (!erase_sector(i)) {
+            if (!erase_sector(i, true)) {
                 return false;
             }
         }
@@ -138,7 +140,24 @@ bool AP_FlashStorage::init(void)
 bool AP_FlashStorage::switch_full_sector(void)
 {
     debug("running switch_full_sector()\n");
-    
+
+    if (in_switch_full_sector) {
+        INTERNAL_ERROR(AP_InternalError::error_t::switch_full_sector_recursion);
+        return false;
+    }
+    in_switch_full_sector = true;
+    bool ret = protected_switch_full_sector();
+    in_switch_full_sector = false;
+    return ret;
+}
+
+// protected_switch_full_sector is protected by switch_full_sector to
+// avoid an infinite recursion problem; switch_full_sectory calls
+// write() which can call switch_full_sector.  This has been seen in
+// practice, and while it might be caused by corruption... corruption
+// happens.
+bool AP_FlashStorage::protected_switch_full_sector(void)
+{
     // clear any write error
     write_error = false;
     reserved_space = 0;
@@ -147,7 +166,7 @@ bool AP_FlashStorage::switch_full_sector(void)
         return false;
     }
 
-    if (!erase_sector(current_sector ^ 1)) {
+    if (!erase_sector(current_sector ^ 1, true)) {
         return false;
     }
 
@@ -164,11 +183,15 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
     
     while (length > 0) {
         uint8_t n = max_write;
+#if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7
         if (length < n) {
             n = length;
         }
+#endif
 
-        if (write_offset > flash_sector_size - (sizeof(struct block_header) + max_write + reserved_space)) {
+        const uint32_t space_available = flash_sector_size - write_offset;
+        const uint32_t space_required = sizeof(struct block_header) + max_write + reserved_space;
+        if (space_available < space_required) {
             if (!switch_sectors()) {
                 if (!flash_erase_ok()) {
                     return false;
@@ -178,25 +201,45 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
                 }
             }
         }
-        
-        struct block_header header;
-        header.state = BLOCK_STATE_WRITING;
-        header.block_num = offset / block_size;
-        header.num_blocks_minus_one = ((n + (block_size - 1)) / block_size)-1;
-        uint16_t block_ofs = header.block_num*block_size;
-        uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
-        
-        if (!flash_write(current_sector, write_offset, (uint8_t*)&header, sizeof(header))) {
+
+        struct PACKED {
+            struct block_header header;
+            uint8_t data[max_write];
+        } blk;
+
+        blk.header.state = BLOCK_STATE_WRITING;
+        blk.header.block_num = offset / block_size;
+        blk.header.num_blocks_minus_one = ((n + (block_size - 1)) / block_size)-1;
+
+        uint16_t block_ofs = blk.header.block_num*block_size;
+        uint16_t block_nbytes = (blk.header.num_blocks_minus_one+1)*block_size;
+
+        memcpy(blk.data, &mem_buffer[block_ofs], block_nbytes);
+
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_F4
+        if (!flash_write(current_sector, write_offset, (uint8_t*)&blk.header, sizeof(blk.header))) {
             return false;
         }
-        if (!flash_write(current_sector, write_offset+sizeof(header), &mem_buffer[block_ofs], block_nbytes)) {
+        if (!flash_write(current_sector, write_offset+sizeof(blk.header), blk.data, block_nbytes)) {
             return false;
         }
-        header.state = BLOCK_STATE_VALID;
-        if (!flash_write(current_sector, write_offset, (uint8_t*)&header, sizeof(header))) {
+        blk.header.state = BLOCK_STATE_VALID;
+        if (!flash_write(current_sector, write_offset, (uint8_t*)&blk.header, sizeof(blk.header))) {
             return false;
         }
-        write_offset += sizeof(header) + block_nbytes;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_F1
+        blk.header.state = BLOCK_STATE_VALID;
+        if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + block_nbytes)) {
+            return false;
+        }
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
+        blk.header.state = BLOCK_STATE_VALID;
+        if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + max_write)) {
+            return false;
+        }
+#endif
+
+        write_offset += sizeof(blk.header) + block_nbytes;
 
         uint8_t n2 = block_nbytes - (offset % block_size);
         //debug("write_block at %u for %u n2=%u\n", block_ofs, block_nbytes, n2);
@@ -206,7 +249,9 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
         offset += n2;
         length -= n2;
     }
-    
+
+    //debug("write_offset %u\n", write_offset);
+
     // handle wrap to next sector
     // write data
     // write header word
@@ -265,6 +310,10 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
             // invalid state
             return false;
         }
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
+        // offsets must be advanced to a multiple of 32 on H7
+        ofs = (ofs + 31U) & ~31U;
+#endif
     }
     write_offset = ofs;
     return true;
@@ -273,15 +322,16 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
 /*
   erase one sector
  */
-bool AP_FlashStorage::erase_sector(uint8_t sector)
+bool AP_FlashStorage::erase_sector(uint8_t sector, bool mark_available)
 {
     if (!flash_erase(sector)) {
         return false;
     }
-
+    if (!mark_available) {
+        return true;
+    }
     struct sector_header header;
-    header.signature = signature;
-    header.state = SECTOR_STATE_AVAILABLE;
+    header.set_state(SECTOR_STATE_AVAILABLE);
     return flash_write(sector, 0, (const uint8_t *)&header, sizeof(header));
 }
 
@@ -295,27 +345,32 @@ bool AP_FlashStorage::erase_all(void)
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
-    if (!erase_sector(0) || !erase_sector(1)) {
+    if (!erase_sector(0, current_sector!=0)) {
+        return false;
+    }
+    if (!erase_sector(1, current_sector!=1)) {
         return false;
     }
     
     // mark current sector as in-use
     struct sector_header header;
-    header.signature = signature;
-    header.state = SECTOR_STATE_IN_USE;
+    header.set_state(SECTOR_STATE_IN_USE);
     return flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header));    
 }
 
 /*
   write all of mem_buffer to current sector
  */
-bool AP_FlashStorage::write_all(void)
+bool AP_FlashStorage::write_all()
 {
     debug("write_all to sector %u at %u with reserved_space=%u\n",
            current_sector, write_offset, reserved_space);
     for (uint16_t ofs=0; ofs<storage_size; ofs += max_write) {
-        if (!all_zero(ofs, max_write)) {
-            if (!write(ofs, max_write)) {
+        // local variable needed to overcome problem with MIN() macro and -O0
+        const uint8_t max_write_local = max_write;
+        uint8_t n = MIN(max_write_local, storage_size-ofs);
+        if (!all_zero(ofs, n)) {
+            if (!write(ofs, n)) {
                 return false;
             }
         }
@@ -344,7 +399,6 @@ bool AP_FlashStorage::switch_sectors(void)
     }
 
     struct sector_header header;
-    header.signature = signature;
 
     uint8_t new_sector = current_sector ^ 1;
     debug("switching to sector %u\n", new_sector);
@@ -353,13 +407,13 @@ bool AP_FlashStorage::switch_sectors(void)
     if (!flash_read(new_sector, 0, (uint8_t *)&header, sizeof(header))) {
         return false;
     }
-    if (header.signature != signature) {
+    if (!header.signature_ok()) {
         write_error = true;
         return false;
     }
-    if (SECTOR_STATE_AVAILABLE != (enum SectorState)header.state) {
+    if (SECTOR_STATE_AVAILABLE != header.get_state()) {
         write_error = true;
-        debug("both sectors full\n");
+        debug("new sector unavailable; state=0x%02x\n", (unsigned)header.get_state());
         return false;
     }
 
@@ -367,13 +421,13 @@ bool AP_FlashStorage::switch_sectors(void)
     // mark the new sector as in-use so that a power failure between
     // the two steps doesn't leave us with an erase on the
     // reboot. Thanks to night-ghost for spotting this.
-    header.state = SECTOR_STATE_FULL;
+    header.set_state(SECTOR_STATE_FULL);
     if (!flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
 
     // mark new sector as in-use
-    header.state = SECTOR_STATE_IN_USE;
+    header.set_state(SECTOR_STATE_IN_USE);
     if (!flash_write(new_sector, 0, (const uint8_t *)&header, sizeof(header))) {
         return false;
     }
@@ -402,3 +456,163 @@ bool AP_FlashStorage::re_initialise(void)
     }
     return write_all();
 }
+
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
+/*
+  H7 specific sector header functions
+ */
+bool AP_FlashStorage::sector_header::signature_ok(void) const
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(pad1); i++) {
+        if (pad1[i] != 0xFFFFFFFFU || pad2[i] != 0xFFFFFFFFU || pad3[i] != 0xFFFFFFFFU) {
+            return false;
+        }
+    }
+    return signature1 == signature;
+}
+
+AP_FlashStorage::SectorState AP_FlashStorage::sector_header::get_state(void) const
+{
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFFF &&
+        state3 == 0xFFFFFFFF &&
+        signature1 == signature &&
+        signature2 == 0xFFFFFFFF &&
+        signature3 == 0xFFFFFFFF) {
+        return SECTOR_STATE_AVAILABLE;
+    }
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFF2 &&
+        state3 == 0xFFFFFFFF &&
+        signature1 == signature &&
+        signature2 == signature &&
+        signature3 == 0xFFFFFFFF) {
+        return SECTOR_STATE_IN_USE;
+    }
+    if (state1 == 0xFFFFFFF1 &&
+        state2 == 0xFFFFFFF2 &&
+        state3 == 0xFFFFFFF3 &&
+        signature1 == signature &&
+        signature2 == signature &&
+        signature3 == signature) {
+        return SECTOR_STATE_FULL;
+    }
+    return SECTOR_STATE_INVALID;
+}
+
+void AP_FlashStorage::sector_header::set_state(SectorState state)
+{
+    memset(pad1, 0xff, sizeof(pad1));
+    memset(pad2, 0xff, sizeof(pad2));
+    memset(pad3, 0xff, sizeof(pad3));
+    switch (state) {
+    case SECTOR_STATE_AVAILABLE:
+        signature1 = signature;
+        signature2 = 0xFFFFFFFF;
+        signature3 = 0xFFFFFFFF;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFFF;
+        state3 = 0xFFFFFFFF;
+        break;
+    case SECTOR_STATE_IN_USE:
+        signature1 = signature;
+        signature2 = signature;
+        signature3 = 0xFFFFFFFF;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFF2;
+        state3 = 0xFFFFFFFF;
+        break;
+    case SECTOR_STATE_FULL:
+        signature1 = signature;
+        signature2 = signature;
+        signature3 = signature;
+        state1 = 0xFFFFFFF1;
+        state2 = 0xFFFFFFF2;
+        state3 = 0xFFFFFFF3;
+        break;
+    default:
+        break;
+    }
+}
+
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_F1
+/*
+  F1/F3 specific sector header functions
+ */
+bool AP_FlashStorage::sector_header::signature_ok(void) const
+{
+    return signature1 == signature;
+}
+
+AP_FlashStorage::SectorState AP_FlashStorage::sector_header::get_state(void) const
+{
+    if (state1 == 0xFFFFFFFF) {
+        return SECTOR_STATE_AVAILABLE;
+    }
+    if (state1 == 0xFFFFFFF1) {
+        return SECTOR_STATE_IN_USE;
+    }
+    if (state1 == 0xFFF2FFF1) {
+        return SECTOR_STATE_FULL;
+    }
+    return SECTOR_STATE_INVALID;
+}
+
+void AP_FlashStorage::sector_header::set_state(SectorState state)
+{
+    signature1 = signature;
+    switch (state) {
+    case SECTOR_STATE_AVAILABLE:
+        state1 = 0xFFFFFFFF;
+        break;
+    case SECTOR_STATE_IN_USE:
+        state1 = 0xFFFFFFF1;
+        break;
+    case SECTOR_STATE_FULL:
+        state1 = 0xFFF2FFF1;
+        break;
+    default:
+        break;
+    }
+}
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_F4
+/*
+  F4 specific sector header functions
+ */
+bool AP_FlashStorage::sector_header::signature_ok(void) const
+{
+    return signature1 == signature;
+}
+
+AP_FlashStorage::SectorState AP_FlashStorage::sector_header::get_state(void) const
+{
+    if (state1 == 0xFF) {
+        return SECTOR_STATE_AVAILABLE;
+    }
+    if (state1 == 0xFE) {
+        return SECTOR_STATE_IN_USE;
+    }
+    if (state1 == 0xFC) {
+        return SECTOR_STATE_FULL;
+    }
+    return SECTOR_STATE_INVALID;
+}
+
+void AP_FlashStorage::sector_header::set_state(SectorState state)
+{
+    signature1 = signature;
+    switch (state) {
+    case SECTOR_STATE_AVAILABLE:
+        state1 = 0xFF;
+        break;
+    case SECTOR_STATE_IN_USE:
+        state1 = 0xFE;
+        break;
+    case SECTOR_STATE_FULL:
+        state1 = 0xFC;
+        break;
+    default:
+        break;
+    }
+}
+#endif

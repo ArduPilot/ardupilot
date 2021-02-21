@@ -4,7 +4,8 @@
 import boards
 
 def build(bld):
-    if not isinstance(bld.get_board(), boards.linux):
+    if isinstance(bld.get_board(), boards.chibios) and bld.env['WITH_FATFS'] != '1':
+        # we need a filesystem for replay
         return
 
     vehicle = bld.path.name
@@ -13,12 +14,14 @@ def build(bld):
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AP_InertialNav',
             'AP_Beacon',
+            'AP_Arming',
+            'AP_RCMapper',
+            'AP_OSD',
         ],
     )
 
     bld.ap_program(
-        program_groups='tools',
+        program_groups=['tools','replay'],
         use=vehicle + '_libs',
     )

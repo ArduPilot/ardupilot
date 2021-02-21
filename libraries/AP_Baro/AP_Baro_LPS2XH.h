@@ -7,7 +7,10 @@
 #include "AP_Baro_Backend.h"
 
 #define HAL_BARO_LPS25H_I2C_BUS 0
-#define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+
+#ifndef HAL_BARO_LPS25H_I2C_ADDR
+# define HAL_BARO_LPS25H_I2C_ADDR 0x5D
+#endif
 
 
 class AP_Baro_LPS2XH : public AP_Baro_Backend
@@ -21,10 +24,10 @@ public:
     AP_Baro_LPS2XH(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
-
+    static AP_Baro_Backend *probe_InvensenseIMU(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, uint8_t imu_address);
 
 private:
     virtual ~AP_Baro_LPS2XH(void) {};
@@ -33,8 +36,9 @@ private:
     void _timer(void);
     void _update_temperature(void);
     void _update_pressure(void);
+    bool _imu_i2c_init(uint8_t imu_address);
 
-   bool _check_whoami(void);
+    bool _check_whoami(void);
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
@@ -45,9 +49,5 @@ private:
 
     uint32_t CallTime = 0;
 
-   enum LPS2XH_TYPE _lps2xh_type;
-
-   // WHOAMI values
-#define   LPS22HB_WHOAMI     0xB1
-#define 	 LPS25HB_WHOAMI		0xBD
+    enum LPS2XH_TYPE _lps2xh_type;
 };

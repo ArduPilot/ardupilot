@@ -12,8 +12,11 @@ undef USART3
 undef USART3_TX
 undef USART3_RX
 undef CAN1
+undef CAN1_RX
+undef CAN1_TX
 undef CAN2
-undef HAL_WITH_UAVCAN
+undef CAN2_RX
+undef CAN2_TX
 undef IOMCU_UART
 undef AP_FEATURE_SBUS_OUT
 undef HAL_OS_FATFS_IO
@@ -24,13 +27,17 @@ undef SDIO
 undef HAL_BOARD_LOG_DIRECTORY
 undef HAL_BOARD_TERRAIN_DIRECTORY
 
-UART_ORDER OTG1 UART4 USART2
+SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
 define HAL_RCINPUT_WITH_AP_RADIO 1
 
 define HAL_GPIO_RADIO_RESET      1 // PB0 GPIO from FMU3
-define HAL_GPIO_RADIO_IRQ       15 // PD15
+
+# setup for radio IRQ on PD15
+undef PD15
+PD15 MPU_DRDY INPUT GPIO(100)
+define HAL_GPIO_RADIO_IRQ       100
 
 # setup defines for ArduCopter config
 define TOY_MODE_ENABLED ENABLED
@@ -45,7 +52,15 @@ SPIDEV pixartflow SPI4 DEVID13 MPU_EXT_CS  MODE3  2*MHZ  2*MHZ
 
 # SPI2 for the cypress needs exclusive access or we will end up with
 # lost packets
-DMA_PRIORITY SPI2_*
+DMA_PRIORITY SPI2_* SPI* ADC*
 DMA_NOSHARE SPI2_*
 undef PA1
 PA1 UART4_RX UART4 NODMA
+
+# use flash storage
+define STORAGE_FLASH_PAGE 22
+
+env DEFAULT_PARAMETERS 'Tools/Frame_params/SkyViper-2450GPS/defaults.parm'
+
+# the web UI uses an abin file for firmware uploads
+env BUILD_ABIN True

@@ -6,12 +6,12 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 AP_Int32 log_bitmask;
-DataFlash_Class DataFlash{"Bob", log_bitmask};
+AP_Logger AP_Logger{log_bitmask};
 
 class SchedTest {
 public:
@@ -87,7 +87,7 @@ void SchedTest::one_hz_print(void)
  */
 void SchedTest::five_second_call(void)
 {
-    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), ins_counter);
+    hal.console->printf("five_seconds: t=%lu ins_counter=%u\n", (unsigned long)AP_HAL::millis(), (unsigned)ins_counter);
 }
 
 /*

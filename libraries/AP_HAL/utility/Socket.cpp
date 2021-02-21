@@ -92,28 +92,38 @@ bool SocketAPM::bind(const char *address, uint16_t port)
 /*
   set SO_REUSEADDR
  */
-void SocketAPM::reuseaddress(void)
+bool SocketAPM::reuseaddress(void) const
 {
     int one = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) != -1);
 }
 
 /*
   set blocking state
  */
-void SocketAPM::set_blocking(bool blocking)
+bool SocketAPM::set_blocking(bool blocking) const
 {
+    int fcntl_ret;
     if (blocking) {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) & ~O_NONBLOCK);
     } else {
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+        fcntl_ret = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
     }
+    return fcntl_ret != -1;
+}
+
+/*
+  set cloexec state
+ */
+bool SocketAPM::set_cloexec() const
+{
+    return (fcntl(fd, F_SETFD, FD_CLOEXEC) != -1);
 }
 
 /*
   send some data
  */
-ssize_t SocketAPM::send(const void *buf, size_t size)
+ssize_t SocketAPM::send(const void *buf, size_t size) const
 {
     return ::send(fd, buf, size, 0);
 }
@@ -143,13 +153,13 @@ ssize_t SocketAPM::recv(void *buf, size_t size, uint32_t timeout_ms)
 /*
   return the IP address and port of the last received packet
  */
-void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port)
+void SocketAPM::last_recv_address(const char *&ip_addr, uint16_t &port) const
 {
     ip_addr = inet_ntoa(in_addr.sin_addr);
     port = ntohs(in_addr.sin_port);
 }
 
-void SocketAPM::set_broadcast(void)
+void SocketAPM::set_broadcast(void) const
 {
     int one = 1;
     setsockopt(fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
@@ -199,7 +209,7 @@ bool SocketAPM::pollout(uint32_t timeout_ms)
 /* 
    start listening for new tcp connections
  */
-bool SocketAPM::listen(uint16_t backlog)
+bool SocketAPM::listen(uint16_t backlog) const
 {
     return ::listen(fd, (int)backlog) == 0;
 }

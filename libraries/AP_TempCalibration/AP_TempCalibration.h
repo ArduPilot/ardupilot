@@ -20,19 +20,24 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 class AP_TempCalibration
 {
 public:
-    // constructor
-    AP_TempCalibration(AP_Baro &baro, AP_InertialSensor &ins);
+    // constructor.  This remains because construction of Copter's g2
+    // object becomes problematic if we don't have at least one object
+    // to initialise
+    AP_TempCalibration() {}
 
     // settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
     void update(void);
+
+    /* Do not allow copies */
+    AP_TempCalibration(const AP_TempCalibration &other) = delete;
+    AP_TempCalibration &operator=(const AP_TempCalibration&) = delete;
 
     enum {
         TC_DISABLED = 0,
@@ -41,8 +46,6 @@ public:
     };
     
 private:
-    AP_Baro &baro;
-    AP_InertialSensor &ins;
 
     AP_Int8 enabled;
     AP_Int8 temp_min;
@@ -63,7 +66,7 @@ private:
 
     const float exp_limit_max = 2;
     const float exp_limit_min = 0;
-    float learn_delta = 0.01;
+    float learn_delta = 0.01f;
     
     // require observation of at least 5 degrees of temp range to
     // start learning

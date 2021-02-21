@@ -1,9 +1,13 @@
 #pragma once
 
-#include <DataFlash/DataFlash.h>
+#include <AP_Logger/AP_Logger.h>
 #include "VehicleType.h"
 
 #include <stdio.h>
+
+// ignore cast errors in this case to keep complexity down
+// on x86 where replay is run we don't care about cast alignment
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 #define LOGREADER_MAX_FIELDS 30
 
@@ -15,7 +19,7 @@ public:
     MsgHandler(const struct log_Format &f);
 
     // retrieve a comma-separated list of all labels
-    void string_for_labels(char *buffer, uint bufferlen);
+    void string_for_labels(char *buffer, uint32_t bufferlen);
 
     // field_value - retrieve the value of a field from the supplied message
     // these return false if the field was not found
@@ -69,7 +73,6 @@ private:
 
 protected:
     struct log_Format f; // the format we are a parser for
-    ~MsgHandler();
 
     void location_from_msg(uint8_t *msg, Location &loc, const char *label_lat,
 			   const char *label_long, const char *label_alt);

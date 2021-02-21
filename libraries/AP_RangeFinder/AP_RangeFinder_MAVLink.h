@@ -1,7 +1,7 @@
 #pragma once
 
-#include "RangeFinder.h"
-#include "RangeFinder_Backend.h"
+#include "AP_RangeFinder.h"
+#include "AP_RangeFinder_Backend.h"
 
 // Data timeout
 #define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500
@@ -11,16 +11,20 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 
 public:
     // constructor
-    AP_RangeFinder_MAVLink(RangeFinder::RangeFinder_State &_state);
+    using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
-    // static detection function
-    static bool detect();
+    // Assume that if the user set the RANGEFINDER_TYPE parameter to MAVLink,
+    // there is an attached MAVLink rangefinder
+    static bool detect() { return true; }
 
     // update state
-    void update(void);
+    void update(void) override;
 
     // Get update from mavlink
-    void handle_msg(mavlink_message_t *msg);
+    void handle_msg(const mavlink_message_t &msg) override;
+
+    int16_t max_distance_cm() const override;
+    int16_t min_distance_cm() const override;
 
 protected:
 
@@ -29,8 +33,11 @@ protected:
     }
 
 private:
+
+    // stored data from packet:
     uint16_t distance_cm;
-    uint32_t last_update_ms;
+    uint16_t _max_distance_cm;
+    uint16_t _min_distance_cm;
 
     // start a reading
     static bool start_reading(void);

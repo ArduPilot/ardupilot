@@ -22,8 +22,8 @@
 
 using namespace SITL;
 
-QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
-    Plane(home_str, frame_str)
+QuadPlane::QuadPlane(const char *frame_str) :
+    Plane(frame_str)
 {
     // default to X frame
     const char *frame_type = "x";
@@ -73,6 +73,8 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
         printf("Failed to find frame '%s'\n", frame_type);
         exit(1);
     }
+    num_motors = 1 + frame->num_motors;
+    vtol_motor_start = 1;
 
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
@@ -86,7 +88,11 @@ QuadPlane::QuadPlane(const char *home_str, const char *frame_str) :
     frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(mass, 0.51, 0, 0);
+    frame->init(frame_str, &battery);
+
+    // increase mass for plane components
+    mass = frame->get_mass() * 1.5;
+    frame->set_mass(mass);
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 }
@@ -101,18 +107,34 @@ void QuadPlane::update(const struct sitl_input &input)
 
     // first plane forces
     Vector3f rot_accel;
-    calculate_forces(input, rot_accel, accel_body);
+    calculate_forces(input, rot_accel);
 
     // now quad forces
     Vector3f quad_rot_accel;
     Vector3f quad_accel_body;
 
-    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body);
+    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1], false);
 
+    // estimate voltage and current
+    frame->current_and_voltage(battery_voltage, battery_current);
+
+    battery.set_current(battery_current);
+
+    float throttle;
+    if (reverse_thrust) {
+        throttle = filtered_servo_angle(input, 2);
+    } else {
+        throttle = filtered_servo_range(input, 2);
+    }
+    // assume 20A at full fwd throttle
+    throttle = fabsf(throttle);
+    battery_current += 20 * throttle;
+    
     rot_accel += quad_rot_accel;
     accel_body += quad_accel_body;
 
     update_dynamics(rot_accel);
+    update_external_payload(input);
 
     // update lat/lon/altitude
     update_position();

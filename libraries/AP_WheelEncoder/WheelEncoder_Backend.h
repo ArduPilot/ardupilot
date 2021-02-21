@@ -22,7 +22,7 @@ class AP_WheelEncoder_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
+    AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
 
     // we declare a virtual destructor so that WheelEncoder drivers can
     // override with a custom destructor if need be
@@ -36,6 +36,9 @@ protected:
     // return pin number.  returns -1 if pin is not defined for this instance
     int8_t get_pin_a() const;
     int8_t get_pin_b() const;
+
+    // copy state to front end helper function
+    void copy_state_to_frontend(int32_t distance_count, uint32_t total_count, uint32_t error_count, uint32_t last_reading_ms);
 
     AP_WheelEncoder &_frontend;
     AP_WheelEncoder::WheelEncoder_State &_state;

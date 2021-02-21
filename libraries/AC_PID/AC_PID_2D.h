@@ -50,7 +50,7 @@ public:
     float       imax() const { return _imax.get(); }
     float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const { return _filt_alpha; }
-    float       filt_d_hz() const { return _filt_hz.get(); }
+    float       filt_d_hz() const { return _filt_d_hz.get(); }
     float       get_filt_alpha_D() const { return _filt_alpha_d; }
 
     // set accessors

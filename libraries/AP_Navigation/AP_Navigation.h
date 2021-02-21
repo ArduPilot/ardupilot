@@ -67,7 +67,7 @@ public:
     // main flight code will call an output function (such as
     // nav_roll_cd()) after this function to ask for the new required
     // navigation attitude/steering.
-    virtual void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP) = 0;
+    virtual void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min = 0.0f) = 0;
 
     // update the internal state of the navigation controller for when
     // the vehicle has been commanded to circle about a point.  This

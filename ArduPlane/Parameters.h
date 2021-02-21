@@ -35,25 +35,19 @@ public:
     //////////////////////////////////////////////////////////////////
 
 
-    // The parameter software_type is set up solely for ground station use
-    // and identifies the software type (eg ArduPilotMega versus ArduCopterMega)
-    // GCS will interpret values 0-9 as ArduPilotMega.  Developers may use
-    // values within that range to identify different branches.
-    //
-    static const uint16_t k_software_type = 0;          // 0 for APM trunk
-
     enum {
         // Layout version number, always key zero.
         //
         k_param_format_version = 0,
-        k_param_software_type,
+        k_param_software_type, // unused;
         k_param_num_resets,
         k_param_NavEKF2,
         k_param_g2,
         k_param_avoidance_adsb,
         k_param_landing,
         k_param_NavEKF3,
-        k_param_BoardConfig_CAN,
+        k_param_can_mgr,
+        k_param_osd,
 
         // Misc
         //
@@ -94,7 +88,7 @@ public:
         k_param_scheduler,
         k_param_relay,
         k_param_takeoff_throttle_delay,
-        k_param_skip_gyro_cal, // unused
+        k_param_mode_takeoff, // was skip_gyro_cal
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
         k_param_ground_steer_alt,        
@@ -105,7 +99,7 @@ public:
         k_param_log_bitmask,
         k_param_BoardConfig,
         k_param_rssi_range,     // unused, replaced by rssi_ library parameters
-        k_param_flapin_channel,
+        k_param_flapin_channel_old,  // unused, moved to RC_OPTION
         k_param_flaperon_output, // unused
         k_param_gps,
         k_param_autotune_level,
@@ -192,7 +186,7 @@ public:
         k_param_imu = 130,  // unused
         k_param_altitude_mix, // deprecated
 
-        k_param_compass_enabled,
+        k_param_compass_enabled_deprecated,
         k_param_compass,
         k_param_battery_monitoring, // unused
         k_param_volt_div_ratio,     // unused
@@ -221,7 +215,7 @@ public:
         k_param_pitch_limit_min_cd,
         k_param_airspeed_cruise_cm,
         k_param_RTL_altitude_cm,
-        k_param_inverted_flight_ch,
+        k_param_inverted_flight_ch_unused, // unused
         k_param_min_gndspeed_cm,
         k_param_crosstrack_use_wind, // unused
 
@@ -272,8 +266,8 @@ public:
         k_param_throttle_suppress_manual,
         k_param_throttle_passthru_stabilize,
         k_param_rc_12_old,
-        k_param_fs_batt_voltage,
-        k_param_fs_batt_mah,
+        k_param_fs_batt_voltage, // unused - moved to AP_BattMonitor
+        k_param_fs_batt_mah,     // unused - moved to AP_BattMonitor
         k_param_fs_timeout_short,
         k_param_fs_timeout_long,
         k_param_rc_13_old,
@@ -348,13 +342,17 @@ public:
         k_param_mixing_offset,
         k_param_dspoiler_rud_rate,
 
-        k_param_DataFlash = 253, // Logging Group
+        k_param_logger = 253, // Logging Group
 
         // 254,255: reserved
+
+        k_param_vehicle = 257, // vehicle common block of parameters
+        k_param_gcs4,          // stream rates
+        k_param_gcs5,          // stream rates
+        k_param_gcs6,          // stream rates
     };
 
     AP_Int16 format_version;
-    AP_Int8 software_type;
 
     // Telemetry control
     //
@@ -406,7 +404,7 @@ public:
     AP_Int16 fence_minalt;    // meters
     AP_Int16 fence_maxalt;    // meters
     AP_Int16 fence_retalt;    // meters
-    AP_Int8 fence_autoenable;
+    AP_Enum<FenceAutoEnable> fence_autoenable;
     AP_Int8 fence_ret_rally;
 #endif
 
@@ -430,8 +428,6 @@ public:
     AP_Float fs_timeout_short;
     AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
-    AP_Float fs_batt_voltage;
-    AP_Float fs_batt_mah;
 
     // Flight modes
     //
@@ -470,13 +466,11 @@ public:
     AP_Int8  hil_mode;
 #endif
 
-    AP_Int8 compass_enabled;
     AP_Int8 flap_1_percent;
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 takeoff_flap_percent;  
-    AP_Int8 inverted_flight_ch;             // 0=disabled, 1-8 is channel for inverted flight trigger
     AP_Int8 stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
@@ -487,7 +481,6 @@ public:
     AP_Int8 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
-    AP_Int8 flapin_channel;
 #if AP_TERRAIN_AVAILABLE
     AP_Int8 terrain_follow;
     AP_Int16 terrain_lookahead;
@@ -497,7 +490,7 @@ public:
     AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
-#if CONFIG_HAL_BOARD == HAL_BOARD_PX4
+#if HAL_WITH_IO_MCU
     AP_Int8 override_channel;
     AP_Int8 override_safety;
 #endif
@@ -516,28 +509,35 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // button reporting library
-    AP_Button button;
+    AP_Button *button_ptr;
 
+#if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
+#endif
 
     // internal combustion engine control
     AP_ICEngine ice_control;
 
     // RC input channels
-    RC_Channels rc_channels;
+    RC_Channels_Plane rc_channels;
     
     // control over servo output ranges
     SRV_Channels servo_channels;
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
-    
+
+#if HAL_SOARING_ENABLED
     // ArduSoar parameters
     SoaringController soaring_controller;
+#endif
 
     // dual motor tailsitter rudder to differential thrust scaling: 0-100%
     AP_Int8 rudd_dt_gain;
+
+    // QACRO mode max yaw rate in deg/sec
+    AP_Int16 acro_yaw_rate;
 
     // mask of channels to do manual pass-thru for
     AP_Int32 manual_rc_mask;
@@ -545,6 +545,50 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
+#if GRIPPER_ENABLED == ENABLED
+    // Payload Gripper
+    AP_Gripper gripper;
+#endif
+
+    AP_Int32 flight_options;
+
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting scripting;
+#endif // ENABLE_SCRIPTING
+
+    AP_Int8 takeoff_throttle_accel_count;
+    AP_Int8 takeoff_timeout;
+
+#if LANDING_GEAR_ENABLED == ENABLED
+    AP_LandingGear landing_gear;
+#endif
+
+    // crow flaps weighting
+    AP_Int8 crow_flap_weight_outer;
+    AP_Int8 crow_flap_weight_inner;
+    AP_Int8 crow_flap_options;
+    AP_Int8 crow_flap_aileron_matching;
+
+    // Forward throttle battery voltage compenstaion
+    AP_Float fwd_thr_batt_voltage_max;
+    AP_Float fwd_thr_batt_voltage_min;
+    AP_Int8  fwd_thr_batt_idx;
+
+#if EFI_ENABLED
+    // EFI Engine Monitor
+    AP_EFI efi;
+#endif
+
+#if OFFBOARD_GUIDED == ENABLED
+    // guided yaw heading PID
+    AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.2};
+#endif
+
+
+    AP_Float        fs_ekf_thresh;
+
+    // min initial climb in RTL
+    AP_Int16        rtl_climb_min;
 };
 
 extern const AP_Param::Info var_info[];

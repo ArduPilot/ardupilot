@@ -40,7 +40,7 @@ class WikiEmit(Emit):
     def start_libraries(self):
         self.emit_comment("Libraries")
 
-    def emit(self, g, f):
+    def emit(self, g):
         t = "\n\n== %s Parameters ==\n" % (self.camelcase_escape(g.name))
 
         for param in g.params:
@@ -62,6 +62,8 @@ class WikiEmit(Emit):
                         t += "|| *Value* || *Meaning* ||\n"
                         for value in values:
                             v = value.split(':')
+                            if len(v) != 2:
+                                raise ValueError("Bad value (%s)" % v)
                             t += "|| " + v[0] + " || " + self.camelcase_escape(v[1]) + " ||\n"
                     elif field == 'Units':
                         abreviated_units = param.__dict__[field]

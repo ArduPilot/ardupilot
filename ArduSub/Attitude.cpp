@@ -1,12 +1,5 @@
 #include "Sub.h"
 
-// get_smoothing_gain - returns smoothing gain to be passed into attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw
-//      result is a number from 2 to 12 with 2 being very sluggish and 12 being very crisp
-float Sub::get_smoothing_gain()
-{
-    return (2.0f + (float)g.rc_feel_rp/10.0f);
-}
-
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle
 // returns desired angle in centi-degrees
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
@@ -41,7 +34,7 @@ void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &ro
 // get_pilot_desired_heading - transform pilot's yaw input into a
 // desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle)
+float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle) const
 {
     // convert pilot input to the desired yaw rate
     return stick_angle * g.acro_yaw_p;
@@ -50,10 +43,10 @@ float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle)
 // check for ekf yaw reset and adjust target heading
 void Sub::check_ekf_yaw_reset()
 {
-    float yaw_angle_change_rad = 0.0f;
+    float yaw_angle_change_rad;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.shift_ef_yaw_target(ToDeg(yaw_angle_change_rad) * 100.0f);
+        attitude_control.inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }
@@ -140,7 +133,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
     float velocity_correction;
     float current_alt = inertial_nav.get_altitude();
 
-    uint32_t now = millis();
+    uint32_t now = AP_HAL::millis();
 
     // reset target altitude if this controller has just been engaged
     if (now - last_call_ms > RANGEFINDER_TIMEOUT_MS) {
@@ -202,11 +195,10 @@ void Sub::rotate_body_frame_to_NE(float &x, float &y)
 }
 
 // It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
-uint16_t Sub::get_pilot_speed_dn()
+uint16_t Sub::get_pilot_speed_dn() const
 {
     if (g.pilot_speed_dn == 0) {
         return abs(g.pilot_speed_up);
-    } else {
-        return abs(g.pilot_speed_dn);
     }
+    return abs(g.pilot_speed_dn);
 }

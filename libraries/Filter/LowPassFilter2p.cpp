@@ -17,6 +17,11 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
         return sample;
     }
 
+    if (!initialised) {
+        reset(sample, params);
+        initialised = true;
+    }
+
     T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
     T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
 
@@ -29,12 +34,23 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
 template <class T>
 void DigitalBiquadFilter<T>::reset() { 
     _delay_element_1 = _delay_element_2 = T();
+    initialised = false;
+}
+
+template <class T>
+void DigitalBiquadFilter<T>::reset(const T &value, const struct biquad_params &params) {
+    _delay_element_1 = _delay_element_2 = value * (1.0 / (1 + params.a1 + params.a2));
+    initialised = true;
 }
 
 template <class T>
 void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq, biquad_params &ret) {
     ret.cutoff_freq = cutoff_freq;
     ret.sample_freq = sample_freq;
+    if (!is_positive(ret.cutoff_freq)) {
+        // zero cutoff means pass-thru
+        return;
+    }
 
     float fr = sample_freq/cutoff_freq;
     float ohm = tanf(M_PI/fr);
@@ -83,12 +99,21 @@ float LowPassFilter2p<T>::get_sample_freq(void) const {
 
 template <class T>
 T LowPassFilter2p<T>::apply(const T &sample) {
+    if (!is_positive(_params.cutoff_freq)) {
+        // zero cutoff means pass-thru
+        return sample;
+    }
     return _filter.apply(sample, _params);
 }
 
 template <class T>
 void LowPassFilter2p<T>::reset(void) {
     return _filter.reset();
+}
+
+template <class T>
+void LowPassFilter2p<T>::reset(const T &value) {
+    return _filter.reset(value, _params);
 }
 
 /* 

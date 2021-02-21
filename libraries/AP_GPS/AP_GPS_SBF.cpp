@@ -20,8 +20,9 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
-#include <DataFlash/DataFlash.h>
 #include <GCS_MAVLink/GCS.h>
+#include <stdio.h>
+#include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,15 +40,20 @@ do {                                            \
  # define Debug(fmt, args ...)
 #endif
 
+#ifndef GPS_SBF_STREAM_NUMBER
+  #define GPS_SBF_STREAM_NUMBER 1
+#endif
+
 #define SBF_EXCESS_COMMAND_BYTES 5 // 2 start bytes + validity byte + space byte + endline byte
 
-#define RX_ERROR_MASK (SOFTWARE      | \
-                       CONGESTION    | \
+#define RX_ERROR_MASK (CONGESTION    | \
                        MISSEDEVENT   | \
                        CPUOVERLOAD   | \
                        INVALIDCONFIG | \
                        OUTOFGEOFENCE)
 
+constexpr const char *AP_GPS_SBF::portIdentifiers[];
+constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                        AP_HAL::UARTDriver *_port) :
@@ -55,8 +61,17 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
 
-    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
     _config_last_ack_time = AP_HAL::millis();
+
+    // if we ever parse RTK observations it will always be of type NED, so set it once
+    state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
+    if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+        state.gps_yaw_configured = true;
+    }
+}
+
+AP_GPS_SBF::~AP_GPS_SBF (void) {
+    free(config_string);
 }
 
 // Process all bytes available from the stream
@@ -72,21 +87,56 @@ AP_GPS_SBF::read(void)
     }
 
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
-        if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
+        if (config_step != Config_State::Complete) {
             uint32_t now = AP_HAL::millis();
-            const char *init_str = _initialisation_blob[_init_blob_index];
-
             if (now > _init_blob_time) {
-                if (now > _config_last_ack_time + 2500) {
-                    // try to enable input on the GPS port if we have not made progress on configuring it
-                    Debug("SBF Sending port enable");
-                    port->write((const uint8_t*)_port_enable, strlen(_port_enable));
-                    _config_last_ack_time = now;
-                } else {
-                    Debug("SBF sending init string: %s", init_str);
-                    port->write((const uint8_t*)init_str, strlen(init_str));
+                if (now > _config_last_ack_time + 2000) {
+                    const size_t port_enable_len = strlen(_port_enable);
+                    if (port_enable_len <= port->txspace()) {
+                        // try to enable input on the GPS port if we have not made progress on configuring it
+                        Debug("SBF Sending port enable");
+                        port->write((const uint8_t*)_port_enable, port_enable_len);
+                        _config_last_ack_time = now;
+                    }
+                } else if (readyForCommand) {
+                    if (config_string == nullptr) {
+                        switch (config_step) {
+                            case Config_State::Baud_Rate:
+                                if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
+                                             (int)gps._com_port[state.instance],
+                                             230400,
+                                             port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::SSO:
+                                if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
+                                             (int)GPS_SBF_STREAM_NUMBER,
+                                             (int)gps._com_port[state.instance]) == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::Blob:
+                                if (asprintf(&config_string,"%s\n", (char *)_initialisation_blob[_init_blob_index]) == -1) {
+                                    config_string = nullptr;
+                                }
+                                break;
+                            case Config_State::Complete:
+                              // should never reach here, why search for a config if we have fully configured already
+                              INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                              break;
+                        }
+                    }
+
+                    if (config_string != nullptr) {
+                        const size_t config_length = strlen(config_string);
+                        if (config_length <= port->txspace()) {
+                            Debug("SBF sending init string: %s", config_string);
+                            port->write((const uint8_t*)config_string, config_length);
+                            readyForCommand = false;
+                        }
+                    }
                 }
-                _init_blob_time = now + 1000;
             }
         } else if (gps._raw_data == 2) { // only manage disarm/rearms when the user opts into it
             if (hal.util->get_soft_armed()) {
@@ -106,6 +156,17 @@ AP_GPS_SBF::read(void)
     return ret;
 }
 
+bool AP_GPS_SBF::logging_healthy(void) const
+{
+    switch (gps._raw_data) {
+        case 1:
+        default:
+            return (RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY);
+        case 2:
+            return ((RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY)) || (!hal.util->get_soft_armed() && _has_been_armed);
+    }
+}
+
 bool
 AP_GPS_SBF::parse(uint8_t temp)
 {
@@ -116,6 +177,33 @@ AP_GPS_SBF::parse(uint8_t temp)
             if (temp == SBF_PREAMBLE1) {
                 sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE2;
                 sbf_msg.read = 0;
+            } else {
+                // attempt to detect command prompt
+                portIdentifier[portLength++] = (char)temp;
+                bool foundPossiblePort = false;
+                for (const char *portId : portIdentifiers) {
+                    if (strncmp(portId, portIdentifier, MIN(portLength, 3)) == 0) {
+                        // we found one of the COM/USB/IP related ports
+                        if (portLength == 4) {
+                            // validate that we have an ascii number
+                            if (isdigit((char)temp)) {
+                                foundPossiblePort = true;
+                                break;
+                            }
+                        } else if (portLength >= sizeof(portIdentifier)) {
+                            if ((char)temp == '>') {
+                                readyForCommand = true;
+                                Debug("SBF: Ready for command");
+                            }
+                        } else {
+                            foundPossiblePort = true;
+                        }
+                        break;
+                    }
+                }
+                if (!foundPossiblePort) {
+                    portLength = 0;
+                }
             }
             break;
         case sbf_msg_parser_t::PREAMBLE2:
@@ -209,11 +297,30 @@ AP_GPS_SBF::parse(uint8_t temp)
                 if (sbf_msg.data.bytes[0] == ':') {
                     // valid command, determine if it was the one we were trying
                     // to send in the configuration sequence
-                    if (_init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-                        if (!strncmp(_initialisation_blob[_init_blob_index], (char *)(sbf_msg.data.bytes + 2),
+                    if (config_string != nullptr) {
+                        if (!strncmp(config_string, (char *)(sbf_msg.data.bytes + 2),
                                      sbf_msg.read - SBF_EXCESS_COMMAND_BYTES)) {
                             Debug("SBF Ack Command: %s\n", sbf_msg.data.bytes);
-                            _init_blob_index++;
+                            free(config_string);
+                            config_string = nullptr;
+                            switch (config_step) {
+                                case Config_State::Baud_Rate:
+                                    config_step = Config_State::SSO;
+                                    break;
+                                case Config_State::SSO:
+                                    config_step = Config_State::Blob;
+                                    break;
+                                case Config_State::Blob:
+                                    _init_blob_index++;
+                                    if (_init_blob_index >= ARRAY_SIZE(_initialisation_blob)) {
+                                        config_step = Config_State::Complete;
+                                    }
+                                    break;
+                                case Config_State::Complete:
+                                    // should never reach here, this implies that we validated a config string when we hadn't sent any
+                                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                                    break;
+                            }
                             _config_last_ack_time = AP_HAL::millis();
                         } else {
                             Debug("SBF Ack command (unexpected): %s\n", sbf_msg.data.bytes);
@@ -233,35 +340,6 @@ AP_GPS_SBF::parse(uint8_t temp)
     return false;
 }
 
-void
-AP_GPS_SBF::log_ExtEventPVTGeodetic(const msg4007 &temp)
-{
-    if (!should_df_log()) {
-        return;
-    }
-
-    uint64_t now = AP_HAL::micros64();
-
-    struct log_GPS_SBF_EVENT header = {
-        LOG_PACKET_HEADER_INIT(LOG_GPS_SBF_EVENT_MSG),
-        time_us:now,
-        TOW:temp.TOW,
-        WNc:temp.WNc,
-        Mode:temp.Mode,
-        Error:temp.Error,
-        Latitude:ToDeg(temp.Latitude),
-        Longitude:ToDeg(temp.Longitude),
-        Height:temp.Height,
-        Undulation:temp.Undulation,
-        Vn:temp.Vn,
-        Ve:temp.Ve,
-        Vu:temp.Vu,
-        COG:temp.COG
-    };
-
-    DataFlash_Class::instance()->WriteBlock(&header, sizeof(header));
-}
-
 bool
 AP_GPS_SBF::process_message(void)
 {
@@ -270,9 +348,6 @@ AP_GPS_SBF::process_message(void)
     Debug("BlockID %d", blockid);
 
     switch (blockid) {
-    case ExtEventPVTGeodetic:
-        log_ExtEventPVTGeodetic(sbf_msg.data.msg4007u);
-        break;
     case PVTGeodetic:
     {
         const msg4007 &temp = sbf_msg.data.msg4007u;
@@ -283,6 +358,7 @@ AP_GPS_SBF::process_message(void)
             state.time_week_ms = (uint32_t)(temp.TOW);
         }
 
+        check_new_itow(temp.TOW, sbf_msg.length);
         state.last_gps_time_ms = AP_HAL::millis();
 
         // Update velocity state (don't use −2·10^10)
@@ -359,6 +435,7 @@ AP_GPS_SBF::process_message(void)
     case DOP:
     {
         const msg4001 &temp = sbf_msg.data.msg4001u;
+        check_new_itow(temp.TOW, sbf_msg.length);
 
         state.hdop = temp.HDOP;
         state.vdop = temp.VDOP;
@@ -367,7 +444,12 @@ AP_GPS_SBF::process_message(void)
     case ReceiverStatus:
     {
         const msg4014 &temp = sbf_msg.data.msg4014u;
+        check_new_itow(temp.TOW, sbf_msg.length);
         RxState = temp.RxState;
+        if ((RxError & RX_ERROR_MASK) != (temp.RxError & RX_ERROR_MASK)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF error changed (0x%08x/0x%08x)", (unsigned int)(state.instance + 1),
+                            (unsigned int)(RxError & RX_ERROR_MASK), (unsigned int)(temp.RxError & RX_ERROR_MASK));
+        }
         RxError = temp.RxError;
         break;
     }
@@ -375,6 +457,7 @@ AP_GPS_SBF::process_message(void)
     {
         const msg5908 &temp = sbf_msg.data.msg5908u;
 
+        check_new_itow(temp.TOW, sbf_msg.length);
         // select the maximum variance, as the EKF will apply it to all the columns in it's estimate
         // FIXME: Support returning the covariance matrix to the EKF
         float max_variance_squared = MAX(temp.Cov_VnVn, MAX(temp.Cov_VeVe, temp.Cov_VuVu));
@@ -386,6 +469,58 @@ AP_GPS_SBF::process_message(void)
         }
         break;
     }
+    case BaseVectorGeod:
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
+        const msg4028 &temp = sbf_msg.data.msg4028u;
+
+        // just breakout any consts we need for Do Not Use (DNU) reasons
+        constexpr double doubleDNU = -2e-10;
+        constexpr uint16_t uint16DNU = 65535;
+
+        check_new_itow(temp.TOW, sbf_msg.length);
+
+        if (temp.N == 0) { // no sub blocks so just bail, we can't do anything useful here
+            state.rtk_num_sats = 0;
+            state.rtk_age_ms = 0;
+            state.rtk_baseline_y_mm = 0;
+            state.rtk_baseline_x_mm = 0;
+            state.rtk_baseline_z_mm = 0;
+            break;
+        }
+
+        state.rtk_num_sats = temp.info.NrSV;
+
+        state.rtk_age_ms = (temp.info.CorrAge != 65535) ? ((uint32_t)temp.info.CorrAge) * 10 : 0;
+
+        // copy the position as long as the data isn't DNU, we require NED, and heading before accepting any of it
+        if ((temp.info.DeltaEast != doubleDNU) && (temp.info.DeltaNorth != doubleDNU) && (temp.info.DeltaUp != doubleDNU) &&
+            (temp.info.Azimuth != uint16DNU)) {
+
+            state.rtk_baseline_y_mm = temp.info.DeltaEast * 1e3;
+            state.rtk_baseline_x_mm = temp.info.DeltaNorth * 1e3;
+            state.rtk_baseline_z_mm = temp.info.DeltaUp * -1e3;
+
+#if GPS_MOVING_BASELINE
+            // copy the baseline data as a yaw source
+            if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+                calculate_moving_base_yaw(temp.info.Azimuth * 0.01f + 180.0f,
+                                          Vector3f(temp.info.DeltaNorth, temp.info.DeltaEast, temp.info.DeltaUp).length(),
+                                          -temp.info.DeltaUp);
+            }
+#endif // GPS_MOVING_BASELINE
+
+        } else {
+            state.rtk_baseline_y_mm = 0;
+            state.rtk_baseline_x_mm = 0;
+            state.rtk_baseline_z_mm = 0;
+            state.have_gps_yaw = false;
+        }
+
+#pragma GCC diagnostic pop
+        break;
+    }
     }
 
     return false;
@@ -395,8 +530,8 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
 {
     if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE &&
         _init_blob_index < ARRAY_SIZE(_initialisation_blob)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not fully configured (%d/%d)", state.instance + 1,
-                        _init_blob_index, ARRAY_SIZE(_initialisation_blob));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %u: SBF is not fully configured (%u/%u)", state.instance + 1,
+                        _init_blob_index, (unsigned)ARRAY_SIZE(_initialisation_blob));
     }
 }
 
@@ -417,7 +552,7 @@ void AP_GPS_SBF::mount_disk (void) const {
 
 void AP_GPS_SBF::unmount_disk (void) const {
     const char* command = "emd, DSK1, Unmount\n";
-    Debug("Unmounting disk");
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "SBF unmounting disk");
     port->write((const uint8_t*)command, strlen(command));
 }
 
@@ -426,22 +561,22 @@ bool AP_GPS_SBF::prepare_for_arming(void) {
     if (gps._raw_data) {
         if (!(RxState & SBF_DISK_MOUNTED)){
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
 
             // simply attempt to mount the disk, no need to check if the command was
             // ACK/NACK'd as we don't continuously attempt to remount the disk
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: Attempting to mount disk", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: Attempting to mount disk", state.instance + 1);
             mount_disk();
             // reset the flag to indicate if we should be logging
             _has_been_armed = false;
         }
         else if (RxState & SBF_DISK_FULL) {
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is full", state.instance + 1);
         }
         else if (!(RxState & SBF_DISK_ACTIVITY)) {
             is_logging = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF is not currently logging", state.instance + 1);
         }
     }
 

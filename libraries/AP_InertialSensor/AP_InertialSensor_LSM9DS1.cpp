@@ -246,9 +246,7 @@ bool AP_InertialSensor_LSM9DS1::_init_sensor()
 
 bool AP_InertialSensor_LSM9DS1::_hardware_init()
 {
-    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _spi_sem->take_blocking();
 
     uint8_t tries, whoami;
 
@@ -403,7 +401,7 @@ void AP_InertialSensor_LSM9DS1::_set_accel_scale(accel_scale scale)
     _accel_scale = (((float) scale + 1.0f) * 2.0f) / 32768.0f;
     if (scale == A_SCALE_16G) {
         /* the datasheet shows an exception for +-16G */
-        _accel_scale = 0.000732;
+        _accel_scale = 0.000732f;
     }
     /* convert to G/LSB to (m/s/s)/LSB */
     _accel_scale *= GRAVITY_MSS;

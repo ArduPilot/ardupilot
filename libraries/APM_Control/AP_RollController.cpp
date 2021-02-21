@@ -3,12 +3,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-
+   
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
+   
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,7 +25,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Param: TCONST
 	// @DisplayName: Roll Time Constant
-	// @Description: This controls the time constant in seconds from demanded to achieved bank angle. A value of 0.5 is a good default and will work with nearly all models. Advanced users may want to reduce this time to obtain a faster response but there is no point setting a time less than the aircraft can achieve.
+	// @Description: Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
 	// @Range: 0.4 1.0
 	// @Units: s
 	// @Increment: 0.1
@@ -34,31 +34,31 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 	// @Param: P
 	// @DisplayName: Proportional Gain
-	// @Description: This is the gain from bank angle error to aileron.
+	// @Description: Proportional gain from roll angle demands to ailerons. Higher values allow more servo response but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
-	// @User: User
-	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        0.6f),
+	// @User: Standard
+	AP_GROUPINFO("P",        1, AP_RollController, gains.P,        1.0f),
 
 	// @Param: D
 	// @DisplayName: Damping Gain
-	// @Description: This is the gain from roll rate to aileron. This adjusts the damping of the roll control loop. It has the same effect as RLL2SRV_D in the old PID controller but without the spikes in servo demands. This gain helps to reduce rolling in turbulence. It should be increased in 0.01 increments as too high a value can lead to a high frequency roll oscillation that could overstress the airframe.
-	// @Range: 0 0.1
+	// @Description: Damping gain from roll acceleration to ailerons. Higher values reduce rolling in turbulence, but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
+	// @Range: 0 0.2
 	// @Increment: 0.01
-	// @User: User
-	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.02f),
+	// @User: Standard
+	AP_GROUPINFO("D",        2, AP_RollController, gains.D,        0.08f),
 
 	// @Param: I
 	// @DisplayName: Integrator Gain
-	// @Description: This is the gain from the integral of bank angle to aileron. It has the same effect as RLL2SRV_I in the old PID controller. Increasing this gain causes the controller to trim out steady offsets due to an out of trim aircraft.
+	// @Description: Integrator gain from long-term roll angle offsets to ailerons. Higher values "trim" out offsets faster but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
 	// @Range: 0 1.0
 	// @Increment: 0.05
-	// @User: User
-	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.1f),
+	// @User: Standard
+	AP_GROUPINFO("I",        3, AP_RollController, gains.I,        0.3f),
 
 	// @Param: RMAX
 	// @DisplayName: Maximum Roll Rate
-	// @Description: This sets the maximum roll rate that the controller will demand (degrees/sec). Setting it to zero disables the limit. If this value is set too low, then the roll can't keep up with the navigation demands and the plane will start weaving. If it is set too high (or disabled by setting to zero) then ailerons will get large inputs at the start of turns. A limit of 60 degrees/sec is a good default.
+	// @Description: Maximum roll rate that the roll controller demands (degrees/sec) in ACRO mode.
 	// @Range: 0 180
 	// @Units: deg/s
 	// @Increment: 1
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 	// @Param: IMAX
 	// @DisplayName: Integrator limit
-	// @Description: This limits the number of degrees of aileron in centi-degrees over which the integrator will operate. At the default setting of 3000 centi-degrees, the integrator will be limited to +- 30 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 2/3rd of the total control throw which is adequate unless the aircraft is severely out of trim.
+	// @Description: Limit of roll integrator gain in centi-degrees of servo travel. Servos are assumed to have +/- 4500 centi-degrees of travel, so a value of 3000 allows trim of up to 2/3 of servo travel range.
 	// @Range: 0 4500
 	// @Increment: 1
 	// @User: Advanced
@@ -75,13 +75,31 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 	// @Param: FF
 	// @DisplayName: Feed forward Gain
-	// @Description: This is the gain from demanded rate to aileron output. 
+	// @Description: Gain from demanded rate to aileron output. 
 	// @Range: 0.1 4.0
 	// @Increment: 0.1
-	// @User: User
+	// @User: Standard
 	AP_GROUPINFO("FF",        6, AP_RollController, gains.FF,          0.0f),
 
-	AP_GROUPEND
+    // @Param: SRMAX
+    // @DisplayName: Servo slew rate limit
+    // @Description: Sets an upper limit on the servo slew rate produced by the D-gain (roll rate feedback). If the amplitude of the control action produced by the roll rate feedback exceeds this value, then the D-gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive D-gain. The parameter should be set to no more than 25% of the servo's specified slew rate to allow for inertia and aerodynamic load effects. Note: The D-gain will not be reduced to less than 10% of the nominal value. A valule of zero will disable this feature.
+    // @Units: deg/s
+    // @Range: 0 500
+    // @Increment: 10.0
+    // @User: Advanced
+    AP_GROUPINFO("SRMAX", 7, AP_RollController, _slew_rate_max, 150.0f),
+
+    // @Param: SRTAU
+    // @DisplayName: Servo slew rate decay time constant
+    // @Description: This sets the time constant used to recover the D-gain after it has been reduced due to excessive servo slew rate.
+    // @Units: s
+    // @Range: 0.5 5.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SRTAU", 8, AP_RollController, _slew_rate_tau, 1.0f),
+
+    AP_GROUPEND
 };
 
 
@@ -105,24 +123,19 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
     float k_ff = gains.FF / eas2tas;
 	float delta_time    = (float)dt * 0.001f;
-	
-	// Limit the demanded roll rate
-	if (gains.rmax && desired_rate < -gains.rmax) {
-        desired_rate = - gains.rmax;
-    } else if (gains.rmax && desired_rate > gains.rmax) {
-        desired_rate = gains.rmax;
-    }
-	
     // Get body rate vector (radians/sec)
 	float omega_x = _ahrs.get_gyro().x;
 	
 	// Calculate the roll rate error (deg/sec) and apply gain scaler
     float achieved_rate = ToDeg(omega_x);
-	float rate_error = (desired_rate - achieved_rate) * scaler;
+    _pid_info.error = desired_rate - achieved_rate;
+    float rate_error = _pid_info.error * scaler;
+    _pid_info.target = desired_rate;
+    _pid_info.actual = achieved_rate;
 	
 	// Get an airspeed estimate - default to zero if none available
 	float aspeed;
-	if (!_ahrs.airspeed_estimate(&aspeed)) {
+	if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0.0f;
     }
 
@@ -160,9 +173,26 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     _pid_info.D = rate_error * gains.D * scaler;
     _pid_info.P = desired_rate * kp_ff * scaler;
     _pid_info.FF = desired_rate * k_ff * scaler;
-    _pid_info.desired = desired_rate;
 
-	_last_out = _pid_info.FF + _pid_info.P + _pid_info.D;
+    if (dt > 0 && _slew_rate_max > 0) {
+        // Calculate the slew rate amplitude produced by the unmodified D term
+
+        // calculate a low pass filtered slew rate
+        float Dterm_slew_rate = _slew_rate_filter.apply((fabsf(_pid_info.D - _last_pid_info_D)/ delta_time), delta_time);
+
+        // rectify and apply a decaying envelope filter
+        float alpha = 1.0f - constrain_float(delta_time/_slew_rate_tau, 0.0f , 1.0f);
+        _slew_rate_amplitude = fmaxf(fabsf(Dterm_slew_rate), alpha * _slew_rate_amplitude);
+        _slew_rate_amplitude = fminf(_slew_rate_amplitude, 10.0f*_slew_rate_max);
+
+        // Calculate and apply the D gain adjustment
+        _pid_info.Dmod = _D_gain_modifier = _slew_rate_max / fmaxf(_slew_rate_amplitude, _slew_rate_max);
+        _pid_info.D *= _D_gain_modifier;
+    }
+
+    _last_pid_info_D = _pid_info.D;
+
+    _last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
 
     if (autotune.running && aspeed > aparm.airspeed_min) {
         // let autotune have a go at the values 
@@ -192,7 +222,7 @@ int32_t AP_RollController::get_rate_out(float desired_rate, float scaler)
 }
 
 /*
- Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
+ Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
  Inputs are: 
  1) demanded bank angle in centi-degrees
@@ -209,6 +239,13 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
 	// Calculate the desired roll rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / gains.tau;
 
+    // Limit the demanded roll rate
+    if (gains.rmax && desired_rate < -gains.rmax) {
+        desired_rate = - gains.rmax;
+    } else if (gains.rmax && desired_rate > gains.rmax) {
+        desired_rate = gains.rmax;
+    }
+
     return _get_rate_out(desired_rate, scaler, disable_integrator);
 }
 
@@ -216,4 +253,3 @@ void AP_RollController::reset_I()
 {
 	_pid_info.I = 0;
 }
-

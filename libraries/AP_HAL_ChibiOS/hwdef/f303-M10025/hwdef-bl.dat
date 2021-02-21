@@ -1,0 +1,6 @@
+include ../f303-periph/hwdef-bl.dat
+
+# start as DNA
+define HAL_CAN_DEFAULT_NODE_ID 0
+
+define CAN_APP_NODE_NAME "org.ardupilot.mro_m10025"

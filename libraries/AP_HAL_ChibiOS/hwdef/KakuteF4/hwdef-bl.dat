@@ -1,0 +1,38 @@
+# hw definition file for KakuteF4 bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 122
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# LEDs
+PB5 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+
+# order of UARTs
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 15360
+
+
+# Add CS pins to ensure they are high in bootloader
+PB14 MAX7456_CS CS
+PB3 FLASH_CS CS
+PC4 ICM20689_CS CS

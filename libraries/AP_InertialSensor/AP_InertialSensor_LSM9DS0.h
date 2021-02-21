@@ -7,6 +7,7 @@
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
+#include <Filter/LowPassFilter2p.h>
 
 class AP_InertialSensor_LSM9DS0 : public AP_InertialSensor_Backend
 {
@@ -16,16 +17,16 @@ public:
     bool update() override;
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
-                                            enum Rotation rotation_a = ROTATION_NONE,
-                                            enum Rotation rotation_g = ROTATION_NONE,
-                                            enum Rotation rotation_gH = ROTATION_NONE);
+                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                                            enum Rotation rotation_a,
+                                            enum Rotation rotation_g,
+                                            enum Rotation rotation_gH);
 
 private:
     AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                              AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                               int drdy_pin_num_a, int drdy_pin_num_b,
                               enum Rotation rotation_a,
                               enum Rotation rotation_g,
@@ -80,8 +81,8 @@ private:
     void        _dump_registers();
 #endif
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_gyro;
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev_accel;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev_gyro;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev_accel;
     AP_HAL::Semaphore *_spi_sem;
 
     /*
@@ -98,6 +99,9 @@ private:
     int _drdy_pin_num_g;
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
+    float _temperature;
+    uint8_t _temp_counter;
+    LowPassFilter2pFloat _temp_filter;
 
     // gyro whoami
     uint8_t whoami_g;

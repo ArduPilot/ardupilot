@@ -14,8 +14,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 #include "OpticalFlow_Onboard.h"
 
 #include <fcntl.h>
@@ -92,23 +91,6 @@ void OpticalFlow_Onboard::init()
         AP_HAL::panic("OpticalFlow_Onboard: couldn't set subdev fmt\n");
     }
     _format = V4L2_PIX_FMT_NV12;
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE
-    std::vector<uint32_t> pixel_formats;
-
-    _videoin->get_pixel_formats(&pixel_formats);
-
-    for (uint32_t px_fmt : pixel_formats) {
-        if (px_fmt == V4L2_PIX_FMT_NV12 || px_fmt == V4L2_PIX_FMT_GREY) {
-            _format = px_fmt;
-            break;
-        }
-
-        /* if V4L2_PIX_FMT_YUYV format is found we still iterate through
-         * the vector since the other formats need no conversions. */
-        if (px_fmt == V4L2_PIX_FMT_YUYV) {
-            _format = px_fmt;
-        }
-    }
 #endif
 
     if (!_videoin->set_format(&_width, &_height, &_format, &_bytesperline,

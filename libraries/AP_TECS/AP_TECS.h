@@ -23,17 +23,14 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SpdHgtControl/AP_SpdHgtControl.h>
-#include <DataFlash/DataFlash.h>
 #include <AP_Landing/AP_Landing.h>
-#include <AP_Soaring/AP_Soaring.h>
 
 class AP_TECS : public AP_SpdHgtControl {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const SoaringController &soaring_controller)
+    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing)
         : _ahrs(ahrs)
         , aparm(parms)
         , _landing(landing)
-        , _soaring_controller(soaring_controller)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -45,7 +42,7 @@ public:
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
     // Should be called at 50Hz or greater
-    void update_50hz(void);
+    void update_50hz(void) override;
 
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
@@ -55,47 +52,47 @@ public:
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
                                float hgt_afe,
-                               float load_factor);
+                               float load_factor) override;
 
     // demanded throttle in percentage
     // should return -100 to 100, usually positive unless reverse thrust is enabled via _THRminf < 0
-    int32_t get_throttle_demand(void) {
+    int32_t get_throttle_demand(void) override {
         return int32_t(_throttle_dem * 100.0f);
     }
 
     // demanded pitch angle in centi-degrees
     // should return between -9000 to +9000
-    int32_t get_pitch_demand(void) {
+    int32_t get_pitch_demand(void) override {
         return int32_t(_pitch_dem * 5729.5781f);
     }
 
     // Rate of change of velocity along X body axis in m/s^2
-    float get_VXdot(void) {
+    float get_VXdot(void) override {
         return _vel_dot;
     }
 
     // return current target airspeed
-    float get_target_airspeed(void) const {
-        return _TAS_dem / _ahrs.get_EAS2TAS();
+    float get_target_airspeed(void) const override {
+        return _TAS_dem_adj / _ahrs.get_EAS2TAS();
     }
 
     // return maximum climb rate
-    float get_max_climbrate(void) const {
+    float get_max_climbrate(void) const override {
         return _maxClimbRate;
     }
 
     // added to let SoaringContoller reset pitch integrator to zero
-    void reset_pitch_I(void) {
+    void reset_pitch_I(void) override {
         _integSEB_state = 0.0f;
     }
     
     // return landing sink rate
-    float get_land_sinkrate(void) const {
+    float get_land_sinkrate(void) const override {
         return _land_sink;
     }
 
     // return landing airspeed
-    float get_land_airspeed(void) const {
+    float get_land_airspeed(void) const override {
         return _landAirspeed;
     }
 
@@ -105,9 +102,20 @@ public:
     }
 
     // set path_proportion
-    void set_path_proportion(float path_proportion) {
+    void set_path_proportion(float path_proportion) override {
         _path_proportion = constrain_float(path_proportion, 0.0f, 1.0f);
     }
+
+    // set soaring flag
+    void set_gliding_requested_flag(bool gliding_requested) override {
+        _flags.gliding_requested = gliding_requested;
+    }
+
+    // set propulsion failed flag
+    void set_propulsion_failed_flag(bool propulsion_failed) override {
+        _flags.propulsion_failed = propulsion_failed;
+    }
+
 
     // set pitch max limit in degrees
     void set_pitch_max_limit(int8_t pitch_limit) {
@@ -118,7 +126,12 @@ public:
     void use_synthetic_airspeed(void) {
         _use_synthetic_airspeed_once = true;
     }
-    
+
+    // reset on next loop
+    void reset(void) override {
+        _need_reset = true;
+    }
+
     // this supports the TECS_* user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -140,9 +153,6 @@ private:
     // reference to const AP_Landing to access it's params
     const AP_Landing &_landing;
     
-    // reference to const SoaringController to access its state
-    const SoaringController &_soaring_controller;
-
     // TECS tuning parameters
     AP_Float _hgtCompFiltOmega;
     AP_Float _spdCompFiltOmega;
@@ -171,6 +181,14 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
     AP_Float _maxSinkRate_approach;
+    AP_Int32 _options;
+
+    enum {
+        OPTION_GLIDER_ONLY=(1<<0),
+    };
+
+    AP_Float _pitch_ff_v0;
+    AP_Float _pitch_ff_k;
 
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
@@ -226,9 +244,8 @@ private:
     float _TASmax;
     float _TASmin;
 
-    // Current and last true airspeed demand
+    // Current true airspeed demand
     float _TAS_dem;
-    float _TAS_dem_last;
 
     // Equivalent airspeed demand
     float _EAS_dem;
@@ -265,6 +282,18 @@ private:
 
         // true when we have reached target speed in takeoff
         bool reached_speed_takeoff:1;
+
+        // true if the soaring feature has requested gliding flight
+        bool gliding_requested:1;
+
+        // true when we are in gliding flight, in one of three situations;
+        //   - THR_MAX=0
+        //   - gliding has been requested e.g. by soaring feature
+        //   - engine failure detected (detection not implemented currently)
+        bool is_gliding:1;
+
+        // true if a propulsion failure is detected.
+        bool propulsion_failed:1;
     };
     union {
         struct flags _flags;
@@ -318,6 +347,11 @@ private:
     float _path_proportion;
 
     float _distance_beyond_land_wp;
+
+    float _land_pitch_min = -90;
+
+    // need to reset on next loop
+    bool _need_reset;
 
     // internal variables to be logged
     struct {

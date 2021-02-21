@@ -1,0 +1,90 @@
+#compdef autotest.py
+#autoload
+
+_ap_autotest() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+  _arguments -C \
+    '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '(- 1 *)--list[list the available steps]' \
+    '(- 1 *)--list-subtests[list available subtests e.g. test.Copter]' \
+    ':first parameter:_ap_autotest_cmds' \
+    '*:: :->args'
+
+  case "$state" in
+    (args)
+      _arguments -C \
+        '--skip[list of steps to skip (comma separated)]' \
+        '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+        '--viewerip[IP address to send MAVLink and fg packets to]:VIEWERIP:' \
+        '--map[show map]' \
+        '--experimental[enable experimental tests]' \
+        '--timeout[maximum runtime in seconds]:TIMEOUT:' \
+        '--frame[specify frame type]:FRAME:' \
+        '--show-test-timings[show how long each test took to run]' \
+        '--validate-parameters[validate vehicle parameter files]' \
+        '--no-configure [do not configure before building]' \
+        '--waf-configure-args[extra arguments passed to waf in configure]:WAF_CONFIGURE_ARGS:' \
+        '--no-clean[do not clean before building]' \
+        '--debug[make built binaries debug binaries]' \
+        '--speedup[speedup to run the simulations at]:SPEEDUP:' \
+        '--valgrind[run ArduPilot binaries under valgrind]' \
+        '--gdb[run ArduPilot ot binaries under gdb]' \
+        '--gdbserver[run ArduPilot binaries under gdbserver]' \
+        '(-B --breakpoint)'{-B,--breakpoint}'[add a breakpoint at given location in debugger]:BREAKPOINT:' \
+        '--disable-breakpoints[disable all breakpoints before starting]' \
+        '*: :_ap_autotest_cmds' \
+      ;;
+    esac
+}
+
+(( $+functions[_ap_autotest_cmds] )) ||
+  _ap_autotest_cmds() {
+  local suf
+  local tasks
+  # check we are on something like test.Copter
+  if compset -P '*[.]*[.]'; then
+    local type; type="$(echo ${words[$CURRENT]} | cut -d'.' -f1)"
+    local vehicle; vehicle="$(echo ${words[$CURRENT]} | cut -d'.' -f2)"
+    # check that we want completing test
+    case $type in
+    test)
+      tasks=( $($caller --list-subtests-for-vehicle $vehicle) )
+      suf=( -qS '.' )
+      _wanted "vehiclfdsfses" expl "vehifdsfcle" compadd $tasks && return 0
+      ;;
+    esac
+  else
+    # check we are on something like test.
+    if compset -P '*[.]'; then
+      local type; type="$(echo ${words[$CURRENT]} | cut -d'.' -f1)"
+      case $type in
+      test)
+        tasks=( $($caller --list-vehicles-test) )
+        # add dot after vehicle name for further completion
+        suf=( -qS '.' )
+        ;;
+      build)
+        # remove first and last line, get the lines starting with build, replace line return by space
+        tasks=( $($caller --list | sed -e '1d' -e '$d' | sed  -n 's/\bbuild\b.*\.//p' | tr '\n' ' ') )
+        # don't add more dot on non test
+        suf=( )
+        ;;
+      run)
+        # remove first and last line, get the lines starting with run, replace line return by space
+        tasks=( $($caller --list | sed -e '1d' -e '$d' | sed  -n 's/\brun\b.*\.//p' | tr '\n' ' ' ) )
+        # don't add more dot on non test
+        suf=( )
+        ;;
+      esac
+    else
+      tasks=(build test run)
+      suf=( -qS '.' )
+    fi
+    _wanted "schemes" expl "scheme" compadd $suf[@] $tasks && return 0
+  fi
+  }
+
+# get the calling program, remove anything after the space == all commands arguments
+caller=$(echo ${words[@]} | sed 's/ .*//g');
+_ap_autotest "$@"

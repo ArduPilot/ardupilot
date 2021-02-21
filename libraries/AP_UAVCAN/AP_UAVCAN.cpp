@@ -1,44 +1,72 @@
 /*
- * AP_UAVCAN.cpp
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *      Author: Eugene Shamaev
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Author: Eugene Shamaev, Siddharth Bharat Purohit
  */
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_WITH_UAVCAN
-
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include "AP_UAVCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_BoardConfig/AP_BoardConfig_CAN.h>
+#include <AP_CANManager/AP_CANManager.h>
 
-// Zubax GPS and other GPS, baro, magnetic sensors
-#include <uavcan/equipment/gnss/Fix.hpp>
-#include <uavcan/equipment/gnss/Auxiliary.hpp>
-#include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
-#include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
-#include <uavcan/equipment/air_data/StaticPressure.hpp>
-#include <uavcan/equipment/air_data/StaticTemperature.hpp>
+#include <uavcan/transport/can_acceptance_filter_configurator.hpp>
+
 #include <uavcan/equipment/actuator/ArrayCommand.hpp>
 #include <uavcan/equipment/actuator/Command.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
+
 #include <uavcan/equipment/esc/RawCommand.hpp>
+#include <uavcan/equipment/esc/Status.hpp>
+#include <uavcan/equipment/indication/LightsCommand.hpp>
+#include <uavcan/equipment/indication/SingleLightCommand.hpp>
+#include <uavcan/equipment/indication/BeepCommand.hpp>
+#include <uavcan/equipment/indication/RGB565.hpp>
+#include <uavcan/equipment/safety/ArmingStatus.hpp>
+#include <ardupilot/indication/SafetyState.hpp>
+#include <ardupilot/indication/Button.hpp>
+#include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
+#include <uavcan/equipment/gnss/RTCMStream.hpp>
+#include <uavcan/protocol/debug/LogMessage.hpp>
+
+#include <AP_Arming/AP_Arming.h>
+#include <AP_Baro/AP_Baro_UAVCAN.h>
+#include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
+#include <AP_GPS/AP_GPS_UAVCAN.h>
+#include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
+#include <AP_Compass/AP_Compass_UAVCAN.h>
+#include <AP_Airspeed/AP_Airspeed_UAVCAN.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
+#include <AP_ADSB/AP_ADSB.h>
+#include "AP_UAVCAN_DNA_Server.h"
+#include <AP_Logger/AP_Logger.h>
+
+#define LED_DELAY_US 50000
 
 extern const AP_HAL::HAL& hal;
 
-#define debug_uavcan(level, fmt, args...) do { if ((level) <= AP_BoardConfig_CAN::get_can_debug()) { hal.console->printf(fmt, ##args); }} while (0)
+#define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
 // in AP_UAVCAN and not in corresponding drivers.
 // The overhead of including definitions of DSDL is very high and it is best to
 // concentrate in one place.
-
-// TODO: temperature can come not only from baro. There should be separation on node ID
-// to check where it belongs to. If it is not baro that is the source, separate layer
-// of listeners/nodes should be added.
 
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
@@ -54,447 +82,405 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Description: Bitmask with one set for channel to be transmitted as a servo command over UAVCAN
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     // @User: Advanced
-    AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 255),
+    AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 0),
 
     // @Param: ESC_BM
     // @DisplayName: RC Out channels to be transmitted as ESC over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a ESC command over UAVCAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
     // @User: Advanced
-    AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 255),
+    AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 0),
+
+    // @Param: SRV_RT
+    // @DisplayName: Servo output rate
+    // @Description: Maximum transmit rate for servo outputs
+    // @Range: 1 200
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
 
     AP_GROUPEND
 };
 
-static void gnss_fix_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_GPS::GPS_State *state = ap_uavcan->find_gps_node(msg.getSrcNodeID().get());
-
-            if (state != nullptr) {
-                bool process = false;
-
-                if (msg.status == uavcan::equipment::gnss::Fix::STATUS_NO_FIX) {
-                    state->status = AP_GPS::GPS_Status::NO_FIX;
-                } else {
-                    if (msg.status == uavcan::equipment::gnss::Fix::STATUS_TIME_ONLY) {
-                        state->status = AP_GPS::GPS_Status::NO_FIX;
-                    } else if (msg.status == uavcan::equipment::gnss::Fix::STATUS_2D_FIX) {
-                        state->status = AP_GPS::GPS_Status::GPS_OK_FIX_2D;
-                        process = true;
-                    } else if (msg.status == uavcan::equipment::gnss::Fix::STATUS_3D_FIX) {
-                        state->status = AP_GPS::GPS_Status::GPS_OK_FIX_3D;
-                        process = true;
-                    }
-
-                    if (msg.gnss_time_standard == uavcan::equipment::gnss::Fix::GNSS_TIME_STANDARD_UTC) {
-                        uint64_t epoch_ms = uavcan::UtcTime(msg.gnss_timestamp).toUSec();
-                        epoch_ms /= 1000;
-                        uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
-                        state->time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
-                        state->time_week_ms = (uint32_t)(gps_ms - (state->time_week) * AP_MSEC_PER_WEEK);
-                    }
-                }
-
-                if (process) {
-                    Location loc = { };
-                    loc.lat = msg.latitude_deg_1e8 / 10;
-                    loc.lng = msg.longitude_deg_1e8 / 10;
-                    loc.alt = msg.height_msl_mm / 10;
-                    state->location = loc;
-                    state->location.options = 0;
-
-                    if (!uavcan::isNaN(msg.ned_velocity[0])) {
-                        Vector3f vel(msg.ned_velocity[0], msg.ned_velocity[1], msg.ned_velocity[2]);
-                        state->velocity = vel;
-                        state->ground_speed = norm(vel.x, vel.y);
-                        state->ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-                        state->have_vertical_velocity = true;
-                    } else {
-                        state->have_vertical_velocity = false;
-                    }
-
-                    float pos_cov[9];
-                    msg.position_covariance.unpackSquareMatrix(pos_cov);
-                    if (!uavcan::isNaN(pos_cov[8])) {
-                        if (pos_cov[8] > 0) {
-                            state->vertical_accuracy = sqrtf(pos_cov[8]);
-                            state->have_vertical_accuracy = true;
-                        } else {
-                            state->have_vertical_accuracy = false;
-                        }
-                    } else {
-                        state->have_vertical_accuracy = false;
-                    }
-
-                    const float horizontal_pos_variance = MAX(pos_cov[0], pos_cov[4]);
-                    if (!uavcan::isNaN(horizontal_pos_variance)) {
-                        if (horizontal_pos_variance > 0) {
-                            state->horizontal_accuracy = sqrtf(horizontal_pos_variance);
-                            state->have_horizontal_accuracy = true;
-                        } else {
-                            state->have_horizontal_accuracy = false;
-                        }
-                    } else {
-                        state->have_horizontal_accuracy = false;
-                    }
-
-                    float vel_cov[9];
-                    msg.velocity_covariance.unpackSquareMatrix(vel_cov);
-                    if (!uavcan::isNaN(vel_cov[0])) {
-                        state->speed_accuracy = sqrtf((vel_cov[0] + vel_cov[4] + vel_cov[8]) / 3.0);
-                        state->have_speed_accuracy = true;
-                    } else {
-                        state->have_speed_accuracy = false;
-                    }
-
-                    state->num_sats = msg.sats_used;
-                } else {
-                    state->have_vertical_velocity = false;
-                    state->have_vertical_accuracy = false;
-                    state->have_horizontal_accuracy = false;
-                    state->have_speed_accuracy = false;
-                    state->num_sats = 0;
-                }
-
-                state->last_gps_time_ms = AP_HAL::millis();
-
-                // after all is filled, update all listeners with new data
-                ap_uavcan->update_gps_state(msg.getSrcNodeID().get());
-            }
-        }
-    }
-}
-
-static void gnss_fix_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg)
-{   gnss_fix_cb(msg, 0); }
-static void gnss_fix_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg)
-{   gnss_fix_cb(msg, 1); }
-static void (*gnss_fix_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Fix>& msg)
-        = { gnss_fix_cb0, gnss_fix_cb1 };
-
-static void gnss_aux_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Auxiliary>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_GPS::GPS_State *state = ap_uavcan->find_gps_node(msg.getSrcNodeID().get());
-
-            if (state != nullptr) {
-                if (!uavcan::isNaN(msg.hdop)) {
-                    state->hdop = msg.hdop * 100.0;
-                }
-
-                if (!uavcan::isNaN(msg.vdop)) {
-                    state->vdop = msg.vdop * 100.0;
-                }
-            }
-        }
-    }
-}
-
-static void gnss_aux_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Auxiliary>& msg)
-{   gnss_aux_cb(msg, 0); }
-static void gnss_aux_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Auxiliary>& msg)
-{   gnss_aux_cb(msg, 1); }
-static void (*gnss_aux_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::gnss::Auxiliary>& msg)
-        = { gnss_aux_cb0, gnss_aux_cb1 };
-
-static void magnetic_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), 0);
-            if (state != nullptr) {
-                state->mag_vector[0] = msg.magnetic_field_ga[0];
-                state->mag_vector[1] = msg.magnetic_field_ga[1];
-                state->mag_vector[2] = msg.magnetic_field_ga[2];
-
-                // after all is filled, update all listeners with new data
-                ap_uavcan->update_mag_state(msg.getSrcNodeID().get(), 0);
-            }
-        }
-    }
-}
-
-static void magnetic_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg)
-{   magnetic_cb(msg, 0); }
-static void magnetic_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg)
-{   magnetic_cb(msg, 1); }
-static void (*magnetic_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength>& msg)
-        = { magnetic_cb0, magnetic_cb1 };
-        
-static void magnetic_cb_2(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Mag_Info *state = ap_uavcan->find_mag_node(msg.getSrcNodeID().get(), msg.sensor_id);
-            if (state != nullptr) {
-                state->mag_vector[0] = msg.magnetic_field_ga[0];
-                state->mag_vector[1] = msg.magnetic_field_ga[1];
-                state->mag_vector[2] = msg.magnetic_field_ga[2];
-
-                // after all is filled, update all listeners with new data
-                ap_uavcan->update_mag_state(msg.getSrcNodeID().get(), msg.sensor_id);
-            }
-        }
-    }
-}
-
-static void magnetic_cb_2_0(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
-{   magnetic_cb_2(msg, 0); }
-static void magnetic_cb_2_1(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
-{   magnetic_cb_2(msg, 1); }
-static void (*magnetic_cb_2_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::ahrs::MagneticFieldStrength2>& msg)
-        = { magnetic_cb_2_0, magnetic_cb_2_1 };
-
-static void air_data_sp_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Baro_Info *state = ap_uavcan->find_baro_node(msg.getSrcNodeID().get());
-
-            if (state != nullptr) {
-                state->pressure = msg.static_pressure;
-                state->pressure_variance = msg.static_pressure_variance;
-
-                // after all is filled, update all listeners with new data
-                ap_uavcan->update_baro_state(msg.getSrcNodeID().get());
-            }
-        }
-    }
-}
-
-static void air_data_sp_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg)
-{   air_data_sp_cb(msg, 0); }
-static void air_data_sp_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg)
-{   air_data_sp_cb(msg, 1); }
-static void (*air_data_sp_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticPressure>& msg)
-        = { air_data_sp_cb0, air_data_sp_cb1 };
-
-// Temperature is not main parameter so do not update listeners when it is received
-static void air_data_st_cb(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg, uint8_t mgr)
-{
-    if (hal.can_mgr[mgr] != nullptr) {
-        AP_UAVCAN *ap_uavcan = hal.can_mgr[mgr]->get_UAVCAN();
-        if (ap_uavcan != nullptr) {
-            AP_UAVCAN::Baro_Info *state = ap_uavcan->find_baro_node(msg.getSrcNodeID().get());
-
-            if (state != nullptr) {
-                state->temperature = msg.static_temperature;
-                state->temperature_variance = msg.static_temperature_variance;
-            }
-        }
-    }
-}
-
-static void air_data_st_cb0(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
-{   air_data_st_cb(msg, 0); }
-static void air_data_st_cb1(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
-{   air_data_st_cb(msg, 1); }
-static void (*air_data_st_cb_arr[2])(const uavcan::ReceivedDataStructure<uavcan::equipment::air_data::StaticTemperature>& msg)
-        = { air_data_st_cb0, air_data_st_cb1 };
+// this is the timeout in milliseconds for periodic message types. We
+// set this to 1 to minimise resend of stale msgs
+#define CAN_PERIODIC_TX_TIMEOUT_MS 2
 
 // publisher interfaces
-static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[MAX_NUMBER_OF_CAN_DRIVERS];
-static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[MAX_NUMBER_OF_CAN_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>* act_out_array[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::esc::RawCommand>* esc_raw[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// subscribers
+
+// handler SafteyButton
+UC_REGISTRY_BINDER(ButtonCb, ardupilot::indication::Button);
+static uavcan::Subscriber<ardupilot::indication::Button, ButtonCb> *safety_button_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// handler TrafficReport
+UC_REGISTRY_BINDER(TrafficReportCb, ardupilot::equipment::trafficmonitor::TrafficReport);
+static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb> *traffic_report_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// handler actuator status
+UC_REGISTRY_BINDER(ActuatorStatusCb, uavcan::equipment::actuator::Status);
+static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// handler ESC status
+UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
+static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+// handler DEBUG
+UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
+static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+AP_UAVCAN::esc_data AP_UAVCAN::_escs_data[];
+HAL_Semaphore AP_UAVCAN::_telem_sem;
+
 
 AP_UAVCAN::AP_UAVCAN() :
-    _node_allocator(
-        UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_SIZE)
+    _node_allocator()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-        _rco_conf[i].active = false;
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+        _SRV_conf[i].esc_pending = false;
+        _SRV_conf[i].servo_pending = false;
     }
 
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-        _gps_nodes[i] = UINT8_MAX;
-        _gps_node_taken[i] = 0;
-    }
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-        _baro_nodes[i] = UINT8_MAX;
-        _baro_node_taken[i] = 0;
-    }
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        _mag_nodes[i] = UINT8_MAX;
-        _mag_node_taken[i] = 0;
-        _mag_node_max_sensorid_count[i] = 1;
-    }
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        _gps_listener_to_node[i] = UINT8_MAX;
-        _gps_listeners[i] = nullptr;
-
-        _baro_listener_to_node[i] = UINT8_MAX;
-        _baro_listeners[i] = nullptr;
-
-        _mag_listener_to_node[i] = UINT8_MAX;
-        _mag_listeners[i] = nullptr;
-        _mag_listener_sensor_ids[i] = 0;
-    }
-
-    _rc_out_sem = hal.util->new_semaphore();
-
-    debug_uavcan(2, "AP_UAVCAN constructed\n\r");
+    debug_uavcan(AP_CANManager::LOG_INFO, "AP_UAVCAN constructed\n\r");
 }
 
 AP_UAVCAN::~AP_UAVCAN()
 {
 }
 
-bool AP_UAVCAN::try_init(void)
+AP_UAVCAN *AP_UAVCAN::get_uavcan(uint8_t driver_index)
 {
-    if (_parent_can_mgr != nullptr) {
-        if (_parent_can_mgr->is_initialized() && !_initialized) {
+    if (driver_index >= AP::can().get_num_drivers() ||
+        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_UAVCAN) {
+        return nullptr;
+    }
+    return static_cast<AP_UAVCAN*>(AP::can().get_driver(driver_index));
+}
 
-            _uavcan_i = UINT8_MAX;
-            for (uint8_t i = 0; i < MAX_NUMBER_OF_CAN_DRIVERS; i++) {
-                if (_parent_can_mgr == hal.can_mgr[i]) {
-                    _uavcan_i = i;
-                    break;
+bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
+
+    if (_iface_mgr == nullptr) {
+        _iface_mgr = new uavcan::CanIfaceMgr();
+    }
+
+    if (_iface_mgr == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't create UAVCAN interface manager\n\r");
+        return false;
+    }
+
+    if (!_iface_mgr->add_interface(can_iface)) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't add UAVCAN interface\n\r");
+        return false;   
+    }
+    return true;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wframe-larger-than=1400"
+void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
+{
+    _driver_index = driver_index;
+
+    if (_initialized) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: init called more than once\n\r");
+        return;
+    }
+
+    if (_iface_mgr == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't get UAVCAN interface driver\n\r");
+        return;
+    }
+
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
+
+    if (_node == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
+        return;
+    }
+
+    if (_node->isStarted()) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node was already started?\n\r");
+        return;
+    }
+    {
+        uavcan::NodeID self_node_id(_uavcan_node);
+        _node->setNodeID(self_node_id);
+
+        char ndname[20];
+        snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", driver_index);
+
+        uavcan::NodeStatusProvider::NodeName name(ndname);
+        _node->setName(name);
+    }
+    {
+        uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
+        sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
+        sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
+        _node->setSoftwareVersion(sw_version);
+
+        uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
+
+        hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
+        hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+
+        const uint8_t uid_buf_len = hw_version.unique_id.capacity();
+        uint8_t uid_len = uid_buf_len;
+        uint8_t unique_id[uid_buf_len];
+
+
+        if (hal.util->get_system_id_unformatted(unique_id, uid_len)) {
+            //This is because we are maintaining a common Server Record for all UAVCAN Instances.
+            //In case the node IDs are different, and unique id same, it will create
+            //conflict in the Server Record.
+            unique_id[uid_len - 1] += _uavcan_node;
+            uavcan::copy(unique_id, unique_id + uid_len, hw_version.unique_id.begin());
+        }
+        _node->setHardwareVersion(hw_version);
+    }
+    int start_res = _node->start();
+    if (start_res < 0) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: node start problem, error %d\n\r", start_res);
+        return;
+    }
+
+    //Start Servers
+    if (!AP::uavcan_dna_server().init(this)) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: Failed to start DNA Server\n\r");
+        return;
+    }
+
+    // Roundup all subscribers from supported drivers
+    AP_UAVCAN_DNA_Server::subscribe_msgs(this);
+    AP_GPS_UAVCAN::subscribe_msgs(this);
+    AP_Compass_UAVCAN::subscribe_msgs(this);
+    AP_Baro_UAVCAN::subscribe_msgs(this);
+    AP_BattMonitor_UAVCAN::subscribe_msgs(this);
+    AP_Airspeed_UAVCAN::subscribe_msgs(this);
+    AP_OpticalFlow_HereFlow::subscribe_msgs(this);
+    AP_RangeFinder_UAVCAN::subscribe_msgs(this);
+
+    act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
+    act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+    esc_raw[driver_index] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*_node);
+    esc_raw[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
+    esc_raw[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+    rgb_led[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::LightsCommand>(*_node);
+    rgb_led[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    rgb_led[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+    buzzer[driver_index] = new uavcan::Publisher<uavcan::equipment::indication::BeepCommand>(*_node);
+    buzzer[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    buzzer[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+    safety_state[driver_index] = new uavcan::Publisher<ardupilot::indication::SafetyState>(*_node);
+    safety_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    safety_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+    arming_status[driver_index] = new uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>(*_node);
+    arming_status[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    arming_status[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+
+    rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node);
+    rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+    
+    safety_button_listener[driver_index] = new uavcan::Subscriber<ardupilot::indication::Button, ButtonCb>(*_node);
+    if (safety_button_listener[driver_index]) {
+        safety_button_listener[driver_index]->start(ButtonCb(this, &handle_button));
+    }
+
+    traffic_report_listener[driver_index] = new uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, TrafficReportCb>(*_node);
+    if (traffic_report_listener[driver_index]) {
+        traffic_report_listener[driver_index]->start(TrafficReportCb(this, &handle_traffic_report));
+    }
+
+    actuator_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb>(*_node);
+    if (actuator_status_listener[driver_index]) {
+        actuator_status_listener[driver_index]->start(ActuatorStatusCb(this, &handle_actuator_status));
+    }
+
+    esc_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb>(*_node);
+    if (esc_status_listener[driver_index]) {
+        esc_status_listener[driver_index]->start(ESCStatusCb(this, &handle_ESC_status));
+    }
+
+    debug_listener[driver_index] = new uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb>(*_node);
+    if (debug_listener[driver_index]) {
+        debug_listener[driver_index]->start(DebugCb(this, &handle_debug));
+    }
+    
+    _led_conf.devices_count = 0;
+    if (enable_filters) {
+        configureCanAcceptanceFilters(*_node);
+    }
+
+    /*
+     * Informing other nodes that we're ready to work.
+     * Default mode is INITIALIZING.
+     */
+    _node->setModeOperational();
+
+    // Spin node for device discovery
+    _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
+
+    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
+        _node->setModeOfflineAndPublish();
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
+        return;
+    }
+
+    _initialized = true;
+    debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
+}
+#pragma GCC diagnostic pop
+
+// send ESC telemetry messages over MAVLink
+void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
+{
+#ifndef HAL_NO_GCS
+    static const uint8_t MAV_ESC_GROUPS = 3;
+    static const uint8_t MAV_ESC_PER_GROUP = 4;
+
+    for (uint8_t i = 0; i < MAV_ESC_GROUPS; i++) {
+
+        // arrays to hold output
+        uint8_t temperature[MAV_ESC_PER_GROUP] {};
+        uint16_t voltage[MAV_ESC_PER_GROUP] {};
+        uint16_t current[MAV_ESC_PER_GROUP] {};
+        uint16_t current_tot[MAV_ESC_PER_GROUP] {};
+        uint16_t rpm[MAV_ESC_PER_GROUP] {};
+        uint16_t count[MAV_ESC_PER_GROUP] {};
+
+        // if at least one of the ESCs in the group is availabe, the group
+        // is considered to be available too, and will be sent over MAVlink
+        bool group_available = false;
+
+        // fill in output arrays of ESCs sensors with available data.
+        for (uint8_t j = 0; j < MAV_ESC_PER_GROUP; j++) {
+            const uint8_t esc_idx = i * MAV_ESC_PER_GROUP + j;
+            
+            if (!is_esc_data_index_valid(esc_idx)) {
+                return;
+            }
+
+            WITH_SEMAPHORE(_telem_sem);
+            
+            if (!_escs_data[esc_idx].available) {
+                continue;
+            } 
+
+            _escs_data[esc_idx].available = false;
+
+            temperature[j] = _escs_data[esc_idx].temp;
+            voltage[j] = _escs_data[esc_idx].voltage;
+            current[j] = _escs_data[esc_idx].current;
+            current_tot[j] = 0; // currently not implemented
+            rpm[j] = _escs_data[esc_idx].rpm;
+            count[j] = _escs_data[esc_idx].count;
+
+            group_available = true;
+        }
+
+        if (!group_available) {
+            continue;
+        }
+
+        if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
+            return;
+        }
+
+        // send messages
+        switch (i) {
+            case 0:
+                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 1:
+                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            case 2:
+                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                break;
+            default:
+                break;
+        }
+    }
+#endif // HAL_NO_GCS
+}
+
+void AP_UAVCAN::loop(void)
+{
+    while (true) {
+        if (!_initialized) {
+            hal.scheduler->delay_microseconds(1000);
+            continue;
+        }
+
+        const int error = _node->spin(uavcan::MonotonicDuration::fromMSec(1));
+
+        if (error < 0) {
+            hal.scheduler->delay_microseconds(100);
+            continue;
+        }
+
+        if (_SRV_armed) {
+            bool sent_servos = false;
+
+            if (_servo_bm > 0) {
+                // if we have any Servos in bitmask
+                uint32_t now = AP_HAL::native_micros();
+                const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+                if (now - _SRV_last_send_us >= servo_period_us) {
+                    _SRV_last_send_us = now;
+                    SRV_send_actuator();
+                    sent_servos = true;
+                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                        _SRV_conf[i].servo_pending = false;
+                    }
                 }
             }
 
-            if(_uavcan_i == UINT8_MAX) {
-                return false;
+            // if we have any ESC's in bitmask
+            if (_esc_bm > 0 && !sent_servos) {
+                SRV_send_esc();
             }
 
-            auto *node = get_node();
-
-            if (node != nullptr) {
-                if (!node->isStarted()) {
-                    uavcan::NodeID self_node_id(_uavcan_node);
-                    node->setNodeID(self_node_id);
-
-                    char ndname[20];
-                    snprintf(ndname, sizeof(ndname), "org.ardupilot:%u", _uavcan_i);
-
-                    uavcan::NodeStatusProvider::NodeName name(ndname);
-                    node->setName(name);
-
-                    uavcan::protocol::SoftwareVersion sw_version; // Standard type uavcan.protocol.SoftwareVersion
-                    sw_version.major = AP_UAVCAN_SW_VERS_MAJOR;
-                    sw_version.minor = AP_UAVCAN_SW_VERS_MINOR;
-                    node->setSoftwareVersion(sw_version);
-
-                    uavcan::protocol::HardwareVersion hw_version; // Standard type uavcan.protocol.HardwareVersion
-
-                    hw_version.major = AP_UAVCAN_HW_VERS_MAJOR;
-                    hw_version.minor = AP_UAVCAN_HW_VERS_MINOR;
-                    node->setHardwareVersion(hw_version);
-
-                    const int node_start_res = node->start();
-                    if (node_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN: node start problem\n\r");
-                    }
-
-                    uavcan::Subscriber<uavcan::equipment::gnss::Fix> *gnss_fix;
-                    gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix>(*node);
-
-                    const int gnss_fix_start_res = gnss_fix->start(gnss_fix_cb_arr[_uavcan_i]);
-                    if (gnss_fix_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN GNSS subscriber start problem\n\r");
-                        return false;
-                    }
-
-                    uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary> *gnss_aux;
-                    gnss_aux = new uavcan::Subscriber<uavcan::equipment::gnss::Auxiliary>(*node);
-                    const int gnss_aux_start_res = gnss_aux->start(gnss_aux_cb_arr[_uavcan_i]);
-                    if (gnss_aux_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN GNSS Aux subscriber start problem\n\r");
-                        return false;
-                    }
-
-                    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength> *magnetic;
-                    magnetic = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength>(*node);
-                    const int magnetic_start_res = magnetic->start(magnetic_cb_arr[_uavcan_i]);
-                    if (magnetic_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN Compass subscriber start problem\n\r");
-                        return false;
-                    }
-                    
-                    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2> *magnetic2;
-                    magnetic2 = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2>(*node);
-                    const int magnetic_start_res_2 = magnetic2->start(magnetic_cb_2_arr[_uavcan_i]);
-                    if (magnetic_start_res_2 < 0) {
-                        debug_uavcan(1, "UAVCAN Compass for multiple mags subscriber start problem\n\r");
-                        return false;
-                    }
-
-                    uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure> *air_data_sp;
-                    air_data_sp = new uavcan::Subscriber<uavcan::equipment::air_data::StaticPressure>(*node);
-                    const int air_data_sp_start_res = air_data_sp->start(air_data_sp_cb_arr[_uavcan_i]);
-                    if (air_data_sp_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN Baro subscriber start problem\n\r");
-                        return false;
-                    }
-
-                    uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature> *air_data_st;
-                    air_data_st = new uavcan::Subscriber<uavcan::equipment::air_data::StaticTemperature>(*node);
-                    const int air_data_st_start_res = air_data_st->start(air_data_st_cb_arr[_uavcan_i]);
-                    if (air_data_st_start_res < 0) {
-                        debug_uavcan(1, "UAVCAN Temperature subscriber start problem\n\r");
-                        return false;
-                    }
-
-                    act_out_array[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*node);
-                    act_out_array[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-                    act_out_array[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
-
-                    esc_raw[_uavcan_i] = new uavcan::Publisher<uavcan::equipment::esc::RawCommand>(*node);
-                    esc_raw[_uavcan_i]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
-                    esc_raw[_uavcan_i]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
-
-                    /*
-                     * Informing other nodes that we're ready to work.
-                     * Default mode is INITIALIZING.
-                     */
-                    node->setModeOperational();
-
-                    _initialized = true;
-
-                    debug_uavcan(1, "UAVCAN: init done\n\r");
-
-                    return true;
-                }
+            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                _SRV_conf[i].esc_pending = false;
             }
         }
 
-        if (_initialized) {
-            return true;
-        }
+        led_out_send();
+        buzzer_send();
+        rtcm_stream_send();
+        safety_state_send();
+        AP::uavcan_dna_server().verify_nodes(this);
     }
-
-    return false;
 }
 
-bool AP_UAVCAN::rc_out_sem_take()
-{
-    bool sem_ret = _rc_out_sem->take(10);
-    if (!sem_ret) {
-        debug_uavcan(1, "AP_UAVCAN RCOut semaphore fail\n\r");
-    }
-    return sem_ret;
-}
 
-void AP_UAVCAN::rc_out_sem_give()
-{
-    _rc_out_sem->give();
-}
+///// SRV output /////
 
-void AP_UAVCAN::rc_out_send_servos(void)
+void AP_UAVCAN::SRV_send_actuator(void)
 {
     uint8_t starting_servo = 0;
     bool repeat_send;
+
+    WITH_SEMAPHORE(SRV_sem);
 
     do {
         repeat_send = false;
@@ -502,7 +488,7 @@ void AP_UAVCAN::rc_out_send_servos(void)
 
         uint8_t i;
         // UAVCAN can hold maximum of 15 commands in one frame
-        for (i = 0; starting_servo < UAVCAN_RCO_NUMBER && i < 15; starting_servo++) {
+        for (i = 0; starting_servo < UAVCAN_SRV_NUMBER && i < 15; starting_servo++) {
             uavcan::equipment::actuator::Command cmd;
 
             /*
@@ -514,14 +500,14 @@ void AP_UAVCAN::rc_out_send_servos(void)
              * physically possible throws at [-1:1] limits.
              */
 
-            if (_rco_conf[starting_servo].active && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
                 cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
 
                 // TODO: failsafe, safety
-                cmd.command_value = constrain_float(((float) _rco_conf[starting_servo].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
+                cmd.command_value = constrain_float(((float) _SRV_conf[starting_servo].pulse - 1000.0) / 500.0 - 1.0, -1.0, 1.0);
 
                 msg.commands.push_back(cmd);
 
@@ -530,7 +516,7 @@ void AP_UAVCAN::rc_out_send_servos(void)
         }
 
         if (i > 0) {
-            act_out_array[_uavcan_i]->broadcast(msg);
+            act_out_array[_driver_index]->broadcast(msg);
 
             if (i == 15) {
                 repeat_send = true;
@@ -539,7 +525,7 @@ void AP_UAVCAN::rc_out_send_servos(void)
     } while (repeat_send);
 }
 
-void AP_UAVCAN::rc_out_send_esc(void)
+void AP_UAVCAN::SRV_send_esc(void)
 {
     static const int cmd_max = uavcan::equipment::esc::RawCommand::FieldTypes::cmd::RawValueType::max();
     uavcan::equipment::esc::RawCommand esc_msg;
@@ -547,11 +533,13 @@ void AP_UAVCAN::rc_out_send_esc(void)
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
 
+    WITH_SEMAPHORE(SRV_sem);
+
     // find out how many esc we have enabled and if they are active at all
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
+    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
-            if (_rco_conf[i].active) {
+            if (_SRV_conf[i].esc_pending) {
                 active_esc_num++;
             }
         }
@@ -562,11 +550,9 @@ void AP_UAVCAN::rc_out_send_esc(void)
         k = 0;
 
         for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
-            uavcan::equipment::actuator::Command cmd;
-
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_rco_conf[i].pulse) + 1.0) / 2.0;
+                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
                 scaled = constrain_float(scaled, 0, cmd_max);
 
@@ -578,542 +564,358 @@ void AP_UAVCAN::rc_out_send_esc(void)
             k++;
         }
 
-        esc_raw[_uavcan_i]->broadcast(esc_msg);
+        esc_raw[_driver_index]->broadcast(esc_msg);
     }
 }
 
-void AP_UAVCAN::do_cyclic(void)
+void AP_UAVCAN::SRV_push_servos()
 {
-    if (!_initialized) {
-        hal.scheduler->delay_microseconds(1000);
+    WITH_SEMAPHORE(SRV_sem);
+
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        // Check if this channels has any function assigned
+        if (SRV_Channels::channel_function(i)) {
+            _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
+            _SRV_conf[i].esc_pending = true;
+            _SRV_conf[i].servo_pending = true;
+        }
+    }
+
+    _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+}
+
+
+///// LED /////
+
+void AP_UAVCAN::led_out_send()
+{
+    uint64_t now = AP_HAL::native_micros64();
+
+    if ((now - _led_conf.last_update) < LED_DELAY_US) {
         return;
     }
 
-	auto *node = get_node();
+    uavcan::equipment::indication::LightsCommand msg;
+    {
+        WITH_SEMAPHORE(_led_out_sem);
 
-	const int error = node->spin(uavcan::MonotonicDuration::fromMSec(1));
-
-	if (error < 0) {
-		hal.scheduler->delay_microseconds(1000);
-		return;
-	}
-
-	if (rc_out_sem_take()) {
-
-		if (_rco_armed) {
-
-			// if we have any Servos in bitmask
-			if (_servo_bm > 0) {
-				rc_out_send_servos();
-			}
-
-			// if we have any ESC's in bitmask
-			if (_esc_bm > 0) {
-				rc_out_send_esc();
-			}
-		}
-
-		for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-			// mark as transmitted
-			_rco_conf[i].active = false;
-		}
-
-		rc_out_sem_give();
-	}
-}
-
-uavcan::ISystemClock & AP_UAVCAN::get_system_clock()
-{
-    return SystemClock::instance();
-}
-
-uavcan::ICanDriver * AP_UAVCAN::get_can_driver()
-{
-    if (_parent_can_mgr != nullptr) {
-        if (_parent_can_mgr->is_initialized() == false) {
-            return nullptr;
-        } else {
-            return _parent_can_mgr->get_driver();
+        if (_led_conf.devices_count == 0) {
+            return;
         }
-    }
-    return nullptr;
-}
 
-uavcan::Node<0> *AP_UAVCAN::get_node()
-{
-    if (_node == nullptr && get_can_driver() != nullptr) {
-        _node = new uavcan::Node<0>(*get_can_driver(), get_system_clock(), _node_allocator);
-    }
+        uavcan::equipment::indication::SingleLightCommand cmd;
 
-    return _node;
-}
+        for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
+            cmd.light_id =_led_conf.devices[i].led_index;
+            cmd.color.red = _led_conf.devices[i].red >> 3;
+            cmd.color.green = _led_conf.devices[i].green >> 2;
+            cmd.color.blue = _led_conf.devices[i].blue >> 3;
 
-void AP_UAVCAN::rco_set_safety_pwm(uint32_t chmask, uint16_t pulse_len)
-{
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-        if (chmask & (((uint32_t) 1) << i)) {
-            _rco_conf[i].safety_pulse = pulse_len;
-        }
-    }
-}
-
-void AP_UAVCAN::rco_set_failsafe_pwm(uint32_t chmask, uint16_t pulse_len)
-{
-    for (uint8_t i = 0; i < UAVCAN_RCO_NUMBER; i++) {
-        if (chmask & (((uint32_t) 1) << i)) {
-            _rco_conf[i].failsafe_pulse = pulse_len;
-        }
-    }
-}
-
-void AP_UAVCAN::rco_force_safety_on(void)
-{
-    _rco_safety = true;
-}
-
-void AP_UAVCAN::rco_force_safety_off(void)
-{
-    _rco_safety = false;
-}
-
-void AP_UAVCAN::rco_arm_actuators(bool arm)
-{
-    _rco_armed = arm;
-}
-
-void AP_UAVCAN::rco_write(uint16_t pulse_len, uint8_t ch)
-{
-    _rco_conf[ch].pulse = pulse_len;
-    _rco_conf[ch].active = true;
-}
-
-uint8_t AP_UAVCAN::find_gps_without_listener(void)
-{
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_gps_listeners[i] == nullptr && _gps_nodes[i] != UINT8_MAX) {
-            return _gps_nodes[i];
+            msg.commands.push_back(cmd);
         }
     }
 
-    return UINT8_MAX;
+    rgb_led[_driver_index]->broadcast(msg);
+    _led_conf.last_update = now;
 }
 
-uint8_t AP_UAVCAN::register_gps_listener(AP_GPS_Backend* new_listener, uint8_t preferred_channel)
+bool AP_UAVCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue)
 {
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_gps_listeners[i] == nullptr) {
-            sel_place = i;
+    if (_led_conf.devices_count >= AP_UAVCAN_MAX_LED_DEVICES) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(_led_out_sem);
+
+    // check if a device instance exists. if so, break so the instance index is remembered
+    uint8_t instance = 0;
+    for (; instance < _led_conf.devices_count; instance++) {
+        if (_led_conf.devices[instance].led_index == led_index) {
             break;
         }
     }
 
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel <= AP_UAVCAN_MAX_GPS_NODES) {
-                _gps_listeners[sel_place] = new_listener;
-                _gps_listener_to_node[sel_place] = preferred_channel - 1;
-                _gps_node_taken[_gps_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
+    // load into the correct instance.
+    // if an existing instance was found in above for loop search,
+    // then instance value is < _led_conf.devices_count.
+    // otherwise a new one was just found so we increment the count.
+    // Either way, the correct instance is the current value of instance
+    _led_conf.devices[instance].led_index = led_index;
+    _led_conf.devices[instance].red = red;
+    _led_conf.devices[instance].green = green;
+    _led_conf.devices[instance].blue = blue;
 
-                debug_uavcan(2, "reg_GPS place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-                if (_gps_node_taken[i] == 0) {
-                    _gps_listeners[sel_place] = new_listener;
-                    _gps_listener_to_node[sel_place] = i;
-                    _gps_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_GPS place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
-        }
+    if (instance == _led_conf.devices_count) {
+        _led_conf.devices_count++;
     }
 
-    return ret;
+    return true;
 }
 
-uint8_t AP_UAVCAN::register_gps_listener_to_node(AP_GPS_Backend* new_listener, uint8_t node)
+// buzzer send
+void AP_UAVCAN::buzzer_send()
 {
-    uint8_t sel_place = UINT8_MAX, ret = 0;
+    uavcan::equipment::indication::BeepCommand msg;
+    WITH_SEMAPHORE(_buzzer.sem);
+    uint8_t mask = (1U << _driver_index);
+    if ((_buzzer.pending_mask & mask) == 0) {
+        return;
+    }
+    _buzzer.pending_mask &= ~mask;
+    msg.frequency = _buzzer.frequency;
+    msg.duration = _buzzer.duration;
+    buzzer[_driver_index]->broadcast(msg);
+}
 
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_gps_listeners[i] == nullptr) {
-            sel_place = i;
+// buzzer support
+void AP_UAVCAN::set_buzzer_tone(float frequency, float duration_s)
+{
+    WITH_SEMAPHORE(_buzzer.sem);
+    _buzzer.frequency = frequency;
+    _buzzer.duration = duration_s;
+    _buzzer.pending_mask = 0xFF;
+}
+
+void AP_UAVCAN::rtcm_stream_send()
+{
+    WITH_SEMAPHORE(_rtcm_stream.sem);
+    if (_rtcm_stream.buf == nullptr ||
+        _rtcm_stream.buf->available() == 0) {
+        // nothing to send
+        return;
+    }
+    uint32_t now = AP_HAL::native_millis();
+    if (now - _rtcm_stream.last_send_ms < 20) {
+        // don't send more than 50 per second
+        return;
+    }
+    _rtcm_stream.last_send_ms = now;
+    uavcan::equipment::gnss::RTCMStream msg;
+    uint32_t len = _rtcm_stream.buf->available();
+    if (len > 128) {
+        len = 128;
+    }
+    msg.protocol_id = uavcan::equipment::gnss::RTCMStream::PROTOCOL_ID_RTCM3;
+    for (uint8_t i=0; i<len; i++) {
+        uint8_t b;
+        if (!_rtcm_stream.buf->read_byte(&b)) {
+            return;
+        }
+        msg.data.push_back(b);
+    }
+    rtcm_stream[_driver_index]->broadcast(msg);
+}
+
+// SafetyState send
+void AP_UAVCAN::safety_state_send()
+{
+    uint32_t now = AP_HAL::native_millis();
+    if (now - _last_safety_state_ms < 500) {
+        // update at 2Hz
+        return;
+    }
+    _last_safety_state_ms = now;
+
+    { // handle SafetyState
+        ardupilot::indication::SafetyState safety_msg;
+        switch (hal.util->safety_switch_state()) {
+        case AP_HAL::Util::SAFETY_ARMED:
+            safety_msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_OFF;
+            break;
+        case AP_HAL::Util::SAFETY_DISARMED:
+            safety_msg.status = ardupilot::indication::SafetyState::STATUS_SAFETY_ON;
+            break;
+        default:
+            // nothing to send
             break;
         }
+        safety_state[_driver_index]->broadcast(safety_msg);
     }
 
-    if (sel_place != UINT8_MAX) {
-        for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-            if (_gps_nodes[i] == node) {
-                _gps_listeners[sel_place] = new_listener;
-                _gps_listener_to_node[sel_place] = i;
-                _gps_node_taken[i]++;
-                ret = i + 1;
-
-                debug_uavcan(2, "reg_GPS place:%d, chan: %d\n\r", sel_place, i);
-                break;
-            }
-        }
-    }
-
-    return ret;
-}
-
-void AP_UAVCAN::remove_gps_listener(AP_GPS_Backend* rem_listener)
-{
-    // Check for all listeners and compare pointers
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_gps_listeners[i] == rem_listener) {
-            _gps_listeners[i] = nullptr;
-
-            // Also decrement usage counter and reset listening node
-            if (_gps_node_taken[_gps_listener_to_node[i]] > 0) {
-                _gps_node_taken[_gps_listener_to_node[i]]--;
-            }
-            _gps_listener_to_node[i] = UINT8_MAX;
-        }
-    }
-}
-
-AP_GPS::GPS_State *AP_UAVCAN::find_gps_node(uint8_t node)
-{
-    // Check if such node is already defined
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-        if (_gps_nodes[i] == node) {
-            return &_gps_node_state[i];
-        }
-    }
-
-    // If not - try to find free space for it
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-        if (_gps_nodes[i] == UINT8_MAX) {
-            _gps_nodes[i] = node;
-            return &_gps_node_state[i];
-        }
-    }
-
-    // If no space is left - return nullptr
-    return nullptr;
-}
-
-void AP_UAVCAN::update_gps_state(uint8_t node)
-{
-    // Go through all listeners of specified node and call their's update methods
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_GPS_NODES; i++) {
-        if (_gps_nodes[i] == node) {
-            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
-                if (_gps_listener_to_node[j] == i) {
-                    _gps_listeners[j]->handle_gnss_msg(_gps_node_state[i]);
-                }
-            }
-        }
-    }
-}
-
-uint8_t AP_UAVCAN::register_baro_listener(AP_Baro_Backend* new_listener, uint8_t preferred_channel)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_baro_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel < AP_UAVCAN_MAX_BARO_NODES) {
-                _baro_listeners[sel_place] = new_listener;
-                _baro_listener_to_node[sel_place] = preferred_channel - 1;
-                _baro_node_taken[_baro_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
-
-                debug_uavcan(2, "reg_Baro place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-                if (_baro_node_taken[i] == 0) {
-                    _baro_listeners[sel_place] = new_listener;
-                    _baro_listener_to_node[sel_place] = i;
-                    _baro_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_BARO place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
-uint8_t AP_UAVCAN::register_baro_listener_to_node(AP_Baro_Backend* new_listener, uint8_t node)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_baro_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-            if (_baro_nodes[i] == node) {
-                _baro_listeners[sel_place] = new_listener;
-                _baro_listener_to_node[sel_place] = i;
-                _baro_node_taken[i]++;
-                ret = i + 1;
-
-                debug_uavcan(2, "reg_BARO place:%d, chan: %d\n\r", sel_place, i);
-                break;
-            }
-        }
-    }
-
-    return ret;
-}
-
-
-void AP_UAVCAN::remove_baro_listener(AP_Baro_Backend* rem_listener)
-{
-    // Check for all listeners and compare pointers
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_baro_listeners[i] == rem_listener) {
-            _baro_listeners[i] = nullptr;
-
-            // Also decrement usage counter and reset listening node
-            if (_baro_node_taken[_baro_listener_to_node[i]] > 0) {
-                _baro_node_taken[_baro_listener_to_node[i]]--;
-            }
-            _baro_listener_to_node[i] = UINT8_MAX;
-        }
-    }
-}
-
-AP_UAVCAN::Baro_Info *AP_UAVCAN::find_baro_node(uint8_t node)
-{
-    // Check if such node is already defined
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-        if (_baro_nodes[i] == node) {
-            return &_baro_node_state[i];
-        }
-    }
-
-    // If not - try to find free space for it
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-        if (_baro_nodes[i] == UINT8_MAX) {
-
-            _baro_nodes[i] = node;
-            return &_baro_node_state[i];
-        }
-    }
-
-    // If no space is left - return nullptr
-    return nullptr;
-}
-
-void AP_UAVCAN::update_baro_state(uint8_t node)
-{
-    // Go through all listeners of specified node and call their's update methods
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-        if (_baro_nodes[i] == node) {
-            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
-                if (_baro_listener_to_node[j] == i) {
-                    _baro_listeners[j]->handle_baro_msg(_baro_node_state[i].pressure, _baro_node_state[i].temperature);
-                }
-            }
-        }
+    { // handle ArmingStatus
+        uavcan::equipment::safety::ArmingStatus arming_msg;
+        arming_msg.status = AP::arming().is_armed() ? uavcan::equipment::safety::ArmingStatus::STATUS_FULLY_ARMED :
+                                                      uavcan::equipment::safety::ArmingStatus::STATUS_DISARMED;
+        arming_status[_driver_index]->broadcast(arming_msg);
     }
 }
 
 /*
- * Find discovered not taken baro node with smallest node ID
- */
-uint8_t AP_UAVCAN::find_smallest_free_baro_node()
+ send RTCMStream packet on all active UAVCAN drivers
+*/
+void AP_UAVCAN::send_RTCMStream(const uint8_t *data, uint32_t len)
 {
-    uint8_t ret = UINT8_MAX;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_BARO_NODES; i++) {
-        if (_baro_node_taken[i] == 0) {
-            ret = MIN(ret, _baro_nodes[i]);
-        }
+    WITH_SEMAPHORE(_rtcm_stream.sem);
+    if (_rtcm_stream.buf == nullptr) {
+        // give enough space for a full round from a NTRIP server with all
+        // constellations
+        _rtcm_stream.buf = new ByteBuffer(2400);
     }
-
-    return ret;
-}
-
-uint8_t AP_UAVCAN::register_mag_listener(AP_Compass_Backend* new_listener, uint8_t preferred_channel)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_mag_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
+    if (_rtcm_stream.buf == nullptr) {
+        return;
     }
-
-    if (sel_place != UINT8_MAX) {
-        if (preferred_channel != 0) {
-            if (preferred_channel < AP_UAVCAN_MAX_MAG_NODES) {
-                _mag_listeners[sel_place] = new_listener;
-                _mag_listener_to_node[sel_place] = preferred_channel - 1;
-                _mag_node_taken[_mag_listener_to_node[sel_place]]++;
-                ret = preferred_channel;
-
-                debug_uavcan(2, "reg_Compass place:%d, chan: %d\n\r", sel_place, preferred_channel);
-            }
-        } else {
-            for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-                if (_mag_node_taken[i] == 0) {
-                    _mag_listeners[sel_place] = new_listener;
-                    _mag_listener_to_node[sel_place] = i;
-                    _mag_node_taken[i]++;
-                    ret = i + 1;
-
-                    debug_uavcan(2, "reg_MAG place:%d, chan: %d\n\r", sel_place, i);
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
-uint8_t AP_UAVCAN::register_mag_listener_to_node(AP_Compass_Backend* new_listener, uint8_t node)
-{
-    uint8_t sel_place = UINT8_MAX, ret = 0;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_mag_listeners[i] == nullptr) {
-            sel_place = i;
-            break;
-        }
-    }
-
-    if (sel_place != UINT8_MAX) {
-        for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-            if (_mag_nodes[i] == node) {
-                _mag_listeners[sel_place] = new_listener;
-                _mag_listener_to_node[sel_place] = i;
-                _mag_listener_sensor_ids[sel_place] = 0;
-                _mag_node_taken[i]++;
-                ret = i + 1;
-
-                debug_uavcan(2, "reg_MAG place:%d, chan: %d\n\r", sel_place, i);
-                break;
-            }
-        }
-    }
-
-    return ret;
-}
-
-void AP_UAVCAN::remove_mag_listener(AP_Compass_Backend* rem_listener)
-{
-    // Check for all listeners and compare pointers
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_LISTENERS; i++) {
-        if (_mag_listeners[i] == rem_listener) {
-            _mag_listeners[i] = nullptr;
-
-            // Also decrement usage counter and reset listening node
-            if (_mag_node_taken[_mag_listener_to_node[i]] > 0) {
-                _mag_node_taken[_mag_listener_to_node[i]]--;
-            }
-            _mag_listener_to_node[i] = UINT8_MAX;
-        }
-    }
-}
-
-AP_UAVCAN::Mag_Info *AP_UAVCAN::find_mag_node(uint8_t node, uint8_t sensor_id)
-{
-    // Check if such node is already defined
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        if (_mag_nodes[i] == node) {
-            if (_mag_node_max_sensorid_count[i] < sensor_id) {
-                _mag_node_max_sensorid_count[i] = sensor_id;
-                debug_uavcan(2, "AP_UAVCAN: Compass: found sensor id %d on node %d\n\r", (int)(sensor_id), (int)(node));
-            }
-            return &_mag_node_state[i];
-        }
-    }
-
-    // If not - try to find free space for it
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        if (_mag_nodes[i] == UINT8_MAX) {
-            _mag_nodes[i] = node;
-            _mag_node_max_sensorid_count[i] = (sensor_id ? sensor_id : 1);
-            debug_uavcan(2, "AP_UAVCAN: Compass: register sensor id %d on node %d\n\r", (int)(sensor_id), (int)(node));  
-            return &_mag_node_state[i];
-        }
-    }
-
-    // If no space is left - return nullptr
-    return nullptr;
+    _rtcm_stream.buf->write(data, len);
 }
 
 /*
- * Find discovered mag node with smallest node ID and which is taken N times,
- * where N is less than its maximum sensor id.
- * This allows multiple AP_Compass_UAVCAN instanses listening multiple compasses
- * that are on one node.
+  handle Button message
  */
-uint8_t AP_UAVCAN::find_smallest_free_mag_node()
+void AP_UAVCAN::handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb)
 {
-    uint8_t ret = UINT8_MAX;
-
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        if (_mag_node_taken[i] < _mag_node_max_sensorid_count[i]) {
-            ret = MIN(ret, _mag_nodes[i]);
-        }
-    }
-
-    return ret;
-}
-
-void AP_UAVCAN::update_mag_state(uint8_t node, uint8_t sensor_id)
-{
-    // Go through all listeners of specified node and call their's update methods
-    for (uint8_t i = 0; i < AP_UAVCAN_MAX_MAG_NODES; i++) {
-        if (_mag_nodes[i] == node) {
-            for (uint8_t j = 0; j < AP_UAVCAN_MAX_LISTENERS; j++) {
-                if (_mag_listener_to_node[j] == i) {
-                    
-                    /*If the current listener has default sensor_id,
-                      while our sensor_id is not default, we have
-                      to assign our sensor_id to this listener*/ 
-                    if ((_mag_listener_sensor_ids[j] == 0) && (sensor_id != 0)) {
-                        bool already_taken = false;
-                        for (uint8_t k = 0; k < AP_UAVCAN_MAX_LISTENERS; k++) {
-                            if (_mag_listener_sensor_ids[k] == sensor_id) {
-                                already_taken = true;
-                            }
-                        }
-                        if (!already_taken) {
-                            debug_uavcan(2, "AP_UAVCAN: Compass: sensor_id updated to %d for listener %d\n", sensor_id, j);
-                            _mag_listener_sensor_ids[j] = sensor_id;
-                        }
-                    }
-                    
-                    /*If the current listener has the sensor_id that we have,
-                      or our sensor_id is default, ask the listener to handle the measurements
-                      (the default one is used for the nodes that have only one compass*/
-                    if ((sensor_id == 0) || (_mag_listener_sensor_ids[j] == sensor_id)) {
-                        _mag_listeners[j]->handle_mag_msg(_mag_node_state[i].mag_vector);
-                    }
-                }
+    switch (cb.msg->button) {
+    case ardupilot::indication::Button::BUTTON_SAFETY: {
+        AP_BoardConfig *brdconfig = AP_BoardConfig::get_singleton();
+        if (brdconfig && brdconfig->safety_button_handle_pressed(cb.msg->press_time)) {
+            AP_HAL::Util::safety_state state = hal.util->safety_switch_state();
+            if (state == AP_HAL::Util::SAFETY_ARMED) {
+                hal.rcout->force_safety_on();
+            } else {
+                hal.rcout->force_safety_off();
             }
         }
+        break;
+    }
     }
 }
 
-#endif // HAL_WITH_UAVCAN
+/*
+  handle traffic report
+ */
+void AP_UAVCAN::handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb)
+{
+#if HAL_ADSB_ENABLED
+    AP_ADSB *adsb = AP::ADSB();
+    if (!adsb || !adsb->enabled()) {
+        // ADSB not enabled
+        return;
+    }
+
+    const ardupilot::equipment::trafficmonitor::TrafficReport &msg = cb.msg[0];
+    AP_ADSB::adsb_vehicle_t vehicle;
+    mavlink_adsb_vehicle_t &pkt = vehicle.info;
+
+    pkt.ICAO_address = msg.icao_address;
+    pkt.tslc = msg.tslc;
+    pkt.lat = msg.latitude_deg_1e7;
+    pkt.lon = msg.longitude_deg_1e7;
+    pkt.altitude = msg.alt_m * 1000;
+    pkt.heading = degrees(msg.heading) * 100;
+    pkt.hor_velocity = norm(msg.velocity[0], msg.velocity[1]) * 100;
+    pkt.ver_velocity = -msg.velocity[2] * 100;
+    pkt.squawk = msg.squawk;
+    for (uint8_t i=0; i<9; i++) {
+        pkt.callsign[i] = msg.callsign[i];
+    }
+    pkt.emitter_type = msg.traffic_type;
+
+    if (msg.alt_type == ardupilot::equipment::trafficmonitor::TrafficReport::ALT_TYPE_PRESSURE_AMSL) {
+        pkt.flags |= ADSB_FLAGS_VALID_ALTITUDE;
+        pkt.altitude_type = ADSB_ALTITUDE_TYPE_PRESSURE_QNH;
+    } else if (msg.alt_type == ardupilot::equipment::trafficmonitor::TrafficReport::ALT_TYPE_WGS84) {
+        pkt.flags |= ADSB_FLAGS_VALID_ALTITUDE;
+        pkt.altitude_type = ADSB_ALTITUDE_TYPE_GEOMETRIC;
+    }
+
+    if (msg.lat_lon_valid) {
+        pkt.flags |= ADSB_FLAGS_VALID_COORDS;
+    }
+    if (msg.heading_valid) {
+        pkt.flags |= ADSB_FLAGS_VALID_HEADING;
+    }
+    if (msg.velocity_valid) {
+        pkt.flags |= ADSB_FLAGS_VALID_VELOCITY;
+    }
+    if (msg.callsign_valid) {
+        pkt.flags |= ADSB_FLAGS_VALID_CALLSIGN;
+    }
+    if (msg.ident_valid) {
+        pkt.flags |= ADSB_FLAGS_VALID_SQUAWK;
+    }
+    if (msg.simulated_report) {
+        pkt.flags |= ADSB_FLAGS_SIMULATED;
+    }
+    if (msg.vertical_velocity_valid) {
+        pkt.flags |= ADSB_FLAGS_VERTICAL_VELOCITY_VALID;
+    }
+    if (msg.baro_valid) {
+        pkt.flags |= ADSB_FLAGS_BARO_VALID;
+    }
+
+    vehicle.last_update_ms = AP_HAL::native_millis() - (vehicle.info.tslc * 1000);
+    adsb->handle_adsb_vehicle(vehicle);
+#endif
+}
+
+/*
+  handle actuator status message
+ */
+void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb)
+{
+    // log as CSRV message
+    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
+                                   cb.msg->actuator_id,
+                                   cb.msg->position,
+                                   cb.msg->force,
+                                   cb.msg->speed,
+                                   cb.msg->power_rating_pct);
+}
+
+/*
+  handle ESC status message
+ */
+void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
+{
+    const uint8_t esc_index = cb.msg->esc_index;
+    
+    // log as CESC message
+    AP::logger().Write_ESCStatus(AP_HAL::native_micros64(),
+                                 cb.msg->esc_index,
+                                 cb.msg->error_count,
+                                 cb.msg->voltage,
+                                 cb.msg->current,
+                                 cb.msg->temperature - C_TO_KELVIN,
+                                 cb.msg->rpm,
+                                 cb.msg->power_rating_pct);
+
+    WITH_SEMAPHORE(_telem_sem);
+
+    if (!is_esc_data_index_valid(esc_index)) {
+        return;
+    }
+
+    esc_data &esc = _escs_data[esc_index];
+    esc.available = true;
+    esc.temp = (cb.msg->temperature - C_TO_KELVIN);
+    esc.voltage = cb.msg->voltage*100;
+    esc.current = cb.msg->current*100;
+    esc.rpm = cb.msg->rpm;
+    esc.count++;
+
+}
+
+bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
+    if (index > UAVCAN_SRV_NUMBER) {
+        // printf("UAVCAN: invalid esc index: %d. max index allowed: %d\n\r", index, UAVCAN_SRV_NUMBER);
+        return false;
+    }
+    return true;
+}
+
+/*
+  handle LogMessage debug
+ */
+void AP_UAVCAN::handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb)
+{
+#ifndef HAL_NO_LOGGING
+    const auto &msg = *cb.msg;
+    if (AP::can().get_log_level() != AP_CANManager::LOG_NONE) {
+        // log to onboard log and mavlink
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CAN[%u] %s", node_id, msg.text.c_str());
+    } else {
+        // only log to onboard log
+        AP::logger().Write_MessageF("CAN[%u] %s", node_id, msg.text.c_str());
+    }
+#endif
+}
+
+#endif // HAL_NUM_CAN_IFACES

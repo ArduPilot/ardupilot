@@ -19,8 +19,7 @@
 #include "OpticalFlow.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
-    (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP ||\
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_MINLURE)
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
 
 #ifndef OPTICALFLOW_ONBOARD_DEBUG
 #define OPTICALFLOW_ONBOARD_DEBUG 0
@@ -54,7 +53,6 @@ void AP_OpticalFlow_Onboard::update()
     }
 
     struct OpticalFlow::OpticalFlow_state state;
-    state.device_id = OPTICALFLOW_ONBOARD_ID;
     state.surface_quality = data_frame.quality;
     if (data_frame.delta_time > 0) {
         const Vector2f flowScaler = _flowScaler();

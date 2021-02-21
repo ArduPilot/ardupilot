@@ -3,39 +3,61 @@
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
 #define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
-#define AP_INERTIAL_SENSOR_ACCEL_CLIP_THRESH_MSS        (15.5f*GRAVITY_MSS) // accelerometer values over 15.5G are recorded as a clipping error
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
+
+#include <AP_HAL/AP_HAL.h>
 
 /**
    maximum number of INS instances available on this platform. If more
    than 1 then redundant sensors may be available
  */
+#ifndef INS_MAX_INSTANCES
 #define INS_MAX_INSTANCES 3
-#define INS_MAX_BACKENDS  6
-#define INS_VIBRATION_CHECK_INSTANCES 2
+#endif
+#define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
+#define INS_MAX_NOTCHES 4
+#ifndef INS_VIBRATION_CHECK_INSTANCES
+  #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+    #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
+  #else
+    #define INS_VIBRATION_CHECK_INSTANCES 1
+  #endif
+#endif
+#define XYZ_AXIS_COUNT    3
+// The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
+#define INS_MAX_GYRO_WINDOW_SAMPLES 8
 
 #define DEFAULT_IMU_LOG_BAT_MASK 0
+
+#ifndef HAL_INS_TEMPERATURE_CAL_ENABLE
+#define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
+
 
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/NotchFilter.h>
+#include <Filter/HarmonicNotchFilter.h>
+#include <AP_Math/polyfit.h>
 
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
 class AP_AHRS;
 
 /*
-  forward declare DataFlash class. We can't include DataFlash.h
+  forward declare AP_Logger class. We can't include logger.h
   because of mutual dependencies
  */
-class DataFlash_Class;
+class AP_Logger;
 
 /* AP_InertialSensor is an abstraction for gyro and accel measurements
  * which are correctly aligned to the body axes and scaled to SI units.
@@ -55,7 +77,7 @@ public:
     AP_InertialSensor(const AP_InertialSensor &other) = delete;
     AP_InertialSensor &operator=(const AP_InertialSensor&) = delete;
 
-    static AP_InertialSensor *get_instance();
+    static AP_InertialSensor *get_singleton();
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
@@ -83,14 +105,20 @@ public:
     bool calibrate_trim(float &trim_roll, float &trim_pitch);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
-    bool calibrating() const { return _calibrating; }
+    bool calibrating() const;
 
+    /// calibrating - returns true if a temperature calibration is running
+    bool temperature_cal_running() const;
+    
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
     ///       been called, as ::init may perform other work
     ///
     void init_gyro(void);
+
+    // get startup messages to output to the GCS
+    bool get_output_banner(uint8_t instance_id, char* banner, uint8_t banner_len);
 
     /// Fetch the current gyro values
     ///
@@ -108,7 +136,7 @@ public:
     bool get_delta_angle(Vector3f &delta_angle) const { return get_delta_angle(_primary_gyro, delta_angle); }
 
     float get_delta_angle_dt(uint8_t i) const;
-    float get_delta_angle_dt() const { return get_delta_angle_dt(_primary_accel); }
+    float get_delta_angle_dt() const { return get_delta_angle_dt(_primary_gyro); }
 
     //get delta velocity if available
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity) const;
@@ -135,7 +163,7 @@ public:
     bool gyro_calibrated_ok(uint8_t instance) const { return _gyro_cal_ok[instance]; }
     bool gyro_calibrated_ok_all() const;
     bool use_gyro(uint8_t instance) const;
-    Gyro_Calibration_Timing gyro_calibration_timing() { return (Gyro_Calibration_Timing)_gyro_cal_timing.get(); }
+    Gyro_Calibration_Timing gyro_calibration_timing();
 
     bool get_accel_health(uint8_t instance) const { return (instance<_accel_count) ? _accel_healthy[instance] : false; }
     bool get_accel_health(void) const { return get_accel_health(_primary_accel); }
@@ -148,6 +176,15 @@ public:
     uint16_t get_gyro_rate_hz(uint8_t instance) const { return uint16_t(_gyro_raw_sample_rates[instance] * _gyro_over_sampling[instance]); }
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
 
+    // FFT support access
+#if HAL_WITH_DSP
+    const Vector3f     &get_raw_gyro(void) const { return _gyro_raw[_primary_gyro]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
+    FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
+    uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
+    uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
+#endif
+    bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
     const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
@@ -187,30 +224,61 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
+    void set_board_orientation(enum Rotation orientation, Matrix3f* custom_rotation = nullptr) {
         _board_orientation = orientation;
+        _custom_rotation = custom_rotation;
     }
 
-    // return the selected sample rate
-    uint16_t get_sample_rate(void) const { return _sample_rate; }
+    // return the selected loop rate at which samples are made avilable
+    uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
     // return the main loop delta_t in seconds
     float get_loop_delta_t(void) const { return _loop_delta_t; }
 
-    uint16_t error_count(void) const { return 0; }
     bool healthy(void) const { return get_gyro_health() && get_accel_health(); }
 
     uint8_t get_primary_accel(void) const { return _primary_accel; }
     uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
+    // Update the harmonic notch frequency
+    void update_harmonic_notch_freq_hz(float scaled_freq);
+    // Update the harmonic notch frequencies
+    void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
+
     // enable HIL mode
     void set_hil_mode(void) { _hil_mode = true; }
 
     // get the gyro filter rate in Hz
-    uint8_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
+    uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
     // get the accel filter rate in Hz
-    uint8_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
+    uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
+
+    // harmonic notch current center frequency
+    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
+
+    // set of harmonic notch current center frequencies
+    const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+
+    // number of harmonic notch current center frequencies
+    uint8_t get_num_gyro_dynamic_notch_center_frequencies(void) const { return _num_calculated_harmonic_notch_frequencies; }
+
+    // harmonic notch reference center frequency
+    float get_gyro_harmonic_notch_center_freq_hz(void) const { return _harmonic_notch_filter.center_freq_hz(); }
+
+    // harmonic notch reference scale factor
+    float get_gyro_harmonic_notch_reference(void) const { return _harmonic_notch_filter.reference(); }
+
+    // harmonic notch tracking mode
+    HarmonicNotchDynamicMode get_gyro_harmonic_notch_tracking_mode(void) const { return _harmonic_notch_filter.tracking_mode(); }
+
+    // harmonic notch harmonics
+    uint8_t get_gyro_harmonic_notch_harmonics(void) const { return _harmonic_notch_filter.harmonics(); }
+
+    // harmonic notch options
+    bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
+        return _harmonic_notch_filter.hasOption(option);
+    }
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -227,6 +295,9 @@ public:
 
     // check for vibration movement. True when all axis show nearly zero movement
     bool is_still();
+
+    // return true if harmonic notch enabled
+    bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
 
     /*
       HIL set functions. The minimum for HIL is set_accel() and
@@ -268,12 +339,15 @@ public:
     void acal_update();
 
     // simple accel calibration
-    MAV_RESULT simple_accel_cal(AP_AHRS &ahrs);
+    MAV_RESULT simple_accel_cal();
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 
     // return time in microseconds of last update() call
     uint32_t get_last_update_usec(void) const { return _last_update_usec; }
+
+    // for killing an IMU for testing purposes
+    void kill_imu(uint8_t imu_idx, bool kill_it);
 
     enum IMU_SENSOR_TYPE {
         IMU_SENSOR_TYPE_ACCEL = 0,
@@ -294,17 +368,39 @@ public:
         // a function called by the main thread at the main loop rate:
         void periodic();
 
+        bool doing_sensor_rate_logging() const { return _doing_sensor_rate_logging; }
+        bool doing_post_filter_logging() const { return _doing_post_filter_logging; }
+
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
 
         // Parameters
         AP_Int16 _required_count;
         AP_Int8 _sensor_mask;
+        AP_Int8 _batch_options_mask;
+
+        // Parameters controlling pushing data to AP_Logger:
+        // Each DF message is ~ 108 bytes in size, so we use about 1kB/s of
+        // logging bandwidth with a 100ms interval.  If we are taking
+        // 1024 samples then we need to send 32 packets, so it will
+        // take ~3 seconds to push a complete batch to the log.  If
+        // you are running a on an FMU with three IMUs then you
+        // will loop back around to the first sensor after about
+        // twenty seconds.
+        AP_Int16 samples_per_msg;
+        AP_Int8 push_interval_ms;
+
         // end Parameters
 
     private:
 
+        enum batch_opt_t {
+            BATCH_OPT_SENSOR_RATE = (1<<0),
+            BATCH_OPT_POST_FILTER = (1<<1),
+        };
+
         void rotate_to_next_sensor();
+        void update_doing_sensor_rate_logging();
 
         bool should_log(uint8_t instance, IMU_SENSOR_TYPE type);
         void push_data_to_log();
@@ -313,6 +409,8 @@ public:
 
         bool initialised : 1;
         bool isbh_sent : 1;
+        bool _doing_sensor_rate_logging : 1;
+        bool _doing_post_filter_logging : 1;
         uint8_t instance : 3; // instance we are sending data for
         AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
         uint16_t isb_seqnum;
@@ -324,24 +422,27 @@ public:
         uint32_t last_sent_ms;
 
         // all samples are multiplied by this
-        static const uint16_t multiplier_accel = INT16_MAX/radians(2000);
-        static const uint16_t multiplier_gyro = INT16_MAX/(16*GRAVITY_MSS);
-        uint16_t multiplier = multiplier_accel;
-
-        // push blocks to DataFlash at regular intervals.  each
-        // message is ~ 108 bytes in size, so we use about 1kB/s of
-        // logging bandwidth with a 100ms interval.  If we are taking
-        // 1024 samples then we need to send 32 packets, so it will
-        // take ~3 seconds to push a complete batch to the log.  If
-        // you are running a on an FMU with three IMUs then you
-        // will loop back around to the first sensor after about
-        // twenty seconds.
-        const uint8_t push_interval_ms = 100;
-        const uint16_t samples_per_msg = 32;
+        uint16_t multiplier; // initialised as part of init()
 
         const AP_InertialSensor &_imu;
     };
     BatchSampler batchsampler{*this};
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // handle external AHRS data
+    void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt);
+#endif
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    /*
+      get a string representation of parameters that should be made
+      persistent across changes of firmware type
+     */
+    void get_persistent_params(ExpandingString &str) const;
+#endif
+
+    // force save of current calibration as valid
+    void force_save_calibration(void);
 
 private:
     // load backend drivers
@@ -371,8 +472,8 @@ private:
     uint8_t _accel_count;
     uint8_t _backend_count;
 
-    // the selected sample rate
-    uint16_t _sample_rate;
+    // the selected loop rate at which samples are made available
+    uint16_t _loop_rate;
     float _loop_delta_t;
     float _loop_delta_t_max;
 
@@ -391,11 +492,25 @@ private:
     LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
     Vector3f _accel_filtered[INS_MAX_INSTANCES];
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
+#if HAL_WITH_DSP
+    // Thread-safe public version of _last_raw_gyro
+    Vector3f _gyro_raw[INS_MAX_INSTANCES];
+    FloatBuffer _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
+    uint16_t _gyro_window_size;
+#endif
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
     // optional notch filter on gyro
-    NotchFilterVector3fParam _notch_filter;
+    NotchFilterParams _notch_filter;
+    NotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
+
+    // optional harmonic notch filter on gyro
+    HarmonicNotchFilterParams _harmonic_notch_filter;
+    HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
+    // the current center frequency for the notch
+    float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
+    uint8_t _num_calculated_harmonic_notch_frequencies;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
@@ -408,8 +523,13 @@ private:
     Vector3f _last_delta_angle[INS_MAX_INSTANCES];
     Vector3f _last_raw_gyro[INS_MAX_INSTANCES];
 
-    // product id
-    AP_Int16 _old_product_id;
+    // bitmask indicating if a sensor is doing sensor-rate sampling:
+    uint8_t _accel_sensor_rate_sampling_enabled;
+    uint8_t _gyro_sensor_rate_sampling_enabled;
+
+    // multipliers for data supplied via sensor-rate logging:
+    uint16_t _accel_raw_sampling_multiplier[INS_MAX_INSTANCES];
+    uint16_t _gyro_raw_sampling_multiplier[INS_MAX_INSTANCES];
 
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
@@ -450,8 +570,8 @@ private:
     float _temperature[INS_MAX_INSTANCES];
 
     // filtering frequency (0 means default)
-    AP_Int8     _accel_filter_cutoff;
-    AP_Int8     _gyro_filter_cutoff;
+    AP_Int16    _accel_filter_cutoff;
+    AP_Int16    _gyro_filter_cutoff;
     AP_Int8     _gyro_cal_timing;
 
     // use for attitude, velocity, position estimates
@@ -460,11 +580,15 @@ private:
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
 
+    // control enable of fast sampling
+    AP_Int8     _fast_sampling_rate;
+
     // control enable of detected sensors
     AP_Int8     _enable_mask;
     
     // board orientation from AHRS
     enum Rotation _board_orientation;
+    Matrix3f* _custom_rotation;
 
     // per-sensor orientation to allow for board type defaults at runtime
     enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
@@ -478,6 +602,11 @@ private:
     uint8_t _primary_gyro;
     uint8_t _primary_accel;
 
+    // mask of accels and gyros which we will be actively using
+    // and this should wait for in wait_for_sample()
+    uint8_t _gyro_wait_mask;
+    uint8_t _accel_wait_mask;
+
     // bitmask bit which indicates if we should log raw accel and gyro data
     uint32_t _log_raw_bit;
 
@@ -487,10 +616,11 @@ private:
     // are we in HIL mode?
     bool _hil_mode:1;
 
-    // are gyros or accels currently being calibrated
-    bool _calibrating:1;
-
     bool _backends_detected:1;
+
+    // are gyros or accels currently being calibrated
+    bool _calibrating_accel;
+    bool _calibrating_gyro;
 
     // the delta time in seconds for the last sample
     float _delta_time;
@@ -539,17 +669,17 @@ private:
     AP_Int8 _acc_body_aligned;
     AP_Int8 _trim_option;
 
-    static AP_InertialSensor *_s_instance;
+    static AP_InertialSensor *_singleton;
     AP_AccelCal* _acal;
 
     AccelCalibrator *_accel_calibrator;
 
     //save accelerometer bias and scale factors
-    void _acal_save_calibrations();
-    void _acal_event_failure();
+    void _acal_save_calibrations() override;
+    void _acal_event_failure() override;
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
-    AccelCalibrator* _acal_get_calibrator(uint8_t i) { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
+    AccelCalibrator* _acal_get_calibrator(uint8_t i) override { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
 
     float _trim_pitch;
     float _trim_roll;
@@ -562,6 +692,104 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+
+    uint8_t imu_kill_mask;
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+public:
+    // TCal class is public for use by SITL
+    class TCal {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+        void correct_accel(float temperature, float cal_temp, Vector3f &accel) const;
+        void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
+        void sitl_apply_accel(float temperature, Vector3f &accel) const;
+        void sitl_apply_gyro(float temperature, Vector3f &accel) const;
+
+        void update_accel_learning(const Vector3f &accel);
+        void update_gyro_learning(const Vector3f &accel);
+
+        enum class Enable : uint8_t {
+            Disabled = 0,
+            Enabled = 1,
+            LearnCalibration = 2,
+        };
+
+        // add samples for learning
+        void update_accel_learning(const Vector3f &gyro, float temperature);
+        void update_gyro_learning(const Vector3f &accel, float temperature);
+        
+        // class for online learning of calibration
+        class Learn {
+        public:
+            Learn(TCal &_tcal, float _start_temp);
+
+            // state for accel/gyro (accel first)
+            struct LearnState {
+                float last_temp;
+                uint32_t last_sample_ms;
+                Vector3f sum;
+                uint32_t sum_count;
+                LowPassFilter2p<float> temp_filter;
+                // double precision is needed for good results when we
+                // span a wide range of temperatures
+                PolyFit<4, double, Vector3f> pfit;
+            } state[2];
+
+            void add_sample(const Vector3f &sample, float temperature, LearnState &state);
+            void finish_calibration(float temperature);
+            bool save_calibration(float temperature);
+            void reset(float temperature);
+            float start_temp;
+            float start_tmax;
+            uint32_t last_save_ms;
+
+            TCal &tcal;
+            uint8_t instance(void) const {
+                return tcal.instance();
+            }
+            Vector3f accel_start;
+        };
+
+        AP_Enum<Enable> enable;
+
+        // get persistent params for this instance
+        void get_persistent_params(ExpandingString &str) const;
+
+    private:
+        AP_Float temp_max;
+        AP_Float temp_min;
+        AP_Vector3f accel_coeff[3];
+        AP_Vector3f gyro_coeff[3];
+        Vector3f accel_tref;
+        Vector3f gyro_tref;
+        Learn *learn;
+
+        void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
+        Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
+
+        // get instance number
+        uint8_t instance(void) const;
+    };
+
+    // instance number for logging
+    uint8_t tcal_instance(const TCal &tc) const {
+        return &tc - &tcal[0];
+    }
+private:
+    TCal tcal[INS_MAX_INSTANCES];
+
+    enum class TCalOptions : uint8_t {
+        PERSIST_TEMP_CAL = (1U<<0),
+        PERSIST_ACCEL_CAL = (1U<<1),
+    };
+
+    // temperature that last calibration was run at
+    AP_Float caltemp_accel[INS_MAX_INSTANCES];
+    AP_Float caltemp_gyro[INS_MAX_INSTANCES];
+    AP_Int32 tcal_options;
+    bool tcal_learning;
+#endif
 };
 
 namespace AP {

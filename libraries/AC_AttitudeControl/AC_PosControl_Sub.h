@@ -4,7 +4,7 @@
 
 class AC_PosControl_Sub : public AC_PosControl {
 public:
-    AC_PosControl_Sub(const AP_AHRS_View & ahrs, const AP_InertialNav& inav,
+    AC_PosControl_Sub(AP_AHRS_View & ahrs, const AP_InertialNav& inav,
                       const AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
     /// set_alt_max - sets maximum altitude above the ekf origin in cm
@@ -30,6 +30,15 @@ public:
     ///     target will also be stopped if the motors hit their limits or leash length is exceeded
     ///     set force_descend to true during landing to allow target to move low enough to slow the motors
     void set_alt_target_from_climb_rate_ff(float climb_rate_cms, float dt, bool force_descend) override;
+
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    void relax_alt_hold_controllers(float throttle_setting) {
+        AC_PosControl::relax_alt_hold_controllers(throttle_setting);
+    }
+
+    /// relax_alt_hold_controllers - set all desired and targets to measured
+    ///     integrator is not reset
+    void relax_alt_hold_controllers();
 
 private:
     float       _alt_max; // max altitude - should be updated from the main code with altitude limit from fence

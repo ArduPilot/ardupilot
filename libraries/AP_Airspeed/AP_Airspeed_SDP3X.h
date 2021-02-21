@@ -49,13 +49,11 @@ public:
 private:
     void _timer();
     bool _send_command(uint16_t cmd);
-    bool _crc(const uint8_t data[], unsigned size, uint8_t checksum);
+    bool _crc(const uint8_t data[], uint8_t size, uint8_t checksum);
     float _correct_pressure(float press);
 
     float _temp;
     float _press;
-    float _temperature;
-    float _pressure;
     uint16_t _temp_count;
     uint16_t _press_count;
     float _temp_sum;

@@ -14,7 +14,7 @@ body {
 	background-image: url(/images/bg.png);
 }
 
-#logo {
+.logo {
 	background-image:url(/images/logo.png);
 	background-repeat:no-repeat;
 	height: 120px;
@@ -35,7 +35,7 @@ h2 {
 	padding-left: 5px;
 }
 
-#git {
+.git {
 	background-color: #FFF;
 	font-size: 15px;
 	display: auto;
@@ -47,12 +47,12 @@ h2 {
 	box-shadow: 2px 2px 5px #888;
 }
 
-#git a {
+.git a {
 	color:#00F;
 	font-weight: normal;
 	}
 	
-#git a:hover {
+.git a:hover {
 	color:#D14836;
 }
 
@@ -65,7 +65,7 @@ h2 {
 }
 
 
-#main {
+.main {
 	padding-top:0px;
 	min-width: 420px;
 	margin-top: 0;
@@ -77,7 +77,7 @@ h2 {
 	padding-left: 20px;
 }
   
-ul#testresults {
+ul.testresults {
 	background-color: #FFF;
 	display: block;
 	padding: 10px;
@@ -89,7 +89,7 @@ ul#testresults {
     box-shadow: 2px 2px 5px #888;
 }
 
-ul#testresults li {
+ul.testresults li {
 	list-style-type: none;
 	display: block;
 	background-color: #eef1f1;
@@ -97,7 +97,7 @@ ul#testresults li {
 	padding: 5px;
 		}
 
-ul#testlogs {
+ul.testlogs {
 	background-color: #FFF;
 	display: block;
 	padding: 10px;
@@ -109,7 +109,7 @@ ul#testlogs {
     box-shadow: 2px 2px 5px #888;
 }
 
-ul#testlogs li {
+ul.testlogs li {
 	text-decoration:none;
 	list-style-type: none;
 	display: block;
@@ -120,13 +120,13 @@ ul#testlogs li {
 		}
 		
 
-ul#testlogs li a {
+ul.testlogs li a {
 	text-decoration:none;
 	color:#8aa19c;
 	font-weight: bold;
 	font-size: 12px;
 	}
 	
-ul#testlogs li a:hover {
+ul.testlogs li a:hover {
 	color:#D14836;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_Common/Location.h>
+
 /*
   magnetic data derived from WMM
  */
@@ -17,12 +19,23 @@ public:
     static bool get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg);
 
     /*
+      get earth field as a Vector3f in Gauss given a Location
+     */
+    static Vector3f get_earth_field_ga(const Location &loc);
+
+    /*
       get declination in degrees for a given latitude_deg and longitude_deg
      */
     static float get_declination(float latitude_deg, float longitude_deg);
     
 private:
-    static const float declination_table[13][37];
-    static const float inclination_table[13][37];
-    static const float intensity_table[13][37];
+    static const float SAMPLING_RES;
+    static const float SAMPLING_MIN_LAT;
+    static const float SAMPLING_MAX_LAT;
+    static const float SAMPLING_MIN_LON;
+    static const float SAMPLING_MAX_LON;
+
+    static const float declination_table[19][37];
+    static const float inclination_table[19][37];
+    static const float intensity_table[19][37];
 };

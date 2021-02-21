@@ -19,8 +19,6 @@
 
 #include <utility>
 
-#include <AP_HAL_Linux/GPIO.h>
-
 extern const AP_HAL::HAL &hal;
 
 #define LSM9DS0_DRY_X_PIN -1
@@ -374,8 +372,8 @@ extern const AP_HAL::HAL &hal;
 #define ACT_DUR                                       0x3F
 
 AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                      int drdy_pin_num_a,
                                                      int drdy_pin_num_g,
                                                      enum Rotation rotation_a,
@@ -389,12 +387,13 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _rotation_a(rotation_a)
     , _rotation_g(rotation_g)
     , _rotation_gH(rotation_gH)
+    , _temp_filter(80, 1)
 {
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM9DS0::probe(AP_InertialSensor &_imu,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
-                                                            AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
                                                             enum Rotation rotation_a,
                                                             enum Rotation rotation_g,
                                                             enum Rotation rotation_gH)
@@ -451,9 +450,7 @@ bool AP_InertialSensor_LSM9DS0::_init_sensor()
 
 bool AP_InertialSensor_LSM9DS0::_hardware_init()
 {
-    if (!_spi_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _spi_sem->take_blocking();
 
     uint8_t tries, whoami;
 
@@ -463,13 +460,11 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
     
     whoami_g = _register_read_g(WHO_AM_I_G);
     if (whoami_g != LSM9DS0_G_WHOAMI && whoami_g != LSM9DS0_G_WHOAMI_H) {
-        hal.console->printf("LSM9DS0: unexpected gyro WHOAMI 0x%x\n", (unsigned)whoami_g);
         goto fail_whoami;
     }
 
     whoami = _register_read_xm(WHO_AM_I_XM);
     if (whoami != LSM9DS0_XM_WHOAMI) {
-        hal.console->printf("LSM9DS0: unexpected acc/mag  WHOAMI 0x%x\n", (unsigned)whoami);
         goto fail_whoami;
     }
 
@@ -645,6 +640,9 @@ void AP_InertialSensor_LSM9DS0::_accel_init()
     /* Accel data ready on INT1 */
     _register_write_xm(CTRL_REG3_XM, CTRL_REG3_XM_P1_DRDYA, true);
     hal.scheduler->delay(1);
+
+    // enable temperature sensor
+    _register_write_xm(CTRL_REG5_XM, _register_read_xm(CTRL_REG5_XM) | 0x80, false);
 }
 
 void AP_InertialSensor_LSM9DS0::_set_gyro_scale(gyro_scale scale)
@@ -678,7 +676,7 @@ void AP_InertialSensor_LSM9DS0::_set_accel_scale(accel_scale scale)
     _accel_scale = (((float) scale + 1.0f) * 2.0f) / 32768.0f;
     if (scale == A_SCALE_16G) {
         /* the datasheet shows an exception for +-16G */
-        _accel_scale = 0.000732;
+        _accel_scale = 0.000732f;
     }
     /* convert to G/LSB to (m/s/s)/LSB */
     _accel_scale *= GRAVITY_MSS;
@@ -731,7 +729,6 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     const uint8_t reg = OUT_X_L_A | 0xC0;
 
     if (!_dev_accel->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading accelerometer\n");
         return;
     }
 
@@ -740,6 +737,16 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
 
     _rotate_and_correct_accel(_accel_instance, accel_data);
     _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
+
+    // read temperature every 10th sample
+    if (_temp_counter == 10) {
+        int16_t traw;
+        const uint8_t regtemp = OUT_TEMP_L_XM | 0xC0;
+        _temp_counter = 0;
+        if (_dev_accel->transfer(&regtemp, 1, (uint8_t *)&traw, sizeof(traw))) {
+            _temperature = _temp_filter.apply(traw * 0.125 + 25);
+        }
+    }
 }
 
 /*
@@ -751,7 +758,6 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_g()
     const uint8_t reg = OUT_X_L_G | 0xC0;
 
     if (!_dev_gyro->transfer(&reg, 1, (uint8_t *) &raw_data, sizeof(raw_data))) {
-        hal.console->printf("LSM9DS0: error reading gyroscope\n");
         return;
     }
 
@@ -767,6 +773,7 @@ bool AP_InertialSensor_LSM9DS0::update()
 {
     update_gyro(_gyro_instance);
     update_accel(_accel_instance);
+    _publish_temperature(_accel_instance, _temperature);
 
     return true;
 }

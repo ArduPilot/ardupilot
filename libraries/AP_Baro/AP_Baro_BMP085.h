@@ -16,7 +16,7 @@ public:
     AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
     /* AP_Baro public interface: */
-    void update();
+    void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 

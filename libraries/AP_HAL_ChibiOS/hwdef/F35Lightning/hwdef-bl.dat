@@ -1,0 +1,49 @@
+# hw definition file for processing by chibios_pins.py
+# for Furious FPV F35 Lightning type hardware bootloader
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 135
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+FLASH_SIZE_KB 1024
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 64
+
+define HAL_STORAGE_SIZE 15360
+define STORAGE_FLASH_PAGE 1
+
+
+# order of UARTs
+SERIAL_ORDER OTG1 USART1 USART2 UART5
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# UART1
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# UART2
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# UART5
+PC12 UART5_TX UART5
+PD2 UART5_RX UART5
+
+PC10 LED_BOOTLOADER OUTPUT LOW GPIO(0)
+define HAL_LED_ON 0
+
+# Add CS pins to ensure they are high in bootloader
+PC0 MPU9250_CS CS
+PA4 OSD_CS CS
+PC5 BMP280_CS CS

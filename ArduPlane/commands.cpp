@@ -34,14 +34,14 @@ void Plane::set_next_WP(const struct Location &loc)
         // additionally treat zero altitude as current altitude
         if (next_WP_loc.alt == 0) {
             next_WP_loc.alt = current_loc.alt;
-            next_WP_loc.flags.relative_alt = false;
-            next_WP_loc.flags.terrain_alt = false;
+            next_WP_loc.relative_alt = false;
+            next_WP_loc.terrain_alt = false;
         }
     }
 
     // convert relative alt to absolute alt
-    if (next_WP_loc.flags.relative_alt) {
-        next_WP_loc.flags.relative_alt = false;
+    if (next_WP_loc.relative_alt) {
+        next_WP_loc.relative_alt = false;
         next_WP_loc.alt += home.alt;
     }
 
@@ -50,7 +50,7 @@ void Plane::set_next_WP(const struct Location &loc)
     // past the waypoint when we start on a leg, then use the current
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
-    if (location_passed_point(current_loc, prev_WP_loc, next_WP_loc)) {
+    if (current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous waypoint");
         prev_WP_loc = current_loc;
     }
@@ -64,13 +64,11 @@ void Plane::set_next_WP(const struct Location &loc)
 
     setup_glide_slope();
     setup_turn_angle();
-
-    loiter_angle_reset();
 }
 
 void Plane::set_guided_WP(void)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.flags.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || guided_WP_loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -103,25 +101,6 @@ void Plane::set_guided_WP(void)
     loiter_angle_reset();
 }
 
-// run this at setup on the ground
-// -------------------------------
-void Plane::init_home()
-{
-    gcs().send_text(MAV_SEVERITY_INFO, "Init HOME");
-
-    ahrs.set_home(gps.location());
-    home_is_set = HOME_SET_NOT_LOCKED;
-    Log_Write_Home_And_Origin();
-    gcs().send_home(gps.location());
-
-    // Save Home to EEPROM
-    mission.write_home_to_storage();
-
-    // Save prev loc
-    // -------------
-    next_WP_loc = prev_WP_loc = home;
-}
-
 /*
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
@@ -129,6 +108,9 @@ void Plane::init_home()
 */
 void Plane::update_home()
 {
+    if (hal.util->was_watchdog_armed()) {
+        return;
+    }
     if ((g2.home_reset_threshold == -1) ||
         ((g2.home_reset_threshold > 0) &&
          (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
@@ -138,39 +120,35 @@ void Plane::update_home()
         // significantly
         return;
     }
-    if (home_is_set == HOME_SET_NOT_LOCKED) {
+    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
-        if(ahrs.get_position(loc)) {
-            ahrs.set_home(loc);
-            Log_Write_Home_And_Origin();
-            gcs().send_home(loc);
+        if(ahrs.get_position(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            // we take the altitude directly from the GPS as we are
+            // about to reset the baro calibration. We can't use AHRS
+            // altitude or we can end up perpetuating a bias in
+            // altitude, as AHRS alt depends on home alt, which means
+            // we would have a circular dependency
+            loc.alt = gps.location().alt;
+            if (!AP::ahrs().set_home(loc)) {
+                // silently fail
+            }
         }
     }
     barometer.update_calibration();
+    ahrs.resetHeightDatum();
 }
 
-// sets ekf_origin if it has not been set.
-//  should only be used when there is no GPS to provide an absolute position
-void Plane::set_ekf_origin(const Location& loc)
+bool Plane::set_home_persistently(const Location &loc)
 {
-    // check location is valid
-    if (!check_latlng(loc)) {
-        return;
+    if (hal.util->was_watchdog_armed()) {
+        return false;
+    }
+    if (!AP::ahrs().set_home(loc)) {
+        return false;
     }
 
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return;
-    }
+    // Save Home to EEPROM
+    mission.write_home_to_storage();
 
-    if (!ahrs.set_origin(loc)) {
-        return;
-    }
-
-    // log ahrs home and ekf origin dataflash
-    Log_Write_Home_And_Origin();
-
-    // send ekf origin to GCS
-    gcs().send_ekf_origin(loc);
+    return true;
 }

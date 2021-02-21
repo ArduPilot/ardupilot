@@ -35,6 +35,11 @@ static AP_HAL::OwnPtr<AP_HAL::Device> dev;
 #define CMD_SOFT_RESET     0x805D
 #define CMD_READ_ID        0xEFC8
 
+void setup(void);
+void loop(void);
+
+
+#ifdef HAL_INS_MPU60x0_NAME
 static void spi_init()
 {
     // SPI reads have flag 0x80 set
@@ -177,8 +182,9 @@ static void spi_init()
 
     spi_dev->get_semaphore()->give();
 }
+#endif
 
-
+#ifdef HAL_INS_MPU60x0_NAME
 /*
   send a 16 bit command to the baro
  */
@@ -215,9 +221,7 @@ static bool read_calibration_data(void)
 // initialise baro on i2c
 static void i2c_init(void)
 {
-    if (!i2c_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("Failed to get baro semaphore");
-    }
+    i2c_dev->get_semaphore()->take_blocking();
 
     if (send_cmd16(CMD_READ_ID)) {
         printf("ICM20789: read ID ******\n");
@@ -243,9 +247,7 @@ static void i2c_init(void)
     i2c_dev->get_semaphore()->give();
 
     printf("checking baro\n");
-    if (!dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("Failed to get device semaphore");
-    }
+    dev->get_semaphore()->take_blocking();
 
     uint8_t regs[3] = { 0xC0, 0xC1, 0xC2 };
     for (uint8_t i=0; i<ARRAY_SIZE(regs); i++) {
@@ -255,6 +257,7 @@ static void i2c_init(void)
     }
     dev->get_semaphore()->give();
 }
+#endif
 
 void setup()
 {
@@ -267,10 +270,7 @@ void setup()
 #ifdef HAL_INS_MPU60x0_NAME
     spi_dev = std::move(hal.spi->get_device(HAL_INS_MPU60x0_NAME));
 
-    if (!spi_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("Failed to get spi semaphore");
-    }
-
+    spi_dev->get_semaphore()->take_blocking();
 
     i2c_dev = std::move(hal.i2c_mgr->get_device(1, 0x63));
     dev = std::move(hal.i2c_mgr->get_device(1, 0x29));

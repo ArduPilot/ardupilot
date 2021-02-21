@@ -98,4 +98,4 @@ static void BM_GeodesicGridSections(benchmark::State& state)
 /* Benchmark each section */
 BENCHMARK(BM_GeodesicGridSections)->DenseRange(0, 79);
 
-BENCHMARK_MAIN()
+BENCHMARK_MAIN();

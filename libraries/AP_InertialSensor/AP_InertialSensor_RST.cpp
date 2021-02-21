@@ -90,7 +90,7 @@ const extern AP_HAL::HAL &hal;
 #define ACCEL_DEFAULT_RANGE_G               8
 #define ACCEL_DEFAULT_RATE                  1000
 #define ACCEL_DEFAULT_ONCHIP_FILTER_FREQ    780
-#define ACCEL_ONE_G                         9.80665f
+#define ACCEL_ONE_G                         GRAVITY_MSS
 
 /************************************i3g4250d register addresses *******************************************/
 #define GYRO_WHO_AM_I             0x0F
@@ -222,9 +222,7 @@ bool AP_InertialSensor_RST::_init_gyro(void)
 {
     uint8_t whoami;
 
-    if (!_dev_gyro->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_gyro->get_semaphore()->take_blocking();
 
     // set flag for reading registers
     _dev_gyro->set_read_flag(0x80);
@@ -285,9 +283,7 @@ bool AP_InertialSensor_RST::_init_accel(void)
 {
     uint8_t whoami;
 
-    if (!_dev_accel->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return false;
-    }
+    _dev_accel->get_semaphore()->take_blocking();
 
     _dev_accel->set_speed(AP_HAL::Device::SPEED_HIGH);
 

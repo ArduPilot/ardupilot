@@ -16,8 +16,8 @@ uint8_t RCInput::num_channels() {
     return 0;
 }
 
-uint16_t RCInput::read(uint8_t ch) {
-    if (ch == 2) return 900; /* throttle should be low, for safety */
+uint16_t RCInput::read(uint8_t chan) {
+    if (chan == 2) return 900; /* throttle should be low, for safety */
     else return 1500;
 }
 
@@ -28,15 +28,4 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len) {
     }
     return len;
 }
-
-bool RCInput::set_overrides(int16_t *overrides, uint8_t len) {
-    return true;
-}
-
-bool RCInput::set_override(uint8_t channel, int16_t override) {
-    return true;
-}
-
-void RCInput::clear_overrides()
-{}
 

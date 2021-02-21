@@ -67,9 +67,7 @@ bool AP_Baro_KellerLD::_init()
         return false;
     }
 
-    if (!_dev->get_semaphore()->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        AP_HAL::panic("PANIC: AP_Baro_KellerLD: failed to take serial semaphore for init");
-    }
+    _dev->get_semaphore()->take_blocking();
 
     // high retries for init
     _dev->set_retries(10);
@@ -144,6 +142,9 @@ bool AP_Baro_KellerLD::_init()
 
     _instance = _frontend.register_sensor();
 
+    _dev->set_device_type(DEVTYPE_BARO_KELLERLD);
+    set_bus_id(_instance, _dev->get_bus_id());
+    
     _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 
     // lower retries for run
@@ -165,7 +166,7 @@ bool AP_Baro_KellerLD::_init()
 bool AP_Baro_KellerLD::_read()
 {
     uint8_t data[5];
-    if (!_dev->transfer(0x0, 1, data, sizeof(data))) {
+    if (!_dev->transfer(nullptr, 0, data, sizeof(data))) {
         Debug("Keller LD read failed!");
         return false;
     }
@@ -188,13 +189,15 @@ bool AP_Baro_KellerLD::_read()
         return false;
     }
 
-    if (_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        _update_and_wrap_accumulator(pressure_raw, temperature_raw, 128);
-        _sem->give();
-        return true;
+    if (!pressure_ok(pressure_raw)) {
+        return false;
     }
-
-    return false;
+    
+    WITH_SEMAPHORE(_sem);
+    
+    _update_and_wrap_accumulator(pressure_raw, temperature_raw, 128);
+    
+    return true;
 }
 
 // Periodic callback, regular update at 50Hz
@@ -228,21 +231,18 @@ void AP_Baro_KellerLD::update()
     float sum_pressure, sum_temperature;
     float num_samples;
 
-    if (!_sem->take(HAL_SEMAPHORE_BLOCK_FOREVER)) {
-        return;
+    {
+        WITH_SEMAPHORE(_sem);
+
+        if (_accum.num_samples == 0) {
+            return;
+        }
+
+        sum_pressure = _accum.sum_pressure;
+        sum_temperature = _accum.sum_temperature;
+        num_samples = _accum.num_samples;
+        memset(&_accum, 0, sizeof(_accum));
     }
-
-    if (_accum.num_samples == 0) {
-        _sem->give();
-        return;
-    }
-
-    sum_pressure = _accum.sum_pressure;
-    sum_temperature = _accum.sum_temperature;
-    num_samples = _accum.num_samples;
-    memset(&_accum, 0, sizeof(_accum));
-
-    _sem->give();
 
     uint16_t raw_pressure_avg = sum_pressure / num_samples;
     uint16_t raw_temperature_avg = sum_temperature / num_samples;

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+_ap_bin()
+{
+    local cur opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    opts="--help -h"
+    opts+=" --wipe -w"
+    opts+=" --unhide-groups -u"
+    opts+=" --speedup -s"
+    opts+=" --rate -r"
+    opts+=" --console -C"
+    opts+=" --instance -I"
+    opts+=" --synthetic-clock -S"
+    opts+=" --home -O"
+    opts+=" --model -M"
+    opts+=" --fg -F"
+    # Prevent word reuse
+    lim=$((COMP_CWORD - 1))
+    for i in $(seq 0 $lim); do
+      if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
+        opts=${opts//${COMP_WORDS[i]}/}
+        opts=${opts//--${COMP_WORDS[i]}/}
+      fi
+    done
+    COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+}
+
+
+complete -F _ap_bin arducopter
+complete -F _ap_bin arduplane
+complete -F _ap_bin ardusub
+complete -F _ap_bin arducopter

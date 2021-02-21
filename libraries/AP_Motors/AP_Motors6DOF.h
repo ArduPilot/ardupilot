@@ -29,6 +29,8 @@ public:
         SUB_FRAME_CUSTOM
     } sub_frame_t;
 
+    const char* get_frame_string() const override { return _frame_class_string; };
+
     // Override parent
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
@@ -41,10 +43,20 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
+    // returns a vector with roll, pitch, and yaw contributions
+    Vector3f get_motor_angular_factors(int motor_number);
+
+    // returns true if motor is enabled
+    bool motor_is_enabled(int motor_number);
+
+    bool set_reversed(int motor_number, bool reversed);
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
 protected:
+    // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
+    float               get_current_limit_max_throttle() override;
 
     //Override MotorsMatrix method
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
@@ -60,4 +72,8 @@ protected:
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to throttle (climb/descent)
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
     float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
+
+    // current limiting
+    float _output_limited = 1.0f;
+    float _batt_current_last = 0.0f;
 };
