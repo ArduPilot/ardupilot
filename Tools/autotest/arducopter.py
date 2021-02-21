@@ -1307,7 +1307,6 @@ class AutoTestCopter(AutoTest):
 
         # enable fence, disable avoidance
         self.set_parameter("FENCE_ENABLE", 1)
-        self.set_parameter("FENCE_AUTOENABLE", 1)
         self.set_parameter("AVOID_ENABLE", 0)
         self.set_parameter("FENCE_TYPE", 1)
 
@@ -1344,8 +1343,6 @@ class AutoTestCopter(AutoTest):
         self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
-        self.set_parameter("FENCE_ENABLE", 1)
-        self.set_parameter("FENCE_AUTOENABLE", 1)
         self.set_parameter("AVOID_ENABLE", 0)
         self.set_parameter("FENCE_TYPE", 8)
         self.set_parameter("FENCE_ALT_MIN", 20)
@@ -1377,6 +1374,9 @@ class AutoTestCopter(AutoTest):
 
         self.wait_rtl_complete()
 
+        # Disable the fence using mavlink command to ensure cleaned up SITL state
+        self.do_fence_disable()
+
         self.zero_throttle()
 
     def fly_fence_autoenable_always_disabled(self):
@@ -1396,7 +1396,7 @@ class AutoTestCopter(AutoTest):
         # Fence disables at start of landing, check fence is disabled
         self.assert_fence_disabled()
         self.wait_landed_and_disarmed()
-        
+
         self.context_pop()
 
     def fly_fence_autoenable_always_after_takeoff(self):
@@ -1415,7 +1415,7 @@ class AutoTestCopter(AutoTest):
         # Fence disables at start of landing, check fence is disabled
         self.assert_fence_disabled()
         self.wait_landed_and_disarmed()
-        
+
         self.context_pop()
 
     def fly_fence_autoenable_after_takeoff_disable_floor_on_land(self):
@@ -1446,7 +1446,7 @@ class AutoTestCopter(AutoTest):
 
         # Fence enables on arming, check fence is enabled
         self.assert_fence_enabled()
-        
+
         self.disarm_vehicle(force=True)
         # Fence disables on disarm, check fence is disabled
         self.assert_fence_disabled()
@@ -1498,6 +1498,10 @@ class AutoTestCopter(AutoTest):
 
         # Assert fence is not healthy
         self.assert_sensor_state(fence_bit, healthy=False)
+
+        # Disable the fence using mavlink command to ensure cleaned up SITL state
+        self.do_fence_disable()
+        self.assert_fence_disabled()
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
@@ -6645,7 +6649,7 @@ class AutoTestCopter(AutoTest):
 
             ("MinAltFence",
              "Test Min Alt Fence",
-             self.fly_alt_min_fence_test), #26s
+             self.fly_alt_min_fence_test), # 26s
 
             ("FenceAutoEnable",
              "Test Fence Auto-Enable conditions",
@@ -6657,7 +6661,7 @@ class AutoTestCopter(AutoTest):
 
             ("AutoTuneSwitch",
              "Fly AUTOTUNE on a switch",
-             self.fly_autotune_switch),  #105s
+             self.fly_autotune_switch),  # 105s
 
             ("GPSGlitchLoiter",
              "GPS Glitch Loiter Test",
