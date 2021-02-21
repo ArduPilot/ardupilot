@@ -27,7 +27,7 @@ EK3_SRC2_YAW  1
 #
 EK3_SRC_OPTIONS  0
 #
-
+RC6_OPTION  90
 RC7_OPTION  65
 ############################
 ACRO_TURN_RATE  180.0
