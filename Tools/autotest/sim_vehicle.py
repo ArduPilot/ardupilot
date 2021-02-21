@@ -743,6 +743,10 @@ def start_mavproxy(opts, stuff):
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
 
+    # setup ports for this instance
+    mavlink_port = "tcp:" + cmd_opts.mav_host +":" + str(5760 + 10 * cmd_opts.instance)
+    simout_port = cmd_opts.sim_host + ":" + str(5501 + 10 * cmd_opts.instance)
+
     # add Tools/mavproxy_modules to PYTHONPATH in autotest so we can
     # find random MAVProxy helper modules like sitl_calibration
     local_mp_modules_dir = os.path.abspath(
@@ -765,7 +769,7 @@ def start_mavproxy(opts, stuff):
                     # mavlink out to the containing host OS
                     c.extend(["--out", "10.0.2.2:" + str(port)])
                 else:
-                    c.extend(["--out", "127.0.0.1:" + str(port)])
+                    cmd.extend(["--out", cmd_opts.fcu_host + ":" + str(port)])
 
         if opts.hil:
             c.extend(["--load-module", "HIL"])
@@ -773,9 +777,9 @@ def start_mavproxy(opts, stuff):
             if opts.mcast:
                 c.extend(["--master", "mcast:"])
             else:
-                c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+                c.extend(["--master", mavlink_port])
             if stuff["sitl-port"] and not opts.no_rcin:
-                c.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+                c.extend(["--sitl", simout_port])
 
         os.chdir(i_dir)
         if i == instances[-1]:
