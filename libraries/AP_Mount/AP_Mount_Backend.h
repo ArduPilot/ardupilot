@@ -63,7 +63,7 @@ public:
 
     // control - control the mount
     virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
-    
+
     // process MOUNT_CONFIGURE messages received from GCS:
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
 
