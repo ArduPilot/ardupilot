@@ -35,14 +35,18 @@ AP_RPM_Pin::AP_RPM_Pin(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_st
  */
 void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
 {
-    const uint32_t dt = timestamp - irq_state[state.instance].last_pulse_us;
-    irq_state[state.instance].last_pulse_us = timestamp;
-    // we don't accept pulses less than 100us. Using an irq for such
-    // high RPM is too inaccurate, and it is probably just bounce of
-    // the signal which we should ignore
-    if (dt > 100 && dt < 1000*1000) {
-        irq_state[state.instance].dt_sum += dt;
-        irq_state[state.instance].dt_count++;
+    // Only trigger when pin is high. The interrupt is configured to only
+    // trigger on rising edges, but this does not seem to work right.
+    if (pin_state) {
+        const uint32_t dt = timestamp - irq_state[state.instance].last_pulse_us;
+        irq_state[state.instance].last_pulse_us = timestamp;
+        // we don't accept pulses less than 100us. Using an irq for such
+        // high RPM is too inaccurate, and it is probably just bounce of
+        // the signal which we should ignore
+        if (dt > 100 && dt < 1000*1000) {
+            irq_state[state.instance].dt_sum += dt;
+            irq_state[state.instance].dt_count++;
+        }
     }
 }
 
