@@ -1254,3 +1254,53 @@ bool AC_PosControl::pre_arm_checks(const char *param_prefix,
 
     return true;
 }
+
+// accel_to_throttle - alt hold's acceleration controller
+// calculates a desired throttle which is sent directly to the motors
+void AC_PosControl::accel_to_throttle(float accel_target_z)
+{
+    float z_accel_meas;         // actual acceleration
+    float p,i,d;              // used to capture pid values for logging
+
+    // Calculate Earth Frame Z acceleration
+    z_accel_meas = -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f;
+
+    // reset target altitude if this controller has just been engaged
+    if (_flags.reset_accel_to_throttle) {
+        // Reset Filter
+        _accel_error.z = 0;
+        _flags.reset_accel_to_throttle = false;
+    } else {
+        // calculate accel error
+        _accel_error.z = accel_target_z - z_accel_meas;
+    }
+
+    // set input to PID
+    _pid_accel_z.update_error(_accel_error.z);
+    _pid_accel_z.update_all(accel_target_z, z_accel_meas);
+
+    // separately calculate p, i, d values for logging
+    p = _pid_accel_z.get_p();
+
+    // get i term
+    i = _pid_accel_z.get_i();
+
+    // ensure imax is always large enough to overpower hover throttle
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_accel_z.imax()) {
+        _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
+
+    // update i term as long as we haven't breached the limits or the I term will certainly reduce
+    // To-Do: should this be replaced with limits check from attitude_controller?
+    if ((!_motors.limit.throttle_lower && !_motors.limit.throttle_upper) || (i>0&&_accel_error.z<0) || (i<0&&_accel_error.z>0)) {
+        i = _pid_accel_z.get_i();
+    }
+
+    // get d term
+    d = _pid_accel_z.get_d();
+
+    float thr_out = (p+i+d)*0.001f +_motors.get_throttle_hover();
+
+    // send throttle to attitude controller with angle boost
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
+}

@@ -82,6 +82,9 @@ public:
     // Sets the roll acceleration limit in centidegrees/s/s
     void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
 
+    // slew the roll acceleration limit in centidegrees/s/s
+    void set_accel_roll_max_slew(float accel_roll_max) { _accel_roll_max_target = accel_roll_max; }
+    
     // Sets and saves the roll acceleration limit in centidegrees/s/s
     void save_accel_roll_max(float accel_roll_max) { _accel_roll_max.set_and_save(accel_roll_max); }
 
@@ -92,6 +95,9 @@ public:
     // Sets the pitch acceleration limit in centidegrees/s/s
     void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
 
+    // Sets the pitch acceleration limit in centidegrees/s/s
+    void set_accel_pitch_max_slew(float accel_pitch_max) { _accel_pitch_max_target = accel_pitch_max; }
+    
     // Sets and saves the pitch acceleration limit in centidegrees/s/s
     void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max.set_and_save(accel_pitch_max); }
 
@@ -354,9 +360,11 @@ protected:
 
     // Maximum rotation acceleration for earth-frame roll axis
     AP_Float            _accel_roll_max;
+    float               _accel_roll_max_target;
 
     // Maximum rotation acceleration for earth-frame pitch axis
     AP_Float            _accel_pitch_max;
+    float               _accel_pitch_max_target;
 
     // Maximum rotation acceleration for earth-frame yaw axis
     AP_Float            _accel_yaw_max;

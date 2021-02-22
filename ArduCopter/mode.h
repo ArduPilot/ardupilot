@@ -655,17 +655,20 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // constructor
+    ModeFlip();
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void stop();
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return false; }
 
+    static const struct AP_Param::GroupInfo var_info[];
+    
 protected:
 
     const char *name() const override { return "FLIP"; }
@@ -673,14 +676,10 @@ protected:
 
 private:
 
-    // Flip
-    Vector3f orig_attitude;         // original vehicle attitude before flip
-
     enum class FlipState : uint8_t {
         Start,
         Roll,
-        Pitch_A,
-        Pitch_B,
+        Pitch,
         Recover,
         Abandon
     };
@@ -689,6 +688,28 @@ private:
     uint32_t  start_time_ms;          // time since flip began
     int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
     int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+
+    // Flip
+    Vector3f flip_orig_attitude;         // original vehicle attitude before flip
+
+    // flip parameters
+    AP_Int16 ramp_ms;
+    AP_Int16 ramp_cd;
+    AP_Int16 rot_rate_dps;
+    AP_Float rot_accel_max;
+
+    // saved accelerations
+    float orig_pitch_accel;
+    float orig_roll_accel;
+
+    uint32_t fwd_start_ms;
+    uint32_t back_start_ms;
+
+    FlipState flip_state;               // current state of flip
+    Mode::Number flip_orig_control_mode; // flight mode when flip was initated
+    uint32_t  flip_start_time;          // time since flip began
+    int8_t    flip_roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+    int8_t    flip_pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 

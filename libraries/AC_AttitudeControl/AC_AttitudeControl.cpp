@@ -541,6 +541,25 @@ void AC_AttitudeControl::input_angle_step_bf_roll_pitch_yaw(float roll_angle_ste
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
+    if (_accel_roll_max_target > 0) {
+        const float delta_rate = 100000.0 / 400.0;
+        float diff = _accel_roll_max_target - _accel_roll_max;
+        diff = constrain_float(diff, -delta_rate, delta_rate);
+        _accel_roll_max += diff;
+        if (is_zero(diff)) {
+            _accel_roll_max_target = 0;
+        }
+    }
+    if (_accel_pitch_max_target > 0) {
+        const float delta_rate = 100000.0 / 400.0;
+        float diff = _accel_pitch_max_target - _accel_pitch_max;
+        diff = constrain_float(diff, -delta_rate, delta_rate);
+        _accel_pitch_max += diff;
+        if (is_zero(diff)) {
+            _accel_pitch_max_target = 0;
+        }
+    }
+
     // Retrieve quaternion vehicle attitude
     Quaternion attitude_vehicle_quat;
     _ahrs.get_quat_body_to_ned(attitude_vehicle_quat);

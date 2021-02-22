@@ -147,6 +147,11 @@ public:
     // is_active - returns true if the z-axis position controller has been run very recently
     bool is_active_z() const;
 
+    // force the Z controller as active, to prevent resets
+    void set_active_z() {
+        _last_update_z_us = AP_HAL::micros64();
+    }
+    
     /// update_z_controller - fly to altitude in cm above home
     void update_z_controller();
 
@@ -306,6 +311,9 @@ public:
     // enable or disable high vibration compensation
     void set_vibe_comp(bool on_off) { _vibe_comp_enabled = on_off; }
 
+    // accel_to_throttle - alt hold's acceleration controller
+    void accel_to_throttle(float accel_target_z);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -317,6 +325,7 @@ protected:
             uint16_t reset_desired_vel_to_pos   : 1;    // 1 if we should reset the rate_to_accel_xy step
             uint16_t reset_accel_to_lean_xy     : 1;    // 1 if we should reset the accel to lean angle step
             uint16_t reset_rate_to_accel_z      : 1;    // 1 if we should reset the rate_to_accel_z step
+            uint16_t reset_accel_to_throttle    : 1;    // 1 if we should reset the accel_to_throttle step of the z-axis controller
             uint16_t freeze_ff_z        : 1;    // 1 used to freeze velocity to accel feed forward for one iteration
             uint16_t use_desvel_ff_z    : 1;    // 1 to use z-axis desired velocity as feed forward into velocity step
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
