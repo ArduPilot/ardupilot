@@ -243,7 +243,7 @@ void SRV_Channels::enable_aux_servos()
 }
 
 /// enable output channels using a channel mask
-void SRV_Channels::enable_by_mask(uint16_t mask)
+void SRV_Channels::enable_by_mask(uint32_t mask)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (mask & (1U<<i)) {
@@ -337,7 +337,7 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
   copy radio_in to radio_out for a channel mask
  */
 void
-SRV_Channels::copy_radio_in_out_mask(uint16_t mask)
+SRV_Channels::copy_radio_in_out_mask(uint32_t mask)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if ((1U<<i) & mask) {
@@ -546,7 +546,7 @@ int16_t SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t functi
 /*
   get mask of output channels for a function
  */
-uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
+uint32_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
 {
     if (!initialised) {
         update_aux_servo_function();
@@ -772,7 +772,7 @@ void SRV_Channels::upgrade_parameters(void)
 // set RC output frequency on a function output
 void SRV_Channels::set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency_hz)
 {
-    uint16_t mask = 0;
+    uint32_t mask = 0;
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {

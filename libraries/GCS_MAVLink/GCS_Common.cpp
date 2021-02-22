@@ -2581,19 +2581,25 @@ bool GCS_MAVLINK::telemetry_delayed() const
  */
 void GCS_MAVLINK::send_servo_output_raw()
 {
-    uint16_t values[16] {};
+#ifndef SERVO32_ENABLE
+    static const uint8_t max_channels = 16;
+#else
+    static const uint8_t max_channels = 32;
+#endif
+
+    uint16_t values[max_channels] {};
     if (in_hil_mode()) {
-        for (uint8_t i=0; i<16; i++) {
+        for (uint8_t i=0; i<max_channels; i++) {
             values[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
     } else {
-        hal.rcout->read(values, 16);
+        hal.rcout->read(values, max_channels);
     }
-    for (uint8_t i=0; i<16; i++) {
+    for (uint8_t i=0; i<max_channels; i++) {
         if (values[i] == 65535) {
             values[i] = 0;
         }
-    }    
+    }
     mavlink_msg_servo_output_raw_send(
             chan,
             AP_HAL::micros(),
@@ -2602,6 +2608,17 @@ void GCS_MAVLINK::send_servo_output_raw()
             values[4],  values[5],  values[6],  values[7],
             values[8],  values[9],  values[10], values[11],
             values[12], values[13], values[14], values[15]);
+
+#ifdef SERVO32_ENABLE
+    mavlink_msg_servo_output_raw_send(
+            chan,
+            AP_HAL::micros(),
+            1,     // port
+            values[16],  values[17],  values[18],  values[19],
+            values[20],  values[21],  values[22],  values[23],
+            values[24],  values[25],  values[26], values[27],
+            values[28], values[29], values[30], values[31]);
+#endif
 }
 
 

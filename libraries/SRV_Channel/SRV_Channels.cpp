@@ -51,9 +51,9 @@ uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 AP_BLHeli *SRV_Channels::blheli_ptr;
 #endif
 
-uint16_t SRV_Channels::disabled_mask;
-uint16_t SRV_Channels::digital_mask;
-uint16_t SRV_Channels::reversible_mask;
+uint32_t SRV_Channels::disabled_mask;
+uint32_t SRV_Channels::digital_mask;
+uint32_t SRV_Channels::reversible_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
@@ -194,6 +194,102 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 #endif // HAL_BUILD_AP_PERIPH
+
+#if (NUM_SERVO_CHANNELS >= 17)
+    // @Group: 17_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[16], "17_",  23, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 18)
+    // @Group: 18_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[17], "18_", 24, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 19)
+    // @Group: 19_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[18], "19_",  25, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 20)
+    // @Group: 20_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[19], "20_",  26, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 21)
+    // @Group: 21_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[20], "21_",  27, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 22)
+    // @Group: 22_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[21], "22_",  28, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 23)
+    // @Group: 23_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[22], "23_",  29, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 24)
+    // @Group: 24_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[23], "24_",  30, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 25)
+    // @Group: 25_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[24], "25_",  31, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 26)
+    // @Group: 26_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[25], "26_",  32, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 27)
+    // @Group: 27_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[26], "27_",  33, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 28)
+    // @Group: 28_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[27], "28_",  34, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 29)
+    // @Group: 29_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[28], "29_",  35, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 30)
+    // @Group: 30_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[29], "30_",  36, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 31)
+    // @Group: 31_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[30], "31_",  37, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 32)
+    // @Group: 32_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[31], "32_",  38, SRV_Channels, SRV_Channel),
+#endif
 
     AP_GROUPEND
 };
