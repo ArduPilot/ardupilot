@@ -56,34 +56,33 @@ void Mode::_TakeOff::start(float alt_cm)
     // tell position controller to reset alt target and reset I terms
     copter.flightmode->set_throttle_takeoff();
 
-    // calculate climb rate
-    const float speed = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
+    // calculate climb rate maximums
+    tkoff_climb_rate_max = MIN(copter.wp_nav->get_default_speed_up(), MAX(copter.g.pilot_speed_up*2.0f/3.0f, copter.g.pilot_speed_up-50.0f));
+    climb_rate_max = copter.g.pilot_speed_up;
 
     // sanity check speed and target
-    if (speed <= 0.0f || alt_cm <= 0.0f) {
+    if (tkoff_climb_rate_max <= 0.0f || alt_cm <= 0.0f) {
         return;
     }
 
     // initialise takeoff state
     _running = true;
-    max_speed = speed;
-    start_ms = millis();
-    alt_delta = alt_cm;
+    alt_delta_cm = alt_cm;
+    alt_climbed_cm = 0.0f;
+    tkoff_climb_rate = 0.0f;
 }
 
 // stop takeoff
 void Mode::_TakeOff::stop()
 {
     _running = false;
-    start_ms = 0;
 }
 
 // returns pilot and takeoff climb rates
 //  pilot_climb_rate is both an input and an output
 //  takeoff_climb_rate is only an output
 //  has side-effect of turning takeoff off when timeout as expired
-void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
-                                                  float& takeoff_climb_rate)
+void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate, float& takeoff_climb_rate, float dt)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
@@ -91,34 +90,37 @@ void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
         return;
     }
 
-    // acceleration of 50cm/s/s
-    static constexpr float TAKEOFF_ACCEL = 50.0f;
-    const float takeoff_minspeed = MIN(50.0f, max_speed);
-    const float time_elapsed = (millis() - start_ms) * 1.0e-3f;
-    const float speed = MIN(time_elapsed * TAKEOFF_ACCEL + takeoff_minspeed, max_speed);
-
-    const float time_to_max_speed = (max_speed - takeoff_minspeed) / TAKEOFF_ACCEL;
-    float height_gained;
-    if (time_elapsed <= time_to_max_speed) {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_elapsed) + takeoff_minspeed * time_elapsed;
-    } else {
-        height_gained = 0.5f * TAKEOFF_ACCEL * sq(time_to_max_speed) + takeoff_minspeed * time_to_max_speed +
-                        (time_elapsed - time_to_max_speed) * max_speed;
-    }
-
-    // check if the takeoff is over
-    if (height_gained >= alt_delta) {
+    // sanity check dt
+    if (!is_positive(dt)) {
         stop();
-    }
-
-    // if takeoff climb rate is zero return
-    if (speed <= 0.0f) {
-        takeoff_climb_rate = 0.0f;
         return;
     }
 
-    // default take-off climb rate to maximum speed
-    takeoff_climb_rate = speed;
+    // if pilot's commands descent, reduce altitude target
+    if (pilot_climb_rate < 0.0f) {
+        alt_delta_cm -= (pilot_climb_rate * dt);
+    }
+
+    // acceleration of 50cm/s/s
+    static constexpr float TAKEOFF_ACCEL_CMSS = 50.0f;
+
+    // accelerate speed up to max speed
+    tkoff_climb_rate = constrain_float(tkoff_climb_rate + (TAKEOFF_ACCEL_CMSS * dt), 0.0f, tkoff_climb_rate_max);
+
+    // ensure we can slow down before hitting target
+    const float alt_remaining_cm = MAX(alt_delta_cm - alt_climbed_cm, 0.0f);
+    tkoff_climb_rate = MIN(tkoff_climb_rate, safe_sqrt(2.0f * alt_remaining_cm * TAKEOFF_ACCEL_CMSS));
+
+    // takeoff climb rate should always be at least 10cm/s
+    tkoff_climb_rate = MAX(tkoff_climb_rate, 10.0f);
+
+    // default return take-off climb rate to calculated climb rate
+    takeoff_climb_rate = tkoff_climb_rate;
+
+    // ensure total climb rate is never over total maximum
+    if (pilot_climb_rate + takeoff_climb_rate > climb_rate_max) {
+        pilot_climb_rate = climb_rate_max - takeoff_climb_rate;
+    }
 
     // if pilot's commands descent
     if (pilot_climb_rate < 0.0f) {
@@ -138,6 +140,20 @@ void Mode::_TakeOff::get_climb_rates(float& pilot_climb_rate,
         } else {
             pilot_climb_rate = 0.0f;
         }
+    }
+
+    // increase expected height gain after this iteration
+    const float expected_climb_cm = (pilot_climb_rate + takeoff_climb_rate) * dt;
+    if (alt_climbed_cm + expected_climb_cm >= alt_delta_cm) {
+        // if pilot's climb rate is not positive set the takeoff climb rate on the final iteration to exactly achieve the alt_delta_cm
+        // we want to ensure that with no pilot input, the vehicle exactly reaches the target altitude
+        if (pilot_climb_rate <= 0.0f) {
+            takeoff_climb_rate = tkoff_climb_rate = (alt_delta_cm - alt_climbed_cm) * dt;
+            alt_climbed_cm = alt_delta_cm;
+        }
+        stop();
+    } else {
+        alt_climbed_cm += expected_climb_cm;
     }
 }
 
