@@ -147,6 +147,20 @@ enum {
     USE_REVERSE_THRUST_AUTO_LANDING_PATTERN     = (1<<11),
 };
 
+enum {
+    STALL_RECOVERY_1_NONE                       = 0,
+    STALL_RECOVERY_1_AIRSPEED_MIN               = (1<<0),
+    STALL_RECOVERY_1_SPIN_RATE_PARAM            = (1<<1),
+    STALL_RECOVERY_1_SINK_RATE_PARAM            = (1<<2),
+};
+
+enum {
+    STALL_RECOVERY_2_NONE                       = 0,
+    STALL_RECOVERY_2_AIRSPEED_CRUISE            = (1<<0),
+    STALL_RECOVERY_2_AIRSPEED_CRUISE_95PCT      = (1<<1),
+    STALL_RECOVERY_2_AIRSPEED_CRUISE_90PCT      = (1<<2),
+};
+
 enum FlightOptions {
     DIRECT_RUDDER_ONLY   = (1 << 0),
     CRUISE_TRIM_THROTTLE = (1 << 1),
