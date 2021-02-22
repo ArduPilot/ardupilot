@@ -1,4 +1,4 @@
-# Bi-directional dshot version of MatekF405
+# Bi-directional dshot version of MatekH743
 # RC input and buzzer timers need to be used so buzzer becomes single tone
 # and UART is used for RCIN
 
