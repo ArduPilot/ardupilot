@@ -116,12 +116,10 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_dps, int8_t d
         // default to regular auto slew rate
         _fixed_yaw_slewrate = AUTO_YAW_SLEW_RATE;
     } else {
-        const int32_t turn_rate = (wrap_180_cd(_fixed_yaw - curr_yaw_target) / 100) / turn_rate_dps;
-        _fixed_yaw_slewrate = constrain_int32(turn_rate, 1, 360);    // deg / sec
+        _fixed_yaw_slewrate = wrap_360_cd(turn_rate_dps) * 100;
     }
 
-    // set yaw mode
-    set_mode(AUTO_YAW_FIXED);
+    set_rate(_fixed_yaw_slewrate);
 
     // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
@@ -182,7 +180,7 @@ float Mode::AutoYaw::yaw()
         return roi_yaw();
 
     case AUTO_YAW_FIXED:
-        // keep heading pointing in the direction held in fixed_yaw
+       // keep heading pointing in the direction held in fixed_yaw
         // with no pilot input allowed
         return _fixed_yaw;
 
@@ -215,10 +213,12 @@ float Mode::AutoYaw::yaw()
 // messages (positive is clockwise, negative is counter clockwise)
 float Mode::AutoYaw::rate_cds() const
 {
-    if (_mode == AUTO_YAW_RATE) {
-        return _rate_cds;
-    }
+    return constrain_float(_rate_cds, -36000.0f, 36000.0f);
+}
 
-    // return zero turn rate (this should never happen)
-    return 0.0f;
+void Mode::AutoYaw::check_reached_desired_yaw_angle()
+{
+    if ((fabsf(wrap_180_cd(copter.attitude_control->get_att_target_euler_cd().z-auto_yaw.yaw())) <= 200)) {
+        set_mode(AUTO_YAW_FIXED);
+    }
 }
