@@ -154,7 +154,9 @@ public:
     // play a tune string
     static void play_tune(const char *tune);
 
-    bool buzzer_enabled() const { return _buzzer_enable; }
+    bool buzzer_enabled() const { return _buzzer_enable == 1                // 1: Always enabled
+                                 || (_buzzer_enable == 2 && !flags.armed)   // 2: Only when disarmed 
+                                 || (_buzzer_enable == 3 && flags.armed); } // 3: Only when armed 
 
     // set flight mode string
     void set_flight_mode_str(const char *str);
