@@ -1,4 +1,5 @@
 #!/bin/tcsh -f
+/bin/rm -rf logs mav.tlog  mav.tlog.raw
 setenv MASTER_DRONE 1
 python3 ../Tools/autotest/sim_vehicle.py --map --console -L Moab --instance=2
 #python3 ../Tools/autotest/sim_vehicle.py --map --console -L Moab -I 2
