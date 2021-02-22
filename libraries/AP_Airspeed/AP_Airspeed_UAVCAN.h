@@ -42,5 +42,7 @@ private:
     } _detected_modules[AIRSPEED_MAX_SENSORS];
 
     static HAL_Semaphore _sem_registry;
+    static bool _probe_has_run;
+
     bool _have_temperature;
 };
