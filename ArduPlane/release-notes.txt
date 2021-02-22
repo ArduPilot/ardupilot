@@ -1,5 +1,5 @@
-Release 4.0.9beta1, 6th February 2021
--------------------------------------
+Release 4.0.9, 23rd February 2021
+---------------------------------
 
 This is a minor release with just bug fixes:
 
@@ -14,6 +14,8 @@ This is a minor release with just bug fixes:
    GPS blending is enabled
 
  - fixed an arming check failure with u-blox M9 based GPS modules
+
+ - added mRoControlZeroH7 support
 
 The main reason for this release is the parameter backup/restore. This
 has been an ongoing issue for quite some time. The symptom is an
