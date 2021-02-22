@@ -591,7 +591,7 @@ void ModeGuided::angle_control_run()
 
     // wrap yaw request
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
-    float yaw_rate_in = wrap_180_cd(guided_angle_state.yaw_rate_cds);
+    float yaw_rate_in = guided_angle_state.yaw_rate_cds;
 
     // constrain climb rate
     float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav->get_default_speed_down()), wp_nav->get_default_speed_up());
