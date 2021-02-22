@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Mount/AP_Mount.h>
 
 // ------------------------------
 #define CAM_DEBUG DISABLED
@@ -144,6 +145,13 @@ AP_Camera::relay_pic()
 void AP_Camera::trigger_pic()
 {
     setup_feedback_callback();
+
+   // AP_Mount *mount = AP::mount();
+
+
+    AP_Mount *mount = AP_Mount::get_singleton();
+
+    mount->toggle_record();
 
     _image_index++;
     switch (_trigger_type) {

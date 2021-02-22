@@ -4,17 +4,32 @@
 // variables
 #ifdef USERHOOK_VARIABLES
 
-
-uint8_t killswitch_counter;
+bool no_RC_in;
 
 float _aft_rpm;
 float _fwd_rpm;
 
-uint16_t spoolup_timer;
-bool timer_trigger;
 
+//Counters and timers
+uint8_t killswitch_counter;
+
+uint16_t spoolup_timer;
 uint16_t spoolup_watcher;
 
+uint16_t start_rpm_comp_time;
+
+
+// Triggers
+bool timer_trigger;
+
+
+// Auto Tune
+int8_t num_battery;
+float payload_weight;
+float vehicle_weight;
+
+
+// Herelink decoding of buttons
 uint32_t ch7_timer;
 uint32_t ch9_timer;
 uint32_t ch10_timer;
@@ -27,12 +42,10 @@ bool ch10_button_pressed;
 bool ch11_button_pressed;
 bool ch12_button_pressed;
 
-
 bool ch7_button_pressed;
 bool long_press_flag_ch7;
 bool short_press_flag_ch7;
 bool ch7_button_hold;
-
 
 bool long_press_flag_ch9;
 bool long_press_flag_ch10;
@@ -44,28 +57,15 @@ bool short_press_flag_ch10;
 bool short_press_flag_ch11;
 bool short_press_flag_ch12;
 
-uint8_t function_counter;
-uint8_t cam_button_debounce_timer;
-bool flight_mode_switch;
-
 bool ch9_button_hold;
 bool ch10_button_hold;
 bool ch11_button_hold;
 bool ch12_button_hold;
 
-float gimbal_pan_spd;
-float gimbal_tilt_spd;
-bool zoom_in;
-bool zoom_out;
-bool zoom_stop;
+uint8_t function_counter;
+uint8_t cam_button_debounce_timer;
+bool flight_mode_switch;
 
-bool no_RC_in;
-
-int8_t num_battery;
-float payload_weight;
-float vehicle_weight;
-
-uint16_t start_rpm_comp_time;
 
 enum vehicle_state{
 	disarm,
@@ -73,14 +73,11 @@ enum vehicle_state{
 	land,
 	takeoff,
 	hover,
-	//fwd_flight,
-	//brake,
 	landing,
 
 }spirit_state;
 
 
-// struct Location roi_1;
 
 
 #if WII_CAMERA == 1

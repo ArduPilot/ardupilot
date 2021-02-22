@@ -114,39 +114,24 @@ public:
     void enable_RC_control(uint8_t instance, bool en);
     void enable_RC_control(bool en) { enable_RC_control(_primary, en); }
 
-    void toggle_record(uint8_t instance, bool type);
-    void toggle_record(bool type) { toggle_record(_primary, type); }
+    void toggle_record(uint8_t instance);
+    void toggle_record() { toggle_record(_primary); }
 
 
-    void toggle_camera_state(uint8_t instance, bool type);
-    void toggle_camera_state(bool type) { toggle_camera_state(_primary, type); }
+    void toggle_camera_state(uint8_t instance);
+    void toggle_camera_state() { toggle_camera_state(_primary); }
 
 
     void set_camera_point_ROI(uint8_t instance, float yaw);
     void set_camera_point_ROI(float yaw) { set_camera_point_ROI(_primary, yaw); }
 
-    void toggle_tracking(uint8_t instance);
-    void toggle_tracking() { toggle_tracking(_primary); }
-
-    void toggle_PIP(uint8_t instance);
-    void toggle_PIP() { toggle_PIP(_primary); }
 
     void turn_camera_off(uint8_t instance);
-    void turn_camera_off() { toggle_PIP(_primary); }
+    void turn_camera_off() { turn_camera_off(_primary); }
 
-    void take_picture(uint8_t instance);
-    void take_picture() { take_picture(_primary); }
-
-
-    void flip_image(uint8_t instance, bool flip);
-    void flip_image(bool flip) { flip_image(_primary, flip); }
 
     void center_yaw(uint8_t instance);
     void center_yaw() { center_yaw(_primary); }
-
-
-
-
 
 
     void enable_follow(uint8_t instance, bool en);
@@ -171,8 +156,6 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
-
-    float f_lat, f_long, f_roi_pan;
 
 protected:
 

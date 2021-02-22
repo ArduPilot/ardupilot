@@ -20,17 +20,6 @@ void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
 {
     // set the target gps location
     _state._roi_target = target_loc;
-/*
-	hal.console->print("\n");
-	hal.console->print("\n");
-	hal.console->printf("lat:%ld", _state._roi_target.lat)  ;
-	hal.console->print("   ");
-	hal.console->printf("long:%ld", _state._roi_target.lng)  ;
-	hal.console->print("\n");
-	hal.console->print("\n");
-*/
-
-
 
     // set the mode to GPS tracking mode
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
@@ -138,7 +127,6 @@ void AP_Mount_Backend::update_targets_from_rc()
 
 
 
-
 // returns the angle (radians) that the RC_Channel input is receiving
 float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max)
 {
@@ -149,99 +137,47 @@ float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min,
 void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_deg, bool calc_tilt, bool calc_pan, bool relative_pan)
 {
 
-	//For logging
-	_lat = target.lat;
-	_long = target.lng;
-
-/*
-	hal.console->print("\n");
-	hal.console->printf("pan:%ld", _frontend._current_loc.alt)  ;
-	hal.console->print("\n");
-*/
-
-
     float GPS_vector_x = (target.lng-_frontend._current_loc.lng)*cosf(ToRad((_frontend._current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
     float GPS_vector_y = (target.lat-_frontend._current_loc.lat)*0.01113195f;
-    //float GPS_vector_z = (target.alt-_frontend._current_loc.alt);                 // baro altitude(IN CM) should be adjusted to known home elevation before take off (Set altimeter).
-    //float GPS_vector_z = (_frontend._current_loc.alt - target.alt);
-
-    float GPS_vector_z = (_frontend._current_loc.alt);
     float target_distance = 100.0f*norm(GPS_vector_x, GPS_vector_y);      // Careful , centimeters here locally. Baro/alt is in cm, lat/lon is in meters.
+
+    float GPS_vector_z = (_frontend._current_loc.alt); // Always assumes target is at the altitude of takeoff.  Should add consideration for 'target.alt'
 
     // initialise all angles to zero
     angles_to_target_deg.zero();
 
     // tilt calcs
     if (calc_tilt) {
-       // angles_to_target_deg.y = ToDeg(atan2f(GPS_vector_z, target_distance));
-    	//angles_to_target_deg.y = ToDeg(atan2f(target_distance, GPS_vector_z));
     	float tan_ratio = target_distance / GPS_vector_z;
     	angles_to_target_deg.y = 90.0f - ToDeg(atanf(tan_ratio));
-
-
-    	if(command_flags.flip_image){
-
-    		//angles_to_target_deg.y = 180.0f - angles_to_target_deg.y;
-
-    	}
-
     }
-
-/*
-	hal.console->print("\n");
-	hal.console->printf("Dis:%f", target_distance)  ;
-	hal.console->printf("   ")  ;
-	hal.console->printf("alt:%f", GPS_vector_z)  ;
-	hal.console->printf("   ")  ;
-	hal.console->printf("tilt:%f", angles_to_target_deg.y)  ;
-	hal.console->print("\n");
-*/
 
     // pan calcs
     if (calc_pan) {
         // calc absolute heading and then convert to vehicle relative yaw
         angles_to_target_deg.z = (atan2f(GPS_vector_x, GPS_vector_y));  //still in radians
+
         if (relative_pan) {
             angles_to_target_deg.z = wrap_PI(angles_to_target_deg.z - AP::ahrs().yaw);
         }
 
         angles_to_target_deg.z = ToDeg(angles_to_target_deg.z);
-
-        _roi_pan = angles_to_target_deg.z;
     }
 }
 
 
-
-
-
-
 // set_angle_targets - sets angle targets in degrees
-void AP_Mount_Backend::enable_RC_control(bool en)
-{
-
-_RC_control_enable = en;
-
-}
-
+void AP_Mount_Backend::enable_RC_control(bool en)  { _RC_control_enable = en; }
 
 
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount_Backend::enable_follow(bool en)
 {
-
- if(en){
-
-	 //enable_follow_yaw();
-
-	 _enable_follow = true;
-
- }else{
-
-
-	 _enable_follow = false;
-
- }
+	 if(en){
+		 _enable_follow = true;
+	 }else{
+		 _enable_follow = false;
+	 }
 
 }
 
@@ -250,153 +186,49 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 {
 
 	roi_gps_target.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
-	roi_gps_target.alt = 0;
+	roi_gps_target.alt = 0; // shouldn't be zero all the time.  Need terrian data
 	roi_gps_target.lng = _frontend._current_loc.lng;
 	roi_gps_target.lat = _frontend._current_loc.lat;
-
 
 	//2D distance from target
 	float tilt_angle;
 	float pan_angle;
 
+	tilt_angle = constrain_float(_camera_tilt_angle, 90.1f, 179.9f);  //Range of viewpro camera (hanging on bottom) from straightout (90) to straight down (180)
 
-	if(!command_flags.flip_image){
-
-		tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
-		tilt_angle = 90.0f - tilt_angle;
-
-	}else{
-
-		tilt_angle = constrain_float(_camera_tilt_angle, 90.1f, 179.9f);
-		tilt_angle = tilt_angle - 90.1f;
-
-		tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
-
-	}
-
-
+	//Covert angle for our distance calc
+	tilt_angle = tilt_angle - 90.1f;
+	tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
 
 	float distance = tanf(radians(tilt_angle))*((float)_frontend._current_loc.alt / 100.0f);
 
+	//Camera pan angle can be negative.  Don't want negatives for our calc
 	if(_camera_pan_angle >= 0){
-
 		pan_angle = _camera_pan_angle;
-
 	}else{
-
 		pan_angle = 360 + _camera_pan_angle;
-
 	}
 
-
 	float bearing = degrees(yaw) + pan_angle;   //// <- pass yaw to this funciton from usercode
-
 	roi_gps_target.offset_bearing(bearing, distance);
 
-/*
-	hal.console->print("\n");
-	hal.console->print("\n");
-	hal.console->printf("yaw:%f", degrees(yaw))  ;
-	hal.console->print("\n");
-	hal.console->printf("tilt:%f", tilt_angle)  ;
-	hal.console->print(	"\n");
-	hal.console->printf("pan:%f", pan_angle)  ;
-	hal.console->print("\n");
-
-
-
-	hal.console->print("\n");
-	hal.console->printf("camera:%f", tilt_angle)  ;
-	hal.console->print("\n");
-
-*/
 	set_roi_target(roi_gps_target);
 }
 
 
+//Functions to control gimbal/camera from higher levels
 
-void AP_Mount_Backend::toggle_record(bool type){
+void AP_Mount_Backend::toggle_record(){	command_flags.toggle_rec = true; }
 
-	if(type){
+void AP_Mount_Backend::toggle_camera_state(){command_flags.change_state = true;}
 
-		command_flags.toggle_video_tracking = true;
+void AP_Mount_Backend::center_yaw(){ command_flags.center_yaw = true; }
 
-	}else{
-		command_flags.toggle_video = true;
-	}
-
-}
-
-
-void AP_Mount_Backend::toggle_tracking(){
-
-	command_flags.toggle_tracking = true;
-
-}
-
-void AP_Mount_Backend::toggle_PIP(){
-
-	command_flags.toggle_pip = true;
-
-}
+void AP_Mount_Backend::turn_camera_off(){command_flags.turn_camera_off = true; }
 
 
 
 
 
-void AP_Mount_Backend::toggle_camera_state(bool type){
 
 
-	if(type){
-
-		command_flags.toggle_tracking_video_state = true;
-
-	}else{
-
-		command_flags.change_state = true;
-	}
-
-}
-
-
-
-void AP_Mount_Backend::flip_image(bool flip){
-
-	order_flip = true;
-
-	if(flip){
-
-		command_flags.flip_image = true;
-
-	}else{
-
-		command_flags.flip_image = false;
-
-	}
-
-}
-
-
-
-void AP_Mount_Backend::center_yaw(){
-
-
-	command_flags.center_yaw = true;
-
-
-}
-
-
-void AP_Mount_Backend::turn_camera_off(){
-
-
-	command_flags.turn_camera_off = true;
-
-
-}
-
-void AP_Mount_Backend::take_picture(){
-
-
-	command_flags.take_picture = true;
-}

@@ -579,55 +579,28 @@ void AP_Mount::enable_RC_control(uint8_t instance, bool en)
 
 
 // set_angle_targets - sets angle targets in degrees
-void AP_Mount::toggle_camera_state(uint8_t instance, bool type)
+void AP_Mount::toggle_camera_state(uint8_t instance)
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
     // send command to backend
-    _backends[instance]->toggle_camera_state(type);
+    _backends[instance]->toggle_camera_state();
 }
 
 
 
 // set_angle_targets - sets angle targets in degrees
-void AP_Mount::toggle_record(uint8_t instance, bool type)
+void AP_Mount::toggle_record(uint8_t instance)
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return;
     }
 
     // send command to backend
-    _backends[instance]->toggle_record(type);
+    _backends[instance]->toggle_record();
 }
-
-
-// set_angle_targets - sets angle targets in degrees
-void AP_Mount::toggle_tracking(uint8_t instance)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
-
-    // send command to backend
-    _backends[instance]->toggle_tracking();
-}
-
-
-
-// set_angle_targets - sets angle targets in degrees
-void AP_Mount::toggle_PIP(uint8_t instance)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
-
-    // send command to backend
-    _backends[instance]->toggle_PIP();
-}
-
-
 
 
 // set_angle_targets - sets angle targets in degrees
@@ -640,23 +613,6 @@ void AP_Mount::set_camera_point_ROI(uint8_t instance, float yaw)
     // send command to backend
     _backends[instance]->set_camera_point_ROI(yaw);
 }
-
-
-
-
-
-
-
-void AP_Mount::flip_image(uint8_t instance, bool flip)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
-
-    // send command to backend
-    _backends[instance]->flip_image(flip);
-}
-
 
 
 
@@ -680,19 +636,6 @@ void AP_Mount::turn_camera_off(uint8_t instance)
     // send command to backend
     _backends[instance]->turn_camera_off();
 }
-
-
-
-void AP_Mount::take_picture(uint8_t instance)
-{
-    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
-        return;
-    }
-
-    // send command to backend
-    _backends[instance]->take_picture();
-}
-
 
 
 // set_angle_targets - sets angle targets in degrees

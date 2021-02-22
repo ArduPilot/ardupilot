@@ -38,8 +38,6 @@ public:
 
    void set_init_cmd();
 
-   void toggle_camera();
-
    void reset_camera();
 
 private:
@@ -66,6 +64,14 @@ private:
     // read_incoming
     void read_incoming();
     void parse_reply();
+
+    void command_gimbal();
+    bool yaw_center();
+    void zoom_camera();
+    void zero_zoom();
+    void camera_state(int camera_state_cmd);
+    void record();
+
 
     enum ReplyType {
         ReplyType_UNKNOWN = 0,
@@ -143,8 +149,21 @@ private:
         uint8_t byte4;
         uint8_t byte5;
         uint8_t byte6;
-       // uint32_t zoom_level;
         uint8_t byte7;
+    };
+
+
+
+    struct PACKED cmd_9_byte_struct {
+        uint8_t byte1;
+        uint8_t byte2;
+        uint8_t byte3;
+        uint8_t byte4;
+        uint8_t byte5;
+        uint8_t byte6;
+        uint8_t byte7;
+        uint8_t byte8;
+        uint8_t byte9;
     };
 
 
@@ -272,9 +291,18 @@ enum zoom_state{
 	ZOOM_STOP,
 }current_zoom_state;
 
+
+enum camera_state_cmd{
+	TOGGLE_REC,
+	TURN_VID_OFF,
+	TOGGLE_STATE,
+};
+
 enum rec_state{
-	REC_ON,
-	REC_OFF,
+	VID_REC_ON,
+	VID_REC_OFF,
+	PIC_MODE,
+
 }current_rec_state;
 
 

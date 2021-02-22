@@ -315,52 +315,6 @@ void AP_Logger::Write_IMU_instance(const uint64_t time_us, const uint8_t imu_ins
 
 
 
-
-
-
-
-
-
-
-
-
-
-void AP_Logger::ROI_logging()
-{
-
-
-	AP_Mount *mount = AP::mount();
-
-	const float roi_lat = mount->f_lat;
-	const float roi_long = mount->f_long;
-	const float roi_pan = mount->f_roi_pan;
-
-	MAV_MOUNT_MODE gimbal_state = mount->get_mode();
-
-	uint64_t time_us = AP_HAL::micros64();
-
-    const struct log_ROI pkt{
-        LOG_PACKET_HEADER_INIT(ROI_LOG),
-        time_us : time_us,
-		mount_state : gimbal_state,
-		ROI_Lat			:	roi_lat,
-		ROI_Long		:	roi_long,
-		angle_pan     	:	roi_pan,
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-
-
-
-
-
-
-
-
-
-
-
 // Write an raw accel/gyro data packet
 void AP_Logger::Write_IMU()
 {

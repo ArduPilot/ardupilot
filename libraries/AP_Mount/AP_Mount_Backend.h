@@ -80,31 +80,14 @@ public:
     virtual void send_gimbal_report(const mavlink_channel_t chan) {}
 
 
+    // Functions for ViewPro
     virtual void enable_RC_control(bool en);
-
-    virtual void toggle_record(bool type);
-
-	 virtual void toggle_camera_state(bool type);
-
-
-	 virtual void take_picture();
-
-	 virtual void toggle_tracking();
-
-	virtual void enable_follow(bool en);
-
-	virtual void set_camera_point_ROI(float yaw);
-
-	virtual void toggle_PIP();
-
-	virtual void center_yaw();
-
+    virtual void toggle_record();
+	virtual void toggle_camera_state();
 	virtual void turn_camera_off();
-
-	virtual void flip_image(bool flip);
-
-
-    float _lat, _long, _roi_pan;
+	virtual void set_camera_point_ROI(float yaw);
+	virtual void enable_follow(bool en);
+	virtual void center_yaw();
 
     bool _enable_follow;
 
@@ -144,47 +127,22 @@ protected:
 
     enum MAV_MOUNT_MODE _previous_mode;
 
-
     bool _zoom_in, _zoom_out;
     bool _RC_control_enable;
 
     bool is_recording;
-    bool is_tracking;
     bool is_video_mode;
-    bool is_connected;
-    bool order_flip;
-    bool mode_change_flag;
-    bool yaw_timeout;
+
     bool yaw_center_reset_flag;
-    uint16_t yaw_timeout_counter;
-
-    uint16_t button_timer;
-    uint8_t ir_zoom_level;
-
 
     struct command_flags {
     	bool change_state;
-    	bool take_picture;
     	bool center_yaw;
-    	bool toggle_video;
+    	bool toggle_rec;
     	bool stop_video;
-    	bool color_change;
-    	bool IR_zoom;
-    	bool toggle_video_tracking;
-    	bool toggle_tracking;
-    	bool toggle_tracking_video_state;
-    	bool toggle_pip;
-    	bool toggle_track;
-    	bool flip_image;
     	bool turn_camera_off;
+    	bool zero_zoom;
     	}  command_flags;
-
-
-    	bool tracking_camera_on;
-    	bool tracking_camera_off;
-    	bool tracking_camera_pic;
-
-
 
 private:
 
