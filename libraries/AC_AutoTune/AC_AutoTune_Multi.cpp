@@ -160,7 +160,6 @@ void AC_AutoTune_Multi::save_tuning_gains()
     if ((axes_completed & AUTOTUNE_AXIS_BITMASK_ROLL) && roll_enabled() && !is_zero(tune_roll_rp)) {
         // rate roll gains
         attitude_control->get_rate_roll_pid().ff(orig_roll_rff);
-        attitude_control->get_rate_roll_pid().filt_T_hz(orig_roll_fltt);
         attitude_control->get_rate_roll_pid().kI(tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_roll_pid().save_gains();
 
@@ -172,7 +171,6 @@ void AC_AutoTune_Multi::save_tuning_gains()
     if ((axes_completed & AUTOTUNE_AXIS_BITMASK_PITCH) && pitch_enabled() && !is_zero(tune_pitch_rp)) {
         // rate pitch gains
         attitude_control->get_rate_pitch_pid().ff(orig_pitch_rff);
-        attitude_control->get_rate_pitch_pid().filt_T_hz(orig_pitch_fltt);
         attitude_control->get_rate_pitch_pid().kI(tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL);
         attitude_control->get_rate_pitch_pid().save_gains();
 
@@ -185,7 +183,6 @@ void AC_AutoTune_Multi::save_tuning_gains()
         // rate yaw gains
         attitude_control->get_rate_yaw_pid().kD(0.0f);
         attitude_control->get_rate_yaw_pid().ff(orig_yaw_rff);
-        attitude_control->get_rate_yaw_pid().filt_T_hz(orig_yaw_fltt);
         attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
         attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL);
         attitude_control->get_rate_yaw_pid().save_gains();
