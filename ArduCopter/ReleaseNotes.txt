@@ -1,5 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.7 22-Feb-2021
+Changes from 4.0.7-rc1
+1) fixed build on Durandal board
+2) multiple fixes for mRo boards: ControlZero*, PixracerPro
+------------------------------------------------------------------
 Copter 4.0.7rc1 6-Feb-2021
 Changes from 4.0.6
 1) added automatic backup/restore of parameters in case of FRAM corruption for F7/H7 boards with 32k FRAM parameter storage
