@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_Common/bitops.h>
 
 #if MODE_AUTO_ENABLED == ENABLED
 

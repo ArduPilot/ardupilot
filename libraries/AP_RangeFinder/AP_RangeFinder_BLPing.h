@@ -26,7 +26,7 @@ class PingProtocol {
     static constexpr uint16_t _dst_id = 1; // sensor's id
 
 public:
-    enum class MessageId {
+    enum class MessageId : uint16_t {
         INVALID = 0,
         SET_PING_INTERVAL = 1004,
         DISTANCE_SIMPLE = 1211,

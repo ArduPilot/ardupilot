@@ -5,6 +5,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Common/bitops.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 

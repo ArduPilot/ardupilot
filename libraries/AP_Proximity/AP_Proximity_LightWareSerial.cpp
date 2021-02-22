@@ -19,6 +19,7 @@
 #include <AP_Math/crc.h>
 #include "AP_Proximity_LightWareSerial.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Common/bitops.h>
 
 extern const AP_HAL::HAL& hal;
 

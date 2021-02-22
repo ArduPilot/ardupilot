@@ -1,6 +1,7 @@
 #include "Copter.h"
 
 #include "RC_Channel.h"
+#include <AP_Common/bitops.h>
 
 
 // defining these two macros and including the RC_Channels_VarInfo header defines the parameter information common to all vehicle types
@@ -39,10 +40,10 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
         !rc().find_channel_for_option(AUX_FUNC::SUPERSIMPLE_MODE)) {
         // if none of the Aux Switches are set to Simple or Super Simple Mode then
         // set Simple Mode using stored parameters from EEPROM
-        if (BIT_IS_SET(copter.g.super_simple, new_pos)) {
+        if (BIT_IS_SET(copter.g.super_simple.get(), new_pos)) {
             copter.set_simple_mode(Copter::SimpleMode::SUPERSIMPLE);
         } else {
-            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes, new_pos) ? Copter::SimpleMode::SIMPLE : Copter::SimpleMode::NONE);
+            copter.set_simple_mode(BIT_IS_SET(copter.g.simple_modes.get(), new_pos) ? Copter::SimpleMode::SIMPLE : Copter::SimpleMode::NONE);
         }
     }
 }

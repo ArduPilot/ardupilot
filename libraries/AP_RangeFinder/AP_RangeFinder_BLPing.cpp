@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
+#include <AP_Common/bitops.h>
 
 void AP_RangeFinder_BLPing::update(void)
 {
@@ -116,9 +117,9 @@ void PingProtocol::send_message(AP_HAL::UARTDriver *uart, PingProtocol::MessageI
     crc += LOWBYTE(payload_len) + HIGHBYTE(payload_len);
 
     // message id
-    uart->write(LOWBYTE(msg_id));
-    uart->write(HIGHBYTE(msg_id));
-    crc += LOWBYTE(msg_id) + HIGHBYTE(msg_id);
+    uart->write(LOWBYTE(static_cast<uint16_t>(msg_id)));
+    uart->write(HIGHBYTE(static_cast<uint16_t>(msg_id)));
+    crc += LOWBYTE(static_cast<uint16_t>(msg_id)) + HIGHBYTE(static_cast<uint16_t>(msg_id));
 
     // src dev id
     uart->write(_src_id);
