@@ -12,6 +12,34 @@ static void failsafe_check_static()
     plane.failsafe_check();
 }
 
+static bool validate_fence_frame(float newframe) 
+{    
+    switch((int)newframe) {
+        case 0:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 1:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 2:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        case 3:
+            return AP::fence()->conv_max_alt_frame((int)newframe);
+            break;
+        default:
+            return false;
+            break;
+    }
+}
+
+static bool chg_max_alt(float newalt)
+{
+    AP::fence()->change_max_alt(newalt);
+
+    return true;
+}
+
 void Plane::init_ardupilot()
 {
 
@@ -154,6 +182,18 @@ void Plane::init_ardupilot()
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
+
+    if (!AP_Param::addhook("FENCE_ALT_FRAME", validate_fence_frame)) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
+    }
+    
+    if (!AP_Param::addhook("FENCE_ALT_MAX", chg_max_alt)) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "Add hook failed");
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Hook added");
+    }
 }
 
 //********************************************************************************

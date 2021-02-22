@@ -72,13 +72,15 @@
 // use.
 #define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
 
+#define AP_PARAM_FLAG_SETHOOKS (1<<6)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   7
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -101,6 +103,7 @@
 
 // declare a group var_info line with a frame type mask
 #define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
+// #define AP_GROUPINFO_FRAME_SETHOOKS(name, idx, clazz, element, def, frame_flags) { AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT ), AP_PARAM_FLAG_SETHOOKS }
 
 // declare a group var_info line with both flags and frame type mask
 #define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
@@ -185,6 +188,15 @@ public:
         float value;        // parameter value
     };
 
+    struct ValidationHooks {
+        const char *name;
+        const void *ptr;
+        struct ValidationHooks *next;
+        bool (*function)(float newvalue);
+    };
+
+    static ValidationHooks *validation_hooks;
+
     // called once at startup to setup the _var_info[] table. This
     // will also check the EEPROM header and re-initialise it if the
     // wrong version is found
@@ -225,6 +237,9 @@ public:
 
     // return true if AP_Param has been initialised via setup()
     static bool initialised(void);
+
+    static bool addhook(const char *name, bool (*function)(float newvalue));
+    bool check_value(float value, const char *name) const;
 
     // the 'group_id' of a element of a group is the 18 bit identifier
     // used to distinguish between this element of the group and other

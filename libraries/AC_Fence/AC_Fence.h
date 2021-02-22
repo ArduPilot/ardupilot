@@ -27,6 +27,7 @@
 #define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
 #define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
 #define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
+#define AC_FENCE_ALT_FRAME_DEFAULT                  1       // default altitude frame is rel; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
 
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
@@ -43,6 +44,12 @@ public:
 
     void init() {
         _poly_loader.init();
+        AP_Param::set_and_save_by_name("FENCE_ALT_MAX", AC_FENCE_ALT_MAX_DEFAULT);
+        AP_Param::set_and_save_by_name("FENCE_ALT_FRAME", AC_FENCE_ALT_FRAME_DEFAULT);
+
+        // gcs().send_text(MAV_SEVERITY_CRITICAL, "Boot value is: %f", (double) _alt_max_ext);
+
+        // AC_Fence().conv_max_alt_frame_boot();
     }
 
     // get singleton instance
@@ -108,6 +115,15 @@ public:
     ///     has no effect if no breaches have occurred
     void manual_recovery_start();
 
+    // Convert frame max altitude is in
+    bool conv_max_alt_frame(int newframe);
+
+    // Convert alt max on bootup if necessary
+    bool conv_max_alt_frame_boot();
+
+    // Adjust the max altitude
+    void change_max_alt(float newalt);
+
     // methods for mavlink SYS_STATUS message (send_sys_status)
     bool sys_status_present() const;
     bool sys_status_enabled() const;
@@ -117,6 +133,7 @@ public:
     const AC_PolyFence_loader &polyfence() const;
 
     static const struct AP_Param::GroupInfo var_info[];
+    
 
 private:
     static AC_Fence *_singleton;
@@ -145,11 +162,14 @@ private:
     AP_Int8         _enabled;               // top level enable/disable control
     AP_Int8         _enabled_fences;        // bit mask holding which fences are enabled
     AP_Int8         _action;                // recovery action specified by user
+    AP_Float        _alt_max_ext;           // front facing max altitude
     AP_Float        _alt_max;               // altitude upper limit in meters
     AP_Float        _alt_min;               // altitude lower limit in meters
     AP_Float        _circle_radius;         // circle fence radius in meters
     AP_Float        _margin;                // distance in meters that autopilot's should maintain from the fence to avoid a breach
     AP_Int8         _total;                 // number of polygon points saved in eeprom
+    AP_Int8         _alt_frame;             // 
+    AP_Int8         _current_frame;         // frame the alt_max is currently in
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
@@ -172,6 +192,7 @@ private:
     uint32_t        _manual_recovery_start_ms;  // system time in milliseconds that pilot re-took manual control
 
     AC_PolyFence_loader _poly_loader{_total}; // polygon fence
+    Location        fenceloc;
 };
 
 namespace AP {

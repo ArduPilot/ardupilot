@@ -107,39 +107,45 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
         AP_HAL::panic("Should not be called on invalid location");
     }
 #endif
-    Location::AltFrame frame = get_alt_frame();
+    Location::AltFrame current_frame = get_alt_frame();
 
+    return convert_altitude_frame(current_frame, desired_frame, alt, ret_alt_cm);
+}
+
+// Convert the altitude frame
+bool Location::convert_altitude_frame(AltFrame current_frame, AltFrame desired_frame, int32_t alt_in_cm, int32_t &alt_out_cm) const
+{
     // shortcut if desired and underlying frame are the same
-    if (desired_frame == frame) {
-        ret_alt_cm = alt;
+    if (desired_frame == current_frame) {
+        alt_out_cm = alt_in_cm;
         return true;
     }
-
+    
     // check for terrain altitude
     float alt_terr_cm = 0;
-    if (frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
-#if AP_TERRAIN_AVAILABLE
-        if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+    if (current_frame == AltFrame::ABOVE_TERRAIN || desired_frame == AltFrame::ABOVE_TERRAIN) {
+    #if AP_TERRAIN_AVAILABLE
+            if (_terrain == nullptr || !_terrain->height_amsl(*(Location *)this, alt_terr_cm, true)) {
+                return false;
+            }
+            // convert terrain alt to cm
+            alt_terr_cm *= 100.0f;
+    #else
             return false;
-        }
-        // convert terrain alt to cm
-        alt_terr_cm *= 100.0f;
-#else
-        return false;
-#endif
+    #endif
     }
 
     // convert alt to absolute
     int32_t alt_abs = 0;
-    switch (frame) {
+    switch (current_frame) {
         case AltFrame::ABSOLUTE:
-            alt_abs = alt;
+            alt_abs = alt_in_cm;
             break;
         case AltFrame::ABOVE_HOME:
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
-            alt_abs = alt + AP::ahrs().get_home().alt;
+            alt_abs = alt_in_cm + AP::ahrs().get_home().alt;
             break;
         case AltFrame::ABOVE_ORIGIN:
             {
@@ -148,24 +154,24 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 if (!AP::ahrs().get_origin(ekf_origin)) {
                     return false;
                 }
-                alt_abs = alt + ekf_origin.alt;
+                alt_abs = alt_in_cm + ekf_origin.alt;
             }
             break;
         case AltFrame::ABOVE_TERRAIN:
-            alt_abs = alt + alt_terr_cm;
+            alt_abs = alt_in_cm + alt_terr_cm;
             break;
     }
 
     // convert absolute to desired frame
     switch (desired_frame) {
         case AltFrame::ABSOLUTE:
-            ret_alt_cm = alt_abs;
+            alt_out_cm = alt_abs;
             return true;
         case AltFrame::ABOVE_HOME:
             if (!AP::ahrs().home_is_set()) {
                 return false;
             }
-            ret_alt_cm = alt_abs - AP::ahrs().get_home().alt;
+            alt_out_cm = alt_abs - AP::ahrs().get_home().alt;
             return true;
         case AltFrame::ABOVE_ORIGIN:
             {
@@ -174,11 +180,11 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
                 if (!AP::ahrs().get_origin(ekf_origin)) {
                     return false;
                 }
-                ret_alt_cm = alt_abs - ekf_origin.alt;
+                alt_out_cm = alt_abs - ekf_origin.alt;
                 return true;
             }
         case AltFrame::ABOVE_TERRAIN:
-            ret_alt_cm = alt_abs - alt_terr_cm;
+            alt_out_cm = alt_abs - alt_terr_cm;
             return true;
     }
     return false;

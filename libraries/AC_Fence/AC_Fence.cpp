@@ -3,6 +3,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Param/AP_Param.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -44,7 +45,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Range: 10 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO_FRAME("ALT_MAX", 3, AC_Fence, _alt_max, AC_FENCE_ALT_MAX_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+    AP_GROUPINFO_FLAGS_FRAME("ALT_MAX", 3, AC_Fence, _alt_max_ext, AC_FENCE_ALT_MAX_DEFAULT, AP_PARAM_FLAG_SETHOOKS, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
 
     // @Param: RADIUS
     // @DisplayName: Circular Fence Radius
@@ -78,6 +79,13 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("ALT_MIN",     7,  AC_Fence,   _alt_min,       AC_FENCE_ALT_MIN_DEFAULT, AP_PARAM_FRAME_SUB),
 
+    // @Param: ALT_FRAME
+    // @DisplayName: Fence Altitude Frame
+    // @Description: Frame for min and max altitude, default is 1; MSL = 0, REL/HOME = 1, ORIGIN = 2, TERRAIN = 3
+    // @Range: 0 3
+    // @User: Standard
+    AP_GROUPINFO_FLAGS_FRAME("ALT_FRAME", 8, AC_Fence, _alt_frame, AC_FENCE_ALT_FRAME_DEFAULT, AP_PARAM_FLAG_SETHOOKS, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI),
+
     AP_GROUPEND
 };
 
@@ -91,6 +99,7 @@ AC_Fence::AC_Fence()
 #endif
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+
 }
 
 /// enable the Fence code generally; a master switch for all fences
@@ -254,6 +263,56 @@ bool AC_Fence::check_fence_alt_max()
     return false;
 }
 
+// _alt_frame is the parameter form of _des_frame
+// _current_frame is the current frame
+bool AC_Fence::conv_max_alt_frame(int newframe) 
+{
+    int32_t _new_max_alt_cm;
+    if (fenceloc.convert_altitude_frame(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame(newframe), _alt_max * 100.0f, _new_max_alt_cm)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Previous altitude: %f", (double)_alt_max);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "New altitude: %f", (double)_new_max_alt_cm / 100.0f);
+        
+        _alt_max = (int) _new_max_alt_cm / 100.0f;
+        return true;
+    } else {
+        return false;
+    }    
+
+    return true;
+}
+
+bool AC_Fence::conv_max_alt_frame_boot()
+{
+    int32_t _new_max_alt_cm;
+    if (fenceloc.convert_altitude_frame(static_cast<Location::AltFrame>(int(_alt_frame)), Location::AltFrame::ABOVE_HOME, _alt_max_ext * 100.0f, _new_max_alt_cm)) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Previous altitude: %f", (double)_alt_max);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "New altitude: %f", (double)_new_max_alt_cm / 100.0f);
+        
+        
+        _alt_max = (int) _new_max_alt_cm / 100.0f;
+        return true;
+    } else {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "I'm not executing at bootup");
+
+        return false;
+    }    
+
+    return true;
+}
+
+void AC_Fence::change_max_alt(float newalt)
+{
+    float diff = 0;
+    if (_alt_frame == 1) {
+        _alt_max = newalt;
+    } else {
+        diff = newalt - _alt_max_ext;
+        _alt_max += diff;
+    }
+
+    AP_Param::set_and_save_by_name("FENCE_ALT_MAX", newalt);
+}
+
 // check_fence_polygon - returns true if the poly fence is freshly
 // breached.  That includes being inside exclusion zones and outside
 // inclusions zones
@@ -325,7 +384,7 @@ bool AC_Fence::check_fence_circle()
 
 /// check - returns bitmask of fence types breached (if any)
 uint8_t AC_Fence::check()
-{
+{        
     uint8_t ret = 0;
 
     // return immediately if disabled

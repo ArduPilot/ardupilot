@@ -44,6 +44,8 @@ public:
     // can only happen if the original frame or desired frame is above-terrain
     bool get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const WARN_IF_UNUSED;
 
+    bool convert_altitude_frame(AltFrame current_frame, AltFrame desired_frame, int32_t _alt_in_cm, int32_t &ralt_out_cm) const;
+
     // get altitude frame
     AltFrame get_alt_frame() const;
 
