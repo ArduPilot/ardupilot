@@ -23,6 +23,8 @@
 // DMA stream ID for stream_id2 when only one is needed
 #define SHARED_DMA_NONE 255
 
+#ifndef HAL_NO_SHARED_DMA
+
 class ChibiOS::Shared_DMA
 {
 public:
@@ -108,3 +110,5 @@ private:
         uint32_t transactions;
     } *_contention_stats;
 };
+
+#endif // HAL_NO_SHARED_DMA
