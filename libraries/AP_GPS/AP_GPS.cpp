@@ -1917,6 +1917,15 @@ uint32_t AP_GPS::get_itow(uint8_t instance) const
     return drivers[instance]->get_last_itow();
 }
 
+bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
+{
+    if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
+        return false;
+    }
+
+    return drivers[instance]->get_error_codes(error_codes);
+}
+
 // Logging support:
 // Write an GPS packet
 void AP_GPS::Write_GPS(uint8_t i)
