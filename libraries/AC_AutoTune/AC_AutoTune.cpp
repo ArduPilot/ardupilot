@@ -1669,7 +1669,7 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     float gyro_reading = 0.0f;
     float command_reading = 0.0f;
     float tgt_rate_reading = 0.0f;
-    float tgt_attitude = 10.0f * 0.01745f;
+    float tgt_attitude = 5.0f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
     static uint32_t settle_time = 200;
@@ -1681,8 +1681,18 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
     const float added_ampl = (safe_sqrt(powf(dwell_freq,2.0) + powf(freq_co,2.0)) / freq_co) - 1.0f;
     tgt_attitude = constrain_float(0.08725f * (1.0f + 0.2f * added_ampl), 0.08725f, 0.5235f);
 
+    float cycle_time_ms = 0;
+    if (!is_zero(dwell_freq)) {
+        cycle_time_ms = 1000.0f * 6.28f / dwell_freq;
+    }
+
     if (settle_time == 0) {
-        target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+        // give gentler start for the dwell
+        if ((float)(now - dwell_start_time_ms) < 0.5f * cycle_time_ms) {
+            target_angle_cd = 0.5f * tgt_attitude * 5730.0f * (cosf(dwell_freq * (now - dwell_start_time_ms) * 0.001) - 1.0f);
+        } else {
+            target_angle_cd = -tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001);
+        }
     } else {
         target_angle_cd = 0.0f;
         trim_yaw_tgt_reading = (float)attitude_control->get_att_target_euler_cd().z;
@@ -1711,7 +1721,11 @@ void AC_AutoTune::angle_dwell_test_run(float dwell_freq, float &dwell_gain, floa
         command_reading = motors->get_yaw();
         tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
         gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
-        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll_cd, target_pitch_cd, trim_yaw_tgt_reading + target_angle_cd, false);
+//        if (settle_time == 0) {
+            attitude_control->input_euler_angle_roll_pitch_yaw(target_roll_cd, target_pitch_cd, trim_yaw_tgt_reading + target_angle_cd, false);
+//        } else {
+//            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll_cd, target_pitch_cd, 0.0f);
+//        }
         break;
     }
 
