@@ -154,6 +154,7 @@ void RCOutput::rcout_thread()
     }
 }
 
+#ifndef HAL_NO_SHARED_DMA
 // release locks on the groups that are pending in reverse order
 void RCOutput::dshot_collect_dma_locks(uint32_t last_run_us)
 {
@@ -192,6 +193,7 @@ void RCOutput::dshot_collect_dma_locks(uint32_t last_run_us)
         }
     }
 }
+#endif // HAL_NO_SHARED_DMA
 
 /*
   setup the output frequency for a group and start pwm output
