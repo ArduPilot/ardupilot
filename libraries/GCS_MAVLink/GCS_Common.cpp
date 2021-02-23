@@ -524,7 +524,20 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
 
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
-        send_message(MSG_CURRENT_WAYPOINT);
+        // because MISSION_SET_CURRENT is a message not a command,
+        // there is not ACK associated with us successfully changing
+        // our waypoint.  Some GCSs use the fact we return exactly the
+        // same mission sequence number in this packet as an ACK - so
+        // if they send a MISSION_SET_CURRENT with seq number of 4
+        // then they expect to receive a MISSION_CURRENT message with
+        // exactly that sequence number in it, even if ArduPilot never
+        // actually holds that as a sequence number (e.g. packet.seq==0).
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_CURRENT)) {
+            mavlink_msg_mission_current_send(chan, packet.seq);
+        } else {
+            // schedule it for later:
+            send_message(MSG_CURRENT_WAYPOINT);
+        }
     }
 }
 
