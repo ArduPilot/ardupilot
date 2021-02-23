@@ -351,6 +351,10 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
         break;
     case YAW:
         updating_rate_ff_up(tune_yaw_rff, test_tgt_rate_filt*5730.0f, test_rate_filt*5730.0f, test_command_filt);
+        // TODO make FF updating routine determine when to set rff gain to zero based on A/C response
+        if (tune_yaw_rff <= AUTOTUNE_RFF_MIN && counter == AUTOTUNE_SUCCESS_COUNT) {
+            tune_yaw_rff = 0.0f;
+        }
         break;
     }
 }
