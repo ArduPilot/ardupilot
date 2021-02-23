@@ -103,12 +103,13 @@ bool AP_HAL::Device::check_next_register(void)
 
     if (_bank_select) {
         if (!_bank_select(reg.bank)) {
-        // Cannot set bank
+            // Cannot set bank
 #if 0
-        printf("Device 0x%x set bank 0x%02x\n",
-               (unsigned)get_bus_id(),
-               (unsigned)reg.bank);
+            printf("Device 0x%x set bank 0x%02x\n",
+                   (unsigned)get_bus_id(),
+                   (unsigned)reg.bank);
 #endif
+            _checked.last_reg_fail = reg;
             return false;
         }
     }
@@ -123,8 +124,22 @@ bool AP_HAL::Device::check_next_register(void)
                (unsigned)reg.regnum, (unsigned)v, (unsigned)reg.value);
 #endif
         write_register(reg.regnum, reg.value);
+        _checked.last_reg_fail = reg;
+        _checked.last_reg_fail.value = v;
         return false;
     }
     _checked.next = (_checked.next+1) % _checked.n_set;
     return true;
+}
+
+/*
+  check one register value, returning information on the failure
+ */
+bool AP_HAL::Device::check_next_register(struct checkreg &fail)
+{
+    if (check_next_register()) {
+        return true;
+    }
+    fail = _checked.last_reg_fail;
+    return false;
 }
