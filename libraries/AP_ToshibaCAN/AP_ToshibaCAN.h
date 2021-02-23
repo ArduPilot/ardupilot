@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
 
@@ -22,7 +23,7 @@
 
 class CANTester;
 
-class AP_ToshibaCAN : public AP_CANDriver {
+class AP_ToshibaCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
     friend class CANTester;
 public:
     AP_ToshibaCAN();
@@ -42,14 +43,8 @@ public:
     // called from SRV_Channels
     void update();
 
-    // send ESC telemetry messages over MAVLink
-    void send_esc_telemetry_mavlink(uint8_t mav_chan);
-
     // return a bitmask of escs that are "present" which means they are responding to requests.  Bitmask matches RC outputs
     uint16_t get_present_mask() const { return _esc_present_bitmask; }
-
-    // return total usage time in seconds
-    uint32_t get_usage_seconds(uint8_t esc_id) const;
 
 private:
 
