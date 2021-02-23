@@ -276,7 +276,6 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
-    return 0;
 }
 #endif // NO_FASTBOOT
 
