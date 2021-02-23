@@ -881,7 +881,7 @@ bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     {
     case 0:             // Airspeed
         if ((cmd.content.speed.target_ms >= aparm.airspeed_min.get()) && (cmd.content.speed.target_ms <= aparm.airspeed_max.get()))  {
-            aparm.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
+           new_airspeed_cm = cmd.content.speed.target_ms * 100; //new airspeed target for AUTO or GUIDED modes
             gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
             return true;
         }

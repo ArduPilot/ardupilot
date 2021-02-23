@@ -2438,7 +2438,7 @@ class AutoTestPlane(AutoTest):
                     50    # alt
                 )
                 self.delay_sim_time(5)
-                new_target_groundspeed = m.groundspeed + 5
+                new_target_groundspeed = m.groundspeed + 10
                 self.run_cmd(
                     mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
                     1, # groundspeed
@@ -2552,7 +2552,7 @@ class AutoTestPlane(AutoTest):
         self.wait_ready_to_arm()
         self.takeoff(alt=50)
         self.change_mode("CRUISE")
-        self.wait_distance(150, accuracy=20)
+        self.wait_distance(90, accuracy=15)
 
         self.progress("Enable fence and initiate fence action")
         self.do_fence_enable()
@@ -2633,8 +2633,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Return loc: (%s)" % str(ret_loc))
 
         # Wait for guided return to vehicle calculated fence return location
-        self.wait_distance_to_location(ret_loc, 105, 115)
-        self.wait_circling_point_with_radius(ret_loc, want_radius)
+        self.wait_distance_to_location(ret_loc, 90, 110)
+        self.wait_circling_point_with_radius(ret_loc, 92)
 
         self.progress("Test complete, disable fence and come home")
         self.do_fence_disable()

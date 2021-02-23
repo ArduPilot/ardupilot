@@ -64,6 +64,9 @@ bool Mode::enter()
     plane.auto_state.vtol_mode = false;
     plane.auto_state.vtol_loiter = false;
 
+    // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
+    plane.new_airspeed_cm = -1;
+
     bool enter_result = _enter();
 
     if (enter_result) {
