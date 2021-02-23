@@ -89,7 +89,7 @@ protected:
         ALTITUDE,
         ANALOG,
         BATTERY_STATE,
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
         ESC_SENSOR_DATA,
 #endif
         RTC_DATETIME,
@@ -106,7 +106,7 @@ protected:
         MSP_ALTITUDE,
         MSP_ANALOG,
         MSP_BATTERY_STATE,
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
         MSP_ESC_SENSOR_DATA,
 #endif
         MSP_RTC
