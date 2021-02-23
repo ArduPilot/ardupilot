@@ -24,10 +24,13 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
+#include <AP_Logger/AP_Logger.h>
+
 #include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 #include <ardupilot/gnss/Heading.hpp>
+#include <ardupilot/gnss/Status.hpp>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +40,7 @@ UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
 UC_REGISTRY_BINDER(Fix2Cb, uavcan::equipment::gnss::Fix2);
 UC_REGISTRY_BINDER(AuxCb, uavcan::equipment::gnss::Auxiliary);
 UC_REGISTRY_BINDER(HeadingCb, ardupilot::gnss::Heading);
+UC_REGISTRY_BINDER(StatusCb, ardupilot::gnss::Status);
 
 AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
@@ -89,6 +93,14 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     gnss_heading = new uavcan::Subscriber<ardupilot::gnss::Heading, HeadingCb>(*node);
     const int gnss_heading_start_res = gnss_heading->start(HeadingCb(ap_uavcan, &handle_heading_msg_trampoline));
     if (gnss_heading_start_res < 0) {
+        AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
+        return;
+    }
+
+    uavcan::Subscriber<ardupilot::gnss::Status, StatusCb> *gnss_status;
+    gnss_status = new uavcan::Subscriber<ardupilot::gnss::Status, StatusCb>(*node);
+    const int gnss_status_start_res = gnss_status->start(StatusCb(ap_uavcan, &handle_status_msg_trampoline));
+    if (gnss_status_start_res < 0) {
         AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
         return;
     }
@@ -415,6 +427,23 @@ void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
     interim_state.gps_yaw_accuracy = degrees(cb.msg->heading_accuracy_rad);
 }
 
+void AP_GPS_UAVCAN::handle_status_msg(const StatusCb &cb)
+{
+    WITH_SEMAPHORE(sem);
+
+    seen_status = true;
+
+    healthy = cb.msg->healthy;
+    status_flags = cb.msg->status;
+    if (error_code != cb.msg->error_codes) {
+        AP::logger().Write_MessageF("GPS %d: error changed (0x%08x/0x%08x)",
+                                    (unsigned int)(state.instance + 1),
+                                    error_code,
+                                    cb.msg->error_codes);
+        error_code = cb.msg->error_codes;
+    }
+}
+
 void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb)
 {
     WITH_SEMAPHORE(_sem_registry);
@@ -455,6 +484,16 @@ void AP_GPS_UAVCAN::handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t 
     }
 }
 
+void AP_GPS_UAVCAN::handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const StatusCb &cb)
+{
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+    if (driver != nullptr) {
+        driver->handle_status_msg(cb);
+    }
+}
+
 // Consume new data and mark it received
 bool AP_GPS_UAVCAN::read(void)
 {
@@ -478,6 +517,35 @@ bool AP_GPS_UAVCAN::read(void)
     }
 
     return false;
+}
+
+bool AP_GPS_UAVCAN::is_healthy(void) const
+{
+    // if we don't have any health reports, assume it's healthy
+    if (!seen_status) {
+        return true;
+    }
+    return healthy;
+}
+
+bool AP_GPS_UAVCAN::logging_healthy(void) const
+{
+    // if we don't have status, assume it's valid
+    if (!seen_status) {
+        return true;
+    }
+
+    return (status_flags & ardupilot::gnss::Status::STATUS_LOGGING) != 0;
+}
+
+bool AP_GPS_UAVCAN::is_configured(void) const
+{
+    // if we don't have status assume it's configured
+    if (!seen_status) {
+        return true;
+    }
+
+    return (status_flags & ardupilot::gnss::Status::STATUS_ARMABLE) != 0;
 }
 
 /*

@@ -535,7 +535,7 @@ void AP_GPS_SBF::broadcast_configuration_failure_reason(void) const
     }
 }
 
-bool AP_GPS_SBF::is_configured (void) {
+bool AP_GPS_SBF::is_configured (void) const {
     return (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE ||
              _init_blob_index >= ARRAY_SIZE(_initialisation_blob));
 }

@@ -29,6 +29,7 @@ class FixCb;
 class Fix2Cb;
 class AuxCb;
 class HeadingCb;
+class StatusCb;
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
 public:
@@ -36,6 +37,12 @@ public:
     ~AP_GPS_UAVCAN();
 
     bool read() override;
+
+    bool is_healthy(void) const override;
+
+    bool logging_healthy(void) const override;
+
+    bool is_configured(void) const override;
 
     const char *name() const override { return "UAVCAN"; }
 
@@ -46,14 +53,18 @@ public:
     static void handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb);
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
     static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
+    static void handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const StatusCb &cb);
 
     void inject_data(const uint8_t *data, uint16_t len) override;
+
+    bool get_error_codes(uint32_t &error_codes) const override { error_codes = error_code; return seen_status; };
 
 private:
     void handle_fix_msg(const FixCb &cb);
     void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
     void handle_heading_msg(const HeadingCb &cb);
+    void handle_status_msg(const StatusCb &cb);
 
     static bool take_registry();
     static void give_registry();
@@ -68,6 +79,11 @@ private:
     bool seen_message;
     bool seen_fix2;
     bool seen_aux;
+    bool seen_status;
+
+    bool healthy;
+    uint32_t status_flags;
+    uint32_t error_code;
 
     // Module Detection Registry
     static struct DetectedModules {
