@@ -874,7 +874,7 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     case MSG_AUTOPILOT_VERSION:
         return true;
     default:
-        return false;
+        break;
     }
 
     return false;
