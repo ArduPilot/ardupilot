@@ -62,6 +62,16 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
     write_encode(out, '};\n\n');
     return True
 
+def crc32(bytes, crc=0):
+    '''crc32 equivalent to crc32_small() from AP_Math/crc.cpp'''
+    for byte in bytes:
+        crc ^= byte
+        for i in range(8):
+            mask = (-(crc & 1)) & 0xFFFFFFFF
+            crc >>= 1
+            crc ^= (0xEDB88320 & mask)
+    return crc
+
 def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
 
@@ -85,7 +95,8 @@ def create_embedded_h(filename, files, uncompressed=False):
         else:
             ustr = ''
         print("Embedding file %s:%s%s" % (name, filename, ustr))
-        write_encode(out, '{ "%s", sizeof(ap_romfs_%u), ap_romfs_%u },\n' % (name, i, i))
+        crc = crc32(bytearray(open(filename,'rb').read()))
+        write_encode(out, '{ "%s", sizeof(ap_romfs_%u), 0x%08x, ap_romfs_%u },\n' % (name, i, crc, i))
     write_encode(out, '};\n')
     out.close()
     return True
