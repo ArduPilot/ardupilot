@@ -50,6 +50,7 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
 #define IOMCU_DEBUG_ENABLE 0
 
 #if IOMCU_DEBUG_ENABLE
+#include <stdio.h>
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define debug(fmt, args ...)
@@ -361,9 +362,10 @@ void AP_IOMCU::read_status()
         static uint32_t last_io_print;
         if (now - last_io_print >= 5000) {
             last_io_print = now;
-            debug("t=%u num=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
+            debug("t=%u num=%u mem=%u terr=%u nerr=%u crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%u\n",
                   now,
                   reg_status.total_pkts,
+                  reg_status.freemem,
                   total_errors,
                   reg_status.num_errors,
                   reg_status.err_crc,
