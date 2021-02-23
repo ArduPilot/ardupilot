@@ -23,6 +23,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include "AP_InertialSensor_Invensense.h"
 
@@ -213,29 +214,40 @@ void AP_InertialSensor_Invensense::start()
     case Invensense_MPU9250:
         gdev = DEVTYPE_GYR_MPU9250;
         adev = DEVTYPE_ACC_MPU9250;
+        _enable_offset_checking = true;
         break;
     case Invensense_ICM20602:
         gdev = DEVTYPE_INS_ICM20602;
         adev = DEVTYPE_INS_ICM20602;
+        _enable_offset_checking = true;
         break;
     case Invensense_ICM20601:
         gdev = DEVTYPE_INS_ICM20601;
         adev = DEVTYPE_INS_ICM20601;
+        _enable_offset_checking = true;
         break;
-    case Invensense_MPU6000:
-    case Invensense_MPU6500:
     case Invensense_ICM20608:
-    default:
+        // unfortunately we don't have a separate ID for 20608, and we
+        // can't change this without breaking existing calibrations
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
+        _enable_offset_checking = true;
         break;
     case Invensense_ICM20789:
         gdev = DEVTYPE_INS_ICM20789;
         adev = DEVTYPE_INS_ICM20789;
+        _enable_offset_checking = true;
         break;
     case Invensense_ICM20689:
         gdev = DEVTYPE_INS_ICM20689;
         adev = DEVTYPE_INS_ICM20689;
+        _enable_offset_checking = true;
+        break;
+    case Invensense_MPU6000:
+    case Invensense_MPU6500:
+    default:
+        gdev = DEVTYPE_GYR_MPU6000;
+        adev = DEVTYPE_ACC_MPU6000;
         break;
     }
 
@@ -343,6 +355,35 @@ void AP_InertialSensor_Invensense::start()
         _register_write(MPUREG_INT_PIN_CFG, v);
     }
 
+    if (_enable_offset_checking) {
+        /*
+          there is a bug in at least the ICM-20602 where the
+          MPUREG_ACC_OFF_Y_H changes at runtime, which adds an offset
+          on the Y accelerometer. To prevent this we read the factory
+          cal values of the sensor at startup and write them back as
+          checked register values. Then we rely on the register
+          checking code to detect the change and fix it
+         */
+        uint8_t regs[] = { MPUREG_ACC_OFF_X_H, MPUREG_ACC_OFF_X_L,
+                           MPUREG_ACC_OFF_Y_H, MPUREG_ACC_OFF_Y_L,
+                           MPUREG_ACC_OFF_Z_H, MPUREG_ACC_OFF_Z_L };
+        for (uint8_t i=0; i<ARRAY_SIZE(regs); i++) {
+            _register_write(regs[i], _register_read(regs[i]), true);
+        }
+    }
+
+
+    if (_mpu_type == Invensense_ICM20602) {
+        /*
+          save y offset high separately for ICM20602 to quickly
+          recover from a change in this register. The ICM20602 has a
+          bug where every few hours it can change the factory Y offset
+          register, which leads to a sudden change in Y accelerometer
+          output
+         */
+        _saved_y_ofs_high = _register_read(MPUREG_ACC_OFF_Y_H);
+    }
+
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
@@ -433,11 +474,18 @@ void AP_InertialSensor_Invensense::_poll_data()
     _read_fifo();
 
 #if INVENSENSE_DEBUG_REG_CHANGE
-    /*
-      catch unexpected register changes on an IMU. This was used to
-      find the bug in the ICM-20602 that causes the Y accel offset
-      trim register to change value in flight
-     */
+    _check_register_change();
+#endif // INVENSENSE_DEBUG_REG_CHANGE
+}
+
+#if INVENSENSE_DEBUG_REG_CHANGE
+/*
+  catch unexpected register changes on an IMU. This was used to
+  find the bug in the ICM-20602 that causes the Y accel offset
+  trim register to change value in flight
+*/
+void AP_InertialSensor_Invensense::_check_register_change(void)
+{
     if (_mpu_type != Invensense_ICM20602) {
         return;
     }
@@ -447,7 +495,7 @@ void AP_InertialSensor_Invensense::_poll_data()
     }
     counter = 0;
     static bool reg_init;
-    static uint8_t reg_value[0x7f];
+    static uint8_t reg_value[0x80];
     static uint8_t next_reg;
     if (!reg_init) {
         reg_init = true;
@@ -471,8 +519,8 @@ void AP_InertialSensor_Invensense::_poll_data()
         }
     }
     next_reg = (next_reg+1) % ARRAY_SIZE(reg_value);
-#endif // INVENSENSE_DEBUG_REG_CHANGE
 }
+#endif // INVENSENSE_DEBUG_REG_CHANGE
 
 bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_samples)
 {
@@ -692,6 +740,24 @@ void AP_InertialSensor_Invensense::_read_fifo()
     
 check_registers:
     // check next register value for correctness
+
+    if (_mpu_type == Invensense_ICM20602) {
+        const uint8_t y_ofs = _register_read(MPUREG_ACC_OFF_Y_H);
+        if (y_ofs != _saved_y_ofs_high) {
+            /*
+              we check and restore the ICM20602 Y offset high register
+              on every update. We don't mark the IMU unhealthy when we
+              do this. This is a workaround for a bug in the ICM-20602
+              where this register can change in flight. We log these
+              events to help with log analysis, but don't shout at the
+              GCS to prevent possible flood
+            */
+            AP::logger().Write_MessageF("ICM20602 yofs fix: %x %x", y_ofs, _saved_y_ofs_high);
+            _register_write(MPUREG_ACC_OFF_Y_H, _saved_y_ofs_high);
+        }
+    }
+
+
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
     AP_HAL::Device::checkreg reg;
     if (!_dev->check_next_register(reg)) {
@@ -868,7 +934,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
 
     // setup for register checking. We check much less often on I2C
     // where the cost of the checks is higher
-    _dev->setup_checked_registers(7, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
+    _dev->setup_checked_registers(13, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
     
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
