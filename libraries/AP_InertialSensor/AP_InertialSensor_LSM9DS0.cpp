@@ -695,10 +695,13 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
     }
 
     // check next register value for correctness
-    if (!_dev_gyro->check_next_register()) {
+    AP_HAL::Device::checkreg reg;
+    if (!_dev_gyro->check_next_register(reg)) {
+        log_register_change(_dev_gyro->get_bus_id(), reg);
         _inc_gyro_error_count(_gyro_instance);
     }
-    if (!_dev_accel->check_next_register()) {
+    if (!_dev_accel->check_next_register(reg)) {
+        log_register_change(_dev_accel->get_bus_id(), reg);
         _inc_accel_error_count(_accel_instance);
     }
 }

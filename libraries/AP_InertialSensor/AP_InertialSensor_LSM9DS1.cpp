@@ -426,7 +426,9 @@ void AP_InertialSensor_LSM9DS1::_poll_data()
     }
 
     // check next register value for correctness
-    if (!_dev->check_next_register()) {
+    AP_HAL::Device::checkreg reg;
+    if (!_dev->check_next_register(reg)) {
+        log_register_change(_dev->get_bus_id(), reg);
         _inc_accel_error_count(_accel_instance);
     }
 }
