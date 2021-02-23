@@ -346,8 +346,10 @@ void Scheduler::_rcout_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+#if HAL_USE_PWM == TRUE
     // trampoline into the rcout thread
     ((RCOutput*)hal.rcout)->rcout_thread();
+#endif
 #endif
 }
 
