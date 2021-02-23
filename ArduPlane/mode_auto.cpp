@@ -11,6 +11,8 @@ bool ModeAuto::_enter()
     plane.next_WP_loc = plane.prev_WP_loc = plane.current_loc;
     // start or resume the mission, based on MIS_AUTORESET
     plane.mission.start_or_resume();
+    // initialize temp cruise speed variable to cruise speed param on entry to Auto
+    plane.arspd_cruise_cm = plane.aparm.airspeed_cruise_cm;
 
     if (hal.util->was_watchdog_armed()) {
         if (hal.util->persistent_data.waypoint_num != 0) {
@@ -91,4 +93,3 @@ void ModeAuto::navigate()
         plane.mission.update();
     }
 }
-

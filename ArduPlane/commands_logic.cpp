@@ -21,7 +21,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         // start non-idle
         auto_state.idle_mode = false;
-        
+
         nav_controller->set_data_is_stale();
 
         // reset loiter start time. New command is a new loiter
@@ -50,7 +50,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
         if (quadplane.is_vtol_land(cmd.id)) {
             crash_state.is_crashed = false;
-            return quadplane.do_vtol_land(cmd);            
+            return quadplane.do_vtol_land(cmd);
         }
         do_land(cmd);
         break;
@@ -99,7 +99,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         } else {
             return quadplane.do_vtol_land(cmd);
         }
-        
+
     // Conditional commands
 
     case MAV_CMD_CONDITION_DELAY:
@@ -144,7 +144,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
             } else {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Fence floor disabled");
             }
-        }    
+        }
 #endif
         break;
 
@@ -172,8 +172,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
-        camera_mount.set_angle_targets(cmd.content.mount_control.roll, 
-                                       cmd.content.mount_control.pitch, 
+        camera_mount.set_angle_targets(cmd.content.mount_control.roll,
+                                       cmd.content.mount_control.pitch,
                                        cmd.content.mount_control.yaw);
         break;
 #endif
@@ -220,7 +220,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_NAV_LAND:
         if (quadplane.is_vtol_land(cmd.id)) {
-            return quadplane.verify_vtol_land();            
+            return quadplane.verify_vtol_land();
         }
         if (flight_stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_ABORT_LAND) {
             return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
@@ -482,7 +482,7 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
-    //set target alt  
+    //set target alt
     Location loc = cmd.content.location;
     loc.sanitize(current_loc);
     set_next_WP(loc);
@@ -499,8 +499,8 @@ bool Plane::verify_takeoff()
 {
     if (ahrs.yaw_initialised() && steer_state.hold_course_cd == -1) {
         const float min_gps_speed = 5;
-        if (auto_state.takeoff_speed_time_ms == 0 && 
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+        if (auto_state.takeoff_speed_time_ms == 0 &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
             gps.ground_speed() > min_gps_speed &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
@@ -527,7 +527,7 @@ bool Plane::verify_takeoff()
         // call navigation controller for heading hold
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
-        nav_controller->update_level_flight();        
+        nav_controller->update_level_flight();
     }
 
     // check for optional takeoff timeout
@@ -623,7 +623,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else {
 
     }
-    
+
     if (auto_state.wp_distance <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
@@ -748,7 +748,7 @@ bool Plane::verify_RTL()
         loiter.direction = 1;
     }
     update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) || 
+	if (auto_state.wp_distance <= (uint32_t)MAX(g.waypoint_radius,0) ||
         reached_loiter_target()) {
 			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
 			return true;
@@ -785,7 +785,7 @@ bool Plane::verify_continue_and_change_alt()
     else if (condition_value == 2 &&
              adjusted_altitude_cm() <= next_WP_loc.alt) {
         return true;
-    }    
+    }
     //don't care if we're climbing or descending
     else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
@@ -805,7 +805,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
-        return true;        
+        return true;
     }
 
     // if requested, wiggle servos
@@ -879,7 +879,7 @@ bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     {
     case 0:             // Airspeed
         if ((cmd.content.speed.target_ms >= aparm.airspeed_min.get()) && (cmd.content.speed.target_ms <= aparm.airspeed_max.get()))  {
-            aparm.airspeed_cruise_cm.set(cmd.content.speed.target_ms * 100);
+            arspd_cruise_cm = cmd.content.speed.target_ms * 100;
             gcs().send_text(MAV_SEVERITY_INFO, "Set airspeed %u m/s", (unsigned)cmd.content.speed.target_ms);
             return true;
         }

@@ -59,9 +59,9 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.channel_throttle->get_reverse() && 
+    if (plane.channel_throttle->get_reverse() &&
         Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
-        plane.g.throttle_fs_value < 
+        plane.g.throttle_fs_value <
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
         ret = false;
@@ -187,7 +187,7 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
         }
     }
 #endif
-    
+
     // call parent class checks
     return AP_Arming::arm_checks(method);
 }
@@ -262,9 +262,6 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     //only log if disarming was successful
     change_arm_state();
 
-    // reload target airspeed which could have been modified by a mission
-    plane.aparm.airspeed_cruise_cm.load();
-
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
     if (plane.control_mode == &plane.mode_qautotune) {
@@ -281,7 +278,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
         plane.geofence_set_enabled(false);
     }
 #endif
-    
+
     return true;
 }
 
@@ -298,4 +295,3 @@ void AP_Arming_Plane::update_soft_armed()
         delay_arming = false;
     }
 }
-
