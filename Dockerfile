@@ -35,8 +35,11 @@ RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PAT
 # Set the buildlogs directory into /tmp as other directory aren't accessible
 ENV BUILDLOGS=/tmp/buildlogs
 
+RUN pip install intelhex
+
 # Cleanup
 RUN sudo apt-get clean \
     && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV CCACHE_MAXSIZE=1G
+ENV PATH="/home/ardupilot/.local/bin:/usr/lib/ccache:/ardupilot/Tools/autotest:/opt/gcc-arm-none-eabi-6-2017-q2-update/bin:${PATH}"
