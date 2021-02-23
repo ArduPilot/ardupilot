@@ -3005,8 +3005,6 @@ bool QuadPlane::check_land_complete(void)
     if (land_detector(4000)) {
         poscontrol.state = QPOS_LAND_COMPLETE;
         gcs().send_text(MAV_SEVERITY_INFO,"Land complete");
-        // reload target airspeed which could have been modified by the mission
-        plane.aparm.airspeed_cruise_cm.load();
         if (plane.control_mode != &plane.mode_auto ||
             !plane.mission.continue_after_land()) {
             // disarm on land unless we have MIS_OPTIONS setup to
