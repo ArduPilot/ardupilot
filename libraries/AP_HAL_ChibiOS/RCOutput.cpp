@@ -992,12 +992,12 @@ void RCOutput::trigger_groups(void)
         }
     }
     osalSysUnlock();
-
+#ifndef HAL_NO_RCOUT_THREAD
     // trigger a PWM send
     if (!serial_group && hal.scheduler->in_main_thread()) {
         chEvtSignal(rcout_thread_ctx, EVT_PWM_SEND);
     }
-
+#endif
     /*
       calculate time that we are allowed to trigger next pulse
       to guarantee at least a 50us gap between pulses
