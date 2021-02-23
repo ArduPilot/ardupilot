@@ -14,7 +14,7 @@
 */
 
 #include "AP_CRSF_Telem.h"
-#include "AP_VideoTX.h"
+#include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Common/AP_FWVersion.h>

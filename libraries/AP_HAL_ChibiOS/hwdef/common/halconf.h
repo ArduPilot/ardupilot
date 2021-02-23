@@ -419,7 +419,11 @@
  *          buffers.
  */
 #if !defined(SERIAL_BUFFERS_SIZE) || defined(__DOXYGEN__)
-#define SERIAL_BUFFERS_SIZE         512
+#if defined(STM32H7)
+#define SERIAL_BUFFERS_SIZE     512
+#else
+#define SERIAL_BUFFERS_SIZE     256
+#endif
 #endif
 
 /*===========================================================================*/
@@ -434,7 +438,11 @@
  *          buffers.
  */
 #if !defined(SERIAL_USB_BUFFERS_SIZE) || defined(__DOXYGEN__)
+#if defined(STM32H7)
+#define SERIAL_USB_BUFFERS_SIZE     768
+#else
 #define SERIAL_USB_BUFFERS_SIZE     256
+#endif
 #endif
 
 /**
@@ -442,7 +450,11 @@
  * @note    The default is 2 buffers.
  */
 #if !defined(SERIAL_USB_BUFFERS_NUMBER) || defined(__DOXYGEN__)
+#if defined(STM32H7)
+#define SERIAL_USB_BUFFERS_NUMBER   4
+#else
 #define SERIAL_USB_BUFFERS_NUMBER   2
+#endif
 #endif
 
 /*===========================================================================*/

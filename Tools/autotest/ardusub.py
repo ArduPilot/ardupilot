@@ -283,8 +283,7 @@ class AutoTestSub(AutoTest):
             self.wait_statustext("Gripper Grabbed", timeout=60)
             self.wait_statustext("Gripper Released", timeout=60)
         except Exception as e:
-            self.progress("Exception caught: %s" % (
-                self.get_exception_stacktrace(e)))
+            self.print_exception_caught(e)
             ex = e
         if ex is not None:
             raise ex

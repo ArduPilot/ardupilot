@@ -1828,6 +1828,7 @@ class AutoTest(ABC):
                         continue
                     m = re.match(r"\s*{(.*)\\", line)
                     if m is None:
+                        state = state_outside
                         continue
                     partial_line = m.group(1)
                     linestate = linestate_within
@@ -5309,6 +5310,16 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Run attempt failed.  Retrying")
         self.run_one_test_attempt(test, interact=interact, attempt=1)
 
+    def print_exception_caught(self, e):
+        self.progress("Exception caught: %s" %
+                      self.get_exception_stacktrace(e))
+        path = None
+        try:
+            path = self.current_onboard_log_filepath()
+        except IndexError:
+            pass
+        self.progress("Most recent logfile: %s" % (path, ))
+
     def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
@@ -5341,8 +5352,7 @@ Also, ignores heartbeats not from our target system'''
 
             test_function()
         except Exception as e:
-            self.progress("Exception caught: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
@@ -6579,8 +6589,7 @@ Also, ignores heartbeats not from our target system'''
                         raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
             self.disarm_vehicle()
         except Exception as e:
-            self.progress("Exception caught: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             self.disarm_vehicle()
             ex = e
         self.context_pop()
@@ -6643,7 +6652,7 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy.expect("Chip erase complete")
 
         except Exception as e:
-            self.progress("Exception (%s) caught" % str(e))
+            self.print_exception_caught(e)
             ex = e
         self.mavproxy.send("module unload log\n")
         self.context_pop()
@@ -6751,7 +6760,7 @@ Also, ignores heartbeats not from our target system'''
             self.mavproxy.expect("Chip erase complete")
 
         except Exception as e:
-            self.progress("Exception (%s) caught" % str(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.mavproxy.send("module unload log\n")
@@ -7146,8 +7155,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
 
         self.progress("Resetting CAMERA_FEEDBACK rate to zero")
@@ -8587,8 +8595,7 @@ switch value'''
                     else:
                         self.progress("Correct value %.4f for %s error %.2f%%" % (v, pname, error_pct))
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.mavproxy_unload_module("relay")
         self.mavproxy_unload_module("calibration")
@@ -9693,8 +9700,7 @@ switch value'''
             crsf.write_data_id(crsf.dataid_vtx_unknown)
             self.delay_sim_time(5)
         except Exception as e:
-            self.progress("Caught exception: %s" %
-                          self.get_exception_stacktrace(e))
+            self.print_exception_caught(e)
             ex = e
         self.context_pop()
         self.disarm_vehicle(force=True)

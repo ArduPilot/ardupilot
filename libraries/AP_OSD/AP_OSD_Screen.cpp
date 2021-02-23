@@ -37,6 +37,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_MSP/msp.h>
 #include <AP_OLC/AP_OLC.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -894,6 +895,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(current2, "CURRENT2", 54, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: VTX_PWR_EN
+    // @DisplayName: VTX_PWR_EN
+    // @Description: Displays VTX Power
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: VTX_PWR_X
+    // @DisplayName: VTX_PWR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: VTX_PWR_Y
+    // @DisplayName: VTX_PWR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(vtx_power, "VTX_PWR", 55, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -986,6 +1003,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 #define SYM_FLY       0x9C
 #define SYM_EFF       0xF2
 #define SYM_AH        0xF3
+#define SYM_MW        0xF4
 #define SYM_CLK       0xBC
 
 void AP_OSD_AbstractScreen::set_backend(AP_OSD_Backend *_backend)
@@ -1820,6 +1838,20 @@ void AP_OSD_Screen::draw_current2(uint8_t x, uint8_t y)
     draw_current(1, x, y);
 }
 
+void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
+{
+    AP_VideoTX *vtx = AP_VideoTX::get_singleton();
+    if (!vtx) {
+        return;
+    }
+    uint16_t powr = 0;
+    // If currently in pit mode, just render 0mW to the screen
+    if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
+        powr = vtx->get_power_mw();
+    }
+    backend->write(x, y, false, "%4hu%c", powr, SYM_MW);
+}
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP
@@ -1863,6 +1895,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
     DRAW_SETTING(clk);
+    DRAW_SETTING(vtx_power);
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
     DRAW_SETTING(blh_temp);

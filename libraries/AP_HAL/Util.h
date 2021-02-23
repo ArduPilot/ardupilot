@@ -196,6 +196,9 @@ public:
     // load persistent parameters from bootloader sector
     virtual bool load_persistent_params(ExpandingString &str) const { return false; }
 
+    // request information on uart I/O
+    virtual void uart_info(ExpandingString &str) {}
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

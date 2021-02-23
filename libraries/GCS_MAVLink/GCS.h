@@ -223,11 +223,11 @@ public:
     void send_power_status(void);
     void send_battery_status(const uint8_t instance) const;
     bool send_battery_status();
-    void send_distance_sensor() const;
+    void send_distance_sensor();
     // send_rangefinder sends only if a downward-facing instance is
     // found.  Rover overrides this!
     virtual void send_rangefinder() const;
-    void send_proximity() const;
+    void send_proximity();
     virtual void send_nav_controller_output() const = 0;
     virtual void send_pid_tuning() = 0;
     void send_ahrs2();
@@ -560,18 +560,6 @@ private:
                                                          // queued send
     uint32_t                    _queued_parameter_send_time_ms;
 
-    /// Count the number of reportable parameters.
-    ///
-    /// Not all parameters can be reported via MAVlink.  We count the number
-    // that are
-    /// so that we can report to a GCS the number of parameters it should
-    // expect when it
-    /// requests the full set.
-    ///
-    /// @return         The number of reportable parameters.
-    ///
-    uint16_t                    packet_drops;
-
     // number of extra ms to add to slow things down for the radio
     uint16_t         stream_slowdown_ms;
     // last reported radio buffer percent available
@@ -851,6 +839,11 @@ private:
     uint32_t last_mavlink_stats_logged;
 
     uint8_t last_battery_status_idx;
+
+    // if we've ever sent a DISTANCE_SENSOR message out of an
+    // orientation we continue to send it out, even if it is not
+    // longer valid.
+    uint8_t proximity_ever_valid_bitmask;
 
     // true if we should NOT do MAVLink on this port (usually because
     // someone's doing SERIAL_CONTROL over mavlink)

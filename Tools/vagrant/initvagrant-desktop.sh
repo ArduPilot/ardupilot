@@ -34,6 +34,7 @@ EOF
 sudo -u "$VAGRANT_USER" dbus-launch gsettings set org.gnome.desktop.session idle-delay 0
 
 # don't show the initial setup crap:
+sudo -u "$VAGRANT_USER" mkdir -p /home/"$VAGRANT_USER"/.config
 echo "yes" | sudo -u "$VAGRANT_USER" dd of=/home/"$VAGRANT_USER"/.config/gnome-initial-setup-done
 
 # start the graphical environment right now:
