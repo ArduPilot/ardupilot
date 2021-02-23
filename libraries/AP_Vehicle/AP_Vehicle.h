@@ -307,7 +307,9 @@ protected:
     AP_VisualOdom visual_odom;
 #endif
 
+#if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+#endif
 
 #if HAL_MSP_ENABLED
     AP_MSP msp;
