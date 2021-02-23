@@ -40,7 +40,7 @@ public:
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 
-    virtual bool is_configured(void) { return true; }
+    virtual bool is_configured(void) const { return true; }
 
     virtual void inject_data(const uint8_t *data, uint16_t len);
 
@@ -76,6 +76,8 @@ public:
     // optional support for retrieving RTCMv3 data from a moving baseline base
     virtual bool get_RTCMV3(const uint8_t *&bytes, uint16_t &len) { return false; }
     virtual void clear_RTCMV3(void) {};
+
+    virtual bool get_error_codes(uint32_t &error_codes) const { return false; }
 
     // return iTOW of last message, or zero if not supported
     uint32_t get_last_itow(void) const {
