@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 
@@ -232,7 +233,8 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
-#ifndef HAL_BOOTLOADER_BUILD
+#if !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_NO_LOGGING)
+    INTERNAL_ERROR(AP_InternalError::error_t::panic);
     va_list ap;
 
     va_start(ap, errormsg);
