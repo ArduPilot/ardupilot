@@ -130,7 +130,7 @@ void Plane::navigate()
 void Plane::calc_airspeed_errors()
 {
     float airspeed_measured = 0;
-    
+
     // we use the airspeed estimate function not direct sensor as TECS
     // may be using synthetic airspeed
     ahrs.airspeed_estimate(airspeed_measured);
@@ -166,7 +166,7 @@ void Plane::calc_airspeed_errors()
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 #if OFFBOARD_GUIDED == ENABLED
-    } else if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm)) {
+    } else if (control_mode == &mode_guided && guided_state.target_airspeed_cm >  0.0) { // if offbd guided speed change cmd not set, then this section is skipped
         // offboard airspeed demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
@@ -182,22 +182,31 @@ void Plane::calc_airspeed_errors()
         }
 
 #endif // OFFBOARD_GUIDED == ENABLED
+
     } else if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-    } else if ((control_mode == &mode_auto) &&
-               (quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
-							 ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
-							  (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
-        const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
-        if (is_positive(land_airspeed)) {
-            target_airspeed_cm = land_airspeed * 100;
+    } else if (control_mode == &mode_guided && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
+                       target_airspeed_cm = new_airspeed_cm;
+    } else if (control_mode == &mode_auto) {
+        if ((quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
+			   ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
+			     (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
+                     const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+                     if (is_positive(land_airspeed)) {
+                         target_airspeed_cm = land_airspeed * 100;
+                     } else {
+                         // fallover to normal airspeed
+                         target_airspeed_cm = aparm.airspeed_cruise_cm;
+                     }
         } else {
-            // fallover to normal airspeed
-            target_airspeed_cm = aparm.airspeed_cruise_cm;
+            // normal AUTO mode and new_airspeed variable was set by DO_CHANGE_SPEED command while in AUTO mode
+            if (new_airspeed_cm > 0) {
+                target_airspeed_cm = new_airspeed_cm;
+           }
         }
     } else {
-        // Normal airspeed target
+        // Normal airspeed target for all other cases
         target_airspeed_cm = aparm.airspeed_cruise_cm;
     }
 
@@ -215,7 +224,7 @@ void Plane::calc_airspeed_errors()
 
     // when using the special GUIDED mode features for slew control, don't allow airspeed nudging as it doesn't play nicely.
 #if OFFBOARD_GUIDED == ENABLED
-    if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) { 
+    if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm) && (airspeed_nudge_cm != 0)) {
         airspeed_nudge_cm = 0; //airspeed_nudge_cm forced to zero
     }
 #endif
@@ -308,7 +317,7 @@ void Plane::update_loiter(uint16_t radius)
 }
 
 /*
-  handle speed and height control in FBWB or CRUISE mode. 
+  handle speed and height control in FBWB or CRUISE mode.
   In this mode the elevator is used to change target altitude. The
   throttle is used to change target airspeed or throttle
  */
@@ -322,16 +331,16 @@ void Plane::update_fbwb_speed_height(void)
         dt = constrain_float(dt, 0.1, 0.15);
 
         target_altitude.last_elev_check_us = now;
-        
+
         float elevator_input = channel_pitch->get_control_in() / 4500.0f;
-    
+
         if (g.flybywire_elev_reverse) {
             elevator_input = -elevator_input;
         }
 
         int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
         change_target_altitude(alt_change_cm);
-        
+
         if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
             // the user has just released the elevator, lock in
             // the current altitude
@@ -350,14 +359,14 @@ void Plane::update_fbwb_speed_height(void)
             }
         }
 #endif
-        
+
         target_altitude.last_elevator_input = elevator_input;
     }
-    
+
     check_fbwb_minimum_altitude();
 
     altitude_error_cm = calc_altitude_error_cm();
-    
+
     calc_throttle();
     calc_nav_pitch();
 }
@@ -378,7 +387,7 @@ void Plane::setup_turn_angle(void)
         // work out the angle we need to turn through
         auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
     }
-}    
+}
 
 /*
   see if we have reached our loiter target
@@ -390,4 +399,3 @@ bool Plane::reached_loiter_target(void)
     }
     return nav_controller->reached_loiter_target();
 }
-    
