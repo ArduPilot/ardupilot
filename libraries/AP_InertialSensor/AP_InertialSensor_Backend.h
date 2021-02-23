@@ -329,6 +329,9 @@ protected:
     void notify_accel_fifo_reset(uint8_t instance);
     void notify_gyro_fifo_reset(uint8_t instance);
     
+    // log an unexpected change in a register for an IMU
+    void log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg);
+
     // note that each backend is also expected to have a static detect()
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
