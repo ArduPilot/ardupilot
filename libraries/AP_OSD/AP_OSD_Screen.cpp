@@ -342,8 +342,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(vspeed, "VSPEED", 20, AP_OSD_Screen, AP_OSD_Setting),
-
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#if HAL_WITH_ESC_TELEM
     // @Param: BLHTEMP_EN
     // @DisplayName: BLHTEMP_EN
     // @Description: Displays first esc's temp
@@ -392,7 +391,6 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(blh_amps, "BLHAMPS", 23, AP_OSD_Screen, AP_OSD_Setting),
 #endif
-
     // @Param: GPSLAT_EN
     // @DisplayName: GPSLAT_EN
     // @Description: Displays GPS latitude
@@ -1586,52 +1584,39 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     }
 }
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
-
+#if HAL_WITH_ESC_TELEM
 void AP_OSD_Screen::draw_blh_temp(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-
-        // AP_BLHeli & blh = AP_BLHeli::AP_BLHeli();
-        uint8_t esc_temp = td.temperature;
-        backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
+    int16_t etemp;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_temperature(0, etemp)) {
+        return;
     }
+
+    uint8_t esc_temp = uint8_t(etemp);
+    backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, esc_temp), u_icon(TEMPERATURE));
 }
 
 void AP_OSD_Screen::draw_blh_rpm(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-        backend->write(x, y, false, "%3.1f%c%c", td.rpm * 0.001f, SYM_KILO, SYM_RPM);
+    float rpm;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_rpm(0, rpm)) {
+        return;
     }
+    backend->write(x, y, false, "%3.1f%c%c", uint16_t(rpm) * 0.001f, SYM_KILO, SYM_RPM);
 }
 
 void AP_OSD_Screen::draw_blh_amps(uint8_t x, uint8_t y)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (blheli) {
-        AP_BLHeli::telem_data td;
-        // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
-        if (!blheli->get_telem_data(0, td)) {
-            return;
-        }
-
-        float esc_amps = td.current * 0.01;
-        backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
+    float esc_amps;
+    // first parameter is index into array of ESC's.  Hardwire to zero (first) for now.
+    if (!AP::esc_telem().get_current(0, esc_amps)) {
+        return;
     }
+    backend->write(x, y, false, "%4.1f%c", esc_amps, SYM_AMP);
 }
-#endif  //HAVE_AP_BLHELI_SUPPORT
+#endif
 
 void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
 {
