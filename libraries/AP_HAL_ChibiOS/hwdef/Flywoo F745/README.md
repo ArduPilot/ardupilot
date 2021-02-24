@@ -6,28 +6,28 @@ The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://f
 
 ## Features
 
--MCU: STM32F745 32-bit processor,216MHz, 512Kbytes Flash
--IMU: MPU6000 (SPI)
--Barometer: BMP280
--Onboard LED：WS2812*4
--USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
--7 hardware UARTS (UART1,2,3,4,5,6,7)
--Supports serial receivers (SBUS, iBus, Spektrum, Crossfire) only.
--PPM and PWM receivers are not supported.
--Onbord 8Mbytes for Blackbox logging
--9V Power Out: 1.5A max
--5V Power Out: 2.0A max
--3.3V Power Out: 0.5A max
--Dimensions: 33.5x33.5mm
--Mounting Holes: Standard 25.5/26.5mm square to center of holes 
--Weight: 8.5g
+- MCU: STM32F745 32-bit processor,216MHz, 512Kbytes Flash
+- IMU: MPU6000 (SPI)
+- Barometer: BMP280
+- Onboard LED：WS2812*4
+- USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
+- 7 hardware UARTS (UART1,2,3,4,5,6,7)
+- Supports serial receivers (SBUS, iBus, Spektrum, Crossfire) only.
+- PPM and PWM receivers are not supported.
+- Onbord 8Mbytes for Blackbox logging
+- 9V Power Out: 1.5A max
+- 5V Power Out: 2.0A max
+- 3.3V Power Out: 0.5A max
+- Dimensions: 33.5x33.5mm
+- Mounting Holes: Standard 25.5/26.5mm square to center of holes 
+- Weight: 8.5g
 
--Built-in 40A BL_32 4in1 ESC
--Support BLheli / BLHELI_32
--Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600,Dshot1200
--Input Voltage: 2-6S Lipo
--Continuous Current: 40A
--Firmware: BLHELI_32
+- Built-in 40A BL_32 4in1 ESC
+- Support BLheli / BLHELI_32
+- Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600,Dshot1200
+- Input Voltage: 2-6S Lipo
+- Continuous Current: 40A
+- Firmware: BLHELI_32
 
 ## Pinout
 
