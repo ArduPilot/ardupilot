@@ -961,7 +961,7 @@ bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
         break;
     case 1:             // Ground speed
         gcs().send_text(MAV_SEVERITY_INFO, "Set groundspeed %u", (unsigned)cmd.content.speed.target_ms);
-        aparm.min_gndspeed_cm.set(cmd.content.speed.target_ms * 100);
+        min_gndspd_cm =  cmd.content.speed.target_ms * 100;
         return true;
     }
 
