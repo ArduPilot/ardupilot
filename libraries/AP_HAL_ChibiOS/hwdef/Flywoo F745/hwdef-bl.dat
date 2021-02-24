@@ -1,5 +1,6 @@
 # hw definition file for processing by chibios_pins.py
 # for Flywoo Goku GN F745.
+# thanks andyp1per for the F7 Beast target
 
 # MCU class and specific type
 MCU STM32F7xx STM32F745xx
