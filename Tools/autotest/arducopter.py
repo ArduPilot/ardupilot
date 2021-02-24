@@ -4896,7 +4896,7 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
 
         tstart = self.get_sim_time_cached()
-        want_pitch_degrees = -20
+        want_pitch_degrees = -12
         while True:
             if self.get_sim_time_cached() - tstart > 10:
                 raise AutoTestTimeoutException("Did not reach pitch")
