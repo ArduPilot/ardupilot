@@ -1,5 +1,6 @@
 # hw definition file for processing by chibios_pins.py
 # for FLYWOO Goku GN F745.
+# thanks andyp1per for the F7 Beast target
 # thanks to betaflight for pin information
 
 # MCU class and specific type
