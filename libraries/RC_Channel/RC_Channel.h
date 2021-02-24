@@ -241,7 +241,7 @@ public:
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
-    virtual void do_aux_function(aux_func_t ch_option, AuxSwitchPos);
+    virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
 #if !HAL_MINIMIZE_FEATURES
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -482,8 +482,8 @@ public:
 
     uint32_t last_input_ms() const { return last_update_ms; };
 
-    void do_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos) {
-        rc_channel(0)->do_aux_function(ch_option, pos);
+    bool do_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos) {
+        return rc_channel(0)->do_aux_function(ch_option, pos);
     }
 
 protected:
