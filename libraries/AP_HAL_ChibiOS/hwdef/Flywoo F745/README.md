@@ -48,7 +48,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL6|TX6/RX6|UART6|
 |SERIAL7|TX7/RX7|UART7|
 
-UART1 supports RX and TX DMA. UART2, UART3 and UART4 support TX DMA. UART7 supports RX DMA
+UART1 supports RX and TX DMA. UART2, UART3, UART4, UART5 and UART6 support TX DMA. UART7 supports RX DMA
 
 ## RC Input
  
