@@ -14,7 +14,7 @@ public:
 
 
     // Wait on an Event handle, method for internal use by EventHandle
-    virtual bool wait(uint64_t duration, AP_HAL::EventHandle* evt_handle) = 0;
+    virtual uint32_t wait(uint64_t duration, AP_HAL::EventHandle* evt_handle) = 0;
 };
 
 class AP_HAL::EventHandle {
@@ -30,8 +30,9 @@ public:
     // return true if event type was successfully unregistered
     virtual bool unregister_event(uint32_t evt_mask);
 
-    // return true if event was triggered within the duration
-    virtual bool wait(uint64_t duration);
+    // return evt_mask for which event was triggered within the duration
+    // will be 0 if just timed out
+    virtual uint32_t wait(uint64_t duration);
 
     virtual uint32_t get_evt_mask() const { return evt_mask_; }
 
