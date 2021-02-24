@@ -22,3 +22,6 @@
 [submodule "modules/wolfssl"]
 	path = modules/wolfssl
 	url = https://github.com/bugobliterator/wolfssl
+[submodule "modules/libnpnt"]
+	path = modules/libnpnt
+	url = https://github.com/CubePilot/libnpnt

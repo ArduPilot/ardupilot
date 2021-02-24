@@ -112,11 +112,6 @@ uint32_t flash_func_read_word(uint32_t offset)
     return *(const uint32_t *)(flash_base + offset);
 }
 
-void flash_program_option_bytes(uint32_t data)
-{
-    stm32_flash_program_option_bytes(data);
-}
-
 bool flash_func_write_word(uint32_t offset, uint32_t v)
 {
     return stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));
@@ -141,21 +136,6 @@ bool flash_func_erase_sector(uint32_t sector)
         return stm32_flash_erasepage(flash_base_page+sector);
     }
     return true;
-}
-
-void
-flash_func_protect(uint32_t level)
-{
-	uint32_t word = 0x7FFFAAED;
-	word &= ~(0xff << 8);
-	if(level == 0) {
-		word |= 0xAA << 8;
-	} else if(level == 1) {
-		word |= 0xBB << 8;
-	} else {
-		word |= 0xCC << 8;
-	}
-	flash_program_option_bytes(word);
 }
 
 // read one-time programmable memory

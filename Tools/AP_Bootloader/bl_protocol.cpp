@@ -828,32 +828,6 @@ bootloader(unsigned timeout)
             break;
         }
 
-#if defined(SECURE) && SECURE==1
-		case PROTO_PROTECT0:
-			// expect EOC
-			if (!wait_for_eoc(1000)) {
-				goto cmd_bad;
-			}
-			flash_func_protect(0);
-			break;
-
-		case PROTO_PROTECT1:
-			// expect EOC
-			if (!wait_for_eoc(1000)) {
-				goto cmd_bad;
-			}
-			flash_func_protect(1);
-			break;
-
-		case PROTO_PROTECT2:
-			// expect EOC
-			if (!wait_for_eoc(1000)) {
-				goto cmd_bad;
-			}
-			flash_func_protect(2);
-			break;
-#endif
-
         // finalise programming and boot the system
         //
         // command:			BOOT/EOC
@@ -873,6 +847,7 @@ bootloader(unsigned timeout)
             // program the deferred first word
             if (first_words[0] != 0xffffffff) {
 #if defined(SECURE) && SECURE==1
+                disable_malloc_secure(1); // Its ok to overflow outside of secure memory
                 //verify signature
                 wc_InitSha256(&sha);
                 for (unsigned p = 0; p < address - 76; p += 4) {

@@ -20,7 +20,6 @@ void port_setbaud(uint32_t baudrate);
 
 void flash_init();
 
-void flash_func_protect(uint32_t level);
 void flash_program_option_bytes(uint32_t data);
 uint32_t flash_func_read_word(uint32_t offset);
 bool flash_func_write_word(uint32_t offset, uint32_t v);
@@ -29,7 +28,6 @@ uint32_t flash_func_sector_size(uint32_t sector);
 bool flash_func_erase_sector(uint32_t sector);
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
-void flash_func_protect(uint32_t level);
 void flash_set_keep_unlocked(bool);
 void lock_bl_port(void);
 
