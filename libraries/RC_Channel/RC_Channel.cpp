@@ -893,7 +893,7 @@ void RC_Channel::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
     mission->reset();
 }
 
-void RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::CAMERA_TRIGGER:
@@ -1150,8 +1150,10 @@ void RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     default:
         gcs().send_text(MAV_SEVERITY_INFO, "Invalid channel option (%u)", (unsigned int)ch_option);
-        break;
+        return false;
     }
+
+    return true;
 }
 
 void RC_Channel::init_aux()
