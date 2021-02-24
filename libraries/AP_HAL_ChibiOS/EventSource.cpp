@@ -6,7 +6,7 @@ using namespace ChibiOS;
 
 #if CH_CFG_USE_EVENTS == TRUE
 
-bool EventSource::wait(uint64_t duration, AP_HAL::EventHandle *evt_handle)
+uint32_t EventSource::wait(uint64_t duration, AP_HAL::EventHandle *evt_handle)
 {
     chibios_rt::EventListener evt_listener;
     eventmask_t evt_mask = evt_handle->get_evt_mask();
@@ -18,7 +18,7 @@ bool EventSource::wait(uint64_t duration, AP_HAL::EventHandle *evt_handle)
         ret = chEvtWaitAnyTimeout(evt_mask, chTimeUS2I(duration));
     }
     ch_evt_src_.unregister(&evt_listener);
-    return ret == MSG_OK;
+    return ret;
 }
 
 void EventSource::signal(uint32_t evt_mask)
