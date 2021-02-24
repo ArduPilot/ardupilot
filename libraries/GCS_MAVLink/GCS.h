@@ -790,6 +790,10 @@ private:
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
 
+    void handle_secure_pin(const mavlink_message_t &msg);
+    void handle_change_secure_pin(const mavlink_message_t &msg);
+
+
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
     mavlink_signing_t signing;
