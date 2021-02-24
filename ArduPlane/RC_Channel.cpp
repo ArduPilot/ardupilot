@@ -199,7 +199,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 }
 
 // do_aux_function - implement the function invoked by auxillary switches
-void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
     case AUX_FUNC::INVERTED:
@@ -325,7 +325,8 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         break;
 
     default:
-        RC_Channel::do_aux_function(ch_option, ch_flag);
-        break;
+        return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
+
+    return true;
 }
