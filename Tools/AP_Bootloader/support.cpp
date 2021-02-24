@@ -270,6 +270,7 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
  */
 bool check_limit_flash_1M(void)
 {
+#ifdef STM32F427xx
     uint32_t idcode = (*(uint32_t *)DBGMCU_BASE);
     uint16_t revid = ((idcode & REVID_MASK) >> 16);
 
@@ -278,6 +279,7 @@ bool check_limit_flash_1M(void)
             return silicon_revs[i].limit_flash_size_1M;
         }
     }
+#endif
     return false;
 }
 
