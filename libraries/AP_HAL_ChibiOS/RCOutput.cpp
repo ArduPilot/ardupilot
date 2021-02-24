@@ -1360,8 +1360,11 @@ void RCOutput::dma_unlock(void *p)
     pwm_group *group = (pwm_group *)p;
 
     group->dshot_state = DshotState::IDLE;
-    // tell the waiting process we've done the DMA
-    chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    if (group->dshot_waiter != nullptr) {
+        // tell the waiting process we've done the DMA. Note that
+        // dshot_waiter can be null if we have cancelled the send
+        chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    }
     chSysUnlockFromISR();
 }
 
