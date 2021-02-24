@@ -510,61 +510,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User:
     GSCALAR(payload_weight,  "SPIRIT_PAYLD_WT",    0),
 
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(top_cam,  "SPIRIT_TOP_CAM",    0),
-
-
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(roi_1_long,  "SPIRIT_ROI_1_LNG",    0),
-
-
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(roi_1_lat,  "SPIRIT_ROI_1_LAT",    0),
-
-
-
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(roi_2_long,  "SPIRIT_ROI_2_LNG",    0),
-
-
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(roi_2_lat,  "SPIRIT_ROI_2_LAT",    0),
-
-
-    // @Param: SPIRIT_TOP_CAM
-    // @DisplayName:
-    // @Description:
-    // @Values:
-    // @Range:
-    // @User:
-    GSCALAR(camera_type,  "SPIRIT_CAM_TYPE",    0),
-
-
 
 
 

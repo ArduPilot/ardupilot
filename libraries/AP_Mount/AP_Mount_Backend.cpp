@@ -152,6 +152,17 @@ void AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     	angles_to_target_deg.y = 90.0f - ToDeg(atanf(tan_ratio));
     }
 
+/*
+    //Debugging
+	hal.console->print("\n");
+	hal.console->print("\n");
+	hal.console->printf("CMD Tilt: %4f", angles_to_target_deg.y);
+	hal.console->print("\n");
+	hal.console->printf("Alt:  %ld", _frontend._current_loc.alt);
+	hal.console->print("\n");
+	hal.console->print("\n");
+*/
+
     // pan calcs
     if (calc_pan) {
         // calc absolute heading and then convert to vehicle relative yaw
@@ -194,11 +205,12 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 	float tilt_angle;
 	float pan_angle;
 
-	tilt_angle = constrain_float(_camera_tilt_angle, 90.1f, 179.9f);  //Range of viewpro camera (hanging on bottom) from straightout (90) to straight down (180)
+	tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);//Range of viewpro camera (hanging on bottom) from straightout (0) to straight down (90)
+
 
 	//Covert angle for our distance calc
-	tilt_angle = tilt_angle - 90.1f;
-	tilt_angle = constrain_float(_camera_tilt_angle, 0.1f, 89.9);
+	tilt_angle = 90.0f - tilt_angle;
+	tilt_angle = constrain_float(tilt_angle, 0.1f, 89.9);
 
 	float distance = tanf(radians(tilt_angle))*((float)_frontend._current_loc.alt / 100.0f);
 
@@ -208,6 +220,16 @@ void AP_Mount_Backend::set_camera_point_ROI(float yaw)
 	}else{
 		pan_angle = 360 + _camera_pan_angle;
 	}
+
+	/* Debugging
+	hal.console->print("\n");
+	hal.console->print("\n");
+	hal.console->printf("Camera Tilt: %4f", _camera_tilt_angle);
+	hal.console->print("\n");
+	hal.console->printf("Distance:  %4f", distance);
+	hal.console->print("\n");
+	hal.console->print("\n");
+	 */
 
 	float bearing = degrees(yaw) + pan_angle;   //// <- pass yaw to this funciton from usercode
 	roi_gps_target.offset_bearing(bearing, distance);

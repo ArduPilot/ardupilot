@@ -385,9 +385,6 @@ void AP_Mount_ViewPro::read_incoming() {
 }
 
 
-
-
-
 void AP_Mount_ViewPro::parse_reply() {
 
     switch (_reply_type) {
@@ -401,6 +398,12 @@ void AP_Mount_ViewPro::parse_reply() {
 
         	_camera_tilt_angle = (_buffer.angle_data.pitch_ang)*0.0219726;
         	_camera_pan_angle = (_buffer.angle_data.yaw_rel_ang)*0.0219726;
+
+        	/*
+        	hal.console->printf("%4f", _camera_tilt_angle);
+        	hal.console->print("\n");
+        	hal.console->print("\n");
+			*/
 
             break;
 
@@ -495,11 +498,12 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 
 	_speed_ef_target_deg.x = 0;
 
-	if(is_zero(tilt_wheel_ch->norm_input_dz())){
+	if(tilt_wheel_ch->get_radio_in() == 0 or is_zero(tilt_wheel_ch->norm_input_dz())){
 		_speed_ef_target_deg.y = 0;
+
 	}else{
 		_speed_ef_target_deg.y = -CAM_SPD_MAX + ((tilt_wheel_ch->norm_input_dz() + 1) * CAM_SPD_MAX);
-		//_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
+		_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
 	}
 
 	if(!_RC_control_enable){
@@ -521,6 +525,7 @@ void AP_Mount_ViewPro::update_target_spd_from_rc(){
 		_speed_ef_target_deg.y = -spd_factor + ((tilt_ch->norm_input_dz() + 1) * spd_factor);
 	}else{
 		_speed_ef_target_deg.y = -spd_factor + ((tilt_wheel_ch->norm_input_dz() + 1) * spd_factor);
+		_speed_ef_target_deg.y = -1.0f* _speed_ef_target_deg.y;
 	}
 
 }
@@ -551,10 +556,8 @@ void AP_Mount_ViewPro::turn_motors_off(bool en)
 		_port->write(buf[i]);
 	}
 
-
     // store time of send
     _last_send = AP_HAL::millis();
-
 }
 
 
@@ -624,7 +627,6 @@ void AP_Mount_ViewPro::reset_camera(){
 
 	// store time of send
 	_last_send = AP_HAL::millis();
-
 }
 
 
@@ -644,7 +646,6 @@ void AP_Mount_ViewPro::command_gimbal(){
 
 		case MAV_MOUNT_MODE_RETRACT:
 		case MAV_MOUNT_MODE_NEUTRAL:
-
 
 			cmd_set_data.header1 = 0xFF;
 			cmd_set_data.header2 = 0x01;
@@ -705,14 +706,14 @@ void AP_Mount_ViewPro::command_gimbal(){
 			cmd_set_data.Ys = (int)_yaw_value;
 			cmd_set_data.Ya = (int)0;
 			cmd_set_data.crc = 0;
-/*
+
 			// force follow mode by not giving a control mode to Yaw
 			if(!_RC_control_enable){
 				cmd_set_data.YM = 0x00;
 				cmd_set_data.Ys = (int)0;
 				cmd_set_data.Ya = (int)0;
 			}
-			*/
+
 
 			break;
 
@@ -807,7 +808,6 @@ void AP_Mount_ViewPro::zoom_camera(){
 
 		  _zooming_state_change = false;
 }
-
 
 
 

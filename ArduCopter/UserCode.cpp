@@ -175,8 +175,8 @@ void Copter::userhook_50Hz()
 		//Looks for issues with startup
 		servo_voltage_watcher();
 
-		//Spoolup Watcher.  Disarm if 2.5 seconds passes without advancing
-		if(AP_HAL::millis16() - spoolup_watcher > (uint16_t)2500){
+		//Spoolup Watcher.  Disarm if 3.5 seconds passes without advancing
+		if(AP_HAL::millis16() - spoolup_watcher > (uint16_t)3500){
 			 copter.arming.disarm();
 			 gcs().send_text(MAV_SEVERITY_CRITICAL,"A Rotor Failed to Start: Disarm");
 		}
@@ -777,6 +777,10 @@ void Copter::auto_config(){
 
 	hover_rpm_filter.reset(g.rpm_hover);
 	motors->set_hover_RPM(g.rpm_hover);
+
+
+	compass.set_motor_compensation(1, Vector3f(0,0,0));
+
 
 }
 
