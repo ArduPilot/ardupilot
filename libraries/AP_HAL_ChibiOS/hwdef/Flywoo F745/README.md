@@ -1,23 +1,39 @@
-# iFlight Beast F7 45A AIO Flight Controller
+# Flywoo GOKU GN 745 40A AIO
 
-https://shop.iflight-rc.com/index.php?route=product/product&product_id=1377
+https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5
 
-The Beast F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
+The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
 ## Features
 
- - MCU: BGA-STM32F745
- - Gyro: MPU6000
- - 8Mb Onboard Flash
- - BEC output: 5V 2.5A 
- - Barometer: BMP280
- - OSD: AT7456E
- - 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
- - 5 PWM outputs (4 motors and 1 LED)
+GN745AIO BLHELI32 40A
+Specification: 
+MCU: STM32F745 32-bit processor,216MHz, 512Kbytes Flash
+IMU: MPU6000 (SPI)
+Barometer: BMP280
+Onboard LED：WS2812*4
+USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
+7 hardware UARTS (UART1,2,3,4,5,6,7)
+Supports serial receivers (SBUS, iBus, Spektrum, Crossfire) only.
+PPM and PWM receivers are not supported.
+Onbord 8Mbytes for Blackbox logging
+9V Power Out: 1.5A max
+5V Power Out: 2.0A max
+3.3V Power Out: 0.5A max
+Dimensions: 33.5x33.5mm
+Mounting Holes: Standard 25.5/26.5mm square to center of holes 
+Weight: 8.5g
+
+Built-in 40A BL_32 4in1 ESC
+Support BLheli / BLHELI_32
+Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600,Dshot1200
+Input Voltage: 2-6S Lipo
+Continuous Current: 40A
+Firmware: BLHELI_32
 
 ## Pinout
 
-![Beast F7 AIO Board](../BeastH7/beast_h7_pinout.png "Beast F7 AIO")
+![GOKU GN 745 40A AIO](../GOKUGN745AIO/GOKUGN745AIO_Pinout.png "GOKU GN 745 40A AIO")
 
 ## UART Mapping
 
@@ -26,18 +42,19 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL0|COMPUTER|USB|
-|SERIAL1|RX1/TX1|UART1 (Telem1 / Alt RC Input/Output)|
-|SERIAL2|TX2/RX2|UART2 (DJI)|
-|SERIAL3|RX3|UART3 (DJI RC Input)|
+|SERIAL1|RX1/TX1|UART1 (Telem1)|
+|SERIAL2|TX2/RX2|UART2|
+|SERIAL3|TX3/RX3|UART3|
 |SERIAL4|TX4/RX4|UART4 (GPS)|
+|SERIAL5|TX5/RX5|UART5|
+|SERIAL6|TX6/RX6|UART6|
 |SERIAL7|TX7/RX7|UART7|
 
-UART1 supports RX and TX DMA. UART2, UART3 and UART4 support RX DMA. UART7 supports TX DMA
+UART1 supports RX and TX DMA. UART2, UART3 and UART4 support TX DMA. UART7 supports RX DMA
 
 ## RC Input
  
-RC input is configured on the (UART3_RX) pin which forms part of the DJI connector. It supports all RC protocols.
-For RC input/output use UART1 wih SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
+RC input is configured on the UART3, which supports all RC protocols.
   
 ## OSD Support
 
@@ -45,9 +62,9 @@ The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The Beast F7 AIO supports up to 4 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are for the 4 outputs. All 4 outputs support DShot as well as all PWM types.
+The GOKU GN 745 AIO supports up to 8 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are the first 4 outputs, there are four additional pads for PWM 5-8. All 8 outputs support DShot as well as all PWM types.
 
-The PWM are in in two groups.
+The PWM are in in 4 groups.
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -55,7 +72,7 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builtin voltage sensor. The voltage sensor can handle up to 6S
+The board has a builtin voltage sensor. The voltage sensor can handle 2S to 6S
 LiPo batteries.
 
 The correct battery setting parameters are:
@@ -70,18 +87,19 @@ These are set by default in the firmware and shouldn't need to be adjusted
 
 ## Compass
 
-The Beast F7 AIO does not have a builtin compass and you cannot attach an external compass due to the lack of an external I2C connector.
+The GOKU GN 745 AIO does not have a builtin compass but it does have an external I2C connector.
 
 ## NeoPixel LED
 
-The board includes a NeoPixel LED on the underside which is pre-configured to output ArduPilot sequences. This is the fifth PWM output.
+The board includes a NeoPixel LED pad.
 
-## Loading Firmware
+## Loading Firmware (you will need to compile your own firmware)
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
 firmware, using your favourite DFU loading tool.
 
+## The following is a lie as of February 2021, since this board does not have a unique Board ID yet
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.
