@@ -105,10 +105,11 @@ public:
         NO_CHANGE=1,
         FAIL=2,
         NOT_AVAILABLE=3,
+        LOCKED=3
     };
 
     // overwrite bootloader (probably with one from ROMFS)
-    virtual FlashBootloader flash_bootloader() { return FlashBootloader::NOT_AVAILABLE; }
+    virtual FlashBootloader flash_bootloader(bool secure_bl = false) { return FlashBootloader::NOT_AVAILABLE; }
 
     /*
       get system identifier (eg. serial number)
@@ -159,7 +160,9 @@ public:
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,
-        MEM_FAST
+        MEM_FAST,
+        MEM_SECURE,
+        MEM_ANY
     };
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
