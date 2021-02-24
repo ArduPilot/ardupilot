@@ -24,6 +24,9 @@ bool ModeAuto::_enter()
     plane.g2.soaring_controller.init_cruising();
 #endif
 
+   // set min gndspd temp variable to parameter value
+   plane.min_gndspd_cm = plane.aparm.min_gndspeed_cm;
+ 
     return true;
 }
 
