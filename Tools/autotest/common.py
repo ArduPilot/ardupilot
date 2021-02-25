@@ -513,8 +513,8 @@ class CRSF(Telem):
 
 
 class FRSky(Telem):
-    def __init__(self, destination_address):
-        super(FRSky, self).__init__(destination_address)
+    def __init__(self, destination_address, verbose=False):
+        super(FRSky, self).__init__(destination_address, verbose=verbose)
 
         self.dataid_GPS_ALT_BP          = 0x01
         self.dataid_TEMP1               = 0x02
@@ -815,7 +815,10 @@ class SPortToMAVlite(object):
 
 class FRSkySPort(FRSky):
     def __init__(self, destination_address, verbose=True, get_time=time.time):
-        super(FRSkySPort, self).__init__(destination_address)
+        super(FRSkySPort, self).__init__(
+            destination_address,
+            verbose=verbose
+        )
 
         self.get_time = get_time
 
@@ -899,6 +902,9 @@ class FRSkySPort(FRSky):
 
         self.data_downlink_handler = None
 
+        self.last_poll_sensor = None
+        self.last_data_time = None
+
     def progress_tag(self):
         return "FRSkySPort"
 
@@ -906,13 +912,17 @@ class FRSkySPort(FRSky):
         self.progress("DOWNLINK %s" % (str(some_bytes),))
         if self.data_downlink_handler is not None:
             self.data_downlink_handler(some_bytes)
+        self.last_data_time = self.get_time()
 
     def handle_data(self, dataid, value):
+        if dataid not in self.id_descriptions:
+            raise KeyError("dataid 0x%02x" % dataid)
         self.progress("%s (0x%x)=%u" % (self.id_descriptions[dataid], dataid, value))
         self.data_by_id[dataid] = value
         if dataid not in self.dataid_counts:
             self.dataid_counts[dataid] = 0
         self.dataid_counts[dataid] += 1
+        self.last_data_time = self.get_time()
 
     def dump_dataid_counts_as_progress_messages(self):
         for dataid in self.dataid_counts:
@@ -957,9 +967,20 @@ class FRSkySPort(FRSky):
         return ret
 
     def check_poll(self):
+        self.progress("check poll")
         now = self.get_time()
-        if now - self.poll_sent > 20:
-            self.progress("Re-polling")
+
+        # sometimes ArduPilot will not respond to a poll - for
+        # example, if you poll an unhealthy RPM sensor then we will
+        # *never* get a response back.  So we must re-poll (which
+        # moves onto the next sensor):
+        if now - self.poll_sent > 5:
+            if self.last_poll_sensor is None:
+                self.progress("Re-polling (last poll sensor was None)")
+            else:
+                msg = ("Re-polling (last_poll_sensor=0x%02x state=%s)" %
+                       (self.last_poll_sensor, self.state))
+                self.progress(msg)
             if self.state != self.state_WANT_FRAME_TYPE:
                 raise ValueError("Expected to be wanting a frame type when repolling (state=%s)" % str(self.state))
             self.state = self.state_SEND_POLL
@@ -967,6 +988,7 @@ class FRSkySPort(FRSky):
         if self.state == self.state_SEND_POLL:
             sensor_id = self.next_sensor()
             self.progress("Sending poll for 0x%02x" % sensor_id)
+            self.last_poll_sensor = sensor_id
             if sensor_id not in self.sensor_id_poll_counts:
                 self.sensor_id_poll_counts[sensor_id] = 0
             self.sensor_id_poll_counts[sensor_id] += 1
@@ -1046,6 +1068,7 @@ class FRSkySPort(FRSky):
     def update(self):
         if not self.connected:
             if not self.connect():
+                self.progress("Failed to connect")
                 return
         self.check_poll()
         self.do_sport_read()
@@ -9634,13 +9657,33 @@ switch value'''
             return True
         return False
 
+    def wait_rpm1(self, min_rpm=None, timeout=10):
+        '''wait for mavlink RPM message to indicate valid RPM'''
+        tstart = self.get_sim_time()
+        while True:
+            t = self.get_sim_time_cached()
+            if t - tstart > 10:
+                raise AutoTestTimeoutException("Failed to do get valid RPM")
+            rpm = self.mav.recv_match(
+                type='RPM',
+                blocking=True,
+                timeout=1
+            )
+            self.progress("rpm: (%s)" % str(rpm))
+            if rpm is None:
+                continue
+            if min_rpm is None:
+                return
+            if rpm.rpm1 >= min_rpm:
+                return
+
     def test_frsky_sport(self):
         self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
-        self.set_parameter("RPM_TYPE", 1) # enable RPM sensor
+        self.set_parameter("RPM_TYPE", 10) # enable SITL RPM sensor
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
-        frsky = FRSkySPort(("127.0.0.1", 6735))
+        frsky = FRSkySPort(("127.0.0.1", 6735), verbose=True)
         self.wait_ready_to_arm()
 
         # we need to start the engine to get some RPM readings, we do it for plane only
@@ -9649,6 +9692,7 @@ switch value'''
             if not self.arm_vehicle():
                 raise NotAchievedException("Failed to ARM")
             self.set_rc(3, 1050)
+            self.wait_rpm1(timeout=10, min_rpm=200)
 
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.
@@ -9673,6 +9717,8 @@ switch value'''
         }
         tstart = self.get_sim_time_cached()
         last_wanting_print = 0
+
+        last_data_time = None
         while len(wants):
             now = self.get_sim_time()
             if now - last_wanting_print > 1:
@@ -9688,6 +9734,9 @@ switch value'''
                 frsky.dump_dataid_counts_as_progress_messages()
                 raise AutoTestTimeoutException("Failed to get frsky sport data")
             frsky.update()
+            if frsky.last_data_time == last_data_time:
+                continue
+            last_data_time = frsky.last_data_time
             for want in wants_copy:
                 data = frsky.get_data(want)
                 if data is None:
