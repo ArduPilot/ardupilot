@@ -5688,15 +5688,16 @@ Also, ignores heartbeats not from our target system'''
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
+        self.do_timesync_roundtrip()
+        tstart = self.get_sim_time()
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         len(items),
                                         mission_type)
-        tstart = self.get_sim_time_cached()
         remaining_to_send = set(range(0, len(items)))
         sent = set()
         while True:
-            if self.get_sim_time_cached() - tstart > 10:
+            if self.get_sim_time_cached() - tstart > (10 + len(items)/10):
                 raise NotAchievedException("timeout uploading %s" % str(mission_type))
             if len(remaining_to_send) == 0:
                 self.progress("All sent")
@@ -5761,11 +5762,11 @@ Also, ignores heartbeats not from our target system'''
         target_component = 1
         self.drain_mav_unparsed()
         self.progress("Sending mission_request_list")
+        tstart = self.get_sim_time()
         self.mav.mav.mission_request_list_send(target_system,
                                                target_component,
                                                mission_type)
 
-        tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
@@ -5792,8 +5793,9 @@ Also, ignores heartbeats not from our target system'''
         tstart = self.get_sim_time_cached()
         remaining_to_receive = set(range(0, m.count))
         next_to_request = 0
+        timeout = (10 + m.count/10)
         while True:
-            if self.get_sim_time_cached() - tstart > 10:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout downloading type=%s" %
                                            (mavutil.mavlink.enums["MAV_MISSION_TYPE"][mission_type].name))
             if len(remaining_to_receive) == 0:
