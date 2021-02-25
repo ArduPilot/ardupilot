@@ -847,7 +847,6 @@ bootloader(unsigned timeout)
             // program the deferred first word
             if (first_words[0] != 0xffffffff) {
 #if defined(SECURE) && SECURE==1
-                disable_malloc_secure(1); // Its ok to overflow outside of secure memory
                 //verify signature
                 wc_InitSha256(&sha);
                 for (unsigned p = 0; p < address - 76; p += 4) {
