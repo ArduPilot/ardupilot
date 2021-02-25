@@ -224,10 +224,7 @@ def chibios_firmware(self):
         abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
-    if self.env.SECURE:
-        bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_securebl.bin" % self.env.BOARD)
-    else:
-        bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
+    bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
         
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
