@@ -738,11 +738,13 @@ void stm32_flash_keep_unlocked(bool set)
 
 bool stm32_flash_is_rdp_enabled()
 {
+#if defined(STM32H7)
     // clear any previous errors
     stm32_flash_clear_errors();
     if ((FLASH->OPTSR_CUR & FLASH_OPTSR_RDP) != 0xAA00U) {
         return true;
     }
+#endif
     return false;
 }
 
