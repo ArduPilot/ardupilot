@@ -3193,6 +3193,105 @@ class AutoTest(ABC):
         self.progress("num_wp: %d" % num_wp)
         return num_wp
 
+    def string_for_frame(self, frame):
+        return mavutil.mavlink.enums["MAV_FRAME"][frame].name
+
+    def frames_equivalent(self, f1, f2):
+        pairs = [
+            (mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT),
+            (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT),
+            (mavutil.mavlink.MAV_FRAME_GLOBAL,
+             mavutil.mavlink.MAV_FRAME_GLOBAL_INT),
+        ]
+        for pair in pairs:
+            if (f1 == pair[0] and f2 == pair[1]):
+                return True
+            if (f1 == pair[1] and f2 == pair[0]):
+                return True
+        return f1 == f2
+
+    def check_mission_items_same(self,
+                                 check_atts,
+                                 want,
+                                 got,
+                                 epsilon=None,
+                                 skip_first_item=False):
+        self.progress("Checking mission items same")
+        if epsilon is None:
+            epsilon = 1
+        if len(want) != len(got):
+            raise NotAchievedException("Incorrect item count (want=%u got=%u)" % (len(want), len(got)))
+        self.progress("Checking %u items" % len(want))
+        for i in range(0, len(want)):
+            if skip_first_item and i == 0:
+                continue
+            item = want[i]
+            downloaded_item = got[i]
+
+            check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
+            # z is not preserved
+
+            self.progress("Comparing (%s) and (%s)" % (str(item), str(downloaded_item)))
+
+            for att in check_atts:
+                item_val = getattr(item, att)
+                downloaded_item_val = getattr(downloaded_item, att)
+                if abs(item_val - downloaded_item_val) > epsilon:
+                    raise NotAchievedException(
+                        "Item %u (%s) has different %s after download want=%s got=%s (got-item=%s)" %
+                        (i, str(item), att, str(item_val), str(downloaded_item_val), str(downloaded_item)))
+                # for waypoint items ensure z and frame are preserved:
+            self.progress("Type is %u" % got[0].mission_type)
+            if got[0].mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                item_val = getattr(item, 'frame')
+                downloaded_item_val = getattr(downloaded_item, 'frame')
+                if not self.frames_equivalent(item_val, downloaded_item_val):
+                    raise NotAchievedException("Frame not same (got=%s want=%s)" %
+                                               (self.string_for_frame(downloaded_item_val),
+                                                self.string_for_frame(item_val)))
+                if abs(item.z - downloaded_item.z) > 0.00001:
+                    raise NotAchievedException("Z not preserved (got=%f want=%f)" %
+                                               (item.z, downloaded_item.z))
+
+    def check_fence_items_same(self, want, got):
+        check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
+        return self.check_mission_items_same(check_atts, want, got)
+
+    def check_mission_waypoint_items_same(self, want, got):
+        check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
+        return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
+
+    def check_mission_item_upload_download(self, items, itype, mission_type):
+        self.progress("check %s _upload/download: upload %u items" %
+                      (itype, len(items),))
+        self.upload_using_mission_protocol(mission_type, items)
+        self.progress("check %s upload/download: download items" % itype)
+        downloaded_items = self.download_using_mission_protocol(mission_type)
+        self.progress("Downloaded items: (%s)" % str(downloaded_items))
+        if len(items) != len(downloaded_items):
+            raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
+                                       (len(items), len(downloaded_items)))
+        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
+            self.check_fence_items_same(items, downloaded_items)
+        elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+            self.check_mission_waypoint_items_same(items, downloaded_items)
+        else:
+            raise NotAchievedException("Unhandled")
+
+    def check_fence_upload_download(self, items):
+        self.check_mission_item_upload_download(
+            items,
+            "fence",
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+
+    def check_mission_upload_download(self, items):
+        self.check_mission_item_upload_download(
+            items,
+            "waypoints",
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
     def rc_defaults(self):
         return {
             1: 1500,
