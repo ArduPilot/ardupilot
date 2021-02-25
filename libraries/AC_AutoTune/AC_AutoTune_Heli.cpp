@@ -79,6 +79,7 @@ void AC_AutoTune_Heli::test_init()
         if (freq_cnt == 0) {
             test_freq[0] = 0.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
+            test_accel_max = 0.0f;
             // reset determine_gain function for first use in the event autotune is restarted
             determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt], test_accel_max, dwell_complete, true);
         }
@@ -647,6 +648,13 @@ void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float
             curr_test_freq = freq[0];
             frq_cnt = 0;
         }
+
+        // guard against frequency getting too high or too low
+        if (curr_test_freq > 50.24f || curr_test_freq < 3.14f) {
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+        }
+
     }
     // reset determine_gain function
     determine_gain_angle(0.0f, 0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], test_accel_max, dwell_complete, true);
