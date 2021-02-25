@@ -226,17 +226,17 @@ unsigned short AS_5600::setStartPosition(unsigned short startAngle)
 
 */
 
-int AS_5600::writeOneByte(uint8_t in_adr, uint8_t msg){
-
-    WITH_SEMAPHORE(sem);
-
-    uint8_t  send[2] = {in_adr, msg};
-
-    bool success = dev->transfer(send, sizeof(send), nullptr, 0);
-
-    return success ? 0 : -1;
-
-}
+//int AS_5600::writeOneByte(uint8_t in_adr, uint8_t msg){
+//
+//    WITH_SEMAPHORE(sem);
+//
+//    send[2] = {in_adr, msg};
+//
+//    bool success = dev->transfer(send, sizeof(send), nullptr, 0);
+//
+//    return success ? 0 : -1;
+//
+//}
 
 
 /*******************************************************
@@ -252,7 +252,6 @@ int AS_5600::readOneByte(uint8_t in_adr)
 
   uint8_t  send[1] = {in_adr};
   uint8_t  recv[1];
-
 
   bool success = dev->transfer(send, sizeof(send), recv, sizeof(recv));
 
