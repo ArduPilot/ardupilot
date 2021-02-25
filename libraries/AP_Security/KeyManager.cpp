@@ -79,7 +79,9 @@ void KeyManager::init() {
         }
     }
     // Load Server's Public Key for Verification
+#ifdef HAL_DIGITAL_SKY_RFM
     load_server_pubkey();
+#endif
 }
 
 void KeyManager::_secure_thread()
@@ -168,7 +170,6 @@ void KeyManager::_save_public_key()
     uint32_t dersize = 1200;
     // we don't need secure memory
     // for public key
-    disable_malloc_secure(1);
     //Generate Public Key File
     GCS_SEND_TEXT(MAV_SEVERITY_ALERT, "KeyManager: Extracting Public Key.\n");
     uint8_t *publickey_der = new uint8_t[dersize];
@@ -201,17 +202,12 @@ void KeyManager::_save_public_key()
     AP::FS().close(pubkey_fd);
     delete[] publickey_der;
 
-    disable_malloc_secure(0);
 }
 
 void KeyManager::_generate_private_key()
 {
     WC_RNG rng;
     int ret;
-
-    // we don't have enough secure memory to generate
-    // key, so we allow spilover just this once
-    disable_malloc_secure(1);
 
     //Initialise Random Number Generator
     ret = wc_InitRng(&rng);
@@ -260,10 +256,6 @@ void KeyManager::_generate_private_key()
     _save_public_key();
 
     wc_FreeRng(&rng);
-
-    // we don't have enough secure memory to generate
-    // key, so we allow spilover just this once
-    disable_malloc_secure(0);
 }
 
 bool KeyManager::set_input_pin(uint32_t pin)
@@ -407,8 +399,6 @@ int KeyManager::verify_hash_with_server_pkey(const char* hashed_data, uint16_t h
     byte *digest_buf;
     word32 digest_len;
 
-    disable_malloc_secure(0);
-
     /* Check arguments */
     if (hashed_data == NULL || hashed_data_len <= 0 || signature == NULL || signature_len <= 0) {
         ret = -1;
@@ -477,7 +467,6 @@ int KeyManager::verify_hash_with_server_pkey(const char* hashed_data, uint16_t h
     }
 
 end:
-    disable_malloc_secure(1);
     return ret;
 }
 
@@ -499,11 +488,9 @@ bool KeyManager::sign_data_with_ap_key(uint8_t* data, uint32_t data_len, uint8_t
     byte encoded_buf[DIGEST_VALUE_LEN+44];
     word32 encoded_buf_len = sizeof(encoded_buf);
 
-    disable_malloc_secure(1);
     encoded_buf_len = wc_EncodeSignature(encoded_buf, data, data_len, SHA256h);
 
     ret = wc_RsaSSL_Sign(encoded_buf, encoded_buf_len, signature, 256, &ap_key, &rng);
-    disable_malloc_secure(0);
     if (ret < 0) {
         char error_str[WOLFSSL_MAX_ERROR_SZ];
         wc_ErrorString(ret, error_str);
