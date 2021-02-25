@@ -120,7 +120,8 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
                                          name,
                                          thread_priority,           /* Initial priority.    */
                                          DeviceBus::bus_thread,    /* Thread function.     */
-                                         this);                     /* Thread parameter.    */
+                                         this,                     /* Thread parameter.    */
+                                         0);
         if (thread_ctx == nullptr) {
             AP_HAL::panic("Failed to create bus thread %s", name);
         }

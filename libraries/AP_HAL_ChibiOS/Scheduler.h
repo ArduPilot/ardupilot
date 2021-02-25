@@ -32,6 +32,7 @@
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
 #define APM_STARTUP_PRIORITY     10
+#define APM_KEYMGR_PRIORITY     LOWPRIO
 #define APM_SCRIPTING_PRIORITY  LOWPRIO
 
 /*
@@ -134,7 +135,7 @@ public:
     /*
       create a new thread
      */
-    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority, AP_HAL::Util::Memory_Type mem_type = AP_HAL::Util::MEM_ANY) override;
 
     // pat the watchdog
     void watchdog_pat(void);

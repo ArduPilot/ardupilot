@@ -52,7 +52,7 @@ public:
     /*
       create a new thread
      */
-    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority, AP_HAL::Util::Memory_Type mem_type = AP_HAL::Util::MEM_ANY) override;
     
 private:
     class SchedulerThread : public PeriodicThread {

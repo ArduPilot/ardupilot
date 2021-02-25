@@ -351,7 +351,7 @@ void Scheduler::teardown()
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority, AP_HAL::Util::Memory_Type mem_type)
 {
     Thread *thread = new Thread{(Thread::task_t)proc};
     if (!thread) {

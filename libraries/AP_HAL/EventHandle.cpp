@@ -16,7 +16,7 @@ bool AP_HAL::EventHandle::unregister_event(uint32_t evt_mask)
     return true;
 }
 
-bool AP_HAL::EventHandle::wait(uint64_t duration)
+uint32_t AP_HAL::EventHandle::wait(uint64_t duration)
 {
     if (evt_src_ == nullptr) {
         return false;

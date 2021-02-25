@@ -23,6 +23,9 @@
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
+#undef MIN
+#undef MAX
+
 /*
  * Check whether two floats are equal
  */

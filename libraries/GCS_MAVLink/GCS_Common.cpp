@@ -73,6 +73,10 @@
   #include <AP_UAVCAN/AP_UAVCAN.h>
 #endif
 
+#if defined(SECURE) && SECURE == 1
+#include <AP_Security/KeyManager.h>
+#endif
+
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 
@@ -3263,6 +3267,24 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 #endif
 }
 
+void GCS_MAVLINK::handle_secure_pin(const mavlink_message_t &msg)
+{
+#if defined(SECURE) && SECURE == 1
+    mavlink_secure_pin_t packet;
+    mavlink_msg_secure_pin_decode(&msg, &packet);
+    AP::keymgr().set_input_pin(packet.pin);
+#endif
+}
+
+void GCS_MAVLINK::handle_change_secure_pin(const mavlink_message_t &msg)
+{
+#if defined(SECURE) && SECURE == 1
+    mavlink_change_secure_pin_t packet;
+    mavlink_msg_change_secure_pin_decode(&msg, &packet);
+    AP::keymgr().change_pin(packet.oldpin, packet.newpin);
+#endif
+}
+
 /*
   handle messages which don't require vehicle specific data
  */
@@ -3457,6 +3479,14 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
         break;
+
+    case MAVLINK_MSG_ID_SECURE_PIN:
+        handle_secure_pin(msg);
+        break;
+
+    case MAVLINK_MSG_ID_CHANGE_SECURE_PIN:
+        handle_change_secure_pin(msg);
+        break;
     }
 
 }
@@ -3587,12 +3617,23 @@ void GCS_MAVLINK::send_sim_state() const
 
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_long_t &packet)
 {
-    if (uint32_t(packet.param5) != 290876) {
+#if defined(SECURE) && SECURE==1
+    if (chan != 0) {
+        //we only accept flash command only over USB
+        //because of security reasons
+        return MAV_RESULT_FAILED;
+    }
+#endif
+    if (uint32_t(packet.param5) != 290876 && uint32_t(packet.param5) != 290877) {
         gcs().send_text(MAV_SEVERITY_INFO, "Magic not set");
         return MAV_RESULT_FAILED;
     }
+    bool secure_bl = false;
+    if (uint32_t(packet.param5) == 290877) {
+        secure_bl = true;
+    }
 
-    switch (hal.util->flash_bootloader()) {
+    switch (hal.util->flash_bootloader(secure_bl)) {
     case AP_HAL::Util::FlashBootloader::OK:
     case AP_HAL::Util::FlashBootloader::NO_CHANGE:
         // consider NO_CHANGE as success (so as not to display error to user)

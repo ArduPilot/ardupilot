@@ -33,7 +33,8 @@ size_t mem_available(void);
 void *malloc_dma(size_t size);
 void *malloc_sdcard_dma(size_t size);
 void *malloc_fastmem(size_t size);
-thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+
+thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg, uint32_t flags);
 
 struct memory_region {
     void *address;
@@ -62,6 +63,11 @@ uint32_t get_fattime(void);
 #define OTP_BASE 0x1ff0f000
 #define OTP_SIZE 1024
 #endif
+
+#define MEM_REGION_FLAG_DMA_OK 1
+#define MEM_REGION_FLAG_FAST   2
+#define MEM_REGION_FLAG_SDCARD 4
+#define MEM_REGION_FLAG_SECURE 8
 
 enum rtc_boot_magic {
     RTC_BOOT_OFF  = 0,

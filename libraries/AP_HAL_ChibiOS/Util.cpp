@@ -40,6 +40,10 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if defined(SECURE) && SECURE == 1
+#include <AP_Security/KeyManager.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
@@ -64,6 +68,8 @@ void* Util::malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type)
         return malloc_dma(size);
     } else if (mem_type == AP_HAL::Util::MEM_FAST) {
         return malloc_fastmem(size);
+    } else if (mem_type == AP_HAL::Util::MEM_SECURE) {
+        return malloc_secure(size);
     } else {
         return calloc(1, size);
     }
@@ -200,10 +206,22 @@ uint64_t Util::get_hw_rtc() const
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif
 
-Util::FlashBootloader Util::flash_bootloader()
+Util::FlashBootloader Util::flash_bootloader(bool secure_bl)
 {
     uint32_t fw_size;
-    const char *fw_name = "bootloader.bin";
+    const char *fw_name;
+    if (!secure_bl) {
+        fw_name = "bootloader.bin";
+    } else {
+        fw_name = "securebootloader.bin";
+    }
+
+#if defined(SECURE) && SECURE == 1 && !defined(HAL_BOOTLOADER_BUILD)
+    if (!AP::keymgr().is_secure()) {
+        Debug("Vehicle is locked.\n");
+        return FlashBootloader::LOCKED;
+    }
+#endif
 
     EXPECT_DELAY_MS(11000);
 
@@ -212,6 +230,7 @@ Util::FlashBootloader Util::flash_bootloader()
         Debug("failed to find %s\n", fw_name);
         return FlashBootloader::NOT_AVAILABLE;
     }
+    Debug("Loaded %s %ldBytes\n", fw_name, fw_size);
     // make sure size is multiple of 32
     fw_size = (fw_size + 31U) & ~31U;
 
@@ -242,6 +261,13 @@ Util::FlashBootloader Util::flash_bootloader()
 
     if (uptodate) {
         Debug("Bootloader up-to-date\n");
+        if (secure_bl && !stm32_flash_is_rdp_enabled()) {
+            // Enable Read Protection,
+            // Once enabled can be disabled only 
+            // via JTAG
+            hal.scheduler->delay(100);
+            stm32_flash_enable_rdp();
+        }
         AP_ROMFS::free(fw);
         return FlashBootloader::NO_CHANGE;
     }
@@ -285,6 +311,13 @@ Util::FlashBootloader Util::flash_bootloader()
             hal.flash->write(addr+ofs, persistent_params.get_string(), persistent_params.get_length());
         }
 #endif
+        if (secure_bl && !stm32_flash_is_rdp_enabled()) {
+            // Enable Read Protection,
+            // Once enabled can be disabled only 
+            // via JTAG
+            hal.scheduler->delay(100);
+            stm32_flash_enable_rdp();
+        }
         hal.flash->keep_unlocked(false);
         AP_ROMFS::free(fw);
         return FlashBootloader::OK;

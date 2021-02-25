@@ -6,7 +6,7 @@
 
 #include "AP_HAL_Boards.h"
 #include "AP_HAL_Namespace.h"
-
+#include "Util.h"
 
 class AP_HAL::Scheduler {
 public:
@@ -114,13 +114,14 @@ public:
         PRIORITY_UART,
         PRIORITY_STORAGE,
         PRIORITY_SCRIPTING,
+        PRIORITY_KEYMGR,
     };
     
     /*
       create a new thread
      */
     virtual bool thread_create(AP_HAL::MemberProc proc, const char *name,
-                               uint32_t stack_size, priority_base base, int8_t priority) {
+                               uint32_t stack_size, priority_base base, int8_t priority, AP_HAL::Util::Memory_Type mem_type = AP_HAL::Util::MEM_ANY) {
         return false;
     }
 

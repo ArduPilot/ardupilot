@@ -298,7 +298,7 @@ void *Scheduler::thread_create_trampoline(void *ctx)
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority, AP_HAL::Util::Memory_Type mem_type)
 {
     WITH_SEMAPHORE(_thread_sem);
 

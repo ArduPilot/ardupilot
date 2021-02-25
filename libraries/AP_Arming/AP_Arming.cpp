@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #include "AP_Arming.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -40,6 +42,7 @@
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_Security/AP_DigitalSky.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -1196,7 +1199,11 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         return false;
     }
 
-    if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
+    if (((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method)))
+#ifdef HAL_DIGITAL_SKY_RFM
+        && AP::dsnpnt().load_permission()
+#endif
+        ) {
         armed = true;
 
         Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks

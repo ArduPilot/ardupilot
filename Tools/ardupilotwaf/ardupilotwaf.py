@@ -106,6 +106,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_WheelEncoder',
     'AP_ExternalAHRS',
     'AP_VideoTX',
+    'AP_Security',
 ]
 
 def get_legacy_defines(sketch_name):
@@ -245,6 +246,9 @@ def ap_program(bld,
         kw['defines'] = []
     if 'source' not in kw:
         kw['source'] = bld.path.ant_glob(SOURCE_EXTS)
+        # linker gets really confused while trying to find this, so we are compiling this into main binary
+        if bld.env.STM32_HASH_AVAILABLE:
+            kw['source'].append(bld.srcnode.make_node("libraries/AP_HAL_ChibiOS/hwdef/common/wolfssl_stm32.c"))
 
     if not program_name:
         program_name = bld.path.name
