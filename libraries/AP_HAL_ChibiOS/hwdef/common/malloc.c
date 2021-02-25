@@ -487,35 +487,6 @@ uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **re
     return NUM_MEMORY_REGIONS;
 }
 
-#endif // CH_CFG_USE_HEAP
-
-
-/*
-  flush all memory. Used in chSysHalt()
- */
-void memory_flush_all(void)
-{
-    uint8_t i;
-    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
-        stm32_cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
-    }
-}
-
-/*
-  replacement for strdup
- */
-char *strdup(const char *str)
-{
-    const size_t len = strlen(str);
-    char *ret = malloc(len+1);
-    if (!ret) {
-        return NULL;
-    }
-    memcpy(ret, str, len);
-    ret[len] = 0;
-    return ret;
-}
-
 /*
   realloc implementation thanks to wolfssl, used by AP_Scripting, and secure BL
  */
@@ -556,4 +527,33 @@ void *wolfssl_realloc(void *addr, size_t size)
     free(addr);
 
     return ptr;
+}
+
+#endif // CH_CFG_USE_HEAP
+
+
+/*
+  flush all memory. Used in chSysHalt()
+ */
+void memory_flush_all(void)
+{
+    uint8_t i;
+    for (i=0; i<NUM_MEMORY_REGIONS; i++) {
+        stm32_cacheBufferFlush(memory_regions[i].address, memory_regions[i].size);
+    }
+}
+
+/*
+  replacement for strdup
+ */
+char *strdup(const char *str)
+{
+    const size_t len = strlen(str);
+    char *ret = malloc(len+1);
+    if (!ret) {
+        return NULL;
+    }
+    memcpy(ret, str, len);
+    ret[len] = 0;
+    return ret;
 }
