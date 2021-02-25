@@ -115,7 +115,7 @@ inherit Rover's tests!'''
 
             ("DriveMission",
              "Drive Mission %s" % "balancebot1.txt",
-             lambda: self.drive_mission("balancebot1.txt")),
+             lambda: self.drive_mission("balancebot1.txt", strict=False)),
 
             ("TestWheelEncoder",
              "Test wheel encoders",

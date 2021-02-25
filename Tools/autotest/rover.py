@@ -387,10 +387,10 @@ class AutoTestRover(AutoTest):
     #################################################
     # AUTOTEST ALL
     #################################################
-    def drive_mission(self, filename):
+    def drive_mission(self, filename, strict=True):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
-        self.load_mission(filename)
+        self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
@@ -3457,7 +3457,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not get expected MISSION_CURRENT")
         if m.seq != 0:
             raise NotAchievedException("Bad mission current")
-        self.load_mission("rover-gripper-mission.txt")
+        self.load_mission_using_mavproxy("rover-gripper-mission.txt")
         set_wp = 1
         self.mavproxy.send('wp set %u\n' % set_wp)
         self.drain_mav()
@@ -5604,7 +5604,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("DriveMission",
              "Drive Mission %s" % "rover1.txt",
-             lambda: self.drive_mission("rover1.txt")),
+             lambda: self.drive_mission("rover1.txt", strict=False)),
 
             # disabled due to frequent failures in travis. This test needs re-writing
             # ("Drive Brake", self.drive_brake),

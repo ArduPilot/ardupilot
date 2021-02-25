@@ -675,7 +675,7 @@ class AutoTestCopter(AutoTest):
         self.start_subtest("Radio failsafe RTL with option to continue mission: FS_THR_ENABLE=1 & FS_OPTIONS=1")
         self.set_parameter('FS_OPTIONS', 1)
         self.progress("# Load copter_mission")
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 #        self.takeoffAndMoveAway()
@@ -840,7 +840,7 @@ class AutoTestCopter(AutoTest):
 
         # Trigger telemetry loss with failsafe enabled to test FS_OPTIONS settings
         self.start_subtest("GCS failsafe with option bit tests: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16")
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
         self.setGCSfailsafe(1)
@@ -1466,7 +1466,7 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_glitch_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_glitch_mission.txt")
+        num_wp = self.load_mission("copter_glitch_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_glitch_mission failed")
 
@@ -1993,7 +1993,7 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 
@@ -6847,7 +6847,7 @@ class AutoTestHeli(AutoTestCopter):
         # upload mission from file
         self.progress("# Load copter_AVC2013_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_AVC2013_mission.txt")
+        num_wp = self.load_mission("copter_AVC2013_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_AVC2013_mission failed")
 
