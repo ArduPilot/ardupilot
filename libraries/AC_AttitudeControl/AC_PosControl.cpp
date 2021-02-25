@@ -639,7 +639,6 @@ void AC_PosControl::run_z_controller()
         _pid_accel_z.imax(_motors.get_throttle_hover() * 1000.0f);
     }
 
-    float thr_out;
     if (_vibe_comp_enabled) {
         _flags.freeze_ff_z = true;
         _accel_desired.z = 0.0f;
@@ -649,14 +648,14 @@ void AC_PosControl::run_z_controller()
         if (!(_motors.limit.throttle_lower || _motors.limit.throttle_upper) || ((is_positive(_pid_accel_z.get_i()) && is_negative(_vel_error.z)) || (is_negative(_pid_accel_z.get_i()) && is_positive(_vel_error.z)))) {
             _pid_accel_z.set_integrator(_pid_accel_z.get_i() + _dt * thr_per_accelz_cmss * 1000.0f * _vel_error.z * _p_vel_z.kP() * POSCONTROL_VIBE_COMP_I_GAIN);
         }
-        thr_out = POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accelz_cmss * _accel_target.z + _pid_accel_z.get_i() * 0.001f;
+        _thr_out = POSCONTROL_VIBE_COMP_P_GAIN * thr_per_accelz_cmss * _accel_target.z + _pid_accel_z.get_i() * 0.001f;
     } else {
-        thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
+        _thr_out = _pid_accel_z.update_all(_accel_target.z, z_accel_meas, (_motors.limit.throttle_lower || _motors.limit.throttle_upper)) * 0.001f;
     }
-    thr_out += _motors.get_throttle_hover();
+    _thr_out += _motors.get_throttle_hover();
 
     // send throttle to attitude controller with angle boost
-    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
+    _attitude_control.set_throttle_out(_thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ);
 
     // _speed_down_cms is checked to be non-zero when set
     float error_ratio = _vel_error.z/_speed_down_cms;
@@ -828,6 +827,7 @@ void AC_PosControl::init_xy_controller()
     // todo: this should probably be based on the desired attitude not the current attitude
     _roll_target = _ahrs.roll_sensor;
     _pitch_target = _ahrs.pitch_sensor;
+    _thr_out = _attitude_control.get_throttle_in();
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();

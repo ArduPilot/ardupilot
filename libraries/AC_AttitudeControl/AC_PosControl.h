@@ -266,12 +266,13 @@ public:
     /// update_velocity_controller_xyz - run the velocity controller - should be called at 100hz or higher
     ///     velocity targets should we set using set_desired_velocity_xyz() method
     ///     callers should use get_roll() and get_pitch() methods and sent to the attitude controller
-    ///     throttle targets will be sent directly to the motors
+    ///     throttle targets will be sent directly to the motors, but can be read via get_throttle()
     void update_vel_controller_xyz();
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _roll_target; }
     float get_pitch() const { return _pitch_target; }
+    float get_throttle() const { return _thr_out; }
 
     // get_leash_xy - returns horizontal leash length in cm
     float get_leash_xy() const { return _leash; }
@@ -407,6 +408,7 @@ protected:
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller
     float       _pitch_target;          // desired roll pitch in centi-degrees calculated by position controller
+    float       _thr_out;
 
     // position controller internal variables
     Vector3f    _pos_target;            // target location in cm from home
