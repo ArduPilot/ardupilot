@@ -525,7 +525,7 @@ bool CANIface::set_event_handle(AP_HAL::EventHandle* handle) {
 }
 
 
-bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle* evt_handle)
+uint32_t CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle* evt_handle)
 {
     if (evt_handle == nullptr) {
         return false;
@@ -549,7 +549,7 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
     }
 
     if (num_pollfds == 0) {
-        return true;
+        return 1;
     }
 
     // Timeout conversion
@@ -561,7 +561,7 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
     const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);
 
     if (res < 0) {
-        return false;
+        return 0;
     }
 
     // Handling poll output
@@ -575,7 +575,7 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
         const bool poll_write = pollfds[i].revents & POLLOUT;
         _ifaces[pollfd_iface_map[i]]->_poll(poll_read, poll_write);
     }
-    return true;
+    return 1;
 }
 
 void CANIface::get_stats(ExpandingString &str)
