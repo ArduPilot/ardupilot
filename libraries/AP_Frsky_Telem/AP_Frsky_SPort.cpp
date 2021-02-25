@@ -126,9 +126,14 @@ void AP_Frsky_SPort::send(void)
                     int32_t value;
                     if (calc_rpm(_SPort.rpm_call, value)) {
                         // use high numbered frsky sensor ids to leave low numbered free for externally attached physical frsky sensors
-                        send_sport_frame(SPORT_DATA_FRAME, 1+RPM_LAST_ID-(rpm->num_sensors()-_SPort.rpm_call), value);
+                        uint16_t id = RPM1_ID;
+                        if (_SPort.rpm_call != 0) {
+                            // only two sensors are currently supported
+                            id = RPM2_ID;
+                        }
+                        send_sport_frame(SPORT_DATA_FRAME, id, value);
                     }
-                    if (++_SPort.rpm_call > (rpm->num_sensors()-1)) {
+                    if (++_SPort.rpm_call > MIN(rpm->num_sensors()-1, 1)) {
                         _SPort.rpm_call = 0;
                     }
                 }
