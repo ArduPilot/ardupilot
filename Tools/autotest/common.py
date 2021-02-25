@@ -9173,7 +9173,7 @@ switch value'''
         while len(wants):
             self.progress("Still wanting (%s)" % ",".join([("0x%02x" % x) for x in wants.keys()]))
             wants_copy = copy.copy(wants)
-            t2 = self.get_sim_time_cached()
+            t2 = self.get_sim_time()
             if t2 - tstart > 300:
                 self.progress("Failed to get frsky passthrough data")
                 self.progress("Counts of sensor_id polls sent:")
@@ -9193,7 +9193,7 @@ switch value'''
 
     def test_frsky_passthrough(self):
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
-        self.set_parameter("RPM_TYPE", 1) # enable RPM output
+        self.set_parameter("RPM_TYPE", 10) # enable RPM output
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
         ])
