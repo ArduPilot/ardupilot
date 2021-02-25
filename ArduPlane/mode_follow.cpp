@@ -19,8 +19,7 @@ void ModeFollow::update()
     Vector3f vel_ned;
     Vector3f offsets;
     static uint32_t last_notify;
-    if (plane.g2.follow.get_target_location_and_velocity(loc, vel_ned)) &&
-       plane.g2.follow.get_offsets_ned(offsets)) {
+    if ((plane.g2.follow.get_target_location_and_velocity(loc, vel_ned)) && (plane.g2.follow.get_offsets_ned(offsets))) {
         
         // apply offsets from follow parameters
         loc.offset(offsets.x, offsets.y);
@@ -41,5 +40,5 @@ void ModeFollow::update()
 void ModeFollow::navigate()
 {
     // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(3);    // Loiter radius of 3 prevents weaving and position error from target path
+    plane.update_loiter(5);    
 }
