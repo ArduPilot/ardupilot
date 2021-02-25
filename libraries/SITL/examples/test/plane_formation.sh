@@ -2,7 +2,7 @@
 #This program tests a formation between three planes
 #!/bin/bash
 
-# three plane swarm (x offset formation)
+# three plane swarm 
 
 # assume we start the script from the root directory
 ROOTDIR=$PWD
@@ -25,7 +25,7 @@ mkdir -p swarm/plane1 swarm/plane2 swarm/plane3
 cat <<EOF > swarm/plane2/follow.parm
 SYSID_THISMAV 2
 FOLL_ENABLE 1
-FOLL_OFS_X -5
+FOLL_OFS_Y 30
 FOLL_OFS_TYPE 1
 FOLL_SYSID 1
 FOLL_DIST_MAX 1000
@@ -37,7 +37,7 @@ EOF
 cat <<EOF > swarm/plane3/follow.parm
 SYSID_THISMAV 3
 FOLL_ENABLE 1
-FOLL_OFS_X 5
+FOLL_OFS_Y -30
 FOLL_OFS_TYPE 1
 FOLL_SYSID 1
 FOLL_DIST_MAX 1000
