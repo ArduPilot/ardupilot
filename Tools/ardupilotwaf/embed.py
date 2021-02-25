@@ -33,7 +33,7 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
                     contents += bytes(chr(0xff))
             print("Padded %u bytes for %s to %u" % (pad, embedded_name, len(contents)))
 
-    crc = crc32(contents)
+    crc = crc32(bytearray(contents))
     write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
 
     compressed = tempfile.NamedTemporaryFile()
