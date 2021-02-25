@@ -46,8 +46,8 @@ void *calloc(size_t nmemb, size_t size);
 void free(void *ptr);
 void *realloc(void* ptr, size_t size) __attribute__((deprecated));
 void *malloc_secure(size_t size);
-void disable_malloc_secure(uint8_t disable);
 void *wolfssl_realloc(void *addr, size_t size);
+void *mxml_realloc(void *addr, size_t size);
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 void malloc_check(const void *ptr);
 
