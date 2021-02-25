@@ -2925,6 +2925,18 @@ class AutoTest(ABC):
         this_dir = os.path.dirname(__file__)
         return os.path.realpath(os.path.join(this_dir, "../.."))
 
+    def ardupilot_stores_frame_for_cmd(self, t):
+        # ardupilot doesn't remember frame on these commands
+        return t not in [
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
+            mavutil.mavlink.MAV_CMD_DO_JUMP,
+            mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
+            mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        ]
+
     def assert_mission_files_same(self, file1, file2, match_comments=False):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
 
@@ -2961,16 +2973,8 @@ class AutoTest(ABC):
             t = int(fields1[3]) # mission item type
             for (count, (i1, i2)) in enumerate(zip(fields1, fields2)):
                 if count == 2: # frame
-                    if t in [mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
-                             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                             mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-                             mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
-                             mavutil.mavlink.MAV_CMD_DO_JUMP,
-                             mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
-                             mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
-                             ]:
-                        # ardupilot doesn't remember frame on these commands
-                        if int(i1) in [3, 10]: # 3 is relative, 10 is AMSL
+                    if not self.ardupilot_stores_frame_for_cmd(t):
+                        if int(i1) in [3, 10]: # 3 is relative, 10 is terrain
                             i1 = 0
                         if int(i2) in [3, 10]:
                             i2 = 0
@@ -3122,10 +3126,54 @@ class AutoTest(ABC):
     def load_sample_mission(self):
         self.load_mission(self.sample_mission_filename())
 
-    def load_mission(self, filename):
-        return self.load_mission_from_filepath(self.current_test_name_directory, filename)
+    def load_mission(self, filename, strict=True):
+        return self.load_mission_from_filepath(
+            self.current_test_name_directory,
+            filename,
+            strict=strict)
 
-    def load_mission_from_filepath(self, filepath, filename):
+    def wp_to_mission_item_int(self, wp):
+        '''convert a MISSION_ITEM to a MISSION_ITEM_INT. We always send as
+           MISSION_ITEM_INT to give cm level accuracy
+           Swiped from mavproxy_wp.py
+        '''
+        if wp.get_type() == 'MISSION_ITEM_INT':
+            return wp
+        wp_int = mavutil.mavlink.MAVLink_mission_item_int_message(
+            wp.target_system,
+            wp.target_component,
+            wp.seq,
+            wp.frame,
+            wp.command,
+            wp.current,
+            wp.autocontinue,
+            wp.param1,
+            wp.param2,
+            wp.param3,
+            wp.param4,
+            int(wp.x*1.0e7),
+            int(wp.y*1.0e7),
+            wp.z)
+        return wp_int
+
+    def load_mission_from_filepath(self, filepath, filename, target_system=1, target_component=1, strict=True):
+        self.progress("Loading mission (%s)" % filename)
+        path = os.path.join(testdir, filepath, filename)
+        wploader = mavwp.MAVWPLoader(
+            target_system=target_system,
+            target_component=target_component
+        )
+        wploader.load(path)
+        wpoints_int = [self.wp_to_mission_item_int(x) for x in wploader.wpoints]
+        self.check_mission_upload_download(wpoints_int, strict=strict)
+        return len(wpoints_int)
+
+    def load_mission_using_mavproxy(self, filename):
+        return self.load_mission_from_filepath_using_mavproxy(
+            self.current_test_name_directory,
+            filename)
+
+    def load_mission_from_filepath_using_mavproxy(self, filepath, filename):
         """Load a mission from a file to flight controller."""
         self.progress("Loading mission (%s)" % filename)
         path = os.path.join(testdir, filepath, filename)
@@ -3217,7 +3265,8 @@ class AutoTest(ABC):
                                  want,
                                  got,
                                  epsilon=None,
-                                 skip_first_item=False):
+                                 skip_first_item=False,
+                                 strict=True):
         self.progress("Checking mission items same")
         if epsilon is None:
             epsilon = 1
@@ -3247,7 +3296,13 @@ class AutoTest(ABC):
             if got[0].mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
                 item_val = getattr(item, 'frame')
                 downloaded_item_val = getattr(downloaded_item, 'frame')
-                if not self.frames_equivalent(item_val, downloaded_item_val):
+                # if you are thinking of adding another, "don't annoy
+                # me, I know missions aren't troundtripped" non-strict
+                # thing here, DON'T do it without first checking "def
+                # assert_mission_files_same"; it makes the same checks
+                # as will be needed here eventually.
+                if ((strict or self.ardupilot_stores_frame_for_cmd(getattr(item, 'command'))) and
+                        not self.frames_equivalent(item_val, downloaded_item_val)):
                     raise NotAchievedException("Frame not same (got=%s want=%s)" %
                                                (self.string_for_frame(downloaded_item_val),
                                                 self.string_for_frame(item_val)))
@@ -3255,15 +3310,15 @@ class AutoTest(ABC):
                     raise NotAchievedException("Z not preserved (got=%f want=%f)" %
                                                (item.z, downloaded_item.z))
 
-    def check_fence_items_same(self, want, got):
+    def check_fence_items_same(self, want, got, strict=True):
         check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got)
+        return self.check_mission_items_same(check_atts, want, got, strict=strict)
 
-    def check_mission_waypoint_items_same(self, want, got):
+    def check_mission_waypoint_items_same(self, want, got, strict=True):
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
+        return self.check_mission_items_same(check_atts, want, got, skip_first_item=True, strict=strict)
 
-    def check_mission_item_upload_download(self, items, itype, mission_type):
+    def check_mission_item_upload_download(self, items, itype, mission_type, strict=True):
         self.progress("check %s _upload/download: upload %u items" %
                       (itype, len(items),))
         self.upload_using_mission_protocol(mission_type, items)
@@ -3274,9 +3329,9 @@ class AutoTest(ABC):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
                                        (len(items), len(downloaded_items)))
         if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
-            self.check_fence_items_same(items, downloaded_items)
+            self.check_fence_items_same(items, downloaded_items, strict=strict)
         elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
-            self.check_mission_waypoint_items_same(items, downloaded_items)
+            self.check_mission_waypoint_items_same(items, downloaded_items, strict=strict)
         else:
             raise NotAchievedException("Unhandled")
 
@@ -3286,11 +3341,12 @@ class AutoTest(ABC):
             "fence",
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
 
-    def check_mission_upload_download(self, items):
+    def check_mission_upload_download(self, items, strict=True):
         self.check_mission_item_upload_download(
             items,
             "waypoints",
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+            strict=strict)
 
     def rc_defaults(self):
         return {

@@ -521,10 +521,10 @@ class AutoTestPlane(AutoTest):
 
         return self.wait_level_flight()
 
-    def fly_mission(self, filename, mission_timeout=60.0):
+    def fly_mission(self, filename, mission_timeout=60.0, strict=True):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        num_wp = self.load_mission(filename)-1
+        num_wp = self.load_mission(filename, strict=strict)-1
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
@@ -1328,7 +1328,7 @@ class AutoTestPlane(AutoTest):
         self.run_subtest("CIRCLE test", self.fly_CIRCLE)
 
         self.run_subtest("Mission test",
-                         lambda: self.fly_mission("ap1.txt"))
+                         lambda: self.fly_mission("ap1.txt", strict=False))
 
     def airspeed_autocal(self):
         self.progress("Ensure no AIRSPEED_AUTOCAL on ground")
@@ -1781,8 +1781,8 @@ class AutoTestPlane(AutoTest):
         self.plane_CPUFailsafe()
 
     def test_large_missions(self):
-        self.load_mission("Kingaroy-vlarge.txt")
-        self.load_mission("Kingaroy-vlarge2.txt")
+        self.load_mission("Kingaroy-vlarge.txt", strict=False)
+        self.load_mission("Kingaroy-vlarge2.txt", strict=False)
 
     def fly_soaring(self):
 
@@ -1794,7 +1794,7 @@ class AutoTestPlane(AutoTest):
             defaults_filepath=self.model_defaults_filepath("ArduPlane", model),
             wipe=True)
 
-        self.load_mission('CMAC-soar.txt')
+        self.load_mission('CMAC-soar.txt', strict=False)
 
         self.set_current_waypoint(1)
         self.change_mode('AUTO')
@@ -1899,7 +1899,7 @@ class AutoTestPlane(AutoTest):
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.fly_mission("ap1.txt")
+        self.fly_mission("ap1.txt", strict=False)
 
     def fly_terrain_mission(self):
 
