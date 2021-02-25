@@ -117,6 +117,11 @@ def options(opt):
         default=None,
         help='Configure for building a secure bootloader, needs public certificate to be included.')
 
+    g.add_option('--ds-publickey',
+        action='store',
+        default=None,
+        help='Configures for building with libnpnt, also supply the DigitalSky public key (DER) to build with.')
+
     g.add_option('--with-libnpnt',
         action='store',
         default=None,

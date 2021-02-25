@@ -724,6 +724,22 @@ class chibios(Board):
             cfg.msg("Checking for intelhex module:", 'disabled', color='YELLOW')
             env.HAVE_INTEL_HEX = False
 
+        if cfg.options.ds_publickey is not None:
+            env.AP_LIBRARIES += [
+                'modules/libnpnt/jsmn/*.c',
+                'modules/libnpnt/src/*.c',
+                'modules/libnpnt/mxml/mxml*.c',
+                'libraries/AP_Security/npnt_helpers/*.cpp'
+                ]
+            env.INCLUDES += [
+                cfg.srcnode.find_dir('modules/libnpnt/').abspath(),
+                cfg.srcnode.find_dir('modules/libnpnt/inc').abspath(),
+                cfg.srcnode.find_dir('libraries/AP_Security/').abspath()
+            ]
+            env.GIT_SUBMODULES += ['libnpnt']
+            env.ROMFS_FILES += [ ('server_pubkey.der', cfg.options.ds_publickey) ]
+            env.CXXFLAGS += ['-DHAL_DIGITAL_SKY_RFM']
+
         if cfg.options.secure_key is not None:
             from Crypto.PublicKey import ECC
             cfg.define('WOLFSSL_USER_SETTINGS', 1)
