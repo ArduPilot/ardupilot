@@ -127,6 +127,11 @@ def options(opt):
         default=False,
         help='Configure for building a bootloader.')
 
+    g.add_option('--ds-publickey',
+        action='store',
+        default=None,
+        help='Configures for building with libnpnt, also supply the DigitalSky public key (DER) to build with.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
