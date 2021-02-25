@@ -408,6 +408,8 @@
 #define STM32_ICU_TIM8_IRQ_PRIORITY         7
 #define STM32_ICU_TIM9_IRQ_PRIORITY         7
 
+#define STM32_IRQ_MDMA_PRIORITY             9
+
 /*
  * MAC driver system settings.
  */

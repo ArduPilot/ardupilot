@@ -692,6 +692,7 @@ def write_mcu_config(f):
     if have_type_prefix('QUADSPI'):
         f.write('#define HAL_USE_WSPI TRUE\n')
         f.write('#define STM32_WSPI_USE_QUADSPI1 TRUE\n')
+        f.write('#define STM32_WSPI_QUADSPI1_MDMA_CHANNEL    0\n')
     if have_type_prefix('SDIO'):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
