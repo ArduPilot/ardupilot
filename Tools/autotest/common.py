@@ -1126,7 +1126,7 @@ class FRSkySPort(FRSky):
                 self.state = self.state_SEND_POLL
             elif self.state == self.state_SEND_POLL:
                 # this is done in check_poll
-                print("in send_poll state")
+                self.progress("in send_poll state")
                 pass
             else:
                 raise ValueError("Unknown state (%s)" % self.state)
@@ -9152,12 +9152,12 @@ switch value'''
             wants_copy = copy.copy(wants)
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 300:
-                self.progress("Failed to get frsky data")
+                self.progress("Failed to get frsky passthrough data")
                 self.progress("Counts of sensor_id polls sent:")
                 frsky.dump_sensor_id_poll_counts_as_progress_messages()
                 self.progress("Counts of dataids received:")
                 frsky.dump_dataid_counts_as_progress_messages()
-                raise AutoTestTimeoutException("Failed to get frsky data")
+                raise AutoTestTimeoutException("Failed to get frsky passthrough data")
             frsky.update()
             for want in wants_copy:
                 data = frsky.get_data(want)
@@ -9681,7 +9681,12 @@ switch value'''
                 last_wanting_print = now
             wants_copy = copy.copy(wants)
             if now - tstart > 300:
-                raise AutoTestTimeoutException("Failed to get frsky data")
+                self.progress("Failed to get frsky passthrough data")
+                self.progress("Counts of sensor_id polls sent:")
+                frsky.dump_sensor_id_poll_counts_as_progress_messages()
+                self.progress("Counts of dataids received:")
+                frsky.dump_dataid_counts_as_progress_messages()
+                raise AutoTestTimeoutException("Failed to get frsky sport data")
             frsky.update()
             for want in wants_copy:
                 data = frsky.get_data(want)
@@ -9713,7 +9718,7 @@ switch value'''
         while True:
             t2 = self.get_sim_time_cached()
             if t2 - tstart > 10:
-                raise AutoTestTimeoutException("Failed to get frsky data")
+                raise AutoTestTimeoutException("Failed to get frsky D data")
             frsky.update()
             alt = frsky.get_data(frsky.dataid_GPS_ALT_BP)
             self.progress("Got alt (%s) mav=%s" % (str(alt), str(gpi_abs_alt)))
