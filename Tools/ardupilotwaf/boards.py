@@ -8,7 +8,6 @@ import fnmatch
 import waflib
 from waflib import Utils
 from waflib.Configure import conf
-from Crypto.PublicKey import ECC
 
 _board_classes = {}
 _board = None
@@ -726,6 +725,7 @@ class chibios(Board):
             env.HAVE_INTEL_HEX = False
 
         if cfg.options.secure_key is not None:
+            from Crypto.PublicKey import ECC
             cfg.define('WOLFSSL_USER_SETTINGS', 1)
             cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
             cfg.define('SECURE', 1)
