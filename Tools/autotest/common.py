@@ -4070,7 +4070,7 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='COMMAND_ACK',
                                     blocking=True,
                                     timeout=0.1)
-            if m is None:
+            if m is None or m.get_srcSystem() != self.target_system:
                 continue
             if not quiet:
                 self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
