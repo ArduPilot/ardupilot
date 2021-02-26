@@ -200,53 +200,10 @@ private:
       OW_BL_PAGES_TO_FLASH, // BL only
       OW_REQ_TYPE,
       OW_REQ_SN,
-      OW_REQ_SW_VER
-    };
-
-    enum
-    {
-      OW_RESET_TO_BL = 10,
-      OW_THROTTLE = 11,
-      OW_REQ_TLM = 12,
+      OW_REQ_SW_VER,
       OW_BEEP = 13,
-
       OW_SET_FAST_COM_LENGTH = 26,
-
-      OW_GET_ROTATION_DIRECTION = 28,
-      OW_SET_ROTATION_DIRECTION = 29,
-
-      OW_GET_USE_SIN_START = 30,
-      OW_SET_USE_SIN_START = 31,
-
-      OW_GET_3D_MODE = 32,
-      OW_SET_3D_MODE = 33,
-
-      OW_GET_ID = 34,
-      OW_SET_ID = 35,
-
-/*
-    OW_GET_LINEAR_THRUST = 36,
-    OW_SET_LINEAR_THRUST = 37,
-*/
-
-      OW_GET_EEVER = 38,
-
-      OW_GET_PWM_MIN = 39,
-      OW_SET_PWM_MIN = 40,
-
-      OW_GET_PWM_MAX = 41,
-      OW_SET_PWM_MAX = 42,
-
-      OW_GET_ESC_BEEP = 43,
-      OW_SET_ESC_BEEP = 44,
-
-      OW_GET_CURRENT_CALIB = 45,
-      OW_SET_CURRENT_CALIB = 46,
-
       OW_SET_LED_TMP_COLOR = 51,
-      OW_GET_LED_COLOR = 52,
-      OW_SET_LED_COLOR = 53
-
     };
 
     enum telem_type
@@ -281,8 +238,8 @@ private:
       uint8_t setFastCommand[4] = {OW_SET_FAST_COM_LENGTH, 0, 0, 0};
     } _is;
 
-    uint8_t _ResponseLength[54];
-    uint8_t _RequestLength[54];
+    uint8_t _ResponseLength[OW_SET_FAST_COM_LENGTH+1]; // OW_SET_LED_TMP_COLOR is ignored here
+    uint8_t _RequestLength[OW_SET_FAST_COM_LENGTH+1];  // OW_SET_LED_TMP_COLOR is ignored here
 
 };
 #endif // HAL_AP_FETTECONEWIRE_ENABLED
