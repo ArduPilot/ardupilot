@@ -198,6 +198,13 @@ public:
         float release_rate;     // release rate in meters/second
     };
 
+    // Scripting command structure
+    struct PACKED scripting_Command {
+        float p1;
+        float p2;
+        float p3;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -261,6 +268,9 @@ public:
 
         // do-winch
         Winch_Command winch;
+
+        // do scripting
+        scripting_Command scripting;
 
         // location
         Location location{};      // Waypoint location
@@ -698,6 +708,8 @@ private:
     bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
 
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
+
 };
 
 namespace AP

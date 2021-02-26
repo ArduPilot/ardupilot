@@ -6,6 +6,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AC_Sprayer/AC_Sprayer.h>
+#include <AP_Scripting/AP_Scripting.h>
 
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
 {
@@ -166,4 +167,20 @@ bool AP_Mission::start_command_do_sprayer(const AP_Mission::Mission_Command& cmd
 #else
     return false;
 #endif // HAL_SPRAYER_ENABLED
+}
+
+bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& cmd)
+{
+#ifdef ENABLE_SCRIPTING
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting == nullptr) {
+        return false;
+    }
+
+    scripting->handle_mission_command(cmd);
+
+    return true;
+#else
+    return false;
+#endif // ENABLE_SCRIPTING
 }
