@@ -79,10 +79,27 @@ bool AC_WPNav_OA::update_wpnav()
         }
 
         // convert origin and destination to Locations and pass into oa
-        const Location origin_loc(_origin_oabak);
-        const Location destination_loc(_destination_oabak);
+        Location origin_loc(_origin_oabak);
+        Location destination_loc(_destination_oabak);
+
+        if(_terrain_alt) {
+            origin_loc.set_alt_cm(_origin_oabak.z, Location::AltFrame::ABOVE_TERRAIN);
+            destination_loc.set_alt_cm(_destination_oabak.z, Location::AltFrame::ABOVE_TERRAIN);
+        }
+
         Location oa_origin_new, oa_destination_new;
         const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc, origin_loc, destination_loc, oa_origin_new, oa_destination_new);
+
+        // Return results in the same altitude frame as the input
+        if(_terrain_alt) {
+            if(oa_origin_new.initialised()) {
+                oa_origin_new.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
+            }
+            if(oa_destination_new.initialised()) {
+                oa_destination_new.change_alt_frame(Location::AltFrame::ABOVE_TERRAIN);
+            }
+        }
+
         switch (oa_retstate) {
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
@@ -98,9 +115,14 @@ bool AC_WPNav_OA::update_wpnav()
             if ((_oa_state != AP_OAPathPlanner::OA_PROCESSING) && (_oa_state != AP_OAPathPlanner::OA_ERROR)) {
                 // calculate stopping point
                 Vector3f stopping_point;
-                get_wp_stopping_point(stopping_point);
+                get_wp_stopping_point(stopping_point, _terrain_alt);
+
                 _oa_destination = Location(stopping_point);
-                if (set_wp_destination(stopping_point, false)) {
+                if(_terrain_alt) {
+                    _oa_destination.set_alt_cm(stopping_point.z, Location::AltFrame::ABOVE_TERRAIN);
+                }
+
+                if (set_wp_destination(stopping_point, _terrain_alt)) {
                     _oa_state = oa_retstate;
                 }
             }
