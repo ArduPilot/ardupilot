@@ -948,6 +948,8 @@ private:
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
 
+    bool getGPSLLH(struct Location &loc) const;
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
