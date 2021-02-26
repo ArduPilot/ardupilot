@@ -41,106 +41,20 @@ AP_FETtecOneWire *AP_FETtecOneWire::_singleton;
 AP_FETtecOneWire::AP_FETtecOneWire()
 {
     _singleton = this;
+
     _ResponseLength[OW_OK] = 1;
-    _ResponseLength[OW_BL_PAGE_CORRECT] = 1;   // BL only
-    _ResponseLength[OW_NOT_OK] = 1;
     _ResponseLength[OW_BL_START_FW] = 0;       // BL only
-    _ResponseLength[OW_BL_PAGES_TO_FLASH] = 1; // BL only
     _ResponseLength[OW_REQ_TYPE] = 1;
     _ResponseLength[OW_REQ_SN] = 12;
     _ResponseLength[OW_REQ_SW_VER] = 2;
-    _ResponseLength[OW_RESET_TO_BL] = 0;
-    _ResponseLength[OW_THROTTLE] = 1;
-    _ResponseLength[OW_REQ_TLM] = 2;
-    _ResponseLength[OW_BEEP] = 0;
-
     _ResponseLength[OW_SET_FAST_COM_LENGTH] = 1;
 
-    _ResponseLength[OW_GET_ROTATION_DIRECTION] = 1;
-    _ResponseLength[OW_SET_ROTATION_DIRECTION] = 1;
-
-    _ResponseLength[OW_GET_USE_SIN_START] = 1;
-    _ResponseLength[OW_SET_USE_SIN_START] = 1;
-
-    _ResponseLength[OW_GET_3D_MODE] = 1;
-    _ResponseLength[OW_SET_3D_MODE] = 1;
-
-    _ResponseLength[OW_GET_ID] = 1;
-    _ResponseLength[OW_SET_ID] = 1;
-
-/*
-    _ResponseLength[OW_GET_LINEAR_THRUST] = 1;
-    _ResponseLength[OW_SET_LINEAR_THRUST] = 1;
-*/
-
-    _ResponseLength[OW_GET_EEVER] = 1;
-
-    _ResponseLength[OW_GET_PWM_MIN] = 2;
-    _ResponseLength[OW_SET_PWM_MIN] = 1;
-
-    _ResponseLength[OW_GET_PWM_MAX] = 2;
-    _ResponseLength[OW_SET_PWM_MAX] = 1;
-
-    _ResponseLength[OW_GET_ESC_BEEP] = 1;
-    _ResponseLength[OW_SET_ESC_BEEP] = 1;
-
-    _ResponseLength[OW_GET_CURRENT_CALIB] = 1;
-    _ResponseLength[OW_SET_CURRENT_CALIB] = 1;
-
-    _ResponseLength[OW_SET_LED_TMP_COLOR] = 0;
-    _ResponseLength[OW_GET_LED_COLOR] = 5;
-    _ResponseLength[OW_SET_LED_COLOR] = 1;
-
     _RequestLength[OW_OK] = 1;
-    _RequestLength[OW_BL_PAGE_CORRECT] = 1; // BL only
-    _RequestLength[OW_NOT_OK] = 1;
     _RequestLength[OW_BL_START_FW] = 1;       // BL only
-    _RequestLength[OW_BL_PAGES_TO_FLASH] = 1; // BL only
     _RequestLength[OW_REQ_TYPE] = 1;
     _RequestLength[OW_REQ_SN] = 1;
     _RequestLength[OW_REQ_SW_VER] = 1;
-    _RequestLength[OW_RESET_TO_BL] = 1;
-    _RequestLength[OW_THROTTLE] = 1;
-    _RequestLength[OW_REQ_TLM] = 1;
-    _RequestLength[OW_BEEP] = 2;
-
     _RequestLength[OW_SET_FAST_COM_LENGTH] = 4;
-
-    _RequestLength[OW_GET_ROTATION_DIRECTION] = 1;
-    _RequestLength[OW_SET_ROTATION_DIRECTION] = 1;
-
-    _RequestLength[OW_GET_USE_SIN_START] = 1;
-    _RequestLength[OW_SET_USE_SIN_START] = 1;
-
-    _RequestLength[OW_GET_3D_MODE] = 1;
-    _RequestLength[OW_SET_3D_MODE] = 1;
-
-    _RequestLength[OW_GET_ID] = 1;
-    _RequestLength[OW_SET_ID] = 1;
-
-/*
-    _RequestLength[OW_GET_LINEAR_THRUST] = 1;
-    _RequestLength[OW_SET_LINEAR_THRUST] = 1;
-*/
-
-    _RequestLength[OW_GET_EEVER] = 1;
-
-    _RequestLength[OW_GET_PWM_MIN] = 1;
-    _RequestLength[OW_SET_PWM_MIN] = 2;
-
-    _RequestLength[OW_GET_PWM_MAX] = 1;
-    _RequestLength[OW_SET_PWM_MAX] = 2;
-
-    _RequestLength[OW_GET_ESC_BEEP] = 1;
-    _RequestLength[OW_SET_ESC_BEEP] = 1;
-
-    _RequestLength[OW_GET_CURRENT_CALIB] = 1;
-    _RequestLength[OW_SET_CURRENT_CALIB] = 1;
-
-    _RequestLength[OW_SET_LED_TMP_COLOR] = 4;
-    _RequestLength[OW_GET_LED_COLOR] = 1;
-    _RequestLength[OW_SET_LED_COLOR] = 5;
-
 }
 
 void AP_FETtecOneWire::init()
