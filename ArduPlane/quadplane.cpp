@@ -899,11 +899,11 @@ void QuadPlane::update_yaw_target(void)
      */
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(aspeed);
-    if (have_airspeed) {
+    if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
         float dt = (now - tilt.transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate
         const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
-        const float yaw_rate_cds = degrees(GRAVITY_MSS/MAX(aspeed,airspeed_min) * sinf(radians(plane.nav_roll_cd*0.01)))*100;
+        const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;
         tilt.transition_yaw_cd += yaw_rate_cds * dt;
     }
     tilt.transition_yaw_set_ms = now;
