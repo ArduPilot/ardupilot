@@ -180,24 +180,24 @@ void AP_FETtecOneWire::update()
 
     uint16_t requestedTelemetry[MOTOR_COUNT_MAX] = {0};
     _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, MOTOR_COUNT_MAX, _telem_req_type);
-    if (_telem_avail != -1) {
-        // TODO: take the _telem_semaphore here
-        for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-            _telemetry[i][_telem_avail] = requestedTelemetry[i];
-            _telemetry[i][5]++;
-        }
-    }
+
     if (++_telem_req_type == OW_TLM_DEBUG1) {
         // OW_TLM_DEBUG1, OW_TLM_DEBUG2, OW_TLM_DEBUG3 are ignored
         _telem_req_type = OW_TLM_TEMP;
     }
 
     if (_telem_avail != -1) {
+        // TODO: take the _telem_semaphore here
+        for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
+            _telemetry[i][_telem_avail] = requestedTelemetry[i];
+            _telemetry[i][5]++;
+        }
+        // TODO: give back the _telem_semaphore here
+
         AP_Logger *logger = AP_Logger::get_singleton();
         const uint32_t now = AP_HAL::millis();
         // log at 10Hz
         if (logger && logger->logging_enabled() && now - _last_log_ms > 100) {
-            // TODO: take the _telem_semaphore here
             for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
                 logger->Write_ESC(i,
                         AP_HAL::micros64(),
