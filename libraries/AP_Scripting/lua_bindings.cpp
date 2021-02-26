@@ -47,10 +47,39 @@ static int lua_micros(lua_State *L) {
     return 1;
 }
 
+static int lua_mission_receive(lua_State *L) {
+    check_arguments(L, 0, "mission_receive");
+
+    ObjectBuffer<struct AP_Scripting::scripting_mission_cmd> *input = AP::scripting()->mission_data;
+
+    if (input == nullptr) {
+        // no mission items ever received
+        return 0;
+    }
+
+    struct AP_Scripting::scripting_mission_cmd cmd;
+
+    if (!input->pop(cmd)) {
+        // no new item
+        return 0;
+    }
+
+    new_uint32_t(L);
+    *check_uint32_t(L, -1) = cmd.time_ms;
+
+    lua_pushinteger(L, cmd.p1);
+    lua_pushnumber(L, cmd.content_p1);
+    lua_pushnumber(L, cmd.content_p2);
+    lua_pushnumber(L, cmd.content_p3);
+
+    return 5;
+}
+
 static const luaL_Reg global_functions[] =
 {
     {"millis", lua_millis},
     {"micros", lua_micros},
+    {"mission_receive", lua_mission_receive},
     {NULL, NULL}
 };
 
