@@ -66,7 +66,7 @@ private:
     ///  - _telemetry[i][5] -> count[idx]
     uint16_t _telemetry[MOTOR_COUNT_MAX][6] = {0};
     uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
-    uint8_t _telem_req_type; /// the requested telemetry type (OW_TLM_XXXXX)
+    uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
 
 /**
     initialize FETtecOneWire protocol
@@ -154,7 +154,7 @@ private:
     @param motorValues a 16bit array containing the throttle signals that should be sent to the motors. 0-2000 where 1001-2000 is positive rotation and 999-0 reversed rotation
     @param Telemetry 16bit array where the read telemetry will be stored in.
     @param motorCount the count of motors that should get values send
-    @param tlmRequest the requested telemetry type (OW_TLM_XXXXX)
+    @param tlmRequest the requested telemetry type (telem_type::XXXXX)
     @return the telemetry request if telemetry was available, -1 if dont
 */
     int8_t ESCsSetValues(uint16_t *motorValues, uint16_t *Telemetry, uint8_t motorCount, uint8_t tlmRequest);
@@ -185,14 +185,13 @@ private:
     uint8_t _lastCRC;
     uint8_t _firstInitDone;
 
-
-    enum
+    enum return_type
     {
       OW_RETURN_RESPONSE,
       OW_RETURN_FULL_FRAME
     };
 
-    enum
+    enum msg_type
     {
       OW_OK,
       OW_BL_PAGE_CORRECT,   // BL only
@@ -250,16 +249,16 @@ private:
 
     };
 
-    enum
+    enum telem_type
     {
-      OW_TLM_TEMP,
-      OW_TLM_VOLT,
-      OW_TLM_CURRENT,
-      OW_TLM_ERPM,
-      OW_TLM_CONSUMPTION,
-      OW_TLM_DEBUG1,
-      OW_TLM_DEBUG2,
-      OW_TLM_DEBUG3
+      TEMP,
+      VOLT,
+      CURRENT,
+      ERPM,
+      CONSUMPTION,
+      DEBUG1,
+      DEBUG2,
+      DEBUG3
     };
 
     /// presistent scan state data (only used inside ScanESCs() function)
