@@ -181,6 +181,7 @@ void AP_FETtecOneWire::update()
     uint16_t requestedTelemetry[MOTOR_COUNT_MAX] = {0};
     _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, MOTOR_COUNT_MAX, _telem_req_type);
     if (_telem_avail != -1) {
+        // TODO: take the _telem_semaphore here
         for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
             _telemetry[i][_telem_avail] = requestedTelemetry[i];
             _telemetry[i][5]++;
@@ -196,6 +197,7 @@ void AP_FETtecOneWire::update()
         const uint32_t now = AP_HAL::millis();
         // log at 10Hz
         if (logger && logger->logging_enabled() && now - _last_log_ms > 100) {
+            // TODO: take the _telem_semaphore here
             for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
                 logger->Write_ESC(i,
                         AP_HAL::micros64(),
@@ -228,6 +230,7 @@ void AP_FETtecOneWire::send_esc_telemetry_mavlink(uint8_t mav_chan) const
     uint16_t totalcurrent[4] {};
     uint16_t rpm[4] {};
     uint16_t count[4] {};
+    // TODO: take the _telem_semaphore here
     for (uint8_t i=0; i<MOTOR_COUNT_MAX; i++) {
         uint8_t idx = i % 4;
         temperature[idx] = _telemetry[i][OW_TLM_TEMP];
