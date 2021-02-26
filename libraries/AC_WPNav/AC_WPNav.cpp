@@ -1016,7 +1016,7 @@ void AC_WPNav::calc_spline_pos_vel(float spline_time, Vector3f& position, Vector
 }
 
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
-bool AC_WPNav::get_terrain_offset(float& offset_cm)
+bool AC_WPNav::get_terrain_offset(float& offset_cm) const
 {
     // calculate offset based on source (rangefinder or terrain database)
     switch (get_terrain_source()) {

@@ -283,7 +283,7 @@ protected:
     void calc_spline_pos_vel(float spline_time, Vector3f& position, Vector3f& velocity);
 
     // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
-    bool get_terrain_offset(float& offset_cm);
+    bool get_terrain_offset(float& offset_cm) const;
 
     // convert location to vector from ekf origin.  terrain_alt is set to true if resulting vector's z-axis should be treated as alt-above-terrain
     //      returns false if conversion failed (likely because terrain data was not available)
