@@ -573,10 +573,8 @@ void AP_KDECAN::update()
                 continue;
             }
 
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
-
-            if (SRV_Channels::function_assigned(motor_function)) {
-                float norm_output = SRV_Channels::get_output_norm(motor_function);
+            if (SRV_Channels::channel_function(i)) {
+                float norm_output = hal.rcout->scale_esc_to_unity(SRV_Channels::srv_channel(i)->get_output_pwm());
                 _scaled_output[i] = uint16_t((norm_output + 1.0f) / 2.0f * 2000.0f);
             } else {
                 _scaled_output[i] = 0;
