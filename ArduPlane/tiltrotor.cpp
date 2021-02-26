@@ -248,7 +248,10 @@ void QuadPlane::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
             tilt_count++;
         }
     }
-
+    // prevent 0 division and useless calculation
+    if (tilt_count == 0) {
+        return;
+    }
     float largest_tilted = 0;
     const float sin_tilt = sinf(radians(tilt.current_tilt*90));
     // yaw_gain relates the amount of differential thrust we get from
