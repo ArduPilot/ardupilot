@@ -1892,14 +1892,14 @@ class AutoTestCopter(AutoTest):
     def fly_autotune_switch(self):
         """Test autotune on a switch with gains being saved"""
 
-        self.context_push()
-
         # autotune changes a set of parameters on the vehicle which
         # are not in our context.  That changes the flight
         # characterstics, which we can't afford between runs.  So
         # completely reset the simulated vehicle after the run is
         # complete by "customising" the commandline here:
         self.customise_SITL_commandline([])
+
+        self.context_push()
 
         ex = None
 
