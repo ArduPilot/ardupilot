@@ -3773,6 +3773,9 @@ class AutoTest(ABC):
                             self.context_get().parameters.append((name, original_values[name]))
                     received.add(name)
                     continue
+                if original_values[name] == autopilot_values[name] and i % 2 == 0:
+                    self.send_get_parameter_direct(name)
+                    self.progress("Requesting (%s) (retry=%u)" % (name, i))
                 self.progress("Sending set (%s) to (%f) (old=%f)" % (name, value, original_values[name]))
                 self.send_set_parameter_direct(name, value)
             for name in received:
