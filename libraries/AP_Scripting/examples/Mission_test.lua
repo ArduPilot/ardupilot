@@ -4,6 +4,12 @@ local last_mission_index = mission:get_current_nav_index()
 
 function update() -- this is the loop which periodically runs
 
+  -- check for scripting DO commands in the mission
+  local time_ms, param1, param2, param3, param4 = mission_receive()
+  if time_ms then
+    gcs:send_text(0, string.format("Scripting CMD @ %u ms, %i, %0.2f, %0.2f, %0.2f", time_ms:tofloat(), param1, param2, param3, param4))
+  end
+
   local mission_state = mission:state()
 
   -- make sure the mission is running

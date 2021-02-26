@@ -206,6 +206,30 @@ void AP_Scripting::thread(void) {
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting has stopped");
 }
 
+void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd_in)
+{
+    if (!_enable) {
+        return;
+    }
+
+    if (mission_data == nullptr) {
+        // load buffer
+        mission_data = new ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
+        if (mission_data == nullptr) {
+            gcs().send_text(MAV_SEVERITY_INFO, "scripting: unable to receive mission command");
+            return;
+        }
+    }
+
+    struct scripting_mission_cmd cmd {cmd_in.p1,
+                                      cmd_in.content.scripting.p1,
+                                      cmd_in.content.scripting.p2,
+                                      cmd_in.content.scripting.p3,
+                                      AP_HAL::millis()};
+
+    mission_data->push(cmd);
+}
+
 AP_Scripting *AP_Scripting::_singleton = nullptr;
 
 namespace AP {
