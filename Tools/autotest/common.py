@@ -5698,7 +5698,9 @@ Also, ignores heartbeats not from our target system'''
                 continue
             m = self.mav.messages.get("HOME_POSITION", None)
             if m is None:
-                continue
+                m = self.mav.recv_match(type='HOME_POSITION', blocking=True, timeout=5)
+                if m is None:
+                    continue
             if old is None:
                 break
             if m._timestamp != old._timestamp:
