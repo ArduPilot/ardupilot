@@ -365,10 +365,22 @@ void AC_WPNav::get_wp_stopping_point_xy(Vector3f& stopping_point) const
 }
 
 /// get_wp_stopping_point - returns vector to stopping point based on 3D position and velocity
-void AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point) const
+///     terrain_alt should be true if stopping_point should be altitude above terrain (false if it is alt-above-ekf-origin)
+bool AC_WPNav::get_wp_stopping_point(Vector3f& stopping_point, bool terrain_alt) const
 {
     _pos_control.get_stopping_point_xy(stopping_point);
     _pos_control.get_stopping_point_z(stopping_point);
+
+    // convert origin to alt-above-terrain
+    if (terrain_alt) {
+        float origin_terr_offset;
+        if (!get_terrain_offset(origin_terr_offset)) {
+            return false;
+        }
+        stopping_point.z -= origin_terr_offset;
+    }
+
+    return true;
 }
 
 /// advance_wp_target_along_track - move target location along track from origin to destination
