@@ -197,15 +197,6 @@ void AP_FETtecOneWire::update()
         // log at 10Hz
         if (logger && logger->logging_enabled() && now - _last_log_ms > 100) {
             for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-                // TODO: remove printfs
-                printf(" esc: %d", i + 1);
-                printf(" Temperature: %d", _telemetry[i][OW_TLM_TEMP]);
-                printf(", Voltage: %d", _telemetry[i][OW_TLM_VOLT]);
-                printf(", Current: %d", _telemetry[i][OW_TLM_CURRENT]);
-                printf(", E-rpm: %d", _telemetry[i][OW_TLM_ERPM]);
-                printf(", consumption: %d", _telemetry[i][OW_TLM_CONSUMPTION]);
-                printf("\n");
-
                 logger->Write_ESC(i,
                         AP_HAL::micros64(),
                         _telemetry[i][OW_TLM_ERPM] * 100U,
