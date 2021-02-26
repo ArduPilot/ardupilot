@@ -103,7 +103,7 @@ void AP_FETtecOneWire::Beep(uint8_t beepFrequency)
         uint8_t request[2] = {OW_BEEP, beepFrequency};
         uint8_t spacer[2] = {0, 0};
         for (uint8_t i = _minID; i < _maxID + 1; i++) {
-            Transmit(i, request, FETtecOneWire_RequestLength[request[0]]);
+            Transmit(i, request, _RequestLength[request[0]]);
             // add two zeros to make sure all ESCs can catch their command as we don't wait for a response here
             _uart->write(spacer, 2);
             _IgnoreOwnBytes += 2;
@@ -123,7 +123,7 @@ void AP_FETtecOneWire::RW_LEDcolor(uint8_t R, uint8_t G, uint8_t B)
         uint8_t request[4] = {OW_SET_LED_TMP_COLOR, R, G, B};
         uint8_t spacer[2] = {0, 0};
         for (uint8_t i = _minID; i < _maxID + 1; i++) {
-            Transmit(i, request, FETtecOneWire_RequestLength[request[0]]);
+            Transmit(i, request, _RequestLength[request[0]]);
             // add two zeros to make sure all ESCs can catch their command as we don't wait for a response here
             _uart->write(spacer, 2);
             _IgnoreOwnBytes += 2;
