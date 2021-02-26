@@ -181,9 +181,9 @@ void AP_FETtecOneWire::update()
     uint16_t requestedTelemetry[MOTOR_COUNT_MAX] = {0};
     _telem_avail = ESCsSetValues(_motorpwm, requestedTelemetry, MOTOR_COUNT_MAX, _telem_req_type);
 
-    if (++_telem_req_type == OW_TLM_DEBUG1) {
-        // OW_TLM_DEBUG1, OW_TLM_DEBUG2, OW_TLM_DEBUG3 are ignored
-        _telem_req_type = OW_TLM_TEMP;
+    if (++_telem_req_type == telem_type::DEBUG1) {
+        // telem_type::DEBUG1, telem_type::DEBUG2, telem_type::DEBUG3 are ignored
+        _telem_req_type = telem_type::TEMP;
     }
 
     if (_telem_avail != -1) {
@@ -201,11 +201,11 @@ void AP_FETtecOneWire::update()
             for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
                 logger->Write_ESC(i,
                         AP_HAL::micros64(),
-                        _telemetry[i][OW_TLM_ERPM] * 100U,
-                        _telemetry[i][OW_TLM_VOLT],
-                        _telemetry[i][OW_TLM_CURRENT],
-                        _telemetry[i][OW_TLM_TEMP] * 100U,
-                        _telemetry[i][OW_TLM_CONSUMPTION],
+                        _telemetry[i][telem_type::ERPM] * 100U,
+                        _telemetry[i][telem_type::VOLT],
+                        _telemetry[i][telem_type::CURRENT],
+                        _telemetry[i][telem_type::TEMP] * 100U,
+                        _telemetry[i][telem_type::CONSUMPTION],
                         0,
                         0);
             }
@@ -233,11 +233,11 @@ void AP_FETtecOneWire::send_esc_telemetry_mavlink(uint8_t mav_chan) const
     // TODO: take the _telem_semaphore here
     for (uint8_t i=0; i<MOTOR_COUNT_MAX; i++) {
         uint8_t idx = i % 4;
-        temperature[idx] = _telemetry[i][OW_TLM_TEMP];
-        voltage[idx] = _telemetry[i][OW_TLM_VOLT];
-        current[idx] = _telemetry[i][OW_TLM_CURRENT];
-        rpm[idx] = _telemetry[i][OW_TLM_ERPM];
-        totalcurrent[idx] = _telemetry[i][OW_TLM_CONSUMPTION];
+        temperature[idx] = _telemetry[i][telem_type::TEMP];
+        voltage[idx] = _telemetry[i][telem_type::VOLT];
+        current[idx] = _telemetry[i][telem_type::CURRENT];
+        rpm[idx] = _telemetry[i][telem_type::ERPM];
+        totalcurrent[idx] = _telemetry[i][telem_type::CONSUMPTION];
         count[idx] = _telemetry[i][5];
         if (idx == 3 || i == MOTOR_COUNT_MAX - 1) {
             if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
@@ -684,7 +684,7 @@ int8_t AP_FETtecOneWire::CheckForTLM(uint16_t* Telemetry)
     @param motorValues a 16bit array containing the throttle signals that should be sent to the motors. 0-2000 where 1001-2000 is positive rotation and 999-0 reversed rotation
     @param Telemetry 16bit array where the read telemetry will be stored in.
     @param motorCount the count of motors that should get values send
-    @param tlmRequest the requested telemetry type (OW_TLM_XXXXX)
+    @param tlmRequest the requested telemetry type (telem_type::XXXXX)
     @return the telemetry request if telemetry was available, -1 if dont
 */
 int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetry, uint8_t motorCount,
