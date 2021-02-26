@@ -1148,10 +1148,10 @@ struct PACKED log_PSCZ {
 // @Field: Mar: Margin from path to obstacle on best yaw chosen
 // @Field: DLt: Destination latitude
 // @Field: DLg: Destination longitude
-// @Field: DAlt: Desired alt
+// @Field: DAlt: Desired alt above EKF Origin
 // @Field: OLt: Intermediate location chosen for avoidance
 // @Field: OLg: Intermediate location chosen for avoidance
-// @Field: OAlt: Intermediate alt chosen for avoidance
+// @Field: OAlt: Intermediate alt chosen for avoidance above EKF origin
 
 // @LoggerMessage: OADJ
 // @Description: Object avoidance (Dijkstra) diagnostics
@@ -1499,7 +1499,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
-      "OABR","QBBHHHBfLLfLLf","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
+      "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
