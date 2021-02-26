@@ -570,17 +570,10 @@ void AP_KDECAN::update()
     if (_rc_out_sem.take(1)) {
         for (uint8_t i = 0; i < KDECAN_MAX_NUM_ESCS; i++) {
             if ((_esc_present_bitmask & (1 << i)) == 0) {
+                _scaled_output[i] = 0;
                 continue;
             }
-
-            SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(i);
-
-            if (SRV_Channels::function_assigned(motor_function)) {
-                float norm_output = SRV_Channels::get_output_norm(motor_function);
-                _scaled_output[i] = uint16_t((norm_output + 1.0f) / 2.0f * 2000.0f);
-            } else {
-                _scaled_output[i] = 0;
-            }
+            _scaled_output[i] = SRV_Channels::srv_channel(i)->get_output_pwm();
         }
 
         _rc_out_sem.give();
