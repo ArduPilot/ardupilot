@@ -1,0 +1,161 @@
+# hw definition file for processing by chibios_pins.py
+# for Quanton hardware
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 9999
+
+# Original Quanton 16MHz crystall have to be changed to 8MHz !!!
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_ST_USE_TIMER 5
+
+FLASH_SIZE_KB 1024
+
+# use USB for stdout, so no STDOUT_SERIAL
+# STDOUT_SERIAL SD3
+# STDOUT_BAUDRATE 57600
+
+# I2C bus
+I2C_ORDER I2C3
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1
+#TVJ
+#SERIAL_ORDER OTG1 USART1 USART3 UART5
+
+# rcinput is PC6, which is the 2nd "PWM IN" pin
+PC6 TIM8_CH1 TIM8 RCIN FLOAT LOW
+
+# analog pins
+# PC15 is not working as ADC, it is mistake on sch.
+#PC15 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA4 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# define default battery setup
+#define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 4
+#define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+#SBUS 
+PB2 SBUS_INVERT OUTPUT LOW
+
+# LEDs
+PC14 LED_BLUE OUTPUT LOW GPIO(0)
+PC13 LED_RED OUTPUT LOW GPIO(2)
+
+# GPS port disabled (PC6 used for RCIN)
+#PC6 USART6_TX USART6
+#PC7 USART6_RX USART6
+
+# flexi port, setup as GPS
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# main port, for telem1
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+
+# Another UART
+PC12 UART5_TX UART5
+PD2  UART5_RX UART5
+
+# alternative config
+# PB10 I2C2_SCL I2C2
+# PB11 I2C2_SDA I2C2
+
+# spi bus for IMU
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# spi bus for dataflash
+PB13 SPI2_SCK  SPI2
+PC2  SPI2_MISO SPI2
+PC3  SPI2_MOSI SPI2
+
+# IRQ for MPU6000
+PC0 EXTI_MPU6000 INPUT
+#PC0 EXTI_MPU6000 INPUT PULLUP 
+
+# Now we define the pins that USB is connected on.
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# these are the pins for SWD debugging with a STlinkv2
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# only one I2C bus in normal config (Pins SCL and SDA of HMC5883,MS5611)
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+# SPI chip selects
+PC4 MPU_CS CS
+PB12 FLASH_CS CS
+
+# PWM input pins
+# we will use only one from them for PPM, the rest could be used for PWM output or other purpose
+#PA10 TIM1_CH3 TIM1 PWM(1) GPIO(50)
+# Used as RC IN for PPM
+#PC6  TIM8_CH1 TIM8 PWM(2) GPIO(51) 
+#PC7  TIM8_CH2 TIM8 PWM(3) GPIO(52)
+#PC8  TIM8_CH3 TIM8 PWM(4) GPIO(53)
+#PA15 TIM2_CH1 TIM2 PWM(5) GPIO(54)
+#PB3  TIM2_CH2 TIM2 PWM(6) GPIO(55)
+#PA9  TIM5_CH1 TIM5 PWM(7) GPIO(56)
+#PA1  TIM5_CH2 TIM5 PWM(8) GPIO(57)
+
+# PWM out pins
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set BRD_PWM_COUNT to choose how many of the PWM
+# outputs on the primary MCU are setup as PWM and how many as
+# GPIOs. To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+PB4  TIM3_CH1  TIM3  PWM(1) GPIO(50)
+PB5  TIM3_CH2  TIM3  PWM(2) GPIO(51)
+PB0  TIM3_CH3  TIM3  PWM(3) GPIO(52)
+PB1  TIM3_CH4  TIM3  PWM(4) GPIO(53)
+# We use only 4 outputs, the rest are commented and need additional investigation 
+#PB14 TIM12_CH1 TIM12 PWM(5) GPIO(54) NODMA
+#PB15 TIM12_CH2 TIM12 PWM(6) GPIO(55) NODMA
+#PB8  TIM10_CH1 TIM10 PWM(7) GPIO(56) NODMA
+#PB9  TIM11_CH1 TIM11 PWM(8) GPIO(57) NODMA
+
+# Pin DRDY from HMC5883 (EXIT on sch.)
+PC1 DRDY_HMC5883 INPUT PULLUP
+
+define HAL_STORAGE_SIZE 15360
+define STORAGE_FLASH_PAGE 2
+
+# reserve 32k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 64
+
+# one IMU
+IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+
+# one baro
+BARO MS56XX I2C:0:0x77
+
+# also allow for probing of external barometers
+#define HAL_PROBE_EXTERNAL_I2C_BAROS
+
+# look for internal I2C compass
+COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
+
+# SPI devices
+SPIDEV mpu6000 SPI1 DEVID1 MPU_CS MODE3 1*MHZ 8*MHZ
+SPIDEV dataflash SPI2 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH
+
+#TVJ 4
+# 8 PWM available by default
+define BOARD_PWM_COUNT_DEFAULT 4
+define HAL_WITH_DSP FALSE
+
