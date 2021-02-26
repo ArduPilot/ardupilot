@@ -4036,6 +4036,10 @@ class AutoTest(ABC):
                 target_compid=None,
                 timeout=10,
                 quiet=False):
+        if target_sysid is None:
+            target_sysid = self.target_system
+        if target_compid is None:
+            target_compid = 1
         self.drain_mav_unparsed()
         self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_cmd(
