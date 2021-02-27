@@ -27,6 +27,7 @@
 #include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
@@ -84,7 +85,7 @@ class DebugCb;
             DISABLE_W_CAST_FUNCTION_TYPE_POP \
     }
 
-class AP_UAVCAN : public AP_CANDriver {
+class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
 public:
     AP_UAVCAN();
     ~AP_UAVCAN();
@@ -96,9 +97,6 @@ public:
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
-
-    // send ESC telemetry messages over MAVLink
-    void send_esc_telemetry_mavlink(uint8_t mav_chan);
     
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
@@ -237,7 +235,6 @@ private:
     };
 
     static esc_data _escs_data[UAVCAN_SRV_NUMBER];
-
     
     // safety status send state
     uint32_t _last_safety_state_ms;

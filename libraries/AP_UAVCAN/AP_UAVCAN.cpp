@@ -349,79 +349,6 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 }
 #pragma GCC diagnostic pop
 
-// send ESC telemetry messages over MAVLink
-void AP_UAVCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-#ifndef HAL_NO_GCS
-    static const uint8_t MAV_ESC_GROUPS = 3;
-    static const uint8_t MAV_ESC_PER_GROUP = 4;
-
-    for (uint8_t i = 0; i < MAV_ESC_GROUPS; i++) {
-
-        // arrays to hold output
-        uint8_t temperature[MAV_ESC_PER_GROUP] {};
-        uint16_t voltage[MAV_ESC_PER_GROUP] {};
-        uint16_t current[MAV_ESC_PER_GROUP] {};
-        uint16_t current_tot[MAV_ESC_PER_GROUP] {};
-        uint16_t rpm[MAV_ESC_PER_GROUP] {};
-        uint16_t count[MAV_ESC_PER_GROUP] {};
-
-        // if at least one of the ESCs in the group is availabe, the group
-        // is considered to be available too, and will be sent over MAVlink
-        bool group_available = false;
-
-        // fill in output arrays of ESCs sensors with available data.
-        for (uint8_t j = 0; j < MAV_ESC_PER_GROUP; j++) {
-            const uint8_t esc_idx = i * MAV_ESC_PER_GROUP + j;
-            
-            if (!is_esc_data_index_valid(esc_idx)) {
-                return;
-            }
-
-            WITH_SEMAPHORE(_telem_sem);
-            
-            if (!_escs_data[esc_idx].available) {
-                continue;
-            } 
-
-            _escs_data[esc_idx].available = false;
-
-            temperature[j] = _escs_data[esc_idx].temp;
-            voltage[j] = _escs_data[esc_idx].voltage;
-            current[j] = _escs_data[esc_idx].current;
-            current_tot[j] = 0; // currently not implemented
-            rpm[j] = _escs_data[esc_idx].rpm;
-            count[j] = _escs_data[esc_idx].count;
-
-            group_available = true;
-        }
-
-        if (!group_available) {
-            continue;
-        }
-
-        if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
-            return;
-        }
-
-        // send messages
-        switch (i) {
-            case 0:
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                break;
-            case 1:
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                break;
-            case 2:
-                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
-                break;
-            default:
-                break;
-        }
-    }
-#endif // HAL_NO_GCS
-}
-
 void AP_UAVCAN::loop(void)
 {
     while (true) {
@@ -891,6 +818,17 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
     esc.rpm = cb.msg->rpm;
     esc.count++;
 
+    TelemetryData t {
+        .temperature_cdeg = int16_t(esc.temp * 100),
+        .voltage_cv = esc.voltage,
+        .current_ca = esc.current,
+    };
+
+    ap_uavcan->update_rpm(esc_index, esc.rpm);
+    ap_uavcan->update_telem_data(esc_index, t,
+        AP_ESC_Telem_Backend::TelemetryType::CURRENT
+            | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+            | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 }
 
 bool AP_UAVCAN::is_esc_data_index_valid(const uint8_t index) {
