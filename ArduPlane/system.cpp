@@ -38,6 +38,9 @@ void Plane::init_ardupilot()
     can_mgr.init();
 #endif
 
+    rollController.convert_pid();
+    pitchController.convert_pid();
+
     // initialise rc channels including setting mode
     rc().init();
 
