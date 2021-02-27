@@ -162,8 +162,8 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
         tiltErr : sqrtf(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
+        offsetNorth : offset.x,
+        offsetEast : offset.y,
         faults : _faultStatus,
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
