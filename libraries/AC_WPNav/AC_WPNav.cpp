@@ -437,6 +437,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     }
 
     // let the limited_speed_xy_cms be some range above or below current velocity along track
+    bool is_constrain_spdxy = false;
     if (speed_along_track < -linear_velocity) {
         // we are traveling fast in the opposite direction of travel to the waypoint so do not move the intermediate point
         _limited_speed_xy_cms = 0;
@@ -446,6 +447,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             _limited_speed_xy_cms += 2.0f * _track_accel * dt;
         }
         // do not allow speed to be below zero or over top speed
+        is_constrain_spdxy = (_limited_speed_xy_cms > _track_speed);
         _limited_speed_xy_cms = constrain_float(_limited_speed_xy_cms, 0.0f, _track_speed);
 
         // check if we should begin slowing down
@@ -518,6 +520,9 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             horiz_leash_xy.z = 0;
             if (horiz_leash_xy.length() > MIN(WPNAV_YAW_DIST_MIN, _pos_control.get_leash_xy()*WPNAV_YAW_LEASH_PCT_MIN)) {
                 set_yaw_cd(RadiansToCentiDegrees(atan2f(horiz_leash_xy.y,horiz_leash_xy.x)));
+            } else if (is_constrain_spdxy) {
+                // large vertical distance difference between origin and destination in this condition, so directly set to this direction
+                set_yaw_cd(get_bearing_cd(_origin, _destination));
             }
         }
     }
