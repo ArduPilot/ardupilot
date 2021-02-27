@@ -4,15 +4,12 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AC_PID/AC_PID.h>
 
 class AP_AutoTune {
 public:
     struct ATGains {
         AP_Float tau;
-        AP_Float P;
-        AP_Float I;
-        AP_Float D;
-        AP_Float FF;
         AP_Int16 rmax;
         AP_Int16 imax;
     };
@@ -35,7 +32,7 @@ public:
 
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, AC_PID &rpid);
 
     // called when autotune mode is entered
     void start(void);
@@ -54,6 +51,7 @@ public:
 private:
     // the current gains
     ATGains &current;
+    AC_PID &rpid;
 
     // what type of autotune is this
     ATType type;
