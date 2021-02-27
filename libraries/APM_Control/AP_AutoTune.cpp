@@ -55,9 +55,9 @@ extern const AP_HAL::HAL& hal;
 // step size for decreasing gains, percentage
 #define AUTOTUNE_DECREASE_STEP 8
 
-// min/max P gains
-#define AUTOTUNE_MAX_P 5.0f
-#define AUTOTUNE_MIN_P 0.3f
+// min/max FF gains
+#define AUTOTUNE_MAX_FF 2.0f
+#define AUTOTUNE_MIN_FF 0.05f
 
 // tau ranges
 #define AUTOTUNE_MAX_TAU 0.7f
@@ -68,9 +68,11 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
-                         const AP_Vehicle::FixedWing &parms) :
-    running(false),
+                         const AP_Vehicle::FixedWing &parms,
+                         AC_PID &_rpid) :
     current(_gains),
+    rpid(_rpid),
+    running(false),
     type(_type),
     aparm(parms),
     saturated_surfaces(false)
@@ -91,7 +93,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
  */
 static const struct {
     float tau;
-    float Dratio;
+    float Pratio;
     float rmax;
 } tuning_table[] = {
     { 0.70f, 0.050f,  20 },   // level 1
@@ -131,18 +133,13 @@ void AP_AutoTune::start(void)
     }
 
     current.rmax.set(tuning_table[level-1].rmax);
-    // D gain is scaled to a fixed ratio of P gain
-    current.D.set(tuning_table[level-1].Dratio * current.P);
     current.tau.set(tuning_table[level-1].tau);
 
     current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
 
-    // force a fixed ratio of I to D gain on the rate feedback path
-    current.I = 0.5f * current.D / current.tau;
-
     next_save = current;
 
-    Debug("START P -> %.3f\n", current.P.get());
+    Debug("START FF -> %.3f\n", rpid.ff().get());
 }
 
 /*
@@ -211,24 +208,22 @@ void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
         // we increase P if we have not saturated the surfaces during
         // this state, and we have
         if (state_time_ms >= AUTOTUNE_UNDERSHOOT_TIME && !saturated_surfaces) {
-            current.P.set(current.P * (100+AUTOTUNE_INCREASE_STEP) * 0.01f);
-            if (current.P > AUTOTUNE_MAX_P) {
-                current.P = AUTOTUNE_MAX_P;
+            rpid.ff().set(rpid.ff() * (100+AUTOTUNE_INCREASE_STEP) * 0.01f);
+            if (rpid.ff() > AUTOTUNE_MAX_FF) {
+                rpid.ff().set(AUTOTUNE_MAX_FF);
             }
-            Debug("UNDER P -> %.3f\n", current.P.get());
+            Debug("UNDER FF -> %.3f\n", rpid.ff().get());
         }
-        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
         break;
     case DEMAND_OVER_POS:
     case DEMAND_OVER_NEG:
         if (state_time_ms >= AUTOTUNE_OVERSHOOT_TIME) {
-            current.P.set(current.P * (100-AUTOTUNE_DECREASE_STEP) * 0.01f);
-            if (current.P < AUTOTUNE_MIN_P) {
-                current.P = AUTOTUNE_MIN_P;
+            rpid.ff().set(rpid.ff() * (100-AUTOTUNE_DECREASE_STEP) * 0.01f);
+            if (rpid.ff() < AUTOTUNE_MIN_FF) {
+                rpid.ff().set(AUTOTUNE_MIN_FF);
             }
-            Debug("OVER P -> %.3f\n", current.P.get());
+            Debug("OVER FF -> %.3f\n", rpid.ff().get());
         }
-        current.D.set(tuning_table[aparm.autotune_level-1].Dratio * current.P);
         break;
     }
 }
@@ -249,7 +244,7 @@ void AP_AutoTune::check_save(void)
     ATGains tmp = current;
 
     save_gains(next_save);
-    Debug("SAVE P -> %.3f\n", current.P.get());
+    Debug("SAVE FF -> %.3f\n", rpid.ff().get());
 
     // restore our current gains
     current = tmp;
@@ -318,11 +313,14 @@ void AP_AutoTune::save_gains(const ATGains &v)
 {
     current = last_save;
     save_float_if_changed(current.tau, v.tau, "TCONST");
-    save_float_if_changed(current.P, v.P, "P");
-    save_float_if_changed(current.I, v.I, "I");
-    save_float_if_changed(current.D, v.D, "D");
+#if 0
+    save_float_if_changed(rpid.kP(), v.P, "P");
+    save_float_if_changed(rpid.kI(), v.I, "I");
+    save_float_if_changed(rpid.kD(), v.D, "D");
+    save_float_if_changed(rpid.ff(), v.FF, "FF");
     save_int16_if_changed(current.rmax, v.rmax, "RMAX");
     save_int16_if_changed(current.imax, v.imax, "IMAX");
+#endif
     last_save = current;
 }
 
@@ -341,7 +339,7 @@ void AP_AutoTune::write_log(float servo, float demanded, float achieved)
         servo      : (int16_t)(servo*100),
         demanded   : demanded,
         achieved   : achieved,
-        P          : current.P.get()
+        P          : rpid.kP().get()
     };
     logger->WriteBlock(&pkt, sizeof(pkt));
 }

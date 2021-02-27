@@ -32,29 +32,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @User: Advanced
     AP_GROUPINFO("2SRV_TCONST",      0, AP_RollController, gains.tau,       0.5f),
 
-    // @Param: 2SRV_P
-	// @DisplayName: Proportional Gain
-	// @Description: Proportional gain from roll angle demands to ailerons. Higher values allow more servo response but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
-	// @Range: 0.1 4.0
-	// @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("2SRV_P",        1, AP_RollController, gains.P,        1.0f),
-
-    // @Param: 2SRV_D
-	// @DisplayName: Damping Gain
-	// @Description: Damping gain from roll acceleration to ailerons. Higher values reduce rolling in turbulence, but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
-	// @Range: 0 0.2
-	// @Increment: 0.01
-    // @User: Standard
-    AP_GROUPINFO("2SRV_D",        2, AP_RollController, gains.D,        0.08f),
-
-    // @Param: 2SRV_I
-	// @DisplayName: Integrator Gain
-	// @Description: Integrator gain from long-term roll angle offsets to ailerons. Higher values "trim" out offsets faster but can cause oscillations. Automatically set and adjusted by AUTOTUNE mode.
-	// @Range: 0 1.0
-	// @Increment: 0.05
-    // @User: Standard
-    AP_GROUPINFO("2SRV_I",        3, AP_RollController, gains.I,        0.3f),
+    // index 1 to 3 reserved for old PID values
 
     // @Param: 2SRV_RMAX
 	// @DisplayName: Maximum Roll Rate
@@ -73,13 +51,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @User: Advanced
     AP_GROUPINFO("2SRV_IMAX",      5, AP_RollController, gains.imax,        3000),
 
-    // @Param: 2SRV_FF
-	// @DisplayName: Feed forward Gain
-	// @Description: Gain from demanded rate to aileron output. 
-	// @Range: 0.1 4.0
-	// @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("2SRV_FF",        6, AP_RollController, gains.FF,          0.0f),
+    // index 6 reserved for old FF
 
     // @Param: 2SRV_SRMAX
     // @DisplayName: Servo slew rate limit
@@ -180,117 +152,10 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 
 /*
-  internal rate controller, called by attitude and rate controller
-  public functions
-*/
-int32_t AP_RollController::_get_rate_out_old(float desired_rate, float scaler, bool disable_integrator)
-{
-	uint32_t tnow = AP_HAL::millis();
-	uint32_t dt = tnow - _last_t;
-	if (_last_t == 0 || dt > 1000) {
-		dt = 0;
-	}
-	_last_t = tnow;
-	
-	// Calculate equivalent gains so that values for K_P and K_I can be taken across from the old PID law
-    // No conversion is required for K_D
-	float ki_rate = gains.I * gains.tau;
-    float eas2tas = _ahrs.get_EAS2TAS();
-	float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D , 0) / eas2tas;
-    float k_ff = gains.FF / eas2tas;
-	float delta_time    = (float)dt * 0.001f;
-    // Get body rate vector (radians/sec)
-	float omega_x = _ahrs.get_gyro().x;
-	
-	// Calculate the roll rate error (deg/sec) and apply gain scaler
-    float achieved_rate = ToDeg(omega_x);
-    _pid_info.error = desired_rate - achieved_rate;
-    float rate_error = _pid_info.error * scaler;
-    _pid_info.target = desired_rate;
-    _pid_info.actual = achieved_rate;
-	
-	// Get an airspeed estimate - default to zero if none available
-	float aspeed;
-	if (!_ahrs.airspeed_estimate(aspeed)) {
-        aspeed = 0.0f;
-    }
-
-	// Multiply roll rate error by _ki_rate, apply scaler and integrate
-	// Scaler is applied before integrator so that integrator state relates directly to aileron deflection
-	// This means aileron trim offset doesn't change as the value of scaler changes with airspeed
-	// Don't integrate if in stabilise mode as the integrator will wind up against the pilots inputs
-	if (!disable_integrator && ki_rate > 0) {
-		//only integrate if gain and time step are positive and airspeed above min value.
-		if (dt > 0 && aspeed > float(aparm.airspeed_min)) {
-		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
-			// prevent the integrator from increasing if surface defln demand is above the upper limit
-			if (_last_out < -45) {
-                integrator_delta = MAX(integrator_delta , 0);
-            } else if (_last_out > 45) {
-                // prevent the integrator from decreasing if surface defln demand  is below the lower limit
-                 integrator_delta = MIN(integrator_delta, 0);
-            }
-			_pid_info.I += integrator_delta;
-		}
-	} else {
-		_pid_info.I = 0;
-	}
-	
-    // Scale the integration limit
-    float intLimScaled = gains.imax * 0.01f;
-
-    // Constrain the integrator state
-    _pid_info.I = constrain_float(_pid_info.I, -intLimScaled, intLimScaled);
-	
-	// Calculate the demanded control surface deflection
-	// Note the scaler is applied again. We want a 1/speed scaler applied to the feed-forward
-	// path, but want a 1/speed^2 scaler applied to the rate error path. 
-    // This is because acceleration scales with speed^2, but rate scales with speed.
-    const float last_pid_info_D = _pid_info.D;
-
-    _pid_info.D = rate_error * gains.D * scaler;
-    _pid_info.P = desired_rate * kp_ff * scaler;
-    _pid_info.FF = desired_rate * k_ff * scaler;
-
-    if (dt > 0 && _slew_rate_max > 0) {
-        // Calculate the slew rate amplitude produced by the unmodified D term
-
-        // calculate a low pass filtered slew rate
-        float Dterm_slew_rate = _slew_rate_filter.apply((fabsf(_pid_info.D - last_pid_info_D)/ delta_time), delta_time);
-
-        // rectify and apply a decaying envelope filter
-        float alpha = 1.0f - constrain_float(delta_time/_slew_rate_tau, 0.0f , 1.0f);
-        _slew_rate_amplitude = fmaxf(fabsf(Dterm_slew_rate), alpha * _slew_rate_amplitude);
-        _slew_rate_amplitude = fminf(_slew_rate_amplitude, 10.0f*_slew_rate_max);
-
-        // Calculate and apply the D gain adjustment
-        _pid_info.Dmod = _slew_rate_max / fmaxf(_slew_rate_amplitude, _slew_rate_max);
-        _pid_info.D *= _pid_info.Dmod;
-    }
-
-    _last_out = _pid_info.D + _pid_info.FF + _pid_info.P;
-
-    if (autotune.running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
-        // Note that we don't pass the integrator component so we get
-        // a better idea of how much the base PD controller
-        // contributed
-        autotune.update(desired_rate, achieved_rate, _last_out);
-    }
-
-	_last_out += _pid_info.I;
-	
-	// Convert to centi-degrees and constrain
-	return constrain_float(_last_out * 100, -4500, 4500);
-}
-
-/*
   AC_PID based rate controller
 */
-int32_t AP_RollController::_get_rate_out_ac_pid(float desired_rate, float scaler, bool disable_integrator)
+int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
 {
-    convert_pid();
-
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
     bool limit_I = fabsf(last_ac_out) >= 45;
@@ -330,8 +195,8 @@ int32_t AP_RollController::_get_rate_out_ac_pid(float desired_rate, float scaler
     }
 
     // convert AC_PID info object to same scale as old controller
-    _pid_info_ac_pid = rate_pid.get_pid_info();
-    auto &pinfo = _pid_info_ac_pid;
+    _pid_info = rate_pid.get_pid_info();
+    auto &pinfo = _pid_info;
 
     const float deg_scale = degrees(1);
     pinfo.FF = ff;
@@ -351,25 +216,6 @@ int32_t AP_RollController::_get_rate_out_ac_pid(float desired_rate, float scaler
 
     // output is scaled to notional centidegrees of deflection
     return constrain_int32(out * 100, -4500, 4500);
-}
-
-
-/*
-  rate controller selector
-*/
-int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool disable_integrator)
-{
-    int32_t ret_ac_pid = _get_rate_out_ac_pid(desired_rate, scaler, disable_integrator);
-    int32_t ret_old = _get_rate_out_old(desired_rate, scaler, disable_integrator);
-    const auto &pinfo_ac = _pid_info_ac_pid;
-    const auto &pinfo_old = _pid_info;
-    AP::logger().Write("PIXR", "TimeUS,AC,Old,ACSum,OldSum", "Qiiff",
-                       AP_HAL::micros64(),
-                       ret_ac_pid,
-                       ret_old,
-                       pinfo_ac.FF + pinfo_ac.P + pinfo_ac.I + pinfo_ac.D,
-                       pinfo_old.FF + pinfo_old.P + pinfo_old.I + pinfo_old.D);
-    return use_ac_pid ? ret_ac_pid : ret_old;
 }
 
 /*
@@ -424,18 +270,24 @@ void AP_RollController::reset_I()
  */
 void AP_RollController::convert_pid()
 {
-    if (done_init && is_positive(rate_pid.ff())) {
-        return;
-    }
-    done_init = true;
     AP_Float &ff = rate_pid.ff();
-    if (is_positive(ff) && ff.configured_in_storage()) {
+    if (ff.configured_in_storage()) {
         return;
     }
-    const float kp_ff = MAX((gains.P - gains.I * gains.tau) * gains.tau  - gains.D, 0);
-    rate_pid.ff().set_and_save(gains.FF + kp_ff);
-    rate_pid.kI().set_and_save_ifchanged(gains.I * gains.tau);
-    rate_pid.kP().set_and_save_ifchanged(gains.D);
+    float old_ff=0, old_p=1.0, old_i=0.3, old_d=0.08;
+    bool have_old = AP_Param::get_param_by_index(this, 1, AP_PARAM_FLOAT, &old_p);
+    have_old |= AP_Param::get_param_by_index(this, 3, AP_PARAM_FLOAT, &old_i);
+    have_old |= AP_Param::get_param_by_index(this, 2, AP_PARAM_FLOAT, &old_d);
+    have_old |= AP_Param::get_param_by_index(this, 6, AP_PARAM_FLOAT, &old_ff);
+    if (!have_old) {
+        // none of the old gains were set
+        return;
+    }
+
+    const float kp_ff = MAX((old_p - old_i * gains.tau) * gains.tau  - old_d, 0);
+    rate_pid.ff().set_and_save(old_ff + kp_ff);
+    rate_pid.kI().set_and_save_ifchanged(old_i * gains.tau);
+    rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
     rate_pid.kIMAX().set_and_save_ifchanged(gains.imax/4500.0);
 }
