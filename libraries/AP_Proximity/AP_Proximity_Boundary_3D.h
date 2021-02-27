@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <Filter/LowPassFilter.h>
+
 #define PROXIMITY_NUM_SECTORS         8       // number of sectors
 #define PROXIMITY_NUM_LAYERS          5       // num of layers in a sector
 #define PROXIMITY_MIDDLE_LAYER        2       // middle layer
@@ -22,6 +24,7 @@
 #define PROXIMITY_SECTOR_WIDTH_DEG    (360.0f/PROXIMITY_NUM_SECTORS)   // width of sectors in degrees
 #define PROXIMITY_BOUNDARY_DIST_MIN   0.6f    // minimum distance for a boundary point.  This ensures the object avoidance code doesn't think we are outside the boundary.
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
+#define PROXIMITY_FILT_RESET_TIME     1000    // reset filter if last distance was pushed more than this many ms away
 
 class AP_Proximity_Boundary_3D 
 { 
@@ -105,6 +108,12 @@ public:
     uint8_t get_horizontal_object_count() const;
     bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
+    // get number of layers
+    uint8_t get_num_layers() const { return PROXIMITY_NUM_LAYERS; }
+
+    // get raw and filtered distances in 8 directions per layer.
+    bool get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+
     // sectors
     static_assert(PROXIMITY_NUM_SECTORS == 8, "PROXIMITY_NUM_SECTOR must be 8");
     const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
@@ -130,6 +139,12 @@ private:
     // The resultant is packed into a Boundary Location object and returned by reference as "face"
     bool convert_obstacle_num_to_face(uint8_t obstacle_num, Face& face) const WARN_IF_UNUSED;
 
+    // Apply low pass filter on the raw distance
+    void set_filtered_distance(const Face &face, float distance);
+
+    // Return filtered distance for the passed in face
+    bool get_filtered_distance(const Face &face, float &distance) const;
+
     Vector3f _sector_edge_vector[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
     Vector3f _boundary_points[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
 
@@ -137,5 +152,7 @@ private:
     float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
     float _distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];       // distance to closest object within each sector and layer
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
+    uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
+    LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
 };
 
