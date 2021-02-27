@@ -245,8 +245,6 @@ bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout)
 // called from SRV_Channels
 void AP_PiccoloCAN::update()
 {
-    uint64_t timestamp = AP_HAL::micros64();
-
     /* Read out the ESC commands from the channel mixer */
     for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
 
@@ -263,105 +261,7 @@ void AP_PiccoloCAN::update()
             }
         }
     }
-
-    AP_Logger *logger = AP_Logger::get_singleton();
-
-    // Push received telemtry data into the logging system
-    if (logger && logger->logging_enabled()) {
-
-        WITH_SEMAPHORE(_telem_sem);
-
-        for (uint8_t i = 0; i < PICCOLO_CAN_MAX_NUM_ESC; i++) {
-
-            PiccoloESC_Info_t &esc = _esc_info[i];
-
-            if (esc.newTelemetry) {
-
-                logger->Write_ESC(i, timestamp,
-                                  (int32_t) esc.rpm * 100,
-                                  esc.voltage,
-                                  esc.current,
-                                  (int16_t) esc.fetTemperature,
-                                  0,  // TODO - Accumulated current
-                                  (int16_t) esc.motorTemperature);
-
-                esc.newTelemetry = false;
-            }
-        }
-    }
 }
-
-// send ESC telemetry messages over MAVLink
-void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
-{
-    // Arrays to store ESC telemetry data
-    uint8_t temperature[4] {};
-    uint16_t voltage[4] {};
-    uint16_t rpm[4] {};
-    uint16_t count[4] {};
-    uint16_t current[4] {};
-    uint16_t totalcurrent[4] {};
-
-    bool dataAvailable = false;
-
-    uint8_t idx = 0;
-
-    WITH_SEMAPHORE(_telem_sem);
-
-    for (uint8_t ii = 0; ii < PICCOLO_CAN_MAX_NUM_ESC; ii++) {
-
-        // Calculate index within storage array
-        idx = (ii % 4);
-
-        PiccoloESC_Info_t &esc = _esc_info[idx];
-
-        // Has the ESC been heard from recently?
-        if (is_esc_present(ii)) {
-            dataAvailable = true;
-
-            temperature[idx] = esc.fetTemperature;
-            voltage[idx] = esc.voltage;
-            current[idx] = esc.current;
-            totalcurrent[idx] = 0;
-            rpm[idx] = esc.rpm;
-            count[idx] = 0;
-        } else {
-            temperature[idx] = 0;
-            voltage[idx] = 0;
-            current[idx] = 0;
-            totalcurrent[idx] = 0;
-            rpm[idx] = 0;
-            count[idx] = 0;
-        }
-
-        // Send ESC telemetry in groups of 4
-        if ((ii % 4) == 3) {
-
-            if (dataAvailable) {
-                if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t) mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                    continue;
-                }
-
-                switch (ii) {
-                case 3:
-                    mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 7:
-                    mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                case 11:
-                    mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t) mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            dataAvailable = false;
-        }
-    }
-}
-
 
 // send ESC messages over CAN
 void AP_PiccoloCAN::send_esc_messages(void)
@@ -483,6 +383,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
     // Throw the packet against each decoding routine
     if (decodeESC_StatusAPacket(&frame, &esc.mode, &esc.status, &esc.setpoint, &esc.rpm)) {
         esc.newTelemetry = true;
+        update_rpm(addr, esc.rpm);
     } else if (decodeESC_LegacyStatusAPacket(&frame, &esc.mode, &legacyStatus, &legacyWarnings, &legacyErrors, &esc.setpoint, &esc.rpm)) {
         // The status / warning / error bits need to be converted to modern values
         // Note: Not *all* of the modern status bits are available in the Gen-1 packet
@@ -507,8 +408,22 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
         // There are no common error bits between the Gen-1 and Gen-2 ICD
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
+        TelemetryData t {
+            .temperature_cdeg = int16_t(esc.escTemperature * 100),
+            .voltage = float(esc.voltage) * 0.01f,
+            .current = float(esc.current) * 0.01f,
+        };
+        update_telem_data(addr, t,
+            AP_ESC_Telem_Backend::TelemetryType::CURRENT
+                | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+
         esc.newTelemetry = true;
     } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
+        TelemetryData t { };
+        t.motor_temp_cdeg = int16_t(esc.fetTemperature * 100);
+        update_telem_data(addr, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
+
         esc.newTelemetry = true;
     } else if (decodeESC_WarningErrorStatusPacket(&frame, &esc.warnings, &esc.errors)) {
         esc.newTelemetry = true;
@@ -529,7 +444,6 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
     return result;
 }
-
 
 /**
  * Check if a given ESC channel is "active" (has been configured correctly)
@@ -555,13 +469,13 @@ bool AP_PiccoloCAN::is_esc_channel_active(uint8_t chan)
 /**
  * Determine if an ESC is present on the CAN bus (has telemetry data been received)
  */
-bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms)
+bool AP_PiccoloCAN::is_esc_present(uint8_t chan, uint64_t timeout_ms) const
 {
     if (chan >= PICCOLO_CAN_MAX_NUM_ESC) {
         return false;
     }
 
-    PiccoloESC_Info_t &esc = _esc_info[chan];
+    const PiccoloESC_Info_t &esc = _esc_info[chan];
 
     // No messages received from this ESC
     if (esc.last_rx_msg_timestamp == 0) {
