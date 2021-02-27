@@ -297,3 +297,8 @@ float calc_lowpass_alpha_dt(float dt, float cutoff_freq);
 void fill_nanf(float *f, uint16_t count);
 #endif
 
+/*
+  calculate turn rate in deg/sec given a bank angle and airspeed for a
+  fixed wing aircraft
+ */
+float fixedwing_turn_rate(float bank_angle_deg, float airspeed);
