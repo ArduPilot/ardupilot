@@ -848,13 +848,13 @@ const AP_Param::Info Plane::var_info[] = {
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
     
-    // @Group: RLL2SRV_
+    // @Group: RLL
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
-	GOBJECT(rollController,         "RLL2SRV_",   AP_RollController),
+    GOBJECT(rollController,         "RLL",   AP_RollController),
 
-    // @Group: PTCH2SRV_
+    // @Group: PTCH
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
-	GOBJECT(pitchController,        "PTCH2SRV_",  AP_PitchController),
+    GOBJECT(pitchController,        "PTCH",  AP_PitchController),
 
     // @Group: YAW2SRV_
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
