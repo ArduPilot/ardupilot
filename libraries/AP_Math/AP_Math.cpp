@@ -404,3 +404,13 @@ void fill_nanf(float *f, uint16_t count)
     }
 }
 #endif
+
+/*
+  calculate turn rate in deg/sec given a bank angle and airspeed for a
+  fixed wing aircraft
+ */
+float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
+{
+    bank_angle_deg = constrain_float(bank_angle_deg, -80, 80);
+    return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
+}
