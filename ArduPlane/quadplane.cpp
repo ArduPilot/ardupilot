@@ -1821,11 +1821,13 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
 
-        // do not allow a climb on the quad motors during transition
-        // a climb would add load to the airframe, and prolongs the
-        // transition
+        // do not allow a climb on the quad motors during transition a
+        // climb would add load to the airframe, and prolongs the
+        // transition. We don't limit the climb rate on tilt rotors as
+        // otherwise the plane can end up in high-alpha flight with
+        // low VTOL thrust and may not complete a transition
         float climb_rate_cms = assist_climb_rate_cms();
-        if (options & OPTION_LEVEL_TRANSITION) {
+        if ((options & OPTION_LEVEL_TRANSITION) && tilt.tilt_mask == 0) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
         }
         hold_hover(climb_rate_cms);
