@@ -1034,6 +1034,21 @@ bool AP_Param::find_top_level_key_by_pointer(const void *ptr, uint16_t &key)
     return false;
 }
 
+/*
+  fetch a parameter value based on the index within a group. This
+  is used to find the old value of a parameter that has been
+  removed from an object.
+*/
+bool AP_Param::get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue)
+{
+    uint16_t key;
+    if (!find_top_level_key_by_pointer(obj_ptr, key)) {
+        return false;
+    }
+    const ConversionInfo type_info = {key, idx, old_ptype, nullptr };
+    return AP_Param::find_old_parameter(&type_info, (AP_Param *)pvalue);
+}
+
 
 // Find a object by name.
 //
