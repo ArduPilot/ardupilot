@@ -64,6 +64,12 @@ public:
     // get distances in 8 directions. used for sending distances to ground station
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
 
+    // get raw and filtered distances in 8 directions per layer. used for logging
+    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+
+    // get number of layers
+    uint8_t get_num_layers() const { return boundary.get_num_layers(); }
+
 protected:
 
     // set status and update valid_count
