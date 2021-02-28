@@ -2173,7 +2173,6 @@ class AutoTestPlane(AutoTest):
             "INS_TCAL2_TMAX": 42,
             "SIM_SPEEDUP": 200,
         })
-        self.set_streamrate(1)
         self.set_parameter("LOG_DISARMED", 1)
         self.reboot_sitl()
 
