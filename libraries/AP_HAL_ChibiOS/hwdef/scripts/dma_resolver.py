@@ -346,6 +346,23 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             "\n// Note: The following peripherals can't be resolved for DMA: %s\n\n"
             % unassigned)
 
+    ordered_up_channels = []
+
+    # produce a list of timers ordered by the DMA streamid of the UP channel
+    # this is so that the dshot code can take out the UP DMA locks in the same order as I2C and SPI
+    for key in curr_dict.keys():
+        if "_UP" in key:
+            ordered_up_channels.append(key)
+
+    def order_by_streamid(key):
+        stream = curr_dict[key]
+        return (stream[0] * 8 + stream[1]) * 20 + int(key[3:-3])
+
+    ordered_up_channels = sorted(ordered_up_channels, key=order_by_streamid)
+    ordered_timers = []
+    for key in ordered_up_channels:
+        ordered_timers.append(key[0:-3])
+
     for key in sorted(curr_dict.keys()):
         stream = curr_dict[key]
         shared = ''
@@ -435,7 +452,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             continue
         f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
             key, key, dma_name(key), key, dma_name(key)))
-    return unassigned
+    return unassigned, ordered_timers
 
 
 if __name__ == '__main__':
