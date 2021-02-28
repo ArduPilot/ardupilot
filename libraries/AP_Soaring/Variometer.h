@@ -61,7 +61,7 @@ public:
     float smoothed_climb_rate;
     float tau;
 
-    void update(float exp_e_rate);
+    void update(const float thermal_bank, float exp_e_rate);
     float calculate_aircraft_sinkrate(float phi) const;
 
     void reset_filter(float value) { _climb_filter.reset(value);}
