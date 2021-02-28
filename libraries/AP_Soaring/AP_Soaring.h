@@ -15,6 +15,7 @@
 #include "ExtendedKalmanFilter.h"
 #include "Variometer.h"
 #include <AP_TECS/AP_TECS.h>
+#include "SpeedToFly.h"
 
 #ifndef HAL_SOARING_ENABLED
  #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
@@ -32,6 +33,8 @@ class SoaringController {
     ExtendedKalmanFilter _ekf{};
     AP_TECS &_tecs;
     Variometer _vario;
+    SpeedToFly _speedToFly;
+
     const AP_Vehicle::FixedWing &_aparm;
 
     // store aircraft location at last update
