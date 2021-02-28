@@ -252,33 +252,73 @@ const luaL_Reg AP_Logger_functions[] = {
 
 
 static int add_param(lua_State *L) {
-    const int args = lua_gettop(L);
-    if (args < 5) {
-        return luaL_argerror(L, args, "too few arguments");
+    check_arguments(L, 3, "param.add");
+
+    if (lua_type(L, 3) != LUA_TTABLE) {
+        return luaL_error(L, "expected param table for argument 3");
     }
 
-    if ((args-2) % 3 != 0) {
-        return luaL_argerror(L, args, "incorrect number of arguments");
+    size_t num_params = lua_rawlen(L,3);
+    if (num_params == 0) {
+        return luaL_error(L, "need at least one param");
     }
+
+    AP_Param::Info *info = new AP_Param::Info[num_params+1]{};
 
     uint16_t index = static_cast<uint16_t>(luaL_checkinteger(L, 1));
+
+    // this magic value is to be compared against a automaticaly loaded param at the start of the new table,
+    // the the magics don't match we should reset the new table to defaults 
     //const uint16_t magic = static_cast<uint16_t>(luaL_checkinteger(L, 2));
 
-    uint8_t num_params = (args-2) / 3;
-    AP_Param::Info *info = new  AP_Param::Info[num_params+1]{};
-
     for (uint8_t i=0; i<num_params; i++) {
-        const char * name = luaL_checkstring(L, (i*3)+3);
+
+        lua_pushinteger(L, i+1); // lua is 1 indexed
+        lua_gettable(L,-2);
+        if (lua_type(L, -1) != LUA_TTABLE) {
+            delete info;
+            return luaL_error(L, "expected table in param table index %u", i+1);
+        }
+
+        // cope with either 3 or 4 values in each param table, this allows flags to be omitted
+        size_t len = lua_rawlen(L,-1);
+        if (len != 3 && len != 4) {
+            return luaL_error(L, "expected 3 or 4 values in param table index %u", i+1);
+        }
+
+        lua_pushinteger(L, 1);
+        lua_gettable(L,-2);
+        const char * name = luaL_checkstring(L, -1); // these checks might never comeback and we would leak the param table
+        lua_pop (L, 1);
+
+        lua_pushinteger(L, 2);
+        lua_gettable(L,-2);
+
+        const lua_Integer tmp1 = luaL_checkinteger(L, -1); // these checks might never comeback and we would leak the param table
+        ap_var_type type = static_cast<ap_var_type>(tmp1);
+        lua_pop (L, 1);
+
+        lua_pushinteger(L, 3);
+        lua_gettable(L,-2);
+        const float default_val = luaL_checknumber(L, -1); // these checks might never comeback and we would leak the param table
+        lua_pop (L, 1);
+
+        uint16_t flag = 0;
+        if (len == 4) {
+            // got a flag value
+            lua_pushinteger(L, 4);
+            lua_gettable(L,-2);
+            const lua_Integer tmp2 = luaL_checkinteger(L, -1); // these checks might never comeback and we would leak the param table
+            flag = static_cast<uint16_t>(tmp2);
+            lua_pop (L, 1);
+        }
+        lua_pop (L, 1); // this pops the outer table index
+
         if (strlen(name) > 16) {
             delete info;
             // should also delete the params from inside the table
             return luaL_error(L, "param name %s must be 16 chars or fewer",name);
         }
-
-        const lua_Integer tmp1 = luaL_checkinteger(L, (i*3)+4);
-        ap_var_type type = static_cast<ap_var_type>(tmp1);
-
-        const float default_val = luaL_checknumber(L, (i*3)+5);
 
         void *param = nullptr;
         switch (type) {
@@ -300,13 +340,14 @@ static int add_param(lua_State *L) {
                 return luaL_error(L, "param type error");
         }
 
-        AP_Param::Info tmp_info = {type, name, index, param, {def_value:default_val}, 0};
+        AP_Param::Info tmp_info = {type, name, index, param, {def_value:default_val}, flag};
 
         memcpy(&info[i], &tmp_info, sizeof(tmp_info));
 
         index++;
     }
 
+    // add the end table footer
     AP_Param::Info tmp_info = {AP_PARAM_NONE, "", index, nullptr, {group_info:nullptr}, 0 };
     memcpy(&info[num_params], &tmp_info, sizeof(tmp_info));
 
@@ -333,6 +374,8 @@ struct userdata_enum AP_Param_enums[] = {
     {"AP_PARAM_INT32", AP_PARAM_INT32},
     {"AP_PARAM_INT16", AP_PARAM_INT16},
     {"AP_PARAM_INT8", AP_PARAM_INT8},
+    {"AP_PARAM_FLAG_ENABLE",AP_PARAM_FLAG_ENABLE},
+    {"AP_PARAM_FLAG_INTERNAL_USE_ONLY",AP_PARAM_FLAG_INTERNAL_USE_ONLY},
 };
 
 const luaL_Reg AP_param_functions[] = {

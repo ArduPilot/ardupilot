@@ -1,4 +1,17 @@
-params.add(270,0,'SCR_TEST',4,3.14,'SCR_TEST2',4,42)
+
+-- available types:
+-- AP_PARAM_FLOAT
+-- AP_PARAM_INT32
+-- AP_PARAM_INT16
+-- AP_PARAM_INT8
+
+-- can also do flags:
+-- AP_PARAM_FLAG_ENABLE
+-- AP_PARAM_FLAG_INTERNAL_USE_ONLY
+
+params.add(270,0,{{'SCR_TEST',AP_PARAM_FLOAT,3.14},
+                  {'SCR_TEST2',AP_PARAM_FLOAT,3.14*2},
+                  {'SCR_TEST2',AP_PARAM_FLOAT,3.14*3}})
 
 local count = 0
 
