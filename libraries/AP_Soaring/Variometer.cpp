@@ -67,10 +67,13 @@ void Variometer::update(const float thermal_bank)
 
     reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
     
+    // Update filters.
 
-    float filtered_reading = _trigger_filter.apply(reading, dt); // Apply low pass timeconst filter for noise
+    float filtered_reading = _trigger_filter.apply(reading, dt);
 
-    _audio_filter.apply(reading, dt); // Apply low pass timeconst filter for noise
+    _audio_filter.apply(reading, dt);
+
+    _stf_filter.apply(reading, dt);
 
     _prev_update_time = AP_HAL::micros64();
 
