@@ -43,6 +43,9 @@ class Variometer {
     // Longitudinal acceleration bias filter.
     LowPassFilter<float> _vdotbias_filter{1/60.0};
 
+    // Speed to fly vario filter.
+    LowPassFilter<float> _stf_filter{1/20.0};
+
 public:
     struct PolarParams {
         AP_Float K;
@@ -70,6 +73,8 @@ public:
     float get_filtered_climb(void) const {return _climb_filter.get();};
 
     float get_trigger_value(void) const {return _trigger_filter.get();};
+
+    float get_stf_value(void) const {return _stf_filter.get();};
 
     float get_exp_thermalling_sink(void) const {return _expected_thermalling_sink;};
 

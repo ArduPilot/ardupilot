@@ -150,7 +150,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
 
     // @Param: CRSE_ARSPD
     // @DisplayName: Specific setting for airspeed when cruising.
-    // @Description: If non-zero this airspeed will be used when cruising.
+    // @Description: If non-zero this airspeed will be used when cruising. If set to -1, airspeed will be selected based on speed-to-fly theory.
     // @Range: 5 50
     // @User: Advanced
     AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
@@ -168,6 +168,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
 SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
     _tecs(tecs),
     _vario(parms,_polarParams),
+    _speedToFly(_polarParams),
     _aparm(parms),
     _throttle_suppressed(true)
 {
@@ -369,8 +370,31 @@ void SoaringController::update_thermalling()
 
 void SoaringController::update_cruising()
 {
-    // Reserved for future tasks that need to run continuously while in FBWB or AUTO mode,
-    // for example, calculation of optimal airspeed and flap angle.
+    // Calculate the optimal airspeed for the current conditions of wind along current direction,
+    // expected lift in next thermal and filtered sink rate.
+
+    Vector3f wind    = AP::ahrs().wind_estimate();
+    Vector3f wind_bf = AP::ahrs().earth_to_body(wind);
+
+    const float wx = wind_bf.x;
+
+    const float wz = _vario.get_stf_value();
+
+    // Constraints on the airspeed calculation.
+    const float CLmin = _polarParams.K/(_aparm.airspeed_max*_aparm.airspeed_max);
+    const float CLmax = _polarParams.K/(_aparm.airspeed_min*_aparm.airspeed_min);
+
+    // Update the calculation.
+    _speedToFly.update(wx, wz, thermal_vspeed, CLmin, CLmax);
+
+    AP::logger().WriteStreaming("SORC", "TimeUS,wx,wz,wexp,CLmin,CLmax,Vopt", "Qffffff",
+                                       AP_HAL::micros64(),
+                                       (double)wx,
+                                       (double)wz,
+                                       (double)thermal_vspeed,
+                                       (double)CLmin,
+                                       (double)CLmax,
+                                       (double)_speedToFly.speed_to_fly());
 }
 
 void SoaringController::update_vario()
@@ -499,6 +523,9 @@ float SoaringController::get_thermalling_target_airspeed()
 
 float SoaringController::get_cruising_target_airspeed()
 {
+    if (soar_cruise_airspeed<0) {
+        return _speedToFly.speed_to_fly();
+    }
     return soar_cruise_airspeed;
 }
 
