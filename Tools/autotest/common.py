@@ -2113,9 +2113,7 @@ class AutoTest(ABC):
 
     def initialise_after_reboot_sitl(self):
 
-        # after reboot stream-rates may be zero.  Prompt MAVProxy to
-        # send a rate-change message by changing away from our normal
-        # stream rates and back again:
+        # after reboot stream-rates may be zero.  Request streams.
         self.drain_mav()
         self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
@@ -2138,12 +2136,7 @@ class AutoTest(ABC):
             except IOError:
                 pass
             break
-        # MAVProxy only checks the streamrates once every 15 seconds.
-        # Encourage it:
-        self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
-        # we also need to wait for MAVProxy to requests streams again
-        # - in particular, RC_CHANNELS.
         m = self.mav.recv_match(type='RC_CHANNELS', blocking=True, timeout=15)
         if m is None:
             raise NotAchievedException("No RC_CHANNELS message after restarting SITL")
@@ -2159,7 +2152,6 @@ class AutoTest(ABC):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
         self.start_SITL(wipe=True)
-        self.set_streamrate(self.sitl_streamrate()+1)
         self.set_streamrate(self.sitl_streamrate())
         self.apply_defaultfile_parameters()
         try:
@@ -7346,9 +7338,6 @@ Also, ignores heartbeats not from our target system'''
         self.victim_message_id = mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD
         ex = None
         try:
-            # tell MAVProxy to stop stuffing around with the rates:
-            self.mavproxy.send("set streamrate -1\n")
-
             rate = round(self.get_message_rate(self.victim_message, 20))
             self.progress("Initial rate: %u" % rate)
 
@@ -7403,10 +7392,6 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Resetting CAMERA_FEEDBACK rate to zero")
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
-
-        # tell MAVProxy to start stuffing around with the rates:
-        sr = self.sitl_streamrate()
-        self.mavproxy.send("set streamrate %u\n" % sr)
 
         if ex is not None:
             raise ex

@@ -1816,7 +1816,6 @@ class AutoTestCopter(AutoTest):
     def fly_flip(self):
         ex = None
         try:
-            self.mavproxy.send("set streamrate -1\n")
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
 
             self.takeoff(20)
@@ -1853,8 +1852,6 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
-        sr = self.sitl_streamrate()
-        self.mavproxy.send("set streamrate %u\n" % sr)
         if ex is not None:
             raise ex
 
