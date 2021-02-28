@@ -2611,34 +2611,10 @@ bool AP_Param::load_param_info(struct var_table* table)
     table->num_vars = i;
     table->offset = list->offset + list->num_vars;
 
-    // load defaults and EEPROM, this will not work with groups!!
-    for (i=0; i<table->num_vars; i++) {
-        uint8_t type = table->var_info[i].type;
-        if (type <= AP_PARAM_FLOAT) {
-            ptrdiff_t base;
-            if (get_base(table->var_info[i], base)) {
-                set_value((enum ap_var_type)type, (void*)base,
-                     get_default_value((AP_Param *)base, &table->var_info[i].def_value));
-
-                // create the header we will use to match the variable
-                struct Param_header phdr;
-                phdr.type = table->var_info[i].type;
-                set_key(phdr, table->var_info[i].key);
-
-                // scan EEPROM to find the right location
-                uint16_t ofs;
-                if (scan(&phdr, &ofs)) {
-                    _storage.read_block((AP_Param *)base, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
-                }
-            }
-        }
-    }
-
     // we need to add this in the correct place in the list rather than just to the end
     // also check for index conflicts
     list->next = table;
 
-#if AP_PARAM_KEY_DUMP
     ParamToken token;
     AP_Param *ap;
     enum ap_var_type type;
@@ -2646,11 +2622,14 @@ bool AP_Param::load_param_info(struct var_table* table)
     for (ap=AP_Param::first(&token, &type, false);
          ap;
         ap=AP_Param::next_scalar(&token, &type)) {
+        // load each param in the new table
+        ap->load();
+#if AP_PARAM_KEY_DUMP
         hal.console->printf("Key %u: Index %u: GroupElement %u  :  ", (unsigned)token.key, (unsigned)token.idx, (unsigned)token.group_element);
         show(ap, token, type, hal.console);
         hal.scheduler->delay(1);
-    }
 #endif
+    }
 
     invalidate_count();
 
