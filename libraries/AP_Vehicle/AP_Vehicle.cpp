@@ -160,6 +160,8 @@ void AP_Vehicle::setup()
 #if GENERATOR_ENABLED
     generator.init();
 #endif
+
+    _last_internal_errors = AP::internalerror().errors() ; // get initial bitmask so we can know if it has changed
 }
 
 void AP_Vehicle::loop()
@@ -177,6 +179,11 @@ void AP_Vehicle::loop()
         */
         done_safety_init = true;
         BoardConfig.init_safety();
+    }
+    if(!(_last_internal_errors == AP::internalerror().errors())) {
+        AP::logger().Write_InternalError();
+        send_internal_error_statustext(AP::internalerror().errors());
+        _last_internal_errors = AP::internalerror().errors();
     }
 }
 
@@ -287,6 +294,11 @@ void AP_Vehicle::send_watchdog_reset_statustext()
                     (unsigned)pd.internal_error_count,
                     pd.thread_name4
         );
+}
+
+void AP_Vehicle::send_internal_error_statustext(uint32_t internal_errors_bitmask)
+{
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors %x", internal_errors_bitmask );
 }
 
 bool AP_Vehicle::is_crashed() const

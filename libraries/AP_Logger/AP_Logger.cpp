@@ -944,6 +944,11 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
     }
 }
 
+void AP_Logger::Write_InternalError()
+{
+    Write_Error(LogErrorSubsystem::INTERNAL_ERROR, LogErrorCode::INTERNAL_ERRORS_DETECTED);
+}
+
 /*
   when we are doing replay logging we want to delay start of the EKF
   until after the headers are out so that on replay all parameter

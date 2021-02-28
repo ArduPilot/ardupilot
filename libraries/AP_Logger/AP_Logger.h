@@ -190,6 +190,7 @@ enum class LogErrorSubsystem : uint8_t {
     FAILSAFE_LEAK = 27,
     PILOT_INPUT = 28,
     FAILSAFE_VIBE = 29,
+    INTERNAL_ERROR = 30,
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
@@ -219,6 +220,8 @@ enum class LogErrorCode : uint8_t {
     FAILED_CIRCLE_INIT = 4,
     DEST_OUTSIDE_FENCE = 5,
     RTL_MISSING_RNGFND = 6,
+    // subsystem specific error codes -- internal_error
+    INTERNAL_ERRORS_DETECTED = 1,
 
 // parachute failed to deploy because of low altitude or landed
     PARACHUTE_TOO_LOW = 2,
@@ -341,6 +344,8 @@ public:
     void WriteCritical(const char *name, const char *labels, const char *fmt, ...);
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false);
+
+    void Write_InternalError();
 
     // This structure provides information on the internal member data of a PID for logging purposes
     struct PID_Info {
