@@ -276,7 +276,7 @@ static int add_param(lua_State *L) {
         lua_pushinteger(L, i+1); // lua is 1 indexed
         lua_gettable(L,-2);
         if (lua_type(L, -1) != LUA_TTABLE) {
-            delete info;
+            delete[] info;
             return luaL_error(L, "expected table in param table index %u", i+1);
         }
 
@@ -315,7 +315,7 @@ static int add_param(lua_State *L) {
         lua_pop (L, 1); // this pops the outer table index
 
         if (strlen(name) > 16) {
-            delete info;
+            delete[] info;
             // should also delete the params from inside the table
             return luaL_error(L, "param name %s must be 16 chars or fewer",name);
         }
@@ -335,28 +335,28 @@ static int add_param(lua_State *L) {
                 param = new AP_Float;
                 break;
             default:
-                delete info;
+                delete[] info;
                 // should also delete the params from inside the table
                 return luaL_error(L, "param type error");
         }
 
-        AP_Param::Info tmp_info = {type, name, index, param, {def_value:default_val}, flag};
+        AP_Param::Info tmp_info = {static_cast<uint8_t>(type), name, index, param, {def_value:default_val}, flag};
 
         memcpy(&info[i], &tmp_info, sizeof(tmp_info));
 
         index++;
     }
 
-    // add the end table footer
-    AP_Param::Info tmp_info = {AP_PARAM_NONE, "", index, nullptr, {group_info:nullptr}, 0 };
+    // add the table footer
+    AP_Param::Info tmp_info = {static_cast<uint8_t>(AP_PARAM_NONE), "", index, nullptr, {group_info:nullptr}, 0 };
     memcpy(&info[num_params], &tmp_info, sizeof(tmp_info));
 
     struct AP_Param::var_table *table = new AP_Param::var_table;
     table->var_info = info;
 
     if (!AP_Param::load_param_info(table)) {
-        delete info;
-        delete table;
+        delete[] info;
+        delete[] table;
         // should also delete the params from inside the table
         return luaL_error(L, "Failed to load param var_table");
     }
