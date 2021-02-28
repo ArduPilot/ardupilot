@@ -64,6 +64,7 @@ public:
     // logic handling
     Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const;
     bool find_nearest_rally_point(const Location &myloc, RallyLocation &ret) const;
+    bool find_fastest_rally_point(const Location &myloc, RallyLocation &ret) const;
 
     // last time rally points changed
     uint32_t last_change_time_ms(void) const { return _last_change_time_ms; }
