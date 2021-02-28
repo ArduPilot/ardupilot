@@ -9037,7 +9037,7 @@ switch value'''
         sent_request = False
         while True:
             now = self.get_sim_time()
-            if now - tstart > 60: # it can take a *long* time to get these messages down!
+            if now - tstart > 120: # it can take a *long* time to get these messages down!
                 raise NotAchievedException("Did not get statustext in time")
             if now - tstart > 30 and not sent_request:
                 # have to wait this long or our message gets squelched....
