@@ -14,7 +14,7 @@ Variometer::Variometer(const AP_Vehicle::FixedWing &parms) :
     _vdot_filter2 = LowPassFilter<float>(1.0f/60.0f);
 }
 
-void Variometer::update(const float polar_K, const float polar_Cd0, const float polar_B)
+void Variometer::update(const float thermal_bank, const float polar_K, const float polar_Cd0, const float polar_B)
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -73,8 +73,7 @@ void Variometer::update(const float polar_K, const float polar_Cd0, const float 
 
     _prev_update_time = AP_HAL::micros64();
 
-    float expected_roll = atanf(powf(_aspd_filt_constrained,2)/(GRAVITY_MSS*_aparm.loiter_radius));
-    _expected_thermalling_sink = calculate_aircraft_sinkrate(expected_roll, polar_K, polar_Cd0, polar_B);
+    _expected_thermalling_sink = calculate_aircraft_sinkrate(radians(thermal_bank), polar_K, polar_Cd0, polar_B);
 
 // @LoggerMessage: VAR
 // @Vehicles: Plane
