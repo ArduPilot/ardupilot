@@ -315,8 +315,6 @@ class AutoTestCopter(AutoTest):
     # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
 
-        self.clear_mission_using_mavproxy()
-
         self.takeoff(10, mode="ALT_HOLD")
 
         """Fly a square, flying N then E ."""
