@@ -63,7 +63,8 @@ def run_examples(debug=False, valgrind=False, gdb=False):
     skip = {
         "BARO_generic": "Most linux computers don't have baros...",
         "RCProtocolDecoder": "This assumes specific hardware is connected",
-        "FlashTest": "https://github.com/ArduPilot/ardupilot/issues/14168"
+        "FlashTest": "https://github.com/ArduPilot/ardupilot/issues/14168",
+        "UART_chargen": "This nuke the term",
     }
     for afile in os.listdir(dirpath):
         if afile in skip:
