@@ -113,6 +113,10 @@ void RCOutput::init()
     hal.gpio->pinMode(57, 1);
 #endif
 
+#ifdef HAL_WITH_BIDIR_DSHOT
+    AP::esc_telem().add_backend(this);
+#endif
+
     _initialised = true;
 }
 
@@ -1218,9 +1222,17 @@ void RCOutput::dshot_send(pwm_group &group)
     for (uint8_t i=0; i<4; i++) {
         uint8_t chan = group.chan[i];
         if (chan != CHAN_DISABLED) {
+#ifdef HAL_WITH_BIDIR_DSHOT
             // retrieve the last erpm values
-            _bdshot.erpm[chan] = group.bdshot.erpm[i];
+            const uint16_t erpm = group.bdshot.erpm[i];
 
+            // update the ESC telemetry data
+            if (erpm < 0xFFFF) {
+                update_rpm(chan, erpm * 200 / _bdshot.motor_poles, get_erpm_error_rate(chan));
+            }
+
+            _bdshot.erpm[chan] = erpm;
+#endif
             uint16_t pwm = period[chan];
 
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
