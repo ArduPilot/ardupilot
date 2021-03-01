@@ -1216,7 +1216,8 @@ class AutoTestCopter(AutoTest):
         self.progress("home: %s" % str(m))
 
         self.start_subtest("ensure we can't arm if ouside fence")
-        self.load_fence_using_mavproxy("fence-in-middle-of-nowhere.txt")
+        self.load_fence("fence-in-middle-of-nowhere.txt")
+
         self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
         self.assert_prearm_failure("vehicle outside fence")
         self.progress("Failed to arm outside fence (good!)")
@@ -1262,7 +1263,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         while not self.mode_is("RTL"):
             if self.get_sim_time_cached() - tstart > 30:
-                self.NotAchievedException("Did not breach fence")
+                raise NotAchievedException("Did not breach fence")
 
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
@@ -1312,16 +1313,16 @@ class AutoTestCopter(AutoTest):
         self.change_alt(10)
 
         # first east
-        self.progress("turn east")
+        self.progress("turning east")
         self.set_rc(4, 1580)
         self.wait_heading(160)
         self.set_rc(4, 1500)
 
-        # fly forward (east) at least 20m
+        self.progress("flying east 20m")
         self.set_rc(2, 1100)
         self.wait_distance(20)
 
-        # stop flying forward and start flying up:
+        self.progress("flying up")
         self.set_rc_from_map({
             2: 1500,
             3: 1800,
@@ -5042,7 +5043,7 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex is not None:
@@ -5334,7 +5335,7 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex is not None:

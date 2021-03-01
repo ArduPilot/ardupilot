@@ -596,7 +596,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex:
