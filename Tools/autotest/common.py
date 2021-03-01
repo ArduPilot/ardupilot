@@ -1233,6 +1233,7 @@ class AutoTest(ABC):
         self.sup_binaries = sup_binaries
 
         self.mavproxy = None
+        self._mavproxy = None  # for auto-cleanup on failed tests
         self.mav = None
         self.viewerip = viewerip
         self.use_map = use_map
@@ -1266,6 +1267,8 @@ class AutoTest(ABC):
         self.rc_queue = Queue.Queue()
 
         self.expect_list = []
+
+        self.start_mavproxy_count = 0
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -1410,11 +1413,11 @@ class AutoTest(ABC):
             count += 2 # file doesn't include return point + closing point
         return count
 
-    def load_fence_using_mavproxy(self, filename):
+    def load_fence_using_mavproxy(self, mavproxy, filename):
         self.set_parameter("FENCE_TOTAL", 0)
         filepath = os.path.join(testdir, self.current_test_name_directory, filename)
         count = self.count_expected_fence_lines_in_filepath(filepath)
-        self.mavproxy.send('fence load %s\n' % filepath)
+        mavproxy.send('fence load %s\n' % filepath)
 #        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
         tstart = self.get_sim_time_cached()
         while True:
@@ -2916,17 +2919,19 @@ class AutoTest(ABC):
     def test_log_download_mavproxy(self, upload_logs=False):
         """Download latest log."""
         filename = "MAVProxy-downloaded-log.BIN"
-        self.mavproxy.send("module load log\n")
-        self.mavproxy.expect("Loaded module log")
-        self.mavproxy.send("log list\n")
-        self.mavproxy.expect("numLogs")
+        mavproxy = self.start_mavproxy()
+        mavproxy.send("module load log\n")
+        mavproxy.expect("Loaded module log")
+        mavproxy.send("log list\n")
+        mavproxy.expect("numLogs")
         self.wait_heartbeat()
         self.wait_heartbeat()
-        self.mavproxy.send("set shownoise 0\n")
-        self.mavproxy.send("log download latest %s\n" % filename)
-        self.mavproxy.expect("Finished downloading", timeout=120)
-        self.mavproxy.send("module unload log\n")
-        self.mavproxy.expect("Unloaded module log")
+        mavproxy.send("set shownoise 0\n")
+        mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.expect("Finished downloading", timeout=120)
+        mavproxy.send("module unload log\n")
+        mavproxy.expect("Unloaded module log")
+        self.stop_mavproxy(mavproxy)
 
     def log_upload(self):
         if len(self.fail_list) > 0 and os.getenv("AUTOTEST_UPLOAD"):
@@ -3180,8 +3185,10 @@ class AutoTest(ABC):
         """Load rally points from a file to flight controller."""
         self.progress("Loading rally points (%s)" % filename)
         path = os.path.join(testdir, self.current_test_name_directory, filename)
-        self.mavproxy.send('rally load %s\n' % path)
-        self.mavproxy.expect("Loaded")
+        mavproxy = self.start_mavproxy()
+        mavproxy.send('rally load %s\n' % path)
+        mavproxy.expect("Loaded")
+        self.stop_mavproxy(mavproxy)
 
     def load_sample_mission(self):
         self.load_mission(self.sample_mission_filename())
@@ -3228,12 +3235,16 @@ class AutoTest(ABC):
         self.check_mission_upload_download(wpoints_int, strict=strict)
         return len(wpoints_int)
 
-    def load_mission_using_mavproxy(self, filename):
+    def load_mission_using_mavproxy(self, mavproxy, filename):
         return self.load_mission_from_filepath_using_mavproxy(
+            mavproxy,
             self.current_test_name_directory,
             filename)
 
-    def load_mission_from_filepath_using_mavproxy(self, filepath, filename):
+    def load_mission_from_filepath_using_mavproxy(self,
+                                                  mavproxy,
+                                                  filepath,
+                                                  filename):
         """Load a mission from a file to flight controller."""
         self.progress("Loading mission (%s)" % filename)
         path = os.path.join(testdir, filepath, filename)
@@ -3247,20 +3258,20 @@ class AutoTest(ABC):
                 self.progress("Waiting for MAVProxy de-dupe timer to expire")
                 self.drain_mav_unparsed()
                 time.sleep(0.1)
-            self.mavproxy.send('wp load %s\n' % path)
-            self.mavproxy.expect('Loaded ([0-9]+) waypoints from')
-            load_count = self.mavproxy.match.group(1)
+            mavproxy.send('wp load %s\n' % path)
+            mavproxy.expect('Loaded ([0-9]+) waypoints from')
+            load_count = mavproxy.match.group(1)
             self.last_wp_load = time.time()
-            self.mavproxy.expect("Flight plan received")
-            self.mavproxy.send('wp list\n')
-            self.mavproxy.expect('Requesting ([0-9]+) waypoints')
-            request_count = self.mavproxy.match.group(1)
+            mavproxy.expect("Flight plan received")
+            mavproxy.send('wp list\n')
+            mavproxy.expect('Requesting ([0-9]+) waypoints')
+            request_count = mavproxy.match.group(1)
             if load_count != request_count:
                 self.progress("request_count=%s != load_count=%s" %
                               (request_count, load_count))
                 continue
-            self.mavproxy.expect('Saved ([0-9]+) waypoints to (.+?way.txt)')
-            save_count = self.mavproxy.match.group(1)
+            mavproxy.expect('Saved ([0-9]+) waypoints to (.+?way.txt)')
+            save_count = mavproxy.match.group(1)
             if save_count != request_count:
                 raise NotAchievedException("request count != load count")
             # warning: this assumes MAVProxy was started in the CWD!
@@ -3268,14 +3279,14 @@ class AutoTest(ABC):
             # the git root, like this:
             # timelimit 32000 APM/Tools/autotest/autotest.py --timeout=30000 > buildlogs/autotest-output.txt 2>&1
             # that means the MAVProxy log files are not reltopdir!
-            saved_filepath = self.mavproxy.match.group(2)
+            saved_filepath = mavproxy.match.group(2)
             saved_filepath = saved_filepath.rstrip()
             self.assert_mission_files_same(path, saved_filepath)
             break
-        self.mavproxy.send('wp status\n')
-        self.mavproxy.expect(r'Have (\d+) of (\d+)')
-        status_have = self.mavproxy.match.group(1)
-        status_want = self.mavproxy.match.group(2)
+        mavproxy.send('wp status\n')
+        mavproxy.expect(r'Have (\d+) of (\d+)')
+        status_have = mavproxy.match.group(1)
+        status_want = mavproxy.match.group(2)
         if status_have != status_want:
             raise ValueError("status count mismatch")
         if status_have != save_count:
@@ -3289,15 +3300,16 @@ class AutoTest(ABC):
                              (num_wp, int(status_have)))
         if num_wp == 0:
             raise ValueError("No waypoints loaded?!")
+
         return num_wp
 
-    def save_mission_to_file(self, filename):
+    def save_mission_to_file_using_mavproxy(self, mavproxy, filename):
         """Save a mission to a file"""
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
-        self.mavproxy.send('wp save %s\n' % filename)
-        self.mavproxy.expect('Saved ([0-9]+) waypoints')
-        num_wp = int(self.mavproxy.match.group(1))
+        mavproxy.send('wp list\n')
+        mavproxy.expect('Requesting [0-9]+ waypoints')
+        mavproxy.send('wp save %s\n' % filename)
+        mavproxy.expect('Saved ([0-9]+) waypoints')
+        num_wp = int(mavproxy.match.group(1))
         self.progress("num_wp: %d" % num_wp)
         return num_wp
 
@@ -3790,18 +3802,18 @@ class AutoTest(ABC):
         self.cpufailsafe_wait_servo_channel_value(2, 1660)
         self.reset_SITL_commandline()
 
-    def mavproxy_arm_vehicle(self):
+    def mavproxy_arm_vehicle(self, mavproxy):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
         self.progress("Arm motors with MavProxy")
-        self.mavproxy.send('arm throttle\n')
+        mavproxy.send('arm throttle\n')
         self.mav.motors_armed_wait()
         self.progress("ARMED")
         return True
 
-    def mavproxy_disarm_vehicle(self):
+    def mavproxy_disarm_vehicle(self, mavproxy):
         """Disarm vehicle with mavlink disarm message send from MAVProxy."""
         self.progress("Disarm motors with MavProxy")
-        self.mavproxy.send('disarm\n')
+        mavproxy.send('disarm\n')
         self.wait_disarmed()
         return True
 
@@ -4062,15 +4074,15 @@ class AutoTest(ABC):
                     self.progress("(%s) != (%s)" % (m.param_id, name,))
         raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
 
-    def get_parameter_mavproxy(self, name, attempts=1, timeout=60):
+    def get_parameter_mavproxy(self, mavproxy, name, attempts=1, timeout=60):
         """Get parameters from vehicle."""
         for i in range(0, attempts):
-            self.mavproxy.send("param fetch %s\n" % name)
+            mavproxy.send("param fetch %s\n" % name)
             try:
-                self.mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
+                mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
                 try:
                     # sometimes race conditions garble the MAVProxy output
-                    ret = float(self.mavproxy.match.group(1))
+                    ret = float(mavproxy.match.group(1))
                 except ValueError:
                     continue
                 return ret
@@ -4526,7 +4538,7 @@ class AutoTest(ABC):
             if m.custom_mode == want_custom_mode:
                 return
 
-    def mavproxy_do_set_mode_via_command_long(self, mode, timeout=30):
+    def mavproxy_do_set_mode_via_command_long(self, mavproxy, mode, timeout=30):
         """Set mode with a command long message with Mavproxy."""
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
         custom_mode = self.get_mode_from_mode_mapping(mode)
@@ -4535,8 +4547,8 @@ class AutoTest(ABC):
             remaining = timeout - (self.get_sim_time_cached() - tstart)
             if remaining <= 0:
                 raise AutoTestTimeoutException("Failed to change mode")
-            self.mavproxy.send("long DO_SET_MODE %u %u\n" %
-                               (base_mode, custom_mode))
+            mavproxy.send("long DO_SET_MODE %u %u\n" %
+                          (base_mode, custom_mode))
             m = self.wait_heartbeat()
             if m.custom_mode == custom_mode:
                 return True
@@ -5538,6 +5550,8 @@ Also, ignores heartbeats not from our target system'''
             tests_total_time += test_time
             self.progress(fmt % (desc, test_time))
         self.progress(fmt % ("**--tests_total_time--**", tests_total_time))
+        self.progress("mavproxy_start was called %u times" %
+                      (self.start_mavproxy_count,))
 
     def send_statustext(self, text):
         if sys.version_info.major >= 3 and not isinstance(text, bytes):
@@ -5654,6 +5668,12 @@ Also, ignores heartbeats not from our target system'''
             self.reboot_sitl() # that'll learn it
             passed = False
 
+        if self._mavproxy is not None:
+            self.progress("Stopping auto-started mavproxy")
+            self.expect_list_remove(self._mavproxy)
+            util.pexpect_close(self._mavproxy)
+            self._mavproxy = None
+
         corefiles = glob.glob("core*")
         if corefiles:
             self.progress('Corefiles detected: %s' % str(corefiles))
@@ -5717,6 +5737,9 @@ Also, ignores heartbeats not from our target system'''
         return None
 
     def start_mavproxy(self):
+        self.start_mavproxy_count += 1
+        if self.mavproxy is not None:
+            return self.mavproxy
         self.progress("Starting MAVProxy")
 
         # determine a good pexpect timeout for reading MAVProxy's
@@ -5725,19 +5748,28 @@ Also, ignores heartbeats not from our target system'''
         if self.valgrind:
             pexpect_timeout *= 10
 
-        self.mavproxy = util.start_MAVProxy_SITL(
+        mavproxy = util.start_MAVProxy_SITL(
             self.vehicleinfo_key(),
             logfile=self.mavproxy_logfile,
             options=self.mavproxy_options(),
             pexpect_timeout=pexpect_timeout)
-        self.mavproxy.expect(r'Telemetry log: (\S+)\r\n')
-        self.logfile = self.mavproxy.match.group(1)
+        mavproxy.expect(r'Telemetry log: (\S+)\r\n')
+        self.logfile = mavproxy.match.group(1)
         self.progress("LOGFILE %s" % self.logfile)
         self.try_symlink_tlog()
 
-#        self.progress("Waiting for Parameters")
-#        self.mavproxy.expect('Received [0-9]+ parameters')
-        self.expect_list_add(self.mavproxy)
+        self.expect_list_add(mavproxy)
+        util.expect_setup_callback(mavproxy, self.expect_callback)
+        self._mavproxy = mavproxy  # so we can clean up after tests....
+        return mavproxy
+
+    def stop_mavproxy(self, mavproxy):
+        if self.mavproxy is not None:
+            return
+        self.progress("Stopping MAVProxy")
+        self.expect_list_remove(mavproxy)
+        util.pexpect_close(mavproxy)
+        self._mavproxy = None
 
     def start_SITL(self, **sitl_args):
         start_sitl_args = {
@@ -5778,6 +5810,10 @@ Also, ignores heartbeats not from our target system'''
             return False
         return self.sitl.isalive()
 
+    def autostart_mavproxy(self):
+        return False
+        return self.use_map
+
     def init(self):
         """Initilialize autotest feature."""
         self.check_test_syntax(test_file=self.test_filepath())
@@ -5797,9 +5833,9 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Starting MAVLink connection")
         self.get_mavlink_connection_going()
-        self.start_mavproxy()
 
-        util.expect_setup_callback(self.mavproxy, self.expect_callback)
+        if self.autostart_mavproxy():
+            self.mavproxy = self.start_mavproxy()
 
         self.expect_list_clear()
         if len(self.sup_prog):
@@ -6276,9 +6312,9 @@ Also, ignores heartbeats not from our target system'''
             self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
 
     def test_mag_calibration(self, compass_count=3, timeout=1000):
-        def reset_pos_and_start_magcal(tmask):
-            self.mavproxy.send("sitl_stop\n")
-            self.mavproxy.send("sitl_attitude 0 0 0\n")
+        def reset_pos_and_start_magcal(mavproxy, tmask):
+            mavproxy.send("sitl_stop\n")
+            mavproxy.send("sitl_attitude 0 0 0\n")
             self.drain_mav()
             self.get_sim_time()
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
@@ -6292,9 +6328,9 @@ Also, ignores heartbeats not from our target system'''
                          want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
                          timeout=20,
                          )
-            self.mavproxy.send("sitl_magcal\n")
+            mavproxy.send("sitl_magcal\n")
 
-        def do_prep_mag_cal_test(params):
+        def do_prep_mag_cal_test(mavproxy, params):
             self.progress("Preparing the vehicle for magcal")
             MAG_OFS = 100
             MAG_DIA = 1.0
@@ -6325,14 +6361,14 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Setting calibration mode")
             self.wait_heartbeat()
             self.customise_SITL_commandline(["-M", "calibration"])
-            self.mavproxy_load_module("sitl_calibration")
-            self.mavproxy_load_module("calibration")
-            self.mavproxy_load_module("relay")
+            self.mavproxy_load_module(mavproxy, "sitl_calibration")
+            self.mavproxy_load_module(mavproxy, "calibration")
+            self.mavproxy_load_module(mavproxy, "relay")
             self.wait_statustext("is using GPS", timeout=60)
-            self.mavproxy.send("accelcalsimple\n")
-            self.mavproxy.expect("Calibrated")
+            mavproxy.send("accelcalsimple\n")
+            mavproxy.expect("Calibrated")
             # disable it to not interfert with calibration acceptation
-            self.mavproxy_unload_module("calibration")
+            self.mavproxy_unload_module(mavproxy, "calibration")
             if self.is_copter():
                 # set frame class to pass arming check on copter
                 self.set_parameter("FRAME_CLASS", 1)
@@ -6366,10 +6402,10 @@ Also, ignores heartbeats not from our target system'''
             self.set_parameter("ARMING_CHECK", 4)
 
         #################################################
-        def do_test_mag_cal(params, compass_tnumber):
+        def do_test_mag_cal(mavproxy, params, compass_tnumber):
             self.start_subtest("Try magcal and make it stop around 30%")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
-            reset_pos_and_start_magcal(target_mask)
+            reset_pos_and_start_magcal(mavproxy, target_mask)
             tstart = self.get_sim_time()
             reached_pct = [0] * compass_tnumber
             tstop = None
@@ -6436,7 +6472,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
             old_cal_fit = self.get_parameter("COMPASS_CAL_FIT")
             self.set_parameter("COMPASS_CAL_FIT", 0.001, add_to_context=False)
-            reset_pos_and_start_magcal(target_mask)
+            reset_pos_and_start_magcal(mavproxy, target_mask)
             tstart = self.get_sim_time()
             reached_pct = [0] * compass_tnumber
             report_get = [0] * compass_tnumber
@@ -6471,7 +6507,7 @@ Also, ignores heartbeats not from our target system'''
             #################################################
             self.start_subtest("Try magcal and wait success")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
-            reset_pos_and_start_magcal(target_mask)
+            reset_pos_and_start_magcal(mavproxy, target_mask)
             progress_count = [0] * compass_tnumber
             reached_pct = [0] * compass_tnumber
             report_get = [0] * compass_tnumber
@@ -6509,8 +6545,8 @@ Also, ignores heartbeats not from our target system'''
                     if new_pct != reached_pct[cid]:
                         reached_pct[cid] = new_pct
                         self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
-            self.mavproxy.send("sitl_stop\n")
-            self.mavproxy.send("sitl_attitude 0 0 0\n")
+            mavproxy.send("sitl_stop\n")
+            mavproxy.send("sitl_attitude 0 0 0\n")
             self.progress("Checking that value aren't changed without acceptation")
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
@@ -6560,11 +6596,12 @@ Also, ignores heartbeats not from our target system'''
                          timeout=20,
                          )
             self.disarm_vehicle()
-            self.mavproxy_unload_module("relay")
-            self.mavproxy_unload_module("sitl_calibration")
+            self.mavproxy_unload_module(mavproxy, "relay")
+            self.mavproxy_unload_module(mavproxy, "sitl_calibration")
 
         ex = None
 
+        mavproxy = self.start_mavproxy()
         try:
             self.set_parameter("AHRS_EKF_TYPE", 10)
             self.set_parameter("SIM_GND_BEHAV", 0)
@@ -6580,17 +6617,19 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     target_mask |= (1 << run)
                     ntest_compass = run + 1
-                do_prep_mag_cal_test(curr_params)
-                do_test_mag_cal(curr_params, ntest_compass)
+                do_prep_mag_cal_test(mavproxy, curr_params)
+                do_test_mag_cal(mavproxy, curr_params, ntest_compass)
 
         except Exception as e:
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
-            self.mavproxy_unload_module("relay")
-            self.mavproxy_unload_module("sitl_calibration")
+            self.mavproxy_unload_module(mavproxy, "relay")
+            self.mavproxy_unload_module(mavproxy, "sitl_calibration")
         if ex is not None:
             raise ex
+
+        self.stop_mavproxy(mavproxy)
 
         # need to reboot SITL after moving away from EKF type 10; we
         # can end up with home set but origin not and that will lead
@@ -6851,16 +6890,17 @@ Also, ignores heartbeats not from our target system'''
     def test_dataflash_over_mavlink(self):
         self.context_push()
         ex = None
+        mavproxy = self.start_mavproxy()
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 2)
             self.reboot_sitl()
             self.wait_ready_to_arm(check_prearm_bit=False)
-            self.mavproxy.send('arm throttle\n')
-            self.mavproxy.expect('PreArm: Logging failed')
-            self.mavproxy.send("module load dataflash_logger\n")
-            self.mavproxy.send("dataflash_logger set verbose 1\n")
-            self.mavproxy.expect('logging started')
-            self.mavproxy.send("dataflash_logger set verbose 0\n")
+            mavproxy.send('arm throttle\n')
+            mavproxy.expect('PreArm: Logging failed')
+            mavproxy.send("module load dataflash_logger\n")
+            mavproxy.send("dataflash_logger set verbose 1\n")
+            mavproxy.expect('logging started')
+            mavproxy.send("dataflash_logger set verbose 0\n")
             self.delay_sim_time(1)
             self.do_timesync_roundtrip()  # drain COMMAND_ACK from that failed arm
             self.arm_vehicle()
@@ -6872,10 +6912,10 @@ Also, ignores heartbeats not from our target system'''
                     break
                 if now - last_status > 5:
                     last_status = now
-                    self.mavproxy.send('dataflash_logger status\n')
+                    mavproxy.send('dataflash_logger status\n')
                     # seen on autotest: Active Rate(3s):97.790kB/s Block:164 Missing:0 Fixed:0 Abandoned:0
-                    self.mavproxy.expect(r"Active Rate\([0-9]+s\):([0-9]+[.][0-9]+)")
-                    rate = float(self.mavproxy.match.group(1))
+                    mavproxy.expect(r"Active Rate\([0-9]+s\):([0-9]+[.][0-9]+)")
+                    rate = float(mavproxy.match.group(1))
                     self.progress("Rate: %f" % rate)
                     desired_rate = 50
                     if self.valgrind:
@@ -6888,8 +6928,9 @@ Also, ignores heartbeats not from our target system'''
             self.disarm_vehicle()
             ex = e
         self.context_pop()
-        self.mavproxy.send("module unload dataflash_logger\n")
-        self.mavproxy.expect("Unloaded module dataflash_logger")
+        mavproxy.send("module unload dataflash_logger\n")
+        mavproxy.expect("Unloaded module dataflash_logger")
+        self.stop_mavproxy(mavproxy)
         self.reboot_sitl()
         if ex is not None:
             raise ex
@@ -6898,14 +6939,15 @@ Also, ignores heartbeats not from our target system'''
         """Test the basic functionality of block logging"""
         self.context_push()
         ex = None
+        mavproxy = self.start_mavproxy()
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 4)
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.reboot_sitl()
             # First log created here, but we are in chip erase so ignored
-            self.mavproxy.send("module load log\n")
-            self.mavproxy.send("log erase\n")
-            self.mavproxy.expect("Chip erase complete")
+            mavproxy.send("module load log\n")
+            mavproxy.send("log erase\n")
+            mavproxy.expect("Chip erase complete")
 
             self.wait_ready_to_arm()
             if self.is_copter() or self.is_plane():
@@ -6920,12 +6962,12 @@ Also, ignores heartbeats not from our target system'''
             self.disarm_vehicle()
             # Second log created here
             self.delay_sim_time(2)
-            self.mavproxy.send("log list\n")
-            self.mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
-            log_num = int(self.mavproxy.match.group(1))
-            numlogs = int(self.mavproxy.match.group(2))
-            lastlog = int(self.mavproxy.match.group(3))
-            size = int(self.mavproxy.match.group(4))
+            mavproxy.send("log list\n")
+            mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+            log_num = int(mavproxy.match.group(1))
+            numlogs = int(mavproxy.match.group(2))
+            lastlog = int(mavproxy.match.group(3))
+            size = int(mavproxy.match.group(4))
             if numlogs != 2 or log_num != 1 or size <= 0:
                 raise NotAchievedException("Unexpected log information %d %d %d" % (log_num, numlogs, lastlog))
             self.progress("Log size: %d" % size)
@@ -6933,23 +6975,24 @@ Also, ignores heartbeats not from our target system'''
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time
             self.wait_ready_to_arm()
             # Third log created here
-            self.mavproxy.send("log list\n")
-            self.mavproxy.expect("Log 1  numLogs 3 lastLog 3 size")
+            mavproxy.send("log list\n")
+            mavproxy.expect("Log 1  numLogs 3 lastLog 3 size")
 
             # Download second and third logs
-            self.mavproxy.send("log download 2 logs/dataflash-log-002.BIN\n")
-            self.mavproxy.expect("Finished downloading", timeout=120)
-            self.mavproxy.send("log download 3 logs/dataflash-log-003.BIN\n")
-            self.mavproxy.expect("Finished downloading", timeout=120)
+            mavproxy.send("log download 2 logs/dataflash-log-002.BIN\n")
+            mavproxy.expect("Finished downloading", timeout=120)
+            mavproxy.send("log download 3 logs/dataflash-log-003.BIN\n")
+            mavproxy.expect("Finished downloading", timeout=120)
 
             # Erase the logs
-            self.mavproxy.send("log erase\n")
-            self.mavproxy.expect("Chip erase complete")
+            mavproxy.send("log erase\n")
+            mavproxy.expect("Chip erase complete")
 
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.mavproxy.send("module unload log\n")
+        mavproxy.send("module unload log\n")
+        self.stop_mavproxy(mavproxy)
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
@@ -6990,19 +7033,21 @@ Also, ignores heartbeats not from our target system'''
 
     def test_dataflash_erase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
+        mavproxy = self.start_mavproxy()
+
         ex = None
         self.context_push()
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 4)
             self.reboot_sitl()
-            self.mavproxy.send("module load log\n")
-            self.mavproxy.send("log erase\n")
-            self.mavproxy.expect("Chip erase complete")
+            mavproxy.send("module load log\n")
+            mavproxy.send("log erase\n")
+            mavproxy.expect("Chip erase complete")
             self.set_parameter("LOG_DISARMED", 1)
             self.delay_sim_time(3)
             self.set_parameter("LOG_DISARMED", 0)
-            self.mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
-            self.mavproxy.expect("Finished downloading", timeout=120)
+            mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
+            mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
             self.validate_log_file("logs/dataflash-log-erase.BIN")
 
@@ -7026,41 +7071,45 @@ Also, ignores heartbeats not from our target system'''
             self.disarm_vehicle()
             # make sure we have finished logging
             self.delay_sim_time(15)
-            self.mavproxy.send("log list\n")
+            mavproxy.send("log list\n")
             try:
-                self.mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
+                mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
             except pexpect.TIMEOUT as e:
                 if self.sitl_is_running():
                     self.progress("SITL is running")
                 else:
                     self.progress("SITL is NOT running")
                 raise NotAchievedException("Received %s" % str(e))
-            if int(self.mavproxy.match.group(2)) != 3:
-                raise NotAchievedException("Expected 3 logs got %s" % (self.mavproxy.match.group(2)))
+            if int(mavproxy.match.group(2)) != 3:
+                raise NotAchievedException("Expected 3 logs got %s" % (mavproxy.match.group(2)))
 
-            self.mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
-            self.mavproxy.expect("Finished downloading", timeout=120)
+            mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
+            mavproxy.expect("Finished downloading", timeout=120)
             self.validate_log_file("logs/dataflash-log-erase2.BIN", 1)
 
-            self.mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
-            self.mavproxy.expect("Finished downloading", timeout=120)
+            mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
+            mavproxy.expect("Finished downloading", timeout=120)
             self.validate_log_file("logs/dataflash-log-erase3.BIN", 1)
 
             # clean up
-            self.mavproxy.send("log erase\n")
-            self.mavproxy.expect("Chip erase complete")
+            mavproxy.send("log erase\n")
+            mavproxy.expect("Chip erase complete")
 
             # clean up
-            self.mavproxy.send("log erase\n")
-            self.mavproxy.expect("Chip erase complete")
+            mavproxy.send("log erase\n")
+            mavproxy.expect("Chip erase complete")
 
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
 
-        self.mavproxy.send("module unload log\n")
+        mavproxy.send("module unload log\n")
+
         self.context_pop()
         self.reboot_sitl()
+
+        self.stop_mavproxy(mavproxy)
+
         if ex is not None:
             raise ex
 
@@ -7091,11 +7140,13 @@ Also, ignores heartbeats not from our target system'''
         if not self.disarm_vehicle():
             raise NotAchievedException("Failed to DISARM")
         self.progress("arm with mavproxy")
-        if not self.mavproxy_arm_vehicle():
+        mavproxy = self.start_mavproxy()
+        if not self.mavproxy_arm_vehicle(mavproxy):
             raise NotAchievedException("Failed to ARM")
         self.progress("disarm with mavproxy")
-        if not self.mavproxy_disarm_vehicle():
+        if not self.mavproxy_disarm_vehicle(mavproxy):
             raise NotAchievedException("Failed to DISARM")
+        self.stop_mavproxy(mavproxy)
 
         if not self.is_sub():
             self.start_subtest("Test arm with rc input")
@@ -7559,8 +7610,8 @@ Also, ignores heartbeats not from our target system'''
         if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
             self.last_wp_load = time.time()
 
-    def clear_fence_using_mavproxy(self, timeout=10):
-        self.mavproxy.send("fence clear\n")
+    def clear_fence_using_mavproxy(self, mavproxy, timeout=10):
+        mavproxy.send("fence clear\n")
         tstart = self.get_sim_time_cached()
         while True:
             now = self.get_sim_time_cached()
@@ -7571,15 +7622,6 @@ Also, ignores heartbeats not from our target system'''
 
     def clear_fence(self):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-
-    def clear_mission_using_mavproxy(self):
-        self.mavproxy.send("wp clear\n")
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
-        num_wp = mavwp.MAVWPLoader().count()
-        if num_wp != 0:
-            raise NotAchievedException("Failed to clear mission")
-        self.last_wp_load = time.time()
 
     def test_config_error_loop(self):
         '''test the sensor config error loop works and that parameter sets are persistent'''
@@ -8457,20 +8499,22 @@ switch value'''
 
     def last_onboard_log(self):
         '''return number of last onboard log'''
-        self.mavproxy.send("module load log\n")
+        mavproxy = self.start_mavproxy()
+        mavproxy.send("module load log\n")
         loaded_module = False
-        self.mavproxy.expect(["Loaded module log", "module log already loaded"])
-        if self.mavproxy.match.group(0) == "Loaded module log":
+        mavproxy.expect(["Loaded module log", "module log already loaded"])
+        if mavproxy.match.group(0) == "Loaded module log":
             loaded_module = True
-        self.mavproxy.send("log list\n")
-        self.mavproxy.expect(["lastLog ([0-9]+)", "No logs"])
-        if self.mavproxy.match.group(0) == "No logs":
+        mavproxy.send("log list\n")
+        mavproxy.expect(["lastLog ([0-9]+)", "No logs"])
+        if mavproxy.match.group(0) == "No logs":
             num_log = None
         else:
-            num_log = int(self.mavproxy.match.group(1))
+            num_log = int(mavproxy.match.group(1))
         if loaded_module:
-            self.mavproxy.send("module unload log\n")
-            self.mavproxy.expect("Unloaded module log")
+            mavproxy.send("module unload log\n")
+            mavproxy.expect("Unloaded module log")
+        self.stop_mavproxy(mavproxy)
         return num_log
 
     def current_onboard_log_filepath(self):
@@ -8670,9 +8714,11 @@ switch value'''
         if self.get_parameter("MIS_OPTIONS") != 1:
             raise NotAchievedException("Failed to set MIS_OPTIONS")
 
-        from_mavproxy = self.get_parameter_mavproxy("MIS_OPTIONS")
+        mavproxy = self.start_mavproxy()
+        from_mavproxy = self.get_parameter_mavproxy(mavproxy, "MIS_OPTIONS")
         if from_mavproxy != 1:
             raise NotAchievedException("MAVProxy failed to get parameter")
+        self.stop_mavproxy(mavproxy)
 
     def test_parameter_documentation(self):
         '''ensure parameter documentation is valid'''
@@ -8842,16 +8888,17 @@ switch value'''
             raise NotAchievedException("NMEA output inaccurate (dist=%f want<%f)" %
                                        (distance, max_distance))
 
-    def mavproxy_load_module(self, module):
-        self.mavproxy.send("module load %s\n" % module)
-        self.mavproxy.expect("Loaded module %s" % module)
+    def mavproxy_load_module(self, mavproxy, module):
+        mavproxy.send("module load %s\n" % module)
+        mavproxy.expect("Loaded module %s" % module)
 
-    def mavproxy_unload_module(self, module):
-        self.mavproxy.send("module unload %s\n" % module)
-        self.mavproxy.expect("Unloaded module %s" % module)
+    def mavproxy_unload_module(self, mavproxy, module):
+        mavproxy.send("module unload %s\n" % module)
+        mavproxy.expect("Unloaded module %s" % module)
 
     def accelcal(self):
         ex = None
+        mavproxy = self.start_mavproxy()
         try:
             # setup with pre-existing accel offsets, to show that existing offsets don't
             # adversely affect a new cal
@@ -8880,12 +8927,12 @@ switch value'''
                     initial_params[sim_prefix + "_" + axis] = getattr(post_value, axis.lower())
             self.set_parameters(initial_params)
             self.customise_SITL_commandline(["-M", "calibration"])
-            self.mavproxy_load_module("sitl_calibration")
-            self.mavproxy_load_module("calibration")
-            self.mavproxy_load_module("relay")
-            self.mavproxy.send("sitl_accelcal\n")
-            self.mavproxy.send("accelcal\n")
-            self.mavproxy.expect("Calibrated")
+            self.mavproxy_load_module(mavproxy, "sitl_calibration")
+            self.mavproxy_load_module(mavproxy, "calibration")
+            self.mavproxy_load_module(mavproxy, "relay")
+            mavproxy.send("sitl_accelcal\n")
+            mavproxy.send("accelcal\n")
+            mavproxy.expect("Calibrated")
             for wanted in [
                     "level",
                     "on its LEFT side",
@@ -8895,11 +8942,11 @@ switch value'''
                     "on its BACK",
             ]:
                 timeout = 2
-                self.mavproxy.expect("Place vehicle %s and press any key." % wanted, timeout=timeout)
-                self.mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
-                self.mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
-                self.mavproxy.send("\n")
-            self.mavproxy.expect("APM: Calibration successful", timeout=timeout)
+                mavproxy.expect("Place vehicle %s and press any key." % wanted, timeout=timeout)
+                mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
+                mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
+                mavproxy.send("\n")
+            mavproxy.expect("APM: Calibration successful", timeout=timeout)
             self.drain_mav()
 
             self.progress("Checking results")
@@ -8921,9 +8968,10 @@ switch value'''
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.mavproxy_unload_module("relay")
-        self.mavproxy_unload_module("calibration")
-        self.mavproxy_unload_module("sitl_calibration")
+        self.mavproxy_unload_module(mavproxy, "relay")
+        self.mavproxy_unload_module(mavproxy, "calibration")
+        self.mavproxy_unload_module(mavproxy, "sitl_calibration")
+        self.stop_mavproxy(mavproxy)
         if ex is not None:
             raise ex
 
