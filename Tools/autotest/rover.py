@@ -142,8 +142,11 @@ class AutoTestRover(AutoTest):
             self.save_wp()
 
             self.progress("Checking number of saved waypoints")
-            num_wp = self.save_mission_to_file(
+            mavproxy = self.start_mavproxy()
+            num_wp = self.save_mission_to_file_using_mavproxy(
+                mavproxy,
                 os.path.join(testdir, "ch7_mission.txt"))
+            self.stop_mavproxy(mavproxy)
             expected = 7 # home + 6 toggled in
             if num_wp != expected:
                 raise NotAchievedException("Did not get %u waypoints; got %u" %
@@ -624,24 +627,28 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 (4, 'AUTO'),
                 (5, 'AUTO'),  # non-existant mode, should stay in RTL
                 (6, 'MANUAL')]
+        mavproxy = self.start_mavproxy()
         for (num, expected) in fnoo:
-            self.mavproxy.send('switch %u\n' % num)
+            mavproxy.send('switch %u\n' % num)
             self.wait_mode(expected)
+        self.stop_mavproxy(mavproxy)
 
     def test_setting_modes_via_mavproxy_mode_command(self):
         fnoo = [(1, 'ACRO'),
                 (3, 'STEERING'),
                 (4, 'HOLD'),
                 ]
+        mavproxy = self.start_mavproxy()
         for (num, expected) in fnoo:
-            self.mavproxy.send('mode manual\n')
+            mavproxy.send('mode manual\n')
             self.wait_mode("MANUAL")
-            self.mavproxy.send('mode %u\n' % num)
+            mavproxy.send('mode %u\n' % num)
             self.wait_mode(expected)
-            self.mavproxy.send('mode manual\n')
+            mavproxy.send('mode manual\n')
             self.wait_mode("MANUAL")
-            self.mavproxy.send('mode %s\n' % expected)
+            mavproxy.send('mode %s\n' % expected)
             self.wait_mode(expected)
+        self.stop_mavproxy(mavproxy)
 
     def test_setting_modes_via_modeswitch(self):
         # test setting of modes through mode switch
@@ -1169,8 +1176,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_set_mode_via_command_long("MANUAL")
 
     def test_mavproxy_do_set_mode_via_command_long(self):
-        self.mavproxy_do_set_mode_via_command_long("HOLD")
-        self.mavproxy_do_set_mode_via_command_long("MANUAL")
+        mavproxy = self.start_mavproxy()
+        self.mavproxy_do_set_mode_via_command_long(mavproxy, "HOLD")
+        self.mavproxy_do_set_mode_via_command_long(mavproxy, "MANUAL")
+        self.stop_mavproxy(mavproxy)
 
     def test_sysid_enforce(self):
         '''Run the same arming code with correct then incorrect SYSID'''
@@ -1875,15 +1884,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
         ])
 
-    def click_location_from_item(self, item):
-        self.mavproxy.send("click %f %f\n" % (item.x*1e-7, item.y*1e-7))
+    def click_location_from_item(self, mavproxy, item):
+        mavproxy.send("click %f %f\n" % (item.x*1e-7, item.y*1e-7))
 
     def test_gcs_fence_via_mavproxy(self, target_system=1, target_component=1):
         self.start_subtest("Fence via MAVProxy")
         if not self.mavproxy_can_do_mision_item_protocols():
             return
+        mavproxy = self.start_mavproxy()
         self.start_subsubtest("fence addcircle")
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence_using_mavproxy(mavproxy)
         self.delay_sim_time(1)
         radius = 20
         item = self.mav.mav.mission_item_int_encode(
@@ -1903,8 +1913,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             0.0000, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         print("item is (%s)" % str(item))
-        self.click_location_from_item(item)
-        self.mavproxy.send("fence addcircle inc %u\n" % radius)
+        self.click_location_from_item(mavproxy, item)
+        mavproxy.send("fence addcircle inc %u\n" % radius)
         self.delay_sim_time(1)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         print("downloaded items: %s" % str(downloaded_items))
@@ -1927,8 +1937,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             int(1.0017 * 1e7), # longitude
             0.0000, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        self.click_location_from_item(item2)
-        self.mavproxy.send("fence addcircle exc %f\n" % radius_exc)
+        self.click_location_from_item(mavproxy, item2)
+        mavproxy.send("fence addcircle exc %f\n" % radius_exc)
         self.delay_sim_time(1)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         print("downloaded items: %s" % str(downloaded_items))
@@ -1936,10 +1946,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("fence addcircle")
 
         self.start_subsubtest("fence addpoly")
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence_using_mavproxy(mavproxy)
         self.delay_sim_time(1)
         pointcount = 7
-        self.mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotaiton
+        mavproxy.send("fence addpoly inc 20 %u 37.2\n" % pointcount) # radius, pointcount, rotaiton
         self.delay_sim_time(5)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         if len(downloaded_items) != pointcount:
@@ -1948,30 +1958,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("fence addpoly")
 
         self.start_subsubtest("fence movepolypoint")
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence_using_mavproxy(mavproxy)
         self.delay_sim_time(1)
         triangle = self.test_gcs_fence_boring_triangle(
             target_system=target_system,
             target_component=target_component)
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            triangle)
-        self.mavproxy.send("fence list\n")
+        mavproxy.send("fence list\n")
         self.delay_sim_time(1)
         triangle[2].x += 500
         triangle[2].y += 700
-        self.click_location_from_item(triangle[2])
-        self.mavproxy.send("fence movepolypoint 0 2\n")
+        self.click_location_from_item(mavproxy, triangle[2])
+        mavproxy.send("fence movepolypoint 0 2\n")
         self.delay_sim_time(10)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         self.check_fence_items_same(triangle, downloaded_items)
         self.end_subsubtest("fence movepolypoint")
 
         self.start_subsubtest("fence enable and disable")
-        self.mavproxy.send("fence enable\n")
-        self.mavproxy.expect("fence enabled")
-        self.mavproxy.send("fence disable\n")
-        self.mavproxy.expect("fence disabled")
+        mavproxy.send("fence enable\n")
+        mavproxy.expect("fence enabled")
+        mavproxy.send("fence disable\n")
+        mavproxy.expect("fence disabled")
         self.end_subsubtest("fence enable and disable")
+
+        self.stop_mavproxy(mavproxy)
 
 #        MANUAL> usage: fence <addcircle|addpoly|changealt|clear|disable|draw|enable|list|load|move|movemulti|movepolypoint|param|remove|save|savecsv|savelocal|show|status|undo|update>  # noqa
 
@@ -2382,18 +2394,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
         return self.check_mission_items_same(check_atts, want, got, epsilon=epsilon)
 
-    def click_three_in(self, target_system=1, target_component=1):
-        self.mavproxy.send('rally clear\n')
+    def click_three_in(self, mavproxy, target_system=1, target_component=1):
+        mavproxy.send('rally clear\n')
         self.drain_mav_unparsed()
         # there are race conditions in MAVProxy.  Beware.
-        self.mavproxy.send("click 1.0 1.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send("click 1.0 1.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(1)
-        self.mavproxy.send("click 2.0 2.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send("click 2.0 2.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(1)
-        self.mavproxy.send("click 3.0 3.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send("click 3.0 3.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(10)
         self.assert_mission_count_on_link(
             self.mav,
@@ -2403,20 +2415,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
         )
 
-    def test_gcs_rally_via_mavproxy(self, target_system=1, target_component=1):
+    def test_gcs_rally(self, target_system=1, target_component=1):
+
         self.start_subtest("Testing mavproxy CLI for rally points")
         if not self.mavproxy_can_do_mision_item_protocols():
             return
 
+        mavproxy = self.start_mavproxy()
+
+        mavproxy.send('rally clear\n')
+
         self.start_subsubtest("rally add")
-        self.mavproxy.send('rally clear\n')
+        mavproxy.send('rally clear\n')
         lat_s = "-5.6789"
         lng_s = "98.2341"
         lat = float(lat_s)
         lng = float(lng_s)
-        self.mavproxy.send('click %s %s\n' % (lat_s, lng_s))
+        mavproxy.send('click %s %s\n' % (lat_s, lng_s))
         self.drain_mav_unparsed()
-        self.mavproxy.send('rally add\n')
+        mavproxy.send('rally add\n')
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
@@ -2437,21 +2454,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally add")
 
         self.start_subsubtest("rally list")
-        util.pexpect_drain(self.mavproxy)
-        self.mavproxy.send('rally list\n')
-        self.mavproxy.expect(r"Saved 1 rally items to ([^\s]*)\s")
-        filename = self.mavproxy.match.group(1)
+        util.pexpect_drain(mavproxy)
+        mavproxy.send('rally list\n')
+        mavproxy.expect(r"Saved 1 rally items to ([^\s]*)\s")
+        filename = mavproxy.match.group(1)
         self.assert_rally_filepath_content(filename, '''QGC WPL 110
 0	0	3	5100	0.000000	0.000000	0.000000	0.000000	-5.678900	98.234100	90.000000	0
 ''')
         self.end_subsubtest("rally list")
 
         self.start_subsubtest("rally save")
-        util.pexpect_drain(self.mavproxy)
+        util.pexpect_drain(mavproxy)
         save_tmppath = self.buildlogs_path("rally-testing-tmp.txt")
-        self.mavproxy.send('rally save %s\n' % save_tmppath)
-        self.mavproxy.expect(r"Saved 1 rally items to ([^\s]*)\s")
-        filename = self.mavproxy.match.group(1)
+        mavproxy.send('rally save %s\n' % save_tmppath)
+        mavproxy.expect(r"Saved 1 rally items to ([^\s]*)\s")
+        filename = mavproxy.match.group(1)
         if filename != save_tmppath:
             raise NotAchievedException("Bad save filepath; want=%s got=%s" % (save_tmppath, filename))
         self.assert_rally_filepath_content(filename, '''QGC WPL 110
@@ -2460,10 +2477,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally save")
 
         self.start_subsubtest("rally savecsv")
-        util.pexpect_drain(self.mavproxy)
+        util.pexpect_drain(mavproxy)
         csvpath = self.buildlogs_path("rally-testing-tmp.csv")
-        self.mavproxy.send('rally savecsv %s\n' % csvpath)
-        self.mavproxy.expect('"Seq","Frame"')
+        mavproxy.send('rally savecsv %s\n' % csvpath)
+        mavproxy.expect('"Seq","Frame"')
         expected_content = '''"Seq","Frame","Cmd","P1","P2","P3","P4","X","Y","Z"
 "0","Rel","NAV_RALLY_POINT","0.0","0.0","0.0","0.0","-5.67890024185","98.2341003418","90.0"
 '''
@@ -2478,7 +2495,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("rally load")
         self.drain_mav()
-        self.mavproxy.send('rally clear\n')
+        mavproxy.send('rally clear\n')
         self.assert_mission_count_on_link(self.mav,
                                           0,
                                           target_system,
@@ -2487,9 +2504,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # warning: uses file saved from previous test
         self.start_subtest("Check rally load from filepath")
-        self.mavproxy.send('rally load %s\n' % save_tmppath)
-        self.mavproxy.expect(r"Loaded 1 rally items from ([^\s]*)\s")
-        self.mavproxy.expect("Sent all .* rally items") # notional race condition here
+        mavproxy.send('rally load %s\n' % save_tmppath)
+        mavproxy.expect(r"Loaded 1 rally items from ([^\s]*)\s")
+        mavproxy.expect("Sent all .* rally items") # notional race condition here
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if len(downloaded_items) != 1:
             raise NotAchievedException("Unexpected item count (%u)" % len(downloaded_items))
@@ -2502,11 +2519,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally load")
 
         self.start_subsubtest("rally changealt")
-        self.mavproxy.send('rally clear\n')
-        self.mavproxy.send("click 1.0 1.0\n")
-        self.mavproxy.send("rally add\n")
-        self.mavproxy.send("click 2.0 2.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send('rally clear\n')
+        mavproxy.send("click 1.0 1.0\n")
+        mavproxy.send("rally add\n")
+        mavproxy.send("click 2.0 2.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(10)
         self.assert_mission_count_on_link(
             self.mav,
@@ -2516,12 +2533,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
         )
         self.drain_mav()
-        self.mavproxy.send("rally changealt 1 17.6\n")
+        mavproxy.send("rally changealt 1 17.6\n")
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
         self.delay_sim_time(10)
-        self.mavproxy.send("rally changealt 2 19.1\n")
+        mavproxy.send("rally changealt 2 19.1\n")
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
@@ -2548,7 +2565,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Expected alt=%f got=%f" % (19.1, downloaded_items[1].z))
 
         self.progress("Now change two at once")
-        self.mavproxy.send("rally changealt 1 17.3 2\n")
+        mavproxy.send("rally changealt 1 17.3 2\n")
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
@@ -2577,11 +2594,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally changealt")
 
         self.start_subsubtest("rally move")
-        self.mavproxy.send('rally clear\n')
-        self.mavproxy.send("click 1.0 1.0\n")
-        self.mavproxy.send("rally add\n")
-        self.mavproxy.send("click 2.0 2.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send('rally clear\n')
+        mavproxy.send("click 1.0 1.0\n")
+        mavproxy.send("rally add\n")
+        mavproxy.send("click 2.0 2.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(5)
         self.assert_mission_count_on_link(
             self.mav,
@@ -2590,13 +2607,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component,
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
         )
-        self.mavproxy.send("click 3.0 3.0\n")
-        self.mavproxy.send("rally move 2\n")
+        mavproxy.send("click 3.0 3.0\n")
+        mavproxy.send("rally move 2\n")
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
-        self.mavproxy.send("click 4.12345 4.987654\n")
-        self.mavproxy.send("rally move 1\n")
+        mavproxy.send("click 4.12345 4.987654\n")
+        mavproxy.send("rally move 1\n")
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
                                         target_component=0)
@@ -2623,15 +2640,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("rally movemulti")
         self.drain_mav_unparsed()
-        self.mavproxy.send('rally clear\n')
+        mavproxy.send('rally clear\n')
         self.drain_mav_unparsed()
         # there are race conditions in MAVProxy.  Beware.
-        self.mavproxy.send("click 1.0 1.0\n")
-        self.mavproxy.send("rally add\n")
-        self.mavproxy.send("click 2.0 2.0\n")
-        self.mavproxy.send("rally add\n")
-        self.mavproxy.send("click 3.0 3.0\n")
-        self.mavproxy.send("rally add\n")
+        mavproxy.send("click 1.0 1.0\n")
+        mavproxy.send("rally add\n")
+        mavproxy.send("click 2.0 2.0\n")
+        mavproxy.send("rally add\n")
+        mavproxy.send("click 3.0 3.0\n")
+        mavproxy.send("rally add\n")
         self.delay_sim_time(10)
         self.assert_mission_count_on_link(
             self.mav,
@@ -2645,8 +2662,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         unmoved_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if len(unmoved_items) != 3:
             raise NotAchievedException("Unexpected item count")
-        self.mavproxy.send("click %f %f\n" % (click_lat, click_lon))
-        self.mavproxy.send("rally movemulti 2 1 3\n")
+        mavproxy.send("click %f %f\n" % (click_lat, click_lon))
+        mavproxy.send("rally movemulti 2 1 3\n")
         # MAVProxy currently sends three separate items up.  That's
         # not great and I don't want to lock that behaviour in here.
         self.delay_sim_time(10)
@@ -2663,8 +2680,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.check_rally_items_same(expected_moved_items, moved_items, epsilon=10000)
 
         self.progress("now move back and rotate through 90 degrees")
-        self.mavproxy.send("click %f %f\n" % (2, 2))
-        self.mavproxy.send("rally movemulti 2 1 3 90\n")
+        mavproxy.send("click %f %f\n" % (2, 2))
+        mavproxy.send("rally movemulti 2 1 3 90\n")
 
         # MAVProxy currently sends three separate items up.  That's
         # not great and I don't want to lock that behaviour in here.
@@ -2683,15 +2700,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally movemulti")
 
         self.start_subsubtest("rally param")
-        self.mavproxy.send("rally param 3 2 5\n")
-        self.mavproxy.expect("Set param 2 for 3 to 5.000000")
+        mavproxy.send("rally param 3 2 5\n")
+        mavproxy.expect("Set param 2 for 3 to 5.000000")
         self.end_subsubtest("rally param")
 
         self.start_subsubtest("rally remove")
         self.click_three_in(target_system=target_system, target_component=target_component)
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.progress("Removing last in list")
-        self.mavproxy.send("rally remove 3\n")
+        mavproxy.send("rally remove 3\n")
         self.delay_sim_time(10)
         self.assert_mission_count_on_link(
             self.mav,
@@ -2708,7 +2725,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.check_rally_items_same(shorter_items, fewer_downloaded_items)
 
         self.progress("Removing first in list")
-        self.mavproxy.send("rally remove 1\n")
+        mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
         self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
@@ -2725,7 +2742,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.check_rally_items_same(shorter_items, fewer_downloaded_items)
 
         self.progress("Removing remaining item")
-        self.mavproxy.send("rally remove 1\n")
+        mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
         self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
@@ -2739,14 +2756,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("rally show")
         # what can we test here?
-        self.mavproxy.send("rally show %s\n" % save_tmppath)
+        mavproxy.send("rally show %s\n" % save_tmppath)
         self.end_subsubtest("rally show")
 
         # savelocal must be run immediately after show!
         self.start_subsubtest("rally savelocal")
-        util.pexpect_drain(self.mavproxy)
+        util.pexpect_drain(mavproxy)
         savelocal_path = self.buildlogs_path("rally-testing-tmp-local.txt")
-        self.mavproxy.send('rally savelocal %s\n' % savelocal_path)
+        mavproxy.send('rally savelocal %s\n' % savelocal_path)
         self.delay_sim_time(5)
         self.assert_rally_filepath_content(savelocal_path, '''QGC WPL 110
 0	0	3	5100	0.000000	0.000000	0.000000	0.000000	-5.678900	98.234100	90.000000	0
@@ -2755,11 +2772,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.start_subsubtest("rally status")
         self.click_three_in(target_system=target_system, target_component=target_component)
-        self.mavproxy.send("rally status\n")
-        self.mavproxy.expect("Have 3 of 3 rally items")
-        self.mavproxy.send("rally clear\n")
-        self.mavproxy.send("rally status\n")
-        self.mavproxy.expect("Have 0 of 0 rally items")
+        mavproxy.send("rally status\n")
+        mavproxy.expect("Have 3 of 3 rally items")
+        mavproxy.send("rally clear\n")
+        mavproxy.send("rally status\n")
+        mavproxy.expect("Have 0 of 0 rally items")
         self.end_subsubtest("rally status")
 
         self.start_subsubtest("rally undo")
@@ -2767,7 +2784,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.click_three_in(target_system=target_system, target_component=target_component)
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.progress("Removing first in list")
-        self.mavproxy.send("rally remove 1\n")
+        mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
         self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
@@ -2777,7 +2794,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component,
             mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
         )
-        self.mavproxy.send("rally undo\n")
+        mavproxy.send("rally undo\n")
         self.delay_sim_time(5)
         undone_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.check_rally_items_same(pure_items, undone_items)
@@ -2785,12 +2802,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Testing undo-move")
 
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
-        self.mavproxy.send("click 4.12345 4.987654\n")
-        self.mavproxy.send("rally move 1\n")
+        mavproxy.send("click 4.12345 4.987654\n")
+        mavproxy.send("rally move 1\n")
         # move has already been tested, assume it works...
         self.delay_sim_time(5)
         self.drain_mav_unparsed()
-        self.mavproxy.send("rally undo\n")
+        mavproxy.send("rally undo\n")
         self.delay_sim_time(5)
         self.drain_mav_unparsed()
         undone_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
@@ -2802,27 +2819,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.click_three_in(target_system=target_system, target_component=target_component)
         pure_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         rally_update_tmpfilepath = self.buildlogs_path("rally-tmp-update.txt")
-        self.mavproxy.send("rally save %s\n" % rally_update_tmpfilepath)
+        mavproxy.send("rally save %s\n" % rally_update_tmpfilepath)
         self.delay_sim_time(5)
         self.progress("Moving waypoint")
-        self.mavproxy.send("click 13.0 13.0\n")
-        self.mavproxy.send("rally move 1\n")
+        mavproxy.send("click 13.0 13.0\n")
+        mavproxy.send("rally move 1\n")
         self.delay_sim_time(5)
         self.progress("Reverting to original")
-        self.mavproxy.send("rally update %s\n" % rally_update_tmpfilepath)
+        mavproxy.send("rally update %s\n" % rally_update_tmpfilepath)
         self.delay_sim_time(5)
         reverted_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.check_rally_items_same(pure_items, reverted_items)
 
         self.progress("Making sure specifying a waypoint to be updated works")
-        self.mavproxy.send("click 13.0 13.0\n")
-        self.mavproxy.send("rally move 1\n")
+        mavproxy.send("click 13.0 13.0\n")
+        mavproxy.send("rally move 1\n")
         self.delay_sim_time(5)
-        self.mavproxy.send("click 17.0 17.0\n")
-        self.mavproxy.send("rally move 2\n")
+        mavproxy.send("click 17.0 17.0\n")
+        mavproxy.send("rally move 2\n")
         self.delay_sim_time(5)
         self.progress("Reverting to original item 2")
-        self.mavproxy.send("rally update %s 2\n" % rally_update_tmpfilepath)
+        mavproxy.send("rally update %s 2\n" % rally_update_tmpfilepath)
         self.delay_sim_time(5)
         reverted_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if reverted_items[0].x != 130000000:
@@ -2831,28 +2848,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Expected item2 x to revert")
 
         self.end_subsubtest("rally update")
-
-# MANUAL> usage: rally <add|alt|changealt|clear|list|load|move|movemulti|param|remove|save|savecsv|savelocal|show|status|undo|update>  # noqa
-
-    def test_gcs_rally(self):
-        target_system = 1
-        target_component = 1
-
-        self.test_gcs_rally_via_mavproxy(target_system=target_system,
-                                         target_component=target_component)
-
-        self.mavproxy.send('rally clear\n')
         self.delay_sim_time(1)
         if self.get_parameter("RALLY_TOTAL") != 0:
             raise NotAchievedException("Failed to clear rally points")
 
+        self.stop_mavproxy(mavproxy)
+
+# MANUAL> usage: rally <add|alt|changealt|clear|list|load|move|movemulti|param|remove|save|savecsv|savelocal|show|status|undo|update>  # noqa
+
+    def test_rally(self, target_system=1, target_component=1):
+
         old_srcSystem = self.mav.mav.srcSystem
 
-        # stop MAVProxy poking the autopilot:
-        self.mavproxy.send('module unload rally\n')
-        self.mavproxy.expect("Unloaded module rally")
-        self.mavproxy.send('module unload wp\n')
-        self.mavproxy.expect("Unloaded module wp")
         self.drain_mav()
         try:
             item1_lat = int(2.0000 * 1e7)
@@ -3437,17 +3444,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("Received exception (%s)" % self.get_exception_stacktrace(e))
             self.mav.mav.srcSystem = old_srcSystem
             raise e
-        self.mavproxy.send('module load rally\n')
-        self.mavproxy.expect("Loaded module rally")
-        self.mavproxy.send('module load wp\n')
-        self.mavproxy.expect("Loaded module wp")
         self.reboot_sitl()
 
     def test_gcs_mission(self):
         '''check MAVProxy's waypoint handling of missions'''
         target_system = 1
         target_component = 1
-        self.mavproxy.send('wp clear\n')
+        mavproxy = self.start_mavproxy()
+        mavproxy.send('wp clear\n')
         self.delay_sim_time(1)
         if self.get_parameter("MIS_TOTAL") != 0:
             raise NotAchievedException("Failed to clear mission")
@@ -3457,9 +3461,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not get expected MISSION_CURRENT")
         if m.seq != 0:
             raise NotAchievedException("Bad mission current")
-        self.load_mission_using_mavproxy("rover-gripper-mission.txt")
+        self.load_mission_using_mavproxy(mavproxy, "rover-gripper-mission.txt")
         set_wp = 1
-        self.mavproxy.send('wp set %u\n' % set_wp)
+        mavproxy.send('wp set %u\n' % set_wp)
         self.drain_mav()
         m = self.mav.recv_match(type='MISSION_CURRENT', blocking=True, timeout=5)
         if m is None:
@@ -3473,7 +3477,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         changealt_item = 1
 #        oldalt = downloaded_items[changealt_item].z
         want_newalt = 37.2
-        self.mavproxy.send('wp changealt %u %f\n' % (changealt_item, want_newalt))
+        mavproxy.send('wp changealt %u %f\n' % (changealt_item, want_newalt))
         self.delay_sim_time(5)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         if abs(downloaded_items[changealt_item].z - want_newalt) > 0.0001:
@@ -3485,8 +3489,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.start_subsubtest("wp sethome")
         new_home_lat = 3.14159
         new_home_lng = 2.71828
-        self.mavproxy.send('click %f %f\n' % (new_home_lat, new_home_lng))
-        self.mavproxy.send('wp sethome\n')
+        mavproxy.send('click %f %f\n' % (new_home_lat, new_home_lng))
+        mavproxy.send('wp sethome\n')
         self.delay_sim_time(5)
         # any way to close the loop on this one?
         # downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
@@ -3497,8 +3501,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("wp sethome")
 
         self.start_subsubtest("wp slope")
-        self.mavproxy.send('wp slope\n')
-        self.mavproxy.expect("WP3: slope 0.1")
+        mavproxy.send('wp slope\n')
+        mavproxy.expect("WP3: slope 0.1")
         self.delay_sim_time(5)
         self.end_subsubtest("wp slope")
 
@@ -3507,9 +3511,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             return
 
         self.start_subsubtest("wp split")
-        self.mavproxy.send("wp clear\n")
+        mavproxy.send("wp clear\n")
         self.delay_sim_time(5)
-        self.mavproxy.send("wp list\n")
+        mavproxy.send("wp list\n")
         self.delay_sim_time(5)
         items = [
             None,
@@ -3546,18 +3550,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 33.0000, # altitude
                 mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
         ]
-        self.mavproxy.send("click 5 5\n") # space for home position
-        self.mavproxy.send("wp add\n")
+        mavproxy.send("click 5 5\n") # space for home position
+        mavproxy.send("wp add\n")
         self.delay_sim_time(5)
-        self.click_location_from_item(items[1])
-        self.mavproxy.send("wp add\n")
+        self.click_location_from_item(mavproxy, items[1])
+        mavproxy.send("wp add\n")
         self.delay_sim_time(5)
-        self.click_location_from_item(items[2])
-        self.mavproxy.send("wp add\n")
+        self.click_location_from_item(mavproxy, items[2])
+        mavproxy.send("wp add\n")
         self.delay_sim_time(5)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.check_mission_waypoint_items_same(items, downloaded_items)
-        self.mavproxy.send("wp split 2\n")
+        mavproxy.send("wp split 2\n")
         self.delay_sim_time(5)
         items_with_split_in = [
             items[0],
@@ -3583,6 +3587,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.check_mission_waypoint_items_same(items_with_split_in,
                                                downloaded_items)
+
+        self.stop_mavproxy(mavproxy)
 
         # MANUAL> usage: wp <changealt|clear|draw|editor|list|load|loop|move|movemulti|noflyadd|param|remove|save|savecsv|savelocal|set|sethome|show|slope|split|status|undo|update>  # noqa
 
@@ -4357,7 +4363,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "loc": self.offset_location_ne(here, 20, 0),
                 },
             ])
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            # handy for getting pretty pictures
+            self.mavproxy.send("fence list\n")
 
         self.delay_sim_time(5)
         self.progress("Drive outside top circle")
@@ -4398,7 +4406,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ])
 
         self.delay_sim_time(5)
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            self.mavproxy.send("fence list\n")
         self.progress("Drive outside polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4432,7 +4441,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ])
 
         self.delay_sim_time(5)
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            self.mavproxy.send("fence list\n")
         self.progress("Drive outside top polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4469,7 +4479,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 },
             ])
         self.delay_sim_time(5)
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            self.mavproxy.send("fence list\n")
 
         self.progress("Breach eastern boundary")
         fence_middle = self.offset_location_ne(here, 0, 30)
@@ -4572,7 +4583,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_parameter("FENCE_ENABLE", 1)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             # target_loc is copied from the mission file
             target_loc = mavutil.location(40.073799, -105.229156)
             self.wait_location(target_loc, timeout=300)
@@ -4618,7 +4630,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.set_parameter("FENCE_ENABLE", 1)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             target_loc = mavutil.location(40.073800, -105.229172)
             self.send_guided_mission_item(target_loc,
                                           target_system=target_system,
@@ -4691,7 +4704,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     self.offset_location_ne(here, -60, 80), # br,
                 ],
             ])
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            self.mavproxy.send("fence list\n")
         self.context_push()
         ex = None
         try:
@@ -4701,7 +4715,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.set_parameter("FENCE_ENABLE", 1)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             self.arm_vehicle()
 
             self.change_mode("GUIDED")
@@ -4741,7 +4756,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     "loc": self.offset_location_ne(here, -60, 0),
                 },
             ])
-        self.mavproxy.send("fence list\n")
+        if self.mavproxy is not None:
+            self.mavproxy.send("fence list\n")
         self.set_parameter("FENCE_ENABLE", 1)
         self.set_parameter("AVOID_ENABLE", 3)
         fence_middle = self.offset_location_ne(here, 0, 30)
@@ -4788,7 +4804,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
             self.set_parameter("FENCE_ENABLE", 1)
             self.set_parameter("WP_RADIUS", 5)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             target_loc = mavutil.location(40.071060, -105.227734, 0, 0)
             self.send_guided_mission_item(target_loc,
                                           target_system=target_system,
@@ -4834,7 +4851,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
             self.set_parameter("FENCE_ENABLE", 1)
             self.set_parameter("WP_RADIUS", 5)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             target_loc = mavutil.location(40.071260, -105.227000, 0, 0)
             self.send_guided_mission_item(target_loc,
                                           target_system=target_system,
@@ -4874,7 +4892,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
             self.set_parameter("FENCE_ENABLE", 1)
             self.set_parameter("WP_RADIUS", 5)
-            self.mavproxy.send("fence list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
             target_loc = mavutil.location(40.071260, -105.227000, 0, 0)
             # target_loc is copied from the mission file
             self.wait_location(target_loc, timeout=300)
@@ -5563,8 +5582,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_mavproxy_param(self):
-        self.mavproxy.send("param fetch\n")
-        self.mavproxy.expect("Received [0-9]+ parameters")
+        mavproxy = self.start_mavproxy()
+        mavproxy.send("param fetch\n")
+        mavproxy.expect("Received [0-9]+ parameters")
+        self.stop_mavproxy(mavproxy)
 
     def MAV_CMD_DO_SET_MISSION_CURRENT_mission(self, target_system=1, target_component=1):
         return copy.copy([
@@ -5766,13 +5787,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Upload and download of fence",
              self.test_gcs_fence),
 
-            ("GCSRally",
+            ("Rally",
              "Upload and download of rally",
-             self.test_gcs_rally),
+             self.test_rally),
 
             ("GCSMission",
              "Upload and download of mission",
              self.test_gcs_mission),
+
+            ("GCSRally",
+             "Upload and download of rally using MAVProxy",
+             self.test_gcs_rally),
 
             ("MotorTest",
              "Motor Test triggered via mavlink",
