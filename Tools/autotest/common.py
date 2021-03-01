@@ -5403,10 +5403,10 @@ Also, ignores heartbeats not from our target system'''
         for statustext in [x.text for x in c.collections["STATUSTEXT"]]:
             if regex:
                 if re.match(text, statustext):
-                    return True
+                    return statustext
             elif text.lower() in statustext.lower():
-                return True
-        return False
+                return statustext
+        return None
 
     def wait_statustext(self, text, timeout=20, the_function=None, check_context=False, regex=False, wallclock_timeout=False):
         """Wait for a specific STATUSTEXT."""
@@ -5419,12 +5419,14 @@ Also, ignores heartbeats not from our target system'''
         # which checks all incoming messages.
         self.progress("Waiting for text : %s" % text.lower())
         if check_context:
-            if self.statustext_in_collections(text, regex=regex):
+            statustext = self.statustext_in_collections(text, regex=regex)
+            if statustext:
                 self.progress("Found expected text in collection: %s" % text.lower())
-                return text
+                return statustext
 
         global statustext_found
         global statustext_full
+        statustext_full = None
         statustext_found = False
 
         def mh(mav, m):
@@ -5436,6 +5438,7 @@ Also, ignores heartbeats not from our target system'''
                 self.re_match = re.match(text, m.text)
                 if self.re_match:
                     statustext_found = True
+                    statustext_full = m.text
             if text.lower() in m.text.lower():
                 self.progress("Received expected text: %s" % m.text.lower())
                 statustext_found = True
@@ -5460,8 +5463,7 @@ Also, ignores heartbeats not from our target system'''
                 self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
         finally:
             self.remove_message_hook(mh)
-        if statustext_found:
-            return statustext_full
+        return statustext_full
 
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
