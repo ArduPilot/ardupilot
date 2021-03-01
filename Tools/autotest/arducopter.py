@@ -408,8 +408,11 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # save the stored mission to file
-        num_wp = self.save_mission_to_file(os.path.join(testdir,
-                                                        "ch7_mission.txt"))
+        mavproxy = self.start_mavproxy()
+        num_wp = self.save_mission_to_file_using_mavproxy(
+            mavproxy,
+            os.path.join(testdir, "ch7_mission.txt"))
+        self.stop_mavproxy(mavproxy)
         if not num_wp:
             self.fail_list.append("save_mission_to_file")
             self.progress("save_mission_to_file failed")
@@ -5315,13 +5318,15 @@ class AutoTestCopter(AutoTest):
         self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
         self.progress("new_loc: %s" % str(new_loc))
         heading = 0
-        self.mavproxy.send("map icon %f %f greenplane %f\n" %
-                           (new_loc.lat, new_loc.lng, heading))
+        if self.mavproxy is not None:
+            self.mavproxy.send("map icon %f %f greenplane %f\n" %
+                               (new_loc.lat, new_loc.lng, heading))
 
         expected_loc = copy.copy(new_loc)
         self.location_offset_ne(expected_loc, -foll_ofs_x, 0)
-        self.mavproxy.send("map icon %f %f hoop\n" %
-                           (expected_loc.lat, expected_loc.lng))
+        if self.mavproxy is not None:
+            self.mavproxy.send("map icon %f %f hoop\n" %
+                               (expected_loc.lat, expected_loc.lng))
         self.progress("expected_loc: %s" % str(expected_loc))
 
         last_sent = 0

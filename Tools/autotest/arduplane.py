@@ -1291,12 +1291,13 @@ class AutoTestPlane(AutoTest):
                                           0, # "land dir"
                                           0) # flags
             self.delay_sim_time(1)
-            self.mavproxy.send("rally list\n")
+            if self.mavproxy is not None:
+                self.mavproxy.send("rally list\n")
             self.test_fence_breach_circle_at(loc)
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.mavproxy.send('rally clear\n')
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         if ex is not None:
             raise ex
 
@@ -1419,11 +1420,6 @@ class AutoTestPlane(AutoTest):
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()
-
-    def clear_fence(self):
-        '''Plane doesn't use MissionItemProtocol - yet - so clear it using
-        mavproxy:'''
-        self.clear_fence_using_mavproxy()
 
     def check_attitudes_match(self, a, b):
         '''make sure ahrs2 and simstate and ATTTIUDE_QUATERNION all match'''
