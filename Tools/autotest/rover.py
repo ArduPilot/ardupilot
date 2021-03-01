@@ -93,8 +93,7 @@ class AutoTestRover(AutoTest):
             self.set_parameter("RC7_OPTION", 7)
             self.set_parameter("RC9_OPTION", 58)
 
-            self.mavproxy.send('switch 5\n')
-            self.wait_mode('MANUAL')
+            self.change_mode('MANUAL')
 
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -165,8 +164,7 @@ class AutoTestRover(AutoTest):
 
     def drive_left_circuit(self):
         """Drive a left circuit, 50m on a side."""
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('MANUAL')
+        self.change_mode('MANUAL')
         self.set_rc(3, 2000)
 
         self.progress("Driving left circuit")
@@ -792,8 +790,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_parameter("RC12_OPTION", 46)
             self.reboot_sitl()
 
-            self.mavproxy.send('switch 6\n')  # Manual mode
-            self.wait_mode('MANUAL')
+            self.change_mode('MANUAL')
             self.wait_ready_to_arm()
             self.set_rc(3, 1500)  # throttle at zero
             self.arm_vehicle()
