@@ -6,7 +6,7 @@
 #include "AP_BattMonitor_SMBus_Maxell.h"
 #include "AP_BattMonitor_SMBus_Rotoye.h"
 #include "AP_BattMonitor_Bebop.h"
-#include "AP_BattMonitor_BLHeliESC.h"
+#include "AP_BattMonitor_ESC.h"
 #include "AP_BattMonitor_SMBus_SUI.h"
 #include "AP_BattMonitor_SMBus_NeoDesign.h"
 #include "AP_BattMonitor_Sum.h"
@@ -167,8 +167,8 @@ AP_BattMonitor::init()
 #endif
                 break;
             case Type::BLHeliESC:
-#ifdef HAVE_AP_BLHELI_SUPPORT
-                drivers[instance] = new AP_BattMonitor_BLHeliESC(*this, state[instance], _params[instance]);
+#if HAL_WITH_ESC_TELEM && !defined(HAL_BUILD_AP_PERIPH)
+                drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
 #endif
                 break;
             case Type::Sum:

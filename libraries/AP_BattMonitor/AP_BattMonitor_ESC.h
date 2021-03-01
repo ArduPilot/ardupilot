@@ -16,17 +16,20 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "AP_BattMonitor_Backend.h"
 
-class AP_BattMonitor_BLHeliESC :public AP_BattMonitor_Backend
+#if HAL_WITH_ESC_TELEM
+
+class AP_BattMonitor_ESC :public AP_BattMonitor_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_BLHeliESC(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
+    AP_BattMonitor_ESC(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
         AP_BattMonitor_Backend(mon, mon_state, params)
     {};
 
-    virtual ~AP_BattMonitor_BLHeliESC(void) {};
+    virtual ~AP_BattMonitor_ESC(void) {};
 
     // initialise
     void init() override;
@@ -34,9 +37,15 @@ public:
     // read the latest battery voltage
     void read() override;
 
-    // BLHeliESC provides current info
+    // ESC_Telem provides current info
     bool has_current() const override { return have_current; };
+
+    // ESC_Telem provides temperature info
+    bool has_temperature() const override { return have_temperature; };
 
 private:
     bool have_current;
+    bool have_temperature;
 };
+
+#endif
