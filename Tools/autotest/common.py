@@ -9737,7 +9737,7 @@ switch value'''
                  self.test_onboard_logging_generation),
 
             Test("Logging",
-                 "Teqst Onboard Logging",
+                 "Test Onboard Logging",
                  self.test_onboard_logging),
 
             Test("GetCapabilities",
