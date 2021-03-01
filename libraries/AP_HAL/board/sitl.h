@@ -6,6 +6,7 @@
 #define HAL_OS_POSIX_IO 1
 #define HAL_OS_SOCKETS 1
 #define HAL_DSHOT_ALARM 0
+#define HAL_WITH_ESC_TELEM 1
 
 #define AP_FLASHSTORAGE_TYPE 3
 
