@@ -7246,7 +7246,7 @@ Also, ignores heartbeats not from our target system'''
                 break
 
     def clear_fence(self):
-        self.clear_fence_using_mavproxy()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
 
     def clear_mission_using_mavproxy(self):
         self.mavproxy.send("wp clear\n")
@@ -8432,11 +8432,11 @@ switch value'''
                 # plane requires a polygon fence...
                 self.start_subtest("Altitude Limit breach")
                 self.set_parameter("AFS_AMSL_LIMIT", 100)
-                self.mavproxy.send("fence enable\n")
+                self.do_fence_enable()
                 self.wait_statustext("Terminating due to fence breach", check_context=True)
                 self.set_parameter("AFS_AMSL_LIMIT", 0)
                 self.set_parameter("AFS_TERMINATE", 0)
-                self.mavproxy.send("fence disable\n")
+                self.do_fence_disable()
 
             self.start_subtest("GPS Failure")
             self.set_parameter("AFS_MAX_GPS_LOSS", 1)
@@ -8460,7 +8460,11 @@ switch value'''
 
         except Exception as e:
             ex = e
-        self.mavproxy.send("fence disable\n")
+        try:
+            self.do_fence_disable()
+        except ValueError:
+            # may not actually be enabled....
+            pass
         self.context_pop()
         if ex is not None:
             raise ex

@@ -1117,8 +1117,7 @@ class AutoTestPlane(AutoTest):
             self.assert_fence_sys_status(False, False, True)
             self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL) # report only
             self.assert_fence_sys_status(True, False, True)
-            self.mavproxy.send('fence enable\n')
-            self.mavproxy.expect("fence enabled")
+            self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
             if m is None:
@@ -1126,15 +1125,13 @@ class AutoTestPlane(AutoTest):
             if m.breach_status:
                 raise NotAchievedException("Breached fence unexpectedly (%u)" %
                                            (m.breach_status))
-            self.mavproxy.send('fence disable\n')
-            self.mavproxy.expect("fence disabled")
+            self.do_fence_disable()
             self.assert_fence_sys_status(True, False, True)
             self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_NONE)
             self.assert_fence_sys_status(False, False, True)
             self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL)
             self.assert_fence_sys_status(True, False, True)
-            self.mavproxy.send("fence clear\n")
-            self.mavproxy.expect("fence removed")
+            self.clear_fence()
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
             self.assert_fence_sys_status(False, False, True)
@@ -1147,8 +1144,7 @@ class AutoTestPlane(AutoTest):
             self.set_parameter("FENCE_ACTION", mavutil.mavlink.FENCE_ACTION_RTL)
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
-            self.mavproxy.send("fence clear\n")
-            self.mavproxy.expect("fence removed")
+            self.clear_fence()
             self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, False, False, True)
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
@@ -1156,7 +1152,7 @@ class AutoTestPlane(AutoTest):
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.mavproxy.send('fence clear\n')
+        self.clear_fence()
         if ex is not None:
             raise ex
 
@@ -1208,7 +1204,7 @@ class AutoTestPlane(AutoTest):
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
-        self.mavproxy.send('fence clear\n')
+        self.clear_fence()
         if ex is not None:
             raise ex
 
@@ -1291,6 +1287,11 @@ class AutoTestPlane(AutoTest):
     def run_subtest(self, desc, func):
         self.start_subtest(desc)
         func()
+
+    def clear_fence(self):
+        '''Plane doesn't use MissionItemProtocol - yet - so clear it using
+        mavproxy:'''
+        self.clear_fence_using_mavproxy()
 
     def test_main_flight(self):
 
