@@ -5661,6 +5661,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_mavproxy_param(self):
+        self.mavproxy.send("param fetch\n")
+        self.mavproxy.expect("Received [0-9]+ parameters")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -5774,6 +5778,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("Offboard",
              "Test Offboard Control",
              self.test_offboard),
+
+            ("MAVProxyParam",
+             "Test MAVProxy parameter handling",
+             self.test_mavproxy_param),
 
             ("GCSFence",
              "Upload and download of fence",
