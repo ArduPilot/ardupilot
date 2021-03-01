@@ -1511,10 +1511,6 @@ class AutoTest(ABC):
                 locs
             ])
 
-    def fetch_parameters(self):
-        self.mavproxy.send("param fetch\n")
-        self.mavproxy.expect("Received [0-9]+ parameters")
-
     def send_reboot_command(self):
         self.mav.mav.command_long_send(self.sysid_thismav(),
                                        1,
@@ -8575,7 +8571,6 @@ switch value'''
                 self.mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
                 self.mavproxy.send("\n")
             self.mavproxy.expect("APM: Calibration successful", timeout=timeout)
-            self.fetch_parameters()
             self.drain_mav()
 
             self.progress("Checking results")
@@ -8634,7 +8629,6 @@ switch value'''
                                        mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION, 0,
                                        0, 0, 0, 0, 2, 0, 0)
         self.wait_statustext('Trim OK')
-        self.fetch_parameters()
         self.drain_mav()
 
         self.progress("Checking results")
