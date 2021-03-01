@@ -277,6 +277,10 @@ public:
       If not already done flush any dshot commands still pending
      */
     virtual bool prepare_for_arming() { return true; }
+    /*
+      set the number of motor poles to be used in rpm calculations
+     */
+    virtual void set_motor_poles(uint8_t poles) {}
 
     /*
       setup serial led output for a given channel number, with
