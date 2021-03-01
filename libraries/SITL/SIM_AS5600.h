@@ -39,6 +39,15 @@ public:
     void init() override {
         add_register("ZMCO", AS5600DevReg::ZMCO, O_RDONLY);
         set_register(AS5600DevReg::ZMCO, (uint8_t)1U);
+
+        add_register("ANGH", AS5600DevReg::RAW_ANGLE_HIGH, O_RDONLY);
+        set_register(AS5600DevReg::RAW_ANGLE_HIGH, (uint8_t)1U);
+
+        add_register("ANGL", AS5600DevReg::RAW_ANGLE_LOW, O_RDONLY);
+        set_register(AS5600DevReg::RAW_ANGLE_LOW, (uint8_t)1U);
+
+
+
     }
 
     void update(const class Aircraft &aircraft) override;

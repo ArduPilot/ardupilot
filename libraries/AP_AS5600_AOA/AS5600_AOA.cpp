@@ -74,10 +74,10 @@ void AS_5600::init(){
 
     dev = hal.i2c_mgr->get_device(bus, address);
 
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
-    dev->get_semaphore()->give();
+
 
 }
 
@@ -124,7 +124,7 @@ unsigned short AS_5600::getRawAngle(void)
 
   AP::logger().Write("AoAR", "Status, TimeUS, Angle", "iQH", int(bool(dev)), AP_HAL::micros64(), angle);
 
-  return angle;
+   return angle;
 }
 /*******************************************************
  * Method: highByte
@@ -248,7 +248,7 @@ unsigned short AS_5600::setStartPosition(unsigned short startAngle)
 int AS_5600::readOneByte(uint8_t in_adr)
 {
 
-  WITH_SEMAPHORE(sem);
+  WITH_SEMAPHORE(dev->get_semaphore());
 
   uint8_t  send[1] = {in_adr};
   uint8_t  recv[1];
@@ -267,7 +267,6 @@ int AS_5600::readOneByte(uint8_t in_adr)
 *******************************************************/
 int AS_5600::readTwoBytes(uint8_t in_adr1, uint8_t in_adr2)
 {
-    WITH_SEMAPHORE(sem);
 
   int firstResult =  readOneByte(in_adr1);
   int secondResult = readOneByte(in_adr2);
