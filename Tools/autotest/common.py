@@ -5066,7 +5066,7 @@ Also, ignores heartbeats not from our target system'''
         x["timeout"] = 1
         tstart = time.time()
         while True:
-            if time.time() - tstart > orig_timeout:
+            if time.time() - tstart > orig_timeout and not self.gdb:
                 if not self.sitl_is_running():
                     self.progress("SITL is not running")
                 raise AutoTestTimeoutException("Did not receive heartbeat")
