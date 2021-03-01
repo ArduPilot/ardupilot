@@ -217,6 +217,11 @@ public:
     virtual void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) {}
 
     /*
+      set the number of motor poles to be used in rpm calculations
+     */
+    virtual void set_motor_poles(uint8_t poles) {}
+
+    /*
       setup serial led output for a given channel number, with
       the given max number of LEDs in the chain.
      */
