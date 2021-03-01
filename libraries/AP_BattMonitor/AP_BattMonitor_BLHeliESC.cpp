@@ -15,9 +15,9 @@
 
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_BLHeli/AP_BLHeli.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
-#ifdef HAVE_AP_BLHELI_SUPPORT
+#ifdef HAL_WITH_ESC_TELEM
 
 #include "AP_BattMonitor_BLHeliESC.h"
 
@@ -29,40 +29,43 @@ void AP_BattMonitor_BLHeliESC::init(void)
 
 void AP_BattMonitor_BLHeliESC::read(void)
 {
-    AP_BLHeli *blheli = AP_BLHeli::get_singleton();
-    if (!blheli) {
-        return;
-    }
+    AP_ESC_Telem& telem = AP::esc_telem();
 
     uint8_t num_escs = 0;
     float voltage_sum = 0;
     float current_sum = 0;
     float consumed_sum = 0;
     float temperature_sum = 0;
-    uint32_t now = AP_HAL::millis();
     uint32_t highest_ms = 0;
 
-    for (uint8_t i=0; i<AP_BLHELI_MAX_ESCS; i++) {
-        AP_BLHeli::telem_data td;
-        if (!blheli->get_telem_data(i, td)) {
-            continue;
+    for (uint8_t i=0; i<ESC_TELEM_MAX_ESCS; i++) {
+        int16_t  temperature_deg;
+        uint16_t voltage_cv;
+        uint16_t current_ca;
+        uint16_t consumption_mah;
+
+        if (telem.get_consumption_mah(i, consumption_mah)) {
+            // accumulate consumed_sum regardless of age, to cope with ESC
+            // dropping out
+            consumed_sum += consumption_mah;
         }
 
-        // accumulate consumed_sum regardless of age, to cope with ESC
-        // dropping out
-        consumed_sum += td.consumption;
+        if (telem.get_voltage_cv(i, voltage_cv)) {
+            voltage_sum += voltage_cv;
+        }
 
-        if (now - td.timestamp_ms > 1000) {
-            // don't use old data
-            continue;
+        if (telem.get_current_ca(i, current_ca)) {
+            current_ca += current_ca;
+        }
+
+        if (telem.get_temperature(i, temperature_deg)) {
+            temperature_sum += temperature_deg;
         }
 
         num_escs++;
-        voltage_sum += td.voltage;
-        current_sum += td.current;
-        temperature_sum += td.temperature;
-        if (td.timestamp_ms > highest_ms) {
-            highest_ms = td.timestamp_ms;
+
+        if (telem.get_last_telem_data_ms(i) > highest_ms) {
+            highest_ms = telem.get_last_telem_data_ms(i);
         }
     }
 
@@ -87,4 +90,4 @@ void AP_BattMonitor_BLHeliESC::read(void)
     }
 }
 
-#endif // HAVE_AP_BLHELI_SUPPORT
+#endif // HAL_WITH_ESC_TELEM
