@@ -5699,15 +5699,6 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def get_mission_count(self):
-        return self.get_parameter("MIS_TOTAL")
-
-    def assert_mission_count(self, expected):
-        count = self.get_mission_count()
-        if count != expected:
-            raise NotAchievedException("Unexpected count got=%u want=%u" %
-                                       (count, expected))
-
     def test_aux_switch_options(self):
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
         self.load_mission("copter_loiter_to_alt.txt")

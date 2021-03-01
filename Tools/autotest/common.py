@@ -2691,6 +2691,15 @@ class AutoTest(ABC):
         self.set_rc(ch, 1000)
         self.delay_sim_time(1)
 
+    def get_mission_count(self):
+        return self.get_parameter("MIS_TOTAL")
+
+    def assert_mission_count(self, expected):
+        count = self.get_mission_count()
+        if count != expected:
+            raise NotAchievedException("Unexpected count got=%u want=%u" %
+                                       (count, expected))
+
     def clear_wp(self, ch=8):
         """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
@@ -2699,8 +2708,7 @@ class AutoTest(ABC):
         self.set_rc(ch, 2000)
         self.delay_sim_time(0.5)
         self.set_rc(ch, 1000)
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting 0 waypoints')
+        self.assert_mission_count(0)
 
     def log_list(self):
         '''return a list of log files present in POSIX-style loging dir'''
