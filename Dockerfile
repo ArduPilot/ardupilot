@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 WORKDIR /ardupilot
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -8,6 +8,7 @@ RUN useradd -U -m ardupilot && \
 RUN apt-get update && apt-get install --no-install-recommends -y \
     lsb-release \
     sudo \
+    bash-completion \
     software-properties-common
 
 COPY Tools/environment_install/install-prereqs-ubuntu.sh /ardupilot/Tools/environment_install/
