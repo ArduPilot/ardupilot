@@ -7014,11 +7014,14 @@ class AutoTestHeli(AutoTestCopter):
                            (start_alt + 5),
                            relative=True,
                            timeout=timeout)
+        self.context_collect('STATUSTEXT')
         self.progress("Triggering autorotate by raising interlock")
         self.set_rc(8, 1000)
-        self.mavproxy.expect("SS Glide Phase")
-        self.mavproxy.expect("Hit ground at ([0-9.]+) m/s")
-        speed = float(self.mavproxy.match.group(1))
+        self.wait_statustext("SS Glide Phase", check_context=True)
+        self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
+                             check_context=True,
+                             regex=True)
+        speed = float(self.re_match.group(1))
         if speed > 30:
             raise NotAchievedException("Hit too hard")
         self.wait_disarmed()

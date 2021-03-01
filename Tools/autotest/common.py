@@ -5188,7 +5188,8 @@ Also, ignores heartbeats not from our target system'''
             if m.get_type() != "STATUSTEXT":
                 return
             if regex:
-                if re.match(text, m.text):
+                self.re_match = re.match(text, m.text)
+                if self.re_match:
                     statustext_found = True
             if text.lower() in m.text.lower():
                 self.progress("Received expected text: %s" % m.text.lower())
