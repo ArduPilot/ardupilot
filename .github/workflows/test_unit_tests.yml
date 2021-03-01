@@ -52,7 +52,7 @@ jobs:
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
-        shell: bash
+        shell: 'script -q -e -c "bash {0}"'
         run: |
           if [[ ${{ matrix.toolchain }} = "clang" ]]; then
             export CC=clang-7
