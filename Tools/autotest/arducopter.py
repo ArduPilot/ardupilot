@@ -10,7 +10,6 @@ from __future__ import print_function
 import copy
 import math
 import os
-import signal
 import shutil
 import time
 import numpy
@@ -2103,35 +2102,73 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("GPS_TYPE", 9)
         self.set_parameter("GPS_TYPE2", 9)
         self.set_parameter("SIM_GPS2_DISABLE", 0)
-        os.kill(self.sup_prog[0].pid, signal.SIGSTOP)
-        os.kill(self.sup_prog[1].pid, signal.SIGSTOP)
+
+        self.context_push()
+        self.set_parameter("ARMING_CHECK", 1 << 3)
+        self.context_collect('STATUSTEXT')
+
         self.reboot_sitl()
         # Test UAVCAN GPS ordering working
-        os.kill(self.sup_prog[0].pid, signal.SIGCONT)
-        gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN")
-        os.kill(self.sup_prog[1].pid, signal.SIGCONT)
-        gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN")
+        gps1_det_text = self.wait_statustext("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+        gps2_det_text = self.wait_statustext("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
         gps1_nodeid = int(gps1_det_text.split('-')[1])
         gps2_nodeid = int(gps2_det_text.split('-')[1])
         if gps1_nodeid is None or gps2_nodeid is None:
             raise NotAchievedException("GPS not ordered per the order of Node IDs")
-        self.set_parameter("GPS1_CAN_OVRIDE", gps2_nodeid)
-        self.set_parameter("GPS2_CAN_OVRIDE", gps1_nodeid)
-        
-        # Reboot the SITL, and shuffle the AP_Periph
-        os.kill(self.sup_prog[0].pid, signal.SIGSTOP)
-        os.kill(self.sup_prog[1].pid, signal.SIGSTOP)
-        self.drain_mav()
-        self.reboot_sitl()
-        try:
-            # order should have changed this time
-            os.kill(self.sup_prog[0].pid, signal.SIGCONT)
-            gps1_det_text = self.wait_text("GPS 2: specified as UAVCAN")
-            os.kill(self.sup_prog[1].pid, signal.SIGCONT)
-            gps2_det_text = self.wait_text("GPS 1: specified as UAVCAN")
-        except:
-            raise NotAchievedException("GPS not ordered as requested")
-        
+
+        self.context_stop_collecting('STATUSTEXT')
+
+        GPS_Order_Tests = [[gps2_nodeid, gps2_nodeid, gps2_nodeid, 0,
+                            "PreArm: Same Node Id {} set for multiple GPS".format(gps2_nodeid)],
+                           [gps1_nodeid, int(gps2_nodeid/2), gps1_nodeid, 0,
+                            "Selected GPS Node {} not set as instance {}".format(int(gps2_nodeid/2), 2)],
+                           [int(gps1_nodeid/2), gps2_nodeid, 0, gps2_nodeid,
+                            "Selected GPS Node {} not set as instance {}".format(int(gps1_nodeid/2), 1)],
+                           [gps1_nodeid, gps2_nodeid, gps1_nodeid, gps2_nodeid, ""],
+                           [gps2_nodeid, gps1_nodeid, gps2_nodeid, gps1_nodeid, ""],
+                           [gps1_nodeid, 0, gps1_nodeid, gps2_nodeid, ""],
+                           [0, gps2_nodeid, gps1_nodeid, gps2_nodeid, ""]]
+        for case in GPS_Order_Tests:
+            self.progress("############################### Trying Case: " + str(case))
+            self.set_parameter("GPS1_CAN_OVRIDE", case[0])
+            self.set_parameter("GPS2_CAN_OVRIDE", case[1])
+            self.drain_mav()
+            self.context_collect('STATUSTEXT')
+            self.reboot_sitl()
+            gps1_det_text = None
+            gps2_det_text = None
+            try:
+                gps1_det_text = self.wait_statustext("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+            except AutoTestTimeoutException:
+                pass
+            try:
+                gps2_det_text = self.wait_statustext("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+            except AutoTestTimeoutException:
+                pass
+
+            self.context_stop_collecting('STATUSTEXT')
+            self.change_mode('LOITER')
+            if case[2] == 0 and case[3] == 0:
+                if gps1_det_text or gps2_det_text:
+                    raise NotAchievedException("Failed ordering for requested CASE:", case)
+
+            if case[2] == 0 or case[3] == 0:
+                if bool(gps1_det_text is not None) == bool(gps2_det_text is not None):
+                    print(gps1_det_text)
+                    print(gps2_det_text)
+                    raise NotAchievedException("Failed ordering for requested CASE:", case)
+
+            if gps1_det_text:
+                if case[2] != int(gps1_det_text.split('-')[1]):
+                    raise NotAchievedException("Failed ordering for requested CASE:", case)
+            if gps2_det_text:
+                if case[3] != int(gps2_det_text.split('-')[1]):
+                    raise NotAchievedException("Failed ordering for requested CASE:", case)
+            if len(case[4]):
+                self.mavproxy.send('arm throttle\n')
+                self.mavproxy.expect(case[4])
+        self.progress("############################### All GPS Order Cases Tests Passed")
+        self.context_pop()
         self.fly_auto_test()
 
     def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):

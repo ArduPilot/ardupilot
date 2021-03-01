@@ -465,7 +465,7 @@ def run_step(step):
             supplementary_binaries.append([util.reltopdir(os.path.join('build',
                                                                        config_name,
                                                                        'bin',
-                                                                       binary_name)), 
+                                                                       binary_name)),
                                           '-I {}'.format(instance_num)])
         # we are running in conjunction with a supplementary app
         # can't have speedup
