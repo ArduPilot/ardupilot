@@ -111,6 +111,7 @@ void ModePosHold::run()
     switch (poshold_state) {
 
     case AltHold_MotorStopped:
+        copter.camera_mount.enable_RC_control(true);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -127,6 +128,7 @@ void ModePosHold::run()
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            copter.camera_mount.enable_RC_control(false);
         }
 
         // get take-off adjusted pilot and takeoff climb rates

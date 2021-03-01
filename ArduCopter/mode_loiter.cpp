@@ -127,12 +127,15 @@ void ModeLoiter::run()
         loiter_nav->init_target();
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(loiter_nav->get_roll(), loiter_nav->get_pitch(), target_yaw_rate);
         pos_control->update_z_controller();
+
+        copter.camera_mount.enable_RC_control(true);
         break;
 
     case AltHold_Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            copter.camera_mount.enable_RC_control(false);
         }
 
         // get takeoff adjusted pilot and takeoff climb rates

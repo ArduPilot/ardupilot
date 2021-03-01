@@ -135,6 +135,8 @@ protected:
 
     bool yaw_center_reset_flag;
 
+    bool query_state_flag;
+
     struct command_flags {
     	bool change_state;
     	bool center_yaw;
@@ -142,6 +144,9 @@ protected:
     	bool stop_video;
     	bool turn_camera_off;
     	bool zero_zoom;
+    	bool toggle_pip;
+		bool toggle_color;
+		bool default_pip_color;
     	}  command_flags;
 
 private:

@@ -47,10 +47,6 @@ void ModeRTL::run(bool disarm_on_land)
 
 
 
-
-
-
-
     if (!motors->armed()) {
         return;
     }

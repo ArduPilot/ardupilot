@@ -59,6 +59,7 @@ void ModeAltHold::run()
     switch (althold_state) {
 
     case AltHold_MotorStopped:
+    	 copter.camera_mount.enable_RC_control(true);
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->set_yaw_target_to_current_heading();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
@@ -71,6 +72,7 @@ void ModeAltHold::run()
     case AltHold_Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms();
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+        copter.camera_mount.enable_RC_control(false);
         break;
 
     case AltHold_Takeoff:

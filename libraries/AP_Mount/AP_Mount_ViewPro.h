@@ -70,6 +70,14 @@ private:
     void zoom_camera();
     void zero_zoom();
     void camera_state(int camera_state_cmd);
+
+    void toggle_pip();
+    void toggle_color();
+    void default_pip_color();
+
+
+    //void camera_state_trackingCam(int camera_state_cmd);
+
     void record();
 
 
@@ -318,8 +326,7 @@ struct query_flags {
     uint8_t color_state;
 	bool is_recording;
 	bool state_is_video;
-	bool pip_change_hold;
-	bool color_change_hold;
+	bool pip_color_hold;
 
 
 uint16_t _zoom_level;

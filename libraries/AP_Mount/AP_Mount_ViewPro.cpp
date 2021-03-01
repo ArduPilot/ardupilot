@@ -35,11 +35,16 @@ void AP_Mount_ViewPro::init()
     is_recording = false;
     state_is_video = true;
 
+    pip_state = 0;
+    color_state = 0;
+    pip_color_hold = false;
+
 	command_flags.change_state = false;
 	command_flags.center_yaw = false;
 	command_flags.toggle_rec = false;
 	command_flags.stop_video = false;
 	yaw_center_reset_flag = false;
+	query_state_flag = false;
 
 }
 
@@ -59,6 +64,7 @@ void AP_Mount_ViewPro::update()
     	if(yaw_center_reset_flag){
     		command_flags.center_yaw = true;
     		command_flags.zero_zoom = true;
+    		command_flags.default_pip_color = true;
     	}
     	//set reset flag false so we don't keep sending
     	yaw_center_reset_flag = false;
@@ -139,7 +145,7 @@ void AP_Mount_ViewPro::update()
     if(get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
 
     	//Update at 20 Hz
-    	if((AP_HAL::millis() - _last_send) > 50){
+    	if((AP_HAL::millis() - _last_send) > 100){
 			send_targeting_cmd();
 		}
 		return;
@@ -153,7 +159,7 @@ void AP_Mount_ViewPro::update()
 
     }else if(get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING or get_mode() == MAV_MOUNT_MODE_GPS_POINT){
     	//Update at 10 Hz
-    	if((AP_HAL::millis() - _last_send) > 100){
+    	if((AP_HAL::millis() - _last_send) > 200){
     		send_targeting_cmd();
     	}
     	return;
@@ -242,6 +248,20 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		_last_send = AP_HAL::millis();
 		return;
 
+	}else if(command_flags.toggle_pip and !pip_color_hold){
+
+		toggle_pip();
+		pip_color_hold = true;
+		_last_send = AP_HAL::millis();
+		return;
+
+	}else if(command_flags.toggle_color and !pip_color_hold){
+
+		toggle_color();
+		pip_color_hold = true;
+		_last_send = AP_HAL::millis();
+		return;
+
 	}else if(_zooming_state_change){
 
 		zoom_camera();
@@ -257,6 +277,12 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		_last_send = AP_HAL::millis();
 		return;
 
+	}else if(command_flags.default_pip_color){
+
+		default_pip_color();
+		_last_send = AP_HAL::millis();
+		command_flags.default_pip_color = false;
+		return;
 	}
 
 
@@ -281,9 +307,29 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 
 		//Need Code
 
-	}else if(get_mode() == MAV_MOUNT_MODE_RC_TARGETING){
+	}else if(true){
 
-		if(current_zoom_state == ZOOM_STOP){
+		if(query_state_flag){
+
+			static cmd_5_byte_struct query_angles;
+				query_angles.byte1 = 0x81;
+				query_angles.byte2 = 0x09;
+				query_angles.byte3 = 0x04;
+				query_angles.byte4 = 0x68;
+				query_angles.byte5 = 0xff;
+
+				buf_size = sizeof(query_angles);
+				buf_query = (uint8_t*)&query_angles;
+
+				_reply_type =  ReplyType_Rec_State_DATA;
+				_reply_counter = 0;
+				_reply_length = 6;
+
+
+
+		query_state_flag = false;
+
+		}else if(current_zoom_state == ZOOM_STOP){
 
 			static cmd_5_byte_struct query_angles;
 			query_angles.byte1 = 0x3E;
@@ -324,6 +370,9 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 			_port->write(buf_query[i]);
 		}
 	}
+
+
+
 
     // store time of send
     _last_send = AP_HAL::millis();
@@ -454,11 +503,13 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 	}
 
 	const RC_Channel *zoom_ch = rc().channel(CH_3);
-	//const RC_Channel *pip_color = rc().channel(CH_4);
+	const RC_Channel *pip_color = rc().channel(CH_4);
 
 	float zoom_value = zoom_ch->norm_input_dz();
-	//float pip_color_value = pip_color->norm_input_dz();
+	float pip_color_value = pip_color->norm_input_dz();
 
+
+	//Decode for zoom
 	if(zoom_value < -0.4){
 
 		//Check if we've changed state
@@ -488,6 +539,28 @@ void AP_Mount_ViewPro::update_zoom_focus_from_rc(){
 
 		current_zoom_state = ZOOM_STOP;
 	}
+
+
+
+	//Decode for color/pip
+	if(pip_color_value < -0.4){
+
+		command_flags.toggle_pip = true;
+
+	}else if(pip_color_value > 0.4){
+
+		command_flags.toggle_color = true;
+
+	}else{
+
+		pip_color_hold = false;
+		command_flags.toggle_pip = false;
+		command_flags.toggle_color = false;
+	}
+
+
+
+
 }
 
 
@@ -814,28 +887,28 @@ void AP_Mount_ViewPro::zoom_camera(){
 
 void AP_Mount_ViewPro::zero_zoom(){
 
-		static cmd_9_byte_struct cmd_set_zoom_zero_data;
-		cmd_set_zoom_zero_data.byte1 = 0x81;
-		cmd_set_zoom_zero_data.byte2 = 0x01;
-		cmd_set_zoom_zero_data.byte3 = 0x04;
-		cmd_set_zoom_zero_data.byte4 = 0x47;
-		cmd_set_zoom_zero_data.byte5 = 0x00;
-		cmd_set_zoom_zero_data.byte6 = 0x00;
-		cmd_set_zoom_zero_data.byte7 = 0x00;
-		cmd_set_zoom_zero_data.byte8 = 0x00;
-		cmd_set_zoom_zero_data.byte9 = 0xFF;
+	static cmd_9_byte_struct cmd_set_zoom_zero_data;
+	cmd_set_zoom_zero_data.byte1 = 0x81;
+	cmd_set_zoom_zero_data.byte2 = 0x01;
+	cmd_set_zoom_zero_data.byte3 = 0x04;
+	cmd_set_zoom_zero_data.byte4 = 0x47;
+	cmd_set_zoom_zero_data.byte5 = 0x00;
+	cmd_set_zoom_zero_data.byte6 = 0x00;
+	cmd_set_zoom_zero_data.byte7 = 0x00;
+	cmd_set_zoom_zero_data.byte8 = 0x00;
+	cmd_set_zoom_zero_data.byte9 = 0xFF;
 
-		if ((size_t)_port->txspace() <= sizeof(cmd_set_zoom_zero_data)) {
-			return;
-		}
+	if ((size_t)_port->txspace() <= sizeof(cmd_set_zoom_zero_data)) {
+		return;
+	}
 
-		uint8_t* buf_zoom = (uint8_t*)&cmd_set_zoom_zero_data;
+	uint8_t* buf_zoom = (uint8_t*)&cmd_set_zoom_zero_data;
 
-		for (uint8_t i = 0;  i != sizeof(cmd_set_zoom_zero_data) ; i++) {
-			_port->write(buf_zoom[i]);
-		}
+	for (uint8_t i = 0;  i != sizeof(cmd_set_zoom_zero_data) ; i++) {
+		_port->write(buf_zoom[i]);
+	}
 
-		_zoom_level = 0;
+	_zoom_level = 0;
 
 }
 
@@ -867,10 +940,6 @@ void AP_Mount_ViewPro::camera_state(int camera_cmd){
 		case TOGGLE_STATE:
 			cmd_change_video_state.byte5 = 0x05;
 			break;
-
-		//case TAKE_PIC:
-			//cmd_change_video_state.byte5 = 0x01;
-			//break;
 	}
 
 
@@ -885,8 +954,277 @@ void AP_Mount_ViewPro::camera_state(int camera_cmd){
 		_port->write(buf_cmd[i]);
 	}
 
+
+	///Repeat command for Tracking type cameras
+
+	cmd_48_byte_struct tracking_camera_cmd;
+	uint8_t* send_buf = (uint8_t*)&tracking_camera_cmd;
+	uint16_t checksum = 0;
+
+	for(uint8_t i = 0; i != 47; i++){
+		send_buf[i] = 0x00;
+	}
+
+	//Header
+	send_buf[0] = 0x7E;
+	send_buf[1] = 0x7E;
+	send_buf[2] = 0x44;
+
+	//camera function
+	send_buf[5] = 0x7C;
+
+
+	switch(camera_cmd) {
+
+		case TOGGLE_REC:
+		case TOGGLE_STATE:
+
+			query_state_flag = true;
+
+			if(!is_recording){
+				send_buf[6] = 0x01;
+				is_recording = true;
+			}else{
+				send_buf[6] = 0x00;
+				is_recording = false;
+			}
+			break;
+
+		case TURN_VID_OFF:
+			send_buf[6] = 0x00;
+			is_recording = false;
+			break;
+
+	}
+
+	buf_size = sizeof(tracking_camera_cmd);
+	//buf_cmd = (uint8_t*)&tracking_camera_cmd;
+
+
+
+	//Checksum
+	for (uint8_t i = 0;  i < 47 ; i++) {
+		checksum += send_buf[i];
+	}
+
+	send_buf[47] = (uint8_t)(checksum % 256);
+
+
+
+	if ((size_t)_port->txspace() < buf_size) {
+		return;
+	}
+
+	for (uint8_t i = 0;  i != buf_size ; i++) {
+		_port->write(send_buf[i]);
+	}
+
+
 }
 
+
+void AP_Mount_ViewPro::toggle_pip(){
+
+	// setup message to send
+	cmd_48_byte_struct toggle_pip_cmd;
+	uint8_t* send_buf = (uint8_t*)&toggle_pip_cmd;
+	uint16_t checksum = 0;
+
+	for(uint8_t i = 0; i != 47; i++){
+		send_buf[i] = 0x00;
+	}
+
+	//Header
+	send_buf[0] = 0x7E;
+	send_buf[1] = 0x7E;
+	send_buf[2] = 0x44;
+
+	//camera function
+	send_buf[5] = 0x78;
+
+	if(command_flags.toggle_pip){
+		pip_state++;
+		command_flags.toggle_pip = false;
+		if(pip_state >= 4){  pip_state = 0;	}
+
+	}
+
+
+	if(pip_state == 0){
+		send_buf[14] = 0x00;
+	}else if(pip_state == 1){
+		send_buf[14] = 0x01;
+	}else if(pip_state == 2){
+		send_buf[14] = 0x02;
+	}else if(pip_state == 3){
+		send_buf[14] = 0x03;
+	}
+
+
+	if(color_state == 0){
+		send_buf[6] = 0x00;
+	}else if(color_state == 1){
+		send_buf[6] = 0x01;
+	}else if(color_state == 2){
+		send_buf[6] = 0x02;
+	}else if(color_state == 3){
+		send_buf[6] = 0x03;
+	}else if(color_state == 4){
+		send_buf[6] = 0x04;
+	}
+
+
+	// compute checksum
+	for (uint8_t i = 0;  i < 47 ; i++) {
+		checksum += send_buf[i];
+	}
+	send_buf[47] = (uint8_t)(checksum % 256);
+
+
+
+	if ((size_t)_port->txspace() < 47) {
+		return;
+	}
+
+	for (uint8_t i = 0;  i != 48 ; i++) {
+		_port->write(send_buf[i]);
+	}
+
+
+}
+
+
+
+void AP_Mount_ViewPro::toggle_color(){
+
+	// setup message to send
+	cmd_48_byte_struct toggle_color_cmd;
+	uint8_t* send_buf = (uint8_t*)&toggle_color_cmd;
+	uint16_t checksum = 0;
+
+	for(uint8_t i = 0; i != 47; i++){
+		send_buf[i] = 0x00;
+	}
+
+	//Header
+	send_buf[0] = 0x7E;
+	send_buf[1] = 0x7E;
+	send_buf[2] = 0x44;
+
+	//camera function
+	send_buf[5] = 0x78;
+
+
+	if(command_flags.toggle_color){
+		color_state++;
+		command_flags.toggle_color = false;
+
+    	if(color_state >= 5){  color_state = 0;	}
+
+	}
+
+
+
+	if(color_state == 0){
+		send_buf[6] = 0x00;
+	}else if(color_state == 1){
+		send_buf[6] = 0x01;
+	}else if(color_state == 2){
+		send_buf[6] = 0x02;
+	}else if(color_state == 3){
+		send_buf[6] = 0x03;
+	}else if(color_state == 4){
+		send_buf[6] = 0x04;
+	}
+
+
+	if(pip_state == 0){
+		send_buf[14] = 0x00;
+	}else if(pip_state == 1){
+		send_buf[14] = 0x01;
+	}else if(pip_state == 2){
+		send_buf[14] = 0x02;
+	}else if(pip_state == 3){
+		send_buf[14] = 0x03;
+	}
+
+
+	// compute checksum
+	for (uint8_t i = 0;  i < 47 ; i++) {
+		checksum += send_buf[i];
+	}
+	send_buf[47] = (uint8_t)(checksum % 256);
+
+
+
+	if ((size_t)_port->txspace() < 47) {
+		return;
+	}
+
+	for (uint8_t i = 0;  i != 48 ; i++) {
+		_port->write(send_buf[i]);
+	}
+
+
+}
+
+
+void AP_Mount_ViewPro::default_pip_color(){
+
+	// setup message to send
+		cmd_48_byte_struct toggle_color_cmd;
+		uint8_t* send_buf = (uint8_t*)&toggle_color_cmd;
+		uint16_t checksum = 0;
+
+		for(uint8_t i = 0; i != 47; i++){
+			send_buf[i] = 0x00;
+		}
+
+		//Header
+		send_buf[0] = 0x7E;
+		send_buf[1] = 0x7E;
+		send_buf[2] = 0x44;
+
+		//camera function
+		send_buf[5] = 0x78;
+
+
+		if(color_state == 0){
+			send_buf[6] = 0x00;
+		}else if(color_state == 1){
+			send_buf[6] = 0x01;
+		}else if(color_state == 2){
+			send_buf[6] = 0x02;
+		}else if(color_state == 3){
+			send_buf[6] = 0x03;
+		}else if(color_state == 4){
+			send_buf[6] = 0x04;
+		}
+
+		send_buf[14] = 0x00;
+		pip_state = 0;
+
+
+		// compute checksum
+		for (uint8_t i = 0;  i < 47 ; i++) {
+			checksum += send_buf[i];
+		}
+		send_buf[47] = (uint8_t)(checksum % 256);
+
+
+
+		if ((size_t)_port->txspace() < 47) {
+			return;
+		}
+
+		for (uint8_t i = 0;  i != 48 ; i++) {
+			_port->write(send_buf[i]);
+		}
+
+
+
+
+}
 
 
 
