@@ -697,7 +697,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_RC_FAIL", 1)
         self.wait_mode("RTL")
         self.wait_rtl_complete()
-        self.clear_mission_using_mavproxy()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.set_parameter("SIM_RC_FAIL", 0)
         self.end_subtest("Completed Radio failsafe RTL in mission without option to continue")
 
