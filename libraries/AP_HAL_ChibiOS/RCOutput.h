@@ -18,6 +18,8 @@
 
 #include "AP_HAL_ChibiOS.h"
 #include <AP_HAL/Semaphores.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
+
 #include "shared_dma.h"
 #include "ch.h"
 #include "hal.h"
@@ -30,7 +32,11 @@
 
 #define RCOU_DSHOT_TIMING_DEBUG 0
 
-class ChibiOS::RCOutput : public AP_HAL::RCOutput {
+class ChibiOS::RCOutput : public AP_HAL::RCOutput
+#ifdef HAL_WITH_BIDIR_DSHOT
+  , AP_ESC_Telem_Backend
+#endif
+{
 public:
     // disabled channel marker
     const static uint8_t CHAN_DISABLED = 255;
@@ -151,6 +157,8 @@ public:
       with Dshot to get telemetry feedback
      */
     void set_bidir_dshot_mask(uint16_t mask) override;
+
+    void set_motor_poles(uint8_t poles) override { _bdshot.motor_poles = poles; }
 #endif
 
     /*
@@ -458,6 +466,7 @@ private:
         uint16_t erpm_errors[max_channels];
         uint16_t erpm_clean_frames[max_channels];
         uint32_t erpm_last_stats_ms[max_channels];
+        uint8_t motor_poles;
 #endif
     } _bdshot;
 
