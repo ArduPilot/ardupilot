@@ -516,6 +516,9 @@ public:
 
     static void zero_rc_outputs();
 
+    // initialize before any call to push
+    static void init();
+
 private:
 
     static bool disabled_passthrough;
@@ -573,6 +576,7 @@ private:
 
     AP_Int8 auto_trim;
     AP_Int16 default_rate;
+    AP_Int8 dshot_rate;
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
