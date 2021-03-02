@@ -212,6 +212,11 @@ public:
     virtual void set_bidir_dshot_mask(uint16_t mask) {}
 
     /*
+      Set the dshot rate as a multiple of the loop rate
+     */
+    virtual void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) {}
+
+    /*
       setup serial led output for a given channel number, with
       the given max number of LEDs in the chain.
      */
