@@ -1293,6 +1293,33 @@ class AutoTestPlane(AutoTest):
         mavproxy:'''
         self.clear_fence_using_mavproxy()
 
+    def fly_ahrs2_test(self):
+        '''check secondary estimator is looking OK'''
+
+        ahrs2 = self.mav.recv_match(type='AHRS2', blocking=True, timeout=1)
+        if ahrs2 is None:
+            raise NotAchievedException("Did not receive AHRS2 message")
+
+        # check location
+        gpi = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
+        if gpi is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+        if self.get_distance_int(gpi, ahrs2) > 10:
+            raise NotAchievedException("Secondary location looks bad")
+
+        # check attitude
+        attitude = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+        if attitude is None:
+            raise NotAchievedException("Did not receive ATTITUDE message")
+        if abs(math.degrees(attitude.roll) - ahrs2.roll) > 5:
+            raise NotAchievedException("Secondary roll looks bad")
+        if abs(math.degrees(attitude.pitch) - ahrs2.pitch) > 5:
+            raise NotAchievedException("Secondary pitch looks bad")
+
     def test_main_flight(self):
 
         self.change_mode('MANUAL')
@@ -1327,6 +1354,8 @@ class AutoTestPlane(AutoTest):
         self.run_subtest("LOITER test", self.fly_LOITER)
 
         self.run_subtest("CIRCLE test", self.fly_CIRCLE)
+
+        self.run_subtest("AHRS2 test", self.fly_ahrs2_test)
 
         self.run_subtest("Mission test",
                          lambda: self.fly_mission("ap1.txt", strict=False))
