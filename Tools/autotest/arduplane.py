@@ -1537,13 +1537,16 @@ class AutoTestPlane(AutoTest):
                 return
             divergence = self.get_distance_int(self.gpi, self.simstate)
             max_allowed_divergence = 200
-            if time.time() - self.last_print > 1:
+            if (time.time() - self.last_print > 1 or
+                    divergence > self.max_divergence):
                 self.progress("position-estimate-divergence=%fm" % (divergence,))
                 self.last_print = time.time()
-            if divergence > max_allowed_divergence:
-                raise NotAchievedException("global-position-int diverged from simstate by >%fm" % (max_allowed_divergence,))
             if divergence > self.max_divergence:
                 self.max_divergence = divergence
+            if divergence > max_allowed_divergence:
+                raise NotAchievedException(
+                    "global-position-int diverged from simstate by %fm (max=%fm" %
+                    (divergence, max_allowed_divergence,))
 
         self.install_message_hook(validate_global_position_int_against_simstate)
 
@@ -1557,8 +1560,7 @@ class AutoTestPlane(AutoTest):
 
             self.takeoff(50)
             loc = self.mav.location()
-            loc.lat = -35.35690712
-            loc.lng = 149.17083386
+            self.location_offset_ne(loc, 500, 500)
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_DO_REPOSITION,
                 0,
@@ -1588,6 +1590,8 @@ class AutoTestPlane(AutoTest):
 
     def deadreckoning(self):
         self.deadreckoning_main()
+
+    def deadreckoning_no_airspeed_sensor(self):
         self.deadreckoning_main(disable_airspeed_sensor=True)
 
     def rtl_climb_min(self):
@@ -2784,6 +2788,10 @@ class AutoTestPlane(AutoTest):
             ("Deadreckoning",
              "Test deadreckoning support",
              self.deadreckoning),
+
+            ("DeadreckoningNoAirSpeed",
+             "Test deadreckoning support with no airspeed sensor",
+             self.deadreckoning_no_airspeed_sensor),
 
             ("EKFlaneswitch",
              "Test EKF3 Affinity and Lane Switching",
