@@ -21,7 +21,7 @@ extern const AP_HAL::HAL& hal;
 #define LIGHTWARE_DISTANCE_READ_REG 0
 #define LIGHTWARE_LOST_SIGNAL_TIMEOUT_READ_REG 22
 #define LIGHTWARE_LOST_SIGNAL_TIMEOUT_WRITE_REG 23
-#define LIGHTWARE_TIMEOUT_REG_DESIRED_VALUE 5
+#define LIGHTWARE_TIMEOUT_REG_DESIRED_VALUE 20      // number of lost signal confirmations for legacy protocol only
 
 #define LIGHTWARE_OUT_OF_RANGE_ADD_CM   100
 
