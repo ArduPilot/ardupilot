@@ -12,6 +12,7 @@ set -x
 export CCFLAGS="$CCFLAGS -fprofile-arcs -ftest-coverage"
 export CXXFLAGS="$CXXFLAGS -fprofile-arcs -ftest-coverage"
 export LINKFLAGS="$LINKFLAGS -lgcov -coverage"
+export COVERAGE=True
 
 SPEEDUP=5
 TIMEOUT=14400
