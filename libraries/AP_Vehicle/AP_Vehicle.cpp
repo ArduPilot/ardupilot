@@ -130,6 +130,7 @@ void AP_Vehicle::setup()
     init_ardupilot();
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 
+    SRV_Channels::init();
     // gyro FFT needs to be initialized really late
 #if HAL_GYROFFT_ENABLED
     gyro_fft.init(AP::scheduler().get_loop_period_us());
