@@ -288,7 +288,7 @@ protected:
 private:
 
     // Switch to QRTL if enabled and within radius
-    bool switch_QRTL();
+    bool switch_QRTL(bool check_loiter_target = true);
 };
 
 class ModeStabilize : public Mode
