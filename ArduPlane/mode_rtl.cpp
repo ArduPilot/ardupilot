@@ -7,7 +7,8 @@ bool ModeRTL::_enter()
     plane.do_RTL(plane.get_RTL_altitude());
     plane.rtl.done_climb = false;
 
-    switch_QRTL();
+    // do not check if we have reached the loiter target if switching from loiter this will trigger as the nav controller has not yet proceeded the new destination
+    switch_QRTL(false);
 
     return true;
 }
@@ -80,7 +81,7 @@ void ModeRTL::navigate()
 
 
 // Switch to QRTL if enabled and within radius
-bool ModeRTL::switch_QRTL()
+bool ModeRTL::switch_QRTL(bool check_loiter_target)
 {
     if (!plane.quadplane.available() || (plane.quadplane.rtl_mode != 1)) {
         return false;
@@ -91,7 +92,7 @@ bool ModeRTL::switch_QRTL()
         qrtl_radius = abs(plane.aparm.loiter_radius);
     }
 
-    if (plane.nav_controller->reached_loiter_target() ||
+    if ( (check_loiter_target && plane.nav_controller->reached_loiter_target()) ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
          plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
         /*
