@@ -63,6 +63,11 @@ void RCOutput::set_bidir_dshot_mask(uint16_t mask)
 
 bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 {
+    // check if already allocated
+    if (group.has_ic_dma()) {
+        return true;
+    }
+
     bool set_curr_chan = false;
 
     for (uint8_t i = 0; i < 4; i++) {

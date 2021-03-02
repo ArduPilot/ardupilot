@@ -151,6 +151,11 @@ public:
 #endif
 
     /*
+      Set the dshot rate as a multiple of the loop rate
+     */
+    void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) override;
+
+    /*
       get safety switch state, used by Util.cpp
     */
     AP_HAL::Util::safety_state _safety_switch_state(void);
@@ -414,6 +419,15 @@ private:
 #endif
     } _bdshot;
 
+    // dshot period
+    uint32_t _dshot_period_us;
+    // dshot rate as a multiple of loop rate or 0 for 1Khz
+    uint8_t _dshot_rate;
+    // dshot periods since the last push()
+    uint8_t _dshot_cycle;
+    // virtual timer for post-push() pulses
+    virtual_timer_t _dshot_rate_timer;
+
     uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
@@ -482,8 +496,9 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
-    void dshot_send_groups();
-    void dshot_send(pwm_group &group);
+    void dshot_send_groups(uint32_t time_out_us);
+    void dshot_send(pwm_group &group, uint32_t time_out_us);
+    static void dshot_update_tick(void* p);
     // release locks on the groups that are pending in reverse order
     void dshot_collect_dma_locks(uint32_t last_run_us);
     static void dma_up_irq_callback(void *p, uint32_t flags);
