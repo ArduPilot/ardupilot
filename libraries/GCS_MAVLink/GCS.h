@@ -276,6 +276,7 @@ public:
 #if HAL_HIGH_LATENCY2_ENABLED
     void send_high_latency() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+    bool send_smart_battery_info();
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -864,8 +865,8 @@ private:
 #endif
 
     uint32_t last_mavlink_stats_logged;
-
     uint8_t last_battery_status_idx;
+    uint8_t last_smart_battery_info_idx;
 
     // send_sensor_offsets decimates its send rate using this counter:
     // FIXME: decimate this instead when initialising the message
@@ -1110,4 +1111,3 @@ void can_printf(const char *fmt, ...);
 #define GCS_SEND_TEXT(severity, format, args...)
 
 #endif // HAL_NO_GCS
-
