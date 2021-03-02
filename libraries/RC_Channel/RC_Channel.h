@@ -208,11 +208,13 @@ public:
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
-        WALKING_HEIGHT =     203, // walking robot height input
+        THROTTLE =           203, // throttle pilot input
+        YAW =                204, // yaw pilot input
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
         FWD_THR =            209, // VTOL manual forward throttle
         AIRBRAKE =           210, // manual airbrake control
+        WALKING_HEIGHT =     211, // walking robot height input
 
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
