@@ -195,6 +195,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 #endif // HAL_BUILD_AP_PERIPH
 
+    // @Param: _DSHOT_RATE
+    // @DisplayName: Servo DShot output rate
+    // @Description: This sets the DShot output rate for all outputs as a multiple of the loop rate. 0 sets the output rate to be fixed at 1Khz for low loop rates. This value should never be set below 500Hz.
+    // @Values: 0:1Khz,1:loop-rate,2:double loop-rate,3:triple loop-rate,4:quadruple loop rate
+    // @User: Advanced
+    AP_GROUPINFO("_DSHOT_RATE",  23, SRV_Channels, dshot_rate, 0),
+
     AP_GROUPEND
 };
 
@@ -222,6 +229,13 @@ SRV_Channels::SRV_Channels(void)
     blheli_ptr = &blheli;
 #endif
 #endif // HAL_BUILD_AP_PERIPH
+
+}
+
+// SRV_Channels initialization
+void SRV_Channels::init(void)
+{
+    hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 }
 
 /*
