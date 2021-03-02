@@ -38,13 +38,10 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal)) {
-        float angle_deg = mount->get_follow_yaw_rate();
+        float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
         int8_t direction = 1;
-        bool relative_angle = true;
-        if (angle_deg < 0.0f) {
-            angle_deg = -angle_deg;
-            direction = -1;
-        }
+        bool relative_angle = false;
+
         // update auto_yaw private variable _fixed_yaw
         copter.flightmode->auto_yaw.set_fixed_yaw(
             angle_deg,

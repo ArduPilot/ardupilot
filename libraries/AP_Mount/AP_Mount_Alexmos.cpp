@@ -1,6 +1,7 @@
 ﻿#include "AP_Mount_Alexmos.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -232,6 +233,8 @@ void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
  */
 void AP_Mount_Alexmos::parse_body()
 {
+    float log_encoder_readback = 0;
+    bool mount_defined = false;
     switch (_command_id ) {
         case CMD_BOARD_INFO:
             _board_version = _buffer.version._board_version/ 10;
@@ -269,6 +272,8 @@ void AP_Mount_Alexmos::parse_body()
             AP_Mount *mount = AP::mount();
             if (mount != nullptr) {
                 mount->yaw_encoder_readback = _current_angle.z;
+                log_encoder_readback = mount->yaw_encoder_readback;
+                mount_defined = true;
             }
         }
         break;
@@ -285,6 +290,22 @@ void AP_Mount_Alexmos::parse_body()
             _last_command_confirmed = true;
             break;
     }
+
+
+    AP::logger().Write("AMNT", "TimeUS,CmdId,CAngZ,AngZ,EAngZ,TAngZ,YMode,MMode,Enc,Mdef,Pan", "QBffffBBfBB",
+                                            AP_HAL::micros64(),
+                                            (uint8_t)_command_id,
+                                            (float)_current_angle.z,
+                                            (float)VALUE_TO_DEGREE(_buffer.angles.angle_yaw),
+                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw),
+                                            (float)degrees(_angle_ef_target_rad.z),
+                                            (uint8_t)get_control_mode(_state._yaw_input_mode),
+                                            (uint8_t)_state._mode,
+                                            (float)log_encoder_readback,
+                                            (uint8_t)mount_defined,
+                                            (uint8_t)has_pan_control());
+
+
 }
 
 /*
