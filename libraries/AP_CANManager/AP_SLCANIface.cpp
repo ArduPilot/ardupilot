@@ -673,6 +673,10 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         }
     }
     if (rx_queue_.available()) {
+        if ( intervals > AP_HAL::micros64()) {
+            return 0;
+        }
+        intervals = AP_HAL::micros64() + 1000;
         // if we already have something in buffer transmit it
         CanRxItem frm;
         if (!rx_queue_.pop(frm)) {
