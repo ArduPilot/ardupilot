@@ -1087,6 +1087,15 @@ void GCS_MAVLINK::update_send()
 
     send_ftp_replies();
 
+#ifdef ENABLE_SCRIPTING
+    {
+        AP_Scripting *scripting = AP_Scripting::get_singleton();
+        if (scripting != nullptr) {
+            scripting->send_message(chan);
+        }
+    }
+#endif // ENABLE_SCRIPTING
+
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
         deferred_messages_initialised = true;
@@ -1384,6 +1393,14 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
         handle_mount_message(msg);
     }
+#ifdef ENABLE_SCRIPTING
+    {
+        AP_Scripting *scripting = AP_Scripting::get_singleton();
+        if (scripting != nullptr) {
+            scripting->handle_message(msg, chan);
+        }
+    }
+#endif // ENABLE_SCRIPTING
     if (!accept_packet(status, msg)) {
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;

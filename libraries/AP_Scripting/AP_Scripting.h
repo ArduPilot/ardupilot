@@ -35,6 +35,10 @@ public:
 
     bool enabled(void) const { return _enable != 0; };
 
+    void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
+
+    void send_message(const mavlink_channel_t chan);
+
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -55,6 +59,27 @@ public:
         SCRIPTS = 1 << 1,
     };
     uint16_t get_disabled_dir() { return uint16_t(_dir_disable.get());}
+
+    struct mavlink_msg {
+        mavlink_message_t msg;
+        mavlink_channel_t chan;
+    };
+
+    struct mavlink_output {
+        char data[256]; // maximum payload size
+        int32_t msgid;
+        mavlink_channel_t chan;
+    };
+
+    static const int mavlink_input_queue_size = 5;
+    static const int mavlink_output_queue_size = 3;
+
+    struct mavlink {
+        ObjectBuffer<struct mavlink_msg> * input;
+        ObjectBuffer<struct mavlink_output> * output;
+        int32_t accept_msg_ids[16];
+        HAL_Semaphore sem;
+    } mavlink_data;
 
 private:
 
