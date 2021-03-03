@@ -8,6 +8,8 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_POLYGON
 #else
 #define AC_FENCE_TYPE_DEFAULT AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON
 #endif
@@ -102,12 +104,11 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @Param: AUTOENABLE
     // @DisplayName: Fence Auto-Enable
     // @Description: Auto-enable of fence
-    // @Values{Copter, Plane}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
-    // @Values{Rover, Sub}: 0:AutoEnableOff,3:AutoEnableOnlyWhenArmed
+    // @Values{Plane}: 0:AutoEnableOff,1:AutoEnableOnTakeoff,2:AutoEnableDisableFloorOnLanding,3:AutoEnableOnlyWhenArmed
     // @Range: 0 3
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED)),
+    AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE),
 
     AP_GROUPEND
 };
