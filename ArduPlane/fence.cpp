@@ -42,7 +42,15 @@ void Plane::fence_check()
         return;
     }
 
-    if (new_breaches) {
+    if (orig_breaches &&
+        (control_mode->is_guided_mode()
+        || control_mode == &mode_rtl || fence.get_action() == AC_FENCE_ACTION_REPORT_ONLY)) {
+        // we have already triggered, don't trigger again until the
+        // user disables/re-enables using the fence channel switch
+        return;
+    }
+
+    if (new_breaches || orig_breaches) {
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
         switch (fence_act) {
