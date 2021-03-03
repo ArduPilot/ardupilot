@@ -269,26 +269,6 @@ return_zero:
     return 0;
 }
 
-
-/*
-  called when an auto-takeoff is complete
- */
-void Plane::complete_auto_takeoff(void)
-{
-#if AC_FENCE == ENABLED
-    switch(fence.auto_enabled()) {
-        case AC_Fence::AutoEnable::ALWAYS_ENABLED:
-        case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-            fence.enable(true);
-            break;
-        default:
-            // fence does not auto-enable in other takeoff conditions
-            break;
-    }
-#endif
-}
-
-
 #if LANDING_GEAR_ENABLED == ENABLED
 /*
   update landing gear

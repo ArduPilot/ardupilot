@@ -557,7 +557,9 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-        plane.complete_auto_takeoff();
+#if AC_FENCE == ENABLED
+        plane.fence.auto_enable_fence_after_takeoff();
+#endif
 
         // don't cross-track on completion of takeoff, as otherwise we
         // can end up doing too sharp a turn
