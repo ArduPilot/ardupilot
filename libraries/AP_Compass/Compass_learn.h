@@ -52,6 +52,9 @@ private:
     float worst_error;
     bool converged;
 
+    // notification
+    uint32_t last_learn_progress_sent_ms;
+
     void io_timer(void);
     void process_sample(const struct sample &s);
 };
