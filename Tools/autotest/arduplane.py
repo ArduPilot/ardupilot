@@ -1314,16 +1314,20 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Secondary location looks bad")
 
         # check attitude
-        attitude = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
-        if attitude is None:
-            raise NotAchievedException("Did not receive ATTITUDE message")
-        self.progress("ATTITUDE: %s" % str(attitude))
-        if abs(math.degrees(attitude.roll) - ahrs2.roll) > 5:
+        simstate = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
+        if simstate is None:
+            raise NotAchievedException("Did not receive SIMSTATE message")
+        self.progress("SIMSTATE: %s" % str(simstate))
+        want = math.degrees(simstate.roll)
+        got = math.degrees(ahrs2.roll)
+        if abs(want - got) > 5:
             raise NotAchievedException("Secondary roll looks bad (want=%f got=%f)" %
-                                       (math.degrees(attitude.roll), ahrs2.roll))
-        if abs(math.degrees(attitude.pitch) - ahrs2.pitch) > 5:
+                                       (want, got))
+        want = math.degrees(simstate.pitch)
+        got = math.degrees(ahrs2.pitch)
+        if abs(want - got) > 5:
             raise NotAchievedException("Secondary pitch looks bad (want=%f got=%f)" %
-                                       (math.degrees(attitude.pitch), ahrs2.pitch))
+                                       (want, got))
 
     def test_main_flight(self):
 
