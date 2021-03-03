@@ -12,7 +12,7 @@ bool ModeGuided::_enter()
     // initialise waypoint speed
     g2.wp_nav.set_desired_speed_to_default();
 
-    sent_notification = false;
+    send_notification = false;
 
     return true;
 }
@@ -28,8 +28,8 @@ void ModeGuided::update()
                 navigate_to_waypoint();
             } else {
                 // send notification
-                if (!sent_notification) {
-                    sent_notification = true;
+                if (send_notification) {
+                    send_notification = false;
                     rover.gcs().send_mission_item_reached_message(0);
                 }
 
@@ -228,7 +228,7 @@ bool ModeGuided::set_desired_location(const struct Location& destination,
 
         // handle guided specific initialisation and logging
         _guided_mode = ModeGuided::Guided_WP;
-        sent_notification = false;
+        send_notification = true;
         rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_desired_speed(), 0.0f, 0.0f));
         return true;
     }
