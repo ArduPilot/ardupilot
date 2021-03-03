@@ -28,6 +28,7 @@ void Plane::fence_check()
                 // No returning to a previous mode, unless our action allows it
                 break;
         }
+        return;
     }
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
