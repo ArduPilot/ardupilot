@@ -19,6 +19,7 @@ from pymavlink import mavextra
 from pymavlink import rotmat
 
 from pysim import util
+from pysim import vehicleinfo
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
@@ -6480,6 +6481,50 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
         self.do_RTL()
 
+    def fly_each_frame(self):
+        vinfo = vehicleinfo.VehicleInfo()
+        copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
+        known_broken_frames = {
+            'cwx': "missing defaults file",
+            'deca-cwx': "doesn't take off",
+            'djix': "missing defaults file",
+            'heli-compound': "wrong binary, different takeoff regime",
+            'heli-dual': "wrong binary, different takeoff regime",
+            'heli': "wrong binary, different takeoff regime",
+            'hexa-cwx': "does not take off",
+            'hexa-dji': "does not take off",
+            'octa-cwx': "does not take off",
+            'octa-dji': "does not take off",
+            'octa-quad-cwx': "does not take off",
+            'tri': "does not take off",
+        }
+        for frame in sorted(copter_vinfo_options["frames"].keys()):
+            self.start_subtest("Testing frame (%s)" % str(frame))
+            if frame in known_broken_frames:
+                self.progress("Actually, no I'm not - it is known-broken (%s)" %
+                              (known_broken_frames[frame]))
+                continue
+            frame_bits = copter_vinfo_options["frames"][frame]
+            print("frame_bits: %s" % str(frame_bits))
+            if frame_bits.get("external", False):
+                self.progress("Actually, no I'm not - it is an external simulation")
+                continue
+            model = frame_bits.get("model", frame)
+            # the model string for Callisto has crap in it.... we
+            # should really have another entry in the vehicleinfo data
+            # to carry the path to the JSON.
+            actual_model = model.split(":")[0]
+            defaults = self.model_defaults_filepath("ArduCopter", actual_model)
+            if type(defaults) != list:
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                ["--defaults", ','.join(defaults), ],
+                model=model,
+                wipe=True,
+            )
+            self.takeoff(10)
+            self.do_RTL()
+
     def test_replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -6938,6 +6983,10 @@ class AutoTestCopter(AutoTest):
             Test("GSF",
                  "Check GSF",
                  self.test_gsf),
+
+            Test("FlyEachFrame",
+                 "Fly each supported internal frame",
+                 self.fly_each_frame),
 
             Test("GPSBlending",
                  "Test GPS Blending",
