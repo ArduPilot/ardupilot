@@ -9,19 +9,16 @@
 
 
 
-class AS_5600 {
+class AS5600_AOA {
 
 public:
 
-    AS_5600(void);
+    AS5600_AOA(void);
 
     void init();
 
     uint32_t busMaskExt;
     uint32_t busMaskInt;
-
-
-    void checkConnect(void);
 
     unsigned short setMaxAngle(unsigned short newMaxAngle = -1);
     unsigned short getMaxAngle();
@@ -92,8 +89,5 @@ private:
 
     unsigned char highByte(unsigned short short_in);
     unsigned char lowByte(unsigned short short_in);
-
-
-
 
 };

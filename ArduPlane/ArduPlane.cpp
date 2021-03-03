@@ -47,7 +47,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(update_compass,         10,    200),
     SCHED_TASK(read_airspeed,          10,    100),
     SCHED_TASK(read_aoa,               10,    200),
-    SCHED_TASK(check_aoa,              10,    200),//This line added by Cole
     SCHED_TASK(update_alt,             10,    200),//This line added by Cole
     SCHED_TASK(adjust_altitude_target, 10,    200),
 #if ADVANCED_FAILSAFE == ENABLED
@@ -193,14 +192,6 @@ void Plane::update_compass(void)
     if (AP::compass().enabled() && compass.read()) {
         ahrs.set_compass(&compass);
     }
-}
-
-/*
- * Check if the AoA sensor is up and running               This function is code added by Cole
- */
-
-void Plane::check_aoa(void){
-    aoa_sensor.checkConnect();
 }
 
 /*

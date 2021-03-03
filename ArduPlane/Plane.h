@@ -197,7 +197,7 @@ private:
 
     AP_RPM rpm_sensor;
 
-    AS_5600 aoa_sensor;                             //This line added by Cole
+    AS5600_AOA aoa_sensor;                             //This line added by Cole
 
     AP_TECS TECS_controller{ahrs, aparm, landing};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
@@ -999,7 +999,6 @@ private:
     void read_airspeed(void);
     void rpm_update(void);
     void accel_cal_update(void);
-    void check_aoa(void);                        //This line added by Cole
     void read_aoa(void);                         //This line added by Cole
 
     // system.cpp

@@ -20,33 +20,18 @@
 extern const AP_HAL::HAL &hal;
 
 /****************************************************
- * Method: AS_5600
+ * Method: AS5600_AOA
  * In: none
  * Out: none
  * Description: constructor for AMS 5600
 ***************************************************/
- AS_5600::AS_5600()
+ AS5600_AOA::AS5600_AOA()
 {
 
     bus = 1; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
     address = 0x36; //This is the I2C address for the device, it is set by the manufacturer
 
-    bus_clock = 400000;
-    use_smbus = false;
-    timeout_ms = 4;
-
-    //ChibiOS::I2CDeviceManager myDev; //Create an instance of an I2C device
-
-    //busMaskExt = myDev.get_bus_mask_external(); //Used to see what I2C buses exist on the device
-    //busMaskInt = myDev.get_bus_mask_internal(); //Used to see what I2C buses exist on the device
-
-    //dev = myDev.get_device(bus, address); //Get the specific device which is desired
-
-
-
    /*load register values*/
-   /*c++ class forbids pre loading of variables */
-
 
   _zmco = 0x00;
   _zpos_hi = 0x01;
@@ -70,7 +55,7 @@ extern const AP_HAL::HAL &hal;
 }
 
 
-void AS_5600::init(){
+void AS5600_AOA::init(){
 
     dev = hal.i2c_mgr->get_device(bus, address);
 
@@ -78,11 +63,10 @@ void AS_5600::init(){
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
 
-
 }
 
 /* mode = 0, output PWM, mode = 1 output analog (full range from 0% to 100% between GND and VDD*/
-void AS_5600::setOutPut(unsigned char mode){
+void AS5600_AOA::setOutPut(unsigned char mode){
     unsigned char config_status;
     config_status = readOneByte(_conf_lo);
     if(mode == 1){
@@ -102,14 +86,6 @@ void AS_5600::setOutPut(unsigned char mode){
     writeOneByte(_conf_lo, config_status);
 }
 
-void AS_5600::checkConnect(){
-
-
-
-    AP::logger().Write("AoAC", "Status, TimeUS, busMaskExt, busMaskInt, checkVal", "iQIIi", int(bool(dev)), AP_HAL::micros64(), busMaskExt, busMaskInt, 42);
-
-    }
-
 
 /*******************************************************
  * Method: getRawAngle
@@ -118,13 +94,15 @@ void AS_5600::checkConnect(){
  * Description: gets raw value of magnet position.
  * start, end, and max angle settings do not apply
 *******************************************************/
-unsigned short AS_5600::getRawAngle(void)
+unsigned short AS5600_AOA::getRawAngle(void)
 {
-  unsigned short angle = readTwoBytes(_raw_ang_hi, _raw_ang_lo);
+  unsigned short angleRaw = readTwoBytes(_raw_ang_hi, _raw_ang_lo);
 
-  AP::logger().Write("AoAR", "Status, TimeUS, Angle", "iQH", int(bool(dev)), AP_HAL::micros64(), angle);
+  unsigned short angleDegrees = angleRaw*0.087;
 
-   return angle;
+  AP::logger().Write("AoAR", "Status, TimeUS, Angle", "iQH", int(bool(dev)), AP_HAL::micros64(), angleDegrees);
+
+   return angleDegrees;
 }
 /*******************************************************
  * Method: highByte
@@ -134,7 +112,7 @@ unsigned short AS_5600::getRawAngle(void)
  * the leftmost or highest bite
 *******************************************************/
 
-unsigned char AS_5600::highByte(unsigned short short_in){
+unsigned char AS5600_AOA::highByte(unsigned short short_in){
 
     unsigned char hiByte = ((short_in >> 8) & 0xff);
     return  hiByte;
@@ -148,7 +126,7 @@ unsigned char AS_5600::highByte(unsigned short short_in){
  * the rightmost or lowest byte
 *******************************************************/
 
-unsigned char AS_5600::lowByte(unsigned short short_in){
+unsigned char AS5600_AOA::lowByte(unsigned short short_in){
 
     unsigned char loByte = (short_in & 0xff);
     return  loByte;
@@ -164,7 +142,7 @@ unsigned char AS_5600::lowByte(unsigned short short_in){
  * magnet.  Setting this register zeros out max position
  * register.
 *******************************************************/
-/*unsigned short AS_5600::setMaxAngle(unsigned short newMaxAngle)
+/*unsigned short AS5600_AOA::setMaxAngle(unsigned short newMaxAngle)
 {
   unsigned short retVal;
   if(newMaxAngle == -1)
@@ -191,7 +169,7 @@ unsigned char AS_5600::lowByte(unsigned short short_in){
  * Out: value of max angle register
  * Description: gets value of maximum angle register.
 *******************************************************/
-unsigned short AS_5600::getMaxAngle()
+unsigned short AS5600_AOA::getMaxAngle()
 {
   return readTwoBytes(_mang_hi, _mang_lo);
 }
@@ -206,7 +184,7 @@ unsigned short AS_5600::getMaxAngle()
  * magnet.
 *******************************************************/
 /*
-unsigned short AS_5600::setStartPosition(unsigned short startAngle)
+unsigned short AS5600_AOA::setStartPosition(unsigned short startAngle)
 {
   if(startAngle == -1)
   {
@@ -226,9 +204,9 @@ unsigned short AS_5600::setStartPosition(unsigned short startAngle)
 
 */
 
-//int AS_5600::writeOneByte(uint8_t in_adr, uint8_t msg){
+//int AS5600_AOA::writeOneByte(uint8_t in_adr, uint8_t msg){
 //
-//    WITH_SEMAPHORE(sem);
+//    WITH_SEMAPHORE(dev->get_semaphore());
 //
 //    send[2] = {in_adr, msg};
 //
@@ -245,7 +223,7 @@ unsigned short AS_5600::setStartPosition(unsigned short startAngle)
  * Out: data read from i2c
  * Description: reads one byte register from i2c
 *******************************************************/
-int AS_5600::readOneByte(uint8_t in_adr)
+int AS5600_AOA::readOneByte(uint8_t in_adr)
 {
 
   WITH_SEMAPHORE(dev->get_semaphore());
@@ -265,7 +243,7 @@ int AS_5600::readOneByte(uint8_t in_adr)
  * Out: data read from i2c
  * Description: reads two bytes register from i2c
 *******************************************************/
-int AS_5600::readTwoBytes(uint8_t in_adr1, uint8_t in_adr2)
+int AS5600_AOA::readTwoBytes(uint8_t in_adr1, uint8_t in_adr2)
 {
 
   int firstResult =  readOneByte(in_adr1);
