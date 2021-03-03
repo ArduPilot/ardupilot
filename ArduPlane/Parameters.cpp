@@ -1336,7 +1336,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
     { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
     { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
-    // { Parameters::k_param_fence_action,       0,      AP_PARAM_INT8, "FENCE_ACTION"},
     { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
 };
 
@@ -1427,6 +1426,42 @@ void Plane::load_parameters(void)
         }
     }
 
+    enum ap_var_type ptype_fence_type;
+    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
+    if (fence_type_new && !fence_type_new->configured()) {
+        // If we find the new parameter and it hasn't been configured
+        // attempt to upgrade the altitude fences.
+        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
+        AP_Int16 fence_alt_min_old;
+        AP_Param::ConversionInfo fence_alt_min_info_old = {
+            Parameters::k_param_fence_minalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
+            if (fence_alt_min_old.configured()) {
+                //
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
+            }
+        }
+
+        AP_Int16 fence_alt_max_old;
+        AP_Param::ConversionInfo fence_alt_max_info_old = {
+            Parameters::k_param_fence_maxalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
+            if (fence_alt_max_old.configured()) {
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
+            }
+        }
+
+        fence_type_new->set_and_save((int8_t)fence_type_new_val);
+    }
+
     AP_Int8 fence_action_old;
     AP_Param::ConversionInfo fence_action_info_old = {
         Parameters::k_param_fence_action,
@@ -1438,7 +1473,7 @@ void Plane::load_parameters(void)
         enum ap_var_type ptype;
         AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
         uint8_t fence_action_new_val;
-        if(fence_action_new && !fence_action_new->configured()) {
+        if (fence_action_new && !fence_action_new->configured()) {
             switch(fence_action_old.get()) {
                 case 0: // FENCE_ACTION_NONE
                 case 2: // FENCE_ACTION_REPORT_ONLY
@@ -1451,8 +1486,22 @@ void Plane::load_parameters(void)
                 case 3: // FENCE_ACTION_GUIDED_THR_PASS
                     fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
                     break;
+                case 4: // FENCE_ACTION_RTL
+                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);
+            
+            // Now upgrade the new fence enable at the same time
+            enum ap_var_type ptype_fence_enable;
+            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
+            // fences were used if there was a count, and the old fence action was not zero
+            bool fences_exist = AP::fence()->polyfence().total_fence_count() > 0;
+            bool fences_used = fence_action_old.get() != 0;
+            if (fence_enable && !fence_enable->configured()) {
+                // The fence enable parameter exists, so now set it accordingly
+                fence_enable->set_and_save(fences_exist && fences_used);
+            }
         }
     }
 
