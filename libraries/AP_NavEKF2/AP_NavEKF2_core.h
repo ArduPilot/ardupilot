@@ -1074,7 +1074,7 @@ private:
     uint32_t touchdownExpectedSet_ms; // system time at which expectGndEffectTouchdown was set
     float meaHgtAtTakeOff;            // height measured at commencement of takeoff
 
-    // control of post takeoff magentic field and heading resets
+    // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
     bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
     bool magStateResetRequest;      // true if magnetic field states need to be reset using the magneteomter measurements
