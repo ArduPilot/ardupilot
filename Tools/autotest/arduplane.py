@@ -1353,7 +1353,7 @@ class AutoTestPlane(AutoTest):
         return_radius = 100
         return_alt = 80
         self.set_parameter("RTL_RADIUS", return_radius)
-        self.set_parameter("FENCE_ACTION", 5) # Set Fence Action to Guided
+        self.set_parameter("FENCE_ACTION", 6) # Set Fence Action to Guided
         self.set_parameter("FENCE_TYPE", 8)   # Only use fence floor
         self.set_parameter("FENCE_RET_ALT", return_alt)
         self.do_fence_enable()
@@ -2524,8 +2524,8 @@ class AutoTestPlane(AutoTest):
             self.disarm_vehicle(force=True)
 
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="RTL", expected_mode="RTL", action=1)
-        attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=5)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
+        attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
     def tests(self):
         '''return list of all tests'''
