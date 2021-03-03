@@ -1315,6 +1315,7 @@ class AutoTestPlane(AutoTest):
 
         # check attitude
         simstate = self.mav.recv_match(type='SIMSTATE', blocking=True, timeout=1)
+        attitude_quaternion = self.poll_message('ATTITUDE_QUATERNION')
         if simstate is None:
             raise NotAchievedException("Did not receive SIMSTATE message")
         self.progress("SIMSTATE: %s" % str(simstate))
@@ -1327,6 +1328,28 @@ class AutoTestPlane(AutoTest):
         got = math.degrees(ahrs2.pitch)
         if abs(want - got) > 5:
             raise NotAchievedException("Secondary pitch looks bad (want=%f got=%f)" %
+                                       (want, got))
+
+        q = quaternion.Quaternion([
+            attitude_quaternion.q1,
+            attitude_quaternion.q2,
+            attitude_quaternion.q3,
+            attitude_quaternion.q4
+        ])
+        euler = q.euler
+        self.progress("attquat:%s q:%s euler:%s" % (
+            str(attitude_quaternion), q, euler))
+
+        want = math.degrees(simstate.roll)
+        got = math.degrees(euler[0])
+        if want - got > 5:
+            raise NotAchievedException("quat roll differs from attitude roll; want=%f got=%f" %
+                                       (want, got))
+
+        want = math.degrees(simstate.pitch)
+        got = math.degrees(euler[1])
+        if want - got > 5:
+            raise NotAchievedException("quat pitch differs from attitude pitch; want=%f got=%f" %
                                        (want, got))
 
     def test_main_flight(self):
