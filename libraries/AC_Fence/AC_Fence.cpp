@@ -171,6 +171,7 @@ void AC_Fence::auto_enable_fence_after_takeoff(void)
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             enable(true);
+            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
             break;
         default:
             // fence does not auto-enable in other takeoff conditions
