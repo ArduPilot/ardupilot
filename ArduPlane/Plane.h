@@ -521,7 +521,7 @@ private:
 
 #if OFFBOARD_GUIDED == ENABLED
         // airspeed adjustments
-        float target_airspeed_cm = -1;  // don't default to zero here, as zero is a valid speed.
+        float target_airspeed_cm = -1.0f;  // don't default to zero here, as zero is a valid speed.
         float target_airspeed_accel;
         uint32_t target_airspeed_time_ms;
 

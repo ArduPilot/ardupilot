@@ -166,7 +166,7 @@ void Plane::calc_airspeed_errors()
                                   get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
         }
 #if OFFBOARD_GUIDED == ENABLED
-    } else if (control_mode == &mode_guided && !is_zero(guided_state.target_airspeed_cm)) {
+    } else if (control_mode == &mode_guided && guided_state.target_airspeed_cm >=  0.0) {
         // offboard airspeed demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - guided_state.target_airspeed_time_ms);
