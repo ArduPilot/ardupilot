@@ -1522,11 +1522,6 @@ bool ModeAuto::verify_takeoff()
     if (reached_wp_dest) {
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
-
-#if AC_FENCE == ENABLED
-        // auto-enable the fence after takeoff
-        copter.fence.auto_enable_fence_after_takeoff();
-#endif
     }
 
     return reached_wp_dest;
