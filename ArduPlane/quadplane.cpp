@@ -2940,7 +2940,9 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
     set_alt_target_current();
 
-    plane.complete_auto_takeoff();
+#if AC_FENCE == ENABLED
+    plane.fence.auto_enable_fence_after_takeoff();
+#endif
 
     if (plane.control_mode == &plane.mode_auto) {
         // we reset TECS so that the target height filter is not
