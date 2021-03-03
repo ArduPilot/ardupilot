@@ -143,3 +143,38 @@ gpioInit.Pull = LL_GPIO_MODE_ALTERNATE;
 gpio.Pull = LL_GPIO_PULL_UP;
 gpioInit.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
 gpioInit.Alternate = LL_GPIO_AF_1;
+
+
+
+FullDuplex with Diode
+==================================
+If halfduplex is not available or working there is a workaround with a diode using the normal full duplex.
+This is also working with other "non-halfduplex" Controller like ESP32.
+
+The TLM-Pin (ESC) and RX (FC) connects to the anode (black side) of the diode.
+TX (FC) connects to cathode (white striped side) of the diode.
+
+ (TX --|<-- RX, TLM)
+ 
+ 
+OneWire Configuration:
+==================================
+This settings have to be changed under CONFIG -> Full Parameter List to get it working.
+MOT_PWM_MAX 2000
+MOT_PWM_MIN 1000
+Serial2_OPTIONS 160 #FOR full duplex - Use with diode
+Serial2_OPTIONS 164 #FOR half duplex - Use without diode -> TX from FC to TLM of FETtec ESC
+
+#FOR QUADCOPTER -> Sum of binary values
+SERVO_FTW_MASK 15 
+MOTOR 		1 | 2 | 3 | 4 | 5 | 6  ...
+BIN VAL	    1 | 2 | 4 | 8 | 16| 32 ...
+ACTIV		X | X | X | X | 0 | 0  ...
+SUM     	1 + 2 + 4 + 8 = 15
+
+Change SERVO*_FUNCTION to 33-38 according to the needed motor order e.g.:
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+
