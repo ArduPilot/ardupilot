@@ -1299,7 +1299,7 @@ private:
     uint32_t takeoffExpectedSet_ms;   // system time at which expectTakeoff was set
     bool expectTakeoff;               // external state from vehicle conrol code - takeoff expected
 
-    // control of post takeoff magentic field and heading resets
+    // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
     uint8_t magYawAnomallyCount;    // Number of times the yaw has been reset due to a magnetic anomaly during initial ascent
     bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
