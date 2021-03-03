@@ -168,12 +168,13 @@ Serial2_OPTIONS 164 #FOR half duplex - Use without diode -> TX from FC to TLM of
 #FOR QUADCOPTER -> Sum of binary values
 SERVO_FTW_MASK 15 
 MOTOR 		1 | 2 | 3 | 4 | 5 | 6  ...
-BIN VAL	1 | 2 | 4 | 8 | 16| 32 ...
+BIN VAL	    1 | 2 | 4 | 8 | 16| 32 ...
 ACTIV		X | X | X | X | 0 | 0  ...
 SUM     	1 + 2 + 4 + 8 = 15
 
+Change SERVO*_FUNCTION to 33-38 according to the needed motor order e.g.:
 SERVO1_FUNCTION 33
 SERVO2_FUNCTION 34
-SERVO*_FUNCTION 33-38
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
 
-To change the motor direction change the SERVO*_FUNCTIONS
