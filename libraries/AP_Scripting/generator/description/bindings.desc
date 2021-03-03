@@ -329,3 +329,10 @@ singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCo
 singleton AP_MotorsMatrix_6DoF_Scripting alias Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
 singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX float -FLT_MAX FLT_MAX boolean uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1)
+
+include AP_HAL/I2CDevice.h
+ap_object AP_HAL::I2CDevice semaphore-pointer
+ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
+ap_object AP_HAL::I2CDevice method write_register boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+ap_object AP_HAL::I2CDevice method read_registers boolean uint8_t 0 UINT8_MAX &uint8_t'Null 1'literal
+ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
