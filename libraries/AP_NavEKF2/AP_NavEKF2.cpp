@@ -429,7 +429,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // 36 was LOG_MASK, used for specifying which IMUs/cores to log
     // replay data for
 
-    // control of magentic yaw angle fusion
+    // control of magnetic yaw angle fusion
 
     // @Param: YAW_M_NSE
     // @DisplayName: Yaw measurement noise (rad)
