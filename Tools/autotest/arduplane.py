@@ -1299,6 +1299,7 @@ class AutoTestPlane(AutoTest):
         ahrs2 = self.mav.recv_match(type='AHRS2', blocking=True, timeout=1)
         if ahrs2 is None:
             raise NotAchievedException("Did not receive AHRS2 message")
+        self.progress("AHRS2: %s" % str(ahrs2))
 
         # check location
         gpi = self.mav.recv_match(
@@ -1308,6 +1309,7 @@ class AutoTestPlane(AutoTest):
         )
         if gpi is None:
             raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+        self.progress("GPI: %s" % str(gpi))
         if self.get_distance_int(gpi, ahrs2) > 10:
             raise NotAchievedException("Secondary location looks bad")
 
@@ -1315,10 +1317,13 @@ class AutoTestPlane(AutoTest):
         attitude = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
         if attitude is None:
             raise NotAchievedException("Did not receive ATTITUDE message")
+        self.progress("ATTITUDE: %s" % str(attitude))
         if abs(math.degrees(attitude.roll) - ahrs2.roll) > 5:
-            raise NotAchievedException("Secondary roll looks bad")
+            raise NotAchievedException("Secondary roll looks bad (want=%f got=%f)" %
+                                       (math.degrees(attitude.roll), ahrs2.roll))
         if abs(math.degrees(attitude.pitch) - ahrs2.pitch) > 5:
-            raise NotAchievedException("Secondary pitch looks bad")
+            raise NotAchievedException("Secondary pitch looks bad (want=%f got=%f)" %
+                                       (math.degrees(attitude.pitch), ahrs2.pitch))
 
     def test_main_flight(self):
 
