@@ -1144,7 +1144,7 @@ void NavEKF2_core::alignMagStateDeclination()
     }
 }
 
-// record a magentic field state reset event
+// record a magnetic field state reset event
 void NavEKF2_core::recordMagReset()
 {
     magStateInitComplete = true;
