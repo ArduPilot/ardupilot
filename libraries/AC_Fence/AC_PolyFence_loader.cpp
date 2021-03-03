@@ -1186,8 +1186,11 @@ bool AC_PolyFence_loader::get_return_point(Vector2l &ret)
         }
     }
 
-    ret.x = ((min_loc.x+max_loc.x)/2);
-    ret.y = ((min_loc.y+max_loc.y)/2);
+    // Potential for int32_t overflow when longitudes are beyond [-107, 107].
+    // As a result, the calculated return point's longitude is calculated using overflowed figure.
+    // Dividing first before adding avoids the potential overflow.
+    ret.x = (min_loc.x / 2) + (max_loc.x / 2);
+    ret.y = (min_loc.y / 2) + (max_loc.y / 2);
 
     return true;
 }
