@@ -106,16 +106,19 @@ class VehicleInfo(object):
             "IrisRos": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
+                "external": True,
             },
             "gazebo-iris": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/gazebo-iris.parm"],
+                "external": True,
             },
             "airsim-copter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/airsim-quadX.parm"],
+                "external": True,
             },
             # HELICOPTER
             "heli": {
@@ -142,9 +145,11 @@ class VehicleInfo(object):
             "scrimmage-copter" : {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm",
+                "external": True,
             },
             "calibration": {
                 "extra_mavlink_cmds": "module load sitl_calibration;",
+                "external": True,  # lies!  OTOH, hard to take off with this
             },
             "Callisto": {
                 "model": "octa-quad:@ROMFS/models/Callisto.json",
