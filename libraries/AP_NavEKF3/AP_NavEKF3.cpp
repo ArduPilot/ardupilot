@@ -2008,3 +2008,9 @@ void NavEKF3::writeDefaultAirSpeed(float airspeed)
         }
     }
 }
+
+// Checks if GPS is being used as source for position/velocity
+bool NavEKF3::isGPS_Source() const
+{
+    return sources.usingGPS();
+}
