@@ -40,18 +40,11 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init();
 
+        // set flag to start mission
+        waiting_to_start = true;
+
         // clear guided limits
         copter.mode_guided.limit_clear();
-
-        // don't start the mission until we have an origin
-        Location loc;
-        if (copter.ahrs.get_origin(loc)) {
-            // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start_or_resume();
-            waiting_for_origin = false;
-        } else {
-            waiting_for_origin = true;
-        }
 
         return true;
     } else {
@@ -61,9 +54,21 @@ bool ModeAuto::init(bool ignore_checks)
 
 // auto_run - runs the auto controller
 //      should be called at 100hz or more
-//      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void ModeAuto::run()
 {
+    // start or update mission
+    if (waiting_to_start) {
+        // don't start the mission until we have an origin
+        Location loc;
+        if (copter.ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_to_start = false;
+        }
+    } else {
+        mission.update();
+    }
+
     // call the correct auto controller
     switch (_mode) {
 
@@ -609,21 +614,6 @@ bool ModeAuto::get_wp(Location& destination)
         return copter.mode_rtl.get_wp(destination);
     default:
         return false;
-    }
-}
-
-// update mission
-void ModeAuto::run_autopilot()
-{
-    Location loc;
-    if (waiting_for_origin) {
-        if (copter.ahrs.get_origin(loc)) {
-            // start/resume the mission (based on MIS_RESTART parameter)
-            mission.start_or_resume();
-            waiting_for_origin = false;
-        }
-    } else {
-        mission.update();
     }
 }
 
