@@ -394,7 +394,6 @@ protected:
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) override;
-    void run_autopilot() override;
 
 private:
 
@@ -517,7 +516,7 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    bool waiting_for_origin;    // true if waiting for origin before starting mission
+    bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
