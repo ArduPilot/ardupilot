@@ -9,6 +9,7 @@
 #define NUM_RC_CHANNELS 16
 
 class AP_Arming;
+enum class AP_Arming::Method;
 
 /// @class	RC_Channel
 /// @brief	Object managing one RC channel
@@ -16,6 +17,7 @@ class RC_Channel {
 public:
     friend class SRV_Channels;
     friend class RC_Channels;
+    friend class AP_Arming;
     // Constructor
     RC_Channel(void);
 
@@ -527,7 +529,7 @@ public:
     virtual int8_t flight_mode_channel_number() const = 0;
 
     // returns true if the RC Channels library thinks the vehicle is OK to arm.
-    bool arm_checks(enum class AP_Arming::Method method);
+    bool arm_checks(enum AP_Arming::Method method);
 
 protected:
 
