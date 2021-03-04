@@ -275,6 +275,10 @@ public:
 
         // return a human-readable interpretation of the ID stored in this command
         const char *type() const;
+
+        // comparison operator (relies on all bytes in the structure even if they may not be used)
+        bool operator ==(const Mission_Command &b) const { return (memcmp(this, &b, sizeof(Mission_Command)) == 0); }
+        bool operator !=(const Mission_Command &b) const { return !operator==(b); }
     };
 
 
