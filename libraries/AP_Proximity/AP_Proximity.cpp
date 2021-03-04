@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 1
     // @Description: Proximity sensor ignore width 1
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID1", 5, AP_Proximity, _ignore_width_deg[0], 0),
 
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 2
     // @Description: Proximity sensor ignore width 2
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID2", 7, AP_Proximity, _ignore_width_deg[1], 0),
 
@@ -98,7 +98,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 3
     // @Description: Proximity sensor ignore width 3
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID3", 9, AP_Proximity, _ignore_width_deg[2], 0),
 
@@ -114,7 +114,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 4
     // @Description: Proximity sensor ignore width 4
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID4", 11, AP_Proximity, _ignore_width_deg[3], 0),
 
@@ -130,7 +130,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 5
     // @Description: Proximity sensor ignore width 5
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID5", 13, AP_Proximity, _ignore_width_deg[4], 0),
 
@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @DisplayName: Proximity sensor ignore width 6
     // @Description: Proximity sensor ignore width 6
     // @Units: deg
-    // @Range: 0 45
+    // @Range: 0 127
     // @User: Standard
     AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
 
