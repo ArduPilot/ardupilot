@@ -593,6 +593,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAM_MODE_TOGGLE,"CamModeToggle"},
     { AUX_FUNC::GENERATOR,"Generator"},
     { AUX_FUNC::ARSPD_CALIBRATE,"Calibrate Airspeed"},
+    { AUX_FUNC::ROLL,"Roll"},
+    { AUX_FUNC::PITCH,"Pitch"},
+    { AUX_FUNC::YAW,"Yaw"},
 };
 
 /* lookup the announcement for switch change */
@@ -1316,4 +1319,70 @@ bool RC_Channels::duplicate_options_exist()
         }
     }
    return false;
+}
+
+bool RC_Channels::arm_checks(AP_Arming::Method method)
+{
+    // don't check the trims if we are in a failsafe
+    if (!rc().has_valid_input()) {
+        return true;
+    }
+
+    // only check if we've received some form of input within the last second
+    // this is a protection against a vehicle having never enabled an input
+    uint32_t last_input_ms = rc().last_input_ms();
+    if ((last_input_ms == 0) || ((AP_HAL::millis() - last_input_ms) > 1000)) {
+        return true;
+    }
+
+    bool check_passed = true;
+    // ensure all rc channels have different functions
+    if (rc().duplicate_options_exist()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
+        check_passed = false;
+    }
+    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+        check_failed(ARMING_CHECK_PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+        check_passed = false;
+    }
+    const RCMapper * rcmap = AP::rcmap();
+    if (rcmap != nullptr) {
+        if (!rc().arming_skip_checks_rpy()) {
+            const char *names[3] = {"Roll", "Pitch", "Yaw"};
+            const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
+            for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
+                const RC_Channel *c = rc().channel(channels[i] - 1);
+                if (c == nullptr) {
+                    continue;
+                }
+                if (c->get_control_in() != 0) {
+                    if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
+                        check_failed(ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", names[i], channels[i]);
+                        check_passed = false;
+                    }
+                }
+            }
+        }
+
+        // if throttle check is enabled, require zero input
+        if (rc().arming_check_throttle()) {
+            RC_Channel *c = rc().channel(rcmap->throttle() - 1);
+            if (c != nullptr) {
+                if (c->get_control_in() != 0) {
+                    check_failed(ARMING_CHECK_RC, true, "Throttle (RC%d) is not neutral", rcmap->throttle());
+                    check_passed = false;
+                }
+            }
+            c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
+            if (c != nullptr) {
+                uint8_t fwd_thr = c->percent_input();
+                // require channel input within 2% of minimum
+                if (fwd_thr > 2) {
+                    check_failed(ARMING_CHECK_RC, true, "VTOL Fwd Throttle is not zero");
+                    check_passed = false;
+                }
+            }
+        }
+    }
+    return check_passed;
 }

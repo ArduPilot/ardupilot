@@ -281,6 +281,8 @@ public:
     // channel number, starts at 0, 2 typically being throttle channel.
     uint8_t ch() const { return ch_in; };
 
+    virtual bool arm_checks(AP_Arming::Method method);
+
 protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
