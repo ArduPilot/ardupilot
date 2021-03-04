@@ -415,6 +415,8 @@ private:
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void exit_mission();
 
+    bool check_for_mission_change();    // detect external changes to mission
+
     void takeoff_run();
     void wp_run();
     void land_run();
@@ -524,6 +526,15 @@ private:
     } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
+
+    // variables to detect mission changes
+    static const uint8_t mis_change_detect_cmd_max = 3;
+    struct {
+        uint32_t last_change_time_ms;       // local copy of last time mission was changed
+        uint16_t curr_cmd_index;            // local copy of AP_Mission's current command index
+        uint8_t cmd_count;                  // number of commands in the cmd array
+        AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max]; // local copy of the next few mission commands
+    } mis_change_detect = {};
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
