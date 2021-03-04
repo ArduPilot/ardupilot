@@ -2504,6 +2504,116 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm(timeout=150)
 
+    def test_fence_breached_change_mode(self):
+        """ Attempts to change mode while a fence is breached.
+            This should revert to the mode specified by the fence action. """
+        self.set_parameter("FENCE_ACTION", 1)
+        self.set_parameter("FENCE_TYPE", 4)
+        home_loc = self.mav.location()
+        locs = [
+            mavutil.location(home_loc.lat - 0.001, home_loc.lng - 0.001, 0, 0),
+            mavutil.location(home_loc.lat - 0.001, home_loc.lng + 0.001, 0, 0),
+            mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.001, 0, 0),
+            mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
+        ]
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                locs
+            ]
+        )
+        self.delay_sim_time(1)
+        self.wait_ready_to_arm()
+        self.takeoff(alt=50)
+        self.change_mode("CRUISE")
+        self.wait_distance(150, accuracy=20)
+
+        self.progress("Enable fence and initiate fence action")
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+        self.wait_mode("RTL") # We should RTL because of fence breach
+
+        self.progress("User mode change to cruise should retrigger fence action")
+        self.change_mode("CRUISE")
+        self.wait_mode("RTL", timeout=5)
+
+        self.progress("Test complete, disable fence and come home")
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+
+    def test_fence_breach_no_return_point(self):
+        """ Attempts to change mode while a fence is breached.
+            This should revert to the mode specified by the fence action. """
+        want_radius = 100 # Fence Return Radius
+        self.set_parameter("FENCE_ACTION", 6)
+        self.set_parameter("FENCE_TYPE", 4)
+        self.set_parameter("RTL_RADIUS", want_radius)
+        self.set_parameter("NAVL1_LIM_BANK", 60)
+        home_loc = self.mav.location()
+        locs = [
+            mavutil.location(home_loc.lat - 0.003, home_loc.lng - 0.001, 0, 0),
+            mavutil.location(home_loc.lat - 0.003, home_loc.lng + 0.003, 0, 0),
+            mavutil.location(home_loc.lat + 0.001, home_loc.lng + 0.003, 0, 0),
+            mavutil.location(home_loc.lat + 0.001, home_loc.lng - 0.001, 0, 0),
+        ]
+        self.upload_fences_from_locations(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+            [
+                locs
+            ]
+        )
+        self.delay_sim_time(1)
+        self.wait_ready_to_arm()
+        self.takeoff(alt=50)
+        self.change_mode("CRUISE")
+        self.wait_distance(150, accuracy=20)
+
+        self.progress("Enable fence and initiate fence action")
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+        self.wait_mode("GUIDED") # We should RTL because of fence breach
+        self.delay_sim_time(30)
+
+        items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if len(items) != 4:
+            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (4, len(items)))
+
+        # Check there are no fence return points specified still
+        for fence_loc in items:
+            if fence_loc.command == mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT:
+                raise NotAchievedException(
+                    "Unexpected fence return point found (%u) got %u" %
+                    (fence_loc.command,
+                     mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT))
+
+        # Work out the approximate return point when no fence return point present
+        # Logic taken from AC_PolyFence_loader.cpp
+        min_loc = self.mav.location()
+        max_loc = self.mav.location()
+        for new_loc in locs:
+            if new_loc.lat < min_loc.lat:
+                min_loc.lat = new_loc.lat
+            if new_loc.lng < min_loc.lng:
+                min_loc.lng = new_loc.lng
+            if new_loc.lat > max_loc.lat:
+                max_loc.lat = new_loc.lat
+            if new_loc.lng > max_loc.lng:
+                max_loc.lng = new_loc.lng
+
+        # Generate the return location based on min and max locs
+        ret_lat = (min_loc.lat + max_loc.lat) / 2
+        ret_lng = (min_loc.lng + max_loc.lng) / 2
+        ret_loc = mavutil.location(ret_lat, ret_lng, 0, 0)
+        self.progress("Return loc: (%s)" % str(ret_loc))
+
+        # Wait for guided return to vehicle calculated fence return location
+        self.wait_distance_to_location(ret_loc, 105, 115)
+        self.wait_circling_point_with_radius(ret_loc, want_radius)
+
+        self.progress("Test complete, disable fence and come home")
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+
     def test_fence_disable_under_breach_action(self):
         """ Fence breach will cause the vehicle to enter guided mode.
             Upon breach clear, check the vehicle is in the expected mode"""
@@ -2603,6 +2713,14 @@ class AutoTestPlane(AutoTest):
             ("FenceAltCeilFloor",
              "Tests the fence ceiling and floor",
              self.test_fence_alt_ceil_floor),
+
+            ("FenceBreachedChangeMode",
+             "Tests retrigger of fence action when changing of mode while fence is breached",
+             self.test_fence_breached_change_mode),
+
+            ("FenceNoFenceReturnPoint",
+             "Tests calculated return point during fence breach when no fence return point present",
+             self.test_fence_breach_no_return_point),
 
             ("FenceDisableUnderAction",
              "Tests Disabling fence while undergoing action caused by breach",
