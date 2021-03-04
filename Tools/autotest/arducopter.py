@@ -2019,6 +2019,16 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Auto mission completed: passed!")
 
+        self.start_subtest("Use auto-arming and no-throttle Run consecutive missions")
+        self.set_parameter("AUTO_OPTIONS", 3)
+
+        self.progress("Starting second run")
+        self.arm_vehicle()
+        self.wait_waypoint(0, num_wp-1, timeout=500)
+        self.wait_disarmed()
+
+        self.progress("Back-to-back missions work")
+
     # fly_auto_test using CAN GPS - fly mission which tests normal operation alongside CAN GPS
     def fly_auto_test_using_can_gps(self):
         self.set_parameter("CAN_P1_DRIVER", 1)
