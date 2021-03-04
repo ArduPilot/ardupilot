@@ -184,7 +184,7 @@ protected:
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+    bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
     bool visodom_checks(bool report) const;
     bool disarm_switch_checks(bool report) const;

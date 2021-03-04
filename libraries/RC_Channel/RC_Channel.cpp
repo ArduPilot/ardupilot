@@ -638,6 +638,9 @@ bool RC_Channel::read_aux()
         }
         return false;
     }
+    default:
+        break;
+    }
 
     AuxSwitchPos new_position;
     if (!read_3pos_switch(new_position)) {
@@ -1272,9 +1275,9 @@ RC_Channel::AuxSwitchPos RC_Channel::get_aux_switch_pos() const
 
 // return switch position value as LOW, MIDDLE, HIGH
 // if reading the switch fails then it returns LOW
-RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(const uint8_t rcmapchan) const
+RC_Channel::AuxSwitchPos RC_Channels::get_channel_pos(RC_Channel::AUX_FUNC func) const
 {
-    const RC_Channel* chan = rc().channel(rcmapchan-1);
+    const RC_Channel* chan = rc().find_channel_for_option(func);
     return chan != nullptr ? chan->get_aux_switch_pos() : RC_Channel::AuxSwitchPos::LOW;
 }
 
@@ -1330,36 +1333,32 @@ bool RC_Channels::arm_checks(AP_Arming::Method method)
 
     // only check if we've received some form of input within the last second
     // this is a protection against a vehicle having never enabled an input
-    uint32_t last_input_ms = rc().last_input_ms();
+    const uint32_t last_input_ms = rc().last_input_ms();
     if ((last_input_ms == 0) || ((AP_HAL::millis() - last_input_ms) > 1000)) {
         return true;
     }
 
     bool check_passed = true;
     // ensure all rc channels have different functions
-    if (rc().duplicate_options_exist()) {
-        check_failed(ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
+    if (duplicate_options_exist()) {
+        AP::arming().check_failed(AP_Arming::ARMING_CHECK_PARAMETERS, true, "Duplicate Aux Switch Options");
         check_passed = false;
     }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+    if (flight_mode_channel_conflicts_with_rc_option()) {
         check_failed(ARMING_CHECK_PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
         check_passed = false;
     }
-    const RCMapper * rcmap = AP::rcmap();
-    if (rcmap != nullptr) {
-        if (!rc().arming_skip_checks_rpy()) {
-            const char *names[3] = {"Roll", "Pitch", "Yaw"};
-            const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
-            for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
-                const RC_Channel *c = rc().channel(channels[i] - 1);
-                if (c == nullptr) {
-                    continue;
-                }
-                if (c->get_control_in() != 0) {
-                    if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
-                        check_failed(ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", names[i], channels[i]);
-                        check_passed = false;
-                    }
+    if (!arming_skip_checks_rpy()) {
+        const RC_Channel::AUX_FUNC funcs[] = {RC_Channel::AUX_FUNC::ROLL, RC_Channel::AUX_FUNC::PITCH, RC_Channel::AUX_FUNC::YAW};
+        for (auto func : funcs) {
+            const RC_Channel *c = find_channel_for_option(func);
+            if (c == nullptr) {
+                continue;
+            }
+            if (c->get_control_in() != 0) {
+                if ((method != AP_Arming::Method::RUDDER) || (c != get_arming_channel())) { // ignore the yaw input channel if rudder arming
+                    AP::arming().check_failed(AP_Arming::ARMING_CHECK_RC, true, "%s (RC%d) is not neutral", c->string_for_aux_function(func), c->ch()+1);
+                    check_passed = false;
                 }
             }
         }
