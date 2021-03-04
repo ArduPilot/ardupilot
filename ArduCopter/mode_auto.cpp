@@ -43,6 +43,9 @@ bool ModeAuto::init(bool ignore_checks)
         // set flag to start mission
         waiting_to_start = true;
 
+        // initialise mission change check (ignore results)
+        check_for_mission_change();
+
         // clear guided limits
         copter.mode_guided.limit_clear();
 
@@ -64,8 +67,24 @@ void ModeAuto::run()
             // start/resume the mission (based on MIS_RESTART parameter)
             mission.start_or_resume();
             waiting_to_start = false;
+
+            // initialise mission change check (ignore results)
+            check_for_mission_change();
         }
     } else {
+        // check for mission changes
+        if (check_for_mission_change()) {
+            // if mission is running restart the current command if it is a waypoint or spline command
+            if ((copter.mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == Auto_WP)) {
+                if (mission.restart_current_nav_cmd()) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
+                } else {
+                    // failed to restart mission for some reason
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
+                }
+            }
+        }
+
         mission.update();
     }
 
@@ -523,6 +542,55 @@ void ModeAuto::exit_mission()
         // if we've landed it's safe to disarm
         copter.arming.disarm(AP_Arming::Method::MISSIONEXIT);
     }
+}
+
+// detect external changes to mission
+bool ModeAuto::check_for_mission_change()
+{
+    // check if mission has been updated
+    const uint32_t change_time_ms = mission.last_change_time_ms();
+    const bool update_time_changed = (change_time_ms != mis_change_detect.last_change_time_ms);;
+
+    // check if active command index has changed
+    const uint16_t curr_cmd_idx = mission.get_current_nav_index();
+    const bool curr_cmd_idx_changed = (curr_cmd_idx != mis_change_detect.curr_cmd_index);
+
+    // no changes if neither mission update time nor active command index has changed
+    if (!update_time_changed && !curr_cmd_idx_changed) {
+        return false;
+    }
+
+    // the mission has been updated (but maybe not changed) and/or the current command index has changed
+    // check the contents of the next three commands to ensure they have not changed
+    // and update storage so we can detect future changes
+
+    bool cmds_changed = false;  // true if upcoming command contents have changed
+
+    // retrieve cmds from mission and compare with mis_change_detect
+    uint8_t num_cmds = 0;
+    uint16_t cmd_idx = curr_cmd_idx;
+    AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max];
+    while ((num_cmds < ARRAY_SIZE(cmd)) && mission.get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
+        num_cmds++;
+        if ((num_cmds > mis_change_detect.cmd_count) || (cmd[num_cmds-1] != mis_change_detect.cmd[num_cmds-1])) {
+            cmds_changed = true;
+            mis_change_detect.cmd[num_cmds-1] = cmd[num_cmds-1];
+        }
+        cmd_idx = cmd[num_cmds-1].index+1;
+    }
+
+    // mission has changed if number of upcoming commands does not match mis_change_detect
+    if (num_cmds != mis_change_detect.cmd_count) {
+        cmds_changed = true;
+    }
+
+    // update mis_change_detect with last change time, command index and number of commands
+    mis_change_detect.last_change_time_ms = change_time_ms;
+    mis_change_detect.curr_cmd_index = curr_cmd_idx;
+    mis_change_detect.cmd_count = num_cmds;
+
+    // mission has changed if upcoming command contents have changed without the current command index changing
+    return cmds_changed && !curr_cmd_idx_changed;
 }
 
 // do_guided - start guided mode
@@ -1039,7 +1107,7 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
         ret.lat = default_loc.lat;
         ret.lng = default_loc.lng;
     }
-    // use current altitude if not provided
+    // use default altitude if not provided in cmd
     if (ret.alt == 0) {
         // set to default_loc's altitude but in command's alt frame
         // note that this may use the terrain database
@@ -1256,7 +1324,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
                                  wp_nav->get_default_speed_up());
 }
 
-// do_nav_wp - initiate move to next waypoint
+// do_spline_wp - initiate move to next waypoint
 void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // calculate default location used when lat, lon or alt is zero
@@ -1299,7 +1367,9 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
-// get_spline_from_cmd - Calculates the spline type for a given spline waypoint mission command
+// calculate locations required to build a spline curve from a mission command
+// dest_loc is populated from cmd's location using default_loc in cases where the lat and lon or altitude is zero
+// next_dest_loc and nest_dest_loc_is_spline is filled in with the following navigation command's location if it exists.  If it does not exist it is set to the dest_loc and false
 void ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline)
 {
     dest_loc = loc_from_cmd(cmd, default_loc);
