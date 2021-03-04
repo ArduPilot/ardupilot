@@ -77,8 +77,6 @@ public:
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
 
-    void update_navigation();
-
     int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
@@ -97,9 +95,6 @@ public:
     }
 
 protected:
-
-    // navigation support functions
-    virtual void run_autopilot() {}
 
     // helper functions
     bool is_disarmed_or_landed() const;
