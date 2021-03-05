@@ -84,11 +84,12 @@ private:
     AP_Frsky_Parameters *&_frsky_parameters;
 
     enum PassthroughParam : uint8_t {
+        NONE =                0,
         FRAME_TYPE =          1,
         BATT_FS_VOLTAGE =     2,
         BATT_FS_CAPACITY =    3,
         BATT_CAPACITY_1 =     4,
-        BATT_CAPACITY_2 =     5
+        BATT_CAPACITY_2 =     5,
     };
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format
