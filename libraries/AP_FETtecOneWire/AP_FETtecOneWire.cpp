@@ -138,12 +138,12 @@ void AP_FETtecOneWire::send_esc_telemetry_mavlink(uint8_t mav_chan) const
     if (_telem_avail == -1) {
         return;
     }
-    uint8_t temperature[4] {};
-    uint16_t voltage[4] {};
-    uint16_t current[4] {};
-    uint16_t totalcurrent[4] {};
-    uint16_t rpm[4] {};
-    uint16_t count[4] {};
+    uint8_t temperature[4] {};   // deg C
+    uint16_t voltage[4] {};      // cV
+    uint16_t current[4] {};      // cA
+    uint16_t totalcurrent[4] {}; // mA.h
+    uint16_t rpm[4] {};          // eRPM
+    uint16_t count[4] {};        // ESC telemetry packets received
     // TODO: take the _telem_semaphore here
     for (uint8_t i=0; i<MOTOR_COUNT_MAX; i++) {
         uint8_t idx = i % 4;
@@ -157,7 +157,7 @@ void AP_FETtecOneWire::send_esc_telemetry_mavlink(uint8_t mav_chan) const
             if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
                 return;
             }
-            static_assert(MOTOR_COUNT_MAX <= 12, "AP_FETtecOneWire::send_esc_telemetry_mavlink() support 12 or less motors");
+            static_assert(MOTOR_COUNT_MAX <= 12, "AP_FETtecOneWire::send_esc_telemetry_mavlink() only supports up-to 12 motors");
             if (i < 4) {
                 mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
             } else if (i < 8) {
