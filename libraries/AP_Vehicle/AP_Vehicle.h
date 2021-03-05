@@ -342,12 +342,16 @@ private:
     // statustext:
     void send_watchdog_reset_statustext();
 
+    void send_internal_error_statustext(uint32_t internal_errors_bitmask); // if internal error has occurred, notify gcs
+
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
 
     static AP_Vehicle *_singleton;
 
     bool done_safety_init;
+
+    uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 };
 
 namespace AP {
