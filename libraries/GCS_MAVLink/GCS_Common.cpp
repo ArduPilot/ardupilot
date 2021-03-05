@@ -5253,7 +5253,6 @@ uint64_t GCS_MAVLINK::capabilities() const
     }
 
     if (AP::fence()) {
-        // FIXME: plane also supports this...
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 
