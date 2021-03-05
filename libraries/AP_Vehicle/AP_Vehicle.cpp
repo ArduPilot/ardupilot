@@ -298,7 +298,7 @@ void AP_Vehicle::send_watchdog_reset_statustext()
 
 void AP_Vehicle::send_internal_error_statustext(uint32_t internal_errors_bitmask)
 {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors %x", internal_errors_bitmask );
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Internal Errors %x", (unsigned) internal_errors_bitmask );
 }
 
 bool AP_Vehicle::is_crashed() const
