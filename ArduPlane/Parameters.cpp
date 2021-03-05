@@ -1496,7 +1496,13 @@ void Plane::load_parameters(void)
             enum ap_var_type ptype_fence_enable;
             AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
             // fences were used if there was a count, and the old fence action was not zero
-            bool fences_exist = AP::fence()->polyfence().total_fence_count() > 0;
+            AC_Fence *ap_fence = AP::fence();
+            bool fences_exist = false;
+            if (ap_fence) {
+                // If the fence library is present, attempt to read the fence count
+                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
+            }
+            
             bool fences_used = fence_action_old.get() != 0;
             if (fence_enable && !fence_enable->configured()) {
                 // The fence enable parameter exists, so now set it accordingly
