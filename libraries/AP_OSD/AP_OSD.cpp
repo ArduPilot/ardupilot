@@ -33,6 +33,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <utility>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
@@ -169,8 +170,17 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_BTN_DELAY", 20, AP_OSD, button_delay_ms, 300),
 #endif
-
+#if AP_TERRAIN_AVAILABLE
+    // @Param: _W_TERR
+    // @DisplayName: Terrain warn level
+    // @Description: Set level below which HGT_TER item will flash. -1 disables
+    // @Range: 1 3000
+    // @Units: m
+    // @User: Standard
+    AP_GROUPINFO("_W_TERR", 23, AP_OSD, warn_terr, -1),
 #endif
+
+#endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_
     // @Path: AP_OSD_ParamScreen.cpp
