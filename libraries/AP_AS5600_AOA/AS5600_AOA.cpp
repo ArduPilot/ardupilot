@@ -72,21 +72,19 @@ bool AS5600_AOA::init()
  * Description: gets raw value of magnet position.
  * start, end, and max angle settings do not apply
 *******************************************************/
-uint16_t AS5600_AOA::getRawAngle(void)
+void AS5600_AOA::update(void)
 {
   WITH_SEMAPHORE(dev->get_semaphore());
 
   //uint16_t angleRaw = readTwoBytes(REG_RAW_ANG_HI, REG_RAW_ANG_LO);
   if (!dev->read_registers(REG_RAW_ANG_HI, &highByte, 1) || !dev->read_registers(REG_RAW_ANG_LO, &lowByte, 1)){
-      return -1;
+      return;
   }
 
   //Gets the two relevant register values and multiplies by conversion factor to get degrees
   uint16_t angleRaw = ((highByte << 8) | lowByte)*0.087;
 
   AP::logger().Write("AOAR", "TimeUS, Angle", "QH", AP_HAL::micros64(), angleRaw);
-
-   return angleRaw;
 }
 
 

@@ -17,13 +17,14 @@ public:
 
     bool init();
 
+    void update(void);
+
     uint16_t setMaxAngle(uint16_t newMaxAngle = -1);
     uint16_t getMaxAngle();
     uint16_t setStartPosition(uint16_t startAngle = -1);
     uint16_t getStartPosition();
     uint16_t setEndPosition(uint16_t endAngle = -1);
     uint16_t getEndPosition();
-    uint16_t getRawAngle(void);
     uint16_t getScaledAngle();
 
     int  detectMagnet();
