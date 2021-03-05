@@ -804,6 +804,7 @@ private:
 
     // controls which controller is run (pos or vel):
     GuidedMode guided_mode = Guided_TakeOff;
+    bool send_notification;     // used to send one time notification to ground station
 
 };
 
