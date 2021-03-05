@@ -1,10 +1,9 @@
 /****************************************************
- * AMS 5600 Angle of Attack Class for Ardupilot platform
+ * AS5600 Angle of Attack Class for Ardupilot platform
  * Author: Cole Mero
- * Date: 15 Dec 2014
+ * Date: 15 Feb 2021
  * File: AS5600_AOA.cpp
- * Version 1.00
- * www.ams.com
+ * Based on: www.ams.com
  *
  * Description:  This class has been designed to
  * access the AS5600 magnetic encoder sensor to
@@ -16,75 +15,54 @@
 
 #include <unistd.h>
 #include "AS5600_AOA.h"
+#include <AP_Common/AP_Common.h>
 
 extern const AP_HAL::HAL &hal;
 
-/****************************************************
+/**************************************************
  * Method: AS5600_AOA
  * In: none
  * Out: none
- * Description: constructor for AMS 5600
+ * Description: constructor for AS5600_AOA
 ***************************************************/
  AS5600_AOA::AS5600_AOA()
 {
-
     bus = 1; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
     address = 0x36; //This is the I2C address for the device, it is set by the manufacturer
-
-   /*load register values*/
-
-  _zmco = 0x00;
-  _zpos_hi = 0x01;
-  _zpos_lo = 0x02;
-  _mpos_hi = 0x03;
-  _mpos_lo = 0x04;
-  _mang_hi = 0x05;
-  _mang_lo = 0x06;
-  _conf_hi = 0x07;
-  _conf_lo = 0x08;
-  _raw_ang_hi = 0x0c;
-  _raw_ang_lo = 0x0d;
-  _ang_hi = 0x0e;
-  _ang_lo = 0x0f;
-  _stat = 0x0b;
-  _agc = 0x1a;
-  _mag_hi = 0x1b;
-  _mag_lo = 0x1c;
-  _burn = 0xff;
-
 }
 
 
-void AS5600_AOA::init(){
-
+bool AS5600_AOA::init()
+{
     dev = hal.i2c_mgr->get_device(bus, address);
+
+    if (!dev){
+        return false;
+    }
 
     WITH_SEMAPHORE(dev->get_semaphore());
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
 
+    return true;
 }
 
 /* mode = 0, output PWM, mode = 1 output analog (full range from 0% to 100% between GND and VDD*/
-void AS5600_AOA::setOutPut(unsigned char mode){
-    unsigned char config_status;
-    config_status = readOneByte(_conf_lo);
-    if(mode == 1){
-        config_status = config_status & 0xcf;
-    }else{
-        config_status = config_status & 0xef;
-    }
-
-    /* Note significant variance from the Arduino AMS_5600 library in this line.
-     *
-     * -> writeOneByte(_conf_lo, lowByte(config_status));
-     *  vs writeOneByte(_conf_lo, config_status); I have removed the lowByte() function
-     *  since it is part of the arduino.h library and I don't have access to it, however,
-     *  since it accesses the lowest byte in the variable, and an unsigned char such as
-     *  config_status only HAS one byte regardless, I think the end result should be identical?
-     */
-    writeOneByte(_conf_lo, config_status);
-}
+//void AS5600_AOA::setOutPut(uint8_t mode){
+//    uint8_t config_status;
+//    if (!dev->read_registers(REG_CONF_LO, &config_status, 1)){
+//        return;
+//    }
+//    if (mode == 1){
+//        config_status = config_status & 0xcf;
+//    }else{
+//        config_status = config_status & 0xef;
+//    }
+//
+//    if (!dev->write_register(REG_CONF_LO, config_status)){
+//        return;
+//    }
+//}
 
 
 /*******************************************************
@@ -94,42 +72,21 @@ void AS5600_AOA::setOutPut(unsigned char mode){
  * Description: gets raw value of magnet position.
  * start, end, and max angle settings do not apply
 *******************************************************/
-unsigned short AS5600_AOA::getRawAngle(void)
+uint16_t AS5600_AOA::getRawAngle(void)
 {
-  unsigned short angleRaw = readTwoBytes(_raw_ang_hi, _raw_ang_lo);
+  WITH_SEMAPHORE(dev->get_semaphore());
 
-  unsigned short angleDegrees = angleRaw*0.087;
+  //uint16_t angleRaw = readTwoBytes(REG_RAW_ANG_HI, REG_RAW_ANG_LO);
+  if (!dev->read_registers(REG_RAW_ANG_HI, &highByte, 1) || !dev->read_registers(REG_RAW_ANG_LO, &lowByte, 1)){
+      return -1;
+  }
 
-  AP::logger().Write("AoAR", "Status, TimeUS, Angle", "iQH", int(bool(dev)), AP_HAL::micros64(), angleDegrees);
+  //Gets the two relevant register values and multiplies by conversion factor to get degrees
+  uint16_t angleRaw = ((highByte << 8) | lowByte)*0.087;
 
-   return angleDegrees;
-}
-/*******************************************************
- * Method: highByte
- * In: Unsigned short
- * Out: Highest or leftmost byte of the unsigned short
- * Description: Takes in the unsigned short and returns
- * the leftmost or highest bite
-*******************************************************/
+  AP::logger().Write("AOAR", "TimeUS, Angle", "QH", AP_HAL::micros64(), angleRaw);
 
-unsigned char AS5600_AOA::highByte(unsigned short short_in){
-
-    unsigned char hiByte = ((short_in >> 8) & 0xff);
-    return  hiByte;
-}
-
-/*******************************************************
- * Method: lowByte
- * In: Unsigned short
- * Out: Lowest or rightmost byte of the unsigned short
- * Description: Takes in the unsigned short and returns
- * the rightmost or lowest byte
-*******************************************************/
-
-unsigned char AS5600_AOA::lowByte(unsigned short short_in){
-
-    unsigned char loByte = (short_in & 0xff);
-    return  loByte;
+   return angleRaw;
 }
 
 
@@ -139,29 +96,33 @@ unsigned char AS5600_AOA::lowByte(unsigned short short_in){
  * Out: value of max angle register
  * Description: sets a value in maximum angle register.
  * If no value is provided, method will read position of
- * magnet.  Setting this register zeros out max position
+ * magnet. Setting this register zeros out max position
  * register.
 *******************************************************/
-/*unsigned short AS5600_AOA::setMaxAngle(unsigned short newMaxAngle)
+/*uint16_t AS5600_AOA::setMaxAngle(uint16_t newMaxAngle)
 {
-  unsigned short retVal;
-  if(newMaxAngle == -1)
-  {
+   if(newMaxAngle == -1){
     maxAngle = getRawAngle();
-  }
-  else
+  } else {
     maxAngle = newMaxAngle;
+  }
 
-  writeOneByte(_mang_hi, highByte(maxAngle));
-  usleep(2);
-  writeOneByte(_mang_lo, lowByte(maxAngle));
-  usleep(2);
+  WITH_SEMAPHORE(dev->get_semaphore());
 
-  retVal = readTwoBytes(_mang_hi, _mang_lo);
-  return retVal;
-}
+  if (!dev->write_register(REG_MANG_HI, HIGHBYTE(rawStartAngle))){
+        return -1;
+    }
+    if (!dev->write_register(REG_MANG_LO, LOWBYTE(rawStartAngle))){
+        return -1;
+    }
+    if (!dev->read_registers(REG_MANG_HI, &highByte, 1) || !dev->read_registers(REG_MANG_LO, &lowByte, 1)){
+        return -1;
+    }
 
-*/
+    maxAngle = ((highByte << 8) | lowByte);
+  return maxAngle;
+}*/
+
 
 /*******************************************************
  * Method: getMaxAngle
@@ -169,9 +130,17 @@ unsigned char AS5600_AOA::lowByte(unsigned short short_in){
  * Out: value of max angle register
  * Description: gets value of maximum angle register.
 *******************************************************/
-unsigned short AS5600_AOA::getMaxAngle()
+uint16_t AS5600_AOA::getMaxAngle()
 {
-  return readTwoBytes(_mang_hi, _mang_lo);
+    WITH_SEMAPHORE(dev->get_semaphore());
+
+    if (!dev->read_registers(REG_MANG_HI, &highByte, 1) || !dev->read_registers(REG_MANG_LO, &lowByte, 1)){
+         return -1;
+     }
+
+     maxAngle = ((highByte << 8) | lowByte);
+
+     return maxAngle;
 }
 
 
@@ -183,84 +152,28 @@ unsigned short AS5600_AOA::getMaxAngle()
  * If no value is provided, method will read position of
  * magnet.
 *******************************************************/
-/*
-unsigned short AS5600_AOA::setStartPosition(unsigned short startAngle)
+/*uint16_t AS5600_AOA::setStartPosition(uint16_t startAngle = -1)
 {
   if(startAngle == -1)
   {
     rawStartAngle = getRawAngle();
-  }
-  else
+  } else {
     rawStartAngle = startAngle;
-
-  writeOneByte(_zpos_hi, highByte(rawStartAngle));
-  usleep(2);
-  writeOneByte(_zpos_lo, lowByte(rawStartAngle));
-  usleep(2);
-  zPosition = readTwoBytes(_zpos_hi, _zpos_lo);
-
-  return(zPosition);
-}
-
-*/
-
-//int AS5600_AOA::writeOneByte(uint8_t in_adr, uint8_t msg){
-//
-//    WITH_SEMAPHORE(dev->get_semaphore());
-//
-//    send[2] = {in_adr, msg};
-//
-//    bool success = dev->transfer(send, sizeof(send), nullptr, 0);
-//
-//    return success ? 0 : -1;
-//
-//}
-
-
-/*******************************************************
- * Method: readOneByte
- * In: register to read
- * Out: data read from i2c
- * Description: reads one byte register from i2c
-*******************************************************/
-int AS5600_AOA::readOneByte(uint8_t in_adr)
-{
+  }
 
   WITH_SEMAPHORE(dev->get_semaphore());
 
-  uint8_t  send[1] = {in_adr};
-  uint8_t  recv[1];
-
-  bool success = dev->transfer(send, sizeof(send), recv, sizeof(recv));
-
-  return success ? recv[0] : -1;
-}
-
-
-/*******************************************************
- * Method: readTwoBytes
- * In: register to read
- * Out: data read from i2c
- * Description: reads two bytes register from i2c
-*******************************************************/
-int AS5600_AOA::readTwoBytes(uint8_t in_adr1, uint8_t in_adr2)
-{
-
-  int firstResult =  readOneByte(in_adr1);
-  int secondResult = readOneByte(in_adr2);
-
-  if (firstResult == -1 || secondResult == -1){
-
+  if (!dev->write_register(REG_ZPOS_HI, HIGHBYTE(rawStartAngle))){
+      return -1;
+  }
+  if (!dev->write_register(REG_ZPOS_LO, LOWBYTE(rawStartAngle))){
+      return -1;
+  }
+  if (!dev->read_registers(REG_ZPOS_HI, &highByte, 1) || !dev->read_registers(REG_ZPOS_LO, &lowByte, 1)){
       return -1;
   }
 
-  uint8_t firstByte = firstResult;
-  uint8_t secondByte = secondResult;
+  uint16_t zPosition = ((highByte << 8) | lowByte);
 
-  uint16_t combined = (firstByte << 8) | secondByte;
-
-  return combined;
-
-}
-
-
+  return(zPosition);
+}*/
