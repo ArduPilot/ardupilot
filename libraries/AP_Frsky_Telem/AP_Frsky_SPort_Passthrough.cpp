@@ -47,6 +47,7 @@ for FrSky SPort Passthrough
 #define AP_FS_OFFSET                12
 #define AP_FENCE_PRESENT_OFFSET     13
 #define AP_FENCE_BREACH_OFFSET      14
+#define AP_THROTTLE_OFFSET          19
 #define AP_IMU_TEMP_MIN             19.0f
 #define AP_IMU_TEMP_MAX             82.0f
 #define AP_IMU_TEMP_OFFSET          26
@@ -534,6 +535,14 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
         ap_status |= (uint8_t)(fence->enabled() && fence->present()) << AP_FENCE_PRESENT_OFFSET;
         ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
     }
+    // signed throttle [-100,100] scaled down to [-63,63] on 7 bits, MSB for sign + 6 bits for 0-63
+    int16_t throttle = gcs().get_hud_throttle();
+    uint8_t scaled_throttle = constrain_int16(abs(throttle*0.63f),0,63);
+    // add sign
+    if (throttle < 0) {
+        scaled_throttle |= 0x1<<6;
+    }
+    ap_status |= scaled_throttle<<AP_THROTTLE_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
     return ap_status;
