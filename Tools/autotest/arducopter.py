@@ -4409,6 +4409,54 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def fly_esc_telemetry_notches(self):
+        """Use dynamic harmonic notch to control motor noise via ESC telemetry."""
+        self.progress("Flying with ESC telemetry driven dynamic notches")
+
+        self.set_rc_default()
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+        self.set_parameter("INS_LOG_BAT_MASK", 3)
+        self.set_parameter("INS_LOG_BAT_OPT", 0)
+        # set the gyro filter high so we can observe behaviour
+        self.set_parameter("INS_GYRO_FILTER", 100)
+        self.set_parameter("LOG_BITMASK", 958)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameter("SIM_VIB_MOT_MAX", 350)
+        self.set_parameter("SIM_GYR1_RND", 20)
+        self.set_parameter("SIM_ESC_TELEM", 1)
+        self.reboot_sitl()
+
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # find a motor peak
+        freq, vfr_hud, peakdb = self.hover_and_check_matched_frequency_with_fft(-15, 200, 300)
+
+        # now add a dynamic notch and check that the peak is squashed
+        self.set_parameter("INS_LOG_BAT_OPT", 2)
+        self.set_parameter("INS_HNTCH_ENABLE", 1)
+        self.set_parameter("INS_HNTCH_FREQ", 80)
+        self.set_parameter("INS_HNTCH_REF", 1.0)
+        # first and third harmonic
+        self.set_parameter("INS_HNTCH_HMNCS", 5)
+        self.set_parameter("INS_HNTCH_ATT", 50)
+        self.set_parameter("INS_HNTCH_BW", 40)
+        self.set_parameter("INS_HNTCH_MODE", 3)
+        self.reboot_sitl()
+
+        freq, vfr_hud, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+
+        # now add notch-per motor and check that the peak is squashed
+        self.set_parameter("INS_HNTCH_OPTS", 2)
+        self.reboot_sitl()
+
+        freq, vfr_hud, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+        # notch-per-motor should do better, but check for within 5%
+        if peakdb2 * 1.05 > peakdb1:
+            raise NotAchievedException(
+                "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
+                (peakdb2, peakdb1))
+
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         # find a motor peak
         self.takeoff(10, mode="ALT_HOLD")
@@ -6953,6 +7001,11 @@ class AutoTestCopter(AutoTest):
             Test("PositionWhenGPSIsZero",
                  "Ensure position doesn't zero when GPS lost",
                  self.test_copter_gps_zero),
+
+            Test("DynamicRpmNotches",
+                 "Fly Dynamic Notches driven by ESC Telemetry",
+                 self.fly_esc_telemetry_notches,
+                 attempts=1),
 
             Test("GyroFFT",
                  "Fly Gyro FFT",
