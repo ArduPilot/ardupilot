@@ -165,65 +165,6 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
     return min_dis >= 0;
 }
 
-// Instead of the closest, try to find the fastest reachable Rally point, taking Wind into account 
-bool AP_Rally::find_fastest_rally_point(const Location &current_loc, RallyLocation &return_loc) const
-{
-    float min_dis=-1;
-	float min_ETA=-1; //Minimum Estimated Time of Arrival (in seconds)
-	float airspeed_measured;
-    if (!(AP::ahrs().airspeed_estimate(airspeed_measured)))
-    {
-		airspeed_measured=0; //Are we even flying?
-    }
-	Vector3f nedWind = AP::ahrs().wind_estimate();
-	Vector2f hWind; //Use only the horizontal components
-	hWind.x = nedWind.x; //North (Swap?)
-	hWind.y = nedWind.y; //East (Swap?)
-	float hWind_speed = hWind.length();  //Wind speed in m/sec, regardless of direction
-	hWind.normalize(); //Get the wind vector in normalized form so that we can directly multiply it with normalized bearing to each rally location
-
-    for (uint8_t i = 0; i < (uint8_t) _rally_point_total_count; i++) {
-        RallyLocation next_rally;
-        if (!get_rally_point_with_index(i, next_rally)) {
-            continue;
-        }
-
-		Location rally_loc = rally_location_to_location(next_rally);
-        float dis = current_loc.get_distance(rally_loc);
-		float rally_bearing = current_loc.get_bearing_to(rally_loc); //radians
-		
-		Vector2f bearing_rally_vect; //Cerate a normalized vector towards Rally point, to be cross-referenced with wind vector
-		bearing_rally_vect.x = cosf(rally_bearing);
-		bearing_rally_vect.y = sinf(rally_bearing);
-
-		float speed_modifier = bearing_rally_vect * hWind; //This is where we multiply the Wind vector with the bearing - Result should be Negative for Headwind compontents, positive for Tail-wind components towards Rally point
-		float expected_groundspeed_towards_location = airspeed_measured + speed_modifier * hWind_speed; //Can be Zero or Negative if head-wind component towards location is stronger than current airspeed!
-		
-		if (expected_groundspeed_towards_location>0) //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
-		{
-		  //Current Estimated Time of Arrival to currently examined Rally point, taking Wind speed & direction into account
-		  float c_ETA= dis / expected_groundspeed_towards_location;
-
-		  if (is_valid(rally_loc))  
-			if ((c_ETA < min_ETA) || (min_ETA<0)) {
-			min_dis = dis;
-            min_ETA = c_ETA;
-            return_loc = next_rally;
-          }
-	    }
-    }
-    // if a limit is defined and all rally points are beyond that limit, use home if it is closer
-    if ((_rally_limit_km > 0) && (min_dis > _rally_limit_km*1000.0f)) {
-        return false; // use home position
-    }
-
-    // use home if no rally points found
-    return min_dis >= 0;
-}
-
-
-
-
 // return best RTL location from current position
 Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const
 {
@@ -236,7 +177,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     return_loc.alt = rtl_home_alt;
     return_loc.relative_alt = false; // read_alt_to_hold returns an absolute altitude
 
-    if (find_fastest_rally_point(current_loc, ral_loc)) {
+    if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
         if (!_rally_incl_home  || (current_loc.get_distance(loc) < current_loc.get_distance(return_loc))) {
