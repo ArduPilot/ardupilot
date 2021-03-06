@@ -977,7 +977,7 @@ class AutoTestCopter(AutoTest):
 
         # Trigger low battery condition in land mode with FS_OPTIONS
         # set to allow land mode to continue. Verify landing completes
-        # uninterupted.
+        # uninterrupted.
         self.start_subtest("Battery failsafe with FS_OPTIONS set to continue landing")
         self.takeoffAndMoveAway()
         self.set_parameter('FS_OPTIONS', 8)
