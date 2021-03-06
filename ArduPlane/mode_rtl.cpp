@@ -31,8 +31,7 @@ void ModeRTL::update()
             plane.rtl.done_climb = true;
         }
         if (!plane.rtl.done_climb) {
-            plane.roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
-            plane.nav_roll_cd = constrain_int32(plane.nav_roll_cd, -plane.roll_limit_cd, plane.roll_limit_cd);
+            plane.nav_roll_cd = 0;
         }
     }
 }
