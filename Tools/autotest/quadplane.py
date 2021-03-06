@@ -588,6 +588,7 @@ class AutoTestQuadPlane(AutoTest):
             "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
             "FRSkyPassThrough": "Currently failing",
             "CPUFailsafe": "servo channel values not scaled like ArduPlane",
+            "GyroFFT": "flapping test",
         }
 
     def test_pilot_yaw(self):
