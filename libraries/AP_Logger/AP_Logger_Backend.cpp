@@ -172,8 +172,10 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
 bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
-    // sure, sure we did....
-    return true;
+    if (msg_type < REPLAY_LOG_NEW_MSG_MIN || msg_type > REPLAY_LOG_NEW_MSG_MAX) {
+        // don't re-emit FMU msgs unless they are in the replay range
+        return true;
+    }
 #endif
 
     // get log structure from front end:
