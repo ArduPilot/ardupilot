@@ -250,6 +250,11 @@ void ModeAuto::land_start(const Vector3f& destination)
 
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -1513,8 +1518,9 @@ bool ModeAuto::verify_takeoff()
     // have we reached our target altitude?
     const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
 
-    // retract the landing gear
+    // if we have reached our destination
     if (reached_wp_dest) {
+        // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
 

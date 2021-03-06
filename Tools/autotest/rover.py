@@ -93,8 +93,7 @@ class AutoTestRover(AutoTest):
             self.set_parameter("RC7_OPTION", 7)
             self.set_parameter("RC9_OPTION", 58)
 
-            self.mavproxy.send('switch 5\n')
-            self.wait_mode('MANUAL')
+            self.change_mode('MANUAL')
 
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -165,8 +164,7 @@ class AutoTestRover(AutoTest):
 
     def drive_left_circuit(self):
         """Drive a left circuit, 50m on a side."""
-        self.mavproxy.send('switch 6\n')
-        self.wait_mode('MANUAL')
+        self.change_mode('MANUAL')
         self.set_rc(3, 2000)
 
         self.progress("Driving left circuit")
@@ -389,10 +387,10 @@ class AutoTestRover(AutoTest):
     #################################################
     # AUTOTEST ALL
     #################################################
-    def drive_mission(self, filename):
+    def drive_mission(self, filename, strict=True):
         """Drive a mission from a file."""
         self.progress("Driving mission %s" % filename)
-        self.load_mission(filename)
+        self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
@@ -598,7 +596,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex:
@@ -792,8 +790,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.set_parameter("RC12_OPTION", 46)
             self.reboot_sitl()
 
-            self.mavproxy.send('switch 6\n')  # Manual mode
-            self.wait_mode('MANUAL')
+            self.change_mode('MANUAL')
             self.wait_ready_to_arm()
             self.set_rc(3, 1500)  # throttle at zero
             self.arm_vehicle()
@@ -1254,105 +1251,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                0)
         self.wait_location(loc, accuracy=accuracy)
         self.disarm_vehicle()
-
-    def string_for_frame(self, frame):
-        return mavutil.mavlink.enums["MAV_FRAME"][frame].name
-
-    def frames_equivalent(self, f1, f2):
-        pairs = [
-            (mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
-             mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT),
-            (mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-             mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT),
-            (mavutil.mavlink.MAV_FRAME_GLOBAL,
-             mavutil.mavlink.MAV_FRAME_GLOBAL_INT),
-        ]
-        for pair in pairs:
-            if (f1 == pair[0] and f2 == pair[1]):
-                return True
-            if (f1 == pair[1] and f2 == pair[0]):
-                return True
-        return f1 == f2
-
-    def check_mission_items_same(self,
-                                 check_atts,
-                                 want,
-                                 got,
-                                 epsilon=None,
-                                 skip_first_item=False):
-        self.progress("Checking mission items same")
-        if epsilon is None:
-            epsilon = 1
-        if len(want) != len(got):
-            raise NotAchievedException("Incorrect item count (want=%u got=%u)" % (len(want), len(got)))
-        self.progress("Checking %u items" % len(want))
-        for i in range(0, len(want)):
-            if skip_first_item and i == 0:
-                continue
-            item = want[i]
-            downloaded_item = got[i]
-
-            check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
-            # z is not preserved
-
-            self.progress("Comparing (%s) and (%s)" % (str(item), str(downloaded_item)))
-
-            for att in check_atts:
-                item_val = getattr(item, att)
-                downloaded_item_val = getattr(downloaded_item, att)
-                if abs(item_val - downloaded_item_val) > epsilon:
-                    raise NotAchievedException(
-                        "Item %u (%s) has different %s after download want=%s got=%s (got-item=%s)" %
-                        (i, str(item), att, str(item_val), str(downloaded_item_val), str(downloaded_item)))
-                # for waypoint items ensure z and frame are preserved:
-            self.progress("Type is %u" % got[0].mission_type)
-            if got[0].mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
-                item_val = getattr(item, 'frame')
-                downloaded_item_val = getattr(downloaded_item, 'frame')
-                if not self.frames_equivalent(item_val, downloaded_item_val):
-                    raise NotAchievedException("Frame not same (got=%s want=%s)" %
-                                               (self.string_for_frame(downloaded_item_val),
-                                                self.string_for_frame(item_val)))
-                if abs(item.z - downloaded_item.z) > 0.00001:
-                    raise NotAchievedException("Z not preserved (got=%f want=%f)" %
-                                               (item.z, downloaded_item.z))
-
-    def check_fence_items_same(self, want, got):
-        check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got)
-
-    def check_mission_waypoint_items_same(self, want, got):
-        check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, skip_first_item=True)
-
-    def check_mission_item_upload_download(self, items, itype, mission_type):
-        self.progress("check %s _upload/download: upload %u items" %
-                      (itype, len(items),))
-        self.upload_using_mission_protocol(mission_type, items)
-        self.progress("check %s upload/download: download items" % itype)
-        downloaded_items = self.download_using_mission_protocol(mission_type)
-        self.progress("Downloaded items: (%s)" % str(downloaded_items))
-        if len(items) != len(downloaded_items):
-            raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
-                                       (len(items), len(downloaded_items)))
-        if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_FENCE:
-            self.check_fence_items_same(items, downloaded_items)
-        elif mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
-            self.check_mission_waypoint_items_same(items, downloaded_items)
-        else:
-            raise NotAchievedException("Unhandled")
-
-    def check_fence_upload_download(self, items):
-        self.check_mission_item_upload_download(
-            items,
-            "fence",
-            mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-
-    def check_mission_upload_download(self, items):
-        self.check_mission_item_upload_download(
-            items,
-            "waypoints",
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
     def fence_with_bad_frame(self, target_system=1, target_component=1):
         return [
@@ -3559,7 +3457,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Did not get expected MISSION_CURRENT")
         if m.seq != 0:
             raise NotAchievedException("Bad mission current")
-        self.load_mission("rover-gripper-mission.txt")
+        self.load_mission_using_mavproxy("rover-gripper-mission.txt")
         set_wp = 1
         self.mavproxy.send('wp set %u\n' % set_wp)
         self.drain_mav()
@@ -5664,6 +5562,84 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_mavproxy_param(self):
+        self.mavproxy.send("param fetch\n")
+        self.mavproxy.expect("Received [0-9]+ parameters")
+
+    def MAV_CMD_DO_SET_MISSION_CURRENT_mission(self, target_system=1, target_component=1):
+        return copy.copy([
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(1.0000 * 1e7), # latitude
+                int(1.0000 * 1e7), # longitude
+                31.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(1.0000 * 1e7), # latitude
+                int(1.0000 * 1e7), # longitude
+                31.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                2, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(1.0000 * 1e7), # latitude
+                int(1.0000 * 1e7), # longitude
+                31.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION),
+        ])
+
+    def MAV_CMD_DO_SET_MISSION_CURRENT(self, target_sysid=None, target_compid=1):
+        if target_sysid is None:
+            target_sysid = self.sysid_thismav()
+        self.check_mission_upload_download(self.MAV_CMD_DO_SET_MISSION_CURRENT_mission())
+
+        self.set_current_waypoint(2)
+
+        self.set_current_waypoint_using_mav_cmd_do_set_mission_current(2)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+                     17,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=1,
+                     target_sysid=target_sysid,
+                     target_compid=target_compid,
+                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -5702,7 +5678,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("DriveMission",
              "Drive Mission %s" % "rover1.txt",
-             lambda: self.drive_mission("rover1.txt")),
+             lambda: self.drive_mission("rover1.txt", strict=False)),
 
             # disabled due to frequent failures in travis. This test needs re-writing
             # ("Drive Brake", self.drive_brake),
@@ -5766,6 +5742,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Test handling of SET_POSITION_TARGET_LOCAL_NED",
              self.SET_POSITION_TARGET_LOCAL_NED),
 
+            ("MAV_CMD_DO_SET_MISSION_CURRENT",
+             "Test handling of CMD_DO_SET_MISSION_CURRENT",
+             self.MAV_CMD_DO_SET_MISSION_CURRENT),
+
             ("Button",
              "Test Buttons",
              self.test_button),
@@ -5777,6 +5757,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("Offboard",
              "Test Offboard Control",
              self.test_offboard),
+
+            ("MAVProxyParam",
+             "Test MAVProxy parameter handling",
+             self.test_mavproxy_param),
 
             ("GCSFence",
              "Upload and download of fence",

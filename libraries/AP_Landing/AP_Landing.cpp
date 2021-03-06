@@ -20,6 +20,7 @@
 #include "AP_Landing.h"
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AC_Fence/AC_Fence.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
@@ -249,6 +250,11 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
              mission.resume();
          }
          // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
+
+        AC_Fence *fence = AP::fence();
+        if (fence) {
+            fence->auto_enable_fence_after_takeoff();
+        }
      }
 
      Log();

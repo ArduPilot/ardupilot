@@ -154,6 +154,7 @@ void RCOutput::rcout_thread()
     }
 }
 
+#ifndef HAL_NO_SHARED_DMA
 // release locks on the groups that are pending in reverse order
 void RCOutput::dshot_collect_dma_locks(uint32_t last_run_us)
 {
@@ -192,6 +193,7 @@ void RCOutput::dshot_collect_dma_locks(uint32_t last_run_us)
         }
     }
 }
+#endif // HAL_NO_SHARED_DMA
 
 /*
   setup the output frequency for a group and start pwm output
@@ -992,12 +994,12 @@ void RCOutput::trigger_groups(void)
         }
     }
     osalSysUnlock();
-
+#ifndef HAL_NO_RCOUT_THREAD
     // trigger a PWM send
     if (!serial_group && hal.scheduler->in_main_thread()) {
         chEvtSignal(rcout_thread_ctx, EVT_PWM_SEND);
     }
-
+#endif
     /*
       calculate time that we are allowed to trigger next pulse
       to guarantee at least a 50us gap between pulses
@@ -1360,8 +1362,11 @@ void RCOutput::dma_unlock(void *p)
     pwm_group *group = (pwm_group *)p;
 
     group->dshot_state = DshotState::IDLE;
-    // tell the waiting process we've done the DMA
-    chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    if (group->dshot_waiter != nullptr) {
+        // tell the waiting process we've done the DMA. Note that
+        // dshot_waiter can be null if we have cancelled the send
+        chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    }
     chSysUnlockFromISR();
 }
 

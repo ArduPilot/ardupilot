@@ -192,7 +192,10 @@ static void main_loop()
     ChibiOS::I2CBus::clear_all();
 #endif
 
+#ifndef HAL_NO_SHARED_DMA
     ChibiOS::Shared_DMA::init();
+#endif
+
     peripheral_power_enable();
 
     hal.serial(0)->begin(115200);

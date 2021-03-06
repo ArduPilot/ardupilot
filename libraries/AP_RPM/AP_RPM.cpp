@@ -132,7 +132,7 @@ void AP_RPM::init(void)
             drivers[i] = new AP_RPM_HarmonicNotch(*this, i, state[i]);
         }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        if (drivers[i] == nullptr) {
+        if (type == RPM_TYPE_SITL) {
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
         }
 #endif

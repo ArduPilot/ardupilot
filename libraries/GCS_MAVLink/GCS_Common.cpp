@@ -437,7 +437,8 @@ void GCS_MAVLINK::send_ahrs2()
     const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
     struct Location loc {};
-    if (ahrs.get_secondary_attitude(euler) ||
+    // we want one or both of these, use | to avoid short-circuiting:
+    if (ahrs.get_secondary_attitude(euler) |
         ahrs.get_secondary_position(loc)) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
@@ -515,6 +516,12 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg) const
 
 /*
   handle a MISSION_SET_CURRENT mavlink packet
+
+  Note that there exists a relatively new mavlink DO command,
+  MAV_CMD_DO_SET_MISSION_CURRENT which provides an acknowledgement
+  that the command has been received, rather than the GCS having to
+  rely on getting back an identical sequence number as some currently
+  do.
  */
 void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
@@ -524,7 +531,20 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
 
     // set current command
     if (mission.set_current_cmd(packet.seq)) {
-        send_message(MSG_CURRENT_WAYPOINT);
+        // because MISSION_SET_CURRENT is a message not a command,
+        // there is not ACK associated with us successfully changing
+        // our waypoint.  Some GCSs use the fact we return exactly the
+        // same mission sequence number in this packet as an ACK - so
+        // if they send a MISSION_SET_CURRENT with seq number of 4
+        // then they expect to receive a MISSION_CURRENT message with
+        // exactly that sequence number in it, even if ArduPilot never
+        // actually holds that as a sequence number (e.g. packet.seq==0).
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_CURRENT)) {
+            mavlink_msg_mission_current_send(chan, packet.seq);
+        } else {
+            // schedule it for later:
+            send_message(MSG_CURRENT_WAYPOINT);
+        }
     }
 }
 
@@ -3774,6 +3794,29 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
 #endif
 }
 
+// changes the current waypoint; at time of writing GCS
+// implementations use the mavlink message MISSION_SET_CURRENT to set
+// the current waypoint, rather than this DO command.  It is hoped we
+// can move to this command in the future to avoid acknowledgement
+// issues with MISSION_SET_CURRENT
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
+{
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    const uint32_t seq = (uint32_t)packet.param1;
+    if (!mission->set_current_cmd(seq)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // volunteer the new current waypoint for all listeners
+    send_message(MSG_CURRENT_WAYPOINT);
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_t &packet)
 {
     const uint16_t battery_mask = packet.param1;
@@ -4043,6 +4086,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         result = handle_command_preflight_calibration(packet);
+        break;
+
+
+    case MAV_CMD_DO_SET_MISSION_CURRENT:
+        result = handle_command_do_set_mission_current(packet);
         break;
 
     case MAV_CMD_BATTERY_RESET:
@@ -5205,7 +5253,6 @@ uint64_t GCS_MAVLINK::capabilities() const
     }
 
     if (AP::fence()) {
-        // FIXME: plane also supports this...
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
 

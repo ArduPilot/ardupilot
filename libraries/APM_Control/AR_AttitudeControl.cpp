@@ -634,6 +634,11 @@ float AR_AttitudeControl::get_throttle_out_stop(bool motor_limit_low, bool motor
         _stop_last_ms = now;
         // set last time speed controller was run so accelerations are limited
         _speed_last_ms = now;
+        // reset filters and I-term
+        _throttle_speed_pid.reset_filter();
+        _throttle_speed_pid.reset_I();
+        // ensure desired speed is zero
+        _desired_speed = 0.0f;
         return 0.0f;
     }
 

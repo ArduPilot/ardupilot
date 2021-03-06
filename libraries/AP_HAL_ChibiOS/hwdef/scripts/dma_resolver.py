@@ -11,13 +11,17 @@ dma_map = None
 
 debug = False
 
-def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot_use_stream):
+def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot_use_stream, forbidden_map):
     global ignore_list
     if debug:
         print('............ Checking ', periph, dma_stream, 'without', cannot_use_stream)
     for other_periph in curr_dict:
         if other_periph != periph:
             if curr_dict[other_periph] == dma_stream:
+                if other_periph in forbidden_map[periph]:
+                    if debug:
+                        print('.................... Forbidden', periph, other_periph)
+                    return False
                 if debug:
                     print('.................... Collision', other_periph, dma_stream)
                 ignore_list.append(periph)
@@ -37,7 +41,8 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot
 
                     if stream != curr_dict[other_periph] and \
                         stream not in cannot_use_stream and \
-                        check_possibility(other_periph, stream, curr_dict, dma_map, check_list, cannot_use_stream+[(dma_stream)]):
+                        check_possibility(other_periph, stream, curr_dict, dma_map, check_list,
+                                          cannot_use_stream+[(dma_stream)], forbidden_map):
                         curr_dict[other_periph] = stream
                         if debug:
                             print ('....................... Resolving', other_periph, stream)
@@ -172,6 +177,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
                 stream = ii % 8
 
                 if (dma,stream) in dma_map[p]:
+                    # this peripheral is already using the stream
                     continue
                 
                 # prevent attempts to share with other half of same peripheral
@@ -233,6 +239,47 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude):
         print('dma_map_both: ', both)
     return both
 
+def sharing_allowed(p1, p2):
+    '''return true if sharing is allowed between p1 and p2'''
+    if p1 == p2:
+        return True
+    # don't allow RX and TX of same peripheral to share
+    if p1.endswith('_RX') and p2.endswith('_TX') and p1[:-2] == p2[:-2]:
+        return False
+    # don't allow sharing of two TIMn_UP channels as DShot code can't cope
+    if p1.endswith("_UP") and p2.endswith("_UP") and p1.startswith("TIM") and p2.startswith("TIM"):
+        return False
+    return True
+
+def check_sharing(shared):
+    '''check if DMA channel sharing is OK'''
+    for p in shared:
+        # don't share UART RX with anything
+        if (p.startswith("UART") or p.startswith("USART")) and p.endswith("_RX"):
+            print("Illegal sharing of %s" % p)
+            return False
+
+        # don't share ADC with anything
+        if p.startswith("ADC"):
+            print("Illegal sharing of %s" % p)
+            return False
+
+        for p2 in shared:
+            if not sharing_allowed(p, p2):
+                print("Illegal sharing of %s and %s" % (p, p2))
+                return False
+
+    return True
+
+def forbidden_list(p, peripheral_list):
+    '''given a peripheral, form a list of other peripherals we may not share with'''
+    ret = []
+    for p2 in peripheral_list:
+        if not sharing_allowed(p, p2):
+            ret.append(p2)
+    return ret
+
+
 def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                      dma_priority='', dma_noshare=''):
     '''write out a DMA resolver header file'''
@@ -255,7 +302,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         if hasattr(lib, "DMA_Map"):
             dma_map = lib.DMA_Map
         else:
-            return []
+            return [], []
     except ImportError:
         print("Unable to find module for MCU %s" % mcu_type)
         sys.exit(1)
@@ -270,6 +317,11 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     print("Writing DMA map")
     unassigned = []
     curr_dict = {}
+
+    # build a map from peripheral name to a list of peripherals that it cannot share with
+    forbidden_map = {}
+    for p in peripheral_list:
+        forbidden_map[p] = forbidden_list(p, peripheral_list)
 
     for periph in peripheral_list:
         if "_CH" in periph:
@@ -290,7 +342,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                 print('........Possibility for', periph, streamchan)
             stream = (streamchan[0], streamchan[1])
             if check_possibility(periph, stream, curr_dict, dma_map,
-                                 check_list, []):
+                                 check_list, [], forbidden_map):
                 curr_dict[periph] = stream
                 if debug:
                     print ('....................... Setting', periph, stream)
@@ -319,7 +371,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             stream = (streamchan[0], streamchan[1])
             share_ok = True
             for periph2 in stream_assign[stream]:
-                if not can_share(periph, noshare_list) or not can_share(periph2, noshare_list):
+                if not can_share(periph, noshare_list) or not can_share(periph2, noshare_list) or periph2 in forbidden_map[periph]:
                     share_ok = False
             if share_ok:
                 share_possibility.append(stream)
@@ -336,6 +388,12 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             unassigned_new.remove(periph)
     unassigned = unassigned_new
 
+    for key in sorted(curr_dict.keys()):
+        stream = curr_dict[key]
+        if len(stream_assign[stream]) > 1:
+            if not check_sharing(stream_assign[stream]):
+                sys.exit(1)
+    
     if debug:
         print(stream_assign)
 
@@ -345,6 +403,23 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
         f.write(
             "\n// Note: The following peripherals can't be resolved for DMA: %s\n\n"
             % unassigned)
+
+    ordered_up_channels = []
+
+    # produce a list of timers ordered by the DMA streamid of the UP channel
+    # this is so that the dshot code can take out the UP DMA locks in the same order as I2C and SPI
+    for key in curr_dict.keys():
+        if "_UP" in key:
+            ordered_up_channels.append(key)
+
+    def order_by_streamid(key):
+        stream = curr_dict[key]
+        return (stream[0] * 8 + stream[1]) * 20 + int(key[3:-3])
+
+    ordered_up_channels = sorted(ordered_up_channels, key=order_by_streamid)
+    ordered_timers = []
+    for key in ordered_up_channels:
+        ordered_timers.append(key[0:-3])
 
     for key in sorted(curr_dict.keys()):
         stream = curr_dict[key]
@@ -435,7 +510,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             continue
         f.write('#define STM32_SPI_%s_DMA_STREAMS STM32_SPI_%s_TX_%s_STREAM, STM32_SPI_%s_RX_%s_STREAM\n' % (
             key, key, dma_name(key), key, dma_name(key)))
-    return unassigned
+    return unassigned, ordered_timers
 
 
 if __name__ == '__main__':

@@ -143,8 +143,8 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
         tiltErr : tiltErrFilt,  // tilt error convergence metric
-        offsetNorth : (int8_t)(offset.x),
-        offsetEast : (int8_t)(offset.y),
+        offsetNorth : offset.x,
+        offsetEast : offset.y,
         faults : _faultStatus,
         timeouts : (uint8_t)(timeoutStatus),
         solution : (uint32_t)(solutionStatus.value),

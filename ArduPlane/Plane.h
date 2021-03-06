@@ -98,6 +98,10 @@
 #include "afs_plane.h"
 #endif
 
+#if AC_FENCE == ENABLED
+#include <AC_Fence/AC_Fence.h>
+#endif
+
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -256,7 +260,11 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-    
+
+#if AC_FENCE == ENABLED
+    AC_Fence fence;
+#endif
+
     ModeCircle mode_circle;
     ModeStabilize mode_stabilize;
     ModeTraining mode_training;
@@ -826,7 +834,6 @@ private:
     void calc_nav_yaw_ground(void);
 
     // GCS_Mavlink.cpp
-    void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
 
     // Log.cpp
@@ -918,25 +925,11 @@ private:
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
-    // geofence.cpp
-    uint8_t max_fencepoints(void) const;
-    Vector2l get_fence_point_with_index(uint8_t i) const;
-    void set_fence_point_with_index(const Vector2l &point, unsigned i);
-    void geofence_load(void);
-    bool geofence_present(void) const;
-    void geofence_update_pwm_enabled_state();
-    bool geofence_set_enabled(bool enable);
-    bool geofence_enabled(void);
-    bool geofence_set_floor_enabled(bool floor_enable);
-    bool geofence_check_minalt(void);
-    bool geofence_check_maxalt(void);
-    void geofence_check(bool altitude_check_only);
-    bool geofence_prearm_check(void);
-    bool geofence_stickmixing(void);
-    void geofence_send_status(mavlink_channel_t chan);
-    bool geofence_breached(void);
-    void geofence_disable_and_send_error_msg(const char *errorMsg);
-    void disable_fence_for_landing(void);
+#if AC_FENCE == ENABLED
+    // fence.cpp
+    void fence_check();
+    bool fence_stickmixing() const;
+#endif
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
@@ -955,6 +948,7 @@ private:
     void afs_fs_check(void);
 #endif
     void one_second_loop(void);
+    void three_hz_loop(void);
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     void airspeed_ratio_update(void);
 #endif 
@@ -1018,7 +1012,6 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
-    void complete_auto_takeoff(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);

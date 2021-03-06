@@ -402,7 +402,9 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
         _notify_new_gyro_raw_sample(gyro_instance, gyro);
     }
 
+    AP_HAL::Device::checkreg reg;
     if (!dev_gyro->check_next_register()) {
+        log_register_change(dev_gyro->get_bus_id(), reg);
         _inc_gyro_error_count(gyro_instance);
     }
 }
