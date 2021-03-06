@@ -226,6 +226,7 @@ const AP_Param::GroupInfo SITL::var_info3[] = {
     AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SITL, SITL::BaroParm),
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SITL, SITL::BaroParm),
 
+    AP_GROUPINFO("ESC_TELEM", 40, SITL, esc_telem, 1),
 
     // user settable parameters for the 1st airspeed sensor
     AP_GROUPINFO("ARSPD_RND",     50, SITL,  arspd_noise[0], 2.0),
