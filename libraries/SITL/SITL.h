@@ -409,6 +409,9 @@ public:
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
 
+    // ESC telemetry
+    AP_Int8 esc_telem;
+
     struct {
         // LED state, for serial LED emulation
         struct {
