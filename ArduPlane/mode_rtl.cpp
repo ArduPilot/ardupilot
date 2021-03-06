@@ -21,10 +21,11 @@ void ModeRTL::update()
 
     if (plane.g2.rtl_climb_min > 0) {
         /*
-          when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
-          until we have climbed by RTL_CLIMB_MIN meters
+          when RTL first starts limit bank angle until we have climbed
+          by RTL_CLIMB_MIN meters above RTL start or ALT_HOLD_RTL,
+          whichever is highest.
          */
-        if (!plane.rtl.done_climb && (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min) {
+        if (!plane.rtl.done_climb && (plane.current_loc.alt - MAX(plane.next_WP_loc.alt,plane.prev_WP_loc.alt))*0.01 > plane.g2.rtl_climb_min) {
             plane.prev_WP_loc = plane.current_loc;
             plane.setup_glide_slope();
             plane.rtl.done_climb = true;
