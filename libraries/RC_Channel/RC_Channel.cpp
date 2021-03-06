@@ -46,7 +46,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Mount/AP_Mount.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 
-#define SWITCH_DEBOUNCE_TIME_MS  200
+#define SWITCH_DEBOUNCE_TIME_MS  30
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: MIN
