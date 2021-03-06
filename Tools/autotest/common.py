@@ -2133,7 +2133,10 @@ class AutoTest(ABC):
             if time.time() - tstart > 30:
                 raise NotAchievedException("Failed to customise")
             try:
-                self.wait_heartbeat(drain_mav=True)
+                m = self.wait_heartbeat(drain_mav=True)
+                if m.type == 0:
+                    self.progress("Bad heartbeat: %s" % str(m))
+                    continue
             except IOError:
                 pass
             break
