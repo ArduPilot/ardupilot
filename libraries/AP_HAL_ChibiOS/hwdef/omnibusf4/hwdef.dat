@@ -8,6 +8,9 @@ undef APJ_BOARD_ID
 undef PC8
 undef PC9
 
+define HAL_NAVEKF2_AVAILABLE 1
+define HAL_NAVEKF3_AVAILABLE 0
+
 # board ID for firmware load
 APJ_BOARD_ID 1002
 
