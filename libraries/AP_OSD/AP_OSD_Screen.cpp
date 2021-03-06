@@ -1158,7 +1158,7 @@ void AP_OSD_Screen::draw_avgvolt(uint8_t x, uint8_t y)
     float v = battery.voltage();
     uint8_t num_cells = (uint8_t)((v/4.3f) + 1);
     float voltage = v/num_cells;
-    backend->write(x,y, voltage < osd->warn_avgvolt, "%c%2.1f%c", SYM_BATT_FULL + p, voltage, SYM_VOLT);
+    backend->write(x,y, voltage < osd->warn_avgvolt, "%c%1.2f%c", SYM_BATT_FULL + p, voltage, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
