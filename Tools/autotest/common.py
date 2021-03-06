@@ -8729,6 +8729,7 @@ switch value'''
             self.drain_mav()
             self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_ENABLE", 1)
+            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_TERM_ACTION", 42)
