@@ -70,7 +70,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
-    // @Description: Degrees of elevator added for full throttle application. Increase to compensate for throttle causing down pitch.
+    // @Description: Pitch up to add in proportion to throttle. 100% throttle will add this number of degrees to the pitch target.
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
