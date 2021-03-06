@@ -475,6 +475,10 @@ public:
     // set_current_cmd - jumps to command specified by index
     bool set_current_cmd(uint16_t index, bool rewind = false);
 
+    // restart current navigation command.  Used to handle external changes to mission
+    // returns true on success, false if current nav command has been deleted
+    bool restart_current_nav_cmd();
+
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
     bool read_cmd_from_storage(uint16_t index, Mission_Command& cmd) const;

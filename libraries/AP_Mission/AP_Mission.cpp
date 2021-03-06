@@ -511,6 +511,24 @@ bool AP_Mission::set_current_cmd(uint16_t index, bool rewind)
     return true;
 }
 
+// restart current navigation command.  Used to handle external changes to mission
+// returns true on success, false if mission is not running or current nav command is invalid
+bool AP_Mission::restart_current_nav_cmd()
+{
+    // return immediately if mission is not running
+    if (_flags.state != MISSION_RUNNING) {
+        return false;
+    }
+
+    // return immediately if nav command index is invalid
+    const uint16_t nav_cmd_index = get_current_nav_index();
+    if ((nav_cmd_index == 0) || (nav_cmd_index >= num_commands())) {
+        return false;
+    }
+
+    return set_current_cmd(_nav_cmd.index);
+}
+
 // returns false on any issue at all.
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
