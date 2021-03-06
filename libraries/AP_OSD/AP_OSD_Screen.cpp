@@ -1291,10 +1291,10 @@ void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magn
 {
     static const int32_t interval = 36000 / SYM_ARROW_COUNT;
     char arrow = SYM_ARROW_START + ((int32_t(angle_rad*DEGX100) + interval / 2) / interval) % SYM_ARROW_COUNT;
-    if (u_scale(SPEED, magnitude) < 10.0) {
-        backend->write(x, y, false, "%c%3.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
+    if (u_scale(SPEED, magnitude) < 9.95) {
+        backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
     } else {
-        backend->write(x, y, false, "%c%3d%c", arrow, (int)u_scale(SPEED, magnitude), u_icon(SPEED));
+        backend->write(x, y, false, "%c%3d%c", arrow, (int)roundf(u_scale(SPEED, magnitude)), u_icon(SPEED));
     }
 }
 
