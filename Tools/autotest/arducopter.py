@@ -1338,9 +1338,6 @@ class AutoTestCopter(AutoTest):
     # fly_alt_min_fence_test - fly down until you hit the fence floor
     def fly_alt_min_fence_test(self):
         self.takeoff(30, mode="LOITER", timeout=60)
-        """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
         self.set_parameter("AVOID_ENABLE", 0)
@@ -1621,8 +1618,6 @@ class AutoTestCopter(AutoTest):
     #   50 seconds east, 15 seconds south
     def fly_simple(self, side=50):
         self.takeoff(10, mode="LOITER")
-        # hold position in loiter
-        self.change_mode('LOITER')
 
         # set SIMPLE mode for all flight modes
         self.set_parameter("SIMPLE", 63)
