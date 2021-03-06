@@ -1657,7 +1657,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 _flags.nav_cmd_loaded = true;
             }
             // save a loaded wp index in history array for when _repeat_dist is set via MAV_CMD_DO_SET_RESUME_REPEAT_DIST
-            // and prevent history being re-written until vehicle returns to interupted position
+            // and prevent history being re-written until vehicle returns to interrupted position
             if (_repeat_dist > 0 && !_flags.resuming_mission && _nav_cmd.index != AP_MISSION_CMD_INDEX_NONE && !(_nav_cmd.content.location.lat == 0 && _nav_cmd.content.location.lng == 0)) {
                 // update mission history. last index position is always the most recent wp loaded.
                 for (uint8_t i=0; i<AP_MISSION_MAX_WP_HISTORY-1; i++) {
@@ -1665,10 +1665,10 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 }
                 _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1] = _nav_cmd.index;
             }
-            // check if the vehicle is resuming and has returned to where it was interupted
+            // check if the vehicle is resuming and has returned to where it was interrupted
             if (_flags.resuming_mission && _nav_cmd.index == _wp_index_history[AP_MISSION_MAX_WP_HISTORY-1]) {
                 // vehicle has resumed previous position
-                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interupted WP");
+                gcs().send_text(MAV_SEVERITY_INFO, "Mission: Returned to interrupted WP");
                 _flags.resuming_mission = false;
             }
 
