@@ -516,7 +516,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
     AP_Mission::Mission_Command cmd;
 
     // can't handle request for anything bigger than the mission size+1...
-    if (index > num_commands() ) {
+    if (index > num_commands()) {
         return false;
     }
 
@@ -527,12 +527,12 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
 
     // A request to set the 'next' item after the end is how we add an extra
     //  item to the list, thus allowing us to write entire missions if needed.
-    if (index == num_commands() ) {
-        return add_cmd( cmd);
+    if (index == num_commands()) {
+        return add_cmd(cmd);
     }
 
     // replacing an existing mission item...
-    return AP_Mission::replace_cmd( index, cmd);
+    return AP_Mission::replace_cmd(index, cmd);
 }
 
 bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet) const
@@ -544,7 +544,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     AP_Mission::Mission_Command cmd;
 
     // can't handle request for anything bigger than the mission size...
-    if (index >= num_commands() ) {
+    if (index >= num_commands()) {
         ret_packet.command = -1;
         return false;
     }
