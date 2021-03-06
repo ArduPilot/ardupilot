@@ -911,6 +911,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(vtx_power, "VTX_PWR", 55, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: AVGVOLT_EN
+    // @DisplayName: AVGVOLT_EN
+    // @Description: Displays average cell voltage
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: AVGVOLT_X
+    // @DisplayName: AVGVOLT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: AVGVOLT_Y
+    // @DisplayName: AVGVOLT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(avgvolt, "AVGVOLT", 57, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1132,6 +1148,17 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
     ahrs.get_relative_position_D_home(alt);
     alt = -alt;
     backend->write(x, y, false, "%4d%c", (int)u_scale(ALTITUDE, alt), u_icon(ALTITUDE));
+}
+
+void AP_OSD_Screen::draw_avgvolt(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t p = (100 - pct) / 16.6;
+    float v = battery.voltage();
+    uint8_t num_cells = (uint8_t)((v/4.3f) + 1);
+    float voltage = v/num_cells;
+    backend->write(x,y, voltage < osd->warn_avgvolt, "%c%2.1f%c", SYM_BATT_FULL + p, voltage, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
@@ -1871,6 +1898,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
+    DRAW_SETTING(avgvolt);
     DRAW_SETTING(bat2_vlt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);

@@ -135,6 +135,7 @@ private:
 
     AP_OSD_Setting altitude{true, 23, 8};
     AP_OSD_Setting bat_volt{true, 24, 1};
+    AP_OSD_Setting avgvolt{true, 1, 1};
     AP_OSD_Setting rssi{true, 1, 1};
     AP_OSD_Setting current{true, 25, 2};
     AP_OSD_Setting batused{true, 23, 3};
@@ -196,6 +197,7 @@ private:
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
+    void draw_avgvolt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
@@ -448,6 +450,7 @@ public:
 
     AP_Int8 warn_rssi;
     AP_Int8 warn_nsat;
+    AP_Float warn_avgvolt;
     AP_Float warn_batvolt;
     AP_Float warn_bat2volt;
     AP_Int8 msgtime_s;

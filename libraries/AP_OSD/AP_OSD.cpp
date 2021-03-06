@@ -180,6 +180,14 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Path: AP_OSD_ParamScreen.cpp
     AP_SUBGROUPINFO(param_screen[1], "6_", 22, AP_OSD, AP_OSD_ParamScreen),
 #endif
+
+    // @Param: _W_AVGVOLT
+    // @DisplayName: AVGVOLT warn level
+    // @Description: Set level at which AVGVOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_AVGVOLT", 24, AP_OSD, warn_avgvolt, 3.6f),
+
     AP_GROUPEND
 };
 
