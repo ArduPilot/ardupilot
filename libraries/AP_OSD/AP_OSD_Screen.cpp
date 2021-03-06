@@ -781,7 +781,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 
     // @Param: POWER_EN
     // @DisplayName: POWER_EN
-    // @Description: Displays power (MSP OSD only)
+    // @Description: Displays power
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: POWER_X
@@ -951,6 +951,7 @@ AP_OSD_Screen::AP_OSD_Screen()
 
 #define SYM_VOLT  0x06
 #define SYM_AMP   0x9A
+#define SYM_WATT  0xAE
 #define SYM_MAH   0x07
 #define SYM_MS    0x9F
 #define SYM_FS    0x99
@@ -1189,6 +1190,19 @@ void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_current(uint8_t x, uint8_t y)
 {
     draw_current(0, x, y);
+}
+
+void AP_OSD_Screen::draw_power(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    float power_w;
+    if (battery.power_watts(power_w)) {
+        osd->avg_power_w = osd->avg_power_w + (power_w - osd->avg_power_w) * 0.33;
+        const char* const fmt = (osd->avg_power_w < 9.995 ? "%1.2f%c" : (osd->avg_power_w < 99.95 ? "%2.1f%c" : "%3.0f%c"));
+        backend->write(x, y, false, fmt, osd->avg_power_w, SYM_WATT);
+    } else {
+        backend->write(x, y, false, "---%c", SYM_WATT);
+    }
 }
 
 void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
@@ -1910,6 +1924,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(bat2_vlt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(current);
+    DRAW_SETTING(power);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
     DRAW_SETTING(sats);

@@ -185,13 +185,13 @@ private:
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
+    AP_OSD_Setting power{true, 1, 1};
 
     // MSP OSD only
     AP_OSD_Setting sidebars{false, 0, 0};
     AP_OSD_Setting crosshair{false, 0, 0};
     AP_OSD_Setting home_dist{true, 1, 1};
     AP_OSD_Setting home_dir{true, 1, 1};
-    AP_OSD_Setting power{true, 1, 1};
     AP_OSD_Setting cell_volt{true, 1, 1};
     AP_OSD_Setting batt_bar{true, 1, 1};
     AP_OSD_Setting arming{true, 1, 1};
@@ -201,6 +201,7 @@ private:
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
+    void draw_power(uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
     void draw_batused(uint8_t instance, uint8_t x, uint8_t y);
     void draw_sats(uint8_t x, uint8_t y);
@@ -548,6 +549,7 @@ private:
     float max_speed_mps;
     float max_current_a;
     float avg_current_a;
+    float avg_power_w;
 #endif
     AP_OSD_Backend *backend;
 
