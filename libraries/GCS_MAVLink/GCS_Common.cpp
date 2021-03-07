@@ -71,6 +71,7 @@
 #include "MissionItemProtocol_Fence.h"
 
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 #include <stdio.h>
 
@@ -1074,6 +1075,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
         { MAVLINK_MSG_ID_RELAY_STATUS, MSG_RELAY_STATUS},
+#endif
+#if AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED
+        { MAVLINK_MSG_ID_ALTITUDE,              MSG_ALTITUDE},
 #endif
             };
 
@@ -5666,6 +5670,69 @@ void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message
     send_text(MAV_SEVERITY_INFO, "Received message (%s) is deprecated", message);
 }
 
+#if AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED
+void GCS_MAVLINK::send_altitude() const
+{
+    Location loc;
+    AP_AHRS &_ahrs = AP::ahrs();
+
+    //we wait for a position from AHRS
+    if (!_ahrs.get_location(loc)) {
+        return;
+    }
+    const float altitude_amsl = global_position_int_alt() * 0.001; //meters above ground/sea level
+
+    AP_Baro &_baro = AP::baro();
+    // MAVLink specs for the altitude_monotonic value:
+    // The only guarantee on this field is that it will never be reset and is consistent within a flight.
+    // The recommended value for this field is the uncorrected barometric altitude at boot time.
+    // This altitude will also drift and vary between flights"
+    // Note: ArduPilot allows for ground calibration while disarmed so we can't guarantee (yet) that this field will not be reset!
+    const float altitude_monotonic = _baro.get_altitude();
+
+    Vector3f local_position;
+    // preset to baro altitude and if available use position NED
+    float altitude_local = altitude_monotonic;
+    if (_ahrs.get_relative_position_NED_origin(local_position)) {
+        altitude_local = -local_position.z; //meters from origin
+    }
+
+    // preset to local position and if available use home relative position
+    float altitude_relative = altitude_local;
+    if (_ahrs.home_is_set()) {
+        altitude_relative = global_position_int_relative_alt() * 0.001; //meters above home
+    }
+
+    float altitude_terrain = -1000; //mavlink specs value for unknown
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+    if (terrain != nullptr && terrain->enabled()) {
+        UNUSED_RESULT(terrain->height_above_terrain(altitude_terrain, true));
+    }
+#endif
+
+    float bottom_clearance = -1;    //mavlink specs value for unavailable
+    const RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder != nullptr) {
+        const AP_RangeFinder_Backend *s = rangefinder->find_instance(ROTATION_PITCH_270);
+        if (s != nullptr) {
+            bottom_clearance = s->distance_cm()*0.01;
+        }
+    }
+
+    mavlink_msg_altitude_send(
+            chan,
+            AP_HAL::millis(),
+            altitude_monotonic,
+            altitude_amsl,
+            altitude_local,
+            altitude_relative,
+            altitude_terrain,
+            bottom_clearance
+    );
+}
+#endif
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -6091,6 +6158,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_MAVLINK_MSG_RELAY_STATUS_ENABLED
     case MSG_RELAY_STATUS:
         ret = send_relay_status();
+        break;
+#endif
+#if AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED
+    case MSG_ALTITUDE:
+        CHECK_PAYLOAD_SIZE(ALTITUDE);
+        send_altitude();
         break;
 #endif
 

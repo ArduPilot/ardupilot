@@ -89,6 +89,10 @@
 // Copter 4.4.0 sends this warning.
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
 #define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 1
+
+// few people want the ALTITUDE message
+#ifndef AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED
+#define AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED 0
 #endif
 
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't

@@ -398,6 +398,10 @@ public:
     void send_uavionix_adsb_out_status() const;
     void send_autopilot_state_for_gimbal_device() const;
 
+#if AP_MAVLINK_ALTITUDE_MESSAGE_ENABLED
+    void send_altitude() const;
+#endif
+
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
         _locked = _lock;
