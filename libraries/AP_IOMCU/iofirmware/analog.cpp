@@ -79,10 +79,10 @@ uint16_t adc_sample_vservo(void)
 }
 
 /*
-  capture VRSSI in mV
+  capture VRSSI in mV  (RSSI is directly connected to ADC input w/o voltage divider)
  */
 uint16_t adc_sample_vrssi(void)
 {
     const uint32_t channel = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN5);
-    return adc_sample_channel(channel) * 9900 / 4096;
+    return adc_sample_channel(channel) * 3300 / 4096;
 }
