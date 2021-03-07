@@ -1,11 +1,11 @@
 /*
-  copter specific AP_AdvancedFailsafe class
+  copter specific AP_AdvancedFailsafe class sssss aaaaaaaa
  */
 
 #include "Copter.h"
 
 #if ADVANCED_FAILSAFE == ENABLED
-
+int hhh = 6;
 // Constructor
 AP_AdvancedFailsafe_Copter::AP_AdvancedFailsafe_Copter(AP_Mission &_mission) :
     AP_AdvancedFailsafe(_mission)
