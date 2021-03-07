@@ -28,6 +28,7 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
         _state(mon_state),
         _params(params)
 {
+    _state.cell_count = _params._cell_count;
 }
 
 /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)

@@ -44,4 +44,6 @@ public:
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
     AP_Int8  _i2c_bus;                  /// I2C bus number
     AP_Int32 _options;                  /// Options
+    AP_Float _cell_detect_volt;         /// cell detection voltage
+    AP_Int8  _cell_count;               /// cell count override
 };

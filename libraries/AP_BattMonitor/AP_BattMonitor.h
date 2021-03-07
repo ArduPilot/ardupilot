@@ -105,6 +105,7 @@ public:
 
     // The BattMonitor_State structure is filled in by the backend driver
     struct BattMonitor_State {
+        int8_t     cell_count;
         cells       cell_voltages;             // battery cell voltages in millivolts, 10 cells matches the MAVLink spec
         float       voltage;                   // voltage in volts
         float       current_amps;              // current in amperes
@@ -139,6 +140,14 @@ public:
     /// voltage - returns battery voltage in volts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    /// cell_avg_voltage - returns average cell battery voltage in volts
+    float cell_avg_voltage(uint8_t instance) const;
+    float cell_avg_voltage() const { return cell_avg_voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    // returns cell count - result could be 0 if autodetection is enabled and not possible or -1 if autodetection is disabled
+    int8_t cell_count(uint8_t instance) const;
+    int8_t cell_count() const { return cell_count(AP_BATT_PRIMARY_INSTANCE); }
 
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage

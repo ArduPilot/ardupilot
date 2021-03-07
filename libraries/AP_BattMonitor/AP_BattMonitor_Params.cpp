@@ -176,6 +176,21 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
 
+    // @Param: CELL_DT_V
+    // @DisplayName: Battery cell max voltage
+    // @Description: Maximum cell voltage for cell count detection
+    // @Units: V
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("CELL_DT_V", 22, AP_BattMonitor_Params, _cell_detect_volt, 4.25f),
+
+    // @Param: CELL_COUNT
+    // @DisplayName: Battery cell count
+    // @Description: Overrides cell count autodetection if not -1
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CELL_COUNT", 23, AP_BattMonitor_Params, _cell_count, -1),
+
     AP_GROUPEND
 
 };

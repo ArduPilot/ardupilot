@@ -323,11 +323,44 @@ bool AP_BattMonitor::healthy(uint8_t instance) const {
 /// voltage - returns battery voltage in volts
 float AP_BattMonitor::voltage(uint8_t instance) const
 {
-    if (instance < _num_instances) {
-        return state[instance].voltage;
-    } else {
+    if (instance >= _num_instances) {
         return 0.0f;
     }
+
+    return state[instance].voltage;
+}
+
+/// voltage - returns average cell battery voltage in volts
+float AP_BattMonitor::cell_avg_voltage(uint8_t instance) const
+{
+    if ((instance >= _num_instances) || (state[instance].cell_count < 1)) {
+        return 0.0f;
+    }
+
+    auto istate = state[instance];
+    float cells_total = 0;
+    if (has_cell_voltages(instance)) {
+        for (uint16_t i = 0; i < AP_BATT_MONITOR_CELLS_MAX; ++i) {
+            auto cell_voltage = istate.cell_voltages.cells[i];
+            if (cell_voltage != 0xFFFF) {
+                cells_total += cell_voltage;
+            }
+        }
+    } else {
+        cells_total = istate.voltage;
+    }
+
+    return cells_total / istate.cell_count;
+}
+
+// returns cell count - result could be 0 if autodetection is enabled and not possible or -1 if autodetection is disabled
+int8_t AP_BattMonitor::cell_count(uint8_t instance) const
+{
+    if (instance >= _num_instances) {
+        return -1;
+    }
+
+    return state[instance].cell_count;
 }
 
 /// get voltage with sag removed (based on battery current draw and resistance)
