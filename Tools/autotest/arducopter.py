@@ -3021,25 +3021,6 @@ class AutoTestCopter(AutoTest):
         return (hours, mins, secs, 0)
 
     def reset_delay_item(self, seq, seconds_in_future):
-        while True:
-            self.progress("Requesting request for seq %u" % (seq,))
-            self.mav.mav.mission_write_partial_list_send(1, # target system
-                                                         1, # target component
-                                                         seq, # start index
-                                                         seq)
-            req = self.mav.recv_match(type='MISSION_REQUEST',
-                                      blocking=True,
-                                      timeout=1)
-            if req is not None and req.seq == seq:
-                if req.get_srcSystem() == 255:
-                    self.progress("Shutup MAVProxy")
-                    continue
-                # notionally this might be in the message cache before
-                # we prompt for it... *shrug*
-                break
-
-        # we have received a request for the item.  Supply it:
-
         frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
         command = mavutil.mavlink.MAV_CMD_NAV_DELAY
         # retrieve mission item and check it:
