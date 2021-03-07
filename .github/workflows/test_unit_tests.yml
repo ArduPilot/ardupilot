@@ -21,7 +21,7 @@ jobs:
         config: [
             unit-tests,
             python-cleanliness,
-            examples,
+            # examples,
         ]
     steps:
       # git checkout the PR
