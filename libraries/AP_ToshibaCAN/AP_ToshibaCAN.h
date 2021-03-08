@@ -96,19 +96,9 @@ private:
     uint16_t update_count_sent;     // counter of outputs successfully sent
     uint8_t send_stage;             // stage of sending algorithm (each stage sends one frame to ESCs)
 
-    // telemetry data (rpm, voltage)
-    HAL_Semaphore _telem_sem;
     struct telemetry_info_t {
-        int16_t rpm;                // rpm
-        uint16_t voltage_cv;        // voltage in centi-volts
-        uint16_t current_ca;        // current in centi-amps
-        uint16_t esc_temp;          // esc temperature in degrees
-        uint16_t motor_temp;        // motor temperature in degrees
-        uint16_t count;             // total number of packets sent
-        uint32_t usage_sec;         // motor's total usage in seconds
         uint32_t last_update_ms;    // system time telemetry was last update (used to calc total current)
         float current_tot_mah;      // total current in mAh
-        bool new_data;              // true if new telemetry data has been filled in but not logged yet
     } _telemetry[TOSHIBACAN_MAX_NUM_ESCS];
     uint32_t _telemetry_req_ms;     // system time (in milliseconds) to request data from escs (updated at 10hz)
     uint8_t _telemetry_temp_req_counter;    // counter used to trigger temp data requests from ESCs (10x slower than other telem data)
