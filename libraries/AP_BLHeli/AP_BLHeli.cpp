@@ -1352,19 +1352,6 @@ void AP_BLHeli::update(void)
 
 }
 
-// get the most recent telemetry data packet for a motor
-bool AP_BLHeli::get_telem_data(uint8_t esc_index, struct telem_data &td)
-{
-    if (esc_index >= max_motors) {
-        return false;
-    }
-    if (last_telem[esc_index].timestamp_ms == 0) {
-        return false;
-    }
-    td = last_telem[esc_index];
-    return true;
-}
-
 /*
   implement the 8 bit CRC used by the BLHeli ESC telemetry protocol
  */
@@ -1402,21 +1389,15 @@ void AP_BLHeli::read_telemetry_packet(void)
         debug("Bad CRC on %u", last_telem_esc);
         return;
     }
-    struct telem_data td;
-    td.temperature = int8_t(buf[0]);
-    td.voltage = (buf[1]<<8) | buf[2];
-    td.current = (buf[3]<<8) | buf[4];
-    td.consumption = (buf[5]<<8) | buf[6];
-    td.rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
-    td.timestamp_ms = AP_HAL::millis();
     // record the previous rpm so that we can slew to the new one
-    update_rpm(last_telem_esc, td.rpm);
+    uint16_t new_rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
+    update_rpm(last_telem_esc, new_rpm);
 
     TelemetryData t {
-        .temperature_deg = td.temperature,
-        .voltage_cv = td.voltage,
-        .current_ca = td.current,
-        .consumption_mah = td.consumption,
+        .temperature_deg = int8_t(buf[0]),
+        .voltage_cv = uint16_t((buf[1]<<8) | buf[2]),
+        .current_ca = uint16_t((buf[3]<<8) | buf[4]),
+        .consumption_mah = uint16_t((buf[5]<<8) | buf[6]),
     };
 
     update_telem_data(last_telem_esc, t,
@@ -1425,12 +1406,8 @@ void AP_BLHeli::read_telemetry_packet(void)
             | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
             | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
-    last_telem[last_telem_esc] = td;
-    last_telem[last_telem_esc].count++;
-    received_telem_data = true;
-
     if (debug_level >= 2) {
-        uint16_t trpm = td.rpm;
+        uint16_t trpm = new_rpm;
         if (has_bidir_dshot(last_telem_esc)) {
             trpm = hal.rcout->get_erpm(last_telem_esc);
             if (trpm != 0xFFFF) {
@@ -1439,10 +1416,10 @@ void AP_BLHeli::read_telemetry_packet(void)
         }
         hal.console->printf("ESC[%u] T=%u V=%u C=%u con=%u RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
-                            td.temperature,
-                            td.voltage,
-                            td.current,
-                            td.consumption,
+                            t.temperature_deg,
+                            t.voltage_cv,
+                            t.current_ca,
+                            t.consumption_mah,
                             trpm, hal.rcout->get_erpm_error_rate(last_telem_esc), (unsigned)AP_HAL::millis());
     }
 }
