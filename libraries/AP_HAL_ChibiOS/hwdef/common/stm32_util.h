@@ -87,7 +87,7 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4)
 iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
