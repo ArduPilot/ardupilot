@@ -68,8 +68,7 @@ extern "C" {
 #define osalDbgAssert(c, remark) do { if (!(c)) { fault_printf("%s:%d: %s", __FILE__, __LINE__, remark ); chDbgAssert(c, remark); } } while (0)
 #endif
 
-#define PORT_INT_REQUIRED_STACK 256
-#endif
+#endif // HAL_CHIBIOS_ENABLE_ASSERTS
 
 #if HAL_ENABLE_THREAD_STATISTICS
 #define CH_DBG_STATISTICS TRUE
