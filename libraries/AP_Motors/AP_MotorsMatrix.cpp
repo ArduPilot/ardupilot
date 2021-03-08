@@ -990,8 +990,10 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
 
         case MOTOR_FRAME_DECA:
             _mav_type = MAV_TYPE_DECAROTOR;
+            _frame_class_string = "DECA";
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
+                    _frame_type_string = "PLUS";
                     add_motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
                     add_motor(AP_MOTORS_MOT_2,    36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
                     add_motor(AP_MOTORS_MOT_3,    72, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
@@ -1004,6 +1006,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motor(AP_MOTORS_MOT_10,  -36, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  10);
                     break;
                 case MOTOR_FRAME_TYPE_X:
+                    _frame_type_string = "X";
                     add_motor(AP_MOTORS_MOT_1,    18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1);
                     add_motor(AP_MOTORS_MOT_2,    54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2);
                     add_motor(AP_MOTORS_MOT_3,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3);
