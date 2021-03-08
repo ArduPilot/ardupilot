@@ -101,69 +101,32 @@ void AP_FETtecOneWire::update()
     }
 
     if (_telem_avail != -1) {
-        // TODO: take the _telem_semaphore here
+        TelemetryData t {};
         for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-            _telemetry[i][_telem_avail] = requestedTelemetry[i];
-            _telemetry[i][5]++;
-        }
-        // TODO: give back the _telem_semaphore here
+            switch(_telem_avail) {
+            case telem_type::TEMP:
+                t.temperature_deg = requestedTelemetry[i],
+                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+                break;
 
-        AP_Logger *logger = AP_Logger::get_singleton();
-        const uint32_t now = AP_HAL::millis();
-        // log at 10Hz
-        if (logger && logger->logging_enabled() && now - _last_log_ms > 100) {
-            for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-                logger->Write_ESC(i,
-                        AP_HAL::micros64(),
-                        _telemetry[i][telem_type::ERPM] * 100U,
-                        _telemetry[i][telem_type::VOLT],
-                        _telemetry[i][telem_type::CURRENT],
-                        _telemetry[i][telem_type::TEMP] * 100U,
-                        _telemetry[i][telem_type::CONSUMPTION],
-                        0,
-                        0);
-            }
-            _last_log_ms = now;
-        }
-    }
+            case telem_type::VOLT:
+                t.voltage_cv = requestedTelemetry[i];
+                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+                break;
 
-}
+            case telem_type::CURRENT:
+                t.current_ca = requestedTelemetry[i];
+                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+                break;
 
-/**
-  send ESC telemetry messages over MAVLink
-  @param mav_chan mavlink channel
- */
-void AP_FETtecOneWire::send_esc_telemetry_mavlink(uint8_t mav_chan) const
-{
-    if (_telem_avail == -1) {
-        return;
-    }
-    uint8_t temperature[4] {};   // deg C
-    uint16_t voltage[4] {};      // cV
-    uint16_t current[4] {};      // cA
-    uint16_t totalcurrent[4] {}; // mA.h
-    uint16_t rpm[4] {};          // eRPM
-    uint16_t count[4] {};        // ESC telemetry packets received
-    // TODO: take the _telem_semaphore here
-    for (uint8_t i=0; i<MOTOR_COUNT_MAX; i++) {
-        uint8_t idx = i % 4;
-        temperature[idx] = _telemetry[i][telem_type::TEMP];
-        voltage[idx] = _telemetry[i][telem_type::VOLT];
-        current[idx] = _telemetry[i][telem_type::CURRENT];
-        rpm[idx] = _telemetry[i][telem_type::ERPM];
-        totalcurrent[idx] = _telemetry[i][telem_type::CONSUMPTION];
-        count[idx] = _telemetry[i][5];
-        if (idx == 3 || i == MOTOR_COUNT_MAX - 1) {
-            if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
-                return;
-            }
-            static_assert(MOTOR_COUNT_MAX <= 12, "AP_FETtecOneWire::send_esc_telemetry_mavlink() only supports up-to 12 motors");
-            if (i < 4) {
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-            } else if (i < 8) {
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
-            } else {
-                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, totalcurrent, rpm, count);
+            case telem_type::ERPM:
+                update_rpm(i, requestedTelemetry[i]);
+                break;
+
+            case telem_type::CONSUMPTION:
+                t.consumption_mah = requestedTelemetry[i];
+                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+                break;
             }
         }
     }
