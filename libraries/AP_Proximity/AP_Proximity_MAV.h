@@ -33,9 +33,11 @@ private:
     // handle mavlink OBSTACLE_DISTANCE_3D messages
     void handle_obstacle_distance_3d_msg(const mavlink_message_t &msg);
 
+   AP_Proximity_Temp_Boundary temp_boundary;
+
     // horizontal distance support
     uint32_t _last_update_ms;   // system time of last mavlink message received
-    uint32_t _last_3d_msg_update_ms;   // last stored OBSTACLE_DISTANCE_3D message timestamp
+    uint32_t _last_msg_update_timestamp_ms;   // last stored mavlink message timestamp
     float _distance_max;        // max range of sensor in meters
     float _distance_min;        // min range of sensor in meters
 
