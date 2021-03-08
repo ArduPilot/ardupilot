@@ -41,7 +41,7 @@
 #pragma once
 
 #include "AP_HAL_ChibiOS.h"
-# if defined(STM32H7XX)
+# if defined(STM32H7XX) || defined(STM32G4)
 #include "CANFDIface.h"
 # else
 #if HAL_NUM_CAN_IFACES
@@ -242,4 +242,4 @@ public:
     };
 };
 #endif //HAL_NUM_CAN_IFACES
-#endif //# if defined(STM32H7XX)
+#endif //# if defined(STM32H7XX) || defined(STM32G4)

@@ -357,7 +357,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -453,7 +453,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -502,7 +502,7 @@ void UARTDriver::rx_irq_cb(void* self)
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
-#elif defined(STM32F3)
+#elif defined(STM32F3) || defined(STM32G4)
     //disable dma, triggering DMA transfer complete interrupt
     dmaStreamDisable(uart_drv->rxdma);
     uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
@@ -1113,7 +1113,7 @@ void UARTDriver::_rx_timer_tick(void)
         //Check if DMA is enabled
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
-#if defined(STM32F3)
+#if defined(STM32F3) || defined(STM32G4)
         bool enabled = (rxdma->channel->CCR & STM32_DMA_CR_EN);
 #else
         bool enabled = (rxdma->stream->CR & STM32_DMA_CR_EN);
@@ -1533,7 +1533,7 @@ bool UARTDriver::set_options(uint16_t options)
     atx_line = sdef.tx_line;
 #endif
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
     // F7 has built-in support for inversion in all uarts
     ioline_t rx_line = (options & OPTION_SWAP)?atx_line:arx_line;
     ioline_t tx_line = (options & OPTION_SWAP)?arx_line:atx_line;

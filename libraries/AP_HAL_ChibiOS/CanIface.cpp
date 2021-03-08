@@ -48,7 +48,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/ExpandingString.h>
 
-# if !defined(STM32H7XX)
+# if !defined(STM32H7XX) && !defined(STM32G4)
 #include "CANIface.h"
 
 /* STM32F3's only CAN inteface does not have a number. */
