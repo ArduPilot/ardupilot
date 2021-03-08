@@ -347,3 +347,16 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len)
     sum = 0xff - ((sum & 0xff) + (sum >> 8));
     return sum;
 }
+
+/// 8 bit CRC used by the BLHeli and FETtec ESC telemetry protocols
+uint8_t crc8_telem(uint8_t crc, uint8_t crc_seed)
+{
+    uint8_t crc_u = crc;
+    crc_u ^= crc_seed;
+
+    for (uint8_t i=0; i<8; i++) {
+        crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
+    }
+
+    return crc_u;
+}
