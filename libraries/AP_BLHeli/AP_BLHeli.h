@@ -285,7 +285,6 @@ private:
     bool BL_VerifyFlash(const uint8_t *buf, uint16_t n);
     void blheli_process_command(void);
     void run_connection_test(uint8_t chan);
-    uint8_t telem_crc8(uint8_t crc, uint8_t crc_seed) const;
     void read_telemetry_packet(void);
     void log_bidir_telemetry(void);
 
