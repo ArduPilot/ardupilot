@@ -137,9 +137,6 @@ static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_stat
 UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
 static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
-AP_UAVCAN::esc_data AP_UAVCAN::_escs_data[];
-HAL_Semaphore AP_UAVCAN::_telem_sem;
-
 
 AP_UAVCAN::AP_UAVCAN() :
     _node_allocator()
@@ -793,38 +790,18 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
     const uint8_t esc_index = cb.msg->esc_index;
-    
-    // log as CESC message
-    AP::logger().Write_ESCStatus(AP_HAL::native_micros64(),
-                                 cb.msg->esc_index,
-                                 cb.msg->error_count,
-                                 cb.msg->voltage,
-                                 cb.msg->current,
-                                 cb.msg->temperature - C_TO_KELVIN,
-                                 cb.msg->rpm,
-                                 cb.msg->power_rating_pct);
-
-    WITH_SEMAPHORE(_telem_sem);
 
     if (!is_esc_data_index_valid(esc_index)) {
         return;
     }
 
-    esc_data &esc = _escs_data[esc_index];
-    esc.available = true;
-    esc.temp = (cb.msg->temperature - C_TO_KELVIN);
-    esc.voltage = cb.msg->voltage*100;
-    esc.current = cb.msg->current*100;
-    esc.rpm = cb.msg->rpm;
-    esc.count++;
-
     TelemetryData t {
-        .temperature_deg = esc.temp,
-        .voltage_cv = esc.voltage,
-        .current_ca = esc.current,
+        .temperature_deg = int16_t(cb.msg->temperature - C_TO_KELVIN),
+        .voltage_cv = uint16_t(cb.msg->voltage*100),
+        .current_ca = uint16_t(cb.msg->current*100),
     };
 
-    ap_uavcan->update_rpm(esc_index, esc.rpm);
+    ap_uavcan->update_rpm(esc_index, cb.msg->rpm);
     ap_uavcan->update_telem_data(esc_index, t,
         AP_ESC_Telem_Backend::TelemetryType::CURRENT
             | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
