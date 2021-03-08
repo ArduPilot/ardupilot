@@ -305,25 +305,18 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     const uint8_t esc_id = recv_frame.id - MOTOR_DATA1;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].rpm = (int16_t)be16toh(reply_data.rpm);
-                        _telemetry[esc_id].current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f);    // milli-amps to centi-amps
-                        _telemetry[esc_id].voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
-                        _telemetry[esc_id].count++;
-                        _telemetry[esc_id].new_data = true;
-
-                        update_rpm(esc_id, _telemetry[esc_id].rpm);
+                        update_rpm(esc_id, (int16_t)be16toh(reply_data.rpm));
 
                         // update total current
                         const uint32_t now_ms = AP_HAL::native_millis();
                         const uint32_t diff_ms = now_ms - _telemetry[esc_id].last_update_ms;
-                        if (diff_ms <= 1000) {
-                            // convert centi-amps miiliseconds to mAh
-                            _telemetry[esc_id].current_tot_mah += _telemetry[esc_id].current_ca * diff_ms * centiamp_ms_to_mah;
-                        }
                         TelemetryData t {};
-                        t.voltage_cv = _telemetry[esc_id].voltage_cv;
-                        t.current_ca = _telemetry[esc_id].current_ca;
+                        t.voltage_cv = be16toh(reply_data.voltage_mv) * 0.1f;  // millivolts to centi-volts
+                        t.current_ca = MAX((int16_t)be16toh(reply_data.current_ma), 0) * (4.0f * 0.1f); // milli-amps to centi-amps
+                        if (diff_ms <= 1000) {
+                            // convert centi-amps miliseconds to mAh
+                            _telemetry[esc_id].current_tot_mah += t.current_ca * diff_ms * centiamp_ms_to_mah;
+                        }
                         t.consumption_mah = uint16_t(_telemetry[esc_id].current_tot_mah);
                         update_telem_data(esc_id, t,
                             AP_ESC_Telem_Backend::TelemetryType::CURRENT
@@ -352,15 +345,14 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA2;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].esc_temp = temp_max < 100 ? 0 : temp_max / 5 - 20;
-                        _telemetry[esc_id].motor_temp = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
+                        const int16_t esc_temp_deg = temp_max < 100 ? 0 : temp_max / 5 - 20;
+                        const int16_t motor_temp_deg = motor_temp < 100 ? 0 : motor_temp / 5 - 20;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
 
                         TelemetryData t {
-                            .temperature_cdeg = int16_t(_telemetry[esc_id].esc_temp)
+                            .temperature_cdeg = int16_t(esc_temp_deg * 100)
                         };
-                        t.motor_temp_cdeg = int16_t(_telemetry[esc_id].motor_temp * 100);
+                        t.motor_temp_cdeg = int16_t(motor_temp_deg * 100);
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE |
                             AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
                     }
@@ -377,12 +369,10 @@ void AP_ToshibaCAN::loop()
                     // store response in telemetry array
                     uint8_t esc_id = recv_frame.id - MOTOR_DATA3;
                     if (esc_id < TOSHIBACAN_MAX_NUM_ESCS) {
-                        WITH_SEMAPHORE(_telem_sem);
-                        _telemetry[esc_id].usage_sec = usage_sec;
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
 
                         TelemetryData t {};
-                        t.usage_s = _telemetry[esc_id].usage_sec;
+                        t.usage_s = usage_sec;
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::USAGE);
                     }
                 }
