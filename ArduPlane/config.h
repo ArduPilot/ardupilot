@@ -78,6 +78,12 @@
  # error XXX
 #endif
 
+#ifndef FLIGHT_MODE_COUNT
+// Anything less than 6 will define 6 modes, and you can define up to
+// 10 modes here.
+#define FLIGHT_MODE_COUNT  6
+#endif
+
 #if !defined(FLIGHT_MODE_1)
  # define FLIGHT_MODE_1                  Mode::Number::RTL
 #endif
@@ -95,6 +101,18 @@
 #endif
 #if !defined(FLIGHT_MODE_6)
  # define FLIGHT_MODE_6                  Mode::Number::MANUAL
+#endif
+#if !defined(FLIGHT_MODE_7)
+ # define FLIGHT_MODE_7                  Mode::Number::MANUAL
+#endif
+#if !defined(FLIGHT_MODE_8)
+ # define FLIGHT_MODE_8                  Mode::Number::MANUAL
+#endif
+#if !defined(FLIGHT_MODE_9)
+ # define FLIGHT_MODE_9                  Mode::Number::MANUAL
+#endif
+#if !defined(FLIGHT_MODE_10)
+ # define FLIGHT_MODE_10                  Mode::Number::MANUAL
 #endif
 
 

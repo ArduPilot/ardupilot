@@ -149,6 +149,8 @@ void Plane::read_control_switch()
 uint8_t Plane::readSwitch(void) const
 {
     uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
+#if FLIGHT_MODE_COUNT <= 6
+    // Use the legacy ranges, for backwards compatibility.
     if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
     if (pulsewidth <= 1230) return 0;
     if (pulsewidth <= 1360) return 1;
@@ -156,6 +158,18 @@ uint8_t Plane::readSwitch(void) const
     if (pulsewidth <= 1620) return 3;
     if (pulsewidth <= 1749) return 4;              // Software Manual
     return 5;                                                           // Hardware Manual
+#else
+    // All bets are off.
+
+    uint8_t range_per_mode = 1000 / FLIGHT_MODE_COUNT;
+    for (uint8_t i=1; i<FLIGHT_MODE_COUNT; i++) {
+        if (pulsewidth < 1000 + (i * range_per_mode)) {
+            return i-1;
+        }
+    }
+    // The last mode.
+    return FLIGHT_MODE_COUNT-1;
+#endif
 }
 
 void Plane::reset_control_switch()
