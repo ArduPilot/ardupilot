@@ -194,25 +194,6 @@ void AP_FETtecOneWire::Init()
 }
 
 /**
-    generates used 8 bit CRC
-    @param crc byte to be added to CRC
-    @param crc_seed CRC where it gets added too
-    @return 8 bit CRC
-*/
-uint8_t AP_FETtecOneWire::Update_crc8(uint8_t crc, uint8_t crc_seed) const
-{
-    // TODO: is there a similar CRC function in the ArduPilot codebase already?
-    // If yes, remove this one and use that instead
-    uint8_t crc_u, i;
-    crc_u = crc;
-    crc_u ^= crc_seed;
-    for (i = 0; i < 8; i++) {
-        crc_u = (crc_u & 0x80) ? 0x7 ^ (crc_u << 1) : (crc_u << 1);
-    }
-    return (crc_u);
-}
-
-/**
     generates used 8 bit CRC for arrays
     @param Buf 8 bit byte array
     @param BufLen count of bytes that should be used for CRC calculation
@@ -222,7 +203,7 @@ uint8_t AP_FETtecOneWire::Get_crc8(uint8_t* Buf, uint16_t BufLen) const
 {
     uint8_t crc = 0;
     for (uint16_t i = 0; i < BufLen; i++) {
-        crc = Update_crc8(Buf[i], crc);
+        crc = crc8_telem(Buf[i], crc);
     }
     return (crc);
 }
