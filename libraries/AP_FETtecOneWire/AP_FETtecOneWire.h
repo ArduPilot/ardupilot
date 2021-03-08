@@ -80,14 +80,6 @@ private:
     void DeInit();
 
 /**
-    generates used 8 bit CRC
-    @param crc byte to be added to CRC
-    @param crc_seed CRC where it gets added too
-    @return 8 bit CRC
-*/
-    uint8_t Update_crc8(uint8_t crc, uint8_t crc_seed) const;
-
-/**
     generates used 8 bit CRC for arrays
     @param Buf 8 bit byte array
     @param BufLen count of bytes that should be used for CRC calculation
