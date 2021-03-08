@@ -515,6 +515,42 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
+#if FLIGHT_MODE_COUNT >= 7
+    // @Param: FLTMODE7
+    // @DisplayName: FlightMode7
+    // @Description: Flight mode for switch position 7 (1750 to 2049)
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @User: Standard
+    GSCALAR(flight_mode7,           "FLTMODE7",       FLIGHT_MODE_7),
+#endif
+
+#if FLIGHT_MODE_COUNT >= 8
+    // @Param: FLTMODE8
+    // @DisplayName: FlightMode8
+    // @Description: Flight mode for switch position 8 (1750 to 2049)
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @User: Standard
+    GSCALAR(flight_mode8,           "FLTMODE8",       FLIGHT_MODE_8),
+#endif
+
+#if FLIGHT_MODE_COUNT >= 9
+    // @Param: FLTMODE9
+    // @DisplayName: FlightMode9
+    // @Description: Flight mode for switch position 9 (1750 to 2049)
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @User: Standard
+    GSCALAR(flight_mode9,           "FLTMODE9",       FLIGHT_MODE_9),
+#endif
+
+#if FLIGHT_MODE_COUNT >= 10
+    // @Param: FLTMODE10
+    // @DisplayName: FlightMode10
+    // @Description: Flight mode for switch position 10 (1750 to 2049)
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @User: Standard
+    GSCALAR(flight_mode10,           "FLTMODE10",       FLIGHT_MODE_10),
+#endif
+
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
