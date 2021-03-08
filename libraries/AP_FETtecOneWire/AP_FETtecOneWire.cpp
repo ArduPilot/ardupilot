@@ -102,32 +102,36 @@ void AP_FETtecOneWire::update()
 
     if (_telem_avail != -1) {
         TelemetryData t {};
+        uint16_t esc_mask = 1;
         for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-            switch(_telem_avail) {
-            case telem_type::TEMP:
-                t.temperature_deg = requestedTelemetry[i],
-                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
-                break;
+            if (mask & esc_mask) { // only update telemetry of enabled ESCs
+                switch(_telem_avail) {
+                case telem_type::TEMP:
+                    t.temperature_deg = requestedTelemetry[i],
+                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+                    break;
 
-            case telem_type::VOLT:
-                t.voltage_cv = requestedTelemetry[i];
-                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
-                break;
+                case telem_type::VOLT:
+                    t.voltage_cv = requestedTelemetry[i];
+                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+                    break;
 
-            case telem_type::CURRENT:
-                t.current_ca = requestedTelemetry[i];
-                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
-                break;
+                case telem_type::CURRENT:
+                    t.current_ca = requestedTelemetry[i];
+                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+                    break;
 
-            case telem_type::ERPM:
-                update_rpm(i, requestedTelemetry[i]);
-                break;
+                case telem_type::ERPM:
+                    update_rpm(i, requestedTelemetry[i]);
+                    break;
 
-            case telem_type::CONSUMPTION:
-                t.consumption_mah = requestedTelemetry[i];
-                update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
-                break;
+                case telem_type::CONSUMPTION:
+                    t.consumption_mah = requestedTelemetry[i];
+                    update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION);
+                    break;
+                }
             }
+            esc_mask <<= 1;
         }
     }
 }
