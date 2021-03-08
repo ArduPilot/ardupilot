@@ -196,6 +196,8 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         return;
     }
 
+    static_assert(ESC_TELEM_MAX_ESCS <= 12, "AP_ESC_Telem::send_esc_telemetry_mavlink() only supports up-to 12 motors");
+
     // loop through 3 groups of 4 ESCs
     for (uint8_t i = 0; i < 3; i++) {
 
