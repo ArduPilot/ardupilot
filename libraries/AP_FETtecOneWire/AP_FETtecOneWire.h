@@ -19,6 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #ifndef HAL_AP_FETTECONEWIRE_ENABLED
 #define HAL_AP_FETTECONEWIRE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH) && BOARD_FLASH_SIZE > 1024
@@ -30,7 +31,7 @@
 
 
 
-class AP_FETtecOneWire {
+class AP_FETtecOneWire : public AP_ESC_Telem_Backend {
 public:
     AP_FETtecOneWire();
 
@@ -41,7 +42,6 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     void update();
-    void send_esc_telemetry_mavlink(uint8_t mav_chan) const;
     static AP_FETtecOneWire *get_singleton() {
         return _singleton;
     }
@@ -53,18 +53,9 @@ private:
     AP_Int32 motor_mask;
 
     uint32_t _last_send_us;
-    uint32_t _last_log_ms;
     static constexpr uint32_t DELAY_TIME_US = 700;
     static constexpr uint8_t MOTOR_COUNT_MAX = 12; /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
     int8_t _telem_avail = -1;
-    /// contains 6 fields per ESC:
-    ///  - _telemetry[i][0] -> temperature[idx]
-    ///  - _telemetry[i][1] -> voltage[idx]
-    ///  - _telemetry[i][2] -> current[idx]
-    ///  - _telemetry[i][3] -> rpm[idx]
-    ///  - _telemetry[i][4] -> totalcurrent[idx]
-    ///  - _telemetry[i][5] -> count[idx]
-    uint16_t _telemetry[MOTOR_COUNT_MAX][6] = {0};
     uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
 
