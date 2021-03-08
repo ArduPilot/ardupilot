@@ -445,33 +445,20 @@ void AP_KDECAN::loop()
                                 break;
                             }
 
-                            if (!_telem_sem.take(1)) {
-                                debug_can(AP_CANManager::LOG_DEBUG, "failed to get telemetry semaphore on write");
-                                break;
-                            }
-
                             const uint8_t idx = id.source_id - ESC_NODE_ID_FIRST;
-                            _telemetry[idx].time = rx_time;
-                            _telemetry[idx].voltage = frame.data[0] << 8 | frame.data[1];
-                            _telemetry[idx].current = frame.data[2] << 8 | frame.data[3];
-                            _telemetry[idx].rpm = frame.data[4] << 8 | frame.data[5];
-                            _telemetry[idx].temp = frame.data[6];
-                            _telemetry[idx].new_data = true;
-
-                            uint8_t num_poles = _num_poles > 0 ? _num_poles : DEFAULT_NUM_POLES;
-                            update_rpm(idx, _telemetry[idx].rpm * 60UL * 2 / num_poles * 100);
+                            const uint8_t num_poles = _num_poles > 0 ? _num_poles : DEFAULT_NUM_POLES;
+                            update_rpm(idx, (frame.data[4] << 8 | frame.data[5]) * 60UL * 2 / num_poles * 100);
 
                             TelemetryData t {
-                                .temperature_deg =_telemetry[idx].temp,
-                                .voltage_cv = _telemetry[idx].voltage,
-                                .current_ca = uint16_t(_telemetry[idx].current),
+                                .temperature_deg = frame.data[6],
+                                .voltage_cv = uint16_t(frame.data[0] << 8 | frame.data[1]),
+                                .current_ca = uint16_t(frame.data[2] << 8 | frame.data[3]),
                             };
                             update_telem_data(idx, t,
                                 AP_ESC_Telem_Backend::TelemetryType::CURRENT
                                     | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
                                     | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
-                            _telem_sem.give();
                             break;
                         }
                         default:
