@@ -72,7 +72,7 @@ class DebugCb;
 
 /*
     Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
-    the Callback will invoke registery to register the node as separate backend.
+    the Callback will invoke registry to register the node as separate backend.
 */
 #define UC_REGISTRY_BINDER(ClassName_, DataType_) \
     class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
@@ -123,7 +123,7 @@ public:
 
     public:
         RegistryBinder() :
-        	_uc(),
+            _uc(),
             _ffunc(),
             msg() {}
 
@@ -224,18 +224,6 @@ private:
 
     static HAL_Semaphore _telem_sem;
 
-    struct esc_data {
-        uint8_t temp;
-        uint16_t voltage;
-        uint16_t current;
-        uint16_t total_current;
-        uint16_t rpm;
-        uint16_t count; //count of telemetry packets received (wraps at 65535).
-        bool available;
-    };
-
-    static esc_data _escs_data[UAVCAN_SRV_NUMBER];
-    
     // safety status send state
     uint32_t _last_safety_state_ms;
 
