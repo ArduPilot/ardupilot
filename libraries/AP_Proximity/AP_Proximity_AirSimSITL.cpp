@@ -46,6 +46,8 @@ void AP_Proximity_AirSimSITL::update(void)
     const float accuracy_sq = sq(PROXIMITY_ACCURACY);
     bool prev_pos_valid = false;
     Vector2f prev_pos;
+    // clear temp boundary since we have a new message
+    temp_boundary.reset();
 
     for (uint16_t i=0; i<points.length; i++) {
         Vector3f &point = points.data[i];
@@ -60,7 +62,9 @@ void AP_Proximity_AirSimSITL::update(void)
 
             // add distance to the 3D boundary
             const float yaw_angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
-            boundary.add_distance(yaw_angle_deg, safe_sqrt(distance_sq));
+            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+            // store the min distance in each face in a temp boundary
+            temp_boundary.add_distance(face, yaw_angle_deg, safe_sqrt(distance_sq));
 
             // check distance from previous point to reduce amount of data sent to object database
             if (!prev_pos_valid || ((new_pos - prev_pos).length_squared() >= accuracy_sq)) {
@@ -72,9 +76,8 @@ void AP_Proximity_AirSimSITL::update(void)
             }
         }
     }
-
-    // update middle boundary
-    boundary.update_middle_boundary();
+    // copy temp boundary to real boundary
+    temp_boundary.update_3D_boundary(boundary);
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
