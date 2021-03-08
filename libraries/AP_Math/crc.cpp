@@ -96,7 +96,7 @@ uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a)
     return crc8_dvb(crc, a, 0xD5);
 }
 
-// crc8 from betaflight
+// crc8 from betaflight, BLHeli and FETtec ESC telemetry protocols
 uint8_t crc8_dvb(uint8_t crc, uint8_t a, uint8_t seed)
 {
     crc ^= a;
