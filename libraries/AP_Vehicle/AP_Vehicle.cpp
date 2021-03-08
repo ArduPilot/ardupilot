@@ -219,7 +219,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50),
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
-    SCHED_TASK(update_dynamic_notch,                   200,    200),
+    SCHED_TASK(update_dynamic_notch,             LOOP_RATE,    200),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 #if HAL_WITH_ESC_TELEM
@@ -330,6 +330,18 @@ void AP_Vehicle::write_notch_log_messages() const
     AP::logger().Write(
         "FTN", "TimeUS,NDn,DnF1,DnF2,DnF3,DnF4", "s-zzzz", "F-----", "QBffff", AP_HAL::micros64(), ins.get_num_gyro_dynamic_notch_center_frequencies(),
             notches[0], notches[1], notches[2], notches[3]);
+}
+
+// run notch update at either loop rate or 200Hz
+void AP_Vehicle::update_dynamic_notch_at_specified_rate()
+{
+    const uint32_t now = AP_HAL::millis();
+
+    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)
+        || now - _last_notch_update_ms > 5) {
+        update_dynamic_notch();
+        _last_notch_update_ms = now;
+    }
 }
 
 // reboot the vehicle in an orderly manner, doing various cleanups and
