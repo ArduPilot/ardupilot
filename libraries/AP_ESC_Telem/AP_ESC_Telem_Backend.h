@@ -14,13 +14,13 @@ class AP_ESC_Telem_Backend {
 public:
 
     struct TelemetryData {
-        int16_t temperature_deg;    // degrees C, negative values allowed
+        int16_t  temperature_deg;   // degrees C, negative values allowed
         uint16_t voltage_cv;        // centi-volts
         uint16_t current_ca;        // centi-amps
         uint16_t consumption_mah;   // mAh
         uint32_t usage_s;           // usage seconds
         float    rpm;               // rpm
-        int16_t motor_temp_deg;     // degrees C, negative values allowed
+        int16_t  motor_temp_deg;    // degrees C, negative values allowed
         float    error_rate;        // error rate in percent
         uint16_t count;             // number of times updated
     };
