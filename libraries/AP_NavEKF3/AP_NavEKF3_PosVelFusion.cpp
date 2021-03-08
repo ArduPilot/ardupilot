@@ -1363,9 +1363,14 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(P[13][5]*t4+P[13][4]*t9+P[13][0]*t14-P[13][6]*t11+P[13][1]*t18-P[13][2]*t21+P[13][3]*t24);
-                Kfusion[14] = t77*(P[14][5]*t4+P[14][4]*t9+P[14][0]*t14-P[14][6]*t11+P[14][1]*t18-P[14][2]*t21+P[14][3]*t24);
-                Kfusion[15] = t77*(P[15][5]*t4+P[15][4]*t9+P[15][0]*t14-P[15][6]*t11+P[15][1]*t18-P[15][2]*t21+P[15][3]*t24);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = t77*(P[stateIndex][5]*t4+P[stateIndex][4]*t9+P[stateIndex][0]*t14-P[stateIndex][6]*t11+P[stateIndex][1]*t18-P[stateIndex][2]*t21+P[stateIndex][3]*t24);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -1535,9 +1540,14 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(-P[13][4]*t3+P[13][5]*t8+P[13][0]*t15+P[13][6]*t12+P[13][1]*t18+P[13][2]*t22-P[13][3]*t25);
-                Kfusion[14] = t77*(-P[14][4]*t3+P[14][5]*t8+P[14][0]*t15+P[14][6]*t12+P[14][1]*t18+P[14][2]*t22-P[14][3]*t25);
-                Kfusion[15] = t77*(-P[15][4]*t3+P[15][5]*t8+P[15][0]*t15+P[15][6]*t12+P[15][1]*t18+P[15][2]*t22-P[15][3]*t25);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = t77*(-P[stateIndex][4]*t3+P[stateIndex][5]*t8+P[stateIndex][0]*t15+P[stateIndex][6]*t12+P[stateIndex][1]*t18+P[stateIndex][2]*t22-P[stateIndex][3]*t25);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -1708,9 +1718,14 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t77*(P[13][4]*t4+P[13][0]*t14+P[13][6]*t9-P[13][5]*t11-P[13][1]*t17+P[13][2]*t20+P[13][3]*t24);
-                Kfusion[14] = t77*(P[14][4]*t4+P[14][0]*t14+P[14][6]*t9-P[14][5]*t11-P[14][1]*t17+P[14][2]*t20+P[14][3]*t24);
-                Kfusion[15] = t77*(P[15][4]*t4+P[15][0]*t14+P[15][6]*t9-P[15][5]*t11-P[15][1]*t17+P[15][2]*t20+P[15][3]*t24);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = t77*(P[stateIndex][4]*t4+P[stateIndex][0]*t14+P[stateIndex][6]*t9-P[stateIndex][5]*t11-P[stateIndex][1]*t17+P[stateIndex][2]*t20+P[stateIndex][3]*t24);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);

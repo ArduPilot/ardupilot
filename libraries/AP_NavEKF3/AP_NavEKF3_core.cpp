@@ -226,6 +226,8 @@ void NavEKF3_core::InitialiseVariables()
     lastRngMeasTime_ms = 0;
 
     // initialise other variables
+    memset(&dvelBiasAxisInhibit, 0, sizeof(dvelBiasAxisInhibit));
+	dvelBiasAxisVarPrev.zero();
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
     tasTimeout = true;
@@ -1131,6 +1133,24 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
     float _accNoise = constrain_float(frontend->_accNoise, 0.0f, 10.0f);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
 
+    if (!inhibitDelVelBiasStates) {
+        for (unsigned stateIndex = 13; stateIndex <= 15; stateIndex++) {
+            const unsigned index = stateIndex - 13;
+
+            // Don't attempt learning of IMU delta velocty bias if on ground and not aligned with the gravity vector
+            const bool is_bias_observable = (fabsf(prevTnb[index][2]) > 0.8f) && onGround;
+
+            if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
+                // store variances to be reinstated wben learnign can commence later
+                dvelBiasAxisVarPrev[index] = P[stateIndex][stateIndex];
+                dvelBiasAxisInhibit[index] = true;
+            } else if (is_bias_observable && dvelBiasAxisInhibit[index]) {
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+                dvelBiasAxisInhibit[index] = false;
+            }
+        }
+    }
+
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the lower diagonal and copy to take advantage of symmetry
 
@@ -1659,6 +1679,18 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
         }
     }
 
+    // inactive delta velocity bias states have all covariances zeroed to prevent
+    // interacton with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroCols(nextP,stateIndex,stateIndex);
+                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
+        }
+    }
+
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1783,6 +1815,7 @@ void NavEKF3_core::ConstrainVariances()
         zeroRows(P,10,12);
     }
 
+    const float minStateVarTarget = 1E-8f;
     if (!inhibitDelVelBiasStates) {
 
         // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
@@ -1799,7 +1832,6 @@ void NavEKF3_core::ConstrainVariances()
 
         // To ensure stability of the covariance matrix operations, the ratio of a max and min variance must
         // not exceed 100 and the minimum variance must not fall below the target minimum
-        const float minStateVarTarget = 1E-8f;
         float minAllowedStateVar = fmaxf(0.01f * maxStateVar, minStateVarTarget);
         for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
             P[stateIndex][stateIndex] = constrain_float(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
@@ -1823,6 +1855,10 @@ void NavEKF3_core::ConstrainVariances()
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
+        for (uint8_t i=0; i<=2; i++) {
+            const uint8_t stateIndex = 1 + 13;
+            P[stateIndex][stateIndex] = fmaxf(P[stateIndex][stateIndex], minStateVarTarget);
+        }
     }
 
     if (!inhibitMagStates) {
