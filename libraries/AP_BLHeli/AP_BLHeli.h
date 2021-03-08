@@ -51,22 +51,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    struct telem_data {
-        int8_t temperature;  // degrees C, negative values allowed
-        uint16_t voltage;    // volts * 100
-        uint16_t current;    // amps * 100
-        uint16_t consumption;// mAh
-        uint16_t rpm;        // eRPM
-        uint16_t count;
-        uint32_t timestamp_ms;
-    };
-
-    // get the most recent telemetry data packet for a motor
-    bool get_telem_data(uint8_t esc_index, struct telem_data &td);
-
-    // return true if we have received any telemetry data
-    bool have_telem_data(void) const { return received_telem_data; }
-
     bool has_bidir_dshot(uint8_t esc_index) const {
         return channel_bidir_dshot_mask.get() & (1U << motor_map[esc_index]);
     }
@@ -229,13 +213,10 @@ private:
     
     AP_HAL::UARTDriver *uart;
     AP_HAL::UARTDriver *debug_uart;
-    AP_HAL::UARTDriver *telem_uart;    
-    
+    AP_HAL::UARTDriver *telem_uart;
+
     static const uint8_t max_motors = AP_BLHELI_MAX_ESCS;
     uint8_t num_motors;
-
-    struct telem_data last_telem[max_motors];
-    uint32_t received_telem_data;
 
     // last log output to avoid beat frequencies
     uint32_t last_log_ms[max_motors];
