@@ -89,18 +89,6 @@ private:
     std::atomic<bool> _new_output;
     uint16_t _scaled_output[KDECAN_MAX_NUM_ESCS];
 
-    // telemetry input
-    HAL_Semaphore _telem_sem;
-    struct telemetry_info_t {
-        uint64_t time;
-        uint16_t voltage;
-        uint16_t current;
-        uint16_t rpm;
-        uint8_t temp;
-        bool new_data;
-    } _telemetry[KDECAN_MAX_NUM_ESCS];
-
-
     union frame_id_t {
         struct {
             uint8_t object_address;
