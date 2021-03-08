@@ -602,9 +602,14 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = SK_MX[0]*(P[13][19] + P[13][1]*SH_MAG[0] - P[13][2]*SH_MAG[1] + P[13][3]*SH_MAG[2] + P[13][0]*SK_MX[2] - P[13][16]*SK_MX[1] + P[13][17]*SK_MX[4] - P[13][18]*SK_MX[3]);
-                Kfusion[14] = SK_MX[0]*(P[14][19] + P[14][1]*SH_MAG[0] - P[14][2]*SH_MAG[1] + P[14][3]*SH_MAG[2] + P[14][0]*SK_MX[2] - P[14][16]*SK_MX[1] + P[14][17]*SK_MX[4] - P[14][18]*SK_MX[3]);
-                Kfusion[15] = SK_MX[0]*(P[15][19] + P[15][1]*SH_MAG[0] - P[15][2]*SH_MAG[1] + P[15][3]*SH_MAG[2] + P[15][0]*SK_MX[2] - P[15][16]*SK_MX[1] + P[15][17]*SK_MX[4] - P[15][18]*SK_MX[3]);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = SK_MX[0]*(P[stateIndex][19] + P[stateIndex][1]*SH_MAG[0] - P[stateIndex][2]*SH_MAG[1] + P[stateIndex][3]*SH_MAG[2] + P[stateIndex][0]*SK_MX[2] - P[stateIndex][16]*SK_MX[1] + P[stateIndex][17]*SK_MX[4] - P[stateIndex][18]*SK_MX[3]);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -677,9 +682,14 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = SK_MY[0]*(P[13][20] + P[13][0]*SH_MAG[2] + P[13][1]*SH_MAG[1] + P[13][2]*SH_MAG[0] - P[13][3]*SK_MY[2] - P[13][17]*SK_MY[1] - P[13][16]*SK_MY[3] + P[13][18]*SK_MY[4]);
-                Kfusion[14] = SK_MY[0]*(P[14][20] + P[14][0]*SH_MAG[2] + P[14][1]*SH_MAG[1] + P[14][2]*SH_MAG[0] - P[14][3]*SK_MY[2] - P[14][17]*SK_MY[1] - P[14][16]*SK_MY[3] + P[14][18]*SK_MY[4]);
-                Kfusion[15] = SK_MY[0]*(P[15][20] + P[15][0]*SH_MAG[2] + P[15][1]*SH_MAG[1] + P[15][2]*SH_MAG[0] - P[15][3]*SK_MY[2] - P[15][17]*SK_MY[1] - P[15][16]*SK_MY[3] + P[15][18]*SK_MY[4]);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = SK_MY[0]*(P[stateIndex][20] + P[stateIndex][0]*SH_MAG[2] + P[stateIndex][1]*SH_MAG[1] + P[stateIndex][2]*SH_MAG[0] - P[stateIndex][3]*SK_MY[2] - P[stateIndex][17]*SK_MY[1] - P[stateIndex][16]*SK_MY[3] + P[stateIndex][18]*SK_MY[4]);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -754,9 +764,14 @@ void NavEKF3_core::FuseMagnetometer()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = SK_MZ[0]*(P[13][21] + P[13][0]*SH_MAG[1] - P[13][1]*SH_MAG[2] + P[13][3]*SH_MAG[0] + P[13][2]*SK_MZ[2] + P[13][18]*SK_MZ[1] + P[13][16]*SK_MZ[4] - P[13][17]*SK_MZ[3]);
-                Kfusion[14] = SK_MZ[0]*(P[14][21] + P[14][0]*SH_MAG[1] - P[14][1]*SH_MAG[2] + P[14][3]*SH_MAG[0] + P[14][2]*SK_MZ[2] + P[14][18]*SK_MZ[1] + P[14][16]*SK_MZ[4] - P[14][17]*SK_MZ[3]);
-                Kfusion[15] = SK_MZ[0]*(P[15][21] + P[15][0]*SH_MAG[1] - P[15][1]*SH_MAG[2] + P[15][3]*SH_MAG[0] + P[15][2]*SK_MZ[2] + P[15][18]*SK_MZ[1] + P[15][16]*SK_MZ[4] - P[15][17]*SK_MZ[3]);
+                for (uint8_t index = 0; index < 3; index++) {
+                    uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = SK_MZ[0]*(P[stateIndex][21] + P[stateIndex][0]*SH_MAG[1] - P[stateIndex][1]*SH_MAG[2] + P[stateIndex][3]*SH_MAG[0] + P[stateIndex][2]*SK_MZ[2] + P[stateIndex][18]*SK_MZ[1] + P[stateIndex][16]*SK_MZ[4] - P[stateIndex][17]*SK_MZ[3]);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -1287,9 +1302,14 @@ void NavEKF3_core::FuseDeclination(float declErr)
     }
 
     if (!inhibitDelVelBiasStates) {
-        Kfusion[13] = -t4*t13*(P[13][16]*magE-P[13][17]*magN);
-        Kfusion[14] = -t4*t13*(P[14][16]*magE-P[14][17]*magN);
-        Kfusion[15] = -t4*t13*(P[15][16]*magE-P[15][17]*magN);
+        for (uint8_t index = 0; index < 3; index++) {
+            uint8_t stateIndex = index + 13;
+            if (!dvelBiasAxisInhibit[index]) {
+                Kfusion[stateIndex] = -t4*t13*(P[stateIndex][16]*magE-P[stateIndex][17]*magN);
+            } else {
+                Kfusion[stateIndex] = 0.0f;
+            }
+        }
     } else {
         // zero indexes 13 to 15 = 3*4 bytes
         memset(&Kfusion[13], 0, 12);
