@@ -16,6 +16,7 @@
 #include "mcu_f4.h"
 #include "mcu_f7.h"
 #include "mcu_h7.h"
+#include "mcu_g4.h"
 
 // optional uprintf() code for debug
 // #define BOOTLOADER_DEBUG SD1
@@ -71,7 +72,7 @@ void cout(uint8_t *data, uint32_t len)
 #endif // BOOTLOADER_DEV_LIST
 
 static uint32_t flash_base_page;
-static uint8_t num_pages;
+static uint16_t num_pages;
 static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
 
 /*
