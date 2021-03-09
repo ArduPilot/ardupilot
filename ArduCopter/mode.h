@@ -13,7 +13,7 @@ public:
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
         STABILIZE =     0,  // manual airframe angle with manual throttle
-        AkRO =          1,  // manual body-frame angular rate with manual throttle
+        ACRO =          1,  // manual body-frame angular rate with manual throttle
         ALT_HOLD =      2,  // manual airframe angle with automatic throttle
         AUTO =          3,  // fully automatic waypoint control using mission commands
         GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
@@ -36,6 +36,7 @@ public:
         ZIGZAG    =    24,  // ZIGZAG mode is able to fly in a zigzag manner with predefined point A and point B
         SYSTEMID  =    25,  // System ID mode produces automated system identification signals in the controllers
         AUTOROTATE =   26,  // Autonomous autorotation
+        ACECORE =      27,  // Acecore new flight modus!
     };
 
     // constructor
@@ -1148,6 +1149,28 @@ protected:
 
     const char *name() const override { return "STABILIZE"; }
     const char *name4() const override { return "STAB"; }
+
+private:
+
+};
+
+class ModeACECORE : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
+
+protected:
+
+    const char *name() const override { return "ACECORE"; }
+    const char *name4() const override { return "ACEC"; }
 
 private:
 

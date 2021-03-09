@@ -65,6 +65,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_ACECORE_ENABLED == ENABLED
+        case Mode::Number::ACECORE:
+            ret = &mode_acecore;
+            break;
+#endif
+
 #if MODE_GUIDED_ENABLED == ENABLED
         case Mode::Number::GUIDED:
             ret = &mode_guided;
