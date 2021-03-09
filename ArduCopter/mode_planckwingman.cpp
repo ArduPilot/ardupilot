@@ -13,7 +13,7 @@ bool ModePlanckWingman::init(bool ignore_checks){
     if(copter.mode_plancktracking.init_without_RTB_request(ignore_checks)) {
 
       //And command a zero-rate, telling planck to maintain current relative position
-      copter.planck_interface.request_move_target(Vector3f(0,0,0),true);
+      copter.planck_interface.request_move_target(Vector3f(0,0,0),true,copter.pos_control->get_max_speed_up(),copter.pos_control->get_max_speed_down());
       return true;
     }
 
@@ -39,7 +39,7 @@ void ModePlanckWingman::run() {
 
       Vector3f rate_NED(N_rate, E_rate, z_rate); //NED
 
-      copter.planck_interface.request_move_target(rate_NED, true);
+      copter.planck_interface.request_move_target(rate_NED, true,copter.pos_control->get_max_speed_up(),copter.pos_control->get_max_speed_down());
 
       _next_req_send_t_ms = millis() + _send_rate_ms;
     }
