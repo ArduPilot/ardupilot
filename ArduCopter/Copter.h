@@ -936,9 +936,6 @@ private:
 #if MODE_BRAKE_ENABLED == ENABLED
     ModeBrake mode_brake;
 #endif
-#if MODE_ACECORE_ENABLED == ENABLED
-    ModeAcecore mode_acecore;
-#endif
 #if MODE_CIRCLE_ENABLED == ENABLED
     ModeCircle mode_circle;
 #endif
