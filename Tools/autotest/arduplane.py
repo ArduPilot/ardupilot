@@ -694,7 +694,7 @@ class AutoTestPlane(AutoTest):
         self.progress("Using %s to fly home" % filename)
         self.load_mission(filename)
         self.change_mode("AUTO")
-        self.set_current_waypoint(7)
+        self.set_current_waypoint(8)
         self.drain_mav()
         # TODO: reflect on file to find this magic waypoint number?
         #        self.wait_waypoint(7, num_wp-1, timeout=500) # we
