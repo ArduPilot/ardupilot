@@ -15,10 +15,15 @@ bool ModeQStabilize::_enter()
 void ModeQStabilize::update()
 {
     // set nav_roll and nav_pitch using sticks
-    // Scale from normalized input [-1,1] to target angles in centidegrees
-    const float roll_input = plane.channel_roll->norm_input();
-    const float pitch_input = plane.channel_pitch->norm_input();
+    // Beware that QuadPlane::tailsitter_check_input (called from Plane::read_radio)
+    // may alter the control_in values for roll and yaw, but not the corresponding
+    // radio_in values. This means that the results for norm_input would not necessarily
+    // be correct for tailsitters, so get_control_in() must be used instead.
+    // normalize control_input to [-1,1]
+    const float roll_input = (float)plane.channel_roll->get_control_in() / plane.channel_roll->get_range();
+    const float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
 
+    // then scale to target angles in centidegrees
     if (plane.quadplane.tailsitter_active()) {
         // tailsitters are different
         set_tailsitter_roll_pitch(roll_input, pitch_input);
