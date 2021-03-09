@@ -3953,10 +3953,12 @@ class AutoTest(ABC):
             self.drain_mav(quiet=True)
             received = set()
             for (name, value) in want.items():
-                # self.progress("%s want=%f autopilot=%s" % (name, value, autopilot_values.get(name, 'None')))
+                if verbose:
+                    self.progress("%s want=%f autopilot=%s" % (name, value, autopilot_values.get(name, 'None')))
                 if name not in autopilot_values:
                     self.send_get_parameter_direct(name)
-                    # self.progress("Requesting (%s) (retry=%u)" % (name, i))
+                    if verbose:
+                        self.progress("Requesting (%s) (retry=%u)" % (name, i))
                     continue
                 delta = abs(autopilot_values[name] - value)
                 if delta <= epsilon_pct*0.01*abs(value):
@@ -3979,12 +3981,6 @@ class AutoTest(ABC):
                     self.do_timesync_roundtrip(quiet=True)
                 except AutoTestTimeoutException:
                     pass
-                    # now = self.get_sim_time_cached()
-                    # if tstart > now:
-                    #     self.progress("Time wrap detected")
-                    # else:
-                    #     raise
-#            do_fetch_all = False
             for m in param_value_messages:
                 if m.param_id in want:
                     self.progress("Received wanted PARAM_VALUE %s=%f" %
@@ -3992,12 +3988,7 @@ class AutoTest(ABC):
                     autopilot_values[m.param_id] = m.param_value
                     if m.param_id not in original_values:
                         original_values[m.param_id] = m.param_value
-                        # if (self.should_fetch_all_for_parameter_change(m.param_id.upper()) and
-                        #         m.param_value != 0):
-                        #     do_fetch_all = True
             param_value_messages = []
-#            if do_fetch_all:
-#                self.do_fetch_all()
 
         self.remove_message_hook(add_param_value)
 
