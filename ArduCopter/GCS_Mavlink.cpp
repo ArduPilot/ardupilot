@@ -117,7 +117,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
     if (!copter.flightmode->in_guided_mode()) {
         return;
     }
-    
+
     const GuidedMode guided_mode = copter.mode_guided.mode();
     Vector3f target_pos;
     Vector3f target_vel;
@@ -138,7 +138,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
     mavlink_msg_position_target_local_ned_send(
         chan,
         AP_HAL::millis(), // time boot ms
-        MAV_FRAME_LOCAL_NED, 
+        MAV_FRAME_LOCAL_NED,
         type_mask,
         target_pos.x, // x in metres
         target_pos.y, // y in metres
@@ -879,7 +879,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             float north = packet.param1;
             float east = packet.param2;
             float up = packet.param3 + (copter.inertial_nav.get_position().z / 100.);
-            copter.planck_interface.request_move_target(Vector3f(north,east,up));
+            copter.planck_interface.request_move_target(Vector3f(north,east,up),false,copter.pos_control->get_max_speed_up(),copter.pos_control->get_max_speed_down());
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -1102,7 +1102,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                     copter.planck_interface.get_commbox_state()) &&
                     !copter.ap.land_complete)
                 {
-                    copter.planck_interface.request_alt_change(pos_vector.z / 100.);
+                    copter.planck_interface.request_alt_change(pos_vector.z / 100.,copter.pos_control->get_max_speed_up(),copter.pos_control->get_max_speed_down());
                 }
             }
             else
@@ -1301,7 +1301,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         copter.g2.toy_mode.handle_message(msg);
         break;
 #endif
-        
+
     default:
         handle_common_message(msg);
         break;

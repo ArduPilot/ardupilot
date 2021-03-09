@@ -1647,8 +1647,10 @@ void ModeAuto::do_planck_wingman(const AP_Mission::Mission_Command& cmd)
       Vector3f(
         cmd.content.planck_wingman.x,
         cmd.content.planck_wingman.y,
-        (float)cmd.content.planck_wingman.z_cm/100.
-      )
+        (float)cmd.content.planck_wingman.z_cm/100.),
+      false,
+      copter.pos_control->get_max_speed_up(),
+      copter.pos_control->get_max_speed_down()
     );
     _planck_used = true;
 }

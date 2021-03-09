@@ -135,10 +135,12 @@ void AC_Planck::request_takeoff(const float alt)
     0,0,0,0,0);
 }
 
-void AC_Planck::request_alt_change(const float alt)
+void AC_Planck::request_alt_change(const float alt, const float rate_up, const float rate_down)
 {
   //Only altitude is valid
   uint8_t valid = 0b00000100;
+  uint32_t max_rates = uint8_t(rate_up) << 8;
+  max_rates = max_rates | uint8_t(rate_down);
   mavlink_msg_planck_cmd_request_send(
     _chan,
     mavlink_system.sysid,
@@ -149,7 +151,7 @@ void AC_Planck::request_alt_change(const float alt)
     0,                //param3
     alt,              //param4
     0,                //param5
-    false);           //param6
+    *reinterpret_cast<float*>(&(max_rates)));           //param6
 }
 
 void AC_Planck::request_rtb(const float alt, const float rate_up, const float rate_down, const float rate_xy)
@@ -180,10 +182,12 @@ void AC_Planck::request_land(const float descent_rate)
 }
 
 //Move the current tracking target, either to an absolute offset or by a rate
-void AC_Planck::request_move_target(const Vector3f offset_cmd_NED, const bool is_rate)
+void AC_Planck::request_move_target(const Vector3f offset_cmd_NED, const bool is_rate, const float rate_up, const float rate_down)
 {
   //all directions and are valid
   uint8_t valid = 0b00000111;
+  uint32_t max_rates = uint8_t(rate_up) << 8;
+  max_rates = max_rates | uint8_t(rate_down);
   mavlink_msg_planck_cmd_request_send(
     _chan,
     mavlink_system.sysid,
@@ -194,7 +198,7 @@ void AC_Planck::request_move_target(const Vector3f offset_cmd_NED, const bool is
     offset_cmd_NED.y, //param3
     offset_cmd_NED.z, //param4
     is_rate,          //param5
-    0);               //param6
+    *reinterpret_cast<float*>(&(max_rates)));               //param6
 
   //If the target has moved, the _was_at_location flag must go false until we
   //hear otherwise from planck
