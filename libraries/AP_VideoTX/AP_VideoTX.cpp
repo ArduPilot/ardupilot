@@ -241,11 +241,12 @@ void AP_VideoTX::update(void)
 
 bool AP_VideoTX::have_params_changed() const
 {
-    return update_power()
+    return _enabled
+        && (update_power()
         || update_band()
         || update_channel()
         || update_frequency()
-        || update_options();
+        || update_options());
 }
 
 // update the configured frequency to match the channel and band
