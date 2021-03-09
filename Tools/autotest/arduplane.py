@@ -525,6 +525,7 @@ class AutoTestPlane(AutoTest):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename, strict=strict)-1
+        self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
@@ -2076,7 +2077,6 @@ class AutoTestPlane(AutoTest):
 
     def fly_terrain_mission(self):
 
-        self.set_current_waypoint(1)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
