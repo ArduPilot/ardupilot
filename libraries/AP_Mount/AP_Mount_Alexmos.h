@@ -89,6 +89,9 @@ public:
 
 private:
 
+    uint8_t _yaw_follow_mode;
+    float _log_encoder_readback;
+
     // get_angles -
     void get_angles();
 
@@ -329,4 +332,5 @@ private:
 
     // Responsiveness of the gimbal to recenter with the vehicle
     float gimbal_yaw_scale;
+
 };

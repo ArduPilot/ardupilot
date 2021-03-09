@@ -37,17 +37,45 @@ void ModePlanckTracking::run() {
 
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
-    if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal)) {
-        float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
-        int8_t direction = 1;
-        bool relative_angle = false;
+    bool paylod_yaw_rate = false;
+    if (mount != nullptr) {
+      if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
-        // update auto_yaw private variable _fixed_yaw
-        copter.flightmode->auto_yaw.set_fixed_yaw(
-            angle_deg,
-            0, // use default angle change rate
-            direction,
-            relative_angle);
+        //only set new yaw command if payload data is recent (1/2 sec)
+        if (mount->get_last_payload_update_us()-AP_HAL::micros64() < 500000)
+        {
+          float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
+          int8_t direction = 1;
+          bool relative_angle = false;
+
+          // update auto_yaw private variable _fixed_yaw
+          copter.flightmode->auto_yaw.set_fixed_yaw(
+                angle_deg,
+                0, // use default angle change rate
+                direction,
+                relative_angle);
+        }
+        paylod_yaw_rate = false;
+      }
+      else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
+      {
+        paylod_yaw_rate = true;
+        if (mount->get_last_payload_update_us()-AP_HAL::micros64() > 500000)
+        {
+          copter.flightmode->auto_yaw.set_fixed_yaw(
+                0.0f,
+                0.0f,
+                0,
+                0);
+        }
+
+      }
+      AP::logger().Write("PTK1", "TimeUS,Gfyr,Myfm,HPan", "QfBB",
+                         AP_HAL::micros64(),
+                         (float)mount->get_follow_yaw_rate(),
+                         (uint8_t)mount->mount_yaw_follow_mode,
+                         (uint8_t)mount->has_pan_control());
+
     }
 
     //Check for tether high tension
@@ -129,7 +157,7 @@ void ModePlanckTracking::run() {
                       && copter.flightmode->auto_yaw.mode() == AUTO_YAW_FIXED && copter.planck_interface.get_tag_pos().z > min_yaw_alt_cm)
               {
                   yaw_cd = copter.flightmode->auto_yaw.yaw();
-                  is_yaw_rate = false;
+                  is_yaw_rate = paylod_yaw_rate;
               }
 
               //Convert this to quaternions, yaw rates

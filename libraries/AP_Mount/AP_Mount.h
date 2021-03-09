@@ -147,9 +147,14 @@ public:
 
     float get_min_yaw_alt_cm() { return _min_yaw_alt_cm; };
 
+    float get_last_payload_update_us() { return yaw_encoder_readback_time_us; };
+    void set_last_payload_update_us(uint64_t time_us) {  yaw_encoder_readback_time_us=time_us; };
+
+
 protected:
 
     float yaw_encoder_readback;
+    uint64_t yaw_encoder_readback_time_us;
 
     static AP_Mount *_singleton;
 
