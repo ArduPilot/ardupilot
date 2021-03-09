@@ -135,12 +135,20 @@ bool Copter::rangefinder_up_ok() const
   difference between the inertial height at that time and the current
   inertial height to give us interpolation of height from rangefinder
  */
-bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret)
+bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret, bool glitch_protected)
 {
     if (!rangefinder_alt_ok()) {
         return false;
     }
-    ret = rangefinder_state.alt_cm_filt.get();
+    if (!glitch_protected) {
+        ret = rangefinder_state.alt_cm_filt.get();
+    } else {
+        ret = rangefinder_state.alt_cm_glitch_protected;
+        if (rangefinder_state.alt_cm_glitch_protected != rangefinder_state.alt_cm) {
+            return false; // we are glitching don't try interpolation as we don't have the full inertia history
+        }
+    }
+
     float inertial_alt_cm = inertial_nav.get_altitude();
     ret += inertial_alt_cm - rangefinder_state.inertial_alt_cm;
     return true;

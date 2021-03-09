@@ -265,7 +265,7 @@ private:
     /*
       return rangefinder height interpolated using inertial altitude
      */
-    bool get_rangefinder_height_interpolated_cm(int32_t& ret);
+    bool get_rangefinder_height_interpolated_cm(int32_t& ret, bool glitch_protected=false);
 
     class SurfaceTracking {
     public:
