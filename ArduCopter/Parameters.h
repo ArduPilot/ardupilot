@@ -370,6 +370,7 @@ public:
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
         k_param_logger = 253, // 253 - Logging Group
+        k_param_acecore, //254
 
         // 254,255: reserved
 
@@ -446,6 +447,7 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+    AP_INT16        acecore;
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Int8         throw_motor_start;

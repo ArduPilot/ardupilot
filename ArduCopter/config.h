@@ -76,6 +76,10 @@
    #   define RC_FAST_SPEED 490
 #endif
 
+#ifndef ACECORE_DEFAULT
+   #   define ACECORE_DEFAULT 123
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Rangefinder
 //
