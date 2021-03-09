@@ -447,7 +447,7 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
-    AP_INT16        acecore;
+    AP_Int16        acecore;
 
 #if MODE_THROW_ENABLED == ENABLED
     AP_Int8         throw_motor_start;
