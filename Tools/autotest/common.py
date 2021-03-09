@@ -5079,7 +5079,9 @@ class AutoTest(ABC):
 
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + timeout:
+        while True:
+            if self.get_sim_time() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get wanted current waypoint")
             seq = self.mav.waypoint_current()
             self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
             if seq == wpnum:
