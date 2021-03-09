@@ -228,6 +228,7 @@ public:
         k_param_rtl_speed_cms = 135,
         k_param_fs_batt_curr_rtl,
         k_param_rtl_cone_slope, // 137
+        k_param_acecore, //138
 
         //
         // 140: Sensor parameters
@@ -370,7 +371,6 @@ public:
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
         k_param_logger = 253, // 253 - Logging Group
-        k_param_acecore, //254
 
         // 254,255: reserved
 
