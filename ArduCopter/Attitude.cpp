@@ -84,16 +84,16 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     }
 #endif
 
-    float desired_rate = 0.0f;
-    float mid_stick = get_throttle_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone;
-    float deadband_bottom = mid_stick - g.throttle_deadzone;
-
     // ensure a reasonable throttle value
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+
+    float desired_rate = 0.0f;
+    const float mid_stick = get_throttle_mid();
+    const float deadband_top = mid_stick + g.throttle_deadzone;
+    const float deadband_bottom = mid_stick - g.throttle_deadzone;
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
