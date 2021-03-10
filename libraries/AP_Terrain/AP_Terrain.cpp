@@ -93,11 +93,8 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
     // quick access for home altitude
     if (loc.lat == home_loc.lat &&
         loc.lng == home_loc.lng) {
-        height = home_height;
         // apply correction which assumes home altitude is at terrain altitude
-        if (corrected) {
-            height += (ahrs.get_home().alt * 0.01f) - home_height;
-        }
+        height = corrected ? ahrs.get_home().alt * 0.01f : home_height;
         return true;
     }
 
@@ -148,7 +145,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         home_loc = loc;
         // apply correction which assumes home altitude is at terrain altitude
         if (corrected) {
-            height += (ahrs.get_home().alt * 0.01f) - home_height;
+            height = ahrs.get_home().alt * 0.01f;
         }
     }
 
