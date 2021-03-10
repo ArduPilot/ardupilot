@@ -198,9 +198,13 @@ void Plane::startup_ground(void)
     g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
-    // reset last heartbeat time, so we don't trigger failsafe on slow
-    // startup
-    failsafe.last_heartbeat_ms = millis();
+    // reset last heartbeat time which starts timer for GCS
+    // failsafe. The user can set FLIGHT_OPTIONS to disable this. If
+    // they do that then GCS failsafe won't trigger until after we've
+    // had at least one heartbeat
+    if (!(g2.flight_options & FlightOptions::GCS_FS_HB_WAIT) || hal.util->was_watchdog_armed()) {
+        failsafe.last_heartbeat_ms = millis();
+    }
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
