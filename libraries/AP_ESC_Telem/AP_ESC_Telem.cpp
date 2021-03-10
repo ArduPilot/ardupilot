@@ -141,7 +141,7 @@ bool AP_ESC_Telem::get_current_ca(uint8_t esc_index, uint16_t& amps_ca) const
     return true;
 }
 
-// get an individual ESC's current if available, returns true on success
+// get an individual ESC's voltage if available, returns true on success
 bool AP_ESC_Telem::get_voltage_cv(uint8_t esc_index, uint16_t& volts_cv) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -153,7 +153,7 @@ bool AP_ESC_Telem::get_voltage_cv(uint8_t esc_index, uint16_t& volts_cv) const
     return true;
 }
 
-// get an individual ESC's current if available, returns true on success
+// get an individual ESC's energy consumption if available, returns true on success
 bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, uint16_t& consumption_mah) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -176,7 +176,7 @@ bool AP_ESC_Telem::get_telem_data(uint8_t esc_index, AP_ESC_Telem_Backend::Telem
     return true;
 }
 
-// get an individual ESC's current if available, returns true on success
+// get an individual ESC's usage time if available, returns true on success
 bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
