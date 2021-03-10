@@ -52,7 +52,7 @@ UART1 supports RX and TX DMA. UART2, UART3, UART4, UART5 and UART6 support TX DM
 
 ## RC Input
  
-RC input is configured on the UART3, which supports all RC protocols.
+RC input is configured on the UART3, which supports serial RC protocols. This board does not support PPM.
   
 ## OSD Support
 
