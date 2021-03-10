@@ -340,8 +340,8 @@ void AP_ESC_Telem::update()
     if (logger && logger->logging_enabled()) {
 
         for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-            if ((_active_escs_mask & (1<<i)) &&  (_last_telem_data_ms[i] >  _last_telem_log_ms[i]
-                || _last_rpm_update_us[i] > _last_telem_log_ms[i] * 1000)) {
+            if ((_active_escs_mask & (1<<i)) &&  (_last_telem_data_ms[i] - _last_telem_log_ms[i] > 100
+                || _last_rpm_update_us[i] - (_last_telem_log_ms[i] * 1000) > 100000)) {
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
