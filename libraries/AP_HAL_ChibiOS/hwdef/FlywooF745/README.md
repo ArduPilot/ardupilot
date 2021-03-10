@@ -56,7 +56,7 @@ RC input is configured on the UART3, which supports serial RC protocols. This bo
   
 ## OSD Support
 
-The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The GOKU GN 745 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
