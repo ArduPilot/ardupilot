@@ -40,15 +40,15 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL0|COMPUTER|USB|
-|SERIAL1|RX1/TX1|UART1 (Telem1)|
+|SERIAL1|RX1/TX1|UART1|
 |SERIAL2|TX2/RX2|UART2|
-|SERIAL3|TX3/RX3|UART3|
-|SERIAL4|TX4/RX4|UART4 (GPS)|
+|SERIAL3|TX3/RX3|UART3 (RC Input/Output)|
+|SERIAL4|TX4/RX4|UART4|
 |SERIAL5|TX5/RX5|UART5|
-|SERIAL6|TX6/RX6|UART6|
+|SERIAL6|TX6/RX6|UART6 (GPS)|
 |SERIAL7|TX7/RX7|UART7|
 
-UART1 supports RX and TX DMA. UART2, UART3, UART4, UART5 and UART6 support TX DMA. UART7 supports RX DMA
+UART3 supports RX and TX DMA. UART1, UART2, UART4, and UART6 supports TX DMA. UART5 and UART7 do not support DMA.
 
 ## RC Input
  
@@ -85,7 +85,7 @@ These are set by default in the firmware and shouldn't need to be adjusted
 
 ## Compass
 
-The GOKU GN 745 AIO does not have a builtin compass but it does have an external I2C connector.
+The GOKU GN 745 AIO does not have a builtin compass but it does have an external I2C connector, the first compass is enabled.
 
 ## NeoPixel LED
 
