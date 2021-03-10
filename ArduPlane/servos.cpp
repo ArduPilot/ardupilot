@@ -514,7 +514,8 @@ void Plane::set_servos_controlled(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
         }
     } else if (suppress_throttle()) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0 ); // default
+        // throttle is suppressed in auto mode
+        set_min_throttle();
         // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
         if (landing.is_flaring() && landing.use_thr_min_during_flare() ) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
@@ -530,7 +531,7 @@ void Plane::set_servos_controlled(void)
                control_mode == &mode_autotune) {
         // a manual throttle mode
         if (failsafe.throttle_counter) {
-            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+            set_min_throttle();
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
             // STABILIZE mode with THR_PASS_STAB set
@@ -1035,4 +1036,18 @@ void Plane::servos_auto_trim(void)
         g2.servo_channels.save_trim();
     }
     
+}
+
+/*
+  set min output throttle. The value depends if we are armed
+ */
+void Plane::set_min_throttle(void)
+{
+    int8_t thr = 0;
+    if (hal.util->get_soft_armed() && (g2.flight_options & FlightOptions::USE_THR_MIN_ZERO)) {
+        // use THR_MIN if armed. This is needed for engines that need
+        // some throttle to stay running
+        thr = MAX(0, aparm.throttle_min.get());
+    }
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, thr);
 }
