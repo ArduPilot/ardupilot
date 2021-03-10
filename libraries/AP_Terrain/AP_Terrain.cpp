@@ -146,11 +146,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         // remember home altitude as a special case
         home_height = height;
         home_loc = loc;
-    }
-
-    // apply correction which assumes home altitude is at terrain altitude
-    if (corrected) {
-        height += (ahrs.get_home().alt * 0.01f) - home_height;
+        // apply correction which assumes home altitude is at terrain altitude
+        if (corrected) {
+            height += (ahrs.get_home().alt * 0.01f) - home_height;
+        }
     }
 
     return true;
