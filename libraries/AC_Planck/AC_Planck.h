@@ -31,10 +31,10 @@ public:
 
   //Requesters to be sent to planck
   void request_takeoff(const float alt);
-  void request_alt_change(const float alt, const float rate_up, const float rate_down);
+  void request_alt_change(const float alt, const float rate_up_cms, const float rate_down_cms);
   void request_rtb(const float alt, const float rate_up, const float rate_down, const float rate_xy);
   void request_land(const float descent_rate);
-  void request_move_target(const Vector3f offset_cmd_NED, const bool is_rate, const float rate_up, const float rate_down);
+  void request_move_target(const Vector3f offset_cmd_NED, const bool is_rate, const float rate_up_cms, const float rate_down_cms);
   void stop_commanding(void);
 
   //planck status getters
@@ -65,6 +65,8 @@ public:
 
   //Get a position, velocity, yaw command
   bool get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, bool &is_yaw_rate);
+
+  uint32_t mux_rates(const float rate_up, const float rate_down){return (uint16_t(rate_up) << 16) | uint16_t(rate_down);};
 
 private:
 
