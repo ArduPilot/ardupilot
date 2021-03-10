@@ -582,7 +582,7 @@ private:
         uint8_t do_cmd_loaded     : 1; // true if a "do"/"conditional" command has been loaded into _do_cmd
         uint8_t do_cmd_all_done   : 1; // true if all "do"/"conditional" commands have been completed (stops unnecessary searching through eeprom for do commands)
         bool in_landing_sequence  : 1; // true if the mission has jumped to a landing
-        bool resuming_mission     : 1; // true if the mission is resuming and set false once the aircraft attains the interupted WP
+        bool resuming_mission     : 1; // true if the mission is resuming and set false once the aircraft attains the interrupted WP
     } _flags;
 
     // mission WP resume history

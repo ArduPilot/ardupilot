@@ -416,10 +416,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Units: m
     AP_GROUPINFO("NOAID_M_NSE", 35, NavEKF3, _noaidHorizNoise, 10.0f),
 
-    // 36 was LOG_MASK, used for specifying which IMUs/cores to log
-    // replay data for
+    // @Param: BETA_MASK
+    // @DisplayName: Bitmask controlling sidelip angle fusion
+    // @Description: 1 byte bitmap controlling use of sideslip angle fusion for estimation of non wind states during operation of 'fly forward' vehicle types such as fixed wing planes. By assuming that the angle of sideslip is small, the wind velocity state estimates are corrected  whenever the EKF is not dead reckoning (e.g. has an independent velocity or position sensor such as GPS). This behaviour is on by default and cannot be disabled. When the EKF is dead reckoning, the wind states are used as a reference, enabling use of the small angle of sideslip assumption to correct non wind velocity states (eg attitude, velocity, position, etc) and improve navigation accuracy. This behaviour is on by default and cannot be disabled. The behaviour controlled by this parameter is the use of the small angle of sideslip assumption to correct non wind velocity states when the EKF is NOT dead reckoning. This is primarily of benefit to reduce the buildup of yaw angle errors during straight and level flight without a yaw sensor (e.g. magnetometer or dual antenna GPS yaw) provided aerobatic flight maneuvers with large sideslip angles are not performed. The 'always' option might be used where the yaw sensor is intentionally not fitted or disabled. The 'WhenNoYawSensor' option might be used if a yaw sensor is fitted, but protection against in-flight failure and continual rejection by the EKF is desired. For vehicles operated within visual range of the operator performing frequent turning maneuvers, setting this parameter is unnecessary.
+    // @Bitmask: 0:Always,1:WhenNoYawSensor
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("BETA_MASK", 36, NavEKF3, _betaMask, 0),
 
-    // control of magentic yaw angle fusion
+    // control of magnetic yaw angle fusion
 
     // @Param: YAW_M_NSE
     // @DisplayName: Yaw measurement noise (rad)
@@ -642,6 +647,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @User: Advanced
     // @Bitmask: 0:EnableGPSAffinity,1:EnableBaroAffinity,2:EnableCompassAffinity,3:EnableAirspeedAffinity
     // @RebootRequired: True
+
     AP_GROUPINFO("AFFINITY", 62, NavEKF3, _affinity, 0),
 
     AP_SUBGROUPEXTENSION("", 63, NavEKF3, var_info2),
@@ -914,6 +920,11 @@ void NavEKF3::UpdateFilter(void)
                     // if this core has a significantly lower relative error to the active primary, we consider it as a 
                     // better core and would like to switch to it even if the current primary is healthy
                     betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
+                    // handle the case where the secondary core is faster to complete yaw alignment which can happen
+                    // in flight when oeprating without a magnetomer
+                    const NavEKF3_core &newCore = core[coreIndex];
+                    const NavEKF3_core &oldCore = core[primary];
+                    betterCore |= newCore.have_aligned_yaw() && !oldCore.have_aligned_yaw();
                     newPrimaryIndex = coreIndex;
                 }
             }
@@ -1236,12 +1247,15 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF3::getWind(int8_t instance, Vector3f &wind) const
+// returns true if wind state estimation is active
+bool NavEKF3::getWind(int8_t instance, Vector3f &wind) const
 {
+    bool ret = false;
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getWind(wind);
+        ret = core[instance].getWind(wind);
     }
+    return ret;
 }
 
 // return earth magnetic field estimates in measurement units / 1000
@@ -1997,14 +2011,23 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
-    AP::dal().log_writeDefaultAirSpeed3(airspeed);
+    AP::dal().log_writeDefaultAirSpeed3(airspeed, uncertainty);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeDefaultAirSpeed(airspeed);
+            core[i].writeDefaultAirSpeed(airspeed, uncertainty);
         }
     }
+}
+
+// returns true when the yaw angle has been aligned
+bool NavEKF3::yawAlignmentComplete(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].have_aligned_yaw();
 }

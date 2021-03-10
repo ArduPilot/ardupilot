@@ -94,7 +94,7 @@ void AP_Proximity_TeraRangerTower::update_sector_data(int16_t angle_deg, uint16_
 {   
     // Get location on 3-D boundary based on angle to the object
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
-    if (distance_cm != 0xffff) {
+    if ((distance_cm != 0xffff) && !check_obstacle_near_ground(angle_deg, distance_cm * 0.001f)) {
         boundary.set_face_attributes(face, angle_deg, ((float) distance_cm) / 1000);
         // update OA database
         database_push(angle_deg, ((float) distance_cm) / 1000);

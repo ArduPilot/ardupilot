@@ -277,6 +277,11 @@ void ModeRTL::descent_start()
 
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
@@ -365,6 +370,11 @@ void ModeRTL::land_start()
 
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 bool ModeRTL::is_landing() const

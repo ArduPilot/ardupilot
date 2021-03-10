@@ -175,8 +175,8 @@ struct PACKED log_NKF3 {
 // @Field: SM: Magnetic field variance
 // @Field: SVT: tilt error convergence metric
 // @Field: errRP: Filtered error in roll/pitch estimate
-// @Field: OFN: Most recent position recent magnitude (North component)
-// @Field: OFE: Most recent position recent magnitude (East component)
+// @Field: OFN: Most recent position reset (North component)
+// @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
 // @Field: SS: Filter solution status
@@ -192,8 +192,8 @@ struct PACKED log_NKF4 {
     int16_t sqrtvarM;
     int16_t sqrtvarVT;
     float   tiltErr;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
+    float  offsetNorth;
+    float  offsetEast;
     uint16_t faults;
     uint8_t timeouts;
     uint32_t solution;
@@ -293,7 +293,7 @@ struct PACKED log_NKT {
     { LOG_NKF3_MSG, sizeof(log_NKF3), \
       "NKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_NKF4_MSG, sizeof(log_NKF4), \
-      "NKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
+      "NKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" }, \
     { LOG_NKF5_MSG, sizeof(log_NKF5), \
       "NKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
     { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \

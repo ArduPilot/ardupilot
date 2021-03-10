@@ -279,68 +279,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
     
-#if GEOFENCE_ENABLED == ENABLED
-    // @Param: FENCE_ACTION
-    // @DisplayName: Action on geofence breach
-    // @Description: What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control. If set to 4 the plane enters RTL mode, with the target waypoint as the closest rally point (or home point if there are no rally points).
-    // @Values: 0:None,1:GuidedMode,2:ReportOnly,3:GuidedModeThrPass,4:RTL_Mode
-    // @User: Standard
-    GSCALAR(fence_action,           "FENCE_ACTION",   0),
-
-    // @Param: FENCE_TOTAL
-    // @DisplayName: Fence Total
-    // @Description: Number of geofence points currently loaded
-    // @User: Advanced
-    GSCALAR(fence_total,            "FENCE_TOTAL",    0),
-
-    // @Param: FENCE_CHANNEL
-    // @DisplayName: Fence Channel
-    // @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
-    // @User: Standard
-    GSCALAR(fence_channel,          "FENCE_CHANNEL",  0),
-
-    // @Param: FENCE_MINALT
-    // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_minalt,           "FENCE_MINALT",   0),
-
-    // @Param: FENCE_MAXALT
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
-
-    // @Param: FENCE_RETALT
-    // @DisplayName: Fence Return Altitude
-    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
-
-    // @Param: FENCE_AUTOENABLE
-    // @DisplayName: Fence automatic enable
-    // @Description: When set to 1, geofence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.  When set to 2, the fence autoenables after an auto takeoff, but only disables the fence floor during landing. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead. When set to 3 the fence auto-enables when the vehicle is armed and disables when disarmed and arming will fail if the fence cannot be enabled or is outside the fence. Option 3 cannot be used with a non-zero FENCE_MINALT
-    // @Values: 0:NoAutoEnable,1:AutoEnable,2:AutoEnableDisableFloorOnly,3:EnableWhenArmed
-    // @User: Standard
-    GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
-
-    // @Param: FENCE_RET_RALLY
-    // @DisplayName: Fence Return to Rally
-    // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
-    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
-    // @User: Standard
-    GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
-#endif
-
     // @Param: STALL_PREVENTION
     // @DisplayName: Enable stall prevention
     // @Description: Enables roll limits at low airspeed in roll limiting flight modes. Roll limits based on aerodynamic load factor in turns and scale on ARSPD_FBW_MIN that must be set correctly. Without airspeed sensor, uses synthetic airspeed from wind speed estimate that may both be inaccurate.
@@ -1073,6 +1011,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,  "RALLY_",       AP_Rally),
 
+#if AC_FENCE == ENABLED
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
+    GOBJECT(fence, "FENCE_",        AC_Fence),
+#endif
+
 #if AP_AHRS_NAVEKF_AVAILABLE
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -1387,6 +1331,12 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
     { Parameters::k_param_arming,           128,     AP_PARAM_INT16,  "ARMING_CHECK" },
+
+    { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
+    { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
+    { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
+    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
+    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
 };
 
 void Plane::load_parameters(void)
@@ -1458,6 +1408,106 @@ void Plane::load_parameters(void)
         RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
         if (soar_ch != nullptr && !soar_ch->option.configured()) {
             soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
+        }
+    }
+
+    // Convert fence to RCx_OPTION
+    AP_Int8 fence_enable_ch;
+    AP_Param::ConversionInfo fence_channel_info = {
+        Parameters::k_param_fence_channel,
+        0,
+        AP_PARAM_INT8,
+        nullptr
+    };
+    if (AP_Param::find_old_parameter(&fence_channel_info, &fence_enable_ch) && fence_enable_ch.get() != 0) {
+        RC_Channel *fence_ch = rc().channel(fence_enable_ch - 1);
+        if (fence_ch != nullptr && !fence_ch->option.configured()) {
+            fence_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FENCE); // save the new param
+        }
+    }
+
+    enum ap_var_type ptype_fence_type;
+    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
+    if (fence_type_new && !fence_type_new->configured()) {
+        // If we find the new parameter and it hasn't been configured
+        // attempt to upgrade the altitude fences.
+        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
+        AP_Int16 fence_alt_min_old;
+        AP_Param::ConversionInfo fence_alt_min_info_old = {
+            Parameters::k_param_fence_minalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
+            if (fence_alt_min_old.configured()) {
+                //
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
+            }
+        }
+
+        AP_Int16 fence_alt_max_old;
+        AP_Param::ConversionInfo fence_alt_max_info_old = {
+            Parameters::k_param_fence_maxalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
+            if (fence_alt_max_old.configured()) {
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
+            }
+        }
+
+        fence_type_new->set_and_save((int8_t)fence_type_new_val);
+    }
+
+    AP_Int8 fence_action_old;
+    AP_Param::ConversionInfo fence_action_info_old = {
+        Parameters::k_param_fence_action,
+        0,
+        AP_PARAM_INT8,
+        "FENCE_ACTION"
+    };
+    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
+        enum ap_var_type ptype;
+        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
+        uint8_t fence_action_new_val;
+        if (fence_action_new && !fence_action_new->configured()) {
+            switch(fence_action_old.get()) {
+                case 0: // FENCE_ACTION_NONE
+                case 2: // FENCE_ACTION_REPORT_ONLY
+                default:
+                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    break;
+                case 1: // FENCE_ACTION_GUIDED
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    break;
+                case 3: // FENCE_ACTION_GUIDED_THR_PASS
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    break;
+                case 4: // FENCE_ACTION_RTL
+                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    break;
+            }
+            fence_action_new->set_and_save((int8_t)fence_action_new_val);
+            
+            // Now upgrade the new fence enable at the same time
+            enum ap_var_type ptype_fence_enable;
+            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
+            // fences were used if there was a count, and the old fence action was not zero
+            AC_Fence *ap_fence = AP::fence();
+            bool fences_exist = false;
+            if (ap_fence) {
+                // If the fence library is present, attempt to read the fence count
+                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
+            }
+            
+            bool fences_used = fence_action_old.get() != 0;
+            if (fence_enable && !fence_enable->configured()) {
+                // The fence enable parameter exists, so now set it accordingly
+                fence_enable->set_and_save(fences_exist && fences_used);
+            }
         }
     }
 

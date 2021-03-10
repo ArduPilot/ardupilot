@@ -59,7 +59,8 @@ private:
     enum class ViconTypeMask : uint8_t {
         VISION_POSITION_ESTIMATE    = (1 << 0),
         VISION_SPEED_ESTIMATE       = (1 << 1),
-        VICON_POSITION_ESTIMATE     = (1 << 2)
+        VICON_POSITION_ESTIMATE     = (1 << 2),
+        VISION_POSITION_DELTA       = (1 << 3)
     };
 
     // return true if the given message type should be sent
@@ -75,6 +76,10 @@ private:
 
     void maybe_send_heartbeat();
     uint32_t last_heartbeat_ms;
+
+    // position delta message 
+    Quaternion _attitude_prev; // Rotation to previous MAV_FRAME_BODY_FRD from MAV_FRAME_LOCAL_NED
+    Vector3f _position_prev;  // previous position from origin (m) MAV_FRAME_LOCAL_NED
 };
 
 }

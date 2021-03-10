@@ -330,7 +330,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,9:Airmode_On_Arm,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -544,6 +544,8 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_LOIT_BRK_ACCEL", 50.0 },
     { "Q_LOIT_BRK_JERK",  250 },
     { "Q_LOIT_SPEED",     500 },
+    { "Q_WP_SPEED",       500 },
+    { "Q_WP_ACCEL",       100 },
 };
 
 /*
@@ -899,11 +901,11 @@ void QuadPlane::update_yaw_target(void)
      */
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(aspeed);
-    if (have_airspeed) {
+    if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
         float dt = (now - tilt.transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate
         const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
-        const float yaw_rate_cds = degrees(GRAVITY_MSS/MAX(aspeed,airspeed_min) * sinf(radians(plane.nav_roll_cd*0.01)))*100;
+        const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;
         tilt.transition_yaw_cd += yaw_rate_cds * dt;
     }
     tilt.transition_yaw_set_ms = now;
@@ -1304,7 +1306,9 @@ void QuadPlane::init_qland(void)
 #if LANDING_GEAR_ENABLED == ENABLED
     plane.g2.landing_gear.deploy_for_landing();
 #endif
-    plane.disable_fence_for_landing();
+#if AC_FENCE == ENABLED
+    plane.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 
@@ -1821,11 +1825,13 @@ void QuadPlane::update_transition(void)
         }
         assisted_flight = true;
 
-        // do not allow a climb on the quad motors during transition
-        // a climb would add load to the airframe, and prolongs the
-        // transition
+        // do not allow a climb on the quad motors during transition a
+        // climb would add load to the airframe, and prolongs the
+        // transition. We don't limit the climb rate on tilt rotors as
+        // otherwise the plane can end up in high-alpha flight with
+        // low VTOL thrust and may not complete a transition
         float climb_rate_cms = assist_climb_rate_cms();
-        if (options & OPTION_LEVEL_TRANSITION) {
+        if ((options & OPTION_LEVEL_TRANSITION) && tilt.tilt_mask == 0) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
         }
         hold_hover(climb_rate_cms);
@@ -2934,7 +2940,9 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     plane.TECS_controller.set_pitch_max_limit(transition_pitch_max);
     set_alt_target_current();
 
-    plane.complete_auto_takeoff();
+#if AC_FENCE == ENABLED
+    plane.fence.auto_enable_fence_after_takeoff();
+#endif
 
     if (plane.control_mode == &plane.mode_auto) {
         // we reset TECS so that the target height filter is not
@@ -3045,7 +3053,9 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.state == QPOS_POSITION2 &&
         plane.auto_state.wp_distance < 2) {
         poscontrol.state = QPOS_LAND_DESCEND;
-        plane.disable_fence_for_landing();
+#if AC_FENCE == ENABLED
+        plane.fence.auto_disable_fence_for_landing();
+#endif
 #if LANDING_GEAR_ENABLED == ENABLED
         plane.g2.landing_gear.deploy_for_landing();
 #endif
@@ -3207,8 +3217,9 @@ int8_t QuadPlane::forward_throttle_pct()
         // lidar could cause the aircraft not to be able to
         // approach the landing point when landing below the takeoff point
         vel_forward.last_pct = vel_forward.integrator;
-    } else if (in_vtol_land_final() && motors->limit.throttle_lower) {
-        // we're in the settling phase of landing, disable fwd motor
+    } else if ((in_vtol_land_final() && motors->limit.throttle_lower) ||
+              (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow))) {
+        // we're in the settling phase of landing or using a rangefinder that is out of range low, disable fwd motor
         vel_forward.last_pct = 0;
         vel_forward.integrator = 0;
     } else {

@@ -383,7 +383,7 @@ private:
 
     RCMapper rcmap;
 
-    // intertial nav alt when we armed
+    // inertial nav alt when we armed
     float arming_altitude_m;
 
     // Failsafe
@@ -608,6 +608,12 @@ private:
         RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
+
+    enum class FlightOptions {
+        DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
+        DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
                                                       Failsafe_Action_Land,
@@ -690,6 +696,9 @@ private:
     // crash_check.cpp
     void crash_check();
     void thrust_loss_check();
+    void yaw_imbalance_check();
+    LowPassFilterFloat yaw_I_filt{0.05f};
+    uint32_t last_yaw_warn_ms;
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
@@ -735,7 +744,9 @@ private:
 #endif
 
     // fence.cpp
+#if AC_FENCE == ENABLED
     void fence_check();
+#endif
 
     // heli.cpp
     void heli_init();

@@ -1362,14 +1362,15 @@ def parse_timer(str):
         error("Bad timer definition %s" % str)
 
 
-def write_PWM_config(f):
+def write_PWM_config(f, ordered_timers):
     '''write PWM config defines'''
     rc_in = None
     rc_in_int = None
     alarm = None
     bidir = None
     pwm_out = []
-    pwm_timers = []
+    # start with the ordered list from the dma resolver
+    pwm_timers = ordered_timers
     has_bidir = False
     for l in bylabel.keys():
         p = bylabel[l]
@@ -1387,6 +1388,7 @@ def write_PWM_config(f):
                     bidir = p
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
+
 
     f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
     if not pwm_out and not alarm:
@@ -1471,7 +1473,7 @@ def write_PWM_config(f):
     f.write('// PWM timer config\n')
     if bidir is not None:
         f.write('#define HAL_WITH_BIDIR_DSHOT\n')
-    for t in sorted(pwm_timers):
+    for t in pwm_timers:
         n = int(t[3:])
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
@@ -1479,7 +1481,8 @@ def write_PWM_config(f):
     f.write('// PWM output config\n')
     groups = []
     have_complementary = False
-    for t in sorted(pwm_timers):
+
+    for t in pwm_timers:
         group = len(groups) + 1
         n = int(t[3:])
         chan_list = [255, 255, 255, 255]
@@ -1761,13 +1764,13 @@ def write_hwdef_header(outfilename):
 
     write_peripheral_enable(f)
 
-    dma_unassigned = dma_resolver.write_dma_header(f, periph_list, mcu_type,
+    dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                                    dma_exclude=get_dma_exclude(periph_list),
                                                    dma_priority=get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
                                                    dma_noshare=get_config('DMA_NOSHARE', default='', spaces=True))
 
     if not args.bootloader:
-        write_PWM_config(f)
+        write_PWM_config(f, ordered_timers)
         write_I2C_config(f)
         write_UART_config(f)
     else:
