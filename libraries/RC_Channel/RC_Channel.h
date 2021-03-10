@@ -68,6 +68,12 @@ public:
     int16_t    get_control_in() const { return control_in;}
     void       set_control_in(int16_t val) { control_in = val;}
 
+    int16_t    get_control_in_no_dz() const { return control_in_no_dz;}
+    void       set_control_in_no_dz(int16_t val) { control_in_no_dz = val;}
+
+    int16_t    get_control_in_no_trim() const { return control_in_no_trim;}
+    void       get_control_in_no_trim(int16_t val) { control_in_no_trim = val;}
+
     void       clear_override();
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
     bool       has_override() const;
@@ -294,6 +300,8 @@ private:
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
+    int16_t    control_in_no_dz;
+    int16_t    control_in_no_trim;
 
     AP_Int16    radio_min;
     AP_Int16    radio_trim;
