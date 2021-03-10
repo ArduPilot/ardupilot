@@ -214,8 +214,8 @@ void NavEKF2_core::FuseRngBcn()
                     statesArray[j] = statesArray[j] - Kfusion[j] * innovRngBcn;
                 }
 
-                // the first 3 states represent the angular misalignment vector. This is
-                // is used to correct the estimated quaternion on the current time step
+                // the first 3 states represent the angular misalignment vector.
+                // This is used to correct the estimated quaternion on the current time step
                 stateStruct.quat.rotate(stateStruct.angErr);
 
                 // record healthy fusion
