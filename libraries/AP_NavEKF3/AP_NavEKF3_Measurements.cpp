@@ -815,15 +815,17 @@ void NavEKF3_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF3_core::readAirSpdData()
 {
+    const float EAS2TAS = dal.get_EAS2TAS();
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
+
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
         airspeed->use(selected_airspeed) &&
         airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * dal.get_EAS2TAS();
+        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
@@ -835,6 +837,16 @@ void NavEKF3_core::readAirSpdData()
     }
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
+    // Allow use of a default value if the measurement times out
+    if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 5000 && is_positive(defaultAirSpeed)) {
+        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
+        easErrVar = MAX(defaultAirSpeedVariance, easErrVar);
+        usingDefaultAirspeed = true;
+    } else {
+        usingDefaultAirspeed = false;
+    }
+    tasErrVar =  easErrVar * sq(EAS2TAS);
 }
 
 /********************************************************
@@ -978,10 +990,11 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     yawMeasTime_ms = timeStamp_ms;
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3_core::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
     defaultAirSpeed = airspeed;
+    defaultAirSpeedVariance = sq(uncertainty);
 }
 
 /********************************************************

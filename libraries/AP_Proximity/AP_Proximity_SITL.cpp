@@ -52,13 +52,13 @@ void AP_Proximity_SITL::update(void)
         // only called to prompt polyfence to reload fence if required
     }
     if (AP::fence()->polyfence().inclusion_boundary_available()) {
+        set_status(AP_Proximity::Status::Good);
         // update distance in each sector
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             const float yaw_angle_deg = sector * 45.0f;
             AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
             float fence_distance;
             if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
-                set_status(AP_Proximity::Status::Good);
                 boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
                 // update OA database
                 database_push(yaw_angle_deg, fence_distance);
@@ -98,6 +98,10 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         }
     }
     distance = min_dist;
+    if (check_obstacle_near_ground(angle_deg, distance)) {
+        // obstacle near land, lets ignore it
+        return false;
+    }
     return true;
 }
 

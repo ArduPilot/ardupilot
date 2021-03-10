@@ -350,6 +350,7 @@ public:
         k_param_gcs4,          // stream rates
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
+        k_param_fence,         // vehicle fence
     };
 
     AP_Int16 format_version;
@@ -396,17 +397,6 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
-
-#if GEOFENCE_ENABLED == ENABLED
-    AP_Int8 fence_action;
-    AP_Int8 fence_total;
-    AP_Int8 fence_channel;
-    AP_Int16 fence_minalt;    // meters
-    AP_Int16 fence_maxalt;    // meters
-    AP_Int16 fence_retalt;    // meters
-    AP_Enum<FenceAutoEnable> fence_autoenable;
-    AP_Int8 fence_ret_rally;
-#endif
 
     // Fly-by-wire
     //

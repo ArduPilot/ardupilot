@@ -52,11 +52,11 @@ UART1 supports RX and TX DMA. UART2, UART3, UART4, UART5 and UART6 support TX DM
 
 ## RC Input
  
-RC input is configured on the UART3, which supports all RC protocols.
+RC input is configured on the UART3, which supports serial RC protocols. This board does not support PPM.
   
 ## OSD Support
 
-The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The GOKU GN 745 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
@@ -97,7 +97,7 @@ Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
 firmware, using your favourite DFU loading tool.
 
-## The following is a lie as of February 2021, since this board does not have a unique Board ID yet
+## Loading Firmware
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.

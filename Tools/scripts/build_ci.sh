@@ -71,6 +71,9 @@ function run_autotest() {
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
         w="$w --debug"
     fi
+    if [ $NAME == "Examples" ]; then
+        w="$w --speedup=5 --timeout=14400 --debug --no-clean"
+    fi
     Tools/autotest/autotest.py --show-test-timings --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
@@ -156,6 +159,13 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "unit-tests" ]; then
         run_autotest "Unit Tests" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
+    if [ "$t" == "examples" ]; then
+        ./waf configure --board=linux --debug
+        ./waf examples
+        run_autotest "Examples" "--no-clean" "run.examples"
         continue
     fi
 

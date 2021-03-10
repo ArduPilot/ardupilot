@@ -315,8 +315,6 @@ class AutoTestCopter(AutoTest):
     # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
 
-        self.clear_mission_using_mavproxy()
-
         self.takeoff(10, mode="ALT_HOLD")
 
         """Fly a square, flying N then E ."""
@@ -675,7 +673,7 @@ class AutoTestCopter(AutoTest):
         self.start_subtest("Radio failsafe RTL with option to continue mission: FS_THR_ENABLE=1 & FS_OPTIONS=1")
         self.set_parameter('FS_OPTIONS', 1)
         self.progress("# Load copter_mission")
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 #        self.takeoffAndMoveAway()
@@ -699,7 +697,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SIM_RC_FAIL", 1)
         self.wait_mode("RTL")
         self.wait_rtl_complete()
-        self.clear_mission_using_mavproxy()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         self.set_parameter("SIM_RC_FAIL", 0)
         self.end_subtest("Completed Radio failsafe RTL in mission without option to continue")
 
@@ -840,7 +838,7 @@ class AutoTestCopter(AutoTest):
 
         # Trigger telemetry loss with failsafe enabled to test FS_OPTIONS settings
         self.start_subtest("GCS failsafe with option bit tests: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16")
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
         self.setGCSfailsafe(1)
@@ -979,7 +977,7 @@ class AutoTestCopter(AutoTest):
 
         # Trigger low battery condition in land mode with FS_OPTIONS
         # set to allow land mode to continue. Verify landing completes
-        # uninterupted.
+        # uninterrupted.
         self.start_subtest("Battery failsafe with FS_OPTIONS set to continue landing")
         self.takeoffAndMoveAway()
         self.set_parameter('FS_OPTIONS', 8)
@@ -1217,15 +1215,16 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Did not receive HOME_POSITION")
         self.progress("home: %s" % str(m))
 
-        self.start_subtest("ensure we can't arm if ouside fence")
-        self.load_fence_using_mavproxy("fence-in-middle-of-nowhere.txt")
+        self.start_subtest("ensure we can't arm if outside fence")
+        self.load_fence("fence-in-middle-of-nowhere.txt")
+
         self.delay_sim_time(5) # let fence check run so it loads-from-eeprom
         self.assert_prearm_failure("vehicle outside fence")
         self.progress("Failed to arm outside fence (good!)")
         self.clear_fence()
         self.delay_sim_time(5) # let fence breach clear
         self.drain_mav()
-        self.end_subtest("ensure we can't arm if ouside fence")
+        self.end_subtest("ensure we can't arm if outside fence")
 
         self.start_subtest("ensure we can't arm with bad radius")
         self.context_push()
@@ -1264,7 +1263,7 @@ class AutoTestCopter(AutoTest):
         tstart = self.get_sim_time()
         while not self.mode_is("RTL"):
             if self.get_sim_time_cached() - tstart > 30:
-                self.NotAchievedException("Did not breach fence")
+                raise NotAchievedException("Did not breach fence")
 
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
             alt = m.relative_alt / 1000.0 # mm -> m
@@ -1301,7 +1300,7 @@ class AutoTestCopter(AutoTest):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
-    # fly_alt_fence_test - fly up until you hit the fence
+    # fly_alt_max_fence_test - fly up until you hit the fence ceiling
     def fly_alt_max_fence_test(self):
         self.takeoff(10, mode="LOITER")
         """Hold loiter position."""
@@ -1314,16 +1313,16 @@ class AutoTestCopter(AutoTest):
         self.change_alt(10)
 
         # first east
-        self.progress("turn east")
+        self.progress("turning east")
         self.set_rc(4, 1580)
         self.wait_heading(160)
         self.set_rc(4, 1500)
 
-        # fly forward (east) at least 20m
+        self.progress("flying east 20m")
         self.set_rc(2, 1100)
         self.wait_distance(20)
 
-        # stop flying forward and start flying up:
+        self.progress("flying up")
         self.set_rc_from_map({
             2: 1500,
             3: 1800,
@@ -1335,6 +1334,86 @@ class AutoTestCopter(AutoTest):
         self.wait_rtl_complete()
 
         self.zero_throttle()
+
+    # fly_alt_min_fence_test - fly down until you hit the fence floor
+    def fly_alt_min_fence_test(self):
+        self.takeoff(30, mode="LOITER", timeout=60)
+        """Hold loiter position."""
+        self.mavproxy.send('switch 5\n')  # loiter mode
+        self.wait_mode('LOITER')
+
+        # enable fence, disable avoidance
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.set_parameter("FENCE_TYPE", 8)
+        self.set_parameter("FENCE_ALT_MIN", 20)
+
+        self.change_alt(30)
+
+        # Activate the floor fence
+        # TODO this test should run without requiring this
+        self.do_fence_enable()
+
+        # first east
+        self.progress("turn east")
+        self.set_rc(4, 1580)
+        self.wait_heading(160)
+        self.set_rc(4, 1500)
+
+        # fly forward (east) at least 20m
+        self.set_rc(2, 1100)
+        self.wait_distance(20)
+
+        # stop flying forward and start flying down:
+        self.set_rc_from_map({
+            2: 1500,
+            3: 1200,
+        })
+
+        # wait for fence to trigger
+        self.wait_mode('RTL', timeout=120)
+
+        self.wait_rtl_complete()
+
+        # Disable the fence using mavlink command to ensure cleaned up SITL state
+        self.do_fence_disable()
+
+        self.zero_throttle()
+
+    def fly_fence_floor_enabled_landing(self):
+        """ fly_fence_floor_enabled_landing. Ensures we can initiate and complete
+        an RTL while the fence is enabled. """
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+
+        self.progress("Test Landing while fence floor enabled")
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.set_parameter("FENCE_TYPE", 15)
+        self.set_parameter("FENCE_ALT_MIN", 10)
+        self.set_parameter("FENCE_ALT_MAX", 20)
+
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=15)
+
+        # Check fence is enabled
+        self.do_fence_enable()
+        self.assert_fence_enabled()
+
+        # Change to RC controlled mode
+        self.change_mode('LOITER')
+
+        self.set_rc(3, 1800)
+
+        self.wait_mode('RTL', timeout=120)
+        self.wait_landed_and_disarmed()
+        self.assert_fence_enabled()
+
+        # Assert fence is not healthy
+        self.assert_sensor_state(fence_bit, healthy=False)
+
+        # Disable the fence using mavlink command to ensure cleaned up SITL state
+        self.do_fence_disable()
+        self.assert_fence_disabled()
 
     def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
@@ -1466,7 +1545,7 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_glitch_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_glitch_mission.txt")
+        num_wp = self.load_mission("copter_glitch_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_glitch_mission failed")
 
@@ -1737,7 +1816,6 @@ class AutoTestCopter(AutoTest):
     def fly_flip(self):
         ex = None
         try:
-            self.mavproxy.send("set streamrate -1\n")
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
 
             self.takeoff(20)
@@ -1774,8 +1852,6 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 0)
-        sr = self.sitl_streamrate()
-        self.mavproxy.send("set streamrate %u\n" % sr)
         if ex is not None:
             raise ex
 
@@ -1892,6 +1968,13 @@ class AutoTestCopter(AutoTest):
     def fly_autotune_switch(self):
         """Test autotune on a switch with gains being saved"""
 
+        # autotune changes a set of parameters on the vehicle which
+        # are not in our context.  That changes the flight
+        # characterstics, which we can't afford between runs.  So
+        # completely reset the simulated vehicle after the run is
+        # complete by "customising" the commandline here:
+        self.customise_SITL_commandline([])
+
         self.context_push()
 
         ex = None
@@ -1903,7 +1986,6 @@ class AutoTestCopter(AutoTest):
             ex = e
 
         self.context_pop()
-        self.reboot_sitl()
 
         if ex is not None:
             raise ex
@@ -1987,7 +2069,7 @@ class AutoTestCopter(AutoTest):
         # Fly mission #1
         self.progress("# Load copter_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_mission.txt")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
 
@@ -4892,7 +4974,7 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
 
         tstart = self.get_sim_time_cached()
-        want_pitch_degrees = -20
+        want_pitch_degrees = -12
         while True:
             if self.get_sim_time_cached() - tstart > 10:
                 raise AutoTestTimeoutException("Did not reach pitch")
@@ -5027,7 +5109,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.load_fence("copter-avoidance-fence.txt")
-            self.set_parameter("FENCE_ENABLE", 0)
+            self.set_parameter("FENCE_ENABLE", 1)
             self.set_parameter("PRX_TYPE", 10)
             self.set_parameter("RC10_OPTION", 40) # proximity-enable
             self.reboot_sitl()
@@ -5038,7 +5120,7 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex is not None:
@@ -5330,7 +5412,7 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
-        self.mavproxy.send("fence clear\n")
+        self.clear_fence()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         if ex is not None:
@@ -6474,6 +6556,14 @@ class AutoTestCopter(AutoTest):
              "Test Max Alt Fence",
              self.fly_alt_max_fence_test),  # 26s
 
+            ("MinAltFence",
+             "Test Min Alt Fence",
+             self.fly_alt_min_fence_test), # 26s
+
+            ("FenceFloorEnabledLanding",
+             "Test Landing with Fence floor enabled",
+             self.fly_fence_floor_enabled_landing),
+
             ("AutoTuneSwitch",
              "Fly AUTOTUNE on a switch",
              self.fly_autotune_switch),  # 105s
@@ -6841,7 +6931,7 @@ class AutoTestHeli(AutoTestCopter):
         # upload mission from file
         self.progress("# Load copter_AVC2013_mission")
         # load the waypoint count
-        num_wp = self.load_mission("copter_AVC2013_mission.txt")
+        num_wp = self.load_mission("copter_AVC2013_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_AVC2013_mission failed")
 
@@ -7008,11 +7098,14 @@ class AutoTestHeli(AutoTestCopter):
                            (start_alt + 5),
                            relative=True,
                            timeout=timeout)
+        self.context_collect('STATUSTEXT')
         self.progress("Triggering autorotate by raising interlock")
         self.set_rc(8, 1000)
-        self.mavproxy.expect("SS Glide Phase")
-        self.mavproxy.expect("Hit ground at ([0-9.]+) m/s")
-        speed = float(self.mavproxy.match.group(1))
+        self.wait_statustext("SS Glide Phase", check_context=True)
+        self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
+                             check_context=True,
+                             regex=True)
+        speed = float(self.re_match.group(1))
         if speed > 30:
             raise NotAchievedException("Hit too hard")
         self.wait_disarmed()

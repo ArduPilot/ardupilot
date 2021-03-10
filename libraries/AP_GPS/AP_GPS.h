@@ -145,10 +145,6 @@ public:
         GPS_ENGINE_AIRBORNE_4G = 8
     };
 
-    enum GPS_Config {
-       GPS_ALL_CONFIGURED = 255
-    };
-
     // role for auto-config
     enum GPS_Role {
         GPS_ROLE_NORMAL,

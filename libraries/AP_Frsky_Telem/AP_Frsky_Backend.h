@@ -109,7 +109,8 @@ protected:
     static const uint8_t BYTESTUFF_D               = 0x5D;
 
     // FrSky data IDs;
-    static const uint16_t RPM_LAST_ID               = 0x050F;
+    static const uint16_t RPM1_ID                   = 0x050E;
+    static const uint16_t RPM2_ID                   = 0x050F;
     static const uint16_t GPS_LONG_LATI_FIRST_ID    = 0x0800;
     static const uint16_t DIY_FIRST_ID              = 0x5000;
 

@@ -6,7 +6,7 @@
 MCU STM32F7xx STM32F745xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1026 #Temporarily copied from Beast F7
+APJ_BOARD_ID 1027
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -118,7 +118,8 @@ PA2 LED0 OUTPUT LOW GPIO(90) # LED
 
 
 # Misc Timer Stuff
-PE13 TIM1_CH3 TIM1 PWM(10) GPIO(59)			# PPM
+#PE13 TIM1_CH3 TIM1 PWM(10) GPIO(59)			# PPM/Unused - for future use according to Flywoo
+#PB3  TIM2_CH2 TIM2 PWM(11) GPIO(60)			# Unused - for future use according to Flywoo
 
 
 DMA_PRIORITY USART1* TIM1* TIM3*
@@ -152,5 +153,6 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define BOARD_PWM_COUNT_DEFAULT 7
-define STM32_PWM_USE_ADVANCED TRUE
+# FFT option (disabled by default)
+# define BOARD_PWM_COUNT_DEFAULT 7
+#define STM32_PWM_USE_ADVANCED TRUE

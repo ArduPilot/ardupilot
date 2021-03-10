@@ -429,7 +429,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // 36 was LOG_MASK, used for specifying which IMUs/cores to log
     // replay data for
 
-    // control of magentic yaw angle fusion
+    // control of magnetic yaw angle fusion
 
     // @Param: YAW_M_NSE
     // @DisplayName: Yaw measurement noise (rad)
@@ -1607,7 +1607,7 @@ void NavEKF2::requestYawReset(void)
 // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
 void NavEKF2::writeDefaultAirSpeed(float airspeed)
 {
-    AP::dal().log_writeDefaultAirSpeed2(airspeed);
+    AP::dal().log_writeDefaultAirSpeed2(airspeed,0.0f);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {

@@ -94,6 +94,9 @@ public:
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
 
+    // get raw and filtered distances in 8 directions per layer. used for logging
+    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+
     // get total number of obstacles, used in GPS based Simple Avoidance
     uint8_t get_obstacle_count() const;
     
@@ -111,6 +114,9 @@ public:
     // get number of objects, angle and distance - used for non-GPS avoidance
     uint8_t get_object_count() const;
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
+
+    // get number of layers
+    uint8_t get_num_layers() const;
 
     // get maximum and minimum distances (in meters) of primary sensor
     float distance_max() const;
@@ -135,6 +141,9 @@ public:
 
     Type get_type(uint8_t instance) const;
 
+    // true if raw distances should be logged
+    bool get_raw_log_enable() const { return _raw_log_enable; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -145,6 +154,9 @@ public:
     bool sensor_present() const;
     bool sensor_enabled() const;
     bool sensor_failed() const;
+
+    // set alt as read from downward facing rangefinder. Tilt is already adjusted for
+    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
 
 private:
     static AP_Proximity *_singleton;
@@ -166,6 +178,8 @@ private:
     AP_Int16 _yaw_correction[PROXIMITY_MAX_INSTANCES];
     AP_Int16 _ignore_angle_deg[PROXIMITY_MAX_IGNORE];   // angle (in degrees) of area that should be ignored by sensor (i.e. leg shows up)
     AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
+    AP_Int8 _raw_log_enable;                            // enable logging raw distances
+    AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
 
     void detect_instance(uint8_t instance);
 };
