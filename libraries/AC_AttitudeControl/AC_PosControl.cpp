@@ -125,14 +125,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _VELZ_FLTE
     // @DisplayName: Velocity (vertical) error filter
-    // @Description: Velocity (vertical) error filter.  This filter (in hz) is applied to the input for P and I terms
+    // @Description: Velocity (vertical) error filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _VELZ_FLTD
     // @DisplayName: Velocity (vertical) input filter for D term
-    // @Description: Velocity (vertical) input filter for D term.  This filter (in hz) is applied to the input for D terms
+    // @Description: Velocity (vertical) input filter for D term.  This filter (in Hz) is applied to the input for D terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
@@ -242,20 +242,20 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _VELXY_FILT
     // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for P and I terms
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _VELXY_D_FILT
     // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in hz) is applied to the input for D term
+    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
     // @Param: _VELXY_FF
-    // @DisplayName: Velocity (horizontal) feed forward gains
+    // @DisplayName: Velocity (horizontal) feed forward gain
     // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
     // @Range: 0 6
     // @Increment: 0.01
@@ -404,7 +404,6 @@ void AC_PosControl::set_alt_target_from_climb_rate(float climb_rate_cms, float d
     }
 
     // do not use z-axis desired velocity feed forward
-    // vel_desired set to desired climb rate for reporting and land-detector
     _vel_desired.z = 0.0f;
 }
 
@@ -426,18 +425,18 @@ void AC_PosControl::set_alt_target_from_climb_rate_ff(float climb_rate_cms, floa
     accel_z_cms = constrain_float(accel_z_cms, 0.0f, 750.0f);
 
     // jerk_z is calculated to reach full acceleration in 1000ms.
-    float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
+    const float jerk_z = accel_z_cms * POSCONTROL_JERK_RATIO;
 
-    float accel_z_max = MIN(accel_z_cms, safe_sqrt(2.0f * fabsf(climb_rate_cms - _vel_desired.z) * jerk_z));
+    const float accel_z_max = MIN(accel_z_cms, safe_sqrt(2.0f * fabsf(climb_rate_cms - _vel_desired.z) * jerk_z));
 
     // jerk limit the acceleration increase
     _accel_last_z_cms += jerk_z * dt;
     // jerk limit the decrease as zero error is approached
     _accel_last_z_cms = MIN(_accel_last_z_cms, accel_z_max);
     // remove overshoot during last time step
-    _accel_last_z_cms = MIN(_accel_last_z_cms, fabsf(climb_rate_cms- _vel_desired.z) / dt);
+    _accel_last_z_cms = MIN(_accel_last_z_cms, fabsf(climb_rate_cms - _vel_desired.z) / dt);
 
-    if (is_positive(climb_rate_cms- _vel_desired.z)){
+    if (is_positive(climb_rate_cms - _vel_desired.z)){
         _accel_desired.z = _accel_last_z_cms;
     } else {
         _accel_desired.z = -_accel_last_z_cms;
@@ -640,7 +639,7 @@ void AC_PosControl::run_z_controller()
     _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
 }
 
-// get throttle using vibration resistant calculation (uses feed forward with manually calculated gain)
+// get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
 float AC_PosControl::get_throttle_with_vibration_override()
 {
     _accel_desired.z = 0.0f;
@@ -1007,7 +1006,7 @@ void AC_PosControl::run_xy_controller(float dt)
     const Vector3f &curr_pos = _inav.get_position();
     Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos, _leash, _accel_cms);
 
-    // add velocity feed-forward
+    // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ekfNavVelGainScaler;
     _vel_target.x = vel_target.x;
     _vel_target.y = vel_target.y;
@@ -1024,7 +1023,7 @@ void AC_PosControl::run_xy_controller(float dt)
         _vehicle_horiz_vel.x = _inav.get_velocity().x;
         _vehicle_horiz_vel.y = _inav.get_velocity().y;
     }
-    Vector2f accel_target = _pid_vel_xy.update_all(Vector2f(_vel_target.x, _vel_target.y), _vehicle_horiz_vel, _limit.accel_xy);
+    Vector2f accel_target = _pid_vel_xy.update_all(Vector2f{_vel_target.x, _vel_target.y}, _vehicle_horiz_vel, _limit.accel_xy);
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ekfNavVelGainScaler;
 
@@ -1051,7 +1050,7 @@ void AC_PosControl::run_xy_controller(float dt)
     // limit acceleration using maximum lean angles
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max(), get_lean_angle_max_cd());
     float accel_max = MIN(GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f)), POSCONTROL_ACCEL_XY_MAX);
-    _limit.accel_xy = limit_vector_length(_accel_target.x, _accel_target.y, accel_max);
+    _limit.accel_xy = _accel_target.limit_length_xy(accel_max);
 
     // update angle targets that will be passed to stabilize controller
     accel_to_lean_angles(_accel_target.x, _accel_target.y, _roll_target, _pitch_target);
