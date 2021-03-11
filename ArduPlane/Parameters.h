@@ -128,7 +128,7 @@ public:
         k_param_override_channel,
         k_param_stall_prevention,
         k_param_optflow,
-        k_param_cli_enabled_old, // unused - CLI removed
+        k_param_stall_state,    // was cli_enabled_old
         k_param_trim_rc_at_start, // unused
         k_param_hil_mode,
         k_param_land_disarm_delay,  // unused - moved to AP_Landing
