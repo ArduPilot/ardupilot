@@ -1,10 +1,10 @@
 #include "Copter.h"
+#include <GCS_MAVLink/GCS.h>
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
-    // put your initialisation code here
-    // this will be called once at start-up
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world!";
 }
 #endif
 
