@@ -266,3 +266,16 @@ void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash)
         *hash *= FNV_1_PRIME_64;
     }
 }
+
+/// 8 bit CRC used by the BLHeli and FETtec ESC telemetry protocols
+uint8_t crc8_telem(uint8_t crc, uint8_t crc_seed)
+{
+    uint8_t crc_u = crc;
+    crc_u ^= crc_seed;
+
+    for (uint8_t i=0; i<8; i++) {
+        crc_u = ( crc_u & 0x80 ) ? 0x7 ^ ( crc_u << 1 ) : ( crc_u << 1 );
+    }
+
+    return crc_u;
+}
