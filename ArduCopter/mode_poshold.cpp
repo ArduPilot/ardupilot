@@ -499,29 +499,35 @@ void ModePosHold::run()
     pitch = constrain_float(pitch, -angle_max, angle_max);
 
     AP_Mount *mount = AP::mount();
-    if ((mount != nullptr) && (mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal)) {
-        float angle_deg;
+    if (mount != nullptr){
+
         // allow the pilot to override the yaw_condition command if the commanded yaw is outside the deadband
         // the total range of target_yaw_rate is about -10000 to 10000,
         // set the deadband to 200/10000 or 2% of the total range,
         if ((target_yaw_rate > 200) || (target_yaw_rate < -200)) {
-            angle_deg = target_yaw_rate/1000.0f;
+            auto_yaw.set_mode(AUTO_YAW_RATE);
         }
-        else {
-            angle_deg = mount->get_follow_yaw_rate();
+        else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle){
+            //auto_yaw.yaw() is set when a CMD_DO_MOUNT_CONTROL message is received
+            target_yaw_rate = AP_HAL::micros64() - mount->get_last_mount_control_time_us() < 500000 ? auto_yaw.yaw() : 0;
+            auto_yaw.set_mode(AUTO_YAW_RATE);
         }
-        int8_t direction = 1;
-        bool relative_angle = true;
-        if (angle_deg < 0.0f) {
-            angle_deg = -angle_deg;
-            direction = -1;
+        else if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
+            //only set new yaw command if payload data is recent (1/2 sec)
+            if(AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
+            {
+                float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
+                int8_t direction = 1;
+                bool relative_angle = false;
+
+                // update auto_yaw private variable _fixed_yaw
+                copter.flightmode->auto_yaw.set_fixed_yaw(
+                    angle_deg,
+                    0, // use default angle change rate
+                    direction,
+                    relative_angle);
+            }
         }
-        // update auto_yaw private variable _fixed_yaw
-        copter.flightmode->auto_yaw.set_fixed_yaw(
-            angle_deg,
-            0, // use default angle change rate
-            direction,
-            relative_angle);
     }
 
     // call attitude controller

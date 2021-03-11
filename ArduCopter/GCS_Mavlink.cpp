@@ -623,7 +623,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
                 0);
             if(mount != nullptr)
             {
-            mount->set_last_mount_control_time_us(AP_HAL::micros64());
+                mount->set_last_mount_control_time_us(AP_HAL::micros64());
             }
         }
         else {
