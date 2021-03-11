@@ -161,6 +161,8 @@ uint8_t Plane::readSwitch(void) const
 #else
     // All bets are off.
 
+    if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
+
     uint8_t range_per_mode = 1000 / FLIGHT_MODE_COUNT;
     for (uint8_t i=1; i<FLIGHT_MODE_COUNT; i++) {
         if (pulsewidth < 1000 + (i * range_per_mode)) {
