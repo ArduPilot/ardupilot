@@ -709,9 +709,10 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
         }
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // failing to log a block means that when we go to replay the log
-    // things will almost certainly go sour.
-    if (!ret) {
+    // things will almost certainly go sour.  However, if we are not
+    // logging while disarmed then the EKF can be started and trying
+    // to log things even 'though the backends might be saying "no".
+    if (!ret && log_while_disarmed()) {
         AP_HAL::panic("Failed to log replay block");
     }
 #endif
