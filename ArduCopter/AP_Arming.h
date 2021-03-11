@@ -2,13 +2,8 @@
 
 #include <AP_Arming/AP_Arming.h>
 
-// acecore begin
-#include <GCS_MAVLink/GCS.h>
-// acecore end
-
 class AP_Arming_Copter : public AP_Arming
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "hello world!");
 public:
     friend class Copter;
     friend class ToyMode;

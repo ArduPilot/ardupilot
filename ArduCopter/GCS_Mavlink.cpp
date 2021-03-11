@@ -1282,7 +1282,7 @@ void Copter::mavlink_delay_cb()
     }
     if (tnow - last_5s > 5000) {
         last_5s = tnow;
-        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM");
+        gcs().send_text(MAV_SEVERITY_INFO, "Initialising APM ACECORE");
     }
 
     logger.EnableWrites(true);
