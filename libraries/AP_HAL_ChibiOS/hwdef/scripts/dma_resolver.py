@@ -188,7 +188,7 @@ def generate_DMAMUX_map_mask(peripheral_list, channel_mask, noshare_list, dma_ex
                 else:
                     other = None
 
-                if other is not None and ii in idsets[other]:
+                if other is not None and other in idsets and ii in idsets[other]:
                     if len(idsets[p]) >= len(idsets[other]) and len(idsets[other]) > 0:
                         continue
                     idsets[other].remove(ii)
