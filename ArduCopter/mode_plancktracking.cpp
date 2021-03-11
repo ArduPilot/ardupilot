@@ -38,11 +38,12 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
+    bool set_rate_zero =false;
     if (mount != nullptr) {
       if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
         //only set new yaw command if payload data is recent (1/2 sec)
-        if (mount->get_last_payload_update_us()-AP_HAL::micros64() < 500000)
+        if (AP_HAL::micros64() - mount->get_last_payload_update_us()< 500000)
         {
           float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
           int8_t direction = 1;
@@ -60,21 +61,25 @@ void ModePlanckTracking::run() {
       else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
       {
         paylod_yaw_rate = true;
-        if (mount->get_last_payload_update_us()-AP_HAL::micros64() > 500000)
+        if (AP_HAL::micros64() - mount->get_last_payload_update_us() > 500000)
         {
           copter.flightmode->auto_yaw.set_fixed_yaw(
                 0.0f,
                 0.0f,
                 0,
                 0);
+          set_rate_zero = true;
         }
 
       }
-      AP::logger().Write("PTK1", "TimeUS,Gfyr,Myfm,HPan", "QfBB",
+      AP::logger().Write("PTK1", "TimeUS,Ctus,Gfyr,Myfm,HPan,Lput,Szyr", "QQfBBQB",
+                         AP_HAL::micros64(),
                          AP_HAL::micros64(),
                          (float)mount->get_follow_yaw_rate(),
                          (uint8_t)mount->mount_yaw_follow_mode,
-                         (uint8_t)mount->has_pan_control());
+                         (uint8_t)mount->has_pan_control(),
+                         (uint64_t)mount->get_last_payload_update_us(),
+                         (uint8_t)set_rate_zero);
 
     }
 
