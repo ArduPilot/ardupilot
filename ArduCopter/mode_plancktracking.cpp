@@ -38,7 +38,6 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
-    bool set_rate_zero =false;
     if (mount != nullptr) {
       if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
@@ -68,19 +67,8 @@ void ModePlanckTracking::run() {
                 0.0f,
                 0,
                 0);
-          set_rate_zero = true;
         }
-
       }
-      AP::logger().Write("PTK1", "TimeUS,Ctus,Gfyr,Myfm,HPan,Lput,Szyr", "QQfBBQB",
-                         AP_HAL::micros64(),
-                         AP_HAL::micros64(),
-                         (float)mount->get_follow_yaw_rate(),
-                         (uint8_t)mount->mount_yaw_follow_mode,
-                         (uint8_t)mount->has_pan_control(),
-                         (uint64_t)mount->get_last_payload_update_us(),
-                         (uint8_t)set_rate_zero);
-
     }
 
     //Check for tether high tension

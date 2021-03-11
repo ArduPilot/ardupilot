@@ -236,8 +236,6 @@ void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
  */
 void AP_Mount_Alexmos::parse_body()
 {
-//    float log_encoder_readback = 0;
-//    bool mount_defined = false;
     switch (_command_id ) {
     case CMD_BOARD_INFO:
         _board_version = _buffer.version._board_version/ 10;
@@ -276,8 +274,6 @@ void AP_Mount_Alexmos::parse_body()
         if (mount != nullptr) {
             mount->yaw_encoder_readback = _current_angle.z;
             mount->yaw_encoder_readback_time_us = AP_HAL::micros64();
-            _log_encoder_readback = mount->yaw_encoder_readback;
-            _yaw_follow_mode=mount->mount_yaw_follow_mode;
         }
     }
     break;
@@ -294,29 +290,6 @@ void AP_Mount_Alexmos::parse_body()
         _last_command_confirmed = true;
         break;
 }
-
-
-
-    AP::logger().Write("AMT2", "TimeUS,GTA,BVrs,FVrs,BFTR,MMode,YMode,FMode,Pan", "QBBHHBBBB",
-                                            AP_HAL::micros64(),
-                                            (uint8_t)_gimbal_3axis,
-                                            (uint8_t)_buffer.version._board_version,
-                                            (uint16_t)_buffer.version._firmware_version,
-                                            (uint16_t)_buffer.version._board_features,
-                                            (uint8_t)_state._mode,
-                                            (uint8_t)get_control_mode(_state._yaw_input_mode),
-                                            (uint8_t)_yaw_follow_mode,
-                                            (uint8_t)has_pan_control());
-
-    AP::logger().Write("AMNT", "TimeUS,CmdId,CAngZ,AngZ,EAngZ,SAngz,TAngZ,Enc", "QBffffff",
-                                            AP_HAL::micros64(),
-                                            (uint8_t)_command_id,
-                                            (float)_current_angle.z,
-                                            (float)VALUE_TO_DEGREE(_buffer.angles.angle_yaw),
-                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw),
-                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw),
-                                            (float)degrees(_angle_ef_target_rad.z),
-                                            (float)_log_encoder_readback);
 }
 
 /*
