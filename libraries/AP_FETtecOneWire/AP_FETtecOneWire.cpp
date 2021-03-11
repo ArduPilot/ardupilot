@@ -119,9 +119,7 @@ void AP_FETtecOneWire::update()
                         _telemetry[i][telem_type::VOLT],
                         _telemetry[i][telem_type::CURRENT],
                         _telemetry[i][telem_type::TEMP] * 100U,
-                        _telemetry[i][telem_type::CONSUMPTION],
-                        0,
-                        0);
+                        _telemetry[i][telem_type::CONSUMPTION]);
             }
             _last_log_ms = now;
         }
