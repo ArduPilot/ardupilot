@@ -37,9 +37,9 @@ public:
     int  burnMaxAngleAndConfig();
     void setOutPut(uint8_t mode);
 
-    HAL_Semaphore sem;
-
 private:
+
+    HAL_Semaphore sem;
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 
@@ -98,4 +98,7 @@ private:
 
     uint8_t lowByte;
     uint8_t highByte;
+
+
+    void _timer(void);
 };

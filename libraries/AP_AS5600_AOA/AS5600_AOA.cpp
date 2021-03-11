@@ -44,6 +44,10 @@ bool AS5600_AOA::init()
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
     dev->set_retries(2);
 
+    dev->register_periodic_callback(
+        50000,
+        FUNCTOR_BIND_MEMBER(&AS5600_AOA::_timer, void));
+
     return true;
 }
 
@@ -74,17 +78,31 @@ bool AS5600_AOA::init()
 *******************************************************/
 void AS5600_AOA::update(void)
 {
-  WITH_SEMAPHORE(dev->get_semaphore());
-
-  //uint16_t angleRaw = readTwoBytes(REG_RAW_ANG_HI, REG_RAW_ANG_LO);
-  if (!dev->read_registers(REG_RAW_ANG_HI, &highByte, 1) || !dev->read_registers(REG_RAW_ANG_LO, &lowByte, 1)){
-      return;
-  }
+  WITH_SEMAPHORE(sem);
 
   //Gets the two relevant register values and multiplies by conversion factor to get degrees
   uint16_t angleRaw = ((highByte << 8) | lowByte)*0.087;
 
   AP::logger().Write("AOAR", "TimeUS, Angle", "QH", AP_HAL::micros64(), angleRaw);
+}
+
+
+void AS5600_AOA::_timer(void)
+{
+    uint8_t low, high;
+
+    {
+        WITH_SEMAPHORE(dev->get_semaphore());
+
+        if (!dev->read_registers(REG_RAW_ANG_HI, &high, 1) ||
+            !dev->read_registers(REG_RAW_ANG_LO, &low, 1)){
+            return;
+        }
+    }
+
+    WITH_SEMAPHORE(sem);
+    lowByte = low;
+    highByte = high;
 }
 
 
