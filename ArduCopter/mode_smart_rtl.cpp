@@ -103,7 +103,7 @@ void ModeSmartRTL::path_follow_run()
                 smart_rtl_state = SmartRTL_PreLandPosition;
                 wp_nav->set_wp_destination_NED(dest_NED);
             } else {
-                // peek at the next point
+                // peek at the next point.  this can fail if the IO task currently has the path semaphore
                 Vector3f next_dest_NED;
                 if (g2.smart_rtl.peek_point(next_dest_NED)) {
                     wp_nav->set_wp_destination_NED(dest_NED);
@@ -113,7 +113,8 @@ void ModeSmartRTL::path_follow_run()
                     }
                     wp_nav->set_wp_destination_next_NED(next_dest_NED);
                 } else {
-                    // this should never happen but send next point anyway
+                    // this can only happen if peek failed to take the semaphore
+                    // send next point anyway which will cause the vehicle to slow at the next point
                     wp_nav->set_wp_destination_NED(dest_NED);
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 }
