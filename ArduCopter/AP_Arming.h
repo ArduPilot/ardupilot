@@ -5,7 +5,7 @@
 // acecore begin
 #include <GCS_MAVLink/GCS.h>
 
-gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world! %5.3f", (double)3.142f);
+send_text(MAV_SEVERITY_CRITICAL, "hello world!");
 // acecore end
 
 class AP_Arming_Copter : public AP_Arming
