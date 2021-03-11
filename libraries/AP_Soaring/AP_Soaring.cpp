@@ -153,7 +153,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
 
-    // @Param: THML_ARSPD
+    // @Param: CRSE_ARSPD
     // @DisplayName: Specific setting for airspeed when cruising.
     // @Description: If non-zero this airspeed will be used when cruising.
     // @Range: 5 50
