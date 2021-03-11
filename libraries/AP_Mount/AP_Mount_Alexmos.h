@@ -329,5 +329,4 @@ private:
 
     // Responsiveness of the gimbal to recenter with the vehicle
     float gimbal_yaw_scale;
-
 };

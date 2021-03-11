@@ -38,11 +38,11 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
-    if (mount != nullptr) {
+    if(mount != nullptr) {
       if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
         //only set new yaw command if payload data is recent (1/2 sec)
-        if (AP_HAL::micros64() - mount->get_last_payload_update_us()< 500000)
+        if (AP_HAL::micros64() - mount->get_last_payload_update_us() < 500000)
         {
           float angle_deg = mount->get_follow_yaw_rate() + degrees(copter.ahrs.get_yaw());
           int8_t direction = 1;
@@ -60,7 +60,7 @@ void ModePlanckTracking::run() {
       else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle)
       {
         paylod_yaw_rate = true;
-        if (AP_HAL::micros64() - mount->get_last_payload_update_us() > 500000)
+        if(AP_HAL::micros64() - mount->get_last_mount_control_time_us() > 500000)
         {
           copter.flightmode->auto_yaw.set_fixed_yaw(
                 0.0f,

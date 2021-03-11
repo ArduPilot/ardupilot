@@ -438,7 +438,8 @@ void AP_Mount::init()
 
     AP_Mount::yaw_encoder_readback = 0.0; // readback yaw encoder position from the gimbal
     AP_Mount::yaw_encoder_readback_time_us = 0;
-    last_payload_update_us = 0;
+    last_mount_control_time_us = 0;
+
     // default is gimbal yaw follows the vehicle, use yaw encoder to move gimbal with the vehicle
     AP_Mount::mount_yaw_follow_mode = gimbal_yaw_follows_vehicle;
 

@@ -1,7 +1,6 @@
 ﻿#include "AP_Mount_Alexmos.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -15,9 +14,6 @@ void AP_Mount_Alexmos::init()
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
     }
-
-  _log_encoder_readback = 0.0f;
-  _yaw_follow_mode = 7;
 
     // Responsiveness of the gimbal to recenter with the vehicle
     gimbal_yaw_scale = 1.0/20.0f;
@@ -237,59 +233,59 @@ void AP_Mount_Alexmos::send_command(uint8_t cmd, uint8_t* data, uint8_t size)
 void AP_Mount_Alexmos::parse_body()
 {
     switch (_command_id ) {
-    case CMD_BOARD_INFO:
-        _board_version = _buffer.version._board_version/ 10;
-        _current_firmware_version = _buffer.version._firmware_version / 1000.0f ;
-        _firmware_beta_version = _buffer.version._firmware_version % 10 ;
-        _gimbal_3axis = (_buffer.version._board_features & 0x1);
-        _gimbal_bat_monitoring = (_buffer.version._board_features & 0x2);
+        case CMD_BOARD_INFO:
+            _board_version = _buffer.version._board_version/ 10;
+            _current_firmware_version = _buffer.version._firmware_version / 1000.0f ;
+            _firmware_beta_version = _buffer.version._firmware_version % 10 ;
+            _gimbal_3axis = (_buffer.version._board_features & 0x1);
+            _gimbal_bat_monitoring = (_buffer.version._board_features & 0x2);
+            break;
+
+        case CMD_GET_ANGLES:
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
+            break;
+
+        case CMD_GET_ANGLES_EXT:
+        {
+            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
+            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
+            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
+            if (_state._roll_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_roll);
+            }
+            if (_state._pitch_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
+                _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_pitch);
+            }
+            // The yaw angle reported by the IMU (angle_yaw) is very unreliable
+            // so use the body frame angle (stator_rotor_angle_yaw) unless
+            // the user specifically requests it (AP_Mount::Input_Mode_Angle_Absolute_Frame)
+            if (_state._yaw_input_mode != AP_Mount::Input_Mode_Angle_Absolute_Frame) {
+                _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw);
+            }
+
+            // make yaw encoder value visible outside the AP_Mount class
+            AP_Mount *mount = AP::mount();
+            if (mount != nullptr) {
+                mount->yaw_encoder_readback = _current_angle.z;
+                mount->yaw_encoder_readback_time_us = AP_HAL::micros64();
+            }
+        }
         break;
 
-    case CMD_GET_ANGLES:
-        _current_angle.x = VALUE_TO_DEGREE(_buffer.angles.angle_roll);
-        _current_angle.y = VALUE_TO_DEGREE(_buffer.angles.angle_pitch);
-        _current_angle.z = VALUE_TO_DEGREE(_buffer.angles.angle_yaw);
-        break;
+        case CMD_READ_PARAMS:
+            _param_read_once = true;
+            _current_parameters.params = _buffer.params;
+            break;
 
-    case CMD_GET_ANGLES_EXT:
-    {
-        _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.angle_roll);
-        _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.angle_pitch);
-        _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw);
-        if (_state._roll_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
-            _current_angle.x = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_roll);
-        }
-        if (_state._pitch_input_mode == AP_Mount::Input_Mode_Angle_Body_Frame) {
-            _current_angle.y = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_pitch);
-        }
-        // The yaw angle reported by the IMU (angle_yaw) is very unreliable
-        // so use the body frame angle (stator_rotor_angle_yaw) unless
-        // the user specifically requests it (AP_Mount::Input_Mode_Angle_Absolute_Frame)
-        if (_state._yaw_input_mode != AP_Mount::Input_Mode_Angle_Absolute_Frame) {
-            _current_angle.z = VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw);
-        }
+        case CMD_WRITE_PARAMS:
+            break;
 
-        // make yaw encoder value visible outside the AP_Mount class
-        AP_Mount *mount = AP::mount();
-        if (mount != nullptr) {
-            mount->yaw_encoder_readback = _current_angle.z;
-            mount->yaw_encoder_readback_time_us = AP_HAL::micros64();
-        }
+        default :
+            _last_command_confirmed = true;
+            break;
     }
-    break;
-
-    case CMD_READ_PARAMS:
-        _param_read_once = true;
-        _current_parameters.params = _buffer.params;
-        break;
-
-    case CMD_WRITE_PARAMS:
-        break;
-
-    default :
-        _last_command_confirmed = true;
-        break;
-}
 }
 
 /*

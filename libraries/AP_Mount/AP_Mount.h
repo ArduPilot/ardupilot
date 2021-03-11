@@ -147,15 +147,18 @@ public:
 
     float get_min_yaw_alt_cm() { return _min_yaw_alt_cm; };
 
-    uint64_t get_last_payload_update_us() { return last_payload_update_us; };
-    void set_last_payload_update_us(uint64_t time_us) {  last_payload_update_us=time_us; };
+    uint64_t get_last_payload_update_us() { return yaw_encoder_readback_time_us; };
 
+    uint64_t get_last_mount_control_time_us() { return last_mount_control_time_us; };
+
+    void set_last_mount_control_time_us(uint64_t time_us) {  last_mount_control_time_us=time_us; };
 
 protected:
 
     float yaw_encoder_readback;
+
     uint64_t yaw_encoder_readback_time_us;
-    uint64_t last_payload_update_us;
+    uint64_t last_mount_control_time_us;
 
     static AP_Mount *_singleton;
 
