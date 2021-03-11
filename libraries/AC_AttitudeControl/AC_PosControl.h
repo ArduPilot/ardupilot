@@ -340,7 +340,7 @@ protected:
     //          init_takeoff
     void run_z_controller();
 
-    // get throttle using vibration resistant calculation (uses feed forward with manually calculated gain)
+    // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
 
     // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
