@@ -1256,58 +1256,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
     }     // end switch
 } // end handle mavlink
 
-// begin Acecore
-// allow override of RC channel values for HIL or for complete GCS
-// control of switch position and RC PWM values.
-void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    if(msg.sysid != sysid_my_gcs()) {
-        return; // Only accept control from our gcs
-    }
-
-    const uint32_t tnow = AP_HAL::millis();
-
-    mavlink_rc_channels_override_t packet;
-    mavlink_msg_rc_channels_override_decode(&msg, &packet);
-
-    const uint16_t override_data[] = {
-        packet.chan1_raw,
-        packet.chan2_raw,
-        packet.chan3_raw,
-        packet.chan4_raw,
-        packet.chan5_raw,
-        packet.chan6_raw,
-        packet.chan7_raw,
-        packet.chan8_raw,
-        packet.chan9_raw,
-        packet.chan10_raw,
-        packet.chan11_raw,
-        packet.chan12_raw,
-        packet.chan13_raw,
-        packet.chan14_raw,
-        packet.chan15_raw,
-        packet.chan16_raw
-    };
-
-    for (uint8_t i=0; i<8; i++) {
-        // Per MAVLink spec a value of UINT16_MAX means to ignore this field.
-        if (override_data[i] != UINT16_MAX) {
-            RC_Channels::set_override(i, override_data[i], tnow);
-        }
-    }
-    for (uint8_t i=8; i<ARRAY_SIZE(override_data); i++) {
-        // Per MAVLink spec a value of zero or UINT16_MAX means to
-        // ignore this field.
-        if (override_data[i] != 0 && override_data[i] != UINT16_MAX) {
-            // per the mavlink spec, a value of UINT16_MAX-1 means
-            // return the field to RC radio values:
-            const uint16_t value = override_data[i] == (UINT16_MAX-1) ? 0 : override_data[i];
-            RC_Channels::set_override(i, value, tnow);
-        }
-    }
-}
-// end Acecore
-
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
  *  callback in long running library initialisation routines to allow
