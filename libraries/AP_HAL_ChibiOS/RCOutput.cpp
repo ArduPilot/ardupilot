@@ -1927,9 +1927,7 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
 
     // we must hold the LED mutex while resizing the array
     WITH_SEMAPHORE(grp->serial_led_mutex);
-    // if already allocated then return
-    if (grp->serial_nleds > 0 || num_leds == 0
-         || (mode != MODE_NEOPIXEL && mode != MODE_PROFILED)) {
+    if (num_leds == 0 || (mode != MODE_NEOPIXEL && mode != MODE_PROFILED)) {
         return false;
     }
 
