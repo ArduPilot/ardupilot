@@ -169,12 +169,12 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
 Vector2f sqrt_controller(const Vector2f& error, float p, float second_ord_lim, float dt)
 {
     const float error_length = error.length();
-    const float correction_length = sqrt_controller(error_length, p, second_ord_lim, dt);
-    if (is_positive(error_length)) {
-        return error * (correction_length / error_length);
-    } else {
-        return Vector2f(0.0f, 0.0f);
+    if (!is_positive(error_length)) {
+        return Vector2f{};
     }
+
+    const float correction_length = sqrt_controller(error_length, p, second_ord_lim, dt);
+    return error * (correction_length / error_length);
 }
 
 // inverse of the sqrt controller.  calculates the input (aka error) to the sqrt_controller required to achieve a given output
@@ -193,9 +193,8 @@ float inv_sqrt_controller(float output, float p, float D_max)
         // P term is zero but we have a second order limit.
         if (is_positive(D_max)) {
             return sq(output)/(2*D_max);
-        } else {
-            return -sq(output)/(2*D_max);
         }
+        return -sq(output)/(2*D_max);
     }
 
     // both the P and second order limit have been defined.
@@ -203,9 +202,8 @@ float inv_sqrt_controller(float output, float p, float D_max)
     if (output > linear_out) {
         if (is_positive(D_max)) {
             return sq(output)/(2*D_max) + D_max/(4*sq(p));
-        } else {
-            return -sq(output)/(2*D_max) + D_max/(4*sq(p));
         }
+        return -sq(output)/(2*D_max) + D_max/(4*sq(p));
     }
 
     return output / p;
@@ -216,9 +214,11 @@ float stopping_distance(float velocity, float p, float accel_max)
 {
     if (is_positive(accel_max) && is_zero(p)) {
         return (velocity * velocity) / (2.0f * accel_max);
-    } else if ((is_negative(accel_max) || is_zero(accel_max)) && !is_zero(p)) {
+    }
+    if ((is_negative(accel_max) || is_zero(accel_max)) && !is_zero(p)) {
         return velocity / p;
-    } else if ((is_negative(accel_max) || is_zero(accel_max)) && is_zero(p)) {
+    }
+    if ((is_negative(accel_max) || is_zero(accel_max)) && is_zero(p)) {
         return 0.0f;
     }
 
@@ -228,67 +228,46 @@ float stopping_distance(float velocity, float p, float accel_max)
     if (fabsf(velocity) < linear_velocity) {
         // if our current velocity is below the cross-over point we use a linear function
         return velocity / p;
-    } else {
-        const float linear_dist = accel_max / sq(p);
-        const float stopping_dist = (linear_dist * 0.5f) + sq(velocity) / (2.0f * accel_max);
-        if (is_positive(velocity)) {
-            return stopping_dist;
-        } else {
-            return -stopping_dist;
-        }
     }
-}
 
-// limit vector to a given length, returns true if vector was limited
-bool limit_vector_length(float &vector_x, float &vector_y, float max_length)
-{
-    const float vector_length = norm(vector_x, vector_y);
-    if ((vector_length > max_length) && is_positive(vector_length)) {
-        vector_x *= (max_length / vector_length);
-        vector_y *= (max_length / vector_length);
-        return true;
-    }
-    return false;
+    const float linear_dist = accel_max / sq(p);
+    const float stopping_dist = (linear_dist * 0.5f) + sq(velocity) / (2.0f * accel_max);
+    return is_positive(velocity) ? stopping_dist : -stopping_dist;
 }
 
 // calculate the maximum acceleration or velocity in a given direction
 // based on horizontal and vertical limits.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float max_z_neg)
 {
-    max_xy = fabsf(max_xy);
-    max_z_pos = fabsf(max_z_pos);
-    max_z_neg = fabsf(max_z_neg);
-
     if (is_zero(direction.length_squared())) {
         return 0.0f;
     }
+
+    max_xy = fabsf(max_xy);
+    max_z_pos = fabsf(max_z_pos);
+    max_z_neg = fabsf(max_z_neg);
 
     direction.normalize();
     const float xy_length = Vector2f{direction.x, direction.y}.length();
 
     if (is_zero(xy_length)) {
-        if (is_positive(direction.z)) {
-            return max_z_pos;
-        } else {
-            return max_z_neg;
-        }
-    } else if (is_zero(direction.z)) {
-        return max_xy;
-    } else {
-        const float slope = direction.z/xy_length;
-        if (is_positive(slope)) {
-            if (fabsf(slope) < max_z_pos/max_xy) {
-                return max_xy/xy_length;
-            } else {
-                return fabsf(max_z_pos/direction.z);
-            }
-        } else {
-            if (fabsf(slope) < max_z_neg/max_xy) {
-                return max_xy/xy_length;
-            } else {
-                return fabsf(max_z_neg/direction.z);
-            }
-        }
+        return is_positive(direction.z) ? max_z_pos : max_z_neg;
     }
-    return 0.0f;
+
+    if (is_zero(direction.z)) {
+        return max_xy;
+    }
+
+    const float slope = direction.z/xy_length;
+    if (is_positive(slope)) {
+        if (fabsf(slope) < max_z_pos/max_xy) {
+            return max_xy/xy_length;
+        }
+        return fabsf(max_z_pos/direction.z);
+    }
+
+    if (fabsf(slope) < max_z_neg/max_xy) {
+        return max_xy/xy_length;
+    }
+    return fabsf(max_z_neg/direction.z);
 }
