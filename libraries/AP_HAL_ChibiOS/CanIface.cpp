@@ -88,11 +88,20 @@ extern AP_HAL::HAL& hal;
 using namespace ChibiOS;
 
 constexpr bxcan::CanType* const CANIface::Can[];
-static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
+static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES];
 
-static inline void handleTxInterrupt(uint8_t iface_index)
+uint8_t CANIface::next_interface;
+
+// mapping from logical interface to physical. First physical is 0, first logical is 0
+static constexpr uint8_t can_interfaces[HAL_NUM_CAN_IFACES] = { HAL_CAN_INTERFACE_LIST };
+
+// mapping from physical interface back to logical. First physical is 0, first logical is 0
+static constexpr int8_t can_iface_to_idx[3] = { HAL_CAN_INTERFACE_REV_LIST };
+
+static inline void handleTxInterrupt(uint8_t phys_index)
 {
-    if (iface_index >= HAL_NUM_CAN_IFACES) {
+    const int8_t iface_index = can_iface_to_idx[phys_index];
+    if (iface_index < 0 || iface_index >= HAL_NUM_CAN_IFACES) {
         return;
     }
     uint64_t precise_time = AP_HAL::micros64();
@@ -104,9 +113,10 @@ static inline void handleTxInterrupt(uint8_t iface_index)
     }
 }
 
-static inline void handleRxInterrupt(uint8_t iface_index, uint8_t fifo_index)
+static inline void handleRxInterrupt(uint8_t phys_index, uint8_t fifo_index)
 {
-    if (iface_index >= HAL_NUM_CAN_IFACES) {
+    const int8_t iface_index = can_iface_to_idx[phys_index];
+    if (iface_index < 0 || iface_index >= HAL_NUM_CAN_IFACES) {
         return;
     }
     uint64_t precise_time = AP_HAL::micros64();
@@ -139,6 +149,11 @@ CANIface::CANIface(uint8_t index) :
         can_ = Can[index];
     }
 }
+
+// constructor suitable for array
+CANIface::CANIface() :
+    CANIface(next_interface++)
+{}
 
 bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
 {
@@ -735,18 +750,27 @@ void CANIface::initOnce(bool enable_irq)
      */
     {
         CriticalSectionLocker lock;
-        if (self_index_ == 0) {
+        switch (can_interfaces[self_index_]) {
+        case 0:
             RCC->APB1ENR  |=  RCC_APB1ENR_CAN1EN;
             RCC->APB1RSTR |=  RCC_APB1RSTR_CAN1RST;
             RCC->APB1RSTR &= ~RCC_APB1RSTR_CAN1RST;
-        }
-# if HAL_NUM_CAN_IFACES > 1
-        else if (self_index_ == 1) {
+            break;
+#ifdef RCC_APB1ENR_CAN2EN
+        case 1:
             RCC->APB1ENR  |=  RCC_APB1ENR_CAN2EN;
             RCC->APB1RSTR |=  RCC_APB1RSTR_CAN2RST;
             RCC->APB1RSTR &= ~RCC_APB1RSTR_CAN2RST;
+            break;
+#endif
+#ifdef RCC_APB1ENR_CAN3EN
+        case 2:
+            RCC->APB1ENR  |=  RCC_APB1ENR_CAN3EN;
+            RCC->APB1RSTR |=  RCC_APB1RSTR_CAN3RST;
+            RCC->APB1RSTR &= ~RCC_APB1RSTR_CAN3RST;
+            break;
+#endif
         }
-# endif
     }
 
     /*
@@ -754,18 +778,27 @@ void CANIface::initOnce(bool enable_irq)
      */
     if (!irq_init_ && enable_irq) {
         CriticalSectionLocker lock;
-        if (self_index_ == 0) {
+        switch (can_interfaces[self_index_]) {
+        case 0:
             nvicEnableVector(CAN1_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN1_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN1_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
-        }
-# if HAL_NUM_CAN_IFACES > 1
-        else if (self_index_ == 1) {
+            break;
+#ifdef CAN2_TX_IRQn
+        case 1:
             nvicEnableVector(CAN2_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN2_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(CAN2_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
+#endif
+#ifdef CAN3_TX_IRQn
+        case 2:
+            nvicEnableVector(CAN3_TX_IRQn,  CORTEX_MAX_KERNEL_PRIORITY);
+            nvicEnableVector(CAN3_RX0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            nvicEnableVector(CAN3_RX1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
+#endif
         }
-# endif
         irq_init_ = true;
     }
 }
@@ -935,7 +968,8 @@ void CANIface::get_stats(ExpandingString &str)
  */
 extern "C"
 {
-
+#ifdef HAL_CAN_IFACE1_ENABLE
+    // CAN1
     CH_IRQ_HANDLER(CAN1_TX_IRQ_Handler);
     CH_IRQ_HANDLER(CAN1_TX_IRQ_Handler)
     {
@@ -959,21 +993,10 @@ extern "C"
         handleRxInterrupt(0, 1);
         CH_IRQ_EPILOGUE();
     }
-
-#if HAL_NUM_CAN_IFACES > 1
-
-#if !defined(CAN2_TX_IRQ_Handler)
-# error "Misconfigured build1"
 #endif
 
-#if !defined(CAN2_RX0_IRQ_Handler)
-# error "Misconfigured build2"
-#endif
-
-#if !defined(CAN2_RX1_IRQ_Handler)
-# error "Misconfigured build3"
-#endif
-
+#ifdef HAL_CAN_IFACE2_ENABLE
+    // CAN2
     CH_IRQ_HANDLER(CAN2_TX_IRQ_Handler);
     CH_IRQ_HANDLER(CAN2_TX_IRQ_Handler)
     {
@@ -997,9 +1020,35 @@ extern "C"
         handleRxInterrupt(1, 1);
         CH_IRQ_EPILOGUE();
     }
+#endif
 
-# endif
+#ifdef HAL_CAN_IFACE3_ENABLE
+    // CAN3
+    CH_IRQ_HANDLER(CAN3_TX_IRQ_Handler);
+    CH_IRQ_HANDLER(CAN3_TX_IRQ_Handler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleTxInterrupt(2);
+        CH_IRQ_EPILOGUE();
+    }
 
+    CH_IRQ_HANDLER(CAN3_RX0_IRQ_Handler);
+    CH_IRQ_HANDLER(CAN3_RX0_IRQ_Handler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleRxInterrupt(2, 0);
+        CH_IRQ_EPILOGUE();
+    }
+
+    CH_IRQ_HANDLER(CAN3_RX1_IRQ_Handler);
+    CH_IRQ_HANDLER(CAN3_RX1_IRQ_Handler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleRxInterrupt(2, 1);
+        CH_IRQ_EPILOGUE();
+    }
+#endif
+    
 } // extern "C"
 
 #endif //!defined(STM32H7XX)
