@@ -135,6 +135,12 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
         }    
 }
 
+void RC_Channel_Plane::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
+{
+    plane.mission.start();
+    plane.prev_WP_loc = plane.current_loc;
+}
+
 void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
                                          const RC_Channel::AuxSwitchPos ch_flag)
 {

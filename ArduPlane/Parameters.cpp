@@ -650,12 +650,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
 
-    // @Param: RST_MISSION_CH
-    // @DisplayName: Reset Mission Channel
-    // @Description: Enables a channel to reset the mission to the first waypoint. Mission restart is triggered by channel rising above 1750 PWM. 0 disables.
-    // @User: Advanced
-    GSCALAR(reset_mission_chan,      "RST_MISSION_CH",  0),
-
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
     // @Description: Target airspeed in cm/s in automatic throttle modes. Value is as an indicated (calibrated/apparent) airspeed.
