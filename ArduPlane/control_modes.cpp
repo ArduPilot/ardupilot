@@ -131,13 +131,6 @@ void Plane::read_control_switch()
 
     switch_debouncer = false;
 
-#if PARACHUTE == ENABLED
-    if (g.parachute_channel > 0) {
-        if (RC_Channels::get_radio_in(g.parachute_channel-1) >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
-            parachute_manual_release();
-        }
-    }
-#endif
 }
 
 uint8_t Plane::readSwitch(void) const
