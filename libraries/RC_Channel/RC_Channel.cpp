@@ -189,6 +189,7 @@ int16_t RC_Channel::get_control_mid() const
   return an "angle in centidegrees" (normally -4500 to 4500) from
   the current radio_in value using the specified dead_zone
  */
+#define DEBUG 1
 int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
     int16_t radio_trim_high = _trim + _dead_zone;
@@ -199,13 +200,28 @@ int16_t RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) co
     // don't allow out of range values
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
+    float result;
     if (r_in > radio_trim_high && radio_max != radio_trim_high) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+        result = reverse_mul * ((float)high_in * (float)(r_in - radio_trim_high)) / (float)(radio_max  - radio_trim_high);
     } else if (r_in < radio_trim_low && radio_trim_low != radio_min) {
-        return reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+        result = reverse_mul * ((float)high_in * (float)(r_in - radio_trim_low)) / (float)(radio_trim_low - radio_min);
     } else {
-        return 0;
+        result = 0;
     }
+#if DEBUG
+    int16_t iresult;
+    if (r_in > radio_trim_high && radio_max != radio_trim_high) {
+        iresult = reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_high)) / (int32_t)(radio_max  - radio_trim_high);
+    } else if (r_in < radio_trim_low && radio_trim_low != radio_min) {
+        iresult = reverse_mul * ((int32_t)high_in * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_trim_low - radio_min);
+    } else {
+        iresult = 0;
+    }
+    AP::logger().Write("NRM", "TimeUS,I,old,new,diff", "s#---", "-----", "QBdff",
+            AP_HAL::micros64(), ch_in,
+            iresult, result, result-iresult);
+#endif
+    return result;
 }
 
 /*
@@ -272,7 +288,6 @@ int16_t RC_Channel::get_control_in_zero_dz(void) const
 }
 
 // ------------------------------------------
-#define DEBUG 1
 float RC_Channel::norm_input() const
 {
     float result = (float)control_in_zero_dz / high_in;
