@@ -96,21 +96,32 @@ using namespace ChibiOS;
 #endif
 
 constexpr CANIface::CanType* const CANIface::Can[];
-static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
+static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES];
+
+uint8_t CANIface::next_interface;
+
+// mapping from logical interface to physical. First physical is 0, first logical is 0
+static constexpr uint8_t can_interfaces[HAL_NUM_CAN_IFACES] = { HAL_CAN_INTERFACE_LIST };
+
+// mapping from physical interface back to logical. First physical is 0, first logical is 0
+static constexpr int8_t can_iface_to_idx[3] = { HAL_CAN_INTERFACE_REV_LIST };
+
 #define REG_SET_TIMEOUT 250 // if it takes longer than 250ms for setting a register we have failed
+
 static inline bool driver_initialised(uint8_t iface_index)
 {
-    if (iface_index >= HAL_NUM_CAN_IFACES) {
-        return false;
-    }
     if (can_ifaces[iface_index] == nullptr) {
         return false;
     }
     return true;
 }
 
-static inline void handleCANInterrupt(uint8_t iface_index, uint8_t line_index)
+static inline void handleCANInterrupt(uint8_t phys_index, uint8_t line_index)
 {
+    const int8_t iface_index = can_iface_to_idx[phys_index];
+    if (iface_index < 0 || iface_index >= HAL_NUM_CAN_IFACES) {
+        return;
+    }
     if (!driver_initialised(iface_index)) {
         //Just reset all the interrupts and return
         CANIface::Can[iface_index]->IR = FDCAN_IR_RF0N;
@@ -160,6 +171,11 @@ CANIface::CANIface(uint8_t index) :
         can_ = Can[index];
     }
 }
+
+// constructor suitable for array
+CANIface::CANIface() :
+    CANIface(next_interface++)
+{}
 
 void CANIface::handleBusOffInterrupt()
 {
@@ -548,16 +564,20 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
      */
     if (!irq_init_) {
         CriticalSectionLocker lock;
-        if (self_index_ == 0) {
+        switch (can_interfaces[self_index_]) {
+        case 0:
             nvicEnableVector(FDCAN1_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN1_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
-        }
-# if HAL_NUM_CAN_IFACES > 1
-        else if (self_index_ == 1) {
+            break;
+        case 1:
             nvicEnableVector(FDCAN2_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN2_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
+        case 2:
+            nvicEnableVector(FDCAN3_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            nvicEnableVector(FDCAN3_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
         }
-# endif
         irq_init_ = true;
     }
 
@@ -679,12 +699,13 @@ void CANIface::clear_rx()
 void CANIface::setupMessageRam()
 {
 #if defined(STM32G4)
-    memset((void*)SRAMCAN_BASE, 0, 0x350);
-    MessageRam_.StandardFilterSA = SRAMCAN_BASE;
-    MessageRam_.ExtendedFilterSA = SRAMCAN_BASE + 0x70;
-    MessageRam_.RxFIFO0SA = SRAMCAN_BASE + 0xB0;
-    MessageRam_.RxFIFO1SA = SRAMCAN_BASE + 0x188;
-    MessageRam_.TxFIFOQSA = SRAMCAN_BASE + 0x278;
+    const uint32_t base = SRAMCAN_BASE + 0x350 * can_interfaces[self_index_];
+    memset((void*)base, 0, 0x350);
+    MessageRam_.StandardFilterSA = base;
+    MessageRam_.ExtendedFilterSA = base + 0x70;
+    MessageRam_.RxFIFO0SA = base + 0xB0;
+    MessageRam_.RxFIFO1SA = base + 0x188;
+    MessageRam_.TxFIFOQSA = base + 0x278;
 
     can_->TXBC = 0; // fifo mode
 #else
@@ -997,7 +1018,7 @@ bool CANIface::select(bool &read, bool &write,
         }
         time = AP_HAL::micros();
     }
-    return true; // Return value doesn't matter as long as it is non-negative
+    return false;
 }
 
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
@@ -1032,7 +1053,8 @@ void CANIface::get_stats(ExpandingString &str)
  */
 extern "C"
 {
-
+#ifdef HAL_CAN_IFACE1_ENABLE
+    // FDCAN1
     CH_IRQ_HANDLER(FDCAN1_IT0_IRQHandler);
     CH_IRQ_HANDLER(FDCAN1_IT0_IRQHandler)
     {
@@ -1048,10 +1070,10 @@ extern "C"
         handleCANInterrupt(0, 1);
         CH_IRQ_EPILOGUE();
     }
+#endif
 
-
-# if HAL_NUM_CAN_IFACES > 1
-
+#ifdef HAL_CAN_IFACE2_ENABLE
+    // FDCAN2
     CH_IRQ_HANDLER(FDCAN2_IT0_IRQHandler);
     CH_IRQ_HANDLER(FDCAN2_IT0_IRQHandler)
     {
@@ -1067,9 +1089,27 @@ extern "C"
         handleCANInterrupt(1, 1);
         CH_IRQ_EPILOGUE();
     }
+#endif
 
-# endif
+#ifdef HAL_CAN_IFACE3_ENABLE
+    // FDCAN3
+    CH_IRQ_HANDLER(FDCAN3_IT0_IRQHandler);
+    CH_IRQ_HANDLER(FDCAN3_IT0_IRQHandler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleCANInterrupt(2, 0);
+        CH_IRQ_EPILOGUE();
+    }
 
+    CH_IRQ_HANDLER(FDCAN3_IT1_IRQHandler);
+    CH_IRQ_HANDLER(FDCAN3_IT1_IRQHandler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleCANInterrupt(2, 1);
+        CH_IRQ_EPILOGUE();
+    }
+#endif
+    
 } // extern "C"
 
 #endif //defined(STM32H7XX) || defined(STM32G4)

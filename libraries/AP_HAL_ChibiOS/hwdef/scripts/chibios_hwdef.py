@@ -615,10 +615,40 @@ def make_line(label):
     return line
 
 
-def enable_can(f, num_ifaces):
+def enable_can(f):
     '''setup for a CAN enabled board'''
-    f.write('#define HAL_NUM_CAN_IFACES %d\n' % num_ifaces)
-    env_vars['HAL_NUM_CAN_IFACES'] = str(num_ifaces)
+    global mcu_series
+    if mcu_series.startswith("STM32H7") or mcu_series.startswith("STM32G4"):
+        prefix = "FDCAN"
+        cast = "CanType"
+    else:
+        prefix = "CAN"
+        cast = "bxcan::CanType"
+
+    # allow for optional CAN_ORDER option giving bus order
+    can_order_str = get_config('CAN_ORDER', required=False, aslist=True)
+    if can_order_str:
+        can_order = [int(s) for s in can_order_str]
+    else:
+        can_order = []
+        for i in range(1,3):
+            if 'CAN%u' % i in bytype:
+                can_order.append(i)
+
+    base_list = []
+    for i in can_order:
+        base_list.append("reinterpret_cast<%s*>(uintptr_t(%s%s_BASE))" % (cast, prefix, i))
+        f.write("#define HAL_CAN_IFACE%u_ENABLE\n" % i)
+
+    can_rev_order = [-1]*3
+    for i in range(len(can_order)):
+        can_rev_order[can_order[i]-1] = i
+
+    f.write('#define HAL_CAN_INTERFACE_LIST %s\n' % ','.join([str(i-1) for i in can_order]))
+    f.write('#define HAL_CAN_INTERFACE_REV_LIST %s\n' % ','.join([str(i) for i in can_rev_order]))
+    f.write('#define HAL_CAN_BASE_LIST %s\n' % ','.join(base_list))
+    f.write('#define HAL_NUM_CAN_IFACES %d\n' % len(base_list))
+    env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
 
 def has_sdcard_spi():
@@ -710,10 +740,7 @@ def write_mcu_config(f):
             f.write('#define %s\n' % d[7:])
 
     if have_type_prefix('CAN') and not using_chibios_can:
-        if 'CAN1' in bytype and 'CAN2' in bytype:
-            enable_can(f, 2)
-        else:
-            enable_can(f, 1)
+        enable_can(f)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     env_vars['BOARD_FLASH_SIZE'] = flash_size
