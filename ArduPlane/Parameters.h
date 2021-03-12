@@ -67,7 +67,7 @@ public:
         k_param_land_pitch_cd,  // unused - moved to AP_Landing
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
-        k_param_reset_mission_chan,
+        k_param_reset_mission_chan, // unused - moved to RC option
         k_param_land_flare_alt, // unused - moved to AP_Landing
         k_param_land_flare_sec, // unused - moved to AP_Landing
         k_param_crosstrack_min_distance, // unused
@@ -447,7 +447,6 @@ public:
     AP_Int16 num_resets;
     AP_Int32 log_bitmask;
     AP_Int8 reset_switch_chan;
-    AP_Int8 reset_mission_chan;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
