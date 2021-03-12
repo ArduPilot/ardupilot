@@ -207,8 +207,8 @@ int32_t AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool
     }
 
     // convert AC_PID info object to same scale as old controller
-    _pid_info_ac_pid = rate_pid.get_pid_info();
-    auto &pinfo = _pid_info_ac_pid;
+    _pid_info = rate_pid.get_pid_info();
+    auto &pinfo = _pid_info;
 
     const float deg_scale = degrees(1);
     pinfo.FF = ff;
