@@ -1594,6 +1594,57 @@ class AutoTestPlane(AutoTest):
     def deadreckoning_no_airspeed_sensor(self):
         self.deadreckoning_main(disable_airspeed_sensor=True)
 
+    def climb_before_turn(self):
+        self.wait_ready_to_arm()
+        self.set_parameter("FLIGHT_OPTIONS", 0)
+        self.set_parameter("ALT_HOLD_RTL", 8000)
+        takeoff_alt = 40
+        self.takeoff(alt=takeoff_alt)
+        self.change_mode("CRUISE")
+        self.wait_distance_to_home(500, 1000, timeout=60)
+        self.change_mode("RTL")
+        expected_alt = self.get_parameter("ALT_HOLD_RTL") / 100.0
+
+        home = self.home_position_as_mav_location()
+        distance = self.get_distance(home, self.mav.location())
+
+        self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True)
+
+        new_distance = self.get_distance(home, self.mav.location())
+        # We should be closer to home.
+        if new_distance > distance:
+            raise NotAchievedException(
+                "Expected to be closer to  home (was %fm, now %fm)."
+                % (distance, new_distance)
+            )
+
+        self.fly_home_land_and_disarm()
+        self.change_mode("MANUAL")
+        self.set_rc(3, 1000)
+
+        self.wait_ready_to_arm()
+        self.set_parameter("FLIGHT_OPTIONS", 16)
+        self.set_parameter("ALT_HOLD_RTL", 10000)
+        self.takeoff(alt=takeoff_alt)
+        self.change_mode("CRUISE")
+        self.wait_distance_to_home(500, 1000, timeout=60)
+        self.change_mode("RTL")
+
+        home = self.home_position_as_mav_location()
+        distance = self.get_distance(home, self.mav.location())
+
+        self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True)
+
+        new_distance = self.get_distance(home, self.mav.location())
+        # We should be farther from to home.
+        if new_distance < distance:
+            raise NotAchievedException(
+                "Expected to be farther from home (was %fm, now %fm)."
+                % (distance, new_distance)
+            )
+
+        self.fly_home_land_and_disarm()
+
     def rtl_climb_min(self):
         self.wait_ready_to_arm()
         rtl_climb_min = 100
@@ -2804,6 +2855,10 @@ class AutoTestPlane(AutoTest):
             ("RTL_CLIMB_MIN",
              "Test RTL_CLIMB_MIN",
              self.rtl_climb_min),
+
+            ("ClimbBeforeTurn",
+             "Test climb-before-turn",
+             self.climb_before_turn),
 
             ("IMUTempCal",
              "Test IMU temperature calibration",
