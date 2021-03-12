@@ -407,8 +407,8 @@ class AutoTestCopter(AutoTest):
             self.progress("save_mission_to_file failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.set_current_waypoint(1)
         self.change_mode('AUTO')
+        self.set_current_waypoint(1)
         self.wait_waypoint(0, num_wp-1, timeout=500)
         self.progress("test: MISSION COMPLETE: passed!")
         self.land_and_disarm()
