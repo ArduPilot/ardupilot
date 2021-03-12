@@ -206,9 +206,6 @@ void Plane::read_radio()
 
     rudder_arm_disarm_check();
 
-    // potentially swap inputs for tailsitters
-    quadplane.tailsitter_check_input();
-
     // check for transmitter tuning changes
     tuning.check_input(control_mode->mode_number());
 }

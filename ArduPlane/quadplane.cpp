@@ -1193,7 +1193,8 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     }
 
     // fetch roll and pitch inputs
-    roll_out_cd = plane.channel_roll->get_control_in();
+    float yaw_input;
+    get_pilot_input_roll_yaw(roll_out_cd, yaw_input);
     pitch_out_cd = plane.channel_pitch->get_control_in();
 
     // limit max lean angle, always allow for 10 degrees
@@ -1201,7 +1202,7 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range
     float scaler = angle_max_cd/4500.0;
-    roll_out_cd *= scaler;
+    roll_out_cd *= angle_max_cd;
     pitch_out_cd *= scaler;
 
     // apply circular limit
@@ -1506,7 +1507,11 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
-    return plane.channel_rudder->get_control_in() * max_rate / 45;
+
+    // if tailsitter with plane mode inputs, use -roll for yaw unless in QACRO mode
+    float roll_input, yaw_input;
+    get_pilot_input_roll_yaw(roll_input, yaw_input);
+    return yaw_input * max_rate * 100;
 }
 
 /*

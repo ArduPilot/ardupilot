@@ -126,13 +126,13 @@ public:
     bool _is_vectored;
 
     // return true when flying a tailsitter in VTOL
-    bool tailsitter_active(void);
+    bool tailsitter_active(void) const;
     
     // create outputs for tailsitters
     void tailsitter_output(void);
 
     // handle different tailsitter input types
-    void tailsitter_check_input(void);
+    void get_pilot_input_roll_yaw(float &roll_input, float &yaw_input) const;
     
     // check if we have completed transition to fixed wing
     bool tailsitter_transition_fw_complete(void);

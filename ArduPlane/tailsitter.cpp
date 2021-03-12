@@ -32,6 +32,21 @@ bool QuadPlane::is_tailsitter(void) const
 }
 
 /*
+  get pilot's roll and yaw commands respecting tailsitter.input_type
+*/
+void QuadPlane::get_pilot_input_roll_yaw(float &roll_input, float &yaw_input) const {
+    if (tailsitter_active() &&
+        (plane.control_mode != &plane.mode_qacro) &&
+        (tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
+        roll_input =  plane.channel_rudder->norm_input_dz();
+        yaw_input  = -plane.channel_roll->norm_input_dz();
+    } else {
+        roll_input = plane.channel_roll->norm_input_dz();
+        yaw_input  = plane.channel_rudder->norm_input_dz();
+    }
+}
+
+/*
   return true when flying a control surface only tailsitter
  */
 bool QuadPlane::is_control_surface_tailsitter(void) const
@@ -43,7 +58,7 @@ bool QuadPlane::is_control_surface_tailsitter(void) const
 /*
   check if we are flying as a tailsitter
  */
-bool QuadPlane::tailsitter_active(void)
+bool QuadPlane::tailsitter_active(void) const
 {
     if (!is_tailsitter()) {
         return false;
@@ -283,22 +298,6 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
     // still waiting
     attitude_control->reset_rate_controller_I_terms();
     return false;
-}
-
-// handle different tailsitter input types
-void QuadPlane::tailsitter_check_input(void)
-{
-    if (tailsitter_active() &&
-        (tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
-        // the user has asked for body frame controls when tailsitter
-        // is active. We switch around the control_in value for the
-        // channels to do this, as that ensures the value is
-        // consistent throughout the code
-        int16_t roll_in = plane.channel_roll->get_control_in();
-        int16_t yaw_in = plane.channel_rudder->get_control_in();
-        plane.channel_roll->set_control_in(yaw_in);
-        plane.channel_rudder->set_control_in(-roll_in);
-    }
 }
 
 /*
