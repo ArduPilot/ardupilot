@@ -195,6 +195,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
+    AP_Int8 *flight_modes2 = &g2.flight_mode7;
 
     AP_Vehicle::FixedWing::Rangefinder_State rangefinder_state;
 
