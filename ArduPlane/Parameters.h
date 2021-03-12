@@ -119,7 +119,7 @@ public:
         k_param_glide_slope_min,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
-        k_param_fbwa_tdrag_chan,
+        k_param_fbwa_tdrag_chan, // unused - moved to RC option
         k_param_rangefinder_landing,
         k_param_land_flap_percent,  // unused - moved to AP_Landing
         k_param_takeoff_flap_percent,
@@ -312,7 +312,7 @@ public:
         k_param_loiter_radius,
         k_param_fence_action,
         k_param_fence_total,
-        k_param_fence_channel,
+        k_param_fence_channel, // unused - moved to RC option
         k_param_fence_minalt,
         k_param_fence_maxalt,
 
@@ -476,7 +476,6 @@ public:
 #endif
     AP_Int16 glide_slope_min;
     AP_Float glide_slope_threshold;
-    AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
