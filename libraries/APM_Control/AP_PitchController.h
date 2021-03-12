@@ -42,20 +42,14 @@ public:
     void autotune_start(void) { autotune.start(); }
     void autotune_restore(void) { autotune.stop(); }
 
-    const AP_Logger::PID_Info& get_pid_info(void) const { return use_ac_pid?_pid_info_ac_pid:_pid_info; }
-    const       AP_Logger::PID_Info& get_old_pid_info(void) const { return _pid_info; }
-    const       AP_Logger::PID_Info& get_ac_pid_info(void) const { return _pid_info_ac_pid; }
-    
+    const       AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+
 	static const struct AP_Param::GroupInfo var_info[];
 
     AP_Float &kP(void) { return rate_pid.kP(); }
     AP_Float &kI(void) { return rate_pid.kI(); }
     AP_Float &kD(void) { return rate_pid.kD(); }
     AP_Float &kFF(void) { return rate_pid.ff(); }
-
-    void set_ac_pid(bool set) {
-        use_ac_pid = set;
-    }
 
     void convert_pid();
 
@@ -70,7 +64,6 @@ private:
     AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 10, 10, 10, 0.02, 150, 1};
 
     AP_Logger::PID_Info _pid_info;
-    AP_Logger::PID_Info _pid_info_ac_pid;
 
     int32_t _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed);
     float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
@@ -84,6 +77,5 @@ private:
     AP_Float _slew_rate_max;                // Maximum permitted angular rate control feedback servo slew rate (deg/sec)
     AP_Float _slew_rate_tau;                // Time constant used to recover gain after a slew rate exceedance (sec)
 
-    bool use_ac_pid;
     float last_ac_out;
 };
