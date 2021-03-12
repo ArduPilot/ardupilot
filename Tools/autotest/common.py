@@ -7786,6 +7786,7 @@ Also, ignores heartbeats not from our target system'''
     def test_set_position_global_int(self, timeout=100):
         """Test set position message in guided mode."""
         # Disable heading and yaw test on rover type
+
         if self.is_rover():
             test_alt = False
             test_heading = False
@@ -7795,15 +7796,15 @@ Also, ignores heartbeats not from our target system'''
             test_heading = True
             test_yaw_rate = True
 
-        self.set_parameter("FS_GCS_ENABLE", 0)
-        self.change_mode("GUIDED")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
         # we must start mavproxy here as otherwise we can't get the
         # terrain database tiles - this leads to random failures in
         # CI!
         mavproxy = self.start_mavproxy()
+
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
@@ -8026,15 +8027,15 @@ Also, ignores heartbeats not from our target system'''
             test_heading = True
             test_yaw_rate = True
 
-        self.set_parameter("FS_GCS_ENABLE", 0)
-        self.change_mode("GUIDED")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
         # we must start mavproxy here as otherwise we can't get the
         # terrain database tiles - this leads to random failures in
         # CI!
         mavproxy = self.start_mavproxy()
+
+        self.set_parameter("FS_GCS_ENABLE", 0)
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
