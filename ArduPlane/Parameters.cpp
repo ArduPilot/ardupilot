@@ -816,12 +816,6 @@ const AP_Param::Info Plane::var_info[] = {
 	// @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
     GOBJECT(parachute,		"CHUTE_", AP_Parachute),
-
-    // @Param: CHUTE_CHAN
-    // @DisplayName: Parachute release channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for manually releasing the parachute. When this channel goes above 1700 the parachute will be released
-    // @User: Advanced
-    GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
     // @Group: RNGFND
