@@ -272,9 +272,9 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
     if (terrain_alt == _terrain_alt) {
         if (_this_leg_is_spline) {
             // if previous leg was a spline we can use current target velocity vector for origin velocity vector
-            Vector3f target_velocity = _pos_control.get_desired_velocity();
-            target_velocity.z -= _vel_terrain_offset;
-            origin_speed = target_velocity.length();
+            Vector3f curr_target_vel = _pos_control.get_desired_velocity();
+            curr_target_vel.z -= _vel_terrain_offset;
+            origin_speed = curr_target_vel.length();
         } else {
             // store previous leg
             _scurve_prev_leg = _scurve_this_leg;
@@ -457,55 +457,53 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
     const Vector3f &curr_pos = _inav.get_position() - Vector3f{0, 0, terr_offset};
 
-    // target position, velocity and acceleration from straight line or spline calculators
-    Vector3f target_pos, target_vel, target_accel;
-    bool s_finished;
-
     // Use _track_scalar_dt to slow down S-Curve time to prevent target moving too far in front of aircraft
-    Vector3f target_velocity = _pos_control.get_desired_velocity();
-    target_velocity.z -= _vel_terrain_offset;
+    Vector3f curr_target_vel = _pos_control.get_desired_velocity();
+    curr_target_vel.z -= _vel_terrain_offset;
 
     float track_error = 0.0f;
     float track_velocity = 0.0f;
     float track_scaler_dt = 1.0f;
     // check target velocity is non-zero
-    if (is_positive(target_velocity.length())) {
-        Vector3f track_direction = target_velocity.normalized();
+    if (is_positive(curr_target_vel.length())) {
+        Vector3f track_direction = curr_target_vel.normalized();
         track_error = _pos_control.get_pos_error().dot(track_direction);
         track_velocity = _inav.get_velocity().dot(track_direction);
         // set time scaler to be consistent with the achievable aircraft speed with a 5% buffer for short term variation.
-        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / target_velocity.length(), 0.1f, 1.0f);
+        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.1f, 1.0f);
         // set time scaler to not exceed the maximum vertical velocity during terrain following.
-        if (is_positive(target_velocity.z)) {
-            track_scaler_dt = MIN(track_scaler_dt, fabsf(_wp_speed_up_cms / target_velocity.z));
-        } else if (is_negative(target_velocity.z)) {
-            track_scaler_dt = MIN(track_scaler_dt, fabsf(_wp_speed_down_cms / target_velocity.z));
+        if (is_positive(curr_target_vel.z)) {
+            track_scaler_dt = MIN(track_scaler_dt, fabsf(_wp_speed_up_cms / curr_target_vel.z));
+        } else if (is_negative(curr_target_vel.z)) {
+            track_scaler_dt = MIN(track_scaler_dt, fabsf(_wp_speed_down_cms / curr_target_vel.z));
         }
     } else {
         track_scaler_dt = 1.0f;
     }
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
-    float track_scaler_tc = 0.01f * _wp_accel_cmss/_wp_jerk;
+    float track_scaler_tc = 1.0f;
     if (!is_zero(_wp_jerk)) {
         track_scaler_tc = 0.01f * _wp_accel_cmss/_wp_jerk;
-    } else {
-        track_scaler_tc = 1.0f;
     }
     _track_scalar_dt += (track_scaler_dt - _track_scalar_dt) * (dt / track_scaler_tc);
 
+    // target position, velocity and acceleration from straight line or spline calculators
+    Vector3f target_pos, target_vel, target_accel;
+
+    bool s_finished;
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
         target_pos = _origin;
         s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _flags.fast_waypoint, _track_scalar_dt * dt, target_pos, target_vel, target_accel);
     } else {
         // splinetarget_vel
-        target_vel = target_velocity;
+        target_vel = curr_target_vel;
         _spline_this_leg.advance_target_along_track(_track_scalar_dt * dt, target_pos, target_vel);
         s_finished = _spline_this_leg.reached_destination();
     }
 
     // input shape the terrain offset
-    shape_pos_vel(terr_offset, 0.0f, _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, 0.0f, 0.0f, _pos_control.get_max_accel_z()*4.0f, 0.05f, _track_scalar_dt * dt);
+    shape_pos_vel(terr_offset, 0.0f, _pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, 0.0f, 0.0f, _pos_control.get_max_accel_z(), 0.05f, _track_scalar_dt * dt);
     update_pos_vel_accel(_pos_terrain_offset, _vel_terrain_offset, _accel_terrain_offset, _track_scalar_dt * dt);
 
     // convert final_target.z to altitude above the ekf origin
@@ -525,7 +523,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
                 const Vector3f dist_to_dest = curr_pos - _destination;
-                if (dist_to_dest.length() <= _wp_radius_cm) {
+                if (dist_to_dest.length_squared() <= sq(_wp_radius_cm)) {
                     _flags.reached_destination = true;
                 }
             }
@@ -541,7 +539,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         const float accel_turn_xy_len = Vector2f(accel_turn.x, accel_turn.y).length();
         turn_rate = accel_turn_xy_len / target_vel_xy_len;
         if ((accel_turn.y * target_vel.x - accel_turn.x * target_vel.y) < 0.0) {
-            turn_rate *= -1.0f;
+            turn_rate = -turn_rate;
         }
     }
 
@@ -634,10 +632,10 @@ float AC_WPNav::get_yaw() const
 }
 
 // returns target yaw rate in centi-degrees / second (used for wp and spline navigation)
-float AC_WPNav::get_yaw_rate() const
+float AC_WPNav::get_yaw_rate_cds() const
 {
     if (_flags.wp_yaw_set) {
-        return _yaw_rate;
+        return _yaw_rate_cds;
     }
 
     // if yaw has not been set return zero turn rate
@@ -654,7 +652,7 @@ void AC_WPNav::set_yaw_cd(float heading_cd)
 // set yaw rate used for spline and waypoint navigation
 void AC_WPNav::set_yaw_rate_cds(float yaw_rate_cds)
 {
-    _yaw_rate = yaw_rate_cds;
+    _yaw_rate_cds = yaw_rate_cds;
 }
 
 // get terrain's altitude (in cm above the ekf origin) at the current position (+ve means terrain below vehicle is above ekf origin's altitude)
@@ -681,7 +679,7 @@ bool AC_WPNav::get_terrain_offset(float& offset_cm)
         return false;
     }
 
-    // we should never get here but just in case
+    // we should never get here
     return false;
 }
 
