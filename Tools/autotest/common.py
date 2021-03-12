@@ -7800,6 +7800,11 @@ Also, ignores heartbeats not from our target system'''
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
+
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
 
@@ -8002,6 +8007,9 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_yaw_speed(target_rate, timeout=timeout,
                                     called_function=lambda plop, empty: send_yaw_rate(
                                         target_rate, None), minimum_duration=5)
+
+        self.stop_mavproxy(mavproxy)
+
         self.start_test("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
@@ -8022,6 +8030,11 @@ Also, ignores heartbeats not from our target system'''
         self.change_mode("GUIDED")
         self.wait_ready_to_arm()
         self.arm_vehicle()
+
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
 
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
@@ -8366,6 +8379,9 @@ Also, ignores heartbeats not from our target system'''
                                                                    frame),
                     minimum_duration=2
                 )
+
+        self.stop_mavproxy(mavproxy)
+
         self.start_test("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
