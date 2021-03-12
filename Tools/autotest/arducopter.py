@@ -2725,6 +2725,11 @@ class AutoTestCopter(AutoTest):
         ex = None
         self.context_push()
 
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
+
         try:
             self.set_analog_rangefinder_parameters()
             self.set_parameter("RC9_OPTION", 10) # rangefinder
@@ -2772,6 +2777,9 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
+
+        self.stop_mavproxy(mavproxy)
+
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
@@ -4805,6 +4813,11 @@ class AutoTestCopter(AutoTest):
 
         '''
 
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
+
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
@@ -4863,6 +4876,8 @@ class AutoTestCopter(AutoTest):
                 (max_post_arming_home_offset_delta_mm, delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
 
         self.wait_disarmed()
+
+        self.stop_mavproxy(mavproxy)
 
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
