@@ -229,7 +229,7 @@ float Mode::AutoYaw::rate_cds() const
         return _rate_cds;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
-        return copter.wp_nav->get_yaw_rate();
+        return copter.wp_nav->get_yaw_rate_cds();
     }
 
     // return zero turn rate (this should never happen)
