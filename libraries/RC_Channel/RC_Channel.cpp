@@ -143,6 +143,7 @@ bool RC_Channel::update(void)
         return false;
     }
 
+    control_in_no_trim = pwm_to_range_no_trim();
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
         control_in_no_dz = pwm_to_range_dz(0);
@@ -150,7 +151,6 @@ bool RC_Channel::update(void)
         //RC_CHANNEL_TYPE_ANGLE
         control_in = pwm_to_angle();
         control_in_no_dz = pwm_to_angle_dz_trim(0, radio_trim);
-        control_in_no_trim = pwm_to_angle_dz_trim(0, 0);
     }
 
     return true;
@@ -261,6 +261,15 @@ int16_t RC_Channel::pwm_to_range() const
     return pwm_to_range_dz(dead_zone);
 }
 
+float RC_Channel::pwm_to_range_no_trim() const
+{
+    // sanity check min and max to avoid divide by zero
+    if (radio_max <= radio_min) {
+        return 0.0f;
+    }
+    float ret = (reversed ? -2.0f : 2.0f) * (((float)(radio_in - radio_min) / (float)(radio_max - radio_min)) - 0.5f);
+    return constrain_float(ret, -1.0f, 1.0f);
+}
 
 int16_t RC_Channel::get_control_in_zero_dz(void) const
 {
@@ -324,7 +333,7 @@ float RC_Channel::norm_input_dz() const
 // ignores trim and deadzone
 float RC_Channel::norm_input_ignore_trim() const
 {
-    float result = (float)control_in_no_trim / high_in;
+    float result = (float)control_in_no_trim;
 #if DEBUG
     // sanity check min and max to avoid divide by zero
     if (radio_max <= radio_min) {

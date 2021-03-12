@@ -56,6 +56,7 @@ public:
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
     int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
+    float       pwm_to_range_no_trim() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -301,7 +302,7 @@ private:
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
     int16_t    control_in_no_dz;
-    int16_t    control_in_no_trim;
+    float      control_in_no_trim;
 
     AP_Int16    radio_min;
     AP_Int16    radio_trim;
