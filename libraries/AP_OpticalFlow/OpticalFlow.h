@@ -57,6 +57,7 @@ public:
         MAVLINK = 5,
         UAVCAN = 6,
         MSP = 7,
+        UPFLOW = 8,
         SITL = 10,
     };
 
