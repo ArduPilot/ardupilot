@@ -117,6 +117,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     // radio and battery failsafe patter: flash yellow
     // gps failsafe pattern : flashing yellow and blue
     // ekf_bad pattern : flashing yellow and red
+   // if any  above occur while armed: flashing red
     if (AP_Notify::flags.failsafe_radio ||
         AP_Notify::flags.failsafe_gcs ||
         AP_Notify::flags.failsafe_battery ||
@@ -124,7 +125,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
         AP_Notify::flags.gps_glitching ||
         AP_Notify::flags.leak_detected) {
 
-        if (AP_Notify::flags.leak_detected) {
+	        
+	if (AP_Notify::flags.armed) {
+            return sequence_armed_error;
+        }
+
+	if (AP_Notify::flags.leak_detected) {
             // purple if leak detected
             return sequence_failsafe_leak;
         } else if (AP_Notify::flags.ekf_bad) {

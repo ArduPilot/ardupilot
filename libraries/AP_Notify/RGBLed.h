@@ -102,6 +102,7 @@ private:
 
     const uint32_t sequence_armed = DEFINE_COLOUR_SEQUENCE_SOLID(GREEN);
     const uint32_t sequence_armed_nogps = DEFINE_COLOUR_SEQUENCE_SOLID(BLUE);
+    const uint32_t sequence_armed_error = DEFINE_COLOUR_SEQUENCE_ALTERNATE(RED,BLACK);
     const uint32_t sequence_prearm_failing = DEFINE_COLOUR_SEQUENCE(YELLOW,YELLOW,BLACK,BLACK,YELLOW,YELLOW,BLACK,BLACK,BLACK,BLACK);
     const uint32_t sequence_disarmed_good_dgps = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN,BLACK);
     const uint32_t sequence_disarmed_good_gps = DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
