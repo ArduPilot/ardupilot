@@ -82,7 +82,13 @@ public:
 
     // send ESC telemetry messages over MAVLink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
-    
+
+    // helpers for scripting
+    int8_t get_temp(uint8_t esc_index) { return last_telem[esc_index].temperature; }
+    float get_voltage(uint8_t esc_index) { return (float)last_telem[esc_index].voltage*0.01f; }
+    float get_current(uint8_t esc_index) { return (float)last_telem[esc_index].current*0.01f; }
+    uint16_t get_rpm(uint8_t esc_index) { return last_telem[esc_index].rpm; }
+
 private:
     static AP_BLHeli *_singleton;
     
