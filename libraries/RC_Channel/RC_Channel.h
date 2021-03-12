@@ -56,7 +56,7 @@ public:
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
     int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
-    float       pwm_to_range_no_trim() const;
+    float       pwm_to_range_ignore_trim() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -69,11 +69,11 @@ public:
     int16_t    get_control_in() const { return control_in;}
     void       set_control_in(int16_t val) { control_in = val;}
 
-    int16_t    get_control_in_no_dz() const { return control_in_no_dz;}
-    void       set_control_in_no_dz(int16_t val) { control_in_no_dz = val;}
+    int16_t    get_control_in_no_dz() const { return control_in_zero_dz;}
+    void       set_control_in_no_dz(int16_t val) { control_in_zero_dz = val;}
 
-    int16_t    get_control_in_no_trim() const { return control_in_no_trim;}
-    void       get_control_in_no_trim(int16_t val) { control_in_no_trim = val;}
+    int16_t    get_control_in_no_trim() const { return control_in_ignore_trim;}
+    void       get_control_in_no_trim(int16_t val) { control_in_ignore_trim = val;}
 
     void       clear_override();
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
@@ -301,8 +301,8 @@ private:
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
-    int16_t    control_in_no_dz;
-    float      control_in_no_trim;
+    int16_t    control_in_zero_dz;
+    float      control_in_ignore_trim;
 
     AP_Int16    radio_min;
     AP_Int16    radio_trim;

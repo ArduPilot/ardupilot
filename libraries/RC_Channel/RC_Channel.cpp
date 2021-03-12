@@ -143,14 +143,14 @@ bool RC_Channel::update(void)
         return false;
     }
 
-    control_in_no_trim = pwm_to_range_no_trim();
+    control_in_ignore_trim = pwm_to_range_ignore_trim();
     if (type_in == RC_CHANNEL_TYPE_RANGE) {
         control_in = pwm_to_range();
-        control_in_no_dz = pwm_to_range_dz(0);
+        control_in_zero_dz = pwm_to_range_dz(0);
     } else {
         //RC_CHANNEL_TYPE_ANGLE
         control_in = pwm_to_angle();
-        control_in_no_dz = pwm_to_angle_dz_trim(0, radio_trim);
+        control_in_zero_dz = pwm_to_angle_dz_trim(0, radio_trim);
     }
 
     return true;
@@ -161,12 +161,7 @@ bool RC_Channel::update(void)
 // to give the same output as input
 void RC_Channel::recompute_pwm_no_deadzone()
 {
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
-        control_in = pwm_to_range_dz(0);
-    } else {
-        //RC_CHANNEL_ANGLE
-        control_in = pwm_to_angle_dz(0);
-    }
+    control_in = control_in_zero_dz;
 }
 
 /*
@@ -261,7 +256,7 @@ int16_t RC_Channel::pwm_to_range() const
     return pwm_to_range_dz(dead_zone);
 }
 
-float RC_Channel::pwm_to_range_no_trim() const
+float RC_Channel::pwm_to_range_ignore_trim() const
 {
     // sanity check min and max to avoid divide by zero
     if (radio_max <= radio_min) {
@@ -273,17 +268,14 @@ float RC_Channel::pwm_to_range_no_trim() const
 
 int16_t RC_Channel::get_control_in_zero_dz(void) const
 {
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
-        return pwm_to_range_dz(0);
-    }
-    return pwm_to_angle_dz(0);
+    return control_in_zero_dz;
 }
 
 // ------------------------------------------
 #define DEBUG 1
 float RC_Channel::norm_input() const
 {
-    float result = (float)control_in_no_dz / high_in;
+    float result = (float)control_in_zero_dz / high_in;
 #if DEBUG
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
@@ -333,7 +325,7 @@ float RC_Channel::norm_input_dz() const
 // ignores trim and deadzone
 float RC_Channel::norm_input_ignore_trim() const
 {
-    float result = (float)control_in_no_trim;
+    float result = (float)control_in_ignore_trim;
 #if DEBUG
     // sanity check min and max to avoid divide by zero
     if (radio_max <= radio_min) {
