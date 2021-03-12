@@ -129,12 +129,6 @@ void Plane::read_control_switch()
         oldSwitchPosition = switchPosition;
     }
 
-    if (g.reset_mission_chan != 0 &&
-        RC_Channels::get_radio_in(g.reset_mission_chan-1) > RESET_SWITCH_CHAN_PWM) {
-        mission.start();
-        prev_WP_loc = current_loc;
-    }
-
     switch_debouncer = false;
 
 #if PARACHUTE == ENABLED
