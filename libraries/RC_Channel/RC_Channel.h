@@ -273,7 +273,7 @@ protected:
     void do_aux_function_clear_wp(const AuxSwitchPos ch_flag);
     void do_aux_function_gripper(const AuxSwitchPos ch_flag);
     void do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag);
-    void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
+    virtual void do_aux_function_mission_reset(const AuxSwitchPos ch_flag);
     void do_aux_function_rc_override_enable(const AuxSwitchPos ch_flag);
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
