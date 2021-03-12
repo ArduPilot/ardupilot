@@ -156,6 +156,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FBWA:
+    case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
     case AUX_FUNC::PARACHUTE_RELEASE:
@@ -246,7 +247,8 @@ void RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 
     case AUX_FUNC::FLAP:
-        break; // flap input label, nothing to do
+    case AUX_FUNC::FBWA_TAILDRAGGER:
+        break; // input labels, nothing to do
 
     case AUX_FUNC::Q_ASSIST:
         do_aux_function_q_assist_state(ch_flag);
