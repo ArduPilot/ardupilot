@@ -142,7 +142,7 @@ public:
         k_param_rpm_sensor,
         k_param_parachute,
         k_param_arming = 100,
-        k_param_parachute_channel,
+        k_param_parachute_channel, // unused - moved to RC option
         k_param_crash_accel_threshold,
         k_param_override_safety,
         k_param_land_throttle_slewrate, // 104 unused - moved to AP_Landing
@@ -484,7 +484,6 @@ public:
     AP_Int8 override_safety;
 #endif
     AP_Int16 gcs_pid_mask;
-    AP_Int8 parachute_channel;
 };
 
 /*
