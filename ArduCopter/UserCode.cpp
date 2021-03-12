@@ -1,10 +1,10 @@
 #include "Copter.h"
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink.h>
 
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world!";
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world!");
 }
 #endif
 

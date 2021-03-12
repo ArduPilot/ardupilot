@@ -525,12 +525,64 @@ void GCS_MAVLINK_Copter::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
 }
 
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)
+void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)  // is this right? I have no idea
 {
-    copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
+    if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
+        return; // Only accept control from our gcs                                 // is this right? I have no idea what it does
+    }
+
+    const uint32_t tnow = AP_HAL::millis();                                         // is this right? I have no idea what it does
+
+    mavlink_rc_channels_override_t packet;                                          // is this right? I have no idea
+    mavlink_msg_rc_channels_override_decode(&msg, &packet);                         // is this right? I have no idea what it does
+
+    const uint16_t override_data[] = {                                              // this reads all the channel vallues and puts it in override_data[] I think
+        packet.chan1_raw,
+        packet.chan2_raw,
+        packet.chan3_raw,
+        packet.chan4_raw,
+        packet.chan5_raw,
+        packet.chan6_raw,
+        packet.chan7_raw,
+        packet.chan8_raw,
+        packet.chan9_raw,
+        packet.chan10_raw,
+        packet.chan11_raw,
+        packet.chan12_raw,
+        packet.chan13_raw,
+        packet.chan14_raw,
+        packet.chan15_raw,
+        packet.chan16_raw
+    };
+    
+    uint16_t i = 1990;
+                                                                    // beginning of my code
+    if (i <= 1900) {                                        // if ch7 from the pilot is high then this part will work, I have no idea how I'm able to read ch7
+        RC_Channels::set_override(9, override_data[9], tnow);       // ch9 from the pilot will be overrided by ch9 from MavLink
+        RC_Channels::set_override(10, override_data[10], tnow);     // ch10 from the pilot will be overrided by ch10 from MavLink
+        RC_Channels::set_override(11, override_data[11], tnow);     // ch11 from the pilot will be overrided by ch11 from MavLink
+        RC_Channels::set_override(12, override_data[12], tnow);     // ch12 from the pilot will be overrided by ch12 from MavLink
+        RC_Channels::set_override(13, override_data[13], tnow);     // ch13 from the pilot will be overrided by ch13 from MavLink
+        RC_Channels::set_override(14, override_data[14], tnow);     // ch14 from the pilot will be overrided by ch14 from MavLink
+        if (i <= 1550) {                          // if ch3 (=YAW) from the pilot is centered then this part will work, I have no idea how I'm able to read ch3
+            RC_Channels::set_override(3, override_data[3], tnow);   // ch3 (=YAW) from the pilot will be override by ch3 from MavLink
+        }
+    }
+    else {                                                          // if ch7 isn't hight, then this part will work
+        RC_Channels::set_override(11, 1500, tnow);                  // ch 11 from the pilot will be overrided by 1500
+        RC_Channels::set_override(12, 1500, tnow);                  // ch 12 from the pilot will be overrided by 1500
+        RC_Channels::set_override(13, 1500, tnow);                  // ch 13 from the pilot will be overrided by 1500
+        RC_Channels::set_override(14, 1500, tnow);                  // ch 14 from the pilot will be overrided by 1500
+    }
+                                                                    // ending of my code
 }
+
+// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
+//void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)
+//{
+//    copter.failsafe.last_heartbeat_ms = AP_HAL::millis();
+//    GCS_MAVLINK::handle_rc_channels_override(msg);
+//}
 
 void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t &msg)
 {
