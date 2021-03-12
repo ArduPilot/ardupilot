@@ -62,7 +62,7 @@ public:
     ///
 
     /// wp_and_spline_init - initialise straight line and spline waypoint controllers
-    ///     speed_cms is the desired max speed to travel between waypoints.  should be a positive value or left at zero to use the default speed
+    ///     speed_cms is the desired max speed to travel between waypoints.  should be a positive value or omitted to use the default speed
     ///     updates target roll, pitch targets and I terms based on vehicle lean angles
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
     void wp_and_spline_init(float speed_cms = 0.0f);
@@ -170,7 +170,7 @@ public:
 
     // get target yaw in centi-degrees (used for wp and spline navigation)
     float get_yaw() const;
-    float get_yaw_rate() const;
+    float get_yaw_rate_cds() const;
 
     /// set_spline_destination waypoint using location class
     ///     returns false if conversion from location to vector from ekf origin cannot be calculated
@@ -262,14 +262,14 @@ protected:
     AP_Float    _wp_speed_up_cms;       // default maximum climb rate in cm/s
     AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
-    AP_Float    _wp_accel_cmss;          // horizontal acceleration in cm/s/s during missions
-    AP_Float    _wp_accel_z_cmss;        // vertical acceleration in cm/s/s during missions
-    AP_Float    _wp_jerk;               // maximum jerk used to generate s-curve trajectories in m/s/s/s
+    AP_Float    _wp_accel_cmss;         // horizontal acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_z_cmss;       // vertical acceleration in cm/s/s during missions
+    AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
 
     // scurve
-    SCurve _scurve_prev_leg;            // previous spline trajectory used to blend with current s-curve trajectory
-    SCurve _scurve_this_leg;            // current spline trajectory
-    SCurve _scurve_next_leg;            // next spline trajectory used to blend with current s-curve trajectory
+    SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
+    SCurve _scurve_this_leg;            // current scurve trajectory
+    SCurve _scurve_next_leg;            // next scurve trajectory used to blend with current scurve trajectory
     float _scurve_jerk;                 // scurve jerk max in m/s/s/s
     float _scurve_jerk_time;            // scurve jerk time (time in seconds for jerk to increase from zero _scurve_jerk)
 
@@ -290,7 +290,7 @@ protected:
     float       _track_desired;         // our desired distance along the track in cm
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
     float       _yaw;                   // current yaw heading in centi-degrees based on track direction
-    float       _yaw_rate;              // current yaw rate in centi-degrees/second based on track curvature
+    float       _yaw_rate_cds;          // current yaw rate in centi-degrees/second based on track curvature
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
