@@ -1263,7 +1263,7 @@ ParametersG2::ParametersG2(void) :
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] = {
+static const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
@@ -1315,6 +1315,22 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
 };
 
+struct RCConversionInfo {
+    uint16_t old_key; // k_param_*
+    uint32_t old_group_element; // index in old object
+    RC_Channel::AUX_FUNC fun; // new function
+};
+
+static const RCConversionInfo rc_option_conversion[] = {
+    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
+    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
+    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
+    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
+    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
+    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
+    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
+};
+
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
@@ -1357,48 +1373,15 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    // Convert flap to RCx_OPTION
-    AP_Int8 flap_output;
-    AP_Param::ConversionInfo flap_info = {
-        Parameters::k_param_flapin_channel_old,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&flap_info, &flap_output) && flap_output.get() != 0) {
-        RC_Channel *flapin = rc().channel(flap_output - 1);
-        if (flapin != nullptr && !flapin->option.configured()) {
-            flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
-        }
-    }
-
-    // Convert SOAR_ENABLE_CH to RCx_OPTION
-    AP_Int8 soar_enable_ch;
-    AP_Param::ConversionInfo soar_info = {
-        Parameters::k_param_g2,
-        968,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&soar_info, &soar_enable_ch) && soar_enable_ch.get() != 0) {
-        RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
-        if (soar_ch != nullptr && !soar_ch->option.configured()) {
-            soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
-        }
-    }
-
-    // Convert fence to RCx_OPTION
-    AP_Int8 fence_enable_ch;
-    AP_Param::ConversionInfo fence_channel_info = {
-        Parameters::k_param_fence_channel,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&fence_channel_info, &fence_enable_ch) && fence_enable_ch.get() != 0) {
-        RC_Channel *fence_ch = rc().channel(fence_enable_ch - 1);
-        if (fence_ch != nullptr && !fence_ch->option.configured()) {
-            fence_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FENCE); // save the new param
+    // Convert chan params to RCx_OPTION
+    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
+        AP_Int8 chan_param;
+        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
+        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
+            RC_Channel *chan = rc().channel(chan_param.get() - 1);
+            if (chan != nullptr && !chan->option.configured()) {
+                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
+            }
         }
     }
 
