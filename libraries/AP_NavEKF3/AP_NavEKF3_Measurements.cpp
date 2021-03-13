@@ -1319,7 +1319,7 @@ void NavEKF3_core::updateMovementCheck(void)
     }
 
     const float gyro_limit = radians(3.0f);
-    const float gyro_diff_limit = 0.1;
+    const float gyro_diff_limit = 0.2f;
     const float accel_limit = 1.0f;
     const float accel_diff_limit = 5.0f;
     const float hysteresis_ratio = 0.7f;
@@ -1355,18 +1355,18 @@ void NavEKF3_core::updateMovementCheck(void)
     const float accel_diff_ratio = accel_diff / accel_diff_limit;
     bool logStatusChange = false;
     if (onGroundNotMoving) {
-        if (gyro_length_ratio > 1.0f ||
-            fabsf(accel_length_ratio) > 1.0f ||
-            gyro_diff_ratio > 1.0f ||
-            accel_diff_ratio > 1.0f)
+        if (gyro_length_ratio > frontend->_ognmTestScaleFactor ||
+            fabsf(accel_length_ratio) > frontend->_ognmTestScaleFactor ||
+            gyro_diff_ratio > frontend->_ognmTestScaleFactor ||
+            accel_diff_ratio > frontend->_ognmTestScaleFactor)
         {
             onGroundNotMoving = false;
             logStatusChange = true;
         }
-    } else if (gyro_length_ratio < hysteresis_ratio &&
-            fabsf(accel_length_ratio) < hysteresis_ratio &&
-            gyro_diff_ratio < hysteresis_ratio &&
-            accel_diff_ratio < hysteresis_ratio)
+    } else if (gyro_length_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            fabsf(accel_length_ratio) < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            gyro_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            accel_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio)
     {
         onGroundNotMoving = true;
         logStatusChange = true;
