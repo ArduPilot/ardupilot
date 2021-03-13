@@ -273,7 +273,7 @@ if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
   if [ -d ".git" ]; then
     heading "Update git submodules"
     cd $ARDUPILOT_ROOT
-    git submodule update --init --recursive
+    sudo git submodule update --init --recursive
     echo "Done!"
   fi
 fi
