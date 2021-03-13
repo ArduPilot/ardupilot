@@ -4995,6 +4995,24 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def get_servo_channel_value(self, channel, timeout=2):
+        channel_field = "servo%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException("Channel value condition not met")
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                    blocking=True,
+                                    timeout=remaining)
+            if m is None:
+                continue
+            m_value = getattr(m, channel_field, None)
+            if m_value is None:
+                raise ValueError("message (%s) has no field %s" %
+                                 (str(m), channel_field))
+            return m_value
+
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
         channel_field = "servo%u_raw" % channel
