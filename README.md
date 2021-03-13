@@ -86,7 +86,7 @@ for reviewing patches on their specific area.
 
 - [Andrew Tridgell](https://github.com/tridge):
   - ***Vehicle***: Plane, AntennaTracker
-  - ***Board***: APM1, APM2, Pixhawk, Pixhawk2, PixRacer
+  - ***Board***: Pixhawk, Pixhawk2, PixRacer
 - [Francisco Ferreira](https://github.com/oxinarf):
   - ***Bug Master***
 - [Grant Morphett](https://github.com/gmorph):
