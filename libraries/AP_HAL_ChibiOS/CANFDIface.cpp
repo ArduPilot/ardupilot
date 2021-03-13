@@ -573,10 +573,12 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
             nvicEnableVector(FDCAN2_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN2_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             break;
+#ifdef FDCAN3_IT0_IRQn
         case 2:
             nvicEnableVector(FDCAN3_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN3_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             break;
+#endif
         }
         irq_init_ = true;
     }
