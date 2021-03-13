@@ -884,7 +884,11 @@ void NavEKF3_core::FuseVelPosNED()
                 // inhibit delta velocity bias state estimation by setting Kalman gains to zero
                 if (!inhibitDelVelBiasStates) {
                     for (uint8_t i = 13; i<=15; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
+                        if (!dvelBiasAxisInhibit[i-13]) {
+                            Kfusion[i] = P[i][stateIndex]*SK;
+                        } else {
+                            Kfusion[i] = 0.0f;
+                        }
                     }
                 } else {
                     // zero indexes 13 to 15 = 3*4 bytes
