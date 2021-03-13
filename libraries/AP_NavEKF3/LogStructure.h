@@ -434,7 +434,7 @@ struct PACKED log_XKV {
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
-      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s------", "F------"}, \
+      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------"}, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
       "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \
