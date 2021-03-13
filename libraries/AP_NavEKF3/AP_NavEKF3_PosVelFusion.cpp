@@ -881,8 +881,11 @@ void NavEKF3_core::FuseVelPosNED()
                     memset(&Kfusion[10], 0, 12);
                 }
 
-                // inhibit delta velocity bias state estimation by setting Kalman gains to zero
-                if (!inhibitDelVelBiasStates) {
+                // Inhibit delta velocity bias state estimation by setting Kalman gains to zero
+                // Don't use 'fake' horizontal measurements used to constrain attitude drift during
+                // periods of non-aiding to learn bias as these can give incorrect esitmates.
+                const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
+                if (!horizInhibit && !inhibitDelVelBiasStates) {
                     for (uint8_t i = 13; i<=15; i++) {
                         if (!dvelBiasAxisInhibit[i-13]) {
                             Kfusion[i] = P[i][stateIndex]*SK;
