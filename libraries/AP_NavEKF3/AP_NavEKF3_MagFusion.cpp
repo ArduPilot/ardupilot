@@ -41,7 +41,7 @@ void NavEKF3_core::controlMagYawReset()
         // check if the spin rate is OK - high spin rates can cause angular alignment errors
         bool angRateOK = deltaRotVecTemp.length() < 0.1745f;
 
-        initialResetAllowed = angRateOK;
+        initialResetAllowed = angRateOK && tiltAlignComplete;
         flightResetAllowed = angRateOK && !onGround;
 
     }
