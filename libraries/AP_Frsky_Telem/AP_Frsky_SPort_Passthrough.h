@@ -90,6 +90,12 @@ private:
         BATT_FS_CAPACITY =    3,
         BATT_CAPACITY_1 =     4,
         BATT_CAPACITY_2 =     5,
+        TELEMETRY_FEATURES =  6
+    };
+
+    enum PassthroughFeatures : uint8_t {
+        BIDIR =                 0,
+        SCRIPTING =             1,
     };
 
     // methods to convert flight controller data to FrSky SPort Passthrough (OpenTX) format

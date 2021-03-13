@@ -404,10 +404,19 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_param(void)
         break;
     case BATT_CAPACITY_1:
         param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(0)); // battery pack capacity in mAh
-        _paramID = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : FRAME_TYPE;
+        _paramID = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
         break;
     case BATT_CAPACITY_2:
         param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(1)); // battery pack capacity in mAh
+        _paramID = TELEMETRY_FEATURES;
+        break;
+    case TELEMETRY_FEATURES:
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        BIT_SET(param_value,PassthroughFeatures::BIDIR);
+#endif
+#ifdef ENABLE_SCRIPTING
+        BIT_SET(param_value,PassthroughFeatures::SCRIPTING);
+#endif
         _paramID = FRAME_TYPE;
         break;
     }
