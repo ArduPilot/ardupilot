@@ -790,6 +790,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
     } map[] {
         { MAVLINK_MSG_ID_HEARTBEAT,             MSG_HEARTBEAT},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
+        { MAVLINK_MSG_ID_ATTITUDE_QUATERNION,   MSG_ATTITUDE_QUATERNION},
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
         { MAVLINK_MSG_ID_HOME_POSITION,         MSG_HOME},
         { MAVLINK_MSG_ID_GPS_GLOBAL_ORIGIN,     MSG_ORIGIN},
@@ -4541,6 +4542,29 @@ void GCS_MAVLINK::send_attitude() const
         omega.z);
 }
 
+void GCS_MAVLINK::send_attitude_quaternion() const
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+    Quaternion quat;
+    if (!ahrs.get_secondary_quaternion(quat)) {
+        return;
+    }
+    const Vector3f omega = ahrs.get_gyro();
+    const float repr_offseq_q[] {0,0,0,0};  // unused, but probably should correspond to the AHRS view?
+    mavlink_msg_attitude_quaternion_send(
+        chan,
+        AP_HAL::millis(),
+        quat.q1,
+        quat.q2,
+        quat.q3,
+        quat.q4,
+        omega.x, // rollspeed
+        omega.y, // pitchspeed
+        omega.z, // yawspeed
+        repr_offseq_q
+        );
+}
+
 int32_t GCS_MAVLINK::global_position_int_alt() const {
     return global_position_current_loc.alt * 10UL;
 }
@@ -4644,6 +4668,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_ATTITUDE:
         CHECK_PAYLOAD_SIZE(ATTITUDE);
         send_attitude();
+        break;
+
+    case MSG_ATTITUDE_QUATERNION:
+        CHECK_PAYLOAD_SIZE(ATTITUDE_QUATERNION);
+        send_attitude_quaternion();
         break;
 
     case MSG_NEXT_PARAM:

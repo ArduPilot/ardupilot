@@ -39,7 +39,7 @@ public:
 
     const char *name() const override { return "SBF"; }
 
-    bool is_configured (void) override;
+    bool is_configured (void) const override;
 
     void broadcast_configuration_failure_reason(void) const override;
 
@@ -54,6 +54,7 @@ public:
 
     bool prepare_for_arming(void) override;
 
+    bool get_error_codes(uint32_t &error_codes) const override { error_codes = RxError; return true; };
 
 private:
 

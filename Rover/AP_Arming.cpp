@@ -39,6 +39,11 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return true;
     }
 
+    // call parent gps checks
+    if (!AP_Arming::gps_checks(display_failure)) {
+        return false;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // always check if inertial nav has started and is ready
@@ -61,8 +66,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
-    // call parent gps checks
-    return AP_Arming::gps_checks(display_failure);
+    return true;
 }
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)

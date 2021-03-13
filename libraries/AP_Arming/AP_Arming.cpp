@@ -463,6 +463,18 @@ bool AP_Arming::gps_checks(bool report)
     const AP_GPS &gps = AP::gps();
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
+        // Any failure messages from GPS backends
+        if ((checks_to_perform & ARMING_CHECK_ALL) ||
+            (checks_to_perform & ARMING_CHECK_GPS)) {
+            char failure_msg[50] = {};
+            if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+                if (failure_msg[0] != '\0') {
+                    check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
+                }
+                return false;
+            }
+        }
+
         //GPS OK?
         if (!AP::ahrs().home_is_set() ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {

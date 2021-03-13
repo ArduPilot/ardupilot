@@ -1210,7 +1210,7 @@ class AutoTest(ABC):
                  _show_test_timings=False,
                  logs_dir=None,
                  force_ahrs_type=None,
-                 sup_binary=None):
+                 sup_binaries=[]):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1229,7 +1229,7 @@ class AutoTest(ABC):
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
         self.speedup = speedup
-        self.sup_binary = sup_binary
+        self.sup_binaries = sup_binaries
 
         self.mavproxy = None
         self.mav = None
@@ -5394,7 +5394,7 @@ Also, ignores heartbeats not from our target system'''
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u disabled" % not_required_value)
 
     def wait_text(self, *args, **kwargs):
-        self.wait_statustext(*args, **kwargs)
+        return self.wait_statustext(*args, **kwargs)
 
     def statustext_in_collections(self, text, regex=False):
         c = self.context_get()
@@ -5403,10 +5403,10 @@ Also, ignores heartbeats not from our target system'''
         for statustext in [x.text for x in c.collections["STATUSTEXT"]]:
             if regex:
                 if re.match(text, statustext):
-                    return True
+                    return statustext
             elif text.lower() in statustext.lower():
-                return True
-        return False
+                return statustext
+        return None
 
     def wait_statustext(self, text, timeout=20, the_function=None, check_context=False, regex=False, wallclock_timeout=False):
         """Wait for a specific STATUSTEXT."""
@@ -5419,24 +5419,31 @@ Also, ignores heartbeats not from our target system'''
         # which checks all incoming messages.
         self.progress("Waiting for text : %s" % text.lower())
         if check_context:
-            if self.statustext_in_collections(text, regex=regex):
+            statustext = self.statustext_in_collections(text, regex=regex)
+            if statustext:
                 self.progress("Found expected text in collection: %s" % text.lower())
-                return
+                return statustext
 
         global statustext_found
+        global statustext_full
+        statustext_full = None
         statustext_found = False
 
         def mh(mav, m):
             global statustext_found
+            global statustext_full
             if m.get_type() != "STATUSTEXT":
                 return
             if regex:
                 self.re_match = re.match(text, m.text)
                 if self.re_match:
                     statustext_found = True
+                    statustext_full = m.text
             if text.lower() in m.text.lower():
                 self.progress("Received expected text: %s" % m.text.lower())
                 statustext_found = True
+                statustext_full = m.text
+
         self.install_message_hook(mh)
         if wallclock_timeout:
             tstart = time.time()
@@ -5456,6 +5463,7 @@ Also, ignores heartbeats not from our target system'''
                 self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=0.1)
         finally:
             self.remove_message_hook(mh)
+        return statustext_full
 
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
@@ -5720,12 +5728,17 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Starting SITL", send_statustext=False)
         self.sitl = util.start_SITL(self.binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
-        if self.sup_binary is not None:
-            self.progress("Starting Supplementary Program")
-            self.sup_prog = util.start_SITL(self.sup_binary, **start_sitl_args)
-            self.expect_list_add(self.sup_prog)
-        else:
-            self.sup_prog = None
+        self.sup_prog = []
+        for sup_binary in self.sup_binaries:
+            self.progress("Starting Supplementary Program ", sup_binary)
+            start_sitl_args["customisations"] = [sup_binary[1]]
+            start_sitl_args["supplementary"] = True
+            sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
+            self.sup_prog.append(sup_prog_link)
+            self.expect_list_add(sup_prog_link)
+
+    def get_suplementary_programs(self):
+        return self.sup_prog
 
     def sitl_is_running(self):
         if self.sitl is None:
@@ -5754,6 +5767,12 @@ Also, ignores heartbeats not from our target system'''
         self.start_mavproxy()
 
         util.expect_setup_callback(self.mavproxy, self.expect_callback)
+
+        self.expect_list_clear()
+        if len(self.sup_prog):
+            self.expect_list_extend([self.sitl, self.mavproxy])
+        else:
+            self.expect_list_extend([self.sitl, self.mavproxy] + self.sup_prog)
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
@@ -9261,25 +9280,16 @@ switch value'''
         tstart = self.get_sim_time_cached()
         old_data = None
         text = ""
-        sent_request = False
+        target_text = self.mav.recv_match(
+            type='STATUSTEXT',
+            blocking=True,
+            timeout=10
+        )
+        self.progress("Got STATUSTEXT: %s, waiting for same text from frsky" % target_text.text)
         while True:
             now = self.get_sim_time()
             if now - tstart > 60: # it can take a *long* time to get these messages down!
                 raise NotAchievedException("Did not get statustext in time")
-            if now - tstart > 30 and not sent_request:
-                # have to wait this long or our message gets squelched....
-                sent_request = True
-#                                self.mavproxy.send("param fetch\n")
-                self.run_cmd(
-                    mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                    0, # p1
-                    0, # p2
-                    1, # p3, baro
-                    0, # p4
-                    0, # p5
-                    0, # p6
-                    0, # p7
-                )
             frsky.update()
             data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
             if data is None:
@@ -9301,9 +9311,9 @@ switch value'''
                 if (x & 0x7f) == 0x00:
                     last = True
             if last:
-                m = re.match("Updating barometer calibration", text)
+                m = re.match(target_text.text, text)
                 if m is not None:
-                    want_sev = mavutil.mavlink.MAV_SEVERITY_INFO
+                    want_sev = target_text.severity
                     if severity != want_sev:
                         raise NotAchievedException("Incorrect severity; want=%u got=%u" % (want_sev, severity))
                     self.progress("Got statustext (%s)" % m.group(0))
