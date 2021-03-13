@@ -167,9 +167,9 @@ void QuadPlane::tailsitter_output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw())*-SERVO_MAX);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch())*SERVO_MAX);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll())*SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, motors->thrust_to_actuator(motors->get_throttle()) * 100);
 
     if (hal.util->get_soft_armed()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, motors->thrust_to_actuator(motors->get_throttle()) * 100);
         // scale surfaces for throttle
         tailsitter_speed_scaling();
     }
