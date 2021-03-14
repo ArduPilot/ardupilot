@@ -874,7 +874,24 @@ void NavEKF3_core::FuseVelPosNED()
                 // inhibit delta angle bias state estimation by setting Kalman gains to zero
                 if (!inhibitDelAngBiasStates) {
                     for (uint8_t i = 10; i<=12; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
+                        // Don't try to learn gyro bias if not aiding and the axis is
+                        // less than 45 degrees from vertical because the bias is poorly observable
+                        bool poorObservability = false;
+                        if (PV_AidingMode == AID_NONE) {
+                            const uint8_t axisIndex = i - 10;
+                            if (axisIndex == 0) {
+                                poorObservability = fabsf(prevTnb.a.z) > M_SQRT1_2;
+                            } else if (axisIndex == 1) {
+                                poorObservability = fabsf(prevTnb.b.z) > M_SQRT1_2;
+                            } else {
+                                poorObservability = fabsf(prevTnb.c.z) > M_SQRT1_2;
+                            }
+                        }
+                        if (poorObservability) {
+                            Kfusion[i] = 0.0;
+                        } else {
+                            Kfusion[i] = P[i][stateIndex]*SK;
+                        }
                     }
                 } else {
                     // zero indexes 10 to 12 = 3*4 bytes
