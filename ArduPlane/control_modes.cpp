@@ -105,15 +105,7 @@ void Plane::read_control_switch()
         return;
     }
 
-    // we look for changes in the switch position. If the
-    // RST_SWITCH_CH parameter is set, then it is a switch that can be
-    // used to force re-reading of the control switch. This is useful
-    // when returning to the previous mode after a failsafe or fence
-    // breach. This channel is best used on a momentary switch (such
-    // as a spring loaded trainer switch).
-    if (oldSwitchPosition != switchPosition ||
-        (g.reset_switch_chan != 0 &&
-         RC_Channels::get_radio_in(g.reset_switch_chan-1) > RESET_SWITCH_CHAN_PWM)) {
+    if (oldSwitchPosition != switchPosition) {
 
         if (switch_debouncer == false) {
             // this ensures that mode switches only happen if the

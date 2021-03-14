@@ -638,12 +638,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
-    // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
-    // @User: Advanced
-    GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
-
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
     // @Description: Target airspeed in cm/s in automatic throttle modes. Value is as an indicated (calibrated/apparent) airspeed.
