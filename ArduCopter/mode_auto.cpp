@@ -327,7 +327,7 @@ void ModeAuto::circle_start()
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
 void ModeAuto::spline_start(const Location& destination, bool stopped_at_start,
-                               AC_WPNav::spline_segment_end_type seg_end_type, 
+                               AC_WPNav::spline_segment_end_type seg_end_type,
                                const Location& next_destination)
 {
     _mode = Auto_Spline;
@@ -493,7 +493,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-    
+
     case MAV_CMD_DO_FENCE_ENABLE:
 #if AC_FENCE == ENABLED
         if (cmd.p1 == 0) { //disable
@@ -849,7 +849,7 @@ void ModeAuto::land_run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    
+
     land_run_horizontal_control();
     land_run_vertical_control();
 }
@@ -1777,7 +1777,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // returns true with RTL has completed successfully
 bool ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && 
+    return (copter.mode_rtl.state_complete() &&
             (copter.mode_rtl.state() == ModeRTL::RTL_FinalDescent || copter.mode_rtl.state() == ModeRTL::RTL_Land) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }
@@ -1907,3 +1907,8 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 }
 
 #endif
+
+// returns a boolean to make sure the first command is takeoff command
+bool ModeAuto::mode_auto_pre_arm_check() {
+  return (mission.starts_with_takeoff_cmd());
+}

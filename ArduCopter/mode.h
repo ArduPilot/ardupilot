@@ -371,6 +371,7 @@ public:
 
     bool requires_terrain_failsafe() const override { return true; }
 
+    bool mode_auto_pre_arm_check();
     // return true if this flight mode supports user takeoff
     //  must_nagivate is true if mode must also control horizontal position
     virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
@@ -1424,7 +1425,7 @@ protected:
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
 };
 
-class ModeZigZag : public Mode {        
+class ModeZigZag : public Mode {
 
 public:
     ModeZigZag(void);
@@ -1559,7 +1560,7 @@ private:
         FLARE,
         TOUCH_DOWN,
         BAIL_OUT } phase_switch;
-        
+
     enum class Navigation_Decision {
         USER_CONTROL_STABILISED,
         STRAIGHT_AHEAD,

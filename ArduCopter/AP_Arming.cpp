@@ -650,6 +650,13 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
+    // always check if the takeoff is the first command for a mission in auto mode
+    if (copter.get_mode() == (uint8_t)Mode::Number::AUTO) {
+      if (!copter.mode_auto.mode_auto_pre_arm_check()) {
+        check_failed(true, "First command should be Takeoff");
+        return false;
+      }
+    }
     // always check motors
     if (!motor_checks(true)) {
         return false;
