@@ -62,7 +62,7 @@ public:
         k_param_flap_1_speed,
         k_param_flap_2_percent,
         k_param_flap_2_speed,
-        k_param_reset_switch_chan,
+        k_param_reset_switch_chan, // unused - moved to RC option
         k_param_manual_level, // unused
         k_param_land_pitch_cd,  // unused - moved to AP_Landing
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
@@ -446,7 +446,6 @@ public:
     AP_Int16 dspoiler_rud_rate;
     AP_Int16 num_resets;
     AP_Int32 log_bitmask;
-    AP_Int8 reset_switch_chan;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
