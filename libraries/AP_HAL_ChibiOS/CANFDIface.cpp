@@ -994,7 +994,7 @@ bool CANIface::select(bool &read, bool &write,
 {
     const bool in_read = read;
     const bool in_write= write;
-    uint64_t time = AP_HAL::micros();
+    uint64_t time = AP_HAL::micros64();
 
     if (!read && !write) {
         //invalid request
@@ -1018,7 +1018,7 @@ bool CANIface::select(bool &read, bool &write,
         if ((read && in_read) || (write && in_write)) {
             return true;
         }
-        time = AP_HAL::micros();
+        time = AP_HAL::micros64();
     }
     return false;
 }
