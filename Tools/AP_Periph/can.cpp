@@ -96,9 +96,9 @@ static uint8_t transfer_id;
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-static ChibiOS::CANIface can_iface(0);
+static ChibiOS::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-static HALSITL::CANIface can_iface(0);
+static HALSITL::CANIface can_iface[HAL_NUM_CAN_IFACES];
 #endif
 /*
  * Variables used for dynamic node ID allocation.
@@ -978,8 +978,13 @@ static void processTx(void)
         txmsg.dlc = txf->data_len;
         memcpy(txmsg.data, txf->data, 8);
         txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
-        // push message with 1s timeout        
-        if (can_iface.send(txmsg, AP_HAL::native_micros64() + 1000000, 0) > 0) {
+        // push message with 1s timeout
+        bool sent_ok = false;
+        const uint64_t deadline = AP_HAL::native_micros64() + 1000000;
+        for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+            sent_ok |= (can_iface[i].send(txmsg, deadline, 0) > 0);
+        }
+        if (sent_ok) {
             canardPopTxQueue(&canard);
             fail_count = 0;
         } else {
@@ -999,22 +1004,29 @@ static void processRx(void)
 {
     AP_HAL::CANFrame rxmsg;
     while (true) {
-        bool read_select = true;
-        bool write_select = false;
-        can_iface.select(read_select, write_select, nullptr, 0);
-        if (!read_select) {
+        bool got_pkt = false;
+        for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+            bool read_select = true;
+            bool write_select = false;
+            can_iface[i].select(read_select, write_select, nullptr, 0);
+            if (!read_select) {
+                continue;
+            }
+            CanardCANFrame rx_frame {};
+
+            //palToggleLine(HAL_GPIO_PIN_LED);
+            uint64_t timestamp;
+            AP_HAL::CANIface::CanIOFlags flags;
+            can_iface[i].receive(rxmsg, timestamp, flags);
+            memcpy(rx_frame.data, rxmsg.data, 8);
+            rx_frame.data_len = rxmsg.dlc;
+            rx_frame.id = rxmsg.id;
+            canardHandleRxFrame(&canard, &rx_frame, timestamp);
+            got_pkt = true;
+        }
+        if (!got_pkt) {
             break;
         }
-        CanardCANFrame rx_frame {};
-
-        //palToggleLine(HAL_GPIO_PIN_LED);
-        uint64_t timestamp;
-        AP_HAL::CANIface::CanIOFlags flags;
-        can_iface.receive(rxmsg, timestamp, flags);
-        memcpy(rx_frame.data, rxmsg.data, 8);
-        rx_frame.data_len = rxmsg.dlc;
-        rx_frame.id = rxmsg.id;
-        canardHandleRxFrame(&canard, &rx_frame, timestamp);
     }
 }
 
@@ -1242,7 +1254,9 @@ void AP_Periph_FW::can_start()
     periph.g.flash_bootloader.set_and_save_ifchanged(0);
 #endif
 
-    can_iface.init(1000000, AP_HAL::CANIface::NormalMode);
+    for (int8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+        can_iface[i].init(1000000, AP_HAL::CANIface::NormalMode);
+    }
 
     canardInit(&canard, (uint8_t *)canard_memory_pool, sizeof(canard_memory_pool),
                onTransferReceived, shouldAcceptTransfer, NULL);
