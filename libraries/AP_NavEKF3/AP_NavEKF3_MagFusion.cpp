@@ -244,10 +244,9 @@ void NavEKF3_core::SelectMagFusion()
                 if (onGroundNotMoving) {
                     // fuse last known good yaw angle before we stopped moving to allow yaw bias learning when on ground before flight
                     fuseEulerYaw(yawFusionMethod::STATIC);
-                } else if (onGround || (sq(P[0][0])+sq(P[1][1])+sq(P[2][2])+sq(P[3][3]) > 0.01f)) {
-                    // prevent uncontrolled yaw variance growth by fusing a zero innovation
-                    // when not on ground allow more variance growth so yaw can be corrected
-                    // by manoeuvring
+                } else if (onGround || PV_AidingMode == AID_NONE || (P[0][0]+P[1][1]+P[2][2]+P[3][3] > 0.01f)) {
+                    // prevent uncontrolled yaw variance growth that can destabilise the covariance matrix
+                    // by fusing a zero innovation
                     fuseEulerYaw(yawFusionMethod::PREDICTED);
                 }
             }
