@@ -359,8 +359,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "ETA is %d seconds", (int)current_loc.get_ETA(cmd.content.location));
-	set_next_WP(cmd.content.location);
+    set_next_WP(cmd.content.location);
 }
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)
