@@ -160,6 +160,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::FWD_THR:
     case AUX_FUNC::LANDING_FLARE:
     case AUX_FUNC::PARACHUTE_RELEASE:
+    case AUX_FUNC::MODE_SWITCH_RESET:
         break;
 
     case AUX_FUNC::Q_ASSIST:
@@ -317,6 +318,10 @@ case AUX_FUNC::ARSPD_CALIBRATE:
 #if PARACHUTE == ENABLED
         plane.parachute_manual_release();
 #endif
+        break;
+
+    case AUX_FUNC::MODE_SWITCH_RESET:
+        plane.reset_control_switch();
         break;
 
     default:
