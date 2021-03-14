@@ -64,6 +64,9 @@ bool ModeAuto::init(bool ignore_checks)
 //      relies on run_autopilot being called at 10hz which handles decision making and non-navigation related commands
 void ModeAuto::run()
 {
+    if (motors->armed() && copter.ap.land_complete && (mission.state() != AP_Mission::mission_state::MISSION_COMPLETE)) {
+      mission.start_or_resume();
+    }
     // call the correct auto controller
     switch (_mode) {
 
@@ -250,11 +253,6 @@ void ModeAuto::land_start(const Vector3f& destination)
 
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
-
-#if AC_FENCE == ENABLED
-    // disable the fence on landing
-    copter.fence.auto_disable_fence_for_landing();
-#endif
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -327,7 +325,7 @@ void ModeAuto::circle_start()
 // auto_spline_start - initialises waypoint controller to implement flying to a particular destination using the spline controller
 //  seg_end_type can be SEGMENT_END_STOP, SEGMENT_END_STRAIGHT or SEGMENT_END_SPLINE.  If Straight or Spline the next_destination should be provided
 void ModeAuto::spline_start(const Location& destination, bool stopped_at_start,
-                               AC_WPNav::spline_segment_end_type seg_end_type, 
+                               AC_WPNav::spline_segment_end_type seg_end_type,
                                const Location& next_destination)
 {
     _mode = Auto_Spline;
@@ -493,7 +491,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-    
+
     case MAV_CMD_DO_FENCE_ENABLE:
 #if AC_FENCE == ENABLED
         if (cmd.p1 == 0) { //disable
@@ -849,7 +847,7 @@ void ModeAuto::land_run()
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    
+
     land_run_horizontal_control();
     land_run_vertical_control();
 }
@@ -1518,9 +1516,8 @@ bool ModeAuto::verify_takeoff()
     // have we reached our target altitude?
     const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
 
-    // if we have reached our destination
+    // retract the landing gear
     if (reached_wp_dest) {
-        // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
 
@@ -1777,7 +1774,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // returns true with RTL has completed successfully
 bool ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && 
+    return (copter.mode_rtl.state_complete() &&
             (copter.mode_rtl.state() == ModeRTL::RTL_FinalDescent || copter.mode_rtl.state() == ModeRTL::RTL_Land) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }
