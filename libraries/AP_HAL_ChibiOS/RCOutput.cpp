@@ -1342,9 +1342,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
                      STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
 
-    // setup for 4 burst strided transfers. 0x0D is the register
-    // address offset of the CCR registers in the timer peripheral
-    group.pwm_drv->tim->DCR = 0x0D | STM32_TIM_DCR_DBL(3);
+    // setup for burst strided transfers into the timers 4 CCR registers
+    const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
+    group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
     group.dshot_state = DshotState::SEND_START;
 
     TOGGLE_PIN_DEBUG(54);
