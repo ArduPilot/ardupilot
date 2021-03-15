@@ -238,26 +238,78 @@ void Plane::calc_gndspeed_undershoot()
 {
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
-	// Modified from comparing GPS track with Yaw angle (which is only valid if Heading is perfectly aligned with Wind - almost never happens in real-life)
-	// instead use Bearing to Next WP - Tested - change suggested by GitUser nagygergely1975 (@gmail.com) - awaiting expert Devs opinion before accepting changes
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-		if (!(current_loc.same_latlon_as(next_WP_loc)))
-		{
-	      float next_wp_bearing_radian=current_loc.get_bearing(next_WP_loc);
-		  Vector2f bearing_vect_to_next_wp;
-		  bearing_vect_to_next_wp.x = cosf(next_wp_bearing_radian);
-		  bearing_vect_to_next_wp.y = sinf(next_wp_bearing_radian);
-		  Vector2f gndVel = ahrs.groundspeed_vector();
-		  if (!bearing_vect_to_next_wp.is_zero())
-		  {
-		    bearing_vect_to_next_wp.normalize();	
-            float gndSpdFwd = bearing_vect_to_next_wp * gndVel;
-			groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
-		  } else { mip_ground_track_speed_cm=0; groundspeed_undershoot=aparm.min_gndspeed_cm;}
-		}  else {  groundspeed_undershoot = 0; }
+	      Vector2f gndVel = ahrs.groundspeed_vector();
+        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
+        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
+        if (!yawVect.is_zero()) {
+            yawVect.normalize();
+            float gndSpdFwd = yawVect * gndVel;
+            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+        }
     } else {
         groundspeed_undershoot = 0;
     }
+}
+
+//Continuosly update / calculate effective (Ground) speed towards next WP, with ETA estimates included
+//Also keeps updating Wind vector projection split to on-bearing, prependicular to bearing, with Wind compensation angle
+//Note that these estimates may be very inaccurate in the first 3-5 seconds of turning towards the new WP
+//But they are becoming more & more accurate after 10-30 secs, as wind & airspeed fluctuations are averaging out
+//They are ment to be used as general helper variables for other, more complex navigation info / decision-making functions (for Plane)
+//Description of the continuosly updated variables are defined in Plane.h
+void Plane::Estimate_Bearing_SPD_ETA()
+{
+	  AP_Mission::Mission_Command next_cmd,c_cmd;
+	  uint16_t c_index = plane.mission.get_current_nav_index(); 
+	  uint16_t next_index=c_index+1;
+	  plane.mission.get_next_nav_cmd(c_index, c_cmd); 
+	  plane.mission.get_next_nav_cmd(next_index, next_cmd);
+	  float airspeed_measured;
+	  if  (plane.mission.is_nav_cmd(c_cmd)) {
+		  if (!(current_loc.same_latlon_as(next_WP_loc))) {
+		      if (AP::ahrs().airspeed_estimate(airspeed_measured)) {
+	              if (airspeed_measured>0) {
+					  float airspeed_available = airspeed_measured; //Assume that our available max airspeed to fight wind is equal to currently achieved airspeed (by using calc_gndspeed_undershoot)
+					  Vector3f nedWind = AP::ahrs().wind_estimate();
+					  Vector2f horizontal_wind_vect; //use only the horizontal components for this calculation
+					  horizontal_wind_vect.x = nedWind.x;  
+					  horizontal_wind_vect.y = nedWind.y;
+					  float l_bearing = current_loc.get_bearing(next_WP_loc); //radians
+					  float w_bearing = atan2f(-horizontal_wind_vect.y,-horizontal_wind_vect.x); //wind vector direction
+					  float l_dis = current_loc.get_distance(next_WP_loc); //distance to location in meters
+					  float angle_diff = l_bearing-w_bearing; //difference between bearing angle to location VS wind vector direction
+					  wind_on_bearing = cosf(angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component along the bearing-to-location direction
+					  wind_prependicular_to_bearing = sinf(angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component prependicular to the bearing-to-location direction - we need to compensate this by heading
+					  float wind_compensation_angle = acosf(wind_prependicular_to_bearing / airspeed_available); //Get the Heading angle correction eeded to compensate the effect of wind vector
+					  wind_compensation_angle_degrees = degrees(wind_compensation_angle);
+					  wind_compensation_angle_diff_degrees = degrees(angle_diff);
+					  float airspeed_on_bearing = airspeed_available*sinf(wind_compensation_angle); //Get the Airspeed component we have remaining after wind-compensation - we can use this to proceed towards target location
+					  expected_groundspeed_towards_WP = airspeed_on_bearing-wind_on_bearing; //We still have to find Wind (projected component in lint with bearing-to-location vector)
+					  if (expected_groundspeed_towards_WP>0) { //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
+						  current_ETA = l_dis / expected_groundspeed_towards_WP; //Current Estimated Time of Arrival to next WP, taking Wind speed & direction into account
+					  } else {
+						  current_ETA = -1; //We may never get there with the current wind vs. airspeed - Use (-1) to indicate infinately long ETA
+					  }
+					  float next_wp_bearing_radian=current_loc.get_bearing(next_WP_loc);
+					  Vector2f gndVel = ahrs.groundspeed_vector();
+					  Vector2f bearing_vect_to_next_wp;
+					  bearing_vect_to_next_wp.x = cosf(next_wp_bearing_radian);
+					  bearing_vect_to_next_wp.y = sinf(next_wp_bearing_radian);
+					  if (!bearing_vect_to_next_wp.is_zero()) {
+						  bearing_vect_to_next_wp.normalize();
+						  float current_effective_speed = bearing_vect_to_next_wp * gndVel; //m/s
+						  _avg_effective_speed += current_effective_speed;
+						  _EB_SPD_ETA_Cycles++;
+						  if (_EB_SPD_ETA_Cycles>0) {
+							  effective_gs = _avg_effective_speed / _EB_SPD_ETA_Cycles; //Effective (Ground) Speed towards next WP
+							  ETA_speed_estimate_error = effective_gs - expected_groundspeed_towards_WP; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
+						  }
+					  }
+				  }
+	          }
+	      }
+     }
 }
 
 void Plane::update_loiter(uint16_t radius)

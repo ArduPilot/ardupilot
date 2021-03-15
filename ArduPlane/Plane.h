@@ -392,7 +392,19 @@ private:
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
 
-    // Difference between current altitude and desired altitude.  Centimeters
+    float wind_on_bearing; //Wind vector component along the bearing-to-location direction, m/s
+    float wind_prependicular_to_bearing; //Wind vector component prependicular to the bearing-to-WP direction, m/s
+    float wind_compensation_angle_degrees; //Wind compensation angle (degrees)
+    float wind_compensation_angle_diff_degrees; //Difference between bearing & wind compensation heading angle (degrees)
+    float expected_groundspeed_towards_WP; //Effective speed estimate to next WP, derived from Wind/Airspeed components (m/s)
+    float current_ETA; //Current Estimated Time of Arrival to next WP, derived from Wind speed & airspeed components (seconds)
+    float effective_gs; //Effective (Ground) Speed towards next WP (m/s)
+    float ETA_speed_estimate_error; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
+    int32_t _avg_effective_speed; //Cumulative effective speed variable, only valid in ratio of EB_SPD_ETA_Cycles
+	int32_t _mission_next_wp_set_ms; //Time of the next WP command issued (mSec)
+    int32_t _EB_SPD_ETA_Cycles; //Number of recalculations of the above parameters since switching to the Next WP
+
+	// Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
 
     // Battery Sensors
@@ -966,6 +978,7 @@ private:
     void navigate();
     void calc_airspeed_errors();
     void calc_gndspeed_undershoot();
+	void Estimate_Bearing_SPD_ETA();
     void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
