@@ -238,15 +238,23 @@ void Plane::calc_gndspeed_undershoot()
 {
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
+	// Modified from comparing GPS track with Yaw angle (which is only valid if Heading is perfectly aligned with Wind - almost never happens in real-life)
+	// instead use Bearing to Next WP - Tested - change suggested by GitUser nagygergely1975 (@gmail.com) - awaiting expert Devs opinion before accepting changes
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	      Vector2f gndVel = ahrs.groundspeed_vector();
-        const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
-        Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-        if (!yawVect.is_zero()) {
-            yawVect.normalize();
-            float gndSpdFwd = yawVect * gndVel;
-            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
-        }
+		if (!(current_loc.same_latlon_as(next_WP_loc)))
+		{
+	      float next_wp_bearing_radian=current_loc.get_bearing(next_WP_loc);
+		  Vector2f bearing_vect_to_next_wp;
+		  bearing_vect_to_next_wp.x = cosf(next_wp_bearing_radian);
+		  bearing_vect_to_next_wp.y = sinf(next_wp_bearing_radian);
+		  Vector2f gndVel = ahrs.groundspeed_vector();
+		  if (!bearing_vect_to_next_wp.is_zero())
+		  {
+		    bearing_vect_to_next_wp.normalize();	
+            float gndSpdFwd = bearing_vect_to_next_wp * gndVel;
+			groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+		  } else { mip_ground_track_speed_cm=0; groundspeed_undershoot=aparm.min_gndspeed_cm;}
+		}  else {  groundspeed_undershoot = 0; }
     } else {
         groundspeed_undershoot = 0;
     }
