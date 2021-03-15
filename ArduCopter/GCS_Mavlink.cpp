@@ -557,7 +557,7 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     
                                                                     // beginning of my code
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
-    uint16_t k = (int)rc().channel(3)->get_control_in());
+    uint16_t k = (int)rc().channel(3)->get_control_in();
     //uint16_t k = hal.rcin->read(3);         // reading ch3 (YAW) from pilot
     
     if (i >= 1850) {                                                // if ch6 from the pilot is high then this part will work
