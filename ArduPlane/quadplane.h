@@ -133,7 +133,7 @@ public:
 
     // handle different tailsitter input types
     void tailsitter_check_input(void);
-    
+
     // check if we have completed transition to fixed wing
     bool tailsitter_transition_fw_complete(void);
 

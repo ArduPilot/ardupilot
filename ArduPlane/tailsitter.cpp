@@ -285,19 +285,46 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
     return false;
 }
 
+namespace {
+    // set radio_in for a channel given the corresponding normalized value
+    // (inverse of norm_input)
+    void update_radio_in(RC_Channel *chan, float norm_in) {
+        // convert norm_in to PWM value using channel min/max/trim
+        if (chan->get_reverse()) norm_in *= -1;
+        int16_t pwm_range;
+        if (norm_in < 0) {
+            pwm_range = chan->get_radio_trim() - chan->get_radio_min();
+        } else {
+            pwm_range = chan->get_radio_max() - chan->get_radio_trim();
+        }
+        int16_t radio_in = norm_in * pwm_range + chan->get_radio_trim();
+        // set radio_in and update control_in
+        chan->set_radio_in(radio_in);
+        chan->set_control_in(chan->pwm_to_angle());
+    }
+}
+
 // handle different tailsitter input types
 void QuadPlane::tailsitter_check_input(void)
 {
     if (tailsitter_active() &&
+        (plane.control_mode != &plane.mode_qacro) &&
         (tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
-        // the user has asked for body frame controls when tailsitter
-        // is active. We switch around the control_in value for the
+        // The user has asked for body frame controls when tailsitter
+        // is active. We switch around the radio_in value for the
         // channels to do this, as that ensures the value is
-        // consistent throughout the code
-        int16_t roll_in = plane.channel_roll->get_control_in();
-        int16_t yaw_in = plane.channel_rudder->get_control_in();
-        plane.channel_roll->set_control_in(yaw_in);
-        plane.channel_rudder->set_control_in(-roll_in);
+        // consistent throughout the code.
+        // roll and rudder channels are both guaranteed to be TYPE_ANGLE
+
+        // get normalized roll and yaw inputs (no deadzone)
+        float roll_n = plane.channel_roll->norm_input();
+        float yaw_n  = plane.channel_rudder->norm_input();
+
+        // update roll and rudder channels with swapped values
+        // deadzone, trim and scaling will be applied in pwm_to_angle
+        // and subsequent calls to norm_input and norm_input_dz should work as expected
+        update_radio_in(plane.channel_roll, yaw_n);
+        update_radio_in(plane.channel_rudder, -roll_n);
     }
 }
 
