@@ -16,6 +16,8 @@
 #include <unistd.h>
 #include "AS5600_AOA.h"
 #include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
+
 
 extern const AP_HAL::HAL &hal;
 
@@ -27,10 +29,9 @@ extern const AP_HAL::HAL &hal;
 ***************************************************/
  AS5600_AOA::AS5600_AOA()
 {
-    bus = 1; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
+    bus = 2; //Sets the bus number for the device, unclear what this number should be, trial and error to make it work
     address = 0x36; //This is the I2C address for the device, it is set by the manufacturer
 }
-
 
 bool AS5600_AOA::init()
 {
@@ -70,7 +71,7 @@ bool AS5600_AOA::init()
 
 
 /*******************************************************
- * Method: getRawAngle
+ * Method: update
  * In: none
  * Out: value of raw angle register
  * Description: gets raw value of magnet position.
@@ -89,15 +90,26 @@ void AS5600_AOA::update(void)
 
 void AS5600_AOA::_timer(void)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "update called - regHiRead: %d regLoRead: %d", regHiRead, regLoRead);
+
     uint8_t low, high;
 
     {
         WITH_SEMAPHORE(dev->get_semaphore());
 
-        if (!dev->read_registers(REG_RAW_ANG_HI, &high, 1) ||
-            !dev->read_registers(REG_RAW_ANG_LO, &low, 1)){
+        if (!dev->read_registers(REG_RAW_ANG_HI, &high, 1)){
             return;
         }
+
+        regHiRead = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "REG_RAW_ANG_HI: %d", high);
+
+        if (!dev->read_registers(REG_RAW_ANG_LO, &low, 1)){
+            return;
+        }
+
+        gcs().send_text(MAV_SEVERITY_INFO, "REG_RAW_ANG_LO: %d", low);
+        regLoRead = true;
     }
 
     WITH_SEMAPHORE(sem);

@@ -8,7 +8,6 @@
 #include <AP_Logger/AP_Logger.h>
 
 
-
 class AS5600_AOA {
 
 public:
@@ -37,6 +36,9 @@ public:
     int  burnMaxAngleAndConfig();
     void setOutPut(uint8_t mode);
 
+    bool regHiRead = false;
+    bool regLoRead = false;
+
 private:
 
     HAL_Semaphore sem;
@@ -53,25 +55,6 @@ private:
     uint16_t maxAngle;
 
     /* Registers */
-//
-//    int  _zmco;
-//    int _zpos_hi;    /*zpos[11:8] high nibble  START POSITION */
-//    int _zpos_lo;    /*zpos[7:0] */
-//    int _mpos_hi;    /*mpos[11:8] high nibble  STOP POSITION */
-//    int _mpos_lo;    /*mpos[7:0] */
-//    int _mang_hi;    /*mang[11:8] high nibble  MAXIMUM ANGLE */
-//    int _mang_lo;    /*mang[7:0] */
-//    int _conf_hi;
-//    int _conf_lo;
-//    int _raw_ang_hi;
-//    int _raw_ang_lo;
-//    int _ang_hi;
-//    int _ang_lo;
-//    int _stat;
-//    int _agc;
-//    int _mag_hi;
-//    int _mag_lo;
-//    int _burn;
 
     static const uint8_t REG_ZMCO       = 0x00;
     static const uint8_t REG_ZPOS_HI    = 0x01;
