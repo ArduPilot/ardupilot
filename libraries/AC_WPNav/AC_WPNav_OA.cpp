@@ -76,6 +76,7 @@ bool AC_WPNav_OA::update_wpnav()
         if (_oa_state == AP_OAPathPlanner::OA_NOT_REQUIRED) {
             _origin_oabak = _origin;
             _destination_oabak = _destination;
+            _terrain_alt_oabak = _terrain_alt;
         }
 
         // convert origin and destination to Locations and pass into oa
@@ -87,7 +88,7 @@ bool AC_WPNav_OA::update_wpnav()
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_state != oa_retstate) {
                 // object avoidance has become inactive so reset target to original destination
-                set_wp_destination(_destination_oabak, _terrain_alt);
+                set_wp_destination(_destination_oabak, _terrain_alt_oabak);
                 _oa_state = oa_retstate;
             }
             break;
@@ -119,7 +120,7 @@ bool AC_WPNav_OA::update_wpnav()
                         const float dist_along_path = constrain_float(oa_destination_new.line_path_proportion(origin_loc, destination_loc), 0.0f, 1.0f);
                         dest_NEU.z = linear_interpolate(_origin_oabak.z, _destination_oabak.z, dist_along_path, 0.0f, 1.0f);
                     }       
-                    if (set_wp_destination(dest_NEU, _terrain_alt)) {
+                    if (set_wp_destination(dest_NEU, _terrain_alt_oabak)) {
                         _oa_state = oa_retstate;
                     }
                 }
