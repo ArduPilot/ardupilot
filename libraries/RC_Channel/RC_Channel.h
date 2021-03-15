@@ -72,8 +72,8 @@ public:
     int16_t    get_control_in_no_dz() const { return control_in_zero_dz;}
     void       set_control_in_no_dz(int16_t val) { control_in_zero_dz = val;}
 
-    int16_t    get_control_in_no_trim() const { return control_in_ignore_trim;}
-    void       get_control_in_no_trim(int16_t val) { control_in_ignore_trim = val;}
+    int16_t    get_control_in_ignore_trim() const { return control_in_ignore_trim;}
+    void       set_control_in_ignore_trim(int16_t val) { control_in_ignore_trim = val;}
 
     void       clear_override();
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
