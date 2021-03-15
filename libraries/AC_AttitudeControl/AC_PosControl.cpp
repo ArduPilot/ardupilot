@@ -825,9 +825,9 @@ float AC_PosControl::get_lean_angle_max_cd() const
 void AC_PosControl::init_xy_controller()
 {
     // set roll, pitch lean angle targets to current attitude
-    // todo: this should probably be based on the desired attitude not the current attitude
-    _roll_target = _ahrs.roll_sensor;
-    _pitch_target = _ahrs.pitch_sensor;
+    const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
+    _roll_target = att_target_euler_cd.x;
+    _pitch_target = att_target_euler_cd.y;
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
@@ -1125,13 +1125,20 @@ void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss,
     roll_target = atanf(accel_right * cos_pitch_target / (GRAVITY_MSS * 100.0f)) * (18000.0f / M_PI);
 }
 
-// get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+// get_lean_angles_to_accel - convert roll, pitch lean target angles to lat/lon frame accelerations in cm/s/s
 void AC_PosControl::lean_angles_to_accel(float& accel_x_cmss, float& accel_y_cmss) const
 {
     // rotate our roll, pitch angles into lat/lon frame
-    // todo: this should probably be based on the desired attitude not the current attitude
-    accel_x_cmss = (GRAVITY_MSS * 100) * (-_ahrs.cos_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() - _ahrs.sin_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll() * _ahrs.cos_pitch(), 0.5f);
-    accel_y_cmss = (GRAVITY_MSS * 100) * (-_ahrs.sin_yaw() * _ahrs.sin_pitch() * _ahrs.cos_roll() + _ahrs.cos_yaw() * _ahrs.sin_roll()) / MAX(_ahrs.cos_roll() * _ahrs.cos_pitch(), 0.5f);
+    const Vector3f &att_target_euler = _attitude_control.get_att_target_euler_rad();
+    const float sin_roll = sinf(att_target_euler.x);
+    const float cos_roll = cosf(att_target_euler.x);
+    const float sin_pitch = sinf(att_target_euler.y);
+    const float cos_pitch = cosf(att_target_euler.y);
+    const float sin_yaw = _ahrs.sin_yaw();
+    const float cos_yaw = _ahrs.cos_yaw();
+
+    accel_x_cmss = (GRAVITY_MSS * 100) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.5f);
+    accel_y_cmss = (GRAVITY_MSS * 100) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.5f);
 }
 
 /// calc_leash_length - calculates the horizontal leash length given a maximum speed, acceleration and position kP gain
