@@ -556,10 +556,10 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     };
     
                                                                     // beginning of my code
-    uint16_t i = 1900; // hal.rcin->read(7);         // reading ch6 from pilot
+    uint16_t i = hal.rcin->read(7);         // reading ch6 from pilot
     uint16_t k = 1500; // hal.rcin->read(5);         // reading ch3 (YAW) from pilot
     
-    if (i >= 1850) {                                                // if ch6 from the pilot is high then this part will work
+    if (i == 1900) {                                                // if ch6 from the pilot is high then this part will work
         RC_Channels::set_override(9, 1500, tnow);       // ch9 from the pilot will be overrided by ch9 from MavLink
         RC_Channels::set_override(10, override_data[10], tnow);     // ch10 from the pilot will be overrided by ch10 from MavLink
         RC_Channels::set_override(11, override_data[11], tnow);     // ch11 from the pilot will be overrided by ch11 from MavLink
