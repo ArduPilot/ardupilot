@@ -3,7 +3,6 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_Generic.h"
-#include <utility>
 
 uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
                              0x3e,  // cell 2
@@ -129,50 +128,6 @@ void AP_BattMonitor_SMBus_Generic::timer()
     read_cycle_count();
 }
 
-// read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Generic::read_block(uint8_t reg, uint8_t* data, bool append_zero) const
-{
-    // get length
-    uint8_t bufflen;
-    // read byte (first byte indicates the number of bytes in the block)
-    if (!_dev->read_registers(reg, &bufflen, 1)) {
-        return 0;
-    }
-
-    // sanity check length returned by smbus
-    if (bufflen == 0 || bufflen > SMBUS_READ_BLOCK_MAXIMUM_TRANSFER) {
-        return 0;
-    }
-
-    // buffer to hold results (2 extra byte returned holding length and PEC)
-    const uint8_t read_size = bufflen + 1 + (_pec_supported ? 1 : 0);
-    uint8_t buff[read_size];
-
-    // read bytes
-    if (!_dev->read_registers(reg, buff, read_size)) {
-        return 0;
-    }
-
-    // check PEC
-    if (_pec_supported) {
-        uint8_t pec = get_PEC(AP_BATTMONITOR_SMBUS_I2C_ADDR, reg, true, buff, bufflen+1);
-        if (pec != buff[bufflen+1]) {
-            return 0;
-        }
-    }
-
-    // copy data (excluding PEC)
-    memcpy(data, &buff[1], bufflen);
-
-    // optionally add zero to end
-    if (append_zero) {
-        data[bufflen] = '\0';
-    }
-
-    // return success
-    return bufflen;
-}
-
 // check if PEC supported with the version value in SpecificationInfo() function
 // returns true once PEC is confirmed as working or not working
 bool AP_BattMonitor_SMBus_Generic::check_pec_support()
@@ -214,4 +169,3 @@ bool AP_BattMonitor_SMBus_Generic::check_pec_support()
 	_pec_confirmed = true;
 	return true;
 }
-
