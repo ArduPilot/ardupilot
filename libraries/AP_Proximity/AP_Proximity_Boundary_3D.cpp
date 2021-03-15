@@ -38,7 +38,6 @@ void AP_Proximity_Boundary_3D::init()
             const float angle_rad = ((float)_sector_middle_deg[sector]+(PROXIMITY_SECTOR_WIDTH_DEG/2.0f));
             _sector_edge_vector[layer][sector].offset_bearing(angle_rad, pitch, 100.0f);
             _boundary_points[layer][sector] = _sector_edge_vector[layer][sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
-            _filtered_distance[layer][sector].set_cutoff_frequency(0.25f);
         }
     }
 }
@@ -92,11 +91,25 @@ void AP_Proximity_Boundary_3D::add_distance(float pitch, float yaw, float distan
     }
 }
 
+// apply a new cutoff_freq to low-pass filter
+void AP_Proximity_Boundary_3D::apply_filter_freq(float cutoff_freq)
+{
+    for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
+        for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+            _filtered_distance[layer][sector].set_cutoff_frequency(cutoff_freq);
+        }
+    }
+}
+
 // Apply low pass filter on the raw distance
 void AP_Proximity_Boundary_3D::set_filtered_distance(const Face &face, float distance)
 {
     if (!face.valid()) {
         return;
+    }
+    if (!is_equal(_filtered_distance[face.layer][face.sector].get_cutoff_freq(), _filter_freq)) {
+        // cutoff freq has changed
+        apply_filter_freq(_filter_freq);
     }
 
     const uint32_t now_ms = AP_HAL::millis();
@@ -193,6 +206,22 @@ void AP_Proximity_Boundary_3D::reset_face(const Face &face)
 
     // update simple avoidance boundary
     update_boundary(face);
+}
+
+// check if a face has valid distance even if it was updated a long time back
+void AP_Proximity_Boundary_3D::check_face_timeout()
+{
+    for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
+        for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
+            if (_distance_valid[layer][sector]) {
+                if ((AP_HAL::millis() - _last_update_ms[layer][sector]) > PROXIMITY_FACE_RESET_MS) {
+                    // this face has a valid distance but wasn't updated for a long time, reset it
+                    AP_Proximity_Boundary_3D::Face face{layer, sector};
+                    reset_face(face);
+                }
+            }
+        }
+    }
 }
 
 // get distance for a face.  returns true on success and fills in distance argument with distance in meters

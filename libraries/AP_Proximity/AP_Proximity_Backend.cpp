@@ -55,6 +55,21 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
     state.status = status;
 }
 
+// timeout faces that have not received data recently and update filter frequencies
+void AP_Proximity_Backend::boundary_3D_checks()
+{
+    // set the cutoff freq for low pass filter
+    boundary.set_filter_freq(frontend.get_filter_freq());
+
+    // check if any face has valid distance when it should not
+    const uint32_t now_ms = AP_HAL::millis();
+    // run this check every PROXIMITY_BOUNDARY_3D_TIMEOUT_MS
+    if ((now_ms - _last_timeout_check_ms) > PROXIMITY_BOUNDARY_3D_TIMEOUT_MS) {
+        _last_timeout_check_ms = now_ms;
+        boundary.check_face_timeout();
+    }
+}
+
 // correct an angle (in degrees) based on the orientation and yaw correction parameters
 float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) const
 {
