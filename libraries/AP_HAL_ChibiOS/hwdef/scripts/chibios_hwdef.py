@@ -632,7 +632,7 @@ def enable_can(f):
     else:
         can_order = []
         for i in range(1,3):
-            if 'CAN%u' % i in bytype:
+            if 'CAN%u' % i in bytype or (i == 1 and 'CAN' in bytype):
                 can_order.append(i)
 
     base_list = []
@@ -648,6 +648,9 @@ def enable_can(f):
     f.write('#define HAL_CAN_INTERFACE_REV_LIST %s\n' % ','.join([str(i) for i in can_rev_order]))
     f.write('#define HAL_CAN_BASE_LIST %s\n' % ','.join(base_list))
     f.write('#define HAL_NUM_CAN_IFACES %d\n' % len(base_list))
+    global mcu_type
+    if 'CAN' in bytype and mcu_type.startswith("STM32F3"):
+        f.write('#define CAN1_BASE CAN_BASE\n')
     env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
 
