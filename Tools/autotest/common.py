@@ -4223,7 +4223,7 @@ class AutoTest(ABC):
                 target_compid=None,
                 timeout=10,
                 quiet=False):
-        self.drain_mav_unparsed()
+        self.drain_mav()
         self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_cmd(
             command,
@@ -7441,22 +7441,32 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None):
+        if type(message_id) == str:
+            message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
+        self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                      message_id,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      target_sysid=target_sysid,
+                      target_compid=target_compid)
+
     def poll_message(self, message_id, timeout=10):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
-        # temporarily use a constant in place of
-        # mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE until we have a
-        # pymavlink release:
-        tstart = self.get_sim_time()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-                     message_id,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=timeout)
+        self.drain_mav_unparsed()
+        tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+        self.send_poll_message(message_id)
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            timeout,
+            quiet=False
+        )
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not receive polled message")
@@ -7467,6 +7477,28 @@ Also, ignores heartbeats not from our target system'''
             if m.id != message_id:
                 continue
             return m
+
+    def get_messages_frame(self, msg_names):
+        '''try to get a "frame" of named messages - a set of messages as close
+        in time as possible'''
+        msgs = {}
+
+        def get_msgs(mav, m):
+            t = m.get_type()
+            if t in msg_names:
+                msgs[t] = m
+        self.do_timesync_roundtrip()
+        self.install_message_hook(get_msgs)
+        for msg_name in msg_names:
+            self.send_poll_message(msg_name)
+        while True:
+            self.mav.recv_match(blocking=True)
+            if len(msgs.keys()) == len(msg_names):
+                break
+
+        self.remove_message_hook(get_msgs)
+
+        return msgs
 
     def test_request_message(self, timeout=60):
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
