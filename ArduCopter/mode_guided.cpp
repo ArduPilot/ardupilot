@@ -415,11 +415,26 @@ void Mode::auto_takeoff_run()
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    copter.pos_control->update_z_controller();
 
-    // call attitude controller
-    auto_takeoff_attitude_run(target_yaw_rate);
+
+
+    if(motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED){
+
+        // call z-axis position controller (wpnav should have already updated it's alt target)
+        copter.pos_control->update_z_controller();
+        // call attitude controller
+        auto_takeoff_attitude_run(target_yaw_rate);
+
+    }else{
+
+		//Don't let control system wind up during spoolup
+        attitude_control->reset_rate_controller_I_terms();
+        pos_control->relax_alt_hold_controllers(0.0f);
+
+    }
+
+
+
 }
 
 // guided_pos_control_run - runs the guided position controller

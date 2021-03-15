@@ -378,6 +378,9 @@ public:
 		k_param_rpm_hover,
 		k_param_battery_number,
 		k_param_payload_weight,
+		k_param_en_topple_sense,
+		k_param_rotor_timeout,
+
 
 
 
@@ -481,7 +484,8 @@ public:
 
     AP_Int8					battery_number;
     AP_Float				payload_weight;
-
+    AP_Int8					en_topple_sense;
+    AP_Float				rotor_timeout;
 
 
     // Note: keep initializers here in the same order as they are declared

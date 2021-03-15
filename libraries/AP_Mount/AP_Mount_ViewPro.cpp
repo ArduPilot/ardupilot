@@ -41,10 +41,14 @@ void AP_Mount_ViewPro::init()
 
 	command_flags.change_state = false;
 	command_flags.center_yaw = false;
+	command_flags.look_down = false;
 	command_flags.toggle_rec = false;
 	command_flags.stop_video = false;
+	command_flags.flip_image_IR = false;
+	command_flags.flip_image_EO = false;
 	yaw_center_reset_flag = false;
 	query_state_flag = false;
+	image_flip_toggle =false;
 
 }
 
@@ -191,6 +195,8 @@ void AP_Mount_ViewPro::send_mount_status(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.
     mavlink_msg_mount_status_send(chan, 0, 0, _camera_tilt_angle, 0, _camera_pan_angle);
+
+    mavlink_msg_mount_orientation_send(chan, AP_HAL::millis(), 0, _camera_tilt_angle,_camera_pan_angle, _camera_pan_angle );
 }
 
 bool AP_Mount_ViewPro::can_send(bool with_control) {
@@ -283,7 +289,27 @@ void AP_Mount_ViewPro::send_targeting_cmd()
 		_last_send = AP_HAL::millis();
 		command_flags.default_pip_color = false;
 		return;
+	}else if(command_flags.flip_image_IR){
+
+		cmd_flip_image_IR();
+		_last_send = AP_HAL::millis();
+		command_flags.flip_image_IR = false;
+		command_flags.flip_image_EO = true;
+		return;
+	}else if(command_flags.flip_image_EO){
+
+		cmd_flip_image_EO();
+		_last_send = AP_HAL::millis();
+		command_flags.flip_image_EO = false;
+		return;
+	}else if(command_flags.look_down){
+
+		cmd_look_down();
+		_last_send = AP_HAL::millis();
+		command_flags.look_down = false;
+		return;
 	}
+
 
 
 	// If no commands where out going, resume with gimbal control
@@ -849,6 +875,34 @@ bool AP_Mount_ViewPro::yaw_center(){
 }
 
 
+void AP_Mount_ViewPro::cmd_look_down(){
+
+	uint8_t* buf_cmd;
+	uint8_t buf_size;
+
+	static	cmd_6_byte_struct center_yaw;
+
+	center_yaw.byte1 = 0x3E;
+	center_yaw.byte2 = 0x45;
+	center_yaw.byte3 = 0x01;
+	center_yaw.byte4 = 0x46;
+	center_yaw.byte5 = 0x11;
+	center_yaw.byte6 = 0x11;
+
+	buf_size = sizeof(center_yaw);
+	buf_cmd = (uint8_t*)&center_yaw;
+
+	if ((size_t)_port->txspace() < buf_size) {
+		return;
+	}
+
+	for (uint8_t i = 0;  i != buf_size ; i++) {
+		_port->write(buf_cmd[i]);
+	}
+
+}
+
+
 void AP_Mount_ViewPro::zoom_camera(){
 
 		static cmd_6_byte_struct cmd_set_zoom_data;
@@ -1220,11 +1274,93 @@ void AP_Mount_ViewPro::default_pip_color(){
 		for (uint8_t i = 0;  i != 48 ; i++) {
 			_port->write(send_buf[i]);
 		}
+}
+
+
+void AP_Mount_ViewPro::cmd_flip_image_IR(){
+
+	// setup message to send
+		cmd_48_byte_struct toggle_flip_image;
+		uint8_t* send_buf = (uint8_t*)&toggle_flip_image;
+		uint16_t checksum = 0;
+
+		for(uint8_t i = 0; i != 47; i++){
+			send_buf[i] = 0x00;
+		}
+
+		//Header
+		send_buf[0] = 0x7E;
+		send_buf[1] = 0x7E;
+		send_buf[2] = 0x44;
+
+		//camera function
+		send_buf[5] = 0x91;
+
+		if(image_flip_toggle){
+
+			image_flip_toggle = false;
+			send_buf[6] = 0x80;
+
+		}else{
+
+			image_flip_toggle = true;
+			send_buf[6] = 0xC0;
+		}
+
+		// compute checksum
+		for (uint8_t i = 0;  i < 47 ; i++) {
+			checksum += send_buf[i];
+		}
+		send_buf[47] = (uint8_t)(checksum % 256);
 
 
 
+		if ((size_t)_port->txspace() < 47) {
+			return;
+		}
+
+		for (uint8_t i = 0;  i != 48 ; i++) {
+			_port->write(send_buf[i]);
+		}
 
 }
 
 
+
+
+void AP_Mount_ViewPro::cmd_flip_image_EO(){
+
+	uint8_t* buf_cmd;
+	uint8_t buf_size;
+
+	static	cmd_6_byte_struct toggle_flip_image;
+
+	toggle_flip_image.byte1 = 0x81;
+	toggle_flip_image.byte2 = 0x01;
+	toggle_flip_image.byte3 = 0x04;
+	toggle_flip_image.byte4 = 0x66;
+
+	if(image_flip_toggle){
+
+		toggle_flip_image.byte5 = 0x02;
+
+	}else{
+
+		toggle_flip_image.byte5 = 0x03;
+	}
+
+	toggle_flip_image.byte6 = 0xFF;
+
+	buf_size = sizeof(toggle_flip_image);
+	buf_cmd = (uint8_t*)&toggle_flip_image;
+
+	if ((size_t)_port->txspace() < buf_size) {
+		return;
+	}
+
+	for (uint8_t i = 0;  i != buf_size ; i++) {
+		_port->write(buf_cmd[i]);
+	}
+
+}
 

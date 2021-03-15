@@ -154,7 +154,6 @@ void Copter::userhook_50Hz()
 
 	switch(spirit_state){
 
-
 	case disarm:
 
 		//zero out dynamic trim for now
@@ -175,10 +174,14 @@ void Copter::userhook_50Hz()
 		//Looks for issues with startup
 		servo_voltage_watcher();
 
-		//Spoolup Watcher.  Disarm if 3.5 seconds passes without advancing
-		if(AP_HAL::millis16() - spoolup_watcher > (uint16_t)3500){
-			 copter.arming.disarm();
-			 gcs().send_text(MAV_SEVERITY_CRITICAL,"A Rotor Failed to Start: Disarm");
+		if((g.rotor_timeout*1000) >= 1){  // if timeout is set too low, just ignore
+
+			//Spoolup Watcher.  Disarm if 3.5 seconds passes without advancing
+			if(AP_HAL::millis16() - spoolup_watcher > ((uint16_t)g.rotor_timeout*1000)){
+				 copter.arming.disarm();
+				 gcs().send_text(MAV_SEVERITY_CRITICAL,"A Rotor Failed to Start: Disarm");
+			}
+
 		}
 
 		_fwd_rpm = rpm_sensor.get_rpm(0);
@@ -350,6 +353,10 @@ void Copter::userhook_auxSwitch3(uint8_t ch_flag)
 void Copter::topple_sense(){
 
 
+	if(!g.en_topple_sense){
+		return;
+	}
+
 	//Disarm in spoolup if inclined over 15 deg
 	if(spirit_state == spoolup){
 		if(labs(ahrs.pitch_sensor) > 1500 or labs(ahrs.roll_sensor) > 1500){
@@ -369,18 +376,18 @@ void Copter::topple_sense(){
 
 		if(fabsf(attitude_control->get_att_error_angle_deg()) > 45.0f){
 			copter.arming.disarm();
-			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing, 1");
 			 return;
 		}
 
 		if(fabsf(attitude_control->get_att_error_angle_deg()) > 30.0f and channel_throttle->get_control_in() == 0){
 			 copter.arming.disarm();
-			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing, 2");
 		}
 
-		if((RangeFinder::RangeFinder_OutOfRangeLow or rangefinder_state.alt_cm_filt.get() <= 75.0f) and fabsf(attitude_control->get_att_error_angle_deg()) > 20.0f and copter.flightmode->get_alt_above_ground_cm() < 400){
+		if((!RangeFinder::RangeFinder_NotConnected and !RangeFinder::RangeFinder_NoData) and (RangeFinder::RangeFinder_OutOfRangeLow or rangefinder_state.alt_cm_filt.get() <= 75.0f) and fabsf(attitude_control->get_att_error_angle_deg()) > 25.0f and copter.flightmode->get_alt_above_ground_cm() < 400){
 			 copter.arming.disarm();
-			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing");
+			 gcs().send_text(MAV_SEVERITY_CRITICAL,"Topple landing, 3");
 		}
 
 	}else{
@@ -574,10 +581,13 @@ void Copter::Decode_Buttons(){
 
 
 	if(short_press_flag_ch9){
+		camera_mount.center_yaw();
 		short_press_flag_ch9 = false;
 	}
 
 	if(long_press_flag_ch9){
+		//camera_mount.flip_image();
+		camera_mount.look_down();
 		long_press_flag_ch9 = false;
 	}
 

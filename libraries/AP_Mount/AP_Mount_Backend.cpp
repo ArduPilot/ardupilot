@@ -246,11 +246,12 @@ void AP_Mount_Backend::toggle_camera_state(){command_flags.change_state = true;}
 
 void AP_Mount_Backend::center_yaw(){ command_flags.center_yaw = true; }
 
+void AP_Mount_Backend::look_down(){ command_flags.look_down = true; }
+
+void AP_Mount_Backend::flip_image(){ command_flags.flip_image_IR = true; }
+
+
 void AP_Mount_Backend::turn_camera_off(){command_flags.turn_camera_off = true; }
-
-
-
-
 
 
 

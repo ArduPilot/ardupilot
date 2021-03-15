@@ -627,6 +627,18 @@ void AP_Mount::center_yaw(uint8_t instance)
 }
 
 
+void AP_Mount::look_down(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->look_down();
+}
+
+
+
 void AP_Mount::turn_camera_off(uint8_t instance)
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
@@ -648,6 +660,22 @@ void AP_Mount::enable_follow(uint8_t instance, bool en)
     // send command to backend
     _backends[instance]->enable_follow(en);
 }
+
+
+
+
+// set_angle_targets - sets angle targets in degrees
+void AP_Mount::flip_image(uint8_t instance)
+{
+    if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->flip_image();
+}
+
+
 
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)

@@ -88,6 +88,8 @@ public:
 	virtual void set_camera_point_ROI(float yaw);
 	virtual void enable_follow(bool en);
 	virtual void center_yaw();
+	virtual void look_down();
+	virtual void flip_image();
 
     bool _enable_follow;
 
@@ -140,6 +142,7 @@ protected:
     struct command_flags {
     	bool change_state;
     	bool center_yaw;
+    	bool look_down;
     	bool toggle_rec;
     	bool stop_video;
     	bool turn_camera_off;
@@ -147,6 +150,8 @@ protected:
     	bool toggle_pip;
 		bool toggle_color;
 		bool default_pip_color;
+		bool flip_image_IR;
+		bool flip_image_EO;
     	}  command_flags;
 
 private:

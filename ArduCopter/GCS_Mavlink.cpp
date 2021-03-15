@@ -296,7 +296,6 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
     return true;
 }
 
-
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate

@@ -131,8 +131,13 @@ void AP_MotorsCoax::output_to_motors()
 
     	}else if(_enable_aft_rotor){
 
-			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
-			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+    		if(_spin_arm <= 0.05){
+    			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_min;
+    			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_min);
+    		}else{
+    			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
+    			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+    		}
 
         	_actuator[2] = _aft_rotor_start;
 
@@ -176,8 +181,13 @@ void AP_MotorsCoax::output_to_motors()
 
     	}else if(_enable_aft_rotor){
 
-			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
-			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+    		if(_spin_arm <= 0.05){
+    			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_min;
+    			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_min);
+    		}else{
+    			_aft_rotor_start += (1.0f/(_spool_up_time * (float)_loop_rate)) * _spin_arm;
+    			_aft_rotor_start = constrain_float(_aft_rotor_start, 0.0f, _spin_arm);
+    		}
 
 			_actuator[2] = _aft_rotor_start;
 

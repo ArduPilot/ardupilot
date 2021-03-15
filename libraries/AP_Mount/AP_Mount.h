@@ -133,6 +133,12 @@ public:
     void center_yaw(uint8_t instance);
     void center_yaw() { center_yaw(_primary); }
 
+    void look_down(uint8_t instance);
+    void look_down() { look_down(_primary); }
+
+    void flip_image(uint8_t instance);
+    void flip_image() { flip_image(_primary); }
+
 
     void enable_follow(uint8_t instance, bool en);
     void enable_follow(bool en) { enable_follow(_primary, en); }

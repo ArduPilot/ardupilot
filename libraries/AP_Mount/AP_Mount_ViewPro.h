@@ -67,6 +67,7 @@ private:
 
     void command_gimbal();
     bool yaw_center();
+    void cmd_look_down();
     void zoom_camera();
     void zero_zoom();
     void camera_state(int camera_state_cmd);
@@ -74,6 +75,8 @@ private:
     void toggle_pip();
     void toggle_color();
     void default_pip_color();
+    void cmd_flip_image_EO();
+    void cmd_flip_image_IR();
 
 
     //void camera_state_trackingCam(int camera_state_cmd);
@@ -327,6 +330,7 @@ struct query_flags {
 	bool is_recording;
 	bool state_is_video;
 	bool pip_color_hold;
+	bool image_flip_toggle;
 
 
 uint16_t _zoom_level;
