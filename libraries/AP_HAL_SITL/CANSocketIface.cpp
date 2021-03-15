@@ -53,6 +53,8 @@ using namespace HALSITL;
 
 CANIface::CANSocketEventSource CANIface::evt_can_socket[HAL_NUM_CAN_IFACES];
 
+uint8_t CANIface::next_interface;
+
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
     can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { } };
