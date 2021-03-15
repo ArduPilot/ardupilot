@@ -81,6 +81,9 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
         ret = &mode_thermal;
 #endif
         break;
+    case Mode::Number::HITTARGET:
+        ret = &mode_hittarget;
+        break;    
     }
     return ret;
 }

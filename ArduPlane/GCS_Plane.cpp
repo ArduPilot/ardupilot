@@ -77,6 +77,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     case Mode::Number::TAKEOFF:
     case Mode::Number::QRTL:
     case Mode::Number::THERMAL:
+    case Mode::Number::HITTARGET:
         rate_controlled = true;
         attitude_stabilized = true;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_YAW_POSITION;
