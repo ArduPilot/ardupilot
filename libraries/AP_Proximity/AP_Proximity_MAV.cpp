@@ -105,6 +105,11 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
     mavlink_obstacle_distance_t packet;
     mavlink_msg_obstacle_distance_decode(&msg, &packet);
 
+    if (packet.frame != MAV_FRAME_BODY_FRD) {
+        // we do not support this frame of reference yet 
+        return;
+    }
+
     // check increment (message's sector width)
     float increment;
     if (!is_zero(packet.increment_f)) {
