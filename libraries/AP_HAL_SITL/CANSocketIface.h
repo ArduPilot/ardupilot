@@ -62,6 +62,9 @@ public:
       , _max_frames_in_socket_tx_queue(2)
     { }
 
+    static uint8_t next_interface;
+    CANIface() : CANIface(next_interface++) {}
+
     ~CANIface() { }
 
     // Initialise CAN Peripheral
