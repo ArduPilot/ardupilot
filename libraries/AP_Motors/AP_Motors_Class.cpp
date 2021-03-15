@@ -30,7 +30,8 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     _throttle_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
     _spool_state(SpoolState::SHUT_DOWN),
-    _air_density_ratio(1.0f)
+    _air_density_ratio(1.0f),
+    _in_use(true)
 {
     _singleton = this;
 
