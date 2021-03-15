@@ -85,6 +85,8 @@ void AS5600_AOA::update(void)
   uint16_t angleRaw = ((highByte << 8) | lowByte)*0.087;
 
   AP::logger().Write("AOAR", "TimeUS, Angle", "QH", AP_HAL::micros64(), angleRaw);
+
+  gcs().send_text(MAV_SEVERITY_INFO, "Angle: %d", angleRaw);
 }
 
 
