@@ -166,6 +166,14 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_LOG_RAW", 17, AP_Proximity, _raw_log_enable, 0),
 
+    // @Param: _FILT
+    // @DisplayName: Proximity filter cutoff frequency
+    // @Description: Cutoff frequency for low pass filter applied to each face in the proximity boundary
+    // @Units: Hz
+    // @Range: 0 20
+    // @User: Advanced
+    AP_GROUPINFO("_FILT", 18, AP_Proximity, _filt_freq, 0.25f),
+
     AP_GROUPEND
 };
 
@@ -209,6 +217,7 @@ void AP_Proximity::update(void)
             continue;
         }
         drivers[i]->update();
+        drivers[i]->boundary_3D_checks();
     }
 
     // work out primary instance - first sensor returning good data
