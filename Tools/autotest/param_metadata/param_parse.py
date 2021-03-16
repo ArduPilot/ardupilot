@@ -35,10 +35,10 @@ args = parser.parse_args()
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: (.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
+prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
-prog_param_fields = re.compile(r"[ \t]*// @(\w+): ([^\r\n]*)")
+prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
 # match e.g @Value{Copter}: 0=Volcano, 1=Peppermint
 prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
@@ -362,6 +362,10 @@ def validate(param):
     if (hasattr(param, "User")):
         if param.User.strip() not in ["Standard", "Advanced"]:
             error("unknown user (%s)" % param.User.strip())
+
+    if (hasattr(param, "Description")):
+        if not param.Description or not param.Description.strip():
+            error("Empty Description (%s)" % param)
 
 for vehicle in vehicles:
     for param in vehicle.params:
