@@ -222,7 +222,7 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
 
 // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
 void AP_OAPathPlanner::avoidance_thread()
-{   
+{
     // require ekf origin to have been set
     bool origin_set = false;
     while (!origin_set) {
