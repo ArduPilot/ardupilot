@@ -527,9 +527,9 @@ void GCS_MAVLINK_Copter::send_banner()
 
 void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)  // is this right? I have no idea
 {
-    if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
-        return; // Only accept control from our gcs                                 // is this right? I have no idea what it does
-    }
+    //if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
+    //    return; // Only accept control from our gcs                                 // is this right? I have no idea what it does
+    //}
 
     const uint32_t tnow = AP_HAL::millis();                                         // is this right? I have no idea what it does
 
@@ -561,17 +561,17 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     uint16_t k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
     
     if (i >= 1850) {                                                // if ch6 from the pilot is high then this part will work
-        RC_Channels::set_override(8, override_data[0], tnow);       // ch9 from the pilot will be overrided by ch9 from MavLink
-        RC_Channels::set_override(9, override_data[8], tnow);     // ch10 from the pilot will be overrided by ch10 from MavLink
-        RC_Channels::set_override(10, override_data[4], tnow);     // ch11 from the pilot will be overrided by ch11 from MavLink
-        RC_Channels::set_override(11, override_data[9], tnow);     // ch12 from the pilot will be overrided by ch12 from MavLink
+        RC_Channels::set_override(8, override_data[0], tnow);       // ch9 from the pilot will be overrided by ch1 from MavLink
+        RC_Channels::set_override(9, override_data[8], tnow);     // ch10 from the pilot will be overrided by ch9 from MavLink
+        RC_Channels::set_override(10, override_data[4], tnow);     // ch11 from the pilot will be overrided by ch5 from MavLink
+        RC_Channels::set_override(11, override_data[9], tnow);     // ch12 from the pilot will be overrided by ch10 from MavLink
         if (k >= 1450) {                               // if ch4 (=YAW) from the pilot is centered then this part will work
             if (k <= 1550) {
-                RC_Channels::set_override(3, override_data[3], tnow);   // ch4 (=YAW) from the pilot will be override by ch3 from MavLink
+                RC_Channels::set_override(3, override_data[3], tnow);   // ch4 (=YAW) from the pilot will be override by ch4 from MavLink
             }
         }
     }
-    else {                                                          // if ch7 isn't hight, then this part will work
+    else {                                                          // if ch6 isn't hight, then this part will work
         RC_Channels::set_override(10, 1500, tnow);                  // ch 11 from the pilot will be overrided by 1500
         RC_Channels::set_override(11, 1500, tnow);                  // ch 12 from the pilot will be overrided by 1500
     }
