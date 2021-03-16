@@ -35,32 +35,34 @@ static uint8_t last_uart;
 
 // #pragma GCC optimize("O0")
 
-int16_t cin(unsigned timeout_ms)
+static bool cin_data(uint8_t *data, uint8_t len, unsigned timeout_ms)
 {
-    uint8_t b = 0;
     for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
         if (locked_uart == -1 || locked_uart == i) {
-            if (chnReadTimeout(uarts[i], &b, 1, chTimeMS2I(timeout_ms)) == 1) {
+            if (chnReadTimeout(uarts[i], data, len, chTimeMS2I(timeout_ms)) == len) {
                 last_uart = i;
-                return b;
+                return true;
             }
         }
     }
     chThdSleepMicroseconds(500);
+    return false;
+}
+
+int16_t cin(unsigned timeout_ms)
+{
+    uint8_t b = 0;
+    if (cin_data(&b, 1, timeout_ms)) {
+        return b;
+    }
     return -1;
 }
 
 int cin_word(uint32_t *wp, unsigned timeout_ms)
 {
-    for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
-        if (locked_uart == -1 || locked_uart == i) {
-            if (chnReadTimeout(uarts[i], (uint8_t *)wp, 4, chTimeMS2I(timeout_ms)) == 4) {
-                last_uart = i;
-                return 0;
-            }
-        }
+    if (cin_data((uint8_t *)wp, 4, timeout_ms)) {
+        return 0;
     }
-    chThdSleepMicroseconds(500);
     return -1;
 }
 
