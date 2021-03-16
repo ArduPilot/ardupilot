@@ -1478,11 +1478,13 @@ void AP_Periph_FW::can_battery_update(void)
         pkt.state_of_charge_pct = battery.lib.capacity_remaining_pct(i);
         pkt.model_instance_id = i+1;
 
+#if !defined(HAL_PERIPH_BATTERY_SKIP_NAME)
         // example model_name: "org.ardupilot.ap_periph SN 123"
         char text[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MODEL_NAME_MAX_LENGTH+1] {};
         hal.util->snprintf(text, sizeof(text), "%s %d", AP_PERIPH_BATTERY_MODEL_NAME, serial_number);
         pkt.model_name.len = strlen(text);
         pkt.model_name.data = (uint8_t *)text;
+#endif //defined(HAL_PERIPH_BATTERY_SKIP_NAME)
 
         uint8_t buffer[UAVCAN_EQUIPMENT_POWER_BATTERYINFO_MAX_SIZE] {};
         const uint16_t total_size = uavcan_equipment_power_BatteryInfo_encode(&pkt, buffer);
