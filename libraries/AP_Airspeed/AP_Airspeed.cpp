@@ -31,6 +31,7 @@
 #include "AP_Airspeed_SDP3X.h"
 #include "AP_Airspeed_DLVR.h"
 #include "AP_Airspeed_analog.h"
+#include "AP_Airspeed_RSC.h"
 #include "AP_Airspeed_Backend.h"
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
@@ -83,7 +84,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:HoneyWell RSC
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -190,7 +191,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
     // @Description: Type of 2nd airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:HoneyWell RSC
     // @User: Standard
     AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -370,6 +371,11 @@ void AP_Airspeed::init()
 #if HAL_MSP_AIRSPEED_ENABLED
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
+            break;
+        case TYPE_RSC:
+#if !HAL_MINIMIZE_FEATURES
+            sensor[i] = new AP_Airspeed_RSC(*this, i);
+#endif // !HAL_MINIMIZE_FEATURES
             break;
         }
         if (sensor[i] && !sensor[i]->init()) {
