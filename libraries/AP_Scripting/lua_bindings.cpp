@@ -271,6 +271,10 @@ static int add_param(lua_State *L) {
 
     AP_Param::Info *info = (AP_Param::Info *)hal.util->malloc_type(sizeof(AP_Param::Info)*(num_params+1), AP_HAL::Util::Memory_Type::MEM_FAST);
     struct AP_Param::var_table *table = new AP_Param::var_table;
+    if (info == nullptr || table == nullptr) {
+        gcs().send_text(MAV_SEVERITY_ERROR,"Lua: failed to create var tables");
+        goto failed_load;
+    }
 
     for (uint8_t i=0; i<num_params; i++) {
 
@@ -372,6 +376,11 @@ static int add_param(lua_State *L) {
             default:
                 gcs().send_text(MAV_SEVERITY_ERROR,"Lua: unknown param type");
                 goto failed_load;
+        }
+
+        if (param == nullptr) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: failed to create param");
+            goto failed_load;
         }
 
         new (&info[i]) AP_Param::Info {static_cast<uint8_t>(type), name, index, param, {def_value:default_val}, flag};
