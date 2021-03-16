@@ -108,6 +108,9 @@ uart_serial_num = {}
 mcu_type = None
 dual_USB_enabled = False
 
+# list of device patterns that can't be shared
+dma_noshare = []
+
 def is_int(str):
     '''check if a string is an integer'''
     try:
@@ -1786,6 +1789,8 @@ def write_hwdef_header(outfilename):
 
 ''')
 
+    dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))
+
     write_mcu_config(f)
     write_SPI_config(f)
     write_ADC_config(f)
@@ -1800,7 +1805,7 @@ def write_hwdef_header(outfilename):
     dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                                    dma_exclude=get_dma_exclude(periph_list),
                                                    dma_priority=get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
-                                                   dma_noshare=get_config('DMA_NOSHARE', default='', spaces=True))
+                                                   dma_noshare=dma_noshare)
 
     if not args.bootloader:
         write_PWM_config(f, ordered_timers)
@@ -1953,6 +1958,8 @@ def build_peripheral_list():
                 if label[-1] == 'N':
                     label = label[:-1]
                 peripherals.append(label)
+                # RCIN DMA channel cannot be shared as it is running all the time
+                dma_noshare.append(label)
             elif not p.has_extra('ALARM') and not p.has_extra('RCININT'):
                 # get the TIMn_UP DMA channels for DShot
                 label = p.type + '_UP'
