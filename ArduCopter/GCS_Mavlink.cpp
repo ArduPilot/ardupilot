@@ -525,11 +525,16 @@ void GCS_MAVLINK_Copter::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
 }
 
-void GCS_MAVLINK_Copter::handle_rc_channels_override()  //const mavlink_message_t &msg // is this right? I have no idea
+void msmits () {                    // void for setting ch11 and ch12 to 1500
+    hal.rcout->write(10, 1500);
+    hal.rcout->write(11, 1500);
+}
+
+void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)  // is this right? I have no idea
 {
-    //if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
-    //    return; // Only accept control from our gcs                                 // is this right? I have no idea what it does
-    //}
+    if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
+        return; // Only accept control from our gcs                                 // is this right? I have no idea what it does
+    }
 
     const uint32_t tnow = AP_HAL::millis();                                         // is this right? I have no idea what it does
 
