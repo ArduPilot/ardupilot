@@ -1388,14 +1388,6 @@ class AutoTest(ABC):
                                                        self.frame)
         for x in self.params:
             self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
-        self.set_parameter('LOG_DISARMED', 1)
-        if self.force_ahrs_type is not None:
-            if self.force_ahrs_type == 2:
-                self.set_parameter("EK2_ENABLE", 1)
-            if self.force_ahrs_type == 3:
-                self.set_parameter("EK3_ENABLE", 1)
-            self.set_parameter("AHRS_EKF_TYPE", self.force_ahrs_type)
-        self.reboot_sitl()
 
     def count_lines_in_filepath(self, filepath):
         return len([i for i in open(filepath)])
@@ -2151,12 +2143,32 @@ class AutoTest(ABC):
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
 
+    def default_parameter_list(self):
+        ret = {
+            'LOG_DISARMED': 1,
+        }
+        if self.force_ahrs_type is not None:
+            if self.force_ahrs_type == 2:
+                ret["EK2_ENABLE"] = 1
+            if self.force_ahrs_type == 3:
+                ret["EK3_ENABLE"] = 1
+            ret["AHRS_EKF_TYPE"] = self.force_ahrs_type
+        return ret
+
+    def apply_default_parameter_list(self):
+        self.set_parameters(self.default_parameter_list())
+
+    def apply_default_parameters(self):
+        self.apply_defaultfile_parameters()
+        self.apply_default_parameter_list()
+        self.reboot_sitl()
+
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
         self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate())
-        self.apply_defaultfile_parameters()
+        self.apply_default_parameters()
         try:
             del self.valgrind_restart_customisations
         except Exception:
@@ -5810,7 +5822,7 @@ Also, ignores heartbeats not from our target system'''
         # you do this!
         self.wait_heartbeat()
         self.progress("Sim time: %f" % (self.get_sim_time(),))
-        self.apply_defaultfile_parameters()
+        self.apply_default_parameters()
 
         if not self.sitl_is_running():
             # we run this just to make sure exceptions are likely to
