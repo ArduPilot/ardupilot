@@ -285,9 +285,9 @@ void Plane::Estimate_Bearing_SPD_ETA()
 					  wind_compensation_angle_degrees = degrees(wind_compensation_angle);
 					  wind_compensation_angle_diff_degrees = degrees(angle_diff);
 					  float airspeed_on_bearing = airspeed_available*sinf(wind_compensation_angle); //Get the Airspeed component we have remaining after wind-compensation - we can use this to proceed towards target location
-					  expected_groundspeed_towards_WP = airspeed_on_bearing-wind_on_bearing; //We still have to find Wind (projected component in lint with bearing-to-location vector)
-					  if (expected_groundspeed_towards_WP>0) { //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
-						  current_ETA = l_dis / expected_groundspeed_towards_WP; //Current Estimated Time of Arrival to next WP, taking Wind speed & direction into account
+					  estimated_gndspeed_towards_WP_by_Wind_Airspeed = airspeed_on_bearing-wind_on_bearing; //We still have to find Wind (projected component in lint with bearing-to-location vector)
+					  if (estimated_gndspeed_towards_WP_by_Wind_Airspeed>0) { //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
+						  current_ETA = l_dis / estimated_gndspeed_towards_WP_by_Wind_Airspeed; //Current Estimated Time of Arrival to next WP, taking Wind speed & direction into account
 					  } else {
 						  current_ETA = -1; //We may never get there with the current wind vs. airspeed - Use (-1) to indicate infinately long ETA
 					  }
@@ -302,8 +302,8 @@ void Plane::Estimate_Bearing_SPD_ETA()
 						  _avg_effective_speed += current_effective_speed;
 						  _EB_SPD_ETA_Cycles++;
 						  if (_EB_SPD_ETA_Cycles>0) {
-							  effective_gs = _avg_effective_speed / _EB_SPD_ETA_Cycles; //Effective (Ground) Speed towards next WP
-							  ETA_speed_estimate_error = effective_gs - expected_groundspeed_towards_WP; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
+							  estimated_gndspeed_towards_WP_by_GPS_Bearing = _avg_effective_speed / _EB_SPD_ETA_Cycles; //Effective (Ground) Speed towards next WP
+							  ETA_speed_estimate_error = estimated_gndspeed_towards_WP_by_GPS_Bearing - estimated_gndspeed_towards_WP_by_Wind_Airspeed; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
 						  }
 					  }
 				  }

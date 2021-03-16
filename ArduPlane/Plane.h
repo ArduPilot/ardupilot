@@ -392,17 +392,39 @@ private:
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
 
-    float wind_on_bearing; //Wind vector component along the bearing-to-location direction, m/s
-    float wind_prependicular_to_bearing; //Wind vector component prependicular to the bearing-to-WP direction, m/s
-    float wind_compensation_angle_degrees; //Wind compensation angle (degrees)
-    float wind_compensation_angle_diff_degrees; //Difference between bearing & wind compensation heading angle (degrees)
-    float expected_groundspeed_towards_WP; //Effective speed estimate to next WP, derived from Wind/Airspeed components (m/s)
-    float current_ETA; //Current Estimated Time of Arrival to next WP, derived from Wind speed & airspeed components (seconds)
-    float effective_gs; //Effective (Ground) Speed towards next WP (m/s)
-    float ETA_speed_estimate_error; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
-    int32_t _avg_effective_speed; //Cumulative effective speed variable, only valid in ratio of EB_SPD_ETA_Cycles
-	int32_t _mission_next_wp_set_ms; //Time of the next WP command issued (mSec)
-    int32_t _EB_SPD_ETA_Cycles; //Number of recalculations of the above parameters since switching to the Next WP
+    //Wind vs Airspeed vs Ground speed helpers
+	//Wind vector component along the bearing-to-location direction, m/s
+	float wind_on_bearing; 
+
+	//Wind vector component prependicular to the bearing-to-WP direction, m/s
+	float wind_prependicular_to_bearing; 
+    
+	//Wind compensation angle (degrees)
+	float wind_compensation_angle_degrees;
+
+    //Difference between bearing & wind compensation heading angle (degrees)
+	float wind_compensation_angle_diff_degrees; 
+    
+	//Effective speed estimate to next WP, derived from Wind vs. Airspeed components (m/s)
+	float estimated_gndspeed_towards_WP_by_Wind_Airspeed; 
+    
+	//Current Estimated Time of Arrival to next WP, derived from Wind speed & airspeed components (seconds)
+	float current_ETA; 
+    
+	//Effective (Ground) Speed towards next WP, estimated by GPS course speed on bearing (m/s)
+	float estimated_gndspeed_towards_WP_by_GPS_Bearing; 
+    
+	//Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (m/sec)
+	float ETA_speed_estimate_error; 
+    
+	//Cumulative effective speed variable, only valid in ratio of EB_SPD_ETA_Cycles
+	float _avg_effective_speed; 
+	
+	//Time of the next WP command issued (mSec)
+	int32_t _mission_next_wp_set_ms; 
+
+	//Number of recalculations of the above parameters since switching to the Next WP
+    int32_t _EB_SPD_ETA_Cycles; 
 
 	// Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
