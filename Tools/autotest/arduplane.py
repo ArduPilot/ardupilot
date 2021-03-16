@@ -1650,7 +1650,7 @@ class AutoTestPlane(AutoTest):
         self.wait_ready_to_arm()
         self.set_parameter("FLIGHT_OPTIONS", 0)
         self.set_parameter("ALT_HOLD_RTL", 8000)
-        takeoff_alt = 40
+        takeoff_alt = 10
         self.takeoff(alt=takeoff_alt)
         self.change_mode("CRUISE")
         self.wait_distance_to_home(500, 1000, timeout=60)
