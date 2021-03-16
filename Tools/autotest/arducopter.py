@@ -2160,8 +2160,19 @@ class AutoTestCopter(AutoTest):
                 if case[3] != int(gps2_det_text.split('-')[1]):
                     raise NotAchievedException("Failed ordering for requested CASE:", case)
             if len(case[4]):
-                self.mavproxy.send('arm throttle\n')
-                self.mavproxy.expect(case[4])
+                self.context_collect('STATUSTEXT')
+                self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                             1,  # ARM
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             timeout=10,
+                             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                self.wait_statustext(case[4], check_context=True)
+                self.context_stop_collecting('STATUSTEXT')
         self.progress("############################### All GPS Order Cases Tests Passed")
         self.context_pop()
         self.fly_auto_test()
