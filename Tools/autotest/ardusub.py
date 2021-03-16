@@ -374,10 +374,10 @@ class AutoTestSub(AutoTest):
                 break
         self.initialise_after_reboot_sitl()
 
-    def apply_defaultfile_parameters(self):
-        super(AutoTestSub, self).apply_defaultfile_parameters()
-        # FIXME:
-        self.set_parameter("FS_GCS_ENABLE", 0)
+    def default_parameter_list(self):
+        ret = super(AutoTestSub, self).default_parameter_list()
+        ret["FS_GCS_ENABLE"] = 0  # FIXME
+        return ret
 
     def disabled_tests(self):
         ret = super(AutoTestSub, self).disabled_tests()
