@@ -41,7 +41,7 @@ void QAutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pit
 
 void QAutoTune::init_z_limits()
 {
-    plane.quadplane.pos_control->set_max_speed_z(-plane.quadplane.pilot_velocity_z_max, plane.quadplane.pilot_velocity_z_max);
+    plane.quadplane.pos_control->set_max_speed_z(-plane.quadplane.get_pilot_velocity_z_max_dn(), plane.quadplane.pilot_velocity_z_max_up);
     plane.quadplane.pos_control->set_max_accel_z(plane.quadplane.pilot_accel_z);
 }
 
