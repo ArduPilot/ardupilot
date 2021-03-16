@@ -290,7 +290,7 @@ def forbidden_list(p, peripheral_list):
 
 
 def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
-                     dma_priority='', dma_noshare=''):
+                     dma_priority='', dma_noshare=[]):
     '''write out a DMA resolver header file'''
     global dma_map, have_DMAMUX, has_bdshot
     timer_ch_periph = []
@@ -304,7 +304,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     peripheral_list = sorted(peripheral_list, key=lambda x: get_list_index(x, priority_list))
 
     # form a list of peripherals that can't share
-    noshare_list = dma_noshare.split()
+    noshare_list = dma_noshare[:]
 
     try:
         lib = importlib.import_module(mcu_type)
