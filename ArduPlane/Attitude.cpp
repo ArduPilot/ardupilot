@@ -386,9 +386,16 @@ void Plane::stabilize()
     if (quadplane.in_tailsitter_vtol_transition(now)) {
         /*
           during transition to vtol in a tailsitter try to raise the
-          nose rapidly while keeping the wings level
+          nose rapidly while keeping the wings level.
+          we wait 500 ms before pulling up to make sure wings have time to get level
          */
-        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        if (now - quadplane.transition_start_ms > 500) {
+            nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle_vtol+5) * 100, 5500, 8500);
+        }
+        else {
+            nav_pitch_cd = ahrs.pitch_sensor;
+        }
+
         nav_roll_cd = 0;
     }
 

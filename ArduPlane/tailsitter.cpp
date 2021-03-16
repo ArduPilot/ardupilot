@@ -250,13 +250,13 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     if (roll_cd > 9000) {
         roll_cd = 18000 - roll_cd;
     }
-    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
-        roll_cd > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > uint32_t(transition_time_ms)) {
+    // if roll or pitch exceed transition angle, forwad transition complete
+    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle_fw * 100 || roll_cd > tailsitter.transition_angle_fw * 100) {
         return true;
     }
-    // still waiting
-    return false;
+
+    // If too much time has elapsed return true to complete transition,otherwise false
+    return (uint32_t)(AP_HAL::millis() - transition_start_ms) > uint32_t(transition_time_ms);
 }
 
 
@@ -264,11 +264,12 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
   return true when we have completed enough of a transition to switch to VTOL control
  */
 bool QuadPlane::tailsitter_transition_vtol_complete(void) const
-{
+{  
     if (plane.fly_inverted()) {
         // transition immediately
         return true;
     }
+
     // for vectored tailsitters at zero pilot throttle
     if ((plane.quadplane.get_pilot_throttle() < .05f) && plane.quadplane._is_vectored) {
         // if we are not moving (hence on the ground?) or don't know
@@ -277,9 +278,9 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
             return true;
         }
     }
-    if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
-        labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > 2000) {
+    if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle_vtol*100 ||
+        labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle_vtol*100 ||
+        AP_HAL::millis() - transition_start_ms > (uint32_t)tailsitter.vtol_max_transition_time + 500) {
         return true;
     }
     // still waiting

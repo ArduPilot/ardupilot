@@ -201,7 +201,7 @@ private:
     
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max;
-
+    
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
 
@@ -262,13 +262,15 @@ private:
 
     void init_loiter(void);
     void init_qland(void);
-    void control_loiter(void);
+    void control_loiter(bool stabilize_transition = false);
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
     bool check_land_final(void);
 
     void init_qrtl(void);
     void control_qrtl(void);
+    
+    bool run_stabilize_transition(void);
     
     float assist_climb_rate_cms(void) const;
 
@@ -429,6 +431,16 @@ private:
     // are we in a guided takeoff?
     bool guided_takeoff:1;
     
+    // transition stabilization helper, initialized in QuadPlane::setup
+    struct {
+        // has the transition stabilizing hover been initialized?
+        bool is_initialized;
+        // has the transition been stabilized yet?
+        bool is_stabilized;
+        // when were we still waiting for the transition to stabilize
+        uint32_t last_wait_at;
+    } transition_stabilization;
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
@@ -521,7 +533,8 @@ private:
 
     // tailsitter control variables
     struct {
-        AP_Int8 transition_angle;
+        AP_Int8 transition_angle_fw;
+        AP_Int8 transition_angle_vtol;
         AP_Int8 input_type;
         AP_Int8 input_mask;
         AP_Int8 input_mask_chan;
@@ -536,6 +549,8 @@ private:
         AP_Float scaling_speed_max;
         AP_Int16 gain_scaling_mask;
         AP_Float disk_loading;
+        AP_Float transition_throttle;
+        AP_Int16 vtol_max_transition_time;
     } tailsitter;
 
     // tailsitter speed scaler
@@ -554,6 +569,8 @@ private:
 
     // time when we were last in a vtol control mode
     uint32_t last_vtol_mode_ms;
+
+    uint32_t vtol_transition_finished_ms = 0;
     
     void tiltrotor_slew(float tilt);
     void tiltrotor_binary_slew(bool forward);
@@ -606,7 +623,6 @@ private:
     uint32_t takeoff_time_limit_ms;
 
     float last_land_final_agl;
-
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
