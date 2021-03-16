@@ -51,6 +51,7 @@ static MaxSonarI2CXL maxsonari2cxl;
 static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
 static Rotoye rotoye;
+static SIM_BattMonitor_SMBus_Generic smbus_generic;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 static ICM40609 icm40609;
@@ -70,7 +71,8 @@ struct i2c_device_at_address {
     { 1, 0x76, ignored }, // MS56XX
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },
-    { 2, 0x0B, maxell },
+    { 2, 0x0B, maxell},
+    { 3, 0x0B, smbus_generic},
     { 2, 0x28, airspeed_dlvr },
 };
 
