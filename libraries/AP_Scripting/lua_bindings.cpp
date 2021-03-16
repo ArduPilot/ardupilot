@@ -250,10 +250,197 @@ const luaL_Reg AP_Logger_functions[] = {
     {NULL, NULL}
 };
 
+
+static int add_param(lua_State *L) {
+    check_arguments(L, 3, "param.add");
+
+    if (lua_type(L, 3) != LUA_TTABLE) {
+        return luaL_error(L, "expected param table for argument 3");
+    }
+
+    size_t num_params = lua_rawlen(L,3);
+    if (num_params == 0) {
+        return luaL_error(L, "need at least one param");
+    }
+
+    uint16_t index = static_cast<uint16_t>(luaL_checkinteger(L, 1));
+
+    // this magic value is to be compared against a automaticaly loaded param at the start of the new table,
+    // the the magics don't match we should reset the new table to defaults 
+    //const uint16_t magic = static_cast<uint16_t>(luaL_checkinteger(L, 2));
+
+    AP_Param::Info *info = (AP_Param::Info *)hal.util->malloc_type(sizeof(AP_Param::Info)*(num_params+1), AP_HAL::Util::Memory_Type::MEM_FAST);
+    struct AP_Param::var_table *table = new AP_Param::var_table;
+    if (info == nullptr || table == nullptr) {
+        gcs().send_text(MAV_SEVERITY_ERROR,"Lua: failed to create var tables");
+        goto failed_load;
+    }
+
+    for (uint8_t i=0; i<num_params; i++) {
+
+        lua_pushinteger(L, i+1); // lua is 1 indexed
+        lua_gettable(L,-2);
+        if (lua_type(L, -1) != LUA_TTABLE) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected table in param table index %u", i+1);
+            goto failed_load;
+        }
+
+        // cope with either 3 or 4 values in each param table, this allows flags to be omitted
+        size_t len = lua_rawlen(L,-1);
+        if (len != 3 && len != 4) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected 3 or 4 values in param table index %u", i+1);
+            goto failed_load;
+        }
+
+        lua_pushinteger(L, 1);
+        lua_gettable(L,-2);
+        const char * name = lua_tolstring(L, -1, NULL);
+        lua_pop (L, 1);
+
+        if (name == nullptr) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: did not get string for param %u", i+1);
+            goto failed_load;
+        }
+
+        if (strlen(name) > 16) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: param name %s must be 16 chars or fewer",name);
+            goto failed_load;
+        }
+
+        // make sure we don't have param with this name already
+        float temp_val;
+        if (AP_Param::get(name,temp_val)) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: parameter %s already exists", name);
+            goto failed_load;
+        }
+
+        lua_pushinteger(L, 2);
+        lua_gettable(L,-2);
+
+        int isnum;
+        const lua_Integer tmp1 = lua_tointegerx(L, -1, &isnum);
+        if (!isnum) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected integer for %s type", name);
+            goto failed_load;
+        }
+        lua_pop (L, 1);
+        ap_var_type type = static_cast<ap_var_type>(tmp1);
+
+        lua_pushinteger(L, 3);
+        lua_gettable(L,-2);
+
+        const float default_val = lua_tonumberx(L, -1, &isnum);
+        if (!isnum) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected number for %s default value", name);
+            goto failed_load;
+        }
+        lua_pop (L, 1);
+
+        uint16_t flag = 0;
+        if (len == 4) {
+            // got a flag value
+            lua_pushinteger(L, 4);
+            lua_gettable(L,-2);
+            const lua_Integer tmp2 = lua_tointegerx(L, -1, &isnum);
+            if (!isnum) {
+                gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected integer for %s flags", name);
+                goto failed_load;
+            }
+            lua_pop (L, 1);
+            flag = static_cast<uint16_t>(tmp2);
+        }
+        lua_pop (L, 1); // this pops the outer table index
+
+        void *param = nullptr;
+        switch (type) {
+            case AP_PARAM_INT8:
+                param = new AP_Int8;
+                break;
+            case AP_PARAM_INT16:
+                param = new AP_Int16;
+                break;
+            case AP_PARAM_INT32:
+                param = new AP_Int32;
+                break;
+            case AP_PARAM_FLOAT:
+                param = new AP_Float;
+                break;
+            default:
+                gcs().send_text(MAV_SEVERITY_ERROR,"Lua: unknown param type");
+                goto failed_load;
+        }
+
+        if (param == nullptr) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Lua: failed to create param");
+            goto failed_load;
+        }
+
+        new (&info[i]) AP_Param::Info {static_cast<uint8_t>(type), name, index, param, {def_value:default_val}, flag};
+
+        index++;
+    }
+
+    // add the table footer
+    new (&info[num_params]) AP_Param::Info {static_cast<uint8_t>(AP_PARAM_NONE), "", index, nullptr, {group_info:nullptr}, 0 };
+
+    table->var_info = info;
+
+    if (AP_Param::load_param_info(table)) {
+        // success !!
+        return 0;
+    }
+
+    gcs().send_text(MAV_SEVERITY_ERROR,"Lua: failed to load param table");
+
+failed_load:
+    // clear all the stuff we added
+    delete[] table;
+    if (info != nullptr) {
+        for (uint8_t i=0; i<=num_params; i++) {
+            delete[] info[i].ptr;
+        }
+        delete[] info;
+    }
+    hal.util->free_type(info, sizeof(AP_Param::Info)*(num_params+1), AP_HAL::Util::Memory_Type::MEM_FAST);
+
+    luaL_error(L, "Param load fail");
+
+    return 0;
+}
+
+struct userdata_enum {
+    const char *name;
+    uint8_t value;
+};
+
+struct userdata_enum AP_Param_enums[] = {
+    {"AP_PARAM_FLOAT", AP_PARAM_FLOAT},
+    {"AP_PARAM_INT32", AP_PARAM_INT32},
+    {"AP_PARAM_INT16", AP_PARAM_INT16},
+    {"AP_PARAM_INT8", AP_PARAM_INT8},
+    {"AP_PARAM_FLAG_ENABLE",AP_PARAM_FLAG_ENABLE},
+    {"AP_PARAM_FLAG_INTERNAL_USE_ONLY",AP_PARAM_FLAG_INTERNAL_USE_ONLY},
+};
+
+const luaL_Reg AP_param_functions[] = {
+    {"add", add_param},
+    {NULL, NULL}
+};
+
 void load_lua_bindings(lua_State *L) {
     lua_pushstring(L, "logger");
     luaL_newlib(L, AP_Logger_functions);
     lua_settable(L, -3);
+
+    lua_pushstring(L, "params");
+    luaL_newlib(L, AP_param_functions);
+    lua_settable(L, -3);
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(AP_Param_enums); i++) {
+        lua_pushstring(L, AP_Param_enums[i].name);
+        lua_pushinteger(L, AP_Param_enums[i].value);
+        lua_settable(L, -3);
+    }
 
     luaL_setfuncs(L, global_functions, 0);
 }
