@@ -282,7 +282,6 @@ static int add_param(lua_State *L) {
         lua_gettable(L,-2);
         if (lua_type(L, -1) != LUA_TTABLE) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected table in param table index %u", i+1);
-            lua_pop (L, 1); // this pops the outer table index
             goto failed_load;
         }
 
@@ -290,7 +289,6 @@ static int add_param(lua_State *L) {
         size_t len = lua_rawlen(L,-1);
         if (len != 3 && len != 4) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected 3 or 4 values in param table index %u", i+1);
-            lua_pop (L, 1);
             goto failed_load;
         }
 
@@ -301,13 +299,11 @@ static int add_param(lua_State *L) {
 
         if (name == nullptr) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: did not get string for param %u", i+1);
-            lua_pop (L, 1);
             goto failed_load;
         }
 
         if (strlen(name) > 16) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: param name %s must be 16 chars or fewer",name);
-            lua_pop (L, 1);
             goto failed_load;
         }
 
@@ -315,7 +311,6 @@ static int add_param(lua_State *L) {
         float temp_val;
         if (AP_Param::get(name,temp_val)) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: parameter %s already exists", name);
-            lua_pop (L, 1);
             goto failed_load;
         }
 
@@ -324,24 +319,22 @@ static int add_param(lua_State *L) {
 
         int isnum;
         const lua_Integer tmp1 = lua_tointegerx(L, -1, &isnum);
-        lua_pop (L, 1);
         if (!isnum) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected integer for %s type", name);
-            lua_pop (L, 1);
             goto failed_load;
         }
+        lua_pop (L, 1);
         ap_var_type type = static_cast<ap_var_type>(tmp1);
 
         lua_pushinteger(L, 3);
         lua_gettable(L,-2);
 
         const float default_val = lua_tonumberx(L, -1, &isnum);
-        lua_pop (L, 1);
         if (!isnum) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected number for %s default value", name);
-            lua_pop (L, 1);
             goto failed_load;
         }
+        lua_pop (L, 1);
 
         uint16_t flag = 0;
         if (len == 4) {
@@ -349,15 +342,14 @@ static int add_param(lua_State *L) {
             lua_pushinteger(L, 4);
             lua_gettable(L,-2);
             const lua_Integer tmp2 = lua_tointegerx(L, -1, &isnum);
-            lua_pop (L, 1);
             if (!isnum) {
                 gcs().send_text(MAV_SEVERITY_ERROR,"Lua: expected integer for %s flags", name);
-                lua_pop (L, 1);
                 goto failed_load;
             }
+            lua_pop (L, 1);
             flag = static_cast<uint16_t>(tmp2);
         }
-        lua_pop (L, 1);
+        lua_pop (L, 1); // this pops the outer table index
 
         void *param = nullptr;
         switch (type) {
@@ -409,6 +401,7 @@ failed_load:
         }
         delete[] info;
     }
+    hal.util->free_type(info, sizeof(AP_Param::Info)*(num_params+1), AP_HAL::Util::Memory_Type::MEM_FAST);
 
     luaL_error(L, "Param load fail");
 
