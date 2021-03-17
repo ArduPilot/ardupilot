@@ -273,7 +273,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         auto_mode = Auto_CircleMoveToEdge;
 
         // convert circle_edge_neu to Location
-        Location circle_edge(circle_edge_neu);
+        Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
         circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
