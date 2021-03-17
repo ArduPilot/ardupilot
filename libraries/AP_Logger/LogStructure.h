@@ -45,6 +45,7 @@ const struct UnitStructure log_Units[] = {
     { '-', "" },              // no units e.g. Pi, or a string
     { '?', "UNKNOWN" },       // Units which haven't been worked out yet....
     { 'A', "A" },             // Ampere
+    { 'a', "Ah" },            // Ampere hours
     { 'd', "deg" },           // of the angular variety, -180 to 180
     { 'b', "B" },             // bytes
     { 'k', "deg/s" },         // degrees per second. Degrees are NOT SI, but is some situations more user-friendly than radians
@@ -489,10 +490,10 @@ struct PACKED log_Esc {
     uint64_t time_us;
     uint8_t instance;
     int32_t rpm;
-    uint16_t voltage;
-    uint16_t current;
+    float voltage;
+    float current;
     int16_t esc_temp;
-    uint16_t current_tot;
+    float current_tot;
     int16_t motor_temp;
     float error_rate;
 };
@@ -1001,7 +1002,7 @@ struct PACKED log_PSCZ {
 // @Field: Volt: Perceived input voltage for the ESC
 // @Field: Curr: Perceived current through the ESC
 // @Field: Temp: ESC temperature
-// @Field: CTot: current consumed total
+// @Field: CTot: current consumed total mAh
 // @Field: MotTemp: measured motor temperature
 // @Field: Err: error rate
 
@@ -1513,7 +1514,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBeCCcHcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAO-O%", "F-BBBB-B-" }, \
+      "ESC",  "QBeffcfcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-B--BCB-" }, \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
