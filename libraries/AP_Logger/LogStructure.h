@@ -45,6 +45,7 @@ const struct UnitStructure log_Units[] = {
     { '-', "" },              // no units e.g. Pi, or a string
     { '?', "UNKNOWN" },       // Units which haven't been worked out yet....
     { 'A', "A" },             // Ampere
+    { 'a', "Ah" },            // Ampere hours
     { 'd', "deg" },           // of the angular variety, -180 to 180
     { 'b', "B" },             // bytes
     { 'k', "deg/s" },         // degrees per second. Degrees are NOT SI, but is some situations more user-friendly than radians
@@ -1479,7 +1480,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--" }, \
     { LOG_ESC_MSG, sizeof(log_Esc), \
-      "ESC",  "QBeCCcHcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAO-O%", "F-BBBB-B-" }, \
+      "ESC",  "QBeCCcHcf", "TimeUS,Instance,RPM,Volt,Curr,Temp,CTot,MotTemp,Err", "s#qvAOaO%", "F-BBBB-B-" }, \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000" }, \
     { LOG_CESC_MSG, sizeof(log_CESC), \
