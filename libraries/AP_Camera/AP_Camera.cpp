@@ -343,24 +343,24 @@ void AP_Camera::control(float session, float zoom_pos, float zoom_step, float fo
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan) const
+void AP_Camera::send_feedback(mavlink_channel_t chan)
 {
     const AP_AHRS &ahrs = AP::ahrs();
-
+    update_offset_location();
     float altitude, altitude_rel;
-    if (current_loc.relative_alt) {
-        altitude = current_loc.alt+ahrs.get_home().alt;
-        altitude_rel = current_loc.alt;
+    if (offset_location.relative_alt) {
+        altitude = offset_location.alt+ahrs.get_home().alt;
+        altitude_rel = offset_location.alt;
     } else {
-        altitude = current_loc.alt;
-        altitude_rel = current_loc.alt - ahrs.get_home().alt;
+        altitude = offset_location.alt;
+        altitude_rel = offset_location.alt - ahrs.get_home().alt;
     }
 
     mavlink_msg_camera_feedback_send(
         chan,
         AP::gps().time_epoch_usec(),
         0, 0, _image_index,
-        current_loc.lat, current_loc.lng,
+        offset_location.lat, offset_location.lng,
         altitude*1e-2f, altitude_rel*1e-2f,
         ahrs.roll_sensor*1e-2f, ahrs.pitch_sensor*1e-2f, ahrs.yaw_sensor*1e-2f,
         0.0f, CAMERA_FEEDBACK_PHOTO, _camera_trigger_logged);
@@ -383,17 +383,20 @@ void AP_Camera::update()
         _last_location.lng = 0;
         return;
     }
+
+    update_offset_location();
+
     if (_last_location.lat == 0 && _last_location.lng == 0) {
-        _last_location = current_loc;
+        _last_location = offset_location;
         return;
     }
-    if (_last_location.lat == current_loc.lat && _last_location.lng == current_loc.lng) {
+    if (_last_location.lat == offset_location.lat && _last_location.lng == offset_location.lng) {
         // we haven't moved - this can happen as update() may
         // be called without a new GPS fix
         return;
     }
 
-    if (current_loc.get_distance(_last_location) < _trigg_dist) {
+    if (offset_location.get_distance(_last_location) < _trigg_dist) {
         return;
     }
 
@@ -412,7 +415,7 @@ void AP_Camera::update()
 
     take_picture();
 
-    _last_location = current_loc;
+    _last_location = offset_location;
     _last_photo_time = tnow;
 }
 
