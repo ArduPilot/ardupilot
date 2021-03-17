@@ -32,7 +32,7 @@ public:
     /// constructors
     Location();
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);
-    Location(const Vector3f &ekf_offset_neu);
+    Location(const Vector3f &ekf_offset_neu, AltFrame frame);
 
     static void set_terrain(AP_Terrain* terrain) { _terrain = terrain; }
 
