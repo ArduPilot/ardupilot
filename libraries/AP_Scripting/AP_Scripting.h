@@ -20,6 +20,11 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/I2CDevice.h>
+
+#ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
+  #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
+#endif
 
 class AP_Scripting
 {
@@ -55,6 +60,10 @@ public:
         SCRIPTS = 1 << 1,
     };
     uint16_t get_disabled_dir() { return uint16_t(_dir_disable.get());}
+
+    // the number of and storage for i2c devices
+    uint8_t num_i2c_devices;
+    AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
 
 private:
 

@@ -248,8 +248,10 @@ void ModeAuto::land_start(const Vector3f& destination)
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
 
 #if AC_FENCE == ENABLED
     // disable the fence on landing
@@ -1452,9 +1454,12 @@ void ModeAuto::do_roi(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if HAL_MOUNT_ENABLED
-    if (!copter.camera_mount.has_pan_control()) {
-        auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,0);
+    // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
+    if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
+        !copter.camera_mount.has_pan_control()) {
+        auto_yaw.set_fixed_yaw(cmd.content.mount_control.yaw,0.0f,0,false);
     }
+    // pass the target angles to the camera mount
     copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
 #endif
 }
@@ -1518,11 +1523,13 @@ bool ModeAuto::verify_takeoff()
     // have we reached our target altitude?
     const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // if we have reached our destination
     if (reached_wp_dest) {
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
+#endif
 
     return reached_wp_dest;
 }

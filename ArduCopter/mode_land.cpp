@@ -37,8 +37,10 @@ bool ModeLand::init(bool ignore_checks)
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
 
 #if AC_FENCE == ENABLED
     // disable the fence on landing

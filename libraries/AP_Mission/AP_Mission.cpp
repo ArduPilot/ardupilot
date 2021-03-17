@@ -625,9 +625,8 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
     // special handling for command #0 which is home
     if (index == 0) {
-        cmd.index = 0;
+        cmd = {};
         cmd.id = MAV_CMD_NAV_WAYPOINT;
-        cmd.p1 = 0;
         cmd.content.location = AP::ahrs().get_home();
         return true;
     }
@@ -635,6 +634,9 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     if (index >= (unsigned)_cmd_total) {
         return false;
     }
+
+    // ensure all bytes of cmd are zeroed
+    cmd = {};
 
     // Find out proper location in memory by using the start_byte position + the index
     // we can load a command, we don't process it yet

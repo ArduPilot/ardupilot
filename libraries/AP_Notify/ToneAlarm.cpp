@@ -96,6 +96,8 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
 #define AP_NOTIFY_TONE_NO_SDCARD 30
     { "MNBGG", false },
+#define AP_NOTIFY_TONE_EKF_ALERT 31
+    { "MBNT255>A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8", true },
 };
 
 bool AP_ToneAlarm::init()
@@ -430,6 +432,14 @@ void AP_ToneAlarm::update()
     if (AP_Notify::events.tune_error) {
         play_tone(AP_NOTIFY_TONE_TUNING_ERROR);
         AP_Notify::events.tune_error = 0;
+    }
+
+    // notify the user when ekf failsafe is triggered
+    if (flags.failsafe_ekf != AP_Notify::flags.failsafe_ekf) {
+        flags.failsafe_ekf = AP_Notify::flags.failsafe_ekf;
+        if (flags.failsafe_ekf) {
+            play_tone(AP_NOTIFY_TONE_EKF_ALERT);
+        }
     }
 }
 

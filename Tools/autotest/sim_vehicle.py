@@ -617,12 +617,18 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.add_param_file:
-        if not os.path.isfile(opts.add_param_file):
-            print("The parameter file (%s) does not exist" %
-                  (opts.add_param_file,))
-            sys.exit(1)
-        path += "," + str(opts.add_param_file)
-        progress("Adding parameters from (%s)" % (str(opts.add_param_file),))
+        for file in opts.add_param_file:
+            if not os.path.isfile(file):
+                print("The parameter file (%s) does not exist" %
+                      (file,))
+                sys.exit(1)
+
+            if path is not None:
+                path += "," + str(file)
+            else:
+                path = str(file)
+
+            progress("Adding parameters from (%s)" % (str(file),))
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
@@ -1017,6 +1023,7 @@ group_sim.add_option("", "--rgbled",
                      help="Enable SITL RGBLed")
 group_sim.add_option("", "--add-param-file",
                      type='string',
+                     action="append",
                      default=None,
                      help="Add a parameters file to use")
 group_sim.add_option("", "--no-extra-ports",

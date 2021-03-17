@@ -248,9 +248,6 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     //only log if disarming was successful
     change_arm_state();
 
-    // reload target airspeed which could have been modified by a mission
-    plane.aparm.airspeed_cruise_cm.load();
-
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success
     if (plane.control_mode == &plane.mode_qautotune) {

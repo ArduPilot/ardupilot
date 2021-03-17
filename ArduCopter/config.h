@@ -101,7 +101,7 @@
 #endif
 
 #ifndef RANGEFINDER_WPNAV_FILT_HZ
- # define RANGEFINDER_WPNAV_FILT_HZ   0.25f // filter frequency for rangefinder altitude provided to waypoint navigation class
+ # define RANGEFINDER_WPNAV_FILT_HZ   0.5f // filter frequency for rangefinder altitude provided to waypoint navigation class
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
@@ -375,6 +375,12 @@
 // Button - Enable the button connected to AUX1-6
 #ifndef BUTTON_ENABLED
  # define BUTTON_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Landing Gear support
+#ifndef LANDING_GEAR_ENABLED
+ #define LANDING_GEAR_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
