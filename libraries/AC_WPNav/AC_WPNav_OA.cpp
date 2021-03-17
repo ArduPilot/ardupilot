@@ -80,8 +80,8 @@ bool AC_WPNav_OA::update_wpnav()
         }
 
         // convert origin and destination to Locations and pass into oa
-        const Location origin_loc(_origin_oabak);
-        const Location destination_loc(_destination_oabak);
+        const Location origin_loc(_origin_oabak, _terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+        const Location destination_loc(_destination_oabak, _terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         Location oa_origin_new, oa_destination_new;
         const AP_OAPathPlanner::OA_RetState oa_retstate = oa_ptr->mission_avoidance(current_loc, origin_loc, destination_loc, oa_origin_new, oa_destination_new);
         switch (oa_retstate) {
@@ -100,7 +100,7 @@ bool AC_WPNav_OA::update_wpnav()
                 // calculate stopping point
                 Vector3f stopping_point;
                 get_wp_stopping_point(stopping_point);
-                _oa_destination = Location(stopping_point);
+                _oa_destination = Location(stopping_point, Location::AltFrame::ABOVE_ORIGIN);
                 if (set_wp_destination(stopping_point, false)) {
                     _oa_state = oa_retstate;
                 }
