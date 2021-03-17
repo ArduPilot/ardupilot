@@ -69,6 +69,18 @@ void AP_Proximity_RangeFinder::update(void)
                 }
                 _last_upward_update_ms = now;
             }
+            // check downward facing range finder
+            if (sensor->orientation() == ROTATION_PITCH_270) {
+                int16_t distance_downward = sensor->distance_cm();
+                int16_t down_distance_min = sensor->min_distance_cm();
+                int16_t down_distance_max = sensor->max_distance_cm();
+                if ((distance_downward >= down_distance_min) && (distance_downward <= down_distance_max)) {
+                    _distance_downward = distance_downward * 0.01f;
+                } else {
+                    _distance_downward = -1.0; // mark an valid reading
+                }
+                _last_downward_update_ms = now;
+            }
         }
     }
 
@@ -90,3 +102,14 @@ bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
     }
     return false;
 }
+
+// get distance downwards in meters. returns true on success
+bool AP_Proximity_RangeFinder::get_downward_distance(float &distance) const
+{
+    if ((_last_downward_update_ms != 0) && (AP_HAL::millis() - _last_downward_update_ms <= PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
+        distance = _distance_downward;
+        return true;
+    }
+    return false;
+}
+

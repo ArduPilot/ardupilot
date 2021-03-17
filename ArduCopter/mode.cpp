@@ -289,6 +289,16 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
     fence.manual_recovery_start();
+    // disable low altitude fence when landing
+    switch (mode) {
+        case Mode::Number::LAND:
+            FALLTHROUGH;
+        case Mode::Number::RTL:
+            fence.disable_floor();
+            break;
+        default:
+            break;
+    }
 #endif
 
 #if CAMERA == ENABLED
@@ -321,6 +331,13 @@ void Copter::update_flight_mode()
     surface_tracking.invalidate_for_logging();  // invalidate surface tracking alt, flight mode will set to true if used
 
     flightmode->run();
+#if AC_FENCE == ENABLED
+    if (!fence.floor_enabled() && (control_mode != Mode::Number::LAND) && (control_mode != Mode::Number::RTL)) {
+        if ((current_loc.alt*0.01f) > fence.get_safe_alt_min() && (rangefinder.has_orientation(ROTATION_PITCH_270) ? (rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f > fence.get_safe_alt_min()) : true)) {
+            fence.enable_floor(); // Potentially enable low altitude fence the first time the vehicle is above it
+        }
+    }
+#endif
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited

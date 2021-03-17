@@ -83,6 +83,9 @@ public:
     /// enabled - returns true if fence is enabled
     bool enabled() const { return _enabled; }
 
+    /// floor_enabled - returns true if floor fence is enabled
+    bool floor_enabled() const { return _floor_enabled; }
+
     /// present - returns true if fence is present
     bool present() const;
 

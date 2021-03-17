@@ -24,9 +24,13 @@ public:
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const override;
 
+    // get distance downward in meters. returns true on success
+    bool get_downward_distance(float &distance) const override;
+
 private:
     SITL::SITL *sitl;
     AP_Float *fence_alt_max;
+    AP_Float *fence_alt_min;
     Location current_loc;
 
     // latest sector updated
