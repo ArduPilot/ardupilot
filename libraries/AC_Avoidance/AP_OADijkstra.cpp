@@ -140,7 +140,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         Vector2f origin_pos;
         if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
             // convert offset from ekf origin to Location
-            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f));
+            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
             // for first point use current loc as origin
@@ -148,7 +148,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
 
         // convert offset from ekf origin to Location
-        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f));
+        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
         destination_new = destination;
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
@@ -904,4 +904,3 @@ bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
     // we should never reach here but just in case
     return false;
 }
-
