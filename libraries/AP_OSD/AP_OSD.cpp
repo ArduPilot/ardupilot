@@ -187,6 +187,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_W_AVGCELLV", 24, AP_OSD, warn_avgcellvolt, 3.6f),
 
+    // @Param: _W_RESTVOLT
+    // @DisplayName: RESTVOLT warn level
+    // @Description: Set level at which RESTVOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_RESTVOLT", 25, AP_OSD, warn_restvolt, 10.0f),
+
 #endif //osd enabled
 
 #if OSD_PARAM_ENABLED

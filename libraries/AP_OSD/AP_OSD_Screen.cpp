@@ -946,6 +946,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(avgcellvolt, "AVGCELLV", 57, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: RESTVOLT_EN
+    // @DisplayName: RESTVOLT_EN
+    // @Description: Displays main battery resting voltage
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RESTVOLT_X
+    // @DisplayName: RESTVOLT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RESTVOLT_Y
+    // @DisplayName: RESTVOLT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(restvolt, "RESTVOLT", 58, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1180,6 +1196,15 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     } else {
         backend->write(x,y, false, "%c---%c", SYM_BATT_FULL + p, SYM_VOLT);
     }
+}
+
+void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
+{
+    AP_BattMonitor &battery = AP::battery();
+    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t p = (100 - pct) / 16.6;
+    float v = battery.voltage_resting_estimate();
+    backend->write(x,y, v < osd->warn_restvolt, "%c%2.1f%c", SYM_BATT_FULL + p, (double)v, SYM_VOLT);
 }
 
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
@@ -1937,6 +1962,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(waypoint);
     DRAW_SETTING(xtrack_error);
     DRAW_SETTING(bat_volt);
+    DRAW_SETTING(restvolt);
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(bat2_vlt);
     DRAW_SETTING(rssi);
