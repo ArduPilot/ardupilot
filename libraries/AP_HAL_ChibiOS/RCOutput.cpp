@@ -52,6 +52,9 @@ const uint8_t RCOutput::NUM_GROUPS = ARRAY_SIZE(RCOutput::pwm_group_list);
 
 // event mask for triggering a PWM send
 static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
+static const eventmask_t EVT_PWM_START  = EVENT_MASK(12);
+static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
+static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
 
 // marker for a disabled channel
 #define CHAN_DISABLED 255
@@ -132,11 +135,15 @@ void RCOutput::rcout_thread()
         hal.scheduler->delay_microseconds(1000);
     }
 
+    chEvtWaitOne(EVT_PWM_START);
+
+    // don't start calibrating until everything else is ready
+    chEvtWaitOne(EVT_PWM_SEND);
+
     // dshot is quite sensitive to timing, it's important to output pulses as
     // regularly as possible at the correct bitrate
     while (true) {
-
-        chEvtWaitOne(EVT_PWM_SEND);
+        chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
 
         // start the clock
         last_thread_run_us = AP_HAL::micros();
@@ -178,10 +185,10 @@ void RCOutput::dshot_update_tick(void* p)
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
 
-    if (rcout->_dshot_cycle < rcout->_dshot_rate - 1) {
+    if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate) {
         chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
-    chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SEND);
+    chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
     chSysUnlockFromISR();
 }
 
@@ -388,16 +395,18 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
 void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
 {
     // for low loop rates simply output at 1Khz on a timer
-    if (loop_rate_hz <= 100) {
+    if (loop_rate_hz <= 100 || dshot_rate == 0) {
         _dshot_period_us = 1000UL;
         _dshot_rate = 0;
+        chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
         return;
     }
 
     uint16_t drate = dshot_rate * loop_rate_hz;
     _dshot_rate = dshot_rate;
-    // never allow rates below 500hz
-    while (drate < 500) {
+    // BLHeli32 uses a 16 bit counter for input calibration which at 48Mhz will wrap
+    // at 732Hz so never allow rates below 800hz
+    while (drate < 800) {
         _dshot_rate++;
         drate = _dshot_rate * loop_rate_hz;
     }
@@ -408,6 +417,8 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
         drate = _dshot_rate * loop_rate_hz;
     }
     _dshot_period_us = 1000000UL / drate;
+
+    chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
 }
 
 /*
@@ -828,6 +839,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, bit_period, active_high,
+            // choosing the low frequency for DSHOT150 is based on experimentation with BLHeli32 and bi-directional dshot
             MAX(DSHOT_BUFFER_LENGTH, GCR_TELEMETRY_BUFFER_LEN), group.current_mode != MODE_PWM_DSHOT150, pulse_send_time_us)) {
             group.current_mode = MODE_PWM_NORMAL;
             break;
@@ -1106,18 +1118,21 @@ void RCOutput::dshot_send_groups(uint32_t time_out_us)
     if (serial_group) {
         return;
     }
-
     // actually do a dshot send
     for (auto &group : pwm_group_list) {
         if (group.can_send_dshot_pulse()) {
             dshot_send(group, time_out_us);
-            // delay sending the next group by the same amount as the IRQ dead time
-            // to avoid irq collisions
-            if (group.bdshot.enabled) {
-                hal.scheduler->delay_microseconds(10U);
-            }
         }
     }
+}
+
+void RCOutput::dshot_send_next_group(void* p)
+{
+    chSysLockFromISR();
+    RCOutput* rcout = (RCOutput*)p;
+
+    chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SEND_NEXT);
+    chSysUnlockFromISR();
 }
 
 /*
