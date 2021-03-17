@@ -76,6 +76,11 @@
 #define MAX_FILTER_LIST_SIZE 80U            //80 element Standard Filter List elements or 40 element Extended Filter List
 #define FDCAN_NUM_RXFIFO0_SIZE 104U         //26 Frames
 #define FDCAN_TX_FIFO_BUFFER_SIZE 128U      //32 Frames
+#define FDCAN_MESSAGERAM_STRIDE 0x350       // separation of messageram areas
+#define FDCAN_EXFILTER_OFFSET 0x70
+#define FDCAN_RXFIFO0_OFFSET 0xB0
+#define FDCAN_RXFIFO1_OFFSET 0x188
+#define FDCAN_TXFIFO_OFFSET 0x278
 
 #define MESSAGE_RAM_END_ADDR 0x4000B5FC
 
@@ -701,13 +706,13 @@ void CANIface::clear_rx()
 void CANIface::setupMessageRam()
 {
 #if defined(STM32G4)
-    const uint32_t base = SRAMCAN_BASE + 0x350 * can_interfaces[self_index_];
-    memset((void*)base, 0, 0x350);
+    const uint32_t base = SRAMCAN_BASE + FDCAN_MESSAGERAM_STRIDE * can_interfaces[self_index_];
+    memset((void*)base, 0, FDCAN_MESSAGERAM_STRIDE);
     MessageRam_.StandardFilterSA = base;
-    MessageRam_.ExtendedFilterSA = base + 0x70;
-    MessageRam_.RxFIFO0SA = base + 0xB0;
-    MessageRam_.RxFIFO1SA = base + 0x188;
-    MessageRam_.TxFIFOQSA = base + 0x278;
+    MessageRam_.ExtendedFilterSA = base + FDCAN_EXFILTER_OFFSET;
+    MessageRam_.RxFIFO0SA = base + FDCAN_RXFIFO0_OFFSET;
+    MessageRam_.RxFIFO1SA = base + FDCAN_RXFIFO1_OFFSET;
+    MessageRam_.TxFIFOQSA = base + FDCAN_TXFIFO_OFFSET;
 
     can_->TXBC = 0; // fifo mode
 #else
