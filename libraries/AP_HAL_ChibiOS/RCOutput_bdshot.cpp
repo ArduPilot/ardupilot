@@ -40,9 +40,6 @@ extern const AP_HAL::HAL& hal;
 // marker for a disabled channel
 #define CHAN_DISABLED 255
 
-// #pragma GCC optimize("Og")
-
-
 /*
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
@@ -143,6 +140,10 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             group.bdshot.telem_tim_ch[i] = curr_chan;
             group.dma_ch[i] = group.dma_ch[curr_chan];
         }
+        // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
+        // when switching from output to input
+        palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
+            | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_MID1);
     }
 
     return true;
@@ -199,14 +200,14 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
         bdshot_finish_dshot_gcr_transaction, group);
     uint8_t curr_ch = group->bdshot.curr_telem_chan;
 
+    group->pwm_drv->tim->CR1 = 0;
+    group->pwm_drv->tim->CCER = 0;
+
     // Configure Timer
     group->pwm_drv->tim->SR = 0;
-    group->pwm_drv->tim->CCER = 0;
     group->pwm_drv->tim->CCMR1 = 0;
     group->pwm_drv->tim->CCMR2 = 0;
-    group->pwm_drv->tim->CCER = 0;
     group->pwm_drv->tim->DIER = 0;
-    group->pwm_drv->tim->CR1 = 0;
     group->pwm_drv->tim->CR2 = 0;
     group->pwm_drv->tim->PSC = group->bdshot.telempsc;
 
@@ -481,9 +482,7 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;
         // sending is done, in 30us the ESC will send telemetry
-        TOGGLE_PIN_DEBUG(55);
         bdshot_receive_pulses_DMAR(group);
-        TOGGLE_PIN_DEBUG(55);
     } else {
         // non-bidir case
         // this prevents us ever having two dshot pulses too close together
