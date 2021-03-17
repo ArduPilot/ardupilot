@@ -350,6 +350,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 		auto_state.runway_takeoff_projected_centerline_loc.offset_bearing(current_loc.get_bearing_to(next_WP_loc)*0.01f, runway_length*2);
 		set_next_WP(auto_state.runway_takeoff_projected_centerline_loc);  //set it as a virtual waypoint to force the nav_controller to keep converging to centerline
 		auto_state.runway_takeoff_centerline_deviation_analysed_ms=millis();
+		auto_state.crosstrack = auto_state.next_wp_crosstrack = true; //For rolling, fixed-direction Runway takeoffs, crosstrack of exact centerline projected waypoint is essential
 	}
 	auto_state.takeoff_speed_time_ms = 0;
     auto_state.takeoff_complete = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
