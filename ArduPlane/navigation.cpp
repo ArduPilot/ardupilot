@@ -287,9 +287,9 @@ void Plane::Estimate_Bearing_SPD_ETA()
 					  float airspeed_on_bearing = airspeed_available*sinf(wind_compensation_angle); //Get the Airspeed component we have remaining after wind-compensation - we can use this to proceed towards target location
 					  estimated_gndspeed_towards_WP_by_Wind_Airspeed = airspeed_on_bearing-wind_on_bearing; //We still have to find Wind (projected component in lint with bearing-to-location vector)
 					  if (estimated_gndspeed_towards_WP_by_Wind_Airspeed>0) { //Only take into consideration if expected Ground speed towards Location is reachable with current Wind conditions
-						  current_ETA = l_dis / estimated_gndspeed_towards_WP_by_Wind_Airspeed; //Current Estimated Time of Arrival to next WP, taking Wind speed & direction into account
+						  current_ETA_by_Wind_Airspeed = l_dis / estimated_gndspeed_towards_WP_by_Wind_Airspeed; //Current Estimated Time of Arrival to next WP, taking Wind speed & direction into account
 					  } else {
-						  current_ETA = -1; //We may never get there with the current wind vs. airspeed - Use (-1) to indicate infinately long ETA
+						  current_ETA_by_Wind_Airspeed = -1; //We may never get there with the current wind vs. airspeed - Use (-1) to indicate infinately long ETA
 					  }
 					  float next_wp_bearing_radian=current_loc.get_bearing(next_WP_loc);
 					  Vector2f gndVel = ahrs.groundspeed_vector();
@@ -303,6 +303,18 @@ void Plane::Estimate_Bearing_SPD_ETA()
 						  _EB_SPD_ETA_Cycles++;
 						  if (_EB_SPD_ETA_Cycles>0) {
 							  estimated_gndspeed_towards_WP_by_GPS_Bearing = _avg_effective_speed / _EB_SPD_ETA_Cycles; //Effective (Ground) Speed towards next WP
+							  if (estimated_gndspeed_towards_WP_by_GPS_Bearing>0)
+							  {
+							      current_ETA_by_GPS_Bearing = l_dis / estimated_gndspeed_towards_WP_by_GPS_Bearing; //Current Estimated Time of Arrival to next WP, taking GPS course speed & bearing into account
+							  } else {
+							      current_ETA_by_GPS_Bearing = -1;
+							  }
+							  if ((current_ETA_by_GPS_Bearing>0) && (current_ETA_by_Wind_Airspeed>0 )) {
+								  ETA_estimate_error = current_ETA_by_GPS_Bearing - current_ETA_by_Wind_Airspeed;
+							      ETA_estimate_error_valid = true;
+							  } else {
+							      ETA_estimate_error_valid = false;
+							  }
 							  ETA_speed_estimate_error = estimated_gndspeed_towards_WP_by_GPS_Bearing - estimated_gndspeed_towards_WP_by_Wind_Airspeed; //Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (cm/sec)
 						  }
 					  }

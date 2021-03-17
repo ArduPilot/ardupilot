@@ -409,19 +409,31 @@ private:
 	float estimated_gndspeed_towards_WP_by_Wind_Airspeed; 
     
 	//Current Estimated Time of Arrival to next WP, derived from Wind speed & airspeed components (seconds)
-	float current_ETA; 
+	float current_ETA_by_Wind_Airspeed; 
     
 	//Effective (Ground) Speed towards next WP, estimated by GPS course speed on bearing (m/s)
 	float estimated_gndspeed_towards_WP_by_GPS_Bearing; 
-    
+
+	//Current Estimated Time of Arrival to next WP, derived from Wind speed & airspeed components (seconds)
+	float current_ETA_by_GPS_Bearing; 
+	
+	//Difference between airspeed/windspeed derived ETA (seconds)
+	float ETA_estimate_error;
+
+	//True if both Wind/Airspeed-related, and GPS ground course speed-related estimates are available, and both are positive values
+	bool ETA_estimate_error_valid;
+
 	//Difference between airspeed/windspeed derived expected effective speed & GPS-based effective Speed (m/sec)
 	float ETA_speed_estimate_error; 
-    
+
 	//Cumulative effective speed variable, only valid in ratio of EB_SPD_ETA_Cycles
 	float _avg_effective_speed; 
 	
 	//Time of the next WP command issued (mSec)
 	int32_t _mission_next_wp_set_ms; 
+
+	//Index of the current ETA-relevant Mission NAV WP Command
+	int32_t _mission_ETA_Relevant_Nav_WP_Cmd_Idx; 
 
 	//Number of recalculations of the above parameters since switching to the Next WP
     int32_t _EB_SPD_ETA_Cycles; 
