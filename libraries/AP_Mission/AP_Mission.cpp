@@ -1524,7 +1524,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
+        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (cm->m)
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:
