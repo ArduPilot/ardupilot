@@ -46,6 +46,7 @@ public:
         return _singleton;
     }
 private:
+    /// initialize FETtecOneWire protocol
     void init();
     static AP_FETtecOneWire *_singleton;
     bool _initialised;
@@ -58,17 +59,6 @@ private:
     int8_t _telem_avail = -1;
     uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
-
-/**
-    initialize FETtecOneWire protocol
-*/
-    void Init();
-
-/**
-    deinitialize FETtecOneWire protocol
-    TODO: remove it? it is not used anywhere
-*/
-    void DeInit();
 
 /**
     generates used 8 bit CRC for arrays
@@ -166,7 +156,6 @@ private:
     uint8_t _PullBusy;
     uint8_t _TLM_request;
     uint8_t _lastCRC;
-    uint8_t _firstInitDone;
 
     enum return_type
     {
