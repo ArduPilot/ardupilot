@@ -287,7 +287,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         _mode = Auto_CircleMoveToEdge;
 
         // convert circle_edge_neu to Location
-        Location circle_edge(circle_edge_neu);
+        Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
 
         // convert altitude to same as command
         circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
@@ -1199,7 +1199,7 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         // To-Do: make this simpler
         Vector3f temp_pos;
         copter.wp_nav->get_wp_stopping_point_xy(temp_pos);
-        const Location temp_loc(temp_pos);
+        const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
     }
@@ -1707,7 +1707,7 @@ bool ModeAuto::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        Location target_loc = inertial_nav.get_position();
+        Location target_loc(inertial_nav.get_position(), Location::AltFrame::ABOVE_ORIGIN);
         target_loc.alt = nav_payload_place.descend_start_altitude;
         wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
