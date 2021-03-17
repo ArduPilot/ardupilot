@@ -544,6 +544,21 @@ AP_Camera::CamTrigType AP_Camera::get_trigger_type(void)
     }   
 }
 
+void AP_Camera::update_offset_location()
+{
+    offset_location = current_loc;
+    if (_cam_positions.get().is_zero()) {
+        return;  // don't wast time here
+    }
+    const Matrix3f Tbn = AP::ahrs().get_rotation_body_to_ned();
+    // Compute camera position relative to IMU
+    const Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
+    const Vector3f cam_pos_ned = Tbn * (_cam_positions.get() - accel_body_offset);
+
+    offset_location.offset(cam_pos_ned.x, cam_pos_ned.y);
+    offset_location.set_alt_cm(current_loc.alt + (-cam_pos_ned.z), Location::AltFrame::ABOVE_HOME);
+}
+
 // singleton instance
 AP_Camera *AP_Camera::_singleton;
 

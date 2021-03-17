@@ -132,6 +132,7 @@ private:
 
     uint32_t log_camera_bit;
     const struct Location &current_loc;
+    Location offset_location;
 
     // update camera trigger - 50Hz
     void update_trigger();
@@ -148,6 +149,8 @@ private:
     {
         return _feedback_pin > 0;
     }
+
+    void update_offset_location();
 
 };
 
