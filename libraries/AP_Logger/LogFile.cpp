@@ -426,11 +426,13 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 // Write ESC status messages
 //   id starts from 0
 //   rpm is eRPM (rpm * 100)
-//   voltage is in centi-volts
-//   current is in centi-amps
+//   voltage is in Volt
+//   current is in Ampere
 //   temperature is in centi-degrees Celsius
-//   current_tot is in centi-amp hours
-void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate)
+//   current_tot is in mili-Ampere hours
+//   motor_temp is in centi-degrees Celsius
+//   error_rate is in percentage
+void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, float voltage, float current, int16_t esc_temp, float current_tot, int16_t motor_temp, float error_rate)
 {
     const struct log_Esc pkt{
         LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
