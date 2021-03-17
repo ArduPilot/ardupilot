@@ -59,6 +59,10 @@ class AutoTestSub(AutoTest):
     def log_name(self):
         return "ArduSub"
 
+    def default_speedup(self):
+        '''Sub seems to be race-free'''
+        return 100
+
     def test_filepath(self):
         return os.path.realpath(__file__)
 
