@@ -104,6 +104,7 @@ private:
     void            feedback_pin_isr(uint8_t, bool, uint32_t);
     void            setup_feedback_callback(void);
 
+    AP_Vector3f     _cam_positions;     // Camera Optical Center offsets from the IMU
     AP_Float        _trigg_dist;        // distance between trigger points (meters)
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera

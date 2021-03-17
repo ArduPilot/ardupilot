@@ -107,6 +107,31 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TYPE",  11, AP_Camera, _type, 0),
 
+    // @Param: POS_X
+    // @DisplayName: Camera Optical Center X position offset
+    // @Description: X position of the Camera Optical Center in body frame. Positive X is forward of the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POS_Y
+    // @DisplayName: Camera Optical Center Y position offset
+    // @Description: Y position of the Camera Optical Center in body frame. Positive Y is to the right of the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POS_Z
+    // @DisplayName: Camera Optical Center Z position offset
+    // @Description: Z position of the Camera Optical Center in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("OFF_POS", 12, AP_Camera, _cam_positions, 0.0f),
+
     AP_GROUPEND
 };
 
