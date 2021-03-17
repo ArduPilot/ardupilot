@@ -113,7 +113,7 @@ void AP_OAPathPlanner::init()
 }
 
 // return type of BendyRuler in use
-AP_OABendyRuler:: OABendyType AP_OAPathPlanner::get_bendy_type() const
+AP_OABendyRuler::OABendyType AP_OAPathPlanner::get_bendy_type() const
 {
     if (_oabendyruler == nullptr) {
         return AP_OABendyRuler::OABendyType::OA_BENDY_DISABLED; 
