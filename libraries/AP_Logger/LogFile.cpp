@@ -361,30 +361,6 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
-// Write ESC status messages
-//   id starts from 0
-//   rpm is eRPM (rpm * 100)
-//   voltage is in centi-volts
-//   current is in centi-amps
-//   temperature is in centi-degrees Celsius
-//   current_tot is in centi-amp hours
-void AP_Logger::Write_ESC(uint8_t instance, uint64_t time_us, int32_t rpm, uint16_t voltage, uint16_t current, int16_t esc_temp, uint16_t current_tot, int16_t motor_temp, float error_rate)
-{
-    const struct log_Esc pkt{
-        LOG_PACKET_HEADER_INIT(uint8_t(LOG_ESC_MSG)),
-        time_us     : time_us,
-        instance    : instance,
-        rpm         : rpm,
-        voltage     : voltage,
-        current     : current,
-        esc_temp    : esc_temp,
-        current_tot : current_tot,
-        motor_temp  : motor_temp,
-        error_rate  : error_rate
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 /*
   write servo status from CAN servo
  */
@@ -397,25 +373,6 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
         position    : position,
         force       : force,
         speed       : speed,
-        power_pct   : power_pct
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
-/*
-  write ESC status from CAN ESC
- */
-void AP_Logger::Write_ESCStatus(uint64_t time_us, uint8_t id, uint32_t error_count, float voltage, float current, float temperature, int32_t rpm, uint8_t power_pct)
-{
-    const struct log_CESC pkt {
-        LOG_PACKET_HEADER_INIT(LOG_CESC_MSG),
-        time_us     : time_us,
-        id          : id,
-        error_count : error_count,
-        voltage     : voltage,
-        current     : current,
-        temperature : temperature,
-        rpm         : rpm,
         power_pct   : power_pct
     };
     WriteBlock(&pkt, sizeof(pkt));
