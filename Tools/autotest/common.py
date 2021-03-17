@@ -1564,28 +1564,6 @@ class AutoTest(ABC):
                      0,
                      0)
 
-    def reboot_sitl_mav(self, required_bootcount=None):
-        """Reboot SITL instance using mavlink and wait for it to reconnect."""
-        old_bootcount = self.get_parameter('STAT_BOOTCNT')
-        # ardupilot SITL may actually NAK the reboot; replace with
-        # run_cmd when we don't do that.
-        if self.valgrind:
-            self.reboot_check_valgrind_log()
-            self.progress("Stopping and restarting SITL")
-            if getattr(self, 'valgrind_restart_customisations', None) is not None:
-                self.customise_SITL_commandline(
-                    self.valgrind_restart_customisations,
-                    model=self.valgrind_restart_model,
-                    defaults_filepath=self.valgrind_restart_defaults_filepath,
-                )
-            else:
-                self.stop_SITL()
-                self.start_SITL(wipe=False)
-        else:
-            self.progress("Executing reboot command")
-            self.run_cmd_reboot()
-        self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
-
     def send_cmd_enter_cpu_lockup(self):
         """Poke ArduPilot to stop the main loop from running"""
         self.mav.mav.command_long_send(self.sysid_thismav(),
@@ -1603,44 +1581,68 @@ class AutoTest(ABC):
     def reboot_sitl(self, required_bootcount=None):
         """Reboot SITL instance and wait for it to reconnect."""
         self.progress("Rebooting SITL")
-        self.reboot_sitl_mav(required_bootcount=required_bootcount)
+        # out battery is reset to full on reboot.  So reduce it to 10%
+        # and wait for it to go above 50 in detect_and_handle_reboot
+        self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+                     255,  # battery mask
+                     10,  # percentage
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+        if self.valgrind:
+            self.reboot_check_valgrind_log()
+            self.progress("Stopping and restarting SITL")
+            if getattr(self, 'valgrind_restart_customisations', None) is not None:
+                self.customise_SITL_commandline(
+                    self.valgrind_restart_customisations,
+                    model=self.valgrind_restart_model,
+                    defaults_filepath=self.valgrind_restart_defaults_filepath,
+                )
+            else:
+                self.stop_SITL()
+                self.start_SITL(wipe=False)
+        else:
+            self.progress("Executing reboot command")
+            self.run_cmd_reboot()
+        self.detect_and_handle_reboot()
         self.do_heartbeats(force=True)
         self.assert_simstate_location_is_at_startup_location()
 
-    def reboot_sitl_mavproxy(self, required_bootcount=None):
-        """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
-        old_bootcount = self.get_parameter('STAT_BOOTCNT')
-        self.mavproxy.send("reboot\n")
-        self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
+    # def reboot_sitl_mavproxy(self, required_bootcount=None):
+    #     """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
+    #     old_bootcount = self.get_parameter('STAT_BOOTCNT')
+    #     self.mavproxy.send("reboot\n")
+    #     self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
-    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10):
+    def detect_and_handle_reboot(self, timeout=10):
         tstart = time.time()
-        if required_bootcount is None:
-            required_bootcount = old_bootcount + 1
         while True:
-            if time.time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not detect reboot")
+            if time.time() - tstart > 30:
+                raise NotAchievedException("Did not detect reboot")
+            # ask for the message:
+            batt = None
             try:
-                current_bootcount = self.get_parameter('STAT_BOOTCNT',
-                                                       timeout=1,
-                                                       attempts=1,
-                                                       verbose=True,
-                                                       timeout_in_wallclock=True)
-                self.progress("current=%s required=%u" %
-                              (str(current_bootcount), required_bootcount))
-                if current_bootcount == required_bootcount:
-                    break
-            except NotAchievedException:
-                pass
-            except AutoTestTimeoutException:
-                pass
+                self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                              mavutil.mavlink.MAVLINK_MSG_ID_BATTERY_STATUS,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0,
+                              0)
+                batt = self.mav.recv_match(type='BATTERY_STATUS',
+                                           blocking=True,
+                                           timeout=1)
             except ConnectionResetError:
                 pass
-            except socket.error:
-                pass
-            except Exception as e:
-                self.progress("Got unexpected exception (%s)" % str(type(e)))
-                pass
+            self.progress("Battery: %s" % str(batt))
+            if batt is None:
+                continue
+            if batt.battery_remaining > 50:
+                break
 
         # empty mav to avoid getting old timestamps:
         self.do_timesync_roundtrip(timeout_in_wallclock=True)
