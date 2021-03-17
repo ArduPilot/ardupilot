@@ -348,3 +348,13 @@ userdata AP_HAL::PWMSource method set_pin boolean uint8_t 0 UINT8_MAX "Scripting
 userdata AP_HAL::PWMSource method get_pwm_us uint16_t
 userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
 
+singleton hal.gpio alias gpio
+singleton hal.gpio literal
+singleton hal.gpio method read boolean uint8_t 0 UINT8_MAX
+singleton hal.gpio method write void uint8_t 0 UINT8_MAX uint8_t 0 1
+singleton hal.gpio method toggle void uint8_t 0 UINT8_MAX
+singleton hal.gpio method pinMode void uint8_t 0 UINT8_MAX uint8_t 0 1
+
+singleton hal.analogin alias analog
+singleton hal.analogin literal
+singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
