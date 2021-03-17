@@ -88,6 +88,7 @@ public:
       return true if we are a tailsitter transitioning to VTOL flight
     */
     bool in_tailsitter_vtol_transition(uint32_t now = 0) const;
+    bool in_tailsitter_vtol_initial_transition(uint32_t now = 0) const;
 
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 

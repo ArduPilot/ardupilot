@@ -279,7 +279,7 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
     }
     if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
         labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > 2000) {
+        AP_HAL::millis() - transition_start_ms > 3000) {
         return true;
     }
     // still waiting
@@ -317,6 +317,18 @@ bool QuadPlane::in_tailsitter_vtol_transition(uint32_t now) const
     if ((now != 0) && ((now - last_vtol_mode_ms) > 1000)) {
         // only just come out of forward flight
         return true;
+    }
+    return false;
+}
+
+/*
+  return true if we are a tailsitter transitioning to VTOL flight and in the first second to allow wing leveling if
+  OPTION_LEVEL_TRANSITION bit is set in attitude controller
+ */
+bool QuadPlane::in_tailsitter_vtol_initial_transition(uint32_t now) const
+{
+    if ( in_tailsitter_vtol_transition(now) && now - transition_start_ms < 1000) {
+	return true;
     }
     return false;
 }

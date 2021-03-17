@@ -382,14 +382,18 @@ void Plane::stabilize()
     }
     float speed_scaler = get_speed_scaler();
 
+     /*
+       during transition to vtol in a tailsitter try to raise the
+       nose rapidly while keeping the wings level. If OPTION_LEVEL_TRANSITION
+       bit is set, will try to level wings for a second before pitching up
+    */
     uint32_t now = AP_HAL::millis();
-    if (quadplane.in_tailsitter_vtol_transition(now)) {
-        /*
-          during transition to vtol in a tailsitter try to raise the
-          nose rapidly while keeping the wings level
-         */
-        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
-        nav_roll_cd = 0;
+    if (quadplane.in_tailsitter_vtol_initial_transition(now) && quadplane.options & QuadPlane::OPTION_LEVEL_TRANSITION) {
+	roll_limit_cd = MIN(roll_limit_cd, g.level_roll_limit*100);
+        nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
+    } else  if (quadplane.in_tailsitter_vtol_transition(now)){
+         nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+         nav_roll_cd = 0;
     }
 
     if (now - last_stabilize_ms > 2000) {
