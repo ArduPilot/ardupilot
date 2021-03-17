@@ -64,7 +64,6 @@ void AP_FETtecOneWire::init()
     if (_uart) {
         _uart->begin(2000000);
     }
-    Init();
 }
 
 void AP_FETtecOneWire::update()
@@ -134,30 +133,6 @@ void AP_FETtecOneWire::update()
             esc_mask <<= 1;
         }
     }
-}
-
-/**
-    initialize FETtecOneWire protocol
-*/
-void AP_FETtecOneWire::Init()
-{
-    // TODO: move this entire code inside AP_FETtecOneWire::init()
-    if (_firstInitDone == 0) {
-        _FoundESCs = 0;
-        _ScanActive = 0;
-        _SetupActive = 0;
-        _minID = MOTOR_COUNT_MAX;
-        _maxID = 0;
-        _IDcount = 0;
-        _FastThrottleByteCount = 0;
-        for (uint8_t i = 0; i < MOTOR_COUNT_MAX; i++) {
-            _activeESC_IDs[i] = 0;
-        }
-    }
-    _IgnoreOwnBytes = 0;
-    _PullSuccess = 0;
-    _PullBusy = 0;
-    _firstInitDone = 1;
 }
 
 /**
