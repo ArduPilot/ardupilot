@@ -1199,7 +1199,7 @@ class AutoTest(ABC):
                  binary,
                  valgrind=False,
                  gdb=False,
-                 speedup=8,
+                 speedup=None,
                  frame=None,
                  params=None,
                  gdbserver=False,
@@ -1230,6 +1230,8 @@ class AutoTest(ABC):
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
         self.speedup = speedup
+        if self.speedup is None:
+            self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
 
         self.mavproxy = None
@@ -1276,6 +1278,9 @@ class AutoTest(ABC):
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None
+
+    def default_speedup(self):
+        return 8
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
