@@ -350,7 +350,7 @@ void AP_ESC_Telem::update()
                                 (int32_t) rpm * 100,
                                 _telem_data[i].voltage_cv,
                                 _telem_data[i].current_ca,
-                                _telem_data[i].temperature_deg,
+                                _telem_data[i].temperature_deg * 100,
                                 _telem_data[i].consumption_mah,
                                 _telem_data[i].motor_temp_deg,
                                 _telem_data[i].error_rate);
