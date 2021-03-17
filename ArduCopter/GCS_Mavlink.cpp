@@ -525,6 +525,11 @@ void GCS_MAVLINK_Copter::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
 }
 
+void msmits ()
+{
+
+}
+
 void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)  // is this right? I have no idea
 {
     if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
@@ -557,8 +562,7 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     
                                                                     // beginning of my code
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
-    uint16_t k = RC_Channel *channel_yaw;
-    //hal.rcin->read(3);         // reading ch4 (YAW) from pilot
+    uint16_t k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
     
     if (i >= 1850) {                                                // if ch6 from the pilot is high then this part will work
         RC_Channels::set_override(8, override_data[0], tnow);       // ch9 from the pilot will be overrided by ch1 from MavLink
@@ -573,7 +577,8 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
         }
     }
     else {                                                          // if ch6 isn't hight, then this part will work
-        RC_Channels::set_override(10, 1500, tnow);                  // ch 11 from the pilot will be overrided by 1500
+        hal.rcout->write(10, 1500);
+        //RC_Channels::set_override(10, 1500, tnow);                // ch 11 from the pilot will be overrided by 1500
         RC_Channels::set_override(11, 1500, tnow);                  // ch 12 from the pilot will be overrided by 1500
         RC_Channels::set_override(12, 1500, tnow);                  // ch 13 from the pilot will be overrided by 1500
     }
