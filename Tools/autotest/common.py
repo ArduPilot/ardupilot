@@ -2691,6 +2691,15 @@ class AutoTest(ABC):
         self.set_rc(ch, 1000)
         self.delay_sim_time(1)
 
+    def get_mission_count(self):
+        return self.get_parameter("MIS_TOTAL")
+
+    def assert_mission_count(self, expected):
+        count = self.get_mission_count()
+        if count != expected:
+            raise NotAchievedException("Unexpected count got=%u want=%u" %
+                                       (count, expected))
+
     def clear_wp(self, ch=8):
         """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
@@ -2699,8 +2708,7 @@ class AutoTest(ABC):
         self.set_rc(ch, 2000)
         self.delay_sim_time(0.5)
         self.set_rc(ch, 1000)
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting 0 waypoints')
+        self.assert_mission_count(0)
 
     def log_list(self):
         '''return a list of log files present in POSIX-style loging dir'''
@@ -4223,7 +4231,7 @@ class AutoTest(ABC):
                 target_compid=None,
                 timeout=10,
                 quiet=False):
-        self.drain_mav_unparsed()
+        self.drain_mav()
         self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_cmd(
             command,
@@ -4994,6 +5002,24 @@ class AutoTest(ABC):
             timeout=timeout,
             **kwargs
         )
+
+    def get_servo_channel_value(self, channel, timeout=2):
+        channel_field = "servo%u_raw" % channel
+        tstart = self.get_sim_time()
+        while True:
+            remaining = timeout - (self.get_sim_time_cached() - tstart)
+            if remaining <= 0:
+                raise NotAchievedException("Channel value condition not met")
+            m = self.mav.recv_match(type='SERVO_OUTPUT_RAW',
+                                    blocking=True,
+                                    timeout=remaining)
+            if m is None:
+                continue
+            m_value = getattr(m, channel_field, None)
+            if m_value is None:
+                raise ValueError("message (%s) has no field %s" %
+                                 (str(m), channel_field))
+            return m_value
 
     def wait_servo_channel_value(self, channel, value, timeout=2, comparator=operator.eq):
         """wait for channel value comparison (default condition is equality)"""
@@ -7423,22 +7449,32 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None):
+        if type(message_id) == str:
+            message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
+        self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                      message_id,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      target_sysid=target_sysid,
+                      target_compid=target_compid)
+
     def poll_message(self, message_id, timeout=10):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
-        # temporarily use a constant in place of
-        # mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE until we have a
-        # pymavlink release:
-        tstart = self.get_sim_time()
-        self.run_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
-                     message_id,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=timeout)
+        self.drain_mav_unparsed()
+        tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+        self.send_poll_message(message_id)
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            timeout,
+            quiet=False
+        )
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not receive polled message")
@@ -7449,6 +7485,28 @@ Also, ignores heartbeats not from our target system'''
             if m.id != message_id:
                 continue
             return m
+
+    def get_messages_frame(self, msg_names):
+        '''try to get a "frame" of named messages - a set of messages as close
+        in time as possible'''
+        msgs = {}
+
+        def get_msgs(mav, m):
+            t = m.get_type()
+            if t in msg_names:
+                msgs[t] = m
+        self.do_timesync_roundtrip()
+        self.install_message_hook(get_msgs)
+        for msg_name in msg_names:
+            self.send_poll_message(msg_name)
+        while True:
+            self.mav.recv_match(blocking=True)
+            if len(msgs.keys()) == len(msg_names):
+                break
+
+        self.remove_message_hook(get_msgs)
+
+        return msgs
 
     def test_request_message(self, timeout=60):
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
@@ -8671,6 +8729,7 @@ switch value'''
             self.drain_mav()
             self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_ENABLE", 1)
+            self.set_parameter("SYSID_MYGCS", self.mav.source_system)
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
             self.set_parameter("AFS_TERM_ACTION", 42)

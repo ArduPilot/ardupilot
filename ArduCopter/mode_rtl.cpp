@@ -275,8 +275,10 @@ void ModeRTL::descent_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
 
 #if AC_FENCE == ENABLED
     // disable the fence on landing
@@ -368,8 +370,10 @@ void ModeRTL::land_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
 
 #if AC_FENCE == ENABLED
     // disable the fence on landing

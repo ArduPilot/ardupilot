@@ -651,6 +651,7 @@ class AutoTestCopter(AutoTest):
         # Trigger an RC failure in guided mode with the option enabled
         # to continue in guided. Verify no failsafe action takes place
         self.start_subtest("Radio failsafe with option to continue in guided mode: FS_THR_ENABLE=1 & FS_OPTIONS=4")
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         self.setGCSfailsafe(1)
         self.set_parameter('FS_THR_ENABLE', 1)
         self.set_parameter('FS_OPTIONS', 4)
@@ -1338,9 +1339,6 @@ class AutoTestCopter(AutoTest):
     # fly_alt_min_fence_test - fly down until you hit the fence floor
     def fly_alt_min_fence_test(self):
         self.takeoff(30, mode="LOITER", timeout=60)
-        """Hold loiter position."""
-        self.mavproxy.send('switch 5\n')  # loiter mode
-        self.wait_mode('LOITER')
 
         # enable fence, disable avoidance
         self.set_parameter("AVOID_ENABLE", 0)
@@ -1621,8 +1619,6 @@ class AutoTestCopter(AutoTest):
     #   50 seconds east, 15 seconds south
     def fly_simple(self, side=50):
         self.takeoff(10, mode="LOITER")
-        # hold position in loiter
-        self.change_mode('LOITER')
 
         # set SIMPLE mode for all flight modes
         self.set_parameter("SIMPLE", 63)
@@ -3021,25 +3017,6 @@ class AutoTestCopter(AutoTest):
         return (hours, mins, secs, 0)
 
     def reset_delay_item(self, seq, seconds_in_future):
-        while True:
-            self.progress("Requesting request for seq %u" % (seq,))
-            self.mav.mav.mission_write_partial_list_send(1, # target system
-                                                         1, # target component
-                                                         seq, # start index
-                                                         seq)
-            req = self.mav.recv_match(type='MISSION_REQUEST',
-                                      blocking=True,
-                                      timeout=1)
-            if req is not None and req.seq == seq:
-                if req.get_srcSystem() == 255:
-                    self.progress("Shutup MAVProxy")
-                    continue
-                # notionally this might be in the message cache before
-                # we prompt for it... *shrug*
-                break
-
-        # we have received a request for the item.  Supply it:
-
         frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
         command = mavutil.mavlink.MAV_CMD_NAV_DELAY
         # retrieve mission item and check it:
@@ -5698,15 +5675,6 @@ class AutoTestCopter(AutoTest):
 
         if ex is not None:
             raise ex
-
-    def get_mission_count(self):
-        return self.get_parameter("MIS_TOTAL")
-
-    def assert_mission_count(self, expected):
-        count = self.get_mission_count()
-        if count != expected:
-            raise NotAchievedException("Unexpected count got=%u want=%u" %
-                                       (count, expected))
 
     def test_aux_switch_options(self):
         self.set_parameter("RC7_OPTION", 58) # clear waypoints

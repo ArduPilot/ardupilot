@@ -480,7 +480,11 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     vtx.set_frequency_mhz(settings.frequency);
     vtx.set_band(settings.band);
     vtx.set_channel(settings.channel);
-    vtx.set_power_dbm(settings.power_in_dbm);
+    if (settings.version == SMARTAUDIO_SPEC_PROTOCOL_v21) {
+        vtx.set_power_dbm(settings.power_in_dbm);
+    } else {
+        vtx.set_power_level(settings.power);
+    }
     // it seems like the spec is wrong, on a unify pro32 this setting is inverted
     _vtx_use_set_freq = !(settings.mode & 1);
 

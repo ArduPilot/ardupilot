@@ -197,12 +197,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
-    // @Param: FBWA_TDRAG_CHAN
-    // @DisplayName: FBWA taildragger channel
-    // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
-    // @User: Standard
-    GSCALAR(fbwa_tdrag_chan,          "FBWA_TDRAG_CHAN",  0),
-
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
@@ -644,18 +638,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
-    // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
-    // @User: Advanced
-    GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
-
-    // @Param: RST_MISSION_CH
-    // @DisplayName: Reset Mission Channel
-    // @Description: Enables a channel to reset the mission to the first waypoint. Mission restart is triggered by channel rising above 1750 PWM. 0 disables.
-    // @User: Advanced
-    GSCALAR(reset_mission_chan,      "RST_MISSION_CH",  0),
-
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
     // @Description: Target airspeed in cm/s in automatic throttle modes. Value is as an indicated (calibrated/apparent) airspeed.
@@ -822,12 +804,6 @@ const AP_Param::Info Plane::var_info[] = {
 	// @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
     GOBJECT(parachute,		"CHUTE_", AP_Parachute),
-
-    // @Param: CHUTE_CHAN
-    // @DisplayName: Parachute release channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for manually releasing the parachute. When this channel goes above 1700 the parachute will be released
-    // @User: Advanced
-    GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
     // @Group: RNGFND
@@ -1143,7 +1119,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL.
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1287,7 +1263,7 @@ ParametersG2::ParametersG2(void) :
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] = {
+static const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
@@ -1339,6 +1315,22 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
 };
 
+struct RCConversionInfo {
+    uint16_t old_key; // k_param_*
+    uint32_t old_group_element; // index in old object
+    RC_Channel::AUX_FUNC fun; // new function
+};
+
+static const RCConversionInfo rc_option_conversion[] = {
+    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
+    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
+    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
+    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
+    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
+    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
+    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
+};
+
 void Plane::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
@@ -1381,48 +1373,15 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    // Convert flap to RCx_OPTION
-    AP_Int8 flap_output;
-    AP_Param::ConversionInfo flap_info = {
-        Parameters::k_param_flapin_channel_old,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&flap_info, &flap_output) && flap_output.get() != 0) {
-        RC_Channel *flapin = rc().channel(flap_output - 1);
-        if (flapin != nullptr && !flapin->option.configured()) {
-            flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
-        }
-    }
-
-    // Convert SOAR_ENABLE_CH to RCx_OPTION
-    AP_Int8 soar_enable_ch;
-    AP_Param::ConversionInfo soar_info = {
-        Parameters::k_param_g2,
-        968,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&soar_info, &soar_enable_ch) && soar_enable_ch.get() != 0) {
-        RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
-        if (soar_ch != nullptr && !soar_ch->option.configured()) {
-            soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
-        }
-    }
-
-    // Convert fence to RCx_OPTION
-    AP_Int8 fence_enable_ch;
-    AP_Param::ConversionInfo fence_channel_info = {
-        Parameters::k_param_fence_channel,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&fence_channel_info, &fence_enable_ch) && fence_enable_ch.get() != 0) {
-        RC_Channel *fence_ch = rc().channel(fence_enable_ch - 1);
-        if (fence_ch != nullptr && !fence_ch->option.configured()) {
-            fence_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FENCE); // save the new param
+    // Convert chan params to RCx_OPTION
+    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
+        AP_Int8 chan_param;
+        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
+        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
+            RC_Channel *chan = rc().channel(chan_param.get() - 1);
+            if (chan != nullptr && !chan->option.configured()) {
+                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
+            }
         }
     }
 
