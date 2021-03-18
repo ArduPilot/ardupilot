@@ -219,7 +219,8 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     }
 
     // record time of pass or fail
-    if (gpsSpdAccFail || numSatsFail || hdopFail || hAccFail || vAccFail || yawFail || gpsDriftFail || gpsVertVelFail || gpsHorizVelFail) {
+    // Judge in order of priority.
+    if (yawFail || numSatsFail || hdopFail || gpsSpdAccFail || vAccFail || hAccFail || gpsHorizVelFail || gpsVertVelFail || gpsDriftFail) { 
         lastGpsVelFail_ms = imuSampleTime_ms;
     } else {
         lastGpsVelPass_ms = imuSampleTime_ms;
