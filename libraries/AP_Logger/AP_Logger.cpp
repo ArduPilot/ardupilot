@@ -697,14 +697,16 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
 
     if (_armed) {
          // went from disarmed to armed
-#if HAL_LOGGER_FILE_CONTENTS_ENABLED
-        // get a set of @SYS files logged:
-        file_content_prepare_for_arming = true;
-#endif
     } else {
         // went from armed to disarmed
         FOR_EACH_BACKEND(vehicle_was_disarmed());
     }
+
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    // get a set of @SYS files logged:
+    io_task->set_vehicle_armed(armed_state);
+#endif
+
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -1397,7 +1399,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
   dump available or we have saved it to sdcard. This is called
   continuously until success to account for late mount of the microSD
  */
-bool AP_Logger::check_crash_dump_save(void)
+bool AP_Logger::IOTask::check_crash_dump_save(void)
 {
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
@@ -1425,25 +1427,27 @@ bool AP_Logger::check_crash_dump_save(void)
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
 // and the thread will sleep while this completes preventing other tasks from running, it therefore
 // is necessary to run the IO in it's own thread
-void AP_Logger::io_thread(void)
+uint32_t AP_Logger::IOTask::update()
 {
-    uint32_t last_run_us = AP_HAL::micros();
-    uint32_t last_stack_us = last_run_us;
-    uint32_t last_crash_check_us = last_run_us;
-    bool done_crash_dump_save = false;
-
-    while (true) {
-        uint32_t now = AP_HAL::micros();
-
-        uint32_t delay = 250U; // always have some delay
-        if (now - last_run_us < 1000) {
-            delay = MAX(1000 - (now - last_run_us), delay);
-        }
-        hal.scheduler->delay_microseconds(delay);
-
-        last_run_us = AP_HAL::micros();
+    if (!init_done) {
+        const uint32_t now { AP_HAL::micros() };
+        last_run_us = now;
+        last_stack_us = now;
+        last_crash_check_us = now;
+        done_crash_dump_save = false;
+    }
 
         FOR_EACH_BACKEND(io_timer());
+
+        uint32_t now = AP_HAL::micros();
+
+        const uint32_t dt = now - last_run_us;
+        last_run_us = now;
+
+        uint32_t delay = 250U; // always have some delay
+        if (dt < 1000) {
+            delay = MAX(1000 - dt, delay);
+        }
 
         if (now - last_stack_us > 100000U) {
             last_stack_us = now;
@@ -1459,7 +1463,8 @@ void AP_Logger::io_thread(void)
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
         file_content_update();
 #endif
-    }
+
+        return delay;
 }
 
 // start the update thread
@@ -1467,16 +1472,19 @@ void AP_Logger::start_io_thread(void)
 {
     WITH_SEMAPHORE(_log_send_sem);
 
-    if (_io_thread_started) {
+    io_task = new IOTask{&backends[0], _next_backend};
+    if (io_task == nullptr) {
         return;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
+    if (!hal.scheduler->task_create(
+            *io_task,
+            "log_io",
+            HAL_LOGGING_STACK_SIZE,
+            AP_HAL::Scheduler::PRIORITY_IO,
+            1)) {
         AP_HAL::panic("Failed to start Logger IO thread");
     }
-
-    _io_thread_started = true;
-    return;
 }
 
 /* End of Write support */
@@ -1553,7 +1561,7 @@ bool AP_Logger::log_while_disarmed(void) const
 }
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
-void AP_Logger::prepare_at_arming_sys_file_logging()
+void AP_Logger::IOTask::prepare_at_arming_sys_file_logging()
 {
     // free existing content:
     at_arm_file_content.reset();
@@ -1633,10 +1641,15 @@ void AP_Logger::FileContent::remove_and_free(file_list *victim)
  */
 void AP_Logger::log_file_content(const char *filename)
 {
+    io_task->log_file_content(filename);
+}
+
+void AP_Logger::IOTask::log_file_content(const char *filename)
+{
     log_file_content(normal_file_content, filename);
 }
 
-void AP_Logger::log_file_content(FileContent &file_content, const char *filename)
+void AP_Logger::IOTask::log_file_content(FileContent &file_content, const char *filename)
 {
     WITH_SEMAPHORE(file_content.sem);
     auto *file = NEW_NOTHROW file_list;
@@ -1671,7 +1684,7 @@ void AP_Logger::log_file_content(FileContent &file_content, const char *filename
 /*
   periodic call to log file content
  */
-void AP_Logger::file_content_update(void)
+void AP_Logger::IOTask::file_content_update(void)
 {
     if (file_content_prepare_for_arming) {
         file_content_prepare_for_arming = false;
@@ -1682,7 +1695,7 @@ void AP_Logger::file_content_update(void)
     file_content_update(normal_file_content);
 }
 
-void AP_Logger::file_content_update(FileContent &file_content)
+void AP_Logger::IOTask::file_content_update(FileContent &file_content)
 {
     auto *file = file_content.head;
     if (file == nullptr) {
@@ -1729,13 +1742,27 @@ void AP_Logger::file_content_update(FileContent &file_content)
     }
     pkt.offset = file_content.offset;
     pkt.length = length;
-    if (WriteBlock_first_succeed(&pkt, sizeof(pkt))) {
+    if (AP::logger().WriteBlock_first_succeed(&pkt, sizeof(pkt))) {
         file_content.offset += length;
     } else {
         // seek back ready for another try
         AP::FS().lseek(file_content.fd, file_content.offset, SEEK_SET);
     }
 }
+
+void AP_Logger::IOTask::arming_failure()
+{
+    file_content_prepare_for_arming = true;
+}
+
+void AP_Logger::IOTask::set_vehicle_armed(const bool armed_state)
+{
+    if (armed_state && ! _armed) {
+        file_content_prepare_for_arming = true;
+    }
+    _armed = armed_state;
+}
+
 #endif // HAL_LOGGER_FILE_CONTENTS_ENABLED
 
 namespace AP {

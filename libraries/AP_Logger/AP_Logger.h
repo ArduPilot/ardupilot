@@ -367,7 +367,7 @@ public:
     void arming_failure() {
         _last_arming_failure_ms = AP_HAL::millis();
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
-        file_content_prepare_for_arming = true;
+        io_task->arming_failure();
 #endif
     }
 
@@ -510,14 +510,8 @@ private:
     void save_format_Replay(const void *pBuffer);
 
     // io thread support
-    bool _io_thread_started;
-
     void start_io_thread(void);
-    void io_thread();
-    bool check_crash_dump_save(void);
 
-#if HAL_LOGGER_FILE_CONTENTS_ENABLED
-    // support for logging file content
     struct file_list {
         struct file_list *next;
         const char *filename;
@@ -533,18 +527,52 @@ private:
         uint8_t counter;
         HAL_Semaphore sem;
     };
-    FileContent normal_file_content;
-    FileContent at_arm_file_content;
 
-    // protect this with a semaphore?
-    bool file_content_prepare_for_arming;
+    class IOTask : public AP_HAL::Scheduler::Task {
+    public:
+        IOTask(AP_Logger_Backend **_backends, uint8_t &next_backend) :
+            backends{_backends},
+            _next_backend{next_backend} {}
+        uint32_t update() override;
 
-    void file_content_update(void);
+        void arming_failure();
+        void set_vehicle_armed(bool arm_state);
 
-    void prepare_at_arming_sys_file_logging();
-
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        void log_file_content(const char *name);
 #endif
-    
+
+    private:
+        AP_Logger_Backend **backends;
+        uint8_t &_next_backend;
+
+        bool init_done;
+        uint32_t last_run_us;
+        uint32_t last_stack_us;
+
+        bool check_crash_dump_save(void);
+        uint32_t last_crash_check_us;
+        bool done_crash_dump_save;
+        bool _armed;
+
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        void file_content_update(void);
+
+        // support for logging file content
+        FileContent normal_file_content;
+        FileContent at_arm_file_content;
+
+        // protect this with a semaphore?
+        bool file_content_prepare_for_arming;
+
+        void log_file_content(FileContent &file_content, const char *filename);
+        void file_content_update(FileContent &file_content);
+
+        void prepare_at_arming_sys_file_logging();
+#endif
+    };
+    IOTask *io_task;
+
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {
@@ -608,10 +636,6 @@ private:
 
     /* end support for retrieving logs via mavlink: */
 
-#if HAL_LOGGER_FILE_CONTENTS_ENABLED
-    void log_file_content(FileContent &file_content, const char *filename);
-    void file_content_update(FileContent &file_content);
-#endif
 };
 
 namespace AP {
