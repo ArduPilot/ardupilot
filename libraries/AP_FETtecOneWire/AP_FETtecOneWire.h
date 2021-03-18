@@ -199,20 +199,20 @@ private:
     /// presistent scan state data (only used inside ScanESCs() function)
     struct scan_state
     {
-      uint16_t delayLoops = 500;
-      uint8_t scanID = 0;
-      uint8_t scanState = 0;
-      uint8_t scanTimeOut = 0;
+      uint16_t delayLoops;
+      uint8_t scanID;
+      uint8_t scanState;
+      uint8_t scanTimeOut;
     } _ss;
 
     /// presistent init state data (only used inside InitESCs() function)
     struct init_state
     {
-      uint8_t delayLoops = 0;
-      uint8_t activeID = 1;
-      uint8_t State = 0;
-      uint8_t TimeOut = 0;
-      uint8_t wakeFromBL = 1;
+      uint8_t delayLoops;
+      uint8_t activeID;
+      uint8_t State;
+      uint8_t TimeOut;
+      uint8_t wakeFromBL;
       uint8_t setFastCommand[4] = {OW_SET_FAST_COM_LENGTH, 0, 0, 0};
     } _is;
 
