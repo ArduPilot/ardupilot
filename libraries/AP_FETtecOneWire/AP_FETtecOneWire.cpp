@@ -152,7 +152,7 @@ uint8_t AP_FETtecOneWire::Get_crc8(uint8_t* Buf, uint16_t BufLen) const
 }
 
 /**
-    transmitts a FETtecOneWire frame to a ESC
+    transmits a FETtec OneWire frame to an ESC
     @param ESC_id id of the ESC
     @param Bytes 8 bit array of bytes. Where byte 1 contains the command, and all following bytes can be the payload
     @param Length length of the Bytes array
@@ -179,7 +179,7 @@ void AP_FETtecOneWire::Transmit(uint8_t ESC_id, uint8_t* Bytes, uint8_t Length)
 }
 
 /**
-    reads the answer frame of a ESC
+    reads the FETtec OneWire answer frame of an ESC
     @param Bytes 8 bit byte array, where the received answer gets stored in
     @param Length the expected answer length
     @param returnFullFrame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
@@ -250,7 +250,7 @@ void AP_FETtecOneWire::PullReset()
 }
 
 /**
-    Pulls a complete request between for ESC
+    Pulls a complete request between flight controller and ESC
     @param ESC_id  id of the ESC
     @param command 8bit array containing the command that should be send including the possible payload
     @param response 8bit array where the response will be stored in
@@ -560,7 +560,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
 
             //prepare fast throttle signals
             uint16_t useSignals[24] = {0};
-            uint8_t OneWireFastThrottleCommand[36] = {0};
+            uint8_t fast_throttle_command[36] = {0};
             if (motorCount > _IDcount) {
                 motorCount = _IDcount;
             }
@@ -577,16 +577,16 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             // B = TLM request type (temp, volt, current, erpm, consumption, debug1, debug2, debug3)
             // C = first bit from first throttle signal
             // D = frame header
-            OneWireFastThrottleCommand[0] = 128 | (_TLM_request << 4);
-            OneWireFastThrottleCommand[0] |= ((useSignals[actThrottleCommand] >> 10) & 0x01) << 3;
-            OneWireFastThrottleCommand[0] |= 0x01;
+            fast_throttle_command[0] = 128 | (_TLM_request << 4);
+            fast_throttle_command[0] |= ((useSignals[actThrottleCommand] >> 10) & 0x01) << 3;
+            fast_throttle_command[0] |= 0x01;
 
             // byte 2:
             // AAABBBBB
             // A = next 3 bits from (11bit)throttle signal
             // B = 5bit target ID
-            OneWireFastThrottleCommand[1] = (((useSignals[actThrottleCommand] >> 7) & 0x07)) << 5;
-            OneWireFastThrottleCommand[1] |= ALL_ID;
+            fast_throttle_command[1] = (((useSignals[actThrottleCommand] >> 7) & 0x07)) << 5;
+            fast_throttle_command[1] |= ALL_ID;
 
             // following bytes are the rest 7 bit of the first (11bit) throttle signal, and all bit from all other signals, followed by the CRC byte
             uint8_t BitsLeftFromCommand = 7;
@@ -595,7 +595,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             uint8_t bitsToAddLeft = (12 + (((_maxID - _minID) + 1) * 11)) - 16;
             while (bitsToAddLeft > 0) {
                 if (bitsFromByteLeft >= BitsLeftFromCommand) {
-                    OneWireFastThrottleCommand[actByte] |=
+                    fast_throttle_command[actByte] |=
                             (useSignals[actThrottleCommand] & ((1 << BitsLeftFromCommand) - 1))
                                     << (bitsFromByteLeft - BitsLeftFromCommand);
                     bitsToAddLeft -= BitsLeftFromCommand;
@@ -607,7 +607,7 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
                         bitsFromByteLeft = 8;
                     }
                 } else {
-                    OneWireFastThrottleCommand[actByte] |=
+                    fast_throttle_command[actByte] |=
                             (useSignals[actThrottleCommand] >> (BitsLeftFromCommand - bitsFromByteLeft))
                                     & ((1 << bitsFromByteLeft) - 1);
                     bitsToAddLeft -= bitsFromByteLeft;
@@ -626,12 +626,12 @@ int8_t AP_FETtecOneWire::ESCsSetValues(uint16_t* motorValues, uint16_t* Telemetr
             }
 
             // send throttle signal
-            OneWireFastThrottleCommand[_FastThrottleByteCount - 1] = Get_crc8(
-                    OneWireFastThrottleCommand, _FastThrottleByteCount - 1);
-            _uart->write(OneWireFastThrottleCommand, _FastThrottleByteCount);
+            fast_throttle_command[_FastThrottleByteCount - 1] = Get_crc8(
+                    fast_throttle_command, _FastThrottleByteCount - 1);
+            _uart->write(fast_throttle_command, _FastThrottleByteCount);
             // last byte of signal can be used to make sure the first TLM byte is correct, in case of spike corruption
             _IgnoreOwnBytes = _FastThrottleByteCount - 1;
-            _lastCRC = OneWireFastThrottleCommand[_FastThrottleByteCount - 1];
+            _lastCRC = fast_throttle_command[_FastThrottleByteCount - 1];
             // the ESCs will answer the TLM as 16bit each ESC, so 2byte each ESC.
         }
     }
