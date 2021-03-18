@@ -30,6 +30,7 @@ const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @DisplayName: Channel Bitmask
     // @Description: Enable of FETtec OneWire ESC protocol to specific channels
     // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_FETtecOneWire, motor_mask, 0),
 
