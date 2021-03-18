@@ -1337,23 +1337,26 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
 // and the thread will sleep while this completes preventing other tasks from running, it therefore
 // is necessary to run the IO in it's own thread
-void AP_Logger::io_thread(void)
+void AP_Logger::io_task_init(void)
 {
-    uint32_t last_run_us = AP_HAL::micros();
+    taskstate.last_run_us = AP_HAL::micros();
+}
 
-    while (true) {
+uint32_t AP_Logger::io_task_body(void)
+{
+        FOR_EACH_BACKEND(io_timer());
+
         uint32_t now = AP_HAL::micros();
 
+        const uint32_t dt = now - taskstate.last_run_us;
+        taskstate.last_run_us = now;
+
         uint32_t delay = 250U; // always have some delay
-        if (now - last_run_us < 1000) {
-            delay = MAX(1000 - (now - last_run_us), delay);
+        if (dt < 1000) {
+            delay = MAX(1000 - dt, delay);
         }
-        hal.scheduler->delay_microseconds(delay);
 
-        last_run_us = AP_HAL::micros();
-
-        FOR_EACH_BACKEND(io_timer());
-    }
+        return delay;
 }
 
 // start the update thread
@@ -1365,7 +1368,13 @@ void AP_Logger::start_io_thread(void)
         return;
     }
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
+    if (!hal.scheduler->task_create(
+            FUNCTOR_BIND_MEMBER(&AP_Logger::io_task_init, void),
+            FUNCTOR_BIND_MEMBER(&AP_Logger::io_task_body, uint32_t),
+            "log_io",
+            HAL_LOGGING_STACK_SIZE,
+            AP_HAL::Scheduler::PRIORITY_IO,
+            1)) {
         AP_HAL::panic("Failed to start Logger IO thread");
     }
 
