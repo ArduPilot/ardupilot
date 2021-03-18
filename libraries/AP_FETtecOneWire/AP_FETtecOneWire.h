@@ -69,7 +69,7 @@ private:
     uint8_t Get_crc8(uint8_t *Buf, uint16_t BufLen) const;
 
 /**
-    transmitts a FETtecOneWire frame to a ESC
+    transmits a FETtec OneWire frame to an ESC
     @param ESC_id id of the ESC
     @param Bytes  8 bit array of bytes. Where byte 1 contains the command, and all following bytes can be the payload
     @param Length length of the Bytes array
@@ -77,7 +77,7 @@ private:
     void Transmit(uint8_t ESC_id, uint8_t *Bytes, uint8_t Length);
 
 /**
-    reads the answer frame of a ESC
+    reads the FETtec OneWire answer frame of an ESC
     @param Bytes 8 bit byte array, where the received answer gets stored in
     @param Length the expected answer length
     @param returnFullFrame can be OW_RETURN_RESPONSE or OW_RETURN_FULL_FRAME
@@ -91,7 +91,7 @@ private:
     void PullReset();
 
 /**
-    Pulls a complete request between for ESC
+    Pulls a complete request between flight controller and ESC
     @param ESC_id id of the ESC
     @param command 8bit array containing the command that should be send including the possible payload
     @param response 8bit array where the response will be stored in
