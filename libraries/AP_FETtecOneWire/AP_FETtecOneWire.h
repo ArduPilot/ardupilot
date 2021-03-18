@@ -25,6 +25,10 @@
 #define HAL_AP_FETTECONEWIRE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH) && BOARD_FLASH_SIZE > 1024
 #endif
 
+#ifndef HAL_AP_FETTECONEWIRE_GET_STATIC_INFO
+#define HAL_AP_FETTECONEWIRE_GET_STATIC_INFO 0
+#endif
+
 #if HAL_AP_FETTECONEWIRE_ENABLED
 
 #include <AP_Param/AP_Param.h>
@@ -136,10 +140,12 @@ private:
     typedef struct FETtecOneWireESC
     {
       uint8_t inBootLoader;
+#if HAL_AP_FETTECONEWIRE_GET_STATIC_INFO
       uint8_t firmWareVersion;
       uint8_t firmWareSubVersion;
       uint8_t ESCtype;
       uint8_t serialNumber[12];
+#endif
     } FETtecOneWireESC_t;
 
     uint8_t _activeESC_IDs[MOTOR_COUNT_MAX] = {0};
