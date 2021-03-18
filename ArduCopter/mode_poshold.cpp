@@ -509,8 +509,8 @@ void ModePosHold::run()
         }
         else if(!mount->has_pan_control() || mount->mount_yaw_follow_mode == AP_Mount::gimbal_yaw_follows_vehicle){
             //auto_yaw.yaw() is set when a CMD_DO_MOUNT_CONTROL message is received
-            target_yaw_rate = AP_HAL::micros64() - mount->get_last_mount_control_time_us() < 500000 ? auto_yaw.yaw() : 0;
-            auto_yaw.set_mode(AUTO_YAW_RATE);
+            target_yaw_rate = AP_HAL::micros64() - mount->get_last_mount_control_time_us() < 500000 ? auto_yaw.rate_cds() : 0;
+//            auto_yaw.set_mode(AUTO_YAW_RATE);
         }
         else if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
             //only set new yaw command if payload data is recent (1/2 sec)
@@ -528,6 +528,15 @@ void ModePosHold::run()
                     relative_angle);
             }
         }
+        AP::logger().Write("PHY1", "TimeUS,Tyr,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QffffBBB",
+                                 AP_HAL::micros64(),
+                                 (float)target_yaw_rate,
+                                 (float)auto_yaw.rate_cds(),
+                                 (float)auto_yaw.yaw(),
+                                 (float)mount->get_follow_yaw_rate(),
+                                 (uint8_t)mount->mount_yaw_follow_mode,
+                                 (uint8_t)mount->has_pan_control(),
+                                 (uint8_t)auto_yaw.mode());
     }
 
     // call attitude controller

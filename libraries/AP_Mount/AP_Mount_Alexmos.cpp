@@ -1,6 +1,7 @@
 ﻿#include "AP_Mount_Alexmos.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -14,6 +15,10 @@ void AP_Mount_Alexmos::init()
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
     }
+
+
+    _log_encoder_readback = 0.0f;
+    _yaw_follow_mode = 7;
 
     // Responsiveness of the gimbal to recenter with the vehicle
     gimbal_yaw_scale = 1.0/20.0f;
@@ -270,6 +275,8 @@ void AP_Mount_Alexmos::parse_body()
             if (mount != nullptr) {
                 mount->yaw_encoder_readback = _current_angle.z;
                 mount->yaw_encoder_readback_time_us = AP_HAL::micros64();
+                _log_encoder_readback = mount->yaw_encoder_readback;
+                _yaw_follow_mode=mount->mount_yaw_follow_mode;
             }
         }
         break;
@@ -286,6 +293,33 @@ void AP_Mount_Alexmos::parse_body()
             _last_command_confirmed = true;
             break;
     }
+    AP::logger().Write("AMT2", "TimeUS,GTA,BVrs,FVrs,BFTR,MMode,YMode,FMode,Pan", "QBBHHBBBB",
+                                            AP_HAL::micros64(),
+                                            (uint8_t)_gimbal_3axis,
+                                            (uint8_t)_buffer.version._board_version,
+                                            (uint16_t)_buffer.version._firmware_version,
+                                            (uint16_t)_buffer.version._board_features,
+                                            (uint8_t)_state._mode,
+                                            (uint8_t)get_control_mode(_state._yaw_input_mode),
+                                            (uint8_t)_yaw_follow_mode,
+                                            (uint8_t)has_pan_control());
+
+    AP::logger().Write("AMNT", "TimeUS,CmdId,CAngZ,AngZ,EAngZ,SAngz,TAngZ,Enc", "QBffffff",
+                                            AP_HAL::micros64(),
+                                            AP_HAL::micros64(),
+                                            (uint8_t)_command_id,
+                                            (uint8_t)_command_id,
+                                            (float)_current_angle.z,
+                                            (float)_current_angle.z,
+                                            (float)VALUE_TO_DEGREE(_buffer.angles.angle_yaw),
+                                            (float)VALUE_TO_DEGREE(_buffer.angles.angle_yaw),
+                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw),
+                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.angle_yaw),
+                                            (float)VALUE_TO_DEGREE(_buffer.angles_ext.stator_rotor_angle_yaw),
+                                            (float)degrees(_angle_ef_target_rad.z),
+                                            (float)degrees(_angle_ef_target_rad.z),
+                                            (uint8_t)get_control_mode(_state._yaw_input_mode),
+                                            (float)_log_encoder_readback);
 }
 
 /*

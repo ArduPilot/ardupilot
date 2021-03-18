@@ -38,6 +38,7 @@ void ModePlanckTracking::run() {
     // check if gimbal steering needs to controlling the vehicle yaw
     AP_Mount *mount = AP::mount();
     bool paylod_yaw_rate = false;
+    float yaw_rate_for_logging_cds=18.4218;
     if(mount != nullptr) {
       if(mount->mount_yaw_follow_mode == AP_Mount::vehicle_yaw_follows_gimbal) {
 
@@ -68,7 +69,25 @@ void ModePlanckTracking::run() {
                 0,
                 0);
         }
+        else if(copter.flightmode->auto_yaw.mode() == AUTO_YAW_RATE)
+        {
+          yaw_rate_for_logging_cds = copter.flightmode->auto_yaw.rate_cds();
+          copter.flightmode->auto_yaw.set_fixed_yaw(
+                copter.flightmode->auto_yaw.rate_cds(),
+                0.0f,
+                0,
+                0);
+
+        }
       }
+      AP::logger().Write("PTK1", "TimeUS,Ayr,Ayy,Gfyr,Myfm,HPan,Aym", "QfffBBB",
+                               AP_HAL::micros64(),
+                         (float)yaw_rate_for_logging_cds,
+                         (float)auto_yaw.yaw(),
+                         (float)mount->get_follow_yaw_rate(),
+                         (uint8_t)mount->mount_yaw_follow_mode,
+                         (uint8_t)mount->has_pan_control(),
+                         (uint8_t)auto_yaw.mode());
     }
 
     //Check for tether high tension
