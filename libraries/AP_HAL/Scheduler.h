@@ -126,6 +126,29 @@ public:
         return false;
     }
 
+    /*
+      create a new task.  Tasks may be run synchronously in the main thread.
+
+      update() is called repeatedly.  If in a thread it is called in
+      a loop.  It must return a delay (in microseconds) that is the
+      time after which the body should be called again.
+
+     */
+
+    class Task {
+    public:
+        virtual uint32_t update() = 0;
+    };
+
+    virtual bool task_create(
+        Task &task,
+        const char *name,
+        uint32_t stack_size,
+        priority_base base,
+        int8_t priority) {
+        return false;
+    }
+
 private:
 
     AP_HAL::Proc _delay_cb;
