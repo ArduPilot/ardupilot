@@ -69,7 +69,8 @@ public:
         ArduCopter,
         Rover,
         ArduPlane,
-        ArduSub
+        ArduSub,
+        Blimp
     };
 
     int gps_pipe(uint8_t index);
