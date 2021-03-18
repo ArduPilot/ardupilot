@@ -626,18 +626,9 @@ void Scheduler::thread_create_trampoline(void *ctx)
     free(t);
 }
 
-/*
-  create a new thread
-*/
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+// calculates an integer to be used as the priority for a newly-created thread
+uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
-    // take a copy of the MemberProc, it is freed after thread exits
-    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
-    if (!tproc) {
-        return false;
-    }
-    *tproc = proc;
-
     uint8_t thread_priority = APM_IO_PRIORITY;
     static const struct {
         priority_base base;
@@ -662,6 +653,23 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
+    return thread_priority;
+}
+
+/*
+  create a new thread
+*/
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+{
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
     thread_t *thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(stack_size),
                                                name,
                                                thread_priority,
