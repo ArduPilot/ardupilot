@@ -562,7 +562,7 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     
                                                                     // beginning of my code
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
-    //uint16_t k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
+    uint16_t p = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
     uint16_t k = override_data[3];
 
     if (i >= 1850) {                                               // if ch6 from the pilot is high then this part will work
@@ -573,7 +573,11 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
         RC_Channels::set_override(12, override_data[5], tnow);     // ch13 from the pilot will be overrided by ch6 from MavLink
         if (k <= 1450) {                               // if ch4 (=YAW) from the pilot is centered then this part will work
             if (k >= 1550) {
-                RC_Channels::set_override(3, override_data[3], tnow);   // ch4 (=YAW) from the pilot will be override by ch4 from MavLink
+                if (p >= 1450) {
+                    if (p <= 1550) {
+                        RC_Channels::set_override(3, override_data[3], tnow);   // ch4 (=YAW) from the pilot will be override by ch4 from MavLink
+                    }
+                }
             }
         }
     }
