@@ -39,9 +39,9 @@ void Sub::althold_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control.set_throttle_out(0,true,g.throttle_filt);
+        attitude_control.set_throttle_out(0.5,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+        pos_control.relax_alt_hold_controllers();
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
@@ -103,33 +103,18 @@ void Sub::althold_run()
 }
 
 void Sub::control_depth() {
-    // Hold actual position until zero derivative is detected
-    static bool engageStopZ = true;
-    // Get last user velocity direction to check for zero derivative points
-    static bool lastVelocityZWasNegative = false;
-    if (fabsf(channel_throttle->norm_input()-0.5f) > 0.05f) { // Throttle input above 5%
-        // output pilot's throttle
-        attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
-        // reset z targets to current values
-        pos_control.relax_alt_hold_controllers();
-        engageStopZ = true;
-        lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z());
-    } else { // hold z
 
-        if (ap.at_bottom) {
-            pos_control.relax_alt_hold_controllers(); // clear velocity and position targets
-            pos_control.set_alt_target(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+    if (fabsf(channel_throttle->norm_input() - 0.5f) > 0.05f)  { // Throttle input  above 5%
+       pos_control.set_alt_target_from_climb_rate((channel_throttle->norm_input() - 0.5f) * 230.0f, POSCONTROL_DT_400HZ, true);
+    } else {
+        if (ap.at_surface) {
+            pos_control.set_alt_target(MIN(pos_control.get_alt_target(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
+        } else if (ap.at_bottom) {
+            pos_control.set_alt_target(MAX(inertial_nav.get_altitude() + 10.0f, pos_control.get_alt_target())); // set target to 10 cm above bottom
         }
-
-        // Detects a zero derivative
-        // When detected, move the altitude set point to the actual position
-        // This will avoid any problem related to joystick delays
-        // or smaller input signals
-        if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z()))) {
-            engageStopZ = false;
-            pos_control.relax_alt_hold_controllers();
-        }
-
-        pos_control.update_z_controller();
     }
+    pos_control.update_z_controller();
+    float throttle_out = constrain_float(attitude_control.get_throttle_in() + channel_throttle->norm_input() - 0.5, 0.0, 1.0);
+    attitude_control.set_throttle_out(throttle_out, false, g.throttle_filt);
+
 }
