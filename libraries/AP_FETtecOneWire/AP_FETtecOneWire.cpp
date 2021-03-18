@@ -321,7 +321,9 @@ uint8_t AP_FETtecOneWire::ScanESCs()
         case 1:request[0] = OW_REQ_TYPE;
             if (PullCommand(_ss.scanID, request, response, OW_RETURN_RESPONSE)) {
                 _ss.scanTimeOut = 0;
+#if HAL_AP_FETTECONEWIRE_GET_STATIC_INFO
                 _foundESCs[_ss.scanID].ESCtype = response[0];
+#endif
                 _ss.delayLoops = 1;
                 _ss.scanState++;
             } else {
@@ -331,8 +333,10 @@ uint8_t AP_FETtecOneWire::ScanESCs()
         case 2:request[0] = OW_REQ_SW_VER;
             if (PullCommand(_ss.scanID, request, response, OW_RETURN_RESPONSE)) {
                 _ss.scanTimeOut = 0;
+#if HAL_AP_FETTECONEWIRE_GET_STATIC_INFO
                 _foundESCs[_ss.scanID].firmWareVersion = response[0];
                 _foundESCs[_ss.scanID].firmWareSubVersion = response[1];
+#endif
                 _ss.delayLoops = 1;
                 _ss.scanState++;
             } else {
@@ -342,9 +346,11 @@ uint8_t AP_FETtecOneWire::ScanESCs()
         case 3:request[0] = OW_REQ_SN;
             if (PullCommand(_ss.scanID, request, response, OW_RETURN_RESPONSE)) {
                 _ss.scanTimeOut = 0;
+#if HAL_AP_FETTECONEWIRE_GET_STATIC_INFO
                 for (uint8_t i = 0; i < 12; i++) {
                     _foundESCs[_ss.scanID].serialNumber[i] = response[i];
                 }
+#endif
                 _ss.delayLoops = 1;
                 return _ss.scanID + 1;
             } else {
