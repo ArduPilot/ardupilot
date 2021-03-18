@@ -196,7 +196,7 @@ bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
 
 void AP_InertialSensor_Invensense::start()
 {
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -284,8 +284,10 @@ void AP_InertialSensor_Invensense::start()
         break;
     }
 
-    _gyro_instance = _imu.register_gyro(1000, _dev->get_bus_id_devtype(gdev));
-    _accel_instance = _imu.register_accel(1000, _dev->get_bus_id_devtype(adev));
+    if (!_imu.register_gyro(_gyro_instance, 1000, _dev->get_bus_id_devtype(gdev)) ||
+        !_imu.register_accel(_accel_instance, 1000, _dev->get_bus_id_devtype(adev))) {
+        return;
+    }
 
     // setup ODR and on-sensor filtering
     _set_filter_register();
@@ -386,8 +388,6 @@ void AP_InertialSensor_Invensense::start()
 
     // now that we have initialised, we set the bus speed to high
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
-
-    _dev->get_semaphore()->give();
 
     // setup sensor rotations from probe()
     set_gyro_orientation(_gyro_instance, _rotation);
@@ -930,7 +930,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
 
 bool AP_InertialSensor_Invensense::_hardware_init(void)
 {
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     // setup for register checking. We check much less often on I2C
     // where the cost of the checks is higher
@@ -940,7 +940,6 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     if (!_check_whoami()) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -998,7 +997,6 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
 
     if (tries == 5) {
         hal.console->printf("Failed to boot Invensense 5 times\n");
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -1008,8 +1006,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         // this avoids a sensor bug, see description above
         _register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
     }
-    _dev->get_semaphore()->give();
-    
+
     return true;
 }
 
@@ -1142,7 +1139,7 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
         return;
     }
     
-    backend._dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(backend._dev->get_semaphore());
 
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/
     if (!(backend._last_stat_user_ctrl & BIT_USER_CTRL_I2C_MST_EN)) {
@@ -1162,8 +1159,6 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
     backend._register_write(MPUREG_I2C_MST_DELAY_CTRL,
                             BIT_I2C_SLV0_DLY_EN | BIT_I2C_SLV1_DLY_EN |
                             BIT_I2C_SLV2_DLY_EN | BIT_I2C_SLV3_DLY_EN);
-
-    backend._dev->get_semaphore()->give();
 }
 
 int AP_Invensense_AuxiliaryBus::_configure_periodic_read(AuxiliaryBusSlave *slave,

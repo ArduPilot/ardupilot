@@ -512,8 +512,10 @@ fail_whoami:
  */
 void AP_InertialSensor_LSM9DS0::start(void)
 {
-    _gyro_instance = _imu.register_gyro(760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20));
-    _accel_instance = _imu.register_accel(1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D));
+    if (!_imu.register_gyro(_gyro_instance, 760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20)) ||
+        !_imu.register_accel(_accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D))) {
+        return;
+    }
 
     if (whoami_g == LSM9DS0_G_WHOAMI_H) {
         set_gyro_orientation(_gyro_instance, _rotation_gH);

@@ -161,8 +161,10 @@ void AP_InertialSensor_Invensensev3::start()
         break;
     }
 
-    gyro_instance = _imu.register_gyro(INV3_ODR, dev->get_bus_id_devtype(devtype));
-    accel_instance = _imu.register_accel(INV3_ODR, dev->get_bus_id_devtype(devtype));
+    if (!_imu.register_gyro(gyro_instance, INV3_ODR, dev->get_bus_id_devtype(devtype)) ||
+        !_imu.register_accel(accel_instance, INV3_ODR, dev->get_bus_id_devtype(devtype))) {
+        return;
+    }
 
     // setup on-sensor filtering and scaling
     set_filter_and_scaling();
