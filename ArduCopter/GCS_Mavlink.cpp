@@ -564,7 +564,7 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
     uint16_t p = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
     uint16_t k = override_data[3];
-    uint16_t h;
+    uint16_t h = 0;
 
     if (k <= 1450) {
         h = 1;
