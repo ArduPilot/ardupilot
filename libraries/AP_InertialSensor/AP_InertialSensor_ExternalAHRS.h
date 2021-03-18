@@ -23,6 +23,7 @@ private:
     uint8_t gyro_instance;
     uint8_t accel_instance;
     const uint8_t serial_port;
+    bool started;
 };
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 
