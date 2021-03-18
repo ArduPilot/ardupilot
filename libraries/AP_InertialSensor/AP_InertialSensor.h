@@ -96,8 +96,8 @@ public:
 
     /// Register a new gyro/accel driver, allocating an instance
     /// number
-    uint8_t register_gyro(uint16_t raw_sample_rate_hz, uint32_t id);
-    uint8_t register_accel(uint16_t raw_sample_rate_hz, uint32_t id);
+    bool register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
+    bool register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
 
     // a function called by the main thread at the main loop rate:
     void periodic();

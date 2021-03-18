@@ -14,6 +14,9 @@ AP_InertialSensor_ExternalAHRS::AP_InertialSensor_ExternalAHRS(AP_InertialSensor
 
 void AP_InertialSensor_ExternalAHRS::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
+    if (!started) {
+        return;
+    }
     Vector3f accel = pkt.accel;
     Vector3f gyro = pkt.gyro;
 
@@ -29,18 +32,22 @@ void AP_InertialSensor_ExternalAHRS::handle_external(const AP_ExternalAHRS::ins_
 
 bool AP_InertialSensor_ExternalAHRS::update(void)
 {
-    update_accel(accel_instance);
-    update_gyro(gyro_instance);
-    return true;
+    if (started) {
+        update_accel(accel_instance);
+        update_gyro(gyro_instance);
+    }
+    return started;
 }
 
 void AP_InertialSensor_ExternalAHRS::start()
 {
     const float rate = AP::externalAHRS().get_IMU_rate();
-    gyro_instance = _imu.register_gyro(rate,
-                                       AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL, serial_port, 1, DEVTYPE_SERIAL));
-    accel_instance = _imu.register_accel(rate,
-                                         AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL, serial_port, 2, DEVTYPE_SERIAL));
+    if (_imu.register_gyro(gyro_instance, rate,
+                           AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL, serial_port, 1, DEVTYPE_SERIAL)) &&
+        _imu.register_accel(accel_instance, rate,
+                            AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL, serial_port, 2, DEVTYPE_SERIAL))) {
+        started = true;
+    }
 }
 
 void AP_InertialSensor_ExternalAHRS::accumulate()

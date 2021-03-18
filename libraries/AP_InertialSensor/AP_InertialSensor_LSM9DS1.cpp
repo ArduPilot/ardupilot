@@ -330,8 +330,10 @@ void AP_InertialSensor_LSM9DS1::_fifo_reset()
  */
 void AP_InertialSensor_LSM9DS1::start(void)
 {
-    _gyro_instance = _imu.register_gyro(952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1));
-    _accel_instance = _imu.register_accel(952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1));
+    if (!_imu.register_gyro(_gyro_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1)) ||
+        !_imu.register_accel(_accel_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1))) {
+        return;
+    }
 
     set_accel_orientation(_accel_instance, _rotation);
     set_gyro_orientation(_gyro_instance, _rotation);
