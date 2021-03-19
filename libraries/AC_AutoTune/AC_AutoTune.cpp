@@ -895,13 +895,23 @@ void AC_AutoTune::load_test_gains()
 {
     switch (axis) {
     case ROLL:
-        attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
-        attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
+        if (tune_type == MAX_GAINS && !is_zero(tune_roll_rff)) {
+            attitude_control->get_rate_roll_pid().kP(0.0f);
+            attitude_control->get_rate_roll_pid().kD(0.0f);
+        } else {
+            attitude_control->get_rate_roll_pid().kP(tune_roll_rp);
+            attitude_control->get_rate_roll_pid().kD(tune_roll_rd);
+        }
         attitude_control->get_angle_roll_p().kP(tune_roll_sp);
         break;
     case PITCH:
-        attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
-        attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
+        if (tune_type == MAX_GAINS && !is_zero(tune_pitch_rff)) {
+            attitude_control->get_rate_pitch_pid().kP(0.0f);
+            attitude_control->get_rate_pitch_pid().kD(0.0f);
+        } else {
+            attitude_control->get_rate_pitch_pid().kP(tune_pitch_rp);
+            attitude_control->get_rate_pitch_pid().kD(tune_pitch_rd);
+        }
         attitude_control->get_angle_pitch_p().kP(tune_pitch_sp);
         break;
     case YAW:
@@ -1556,36 +1566,52 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
     float tgt_attitude = 2.5f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_rate_cds;
+    static uint32_t settle_time = 200;
+    static float trim_command;
+
+    float cycle_time_ms = 0;
+    if (!is_zero(dwell_freq)) {
+        cycle_time_ms = 1000.0f * 6.28f / dwell_freq;
+    }
+
+    if (settle_time == 0) {
+        // give gentler start for the dwell
+        if ((float)(now - dwell_start_time_ms) < 0.5f * cycle_time_ms) {
+            target_rate_cds = - dwell_freq * 0.5f * tgt_attitude * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
+        } else {
+            target_rate_cds = - dwell_freq * tgt_attitude * 5730.0f * cosf(dwell_freq * (now - dwell_start_time_ms - 0.25f * cycle_time_ms) * 0.001);
+        }
+    } else {
+        target_rate_cds = 0.0f;
+        settle_time--;
+        dwell_start_time_ms = now;
+        trim_command = command_out;
+    }
+
 
     switch (axis) {
     case ROLL:
         gyro_reading = ahrs_view->get_gyro().x;
         command_reading = motors->get_roll();
         tgt_rate_reading = attitude_control->rate_bf_targets().x;
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-        if (is_zero(dwell_start_time_ms) && ahrs_view->roll_sensor > -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_roll_target(-1000.0f);
-        } else if (is_zero(dwell_start_time_ms) && ahrs_view->roll_sensor < -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_roll_target(0.0f);
-            dwell_start_time_ms = now;
+        if (settle_time == 0) {
+            float trim_rate_cds = 5730.0f * trim_command / tune_roll_rff;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_roll_target(target_rate_cds + trim_rate_cds);
         } else {
-            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-            attitude_control->rate_bf_roll_target(target_rate_cds);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         }
         break;
     case PITCH:
         gyro_reading = ahrs_view->get_gyro().y;
         command_reading = motors->get_pitch();
         tgt_rate_reading = attitude_control->rate_bf_targets().y;
-        attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
-        if (is_zero(dwell_start_time_ms) && ahrs_view->pitch_sensor > -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_pitch_target(-1000.0f);
-        } else if (is_zero(dwell_start_time_ms) && ahrs_view->pitch_sensor < -0.95f * tgt_attitude * 5730.0f + start_angle) {
-            attitude_control->rate_bf_pitch_target(0.0f);
-            dwell_start_time_ms = now;
+        if (settle_time == 0) {
+            float trim_rate_cds = 5730.0f * trim_command / tune_pitch_rff;
+            attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+            attitude_control->rate_bf_pitch_target(target_rate_cds + trim_rate_cds);
         } else {
-            target_rate_cds = tgt_attitude * dwell_freq * 5730.0f * sinf(dwell_freq * (now - dwell_start_time_ms) * 0.001);
-            attitude_control->rate_bf_pitch_target(target_rate_cds);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
         }
         break;
     case YAW:
@@ -1614,7 +1640,7 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
                                      AP::scheduler().get_loop_period_s());
 
     // wait for dwell to start before determining gain and phase
-    if (!is_zero(dwell_start_time_ms)) {
+    if ((float)(now - dwell_start_time_ms) > 0.5f * cycle_time_ms) {
         if (freq_resp_input == 1) {
             determine_gain(filt_target_rate,rotation_rate, dwell_freq, dwell_gain, dwell_phase, dwell_complete, false);
         } else {
@@ -1625,6 +1651,7 @@ void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float dwell_freq, floa
     if (now - step_start_time_ms >= step_time_limit_ms || dwell_complete) {
         // we have passed the maximum stop time
         step = UPDATE_GAINS;
+        settle_time = 200;
     }
 }
 
