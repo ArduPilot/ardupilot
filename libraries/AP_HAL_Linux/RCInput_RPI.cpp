@@ -64,6 +64,10 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #endif // CONFIG_HAL_BOARD_SUBTYPE
 
 //Memory Addresses
+#define RCIN_RPI_RPI0_DMA_BASE 0x20007000
+#define RCIN_RPI_RPI0_CLK_BASE 0x20101000
+#define RCIN_RPI_RPI0_PCM_BASE 0x20203000
+
 #define RCIN_RPI_RPI1_DMA_BASE 0x20007000
 #define RCIN_RPI_RPI1_CLK_BASE 0x20101000
 #define RCIN_RPI_RPI1_PCM_BASE 0x20203000
@@ -126,7 +130,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     uint32_t i;
     int fdMem, file;
     // Cache coherent adresses depends on RPI's version
-    uint32_t bus = version == 1 ? 0x40000000 : 0xC0000000;
+    uint32_t bus = version <= 1 ? 0x40000000 : 0xC0000000;
     uint64_t pageInfo;
     void *offset;
 
@@ -230,7 +234,11 @@ uint32_t Memory_table::get_page_count() const
 // Physical addresses of peripheral depends on Raspberry Pi's version
 void RCInput_RPI::set_physical_addresses(int version)
 {
-    if (version == 1) {
+    if (version == 0) {
+        dma_base = RCIN_RPI_RPI0_DMA_BASE;
+        clk_base = RCIN_RPI_RPI0_CLK_BASE;
+        pcm_base = RCIN_RPI_RPI0_PCM_BASE;
+    } else if (version == 1) {
         dma_base = RCIN_RPI_RPI1_DMA_BASE;
         clk_base = RCIN_RPI_RPI1_CLK_BASE;
         pcm_base = RCIN_RPI_RPI1_PCM_BASE;
