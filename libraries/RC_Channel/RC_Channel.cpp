@@ -600,11 +600,13 @@ bool RC_Channel::read_aux()
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
     } else if (_option == AUX_FUNC::VTX_POWER) {
+#if HAL_VIDEOTX_ENABLED
         int8_t position;
         if (read_6pos_switch(position)) {
             AP::vtx().change_power(position);
             return true;
         }
+#endif
         return false;
     }
 
