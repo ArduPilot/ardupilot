@@ -86,6 +86,10 @@ private:
     AP_HAL::MemberProc _io_proc[LINUX_SCHEDULER_MAX_IO_PROCS];
     uint8_t _num_io_procs;
 
+    // calculates an integer to be used as the priority for a
+    // newly-created thread
+    uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
+
     SchedulerThread _timer_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_timer_task, void), *this};
     SchedulerThread _io_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_io_task, void), *this};
     SchedulerThread _rcin_thread{FUNCTOR_BIND_MEMBER(&Scheduler::_rcin_task, void), *this};
