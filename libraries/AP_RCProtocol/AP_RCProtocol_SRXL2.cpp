@@ -302,6 +302,7 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 // configure the video transmitter, the input values are Spektrum-oriented
 void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
 {
+#if HAL_VIDEOTX_ENABLED
     AP_VideoTX& vtx = AP::vtx();
     // VTX Band (0 = Fatshark, 1 = Raceband, 2 = E, 3 = B, 4 = A)
     // map to TBS band A, B, E, Race, Airwave, LoRace
@@ -350,6 +351,7 @@ void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t p
     default:
         break;
     }
+#endif
 }
 
 // send data to the uart
