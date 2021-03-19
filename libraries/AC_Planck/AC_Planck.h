@@ -66,7 +66,15 @@ public:
   //Get a position, velocity, yaw command
   bool get_posvel_cmd(Location &loc, Vector3f &vel_cms, float &yaw_cd, bool &is_yaw_rate);
 
-  uint32_t mux_rates(const float rate_up, const float rate_down){return (uint32_t(rate_up) << 16) | uint32_t(rate_down);};
+  uint32_t mux_rates(float rate_up,  float rate_down){
+    if (rate_down<0)
+      rate_down*=-1;
+
+    if (rate_up<0)
+      rate_up*=-1;
+
+    return ((uint32_t(rate_up) << 16) | uint32_t(rate_down));
+  };
 
 private:
 
