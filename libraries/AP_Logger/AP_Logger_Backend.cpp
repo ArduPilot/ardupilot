@@ -429,6 +429,17 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         return false;
     }
 
+    if (_front._last_mavlink_log_transfer_message_handled_ms != 0) {
+        if (AP_HAL::millis() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
+            if (!_front.vehicle_is_armed()) {
+                // user is transfering files via mavlink
+                return false;
+            }
+        } else {
+            _front._last_mavlink_log_transfer_message_handled_ms = 0;
+        }
+    }
+
     if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
         // if we have previously logged while armed then we log all
         // critical messages from then on. That fixes a problem where
