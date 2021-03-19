@@ -30,9 +30,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
+
+#if HAL_VIDEOTX_ENABLED
     // @Group: VTX_
     // @Path: ../AP_VideoTX/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
+#endif
 
 #if HAL_MSP_ENABLED
     // @Group: MSP
@@ -144,9 +147,9 @@ void AP_Vehicle::setup()
     // init library used for visual position estimation
     visual_odom.init();
 #endif
-
+#if HAL_VIDEOTX_ENABLED
     vtx.init();
-
+#endif
 #if HAL_SMARTAUDIO_ENABLED
     smartaudio.init();
 #endif
@@ -204,7 +207,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50),
 #endif
     SCHED_TASK(update_dynamic_notch,                   200,    200),
+#if HAL_VIDEOTX_ENABLED
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100),
+#endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20),
 #if GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50),
