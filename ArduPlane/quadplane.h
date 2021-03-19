@@ -524,7 +524,9 @@ private:
 
     // tailsitter control variables
     struct {
-        AP_Int8 transition_angle;
+        AP_Int8 transition_angle_fw;
+        AP_Int8 transition_angle_vtol;
+        AP_Int16 transition_time_vtol_ms;
         AP_Int8 input_type;
         AP_Int8 input_mask;
         AP_Int8 input_mask_chan;
@@ -540,6 +542,9 @@ private:
         AP_Int16 gain_scaling_mask;
         AP_Float disk_loading;
     } tailsitter;
+
+    // return the ransition_angle_vtol value
+    int8_t get_tailsitter_transition_angle_vtol(void) const;
 
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option

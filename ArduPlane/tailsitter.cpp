@@ -250,8 +250,8 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
     if (roll_cd > 9000) {
         roll_cd = 18000 - roll_cd;
     }
-    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle*100 ||
-        roll_cd > tailsitter.transition_angle*100 ||
+    if (labs(ahrs_view->pitch_sensor) > tailsitter.transition_angle_fw*100 ||
+        labs(roll_cd)> tailsitter.transition_angle_fw*100 ||
         AP_HAL::millis() - transition_start_ms > uint32_t(transition_time_ms)) {
         return true;
     }
@@ -277,9 +277,9 @@ bool QuadPlane::tailsitter_transition_vtol_complete(void) const
             return true;
         }
     }
-    if (labs(plane.ahrs.pitch_sensor) > tailsitter.transition_angle*100 ||
-        labs(plane.ahrs.roll_sensor) > tailsitter.transition_angle*100 ||
-        AP_HAL::millis() - transition_start_ms > 2000) {
+    if (labs(plane.ahrs.pitch_sensor) > get_tailsitter_transition_angle_vtol()*100 ||
+        labs(plane.ahrs.roll_sensor) >  get_tailsitter_transition_angle_vtol()*100 ||
+        AP_HAL::millis() - transition_start_ms > uint32_t( tailsitter.transition_time_vtol_ms)) { 
         return true;
     }
     // still waiting

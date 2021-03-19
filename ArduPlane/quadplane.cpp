@@ -32,6 +32,15 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TRANSITION_MS", 11, QuadPlane, transition_time_ms, 5000),
 
+   // @Param: TS_TRANS_MS
+    // @DisplayName: Tailsitter VTOL transition time
+    // @Description: Maxium time allowed to reach TS_ANGLE_VTOL before completing transition. Also used to set rate of pitch increase towards TS_ANGLE_VTOL during transition.
+    // @Units: ms
+    // @Range: 0 3000
+    // @User: Advanced
+    AP_GROUPINFO("TS_TRANS_MS", 61, QuadPlane, tailsitter.transition_time_vtol_ms, 2000),
+
+
     // 12 ~ 16 were used by position, velocity and acceleration PIDs
 
     // @Group: P
@@ -271,10 +280,16 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO("TILT_TYPE", 47, QuadPlane, tilt.tilt_type, TILT_TYPE_CONTINUOUS),
 
     // @Param: TAILSIT_ANGLE
-    // @DisplayName: Tailsitter transition angle
-    // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control.
+    // @DisplayName: Tailsitter fixed wing transition angle
+    // @Description: This is the angle at which tailsitter aircraft will change from VTOL control to fixed wing control. 
     // @Range: 5 80
-    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle, 45),
+    AP_GROUPINFO("TAILSIT_ANGLE", 48, QuadPlane, tailsitter.transition_angle_fw, 45),
+
+   // @Param: TS_ANGLE_VTOL
+    // @DisplayName: TailsitterVTOL transition angle
+    // @Description: This is the angle at which tailsitter aircraft will change from fixed wing control to VTOL control. 
+    // @Range: 5 80
+    AP_GROUPINFO("TS_ANGLE_VTOL", 62, QuadPlane, tailsitter.transition_angle_vtol, 45),
 
     // @Param: TILT_RATE_DN
     // @DisplayName: Tiltrotor downwards tilt rate
@@ -1448,10 +1463,10 @@ void QuadPlane::control_loiter()
     // run loiter controller
     loiter_nav->update();
 
-    // nav roll and pitch are controller by loiter controller
+    // nav roll and pitch are controller by loiter controller 
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
-
+ 
     if (now - last_pidz_init_ms < (uint32_t)transition_time_ms*2 && !is_tailsitter()) {
         // we limit pitch during initial transition
         float pitch_limit_cd = linear_interpolate(loiter_initial_pitch_cd, aparm.angle_max,
@@ -1919,7 +1934,7 @@ void QuadPlane::update_transition(void)
         // calculate transition rate in degrees per
         // millisecond. Assume we want to get to the transition angle
         // in half the transition time
-        float transition_rate = tailsitter.transition_angle / float(transition_time_ms/2);
+        float transition_rate = tailsitter.transition_angle_fw / float(transition_time_ms/2);
         uint32_t dt = now - transition_start_ms;
         plane.nav_pitch_cd = constrain_float(transition_initial_pitch - (transition_rate * dt)*100, -8500, 8500);
         plane.nav_roll_cd = 0;
@@ -2011,6 +2026,8 @@ void QuadPlane::update(void)
              */
             transition_state = TRANSITION_ANGLE_WAIT_VTOL;
             transition_start_ms = now;
+            transition_initial_pitch = constrain_float(degrees(ahrs.get_pitch() *100),-8500,8500);
+
         } else if (is_tailsitter() &&
                    transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
             float aspeed;
@@ -3602,6 +3619,16 @@ uint16_t QuadPlane::get_pilot_velocity_z_max_dn() const
         return abs(pilot_velocity_z_max_up);
    }
     return abs(pilot_velocity_z_max_dn);
+}
+
+// return the tailsitter.transition_angle_vtol value if non zero, otherwise returns the tailsitter.transition_angle_fw value.
+int8_t QuadPlane::get_tailsitter_transition_angle_vtol() const
+{
+    if (tailsitter.transition_angle_vtol == 0) {
+        return tailsitter.transition_angle_fw;
+    } else {
+        return tailsitter.transition_angle_vtol;
+    }
 }
 
 QuadPlane *QuadPlane::_singleton = nullptr;

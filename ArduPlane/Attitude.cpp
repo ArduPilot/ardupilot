@@ -388,7 +388,9 @@ void Plane::stabilize()
           during transition to vtol in a tailsitter try to raise the
           nose rapidly while keeping the wings level
          */
-        nav_pitch_cd = constrain_float((quadplane.tailsitter.transition_angle+5)*100, 5500, 8500),
+        float transition_rate = quadplane.get_tailsitter_transition_angle_vtol()/ float(quadplane.tailsitter.transition_time_vtol_ms/2);
+        uint32_t dt = now - quadplane.transition_start_ms;
+        nav_pitch_cd = constrain_float(quadplane.transition_initial_pitch + (transition_rate * dt)*100, -8500, 8500);
         nav_roll_cd = 0;
     }
 
