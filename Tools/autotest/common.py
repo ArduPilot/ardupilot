@@ -4676,12 +4676,15 @@ class AutoTest(ABC):
     #################################################
     # WAIT UTILITIES
     #################################################
-    def delay_sim_time(self, seconds_to_wait):
+    def delay_sim_time(self, seconds_to_wait, reason=None):
         """Wait some second in SITL time."""
         self.drain_mav()
         tstart = self.get_sim_time()
         tnow = tstart
-        self.progress("Delaying %f seconds" % (seconds_to_wait,))
+        r = "Delaying %f seconds"
+        if reason is None:
+            r += "for %s" % reason
+        self.progress(r % (seconds_to_wait,))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
 
