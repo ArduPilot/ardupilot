@@ -4682,8 +4682,8 @@ class AutoTest(ABC):
         tstart = self.get_sim_time()
         tnow = tstart
         r = "Delaying %f seconds"
-        if reason is None:
-            r += "for %s" % reason
+        if reason is not None:
+            r += " for %s" % reason
         self.progress(r % (seconds_to_wait,))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time()
