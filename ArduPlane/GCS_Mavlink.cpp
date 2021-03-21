@@ -997,10 +997,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             break;
         }
 
+        uint32_t now = AP_HAL::millis();
         // get final angle, 1 = Relative, 0 = Absolute
         if (packet.param2 > 0) {
+            plane.calc_nav_pitch();
             // relative angle
-            plane.guided_state.forced_rpy_cd.y = plane.calc_nav_pitch() + packet.param1 * 100.0f;
+            plane.guided_state.forced_rpy_cd.y = plane.nav_pitch_cd + packet.param1 * 100.0f;
 
             // Update timer for external pitch to the nav control
             plane.guided_state.last_forced_rpy_ms.y = now;
