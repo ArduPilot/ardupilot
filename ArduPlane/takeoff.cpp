@@ -165,13 +165,13 @@ void Plane::takeoff_calc_pitch(void)
             nav_pitch_cd = takeoff_pitch_min_cd;
         }
     } else {
-        if (is_positive(g.takeoff_throttle_min_speed) || is_positive(g.takeoff_throttle_min_accel)) {
-            // Doing hand launch so need at least 5 deg pitch to prevent initial height loss
-            nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);
-        } else {
+        if (g.takeoff_rotate_speed > 0) {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
             nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
+        } else {
+            // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
+            nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);
         }
     }
 
