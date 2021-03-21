@@ -405,20 +405,19 @@ void SoaringController::update_active_state()
             case ActiveStatus::MANUAL_MODE_CHANGE:
                 // It's enabled, but wasn't on the last loop.
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, manual mode changes.");
-                set_throttle_suppressed(true);
-
-                // We changed mode - if we're in LOITER this means we should exit gracefully.
-                // This has no effect if we're cruising as it is reset on thermal entry.
-                _exit_commanded = true;
                 break;
             case ActiveStatus::AUTO_MODE_CHANGE:
                 gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Enabled, automatic mode changes.");
-                set_throttle_suppressed(true);
-
-                // We changed mode - if we're in LOITER this means we should exit gracefully.
-                // This has no effect if we're cruising as it is reset on thermal entry.
-                _exit_commanded = true;
                 break;
+        }
+
+        if (_last_update_status == ActiveStatus::SOARING_DISABLED) {
+            // We have switched from disabled into an active mode, start cruising.
+            init_cruising();
+        } else if (status != ActiveStatus::SOARING_DISABLED) {
+            // We switched between active modes. If we're in THERMAL this means we should exit gracefully.
+            // This has no effect if we're cruising as it is reset on thermal entry.
+            _exit_commanded = true;
         }
     }
 
