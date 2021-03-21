@@ -994,7 +994,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 
         // exit if vehicle is not in Guided mode
         if (plane.control_mode != &plane.mode_guided) {
-            break;
+            return MAV_RESULT_FAILED;
         }
 
         uint32_t now = AP_HAL::millis();
