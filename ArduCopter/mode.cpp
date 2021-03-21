@@ -176,6 +176,109 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
     return ret;
 }
 
+/**
+ * Get the flight mode number from the flight mode pointer.
+ * 
+ * @param [in] flightMode flight mode pointer
+ * @return flight mode number
+ * @note Return UNDEFINED for an invalid pointer.
+ */
+Mode::Number Copter::mode_num_from_mode(Mode *flightMode)
+{
+    if (flightMode == &mode_stabilize) {
+        return Mode::Number::STABILIZE;
+#if MODE_ACRO_ENABLED == ENABLED
+    } else if (flightMode == &mode_acro) {
+        return Mode::Number::ACRO;
+#endif
+    } else if (flightMode == &mode_althold) {
+        return Mode::Number::ALT_HOLD;
+#if MODE_AUTO_ENABLED == ENABLED
+    } else if (flightMode == &mode_auto) {
+        return Mode::Number::AUTO;
+#endif
+#if MODE_CIRCLE_ENABLED == ENABLED
+    } else if (flightMode == &mode_circle) {
+        return Mode::Number::CIRCLE;
+#endif
+#if MODE_LOITER_ENABLED == ENABLED
+    } else if (flightMode == &mode_loiter) {
+        return Mode::Number::LOITER;
+#endif
+#if MODE_GUIDED_ENABLED == ENABLED
+    } else if (flightMode == &mode_guided) {
+        return Mode::Number::GUIDED;
+#endif
+    } else if (flightMode == &mode_land) {
+        return Mode::Number::LAND;
+#if MODE_RTL_ENABLED == ENABLED
+    } else if (flightMode == &mode_rtl) {
+        return Mode::Number::RTL;
+#endif
+#if MODE_DRIFT_ENABLED == ENABLED
+    } else if (flightMode == &mode_drift) {
+        return Mode::Number::DRIFT;
+#endif
+#if MODE_SPORT_ENABLED == ENABLED
+    } else if (flightMode == &mode_sport) {
+        return Mode::Number::SPORT;
+#endif
+#if MODE_FLIP_ENABLED == ENABLED
+    } else if (flightMode == &mode_flip) {
+        return Mode::Number::FLIP;
+#endif
+#if AUTOTUNE_ENABLED == ENABLED
+    } else if (flightMode == &mode_autotune) {
+        return Mode::Number::AUTOTUNE;
+#endif
+#if MODE_POSHOLD_ENABLED == ENABLED
+    } else if (flightMode == &mode_poshold) {
+        return Mode::Number::POSHOLD;
+#endif
+#if MODE_BRAKE_ENABLED == ENABLED
+    } else if (flightMode == &mode_brake) {
+        return Mode::Number::BRAKE;
+#endif
+#if MODE_THROW_ENABLED == ENABLED
+    } else if (flightMode == &mode_throw) {
+        return Mode::Number::THROW;
+#endif
+#if HAL_ADSB_ENABLED
+    } else if (flightMode == &mode_avoid_adsb) {
+        return Mode::Number::AVOID_ADSB;
+#endif
+#if MODE_GUIDED_NOGPS_ENABLED == ENABLED
+    } else if (flightMode == &mode_guided_nogps) {
+        return Mode::Number::GUIDED_NOGPS;
+#endif
+#if MODE_SMARTRTL_ENABLED == ENABLED
+    } else if (flightMode == &mode_smartrtl) {
+        return Mode::Number::SMART_RTL;
+#endif
+#if OPTFLOW == ENABLED
+    } else if (flightMode == (Mode *)g2.mode_flowhold_ptr) {
+        return Mode::Number::FLOWHOLD;
+#endif
+#if MODE_FOLLOW_ENABLED == ENABLED
+    } else if (flightMode == &mode_follow) {
+        return Mode::Number::FOLLOW;
+#endif
+#if MODE_ZIGZAG_ENABLED == ENABLED
+    } else if (flightMode == &mode_zigzag) {
+        return Mode::Number::ZIGZAG;
+#endif
+#if MODE_SYSTEMID_ENABLED == ENABLED
+    } else if (flightMode == (Mode *)g2.mode_systemid_ptr) {
+        return Mode::Number::SYSTEMID;
+#endif
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+    } else if (flightMode == &mode_autorotate) {
+        return Mode::Number::AUTOROTATE;
+#endif
+    }
+
+    return Mode::Number::UNDEFINED;
+}
 
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)

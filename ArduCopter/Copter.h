@@ -988,6 +988,7 @@ private:
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);
+    Mode::Number mode_num_from_mode(Mode *flightMode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
 public:
