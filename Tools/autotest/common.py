@@ -2501,10 +2501,11 @@ class AutoTest(ABC):
         if m is not None:
             raise NotAchievedException("Received extra LOG_ENTRY?!")
 
-        # download  the 6th and seventh byte of the fifth log
         log_id = 5
         ofs = 6
         count = 2
+        self.start_subtest("downloading %u bytes from offset %u from log_id %u" %
+                           (count, ofs, log_id))
         self.mav.mav.log_request_data_send(self.sysid_thismav(),
                                            1, # target component
                                            log_id,
@@ -2531,10 +2532,9 @@ class AutoTest(ABC):
         if m.data[1] != actual_bytes[1]:
             raise NotAchievedException("Bad second byte")
 
-        # make file contents available
-        # download an entire file
         log_id = 7
         log_filepath = self.log_filepath(log_id)
+        self.start_subtest("Downloading log id %u (%s)" % (log_id, log_filepath))
         with open(log_filepath, "rb") as bob:
             actual_bytes = bytearray(bob.read())
 
@@ -2631,8 +2631,10 @@ class AutoTest(ABC):
                                            (len(actual_bytes), len(data_downloaded)))
             self.assert_bytes_equal(actual_bytes, data_downloaded)
 
-        # ... and now download it reading backwards...
+        self.start_subtest("Download log backwards")
         bytes_to_read = bytes_to_fetch
+        if log_entry.size < bytes_to_read:
+            bytes_to_read = log_entry.size
         bytes_read = 0
         backwards_data_downloaded = []
         last_print = 0
@@ -2658,7 +2660,9 @@ class AutoTest(ABC):
             if m is None:
                 raise NotAchievedException("Did not get reply")
             if m.count == 0:
-                raise NotAchievedException("xZero bytes read")
+                raise NotAchievedException("xZero bytes read (ofs=%u)" % (ofs,))
+            if m.count > bytes_to_fetch:
+                raise NotAchievedException("Read too many bytes?!")
             stuff = m.data[0:m.count]
             stuff.extend(backwards_data_downloaded)
             backwards_data_downloaded = stuff
