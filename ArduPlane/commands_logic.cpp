@@ -266,6 +266,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         } else {
             return quadplane.verify_vtol_land();
         }
+    case MAV_CMD_NAV_SET_PITCH:
+        // TODO add logic later on
+        return true;
 
     // Conditional commands
 

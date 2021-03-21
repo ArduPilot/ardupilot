@@ -987,6 +987,42 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
     }
 
+    case MAV_CMD_NAV_SET_PITCH:
+    {
+        // param1 : pitch angle to adjust direction by in centidegress
+        // param2 : 0 = absolute, 1 = relative
+
+        // exit if vehicle is not in Guided mode
+        if (plane.control_mode != &plane.mode_guided) {
+            break;
+        }
+
+        // get final angle, 1 = Relative, 0 = Absolute
+        if (packet.param2 > 0) {
+            // relative angle
+            plane.guided_state.forced_rpy_cd.y = plane.calc_nav_pitch() + packet.param1 * 100.0f;
+
+            // Update timer for external pitch to the nav control
+            plane.guided_state.last_forced_rpy_ms.y = now;
+        } else {
+            // absolute angle
+            plane.guided_state.forced_rpy_cd.y = packet.param1 * 100.0f;
+
+            // Update timer for external pitch to the nav control
+            plane.guided_state.last_forced_rpy_ms.y = now;
+        }
+
+        // if (packet.param3 > 0) {
+        //     // relative angle
+        //     plane.nav_pitch_cd = plane.calc_nav_pitch() + packet.param1 * 100.0f;
+        // } else {
+        //     // absolute angle
+        //     plane.nav_pitch_cd = packet.param1 * 100.0f;
+        // }
+
+        return MAV_RESULT_ACCEPTED;
+    }
+
     case MAV_CMD_MISSION_START:
         plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
