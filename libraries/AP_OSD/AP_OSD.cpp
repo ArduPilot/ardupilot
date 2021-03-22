@@ -180,6 +180,27 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     AP_GROUPINFO("_W_TERR", 23, AP_OSD, warn_terr, -1),
 #endif
 
+    // @Param: _W_AVGCELLV
+    // @DisplayName: AVGCELLV warn level
+    // @Description: Set level at which AVGCELLV item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_AVGCELLV", 24, AP_OSD, warn_avgcellvolt, 3.6f),
+
+   // @Param: _CELL_COUNT
+    // @DisplayName: Battery cell count
+    // @Description: Used for average cell voltage display. -1 disables, 0 uses cell count autodetection for well charged LIPO/LIION batteries at connection, other values manually select cell count used.
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_CELL_COUNT", 25, AP_OSD, cell_count, -1),
+
+    // @Param: _W_RESTVOLT
+    // @DisplayName: RESTVOLT warn level
+    // @Description: Set level at which RESTVOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_RESTVOLT", 26, AP_OSD, warn_restvolt, 10.0f),
+
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_
