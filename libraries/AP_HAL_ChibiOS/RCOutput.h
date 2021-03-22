@@ -268,6 +268,7 @@ private:
         // serial LED support
         volatile uint8_t serial_nleds;
         uint8_t clock_mask;
+        enum output_mode led_mode;
         volatile bool serial_led_pending;
         volatile bool prepared_send;
         HAL_Semaphore serial_led_mutex;

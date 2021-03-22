@@ -2042,7 +2042,7 @@ uint32_t RCOutput::protocol_bitrate(const enum output_mode mode)
 */
 bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
 {
-    if (!_initialised) {
+    if (!_initialised || num_leds == 0) {
         return false;
     }
 
@@ -2052,27 +2052,28 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
         return false;
     }
 
-    // we must hold the LED mutex while resizing the array
     WITH_SEMAPHORE(grp->serial_led_mutex);
-    // if already allocated a different size then return
-    if ((grp->serial_nleds > 0 && num_leds != grp->serial_nleds)
-         || (mode != MODE_NEOPIXEL && mode != MODE_PROFILED)) {
-        return false;
+
+    // group is already setup correctly
+    if ((grp->serial_nleds >= num_leds) && (mode == grp->current_mode)) {
+        return true;
     }
-    // if already allocated this channel
-    if (grp->serial_nleds > 0 && num_leds == grp->serial_nleds
-        && grp->serial_led_data[i] != nullptr) {
+
+    // we cant add more or change the type after the first setup
+    if (grp->current_mode == MODE_NEOPIXEL || grp->current_mode == MODE_PROFILED) {
         return false;
     }
 
     switch (mode) {
         case MODE_NEOPIXEL: {
-            num_leds = MAX(num_leds, grp->serial_nleds);
-            break;
+            grp->serial_nleds = MAX(num_leds, grp->serial_nleds);
+            grp->led_mode = MODE_NEOPIXEL;
+            return true;
         }
         case MODE_PROFILED: {
             // ProfiLED requires two dummy LED's to mark end of transmission
-            num_leds = MAX(num_leds + 2, grp->serial_nleds);
+            grp->serial_nleds = MAX(num_leds + 2, grp->serial_nleds);
+            grp->led_mode = MODE_PROFILED;
 
             // Enable any clock channels in the same group
             grp->clock_mask = 0;
@@ -2081,42 +2082,17 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
                     grp->clock_mask |= 1U<<j;
                 }
             }
-
-            break;
+            return true;
         }
         default:
+            grp->serial_nleds = 0;
+            grp->led_mode = MODE_PWM_NONE;
             return false;
     }
 
-    // allocate the data storage array, since the group num_leds is changing
-    /// we need to do all that are allocated
-    if (grp->serial_nleds != num_leds || grp->serial_led_data[i] == nullptr) {
-        for (uint8_t j = 0; j < 4; j++) {
-            if (grp->serial_led_data[j] != nullptr) {
-                delete[] grp->serial_led_data[j];
-                grp->serial_led_data[j] = nullptr;
-                if (num_leds > 0) {
-                    grp->serial_led_data[j] = new SerialLed[num_leds];
-                    if (grp->serial_led_data[j] == nullptr) {
-                        num_leds = 0;
-                    }
-                }
-            }
-        }
-        if (num_leds > 0 && grp->serial_led_data[i] == nullptr) {
-            grp->serial_led_data[i] = new SerialLed[num_leds];
-            if (grp->serial_led_data[i] == nullptr) {
-                num_leds = 0;
-            }
-        }
-
-        grp->serial_nleds = num_leds;
-    }
-    // at this point the group led data is all setup but the dma buffer still needs to be resized
-    set_output_mode(1U<<chan, mode);
-
-    return grp->current_mode == mode;
 }
+
+
 
 #pragma GCC push_options
 #pragma GCC optimize("O2")
@@ -2126,10 +2102,14 @@ void RCOutput::fill_DMA_buffer_serial_led(pwm_group& group)
     memset(group.dma_buffer, 0, group.dma_buffer_len);
     for (uint8_t j = 0; j < 4; j++) {
         if (group.serial_led_data[j] == nullptr) {
-            if (group.current_mode == MODE_PROFILED && (group.clock_mask & 1U<<j) != 0) {
-                for (uint8_t i = 0; i < group.serial_nleds; i++) {
-                    _set_profiled_clock(&group, j, i);
-                }
+            // something very bad has happended
+            continue;
+        }
+
+        if (group.current_mode == MODE_PROFILED && (group.clock_mask & 1U<<j) != 0) {
+            // output clock channel
+            for (uint8_t i = 0; i < group.serial_nleds; i++) {
+                _set_profiled_clock(&group, j, i);
             }
             continue;
         }
@@ -2241,10 +2221,47 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
         return;
     }
 
+    if (grp->serial_led_pending) {
+        // dont allow setting new data if a send is pending
+        // would result in a fight over the mutex
+        return;
+    };
+
     WITH_SEMAPHORE(grp->serial_led_mutex);
 
-    if (grp->serial_nleds == 0 || led >= grp->serial_nleds
-        || (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED)) {
+    if (grp->serial_nleds == 0 || led >= grp->serial_nleds) {
+        return;
+    }
+
+    if ((grp->current_mode != grp->led_mode) && ((grp->led_mode == MODE_NEOPIXEL) || (grp->led_mode == MODE_PROFILED))) {
+        // Arrays have not yet been setup, do it now
+        for (uint8_t j = 0; j < 4; j++) {
+            delete[] grp->serial_led_data[j];
+            grp->serial_led_data[j] = nullptr;
+            grp->serial_led_data[j] = new SerialLed[grp->serial_nleds];
+            if (grp->serial_led_data[j] == nullptr) {
+                // if allocation failed clear all memory
+                 for (uint8_t k = 0; k < 4; k++) {
+                    delete[] grp->serial_led_data[k];
+                    grp->serial_led_data[k] = nullptr;
+                }
+                grp->led_mode = MODE_PWM_NONE;
+                grp->serial_nleds = 0;
+                return;
+            }
+        }
+
+        // at this point the group led data is all setup but the dma buffer still needs to be resized
+        set_output_mode(1U<<chan, grp->led_mode);
+
+        if (grp->current_mode != grp->led_mode) {
+            // Failed to set output mode
+            grp->led_mode = MODE_PWM_NONE;
+            grp->serial_nleds = 0;
+            return;
+        }
+
+    } else if ((grp->current_mode != MODE_NEOPIXEL) && (grp->current_mode != MODE_PROFILED)) {
         return;
     }
 
