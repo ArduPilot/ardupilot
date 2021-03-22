@@ -415,6 +415,8 @@ void Plane::update_GPS_10Hz(void)
     }
 
     calc_gndspeed_undershoot();
+	update_AHRS_wind_estimate();
+
 }
 
 /*

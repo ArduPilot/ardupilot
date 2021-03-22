@@ -393,6 +393,15 @@ private:
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
 
+	//Extended Wind vs. Yaw vs. GPS speed based corrections for AHRS wind estimate - X,Y Horizental vectors updated
+	Vector2f updated_AHRS_wind_estimate;
+
+	////Likely underestimation of horizontal Wind components by AHRS in m/sec
+	float AHRS_wind_underestimation;
+	
+	//True if we can reliably believe that the new / updated version if horizontal wind vectorial estimate is more accurate than original AHRS estimate
+	bool use_AHRS_wind_update;
+
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
 
@@ -967,6 +976,7 @@ private:
     void navigate();
     void calc_airspeed_errors();
     void calc_gndspeed_undershoot();
+	void update_AHRS_wind_estimate();
     void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
