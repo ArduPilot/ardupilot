@@ -1326,7 +1326,7 @@ private:
 
 	// variables used to inhibit accel bias learning
     bool inhibitDelVelBiasStates;       // true when all IMU delta velocity bias states are de-activated
-	bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
+    bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3f dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 
 #if EK3_FEATURE_EXTERNAL_NAV
