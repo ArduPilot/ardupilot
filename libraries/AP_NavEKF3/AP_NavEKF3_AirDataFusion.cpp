@@ -95,7 +95,7 @@ void NavEKF3_core::FuseAirspeed()
 
         if (!inhibitDelVelBiasStates && !airDataFusionWindOnly) {
             for (uint8_t index = 0; index < 3; index++) {
-                uint8_t stateIndex = index + 13;
+                const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
                     Kfusion[stateIndex] = SK_TAS[0]*(P[stateIndex][4]*SH_TAS[2] - P[stateIndex][22]*SH_TAS[2] + P[stateIndex][5]*SK_TAS[1] - P[stateIndex][23]*SK_TAS[1] + P[stateIndex][6]*vd*SH_TAS[0]);
                 } else {
@@ -394,7 +394,7 @@ void NavEKF3_core::FuseSideslip()
 
         if (!inhibitDelVelBiasStates && !airDataFusionWindOnly) {
             for (uint8_t index = 0; index < 3; index++) {
-                uint8_t stateIndex = index + 13;
+                const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
                     Kfusion[stateIndex] = SK_BETA[0]*(P[stateIndex][0]*SK_BETA[5] + P[stateIndex][1]*SK_BETA[4] - P[stateIndex][4]*SK_BETA[1] + P[stateIndex][5]*SK_BETA[2] + P[stateIndex][2]*SK_BETA[6] + P[stateIndex][6]*SK_BETA[3] - P[stateIndex][3]*SK_BETA[7] + P[stateIndex][22]*SK_BETA[1] - P[stateIndex][23]*SK_BETA[2]);
                 } else {
