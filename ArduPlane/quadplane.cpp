@@ -762,10 +762,6 @@ bool QuadPlane::setup(void)
 
     motors->init(frame_class, frame_type);
 
-    if (!motors->initialised_ok()) {
-        AP_BoardConfig::config_error("init failed: Q_FRAME_CLASS=%u Q_FRAME_TYPE=%u", frame_class, frame_type);
-    }
-
     tilt.is_vectored = tilt.tilt_mask != 0 && tilt.tilt_type == TILT_TYPE_VECTORED_YAW;
 
     if (motors_var_info == AP_MotorsMatrix::var_info && tilt.is_vectored) {
