@@ -1141,7 +1141,7 @@ void NavEKF3_core::CovariancePrediction(Vector3f *rotVarVecPtr)
             const bool is_bias_observable = (fabsf(prevTnb[index][2]) > 0.8f) && onGround;
 
             if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
-                // store variances to be reinstated wben learnign can commence later
+                // store variances to be reinstated wben learning can commence later
                 dvelBiasAxisVarPrev[index] = P[stateIndex][stateIndex];
                 dvelBiasAxisInhibit[index] = true;
             } else if (is_bias_observable && dvelBiasAxisInhibit[index]) {
