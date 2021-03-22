@@ -1344,6 +1344,43 @@ void AP_Periph_FW::hwesc_telem_update()
 }
 #endif // HAL_PERIPH_ENABLE_HWESC
 
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+void AP_Periph_FW::apd_esc_telem_update()
+{
+    for(uint8_t i = 0; i < ARRAY_SIZE(apd_esc_telem); i++) {
+        ESC_APD_Telem esc = apd_esc_telem[i];
+
+        if (esc.update()) {
+            const ESC_APD_Telem::telem &t = esc.get_telem();
+
+            uavcan_equipment_esc_Status pkt {};
+            static_assert(APD_ESC_INSTANCES <= ARRAY_SIZE(g.esc_number), "There must be an ESC instance number for each APD ESC");
+            pkt.esc_index = g.esc_number[i];
+            pkt.voltage = t.voltage;
+            pkt.current = t.current;
+            pkt.temperature = t.temperature;
+            pkt.rpm = t.rpm;
+            pkt.power_rating_pct = t.power_rating_pct;
+            pkt.error_count = t.error_count;
+
+            fix_float16(pkt.voltage);
+            fix_float16(pkt.current);
+            fix_float16(pkt.temperature);
+
+            uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+            uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer);
+            canardBroadcast(&canard,
+                            UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                            UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                            &transfer_id,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            &buffer[0],
+                            total_size);
+                }
+    }
+
+}
+#endif // HAL_PERIPH_ENABLE_ESC_APD
 
 void AP_Periph_FW::can_update()
 {
@@ -1373,6 +1410,9 @@ void AP_Periph_FW::can_update()
 #endif
 #ifdef HAL_PERIPH_ENABLE_HWESC
     hwesc_telem_update();
+#endif
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+    apd_esc_telem_update();
 #endif
 #ifdef HAL_PERIPH_ENABLE_MSP
     msp_sensor_update();

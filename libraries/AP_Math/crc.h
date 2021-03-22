@@ -35,7 +35,9 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len);
 // Contact: Fergus Noble <fergus@swift-nav.com>
 uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc);
 
-uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
+uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len);
+
+uint16_t crc_fletcher16(const uint8_t * buffer, uint32_t len);
 
 // generate 64bit FNV1a hash from buffer
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL

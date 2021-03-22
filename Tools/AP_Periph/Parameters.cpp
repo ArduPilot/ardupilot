@@ -35,6 +35,7 @@ extern const AP_HAL::HAL &hal;
  */
 
 #define GSCALAR(v, name, def) { periph.g.v.vtype, name, Parameters::k_param_ ## v, &periph.g.v, {def_value : def} }
+#define GARRAYSCALAR(v, index, name, def) { periph.g.v[index].vtype, name, Parameters::k_param_ ## v ## _ ## index, &periph.g.v[index], {def_value : def} }
 #define ASCALAR(v, name, def) { periph.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&periph.aparm.v, {def_value : def} }
 #define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &periph.g.v, {group_info : class::var_info} }
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&periph.v, {group_info : class::var_info} }
@@ -133,8 +134,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
-    GSCALAR(esc_number, "ESC_NUMBER", 0),
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
+    GARRAYSCALAR(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -152,6 +153,18 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: NTF_
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD) && APD_ESC_INSTANCES > 1
+    GARRAYSCALAR(esc_number, 1, "ESC_NUMBER2", 1),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    GARRAYSCALAR(pole_count, 0, "ESC_NUM_POLES", 22),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD) && APD_ESC_INSTANCES > 1
+    GARRAYSCALAR(pole_count, 1, "ESC_NUM_POLES2", 22),
 #endif
 
     AP_VAREND

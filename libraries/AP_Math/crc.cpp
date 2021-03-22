@@ -286,7 +286,7 @@ uint16_t crc16_ccitt(const uint8_t *buf, uint32_t len, uint16_t crc)
  * @param [in] len size of buffer
  * @return CRC value
  */
-uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
+uint16_t calc_crc_modbus(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;
     for (uint16_t pos = 0; pos < len; pos++) {
@@ -302,6 +302,20 @@ uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len)
         }
     }
     return crc;
+}
+
+// fletcher 16 implementation
+uint16_t crc_fletcher16(const uint8_t *buffer, uint32_t len) {
+    uint16_t c0 = 0;
+    uint16_t c1 = 0;
+    for (uint32_t i = 0; i < len; i++) {
+        c0 = (c0 + buffer[i]) % 255;
+        c1 = (c1 + c0) % 255;
+    }
+
+    int32_t crc = c0 - c1;
+    crc <<= 8;
+    return (c1 << 8) | c0;
 }
 
 // FNV-1a implementation

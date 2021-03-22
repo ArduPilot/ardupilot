@@ -27,7 +27,7 @@ public:
         k_param_hardpoint_id,
         k_param_hardpoint_rate,
         k_param_baro_enable,
-        k_param_esc_number,
+        k_param_esc_number_0,
         k_param_battery,
         k_param_debug,
         k_param_serial_number,
@@ -37,6 +37,9 @@ public:
         k_param_gps_port,
         k_param_msp_port,
         k_param_notify,
+        k_param_esc_number_1,
+        k_param_pole_count_0,
+        k_param_pole_count_1,
     };
 
     AP_Int16 format_version;
@@ -70,8 +73,20 @@ public:
     AP_Int8 hardpoint_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
-    AP_Int8 esc_number;
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
+    #if defined ESC_NUMBERS
+        #error "ESC_NUMBERS should not have been previously defined"
+    #endif
+    #if defined(APD_ESC_INSTANCES)
+        #define ESC_NUMBERS APD_ESC_INSTANCES
+    #else
+        #define ESC_NUMBERS 2
+    #endif // defined(APD_ESC_INSTANCES)
+    AP_Int8 esc_number[ESC_NUMBERS];
+#endif
+
+#if defined(ESC_NUMBERS)
+    AP_Int8 pole_count[ESC_NUMBERS];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS

@@ -167,6 +167,15 @@ void AP_Periph_FW::init()
     hwesc_telem.init(hal.serial(3));
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+    apd_esc_telem[0].init(hal.serial(APD_ESC_SERIAL_0), g.pole_count[0]);
+  #if APD_ESC_INSTANCES > 1
+    static_assert(APD_ESC_SERIAL_0 != APD_ESC_SERIAL_1, "APD ESC's must have different serial numbers");
+    apd_esc_telem[1].init(hal.serial(APD_ESC_SERIAL_1), g.pole_count[1]);
+  #endif // APD_ESC_INSTANCES > 1
+
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_MSP
     if (g.msp_port >= 0) {
         msp_init(hal.serial(g.msp_port));
