@@ -467,7 +467,7 @@ void NavEKF3_core::FuseOptFlow()
 
             if (!inhibitDelVelBiasStates) {
                 for (uint8_t index = 0; index < 3; index++) {
-                    uint8_t stateIndex = index + 13;
+                    const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
                         Kfusion[stateIndex] = t78*(P[stateIndex][0]*t2*t5-P[stateIndex][4]*t2*t7+P[stateIndex][1]*t2*t15+P[stateIndex][6]*t2*t10+P[stateIndex][2]*t2*t19-P[stateIndex][3]*t2*t22+P[stateIndex][5]*t2*t27);
                     } else {
@@ -643,7 +643,7 @@ void NavEKF3_core::FuseOptFlow()
 
             if (!inhibitDelVelBiasStates) {
                 for (uint8_t index = 0; index < 3; index++) {
-                    uint8_t stateIndex = index + 13;
+                    const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
                         Kfusion[stateIndex] = -t78*(P[stateIndex][0]*t2*t5+P[stateIndex][5]*t2*t8-P[stateIndex][6]*t2*t10+P[stateIndex][1]*t2*t16-P[stateIndex][2]*t2*t19+P[stateIndex][3]*t2*t22+P[stateIndex][4]*t2*t27);
                     } else {
