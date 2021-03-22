@@ -79,10 +79,14 @@ AP_OABendyRuler::AP_OABendyRuler()
 
 // run background task to find best path and update avoidance_results
 // returns true and updates origin_new and destination_new if a best path has been found
-bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, bool proximity_only)
-{   
+// bendy_type is set to the type of BendyRuler used
+bool AP_OABendyRuler::update(const Location& current_loc, const Location& destination, const Vector2f &ground_speed_vec, Location &origin_new, Location &destination_new, OABendyType &bendy_type, bool proximity_only)
+{
     // bendy ruler always sets origin to current_loc
     origin_new = current_loc;
+
+    // init bendy_type returned
+    bendy_type = OABendyType::OA_BENDY_DISABLED;
 
     // calculate bearing and distance to final destination
     const float bearing_to_dest = current_loc.get_bearing_to(destination) * 0.01f;
@@ -115,12 +119,14 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
         case OABendyType::OA_BENDY_VERTICAL:
         #if VERTICAL_ENABLED 
             ret = search_vertical_path(current_loc, destination, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            bendy_type = OABendyType::OA_BENDY_VERTICAL;
             break;
         #endif
 
         case OABendyType::OA_BENDY_HORIZONTAL:
         default:
             ret = search_xy_path(current_loc, destination, ground_course_deg, destination_new, lookahead_step1_dist, lookahead_step2_dist, bearing_to_dest, distance_to_dest, proximity_only);
+            bendy_type = OABendyType::OA_BENDY_HORIZONTAL;
     }
    
     return ret;
