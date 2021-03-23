@@ -561,7 +561,8 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     k = constrain_int16(k,0,1000);
     //float k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
 
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world! %5.3f", (double)3.142f);
+    //gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world! %5.3f", (double)3.142f);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, k, (double)3.142f);
 
     //hal.console->printf("%5d", (int)rc().channel(3)->get_control_in());
     //hal.console->printf("/n");
