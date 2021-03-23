@@ -200,8 +200,8 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # MS5611 integrated on I2C2 bus, multiple possible choices for external barometer
 BARO MS56XX I2C:0:0x77
+BARO DPS280 I2C:0:0x76
 BARO BMP280 I2C:0:0x76
-BARO BMP388 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
@@ -213,5 +213,4 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define BOARD_PWM_COUNT_DEFAULT 13
-
 

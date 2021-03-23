@@ -481,7 +481,7 @@ const struct LogStructure Copter::log_structure[] = {
 #endif
 #if PRECISION_LANDING == ENABLED
     { LOG_PRECLAND_MSG, sizeof(log_Precland),
-      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasUS,EKFOutl,Est", "s--ddmmddms--","F--00BB00BC--" },
+      "PL",    "QBBfffffffIIB",    "TimeUS,Heal,TAcq,pX,pY,vX,vY,mX,mY,mZ,LastMeasMS,EKFOutl,Est", "s--mmnnmmms--","F--BBBBBBBC--" },
 #endif
     { LOG_SYSIDD_MSG, sizeof(log_SysIdD),
       "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------" },

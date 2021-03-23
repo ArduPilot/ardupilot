@@ -1,14 +1,22 @@
 ###########################################################################################################################################################
 # mRo Pixracer Pro Flight Controller
-# STM32H753IIK6
-# 8 PWM / IO - DMA capable and switchable 3.3v (default) / 5v Logic
-# Exposed JST GH Connectors: GPS UART+I2C connector, 5 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, Power with analog current and voltage sense
+# STM32H743IIK6
+# 8 PWM / IO - DMA capable and hardware and/or software switchable 3.3v / 5v Logic (hardware default)
+# Logic level set in hardware: No Solder for 5v, Solder 1-2 for 3.3v, Solder 2-3 for 3.3v / 5v software switchable
+# Exposed JST GH Connectors: GPS UART+I2C connector, 6 Available UARTS (2 with Flow Control), 2 FDCAN, SPI, I2C, Power with analog current and voltage sense
 # 3 IMUs (ICM20602 6DOF, ICM20948 9DOF, BMI088 6DOF)
-# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG
+# Baro, FRAM (256kb), SDCARD Socket, TC2030 JTAG, USB-C
 # Onboard 3 color LED and buzzer
-# 36mm x 36mm, 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
-# M10064B - Initial Release
+# Uncased weight and dimensions:
+# Weight (with headers): 11.3g (.40oz)
+# Length: 36mm (1.42in)
+# Width:  36mm (1.42in)
+# Mounting holes: 31.5mm x 31.5mm 4mm grommeted mounting holes for 3mm fasteners
+# M10064C - Initial Release
 ###########################################################################################################################################################
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
@@ -28,14 +36,14 @@ env OPTIMIZE -O2
 FLASH_RESERVE_START_KB 128
 
 # use FRAM for storage
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
 # USB setup
 USB_STRING_MANUFACTURER "mRo"
 
-# RC Input set for Interrupt not DMA
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW # also USART6_RX for serial RC
+# RC Input set for Interrupt also USART6_RX for serial RC
+PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
@@ -55,13 +63,14 @@ I2C_ORDER I2C1
 define HAL_I2C_INTERNAL_MASK 0
 
 # order of UARTs (and USB) and suggested usage
-# UART4 GPS
 # USART2 Telem 1 (Flow Control)
 # USART3 Telem 2 (Flow Control)
+# UART4 GPS
 # UART8 FRSKY Telem
-# USART6 RC input (Only RX pin is connected)
 # USART1 Additional UART
 # UART7 Additional UART
+
+# USART6 RC input (Only RX pin is connected)
 
 SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 USART1 UART7 OTG2
 
@@ -209,8 +218,10 @@ PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
 # 1.8V Sensor Level Shifter Output Enable. We pull it high by default.
 PI3 VDD_1V8_SENSORS_EN OUTPUT HIGH
 
-# Set Output Logic Level, Default is 3.3v
-PG6 nSERVO_OUTPUT_3v3 OUTPUT LOW GPIO(74)
+# Pin for PWM Voltage Selection, 0 means 3.3v, 1 means 5v
+PG6 PWM_VOLT_SEL OUTPUT LOW GPIO(74)
+define HAL_GPIO_PWM_VOLT_PIN 74
+define HAL_GPIO_PWM_VOLT_3v3 0
 
 # Power flag pins: these tell the MCU the status of the various power
 # supplies that are available. The pin names need to exactly match the
@@ -219,7 +230,7 @@ PB5 VDD_BRICK_VALID INPUT PULLUP
 
 SPIDEV icm20948 SPI1 DEVID1  ICM_20948_CS    MODE3  2*MHZ  4*MHZ
 SPIDEV icm20608 SPI1 DEVID2  ICM_20602_CS    MODE3  2*MHZ  8*MHZ
-SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
+SPIDEV dps280   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
 SPIDEV bmi088_g SPI5 DEVID1  BMI088_GYRO_CS  MODE3 10*MHZ 10*MHZ
 SPIDEV bmi088_a SPI5 DEVID2  BMI088_ACCEL_CS MODE3 10*MHZ 10*MHZ
@@ -233,8 +244,8 @@ define HAL_OS_FATFS_IO 1
 
 # Now setup the default battery pins driver analog pins and default
 # scaling for the power brick.
-define HAL_BATT_VOLT_PIN 2
-define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_CURR_PIN 15
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
@@ -256,18 +267,15 @@ define HAL_GPIO_A_LED_PIN 0
 define HAL_GPIO_B_LED_PIN 1
 define HAL_GPIO_C_LED_PIN 2
 
-# DMA_PRIORITY SDMMC*
-# DMA_NOSHARE SPI1* SPI2* SPI3*
-
 # 3 IMUs
 IMU BMI088 SPI:bmi088_a SPI:bmi088_g ROTATION_NONE
 IMU Invensense SPI:icm20608 ROTATION_ROLL_180_YAW_90
 IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
 
-define HAL_DEFAULT_INS_FAST_SAMPLE 5
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
 # 1 baro
-BARO DPS280  SPI:dps310
+BARO DPS280  SPI:dps280
 
 # 1 compass
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180

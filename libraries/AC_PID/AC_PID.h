@@ -12,6 +12,7 @@
 #define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_DFILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PID_RESET_TC          0.16f   // Time constant for integrator reset decay to zero
 
 /// @class	AC_PID
 /// @brief	Copter PID control class
@@ -55,6 +56,9 @@ public:
 
     // reset_I - reset the integrator
     void reset_I();
+
+    // reset_I - reset the integrator smoothly to zero within 0.5 seconds
+    void reset_I_smoothly();
 
     // reset_filter - input filter will be reset to the next value provided to set_input()
     void reset_filter() {
@@ -131,6 +135,8 @@ protected:
     float _target;            // target value to enable filtering
     float _error;             // error value to enable filtering
     float _derivative;        // derivative value to enable filtering
+    uint16_t _reset_counter;  // loop counter for reset decay
+    uint64_t _reset_last_update; //time in microseconds of last update to reset_I
 
     AP_Logger::PID_Info _pid_info;
 };

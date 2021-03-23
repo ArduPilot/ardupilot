@@ -522,7 +522,9 @@ private:
     void _detect_runtime(void);
     // This method reorganises devid list to match
     // priority list, only call before detection at boot
+#if COMPASS_MAX_INSTANCES > 1
     void _reorder_compass_params();
+#endif
     // Update Priority List for Mags, by default, we just
     // load them as they come up the first time
     Priority _update_priority_list(int32_t dev_id);

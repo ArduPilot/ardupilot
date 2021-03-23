@@ -69,6 +69,7 @@ void ModeSmartRTL::wait_cleanup_run()
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
+        path_follow_last_pop_fail_ms = 0;
         smart_rtl_state = SmartRTL_PathFollow;
     }
 }
@@ -87,7 +88,10 @@ void ModeSmartRTL::path_follow_run()
     // if we are close to current target point, switch the next point to be our target.
     if (wp_nav->reached_wp_destination()) {
         Vector3f next_point;
+        // this pop_point can fail if the IO task currently has the
+        // path semaphore.
         if (g2.smart_rtl.pop_point(next_point)) {
+            path_follow_last_pop_fail_ms = 0;
             bool fast_waypoint = true;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
@@ -98,8 +102,18 @@ void ModeSmartRTL::path_follow_run()
             // send target to waypoint controller
             wp_nav->set_wp_destination_NED(next_point);
             wp_nav->set_fast_waypoint(fast_waypoint);
-        } else {
-            // this can only happen if we fail to get the semaphore which should never happen but just in case, land
+        } else if (g2.smart_rtl.get_num_points() == 0) {
+            // We should never get here; should always have at least
+            // two points and the "zero points left" is handled above.
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            smart_rtl_state = SmartRTL_PreLandPosition;
+        } else if (path_follow_last_pop_fail_ms == 0) {
+            // first time we've failed to pop off (ever, or after a success)
+            path_follow_last_pop_fail_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - path_follow_last_pop_fail_ms > 10000) {
+            // we failed to pop a point off for 10 seconds.  This is
+            // almost certainly a bug.
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             smart_rtl_state = SmartRTL_PreLandPosition;
         }
     }

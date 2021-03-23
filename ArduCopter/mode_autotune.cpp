@@ -60,7 +60,7 @@ void AutoTune::run()
         } else {
             copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         }
-        copter.attitude_control->reset_rate_controller_I_terms();
+        copter.attitude_control->reset_rate_controller_I_terms_smoothly();
         copter.attitude_control->set_yaw_target_to_current_heading();
 
         float target_roll, target_pitch, target_yaw_rate;

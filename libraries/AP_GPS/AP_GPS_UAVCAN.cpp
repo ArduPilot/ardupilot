@@ -427,6 +427,12 @@ bool AP_GPS_UAVCAN::read(void)
     if (_new_data) {
         _new_data = false;
 
+        // the encoding of accuracies in UAVCAN can result in infinite
+        // values. These cause problems with blending. Use 1000m and 1000m/s instead
+        interim_state.horizontal_accuracy = MIN(interim_state.horizontal_accuracy, 1000.0);
+        interim_state.vertical_accuracy = MIN(interim_state.vertical_accuracy, 1000.0);
+        interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
+
         state = interim_state;
 
         return true;

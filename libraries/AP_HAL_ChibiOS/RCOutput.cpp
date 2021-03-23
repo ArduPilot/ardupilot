@@ -1353,11 +1353,6 @@ void RCOutput::serial_bit_irq(void)
             irq.nbits = 1;
             irq.byte_start_tick = now;
             irq.bitmask = 0;
-            // setup a timeout for 11 bits width, so we aren't left
-            // waiting at the end of bytes
-            chSysLockFromISR();
-            chVTSetI(&irq.serial_timeout, irq.bit_time_tick*11, serial_byte_timeout, irq.waiter);
-            chSysUnlockFromISR();
         }
     } else {
         systime_t dt = now - irq.byte_start_tick;

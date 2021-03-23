@@ -602,10 +602,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
 #if MOUNT == ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         if(!copter.camera_mount.has_pan_control()) {
+            float pan_angle = (float)packet.param3 * .01f;
+            bool relative = ((int)packet.param6 == MAV_FRAME_BODY_FLU);
             copter.flightmode->auto_yaw.set_fixed_yaw(
-                (float)packet.param3 * 0.01f,
+                pan_angle,
                 0.0f,
-                0,0);
+                0,
+                relative);
         }
         break;
 #endif

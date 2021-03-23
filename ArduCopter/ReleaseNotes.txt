@@ -1,5 +1,77 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.0.7 22-Feb-2021
+Changes from 4.0.7-rc1
+1) fixed build on Durandal board
+2) multiple fixes for mRo boards: ControlZero*, PixracerPro
+------------------------------------------------------------------
+Copter 4.0.7rc1 6-Feb-2021
+Changes from 4.0.6
+1) added automatic backup/restore of parameters in case of FRAM corruption for F7/H7 boards with 32k FRAM parameter storage
+2) fixed a bug in EKF2/EKF3 that could cause memory corruption if external naviagtion sources (such as vision based position and velocity data) is supplied before the EKF has initialised
+3) fixed a problem with low accuracy data from UAVCAN GPS modules when GPS blending is enabled
+4) fixed an arming check failure with u-blox M9 based GPS modules
+5) fixed a race condition in SmartRTL which could cause a LAND mode to be triggered
+------------------------------------------------------------------
+Copter 4.0.6 25-Jan-2021 / 4.0.6-rc2 16-Jan-2021
+Changes from 4.0.6-rc1
+1) Add support for keeping a backup of storage for last 100 boots
+2) Bug fixes:
+    a) Fix support for BLHeli_S passthru
+------------------------------------------------------------------
+Copter 4.0.6-rc1 23-Dec-2020
+Changes from 4.0.5
+1) Bug fixes:
+    a) Fix vertical flyaways when rangefinder stops providing data and the user has configured EK*_ALT_SOURCE=1
+    b) Correct units on raw accel data
+    c) Fport RSSI value fix
+    d) Correct compilation when Advanced Failsafe compile time option is enabled
+    e) Correct time wrap in RAW_IMU mavlink message
+    f) PixracerPro - Fix analog volt pin assignments
+    g) fix landing detector for tradheli in acro mode
+2) Small enhancements:
+    a) Parameter documentation enhancements and corrections
+    b) Improve harmonic notch filter parameter documentation
+    c) Report prearm check status in the MAV_SYS_STATUS_PREARM_CHECK flag of the SYS_STATUS mavlink message
+    d) Smooth I term reset over 0.5 seconds
+3) TradHeli enhancements:
+    a) Differential Collective Pitch (DCP) trim support for Dual Heli
+    b) Incorporate hover collective learning
+    c) Option for pitch, roll and yaw I term to be based on takeoff/landing
+------------------------------------------------------------------
+Copter 4.0.5 27-Oct-2020 / 4.0.5-rc2 08-Oct-2020
+Changes from 4.0.5-rc1
+1) Bug fixes:
+    a) Serial/UART DMA race condition that could cause watdog reset fixed (Critical fix)
+    b) SBUS output when no RC input fixed (Critical fix)
+------------------------------------------------------------------
+Copter 4.0.5-rc1 02-Oct-2020
+Changes from 4.0.4
+1) Bug fixes:
+    a) Acro expo calculation fix (fixes sluggish behaviour)
+    b) F32Lightening board IMU fast sampling fix
+    c) GPS minimum accuracy added to protect EKF from unrealistic values
+    d) KakuteF7/mini DShot glitch fix
+    e) RC input gets additional protection against out-of-range inputs (<RCx_MIN or >RCx_MAX)
+    f) RC_OPTION = 4 fix on boards with IOMCU (Pixhawk, etc). This allows ignoring SBUS failsafes 
+2) Small enhancements:
+    a) Linux boards accept up to 16 RC inputs when using UDP
+    b) Protect against two many interrupts from RPM sensor, etc
+    c) RM3100 compass support for probing all four I2C addresses
+    d) Durandal telem3 port enabled
+------------------------------------------------------------------
+Copter 4.0.4 16-Sep-2020
+Changes from 4.0.4-rc4
+1) Matek H743, 765-Wing and F405-Wing get DPS310 Baro support 
+------------------------------------------------------------------
+Copter 4.0.4-rc4 28-Aug-2020
+Changes from 4.0.4-rc3
+1) Bug fixes:
+    a) Compass startup reordering based on compass priorities fix
+    b) TradHeli servo test fix
+    c) Precision landing logging fix
+    d) Mavlink commands ignored after reboot request
+------------------------------------------------------------------
 Copter 4.0.4-rc3 30-Jul-2020
 Changes from 4.0.4-rc2
 1) Bug Fixes and minor enhancements:
@@ -51,7 +123,7 @@ Changes from 4.0.3
     c) MatekSys H743
     e) mRo Nexus
     d) R9Pilot
-5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 and M9 GPSs
+5) GPS moving baseline (aka Yaw from GPS) for UBlox F9 GPSs
 6) Graupner Hott telemetry support
 7) Landing detector filter improvement improves detection on hard surfaces
 8) Object Avoidances Fixes and improvements:

@@ -65,7 +65,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Kalman Filter Accelerometer Noise
     // @Description: Kalman Filter Accelerometer Noise, higher values weight the input from the camera more, accels less
     // @Range: 0.5 5
-    // @User: Advanceds
+    // @User: Advanced
     AP_GROUPINFO("ACC_P_NSE", 6, AC_PrecLand, _accel_noise, 2.5f),
 
     // @Param: CAM_POS_X

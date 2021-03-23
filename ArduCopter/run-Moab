@@ -1,1 +1,5 @@
-python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --map --console -L Moab
+#!/bin/bash
+/bin/rm -rf logs mav.tlog  mav.tlog.raw /tmp/master-gps.data
+python3 ../Tools/autotest/sim_vehicle.py --instance=0 --map --console -L Moab -f hexa
+#python3 ../Tools/autotest/sim_vehicle.py -M -f hexa --map --console -L Moab -I 0
+#python3 ../Tools/autotest/sim_vehicle.py --instance=0 --map --console -L Moab -M  -f hexa

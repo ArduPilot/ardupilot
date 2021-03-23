@@ -145,6 +145,9 @@ public:
         uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
     } limit;
 
+    // set limit flag for pitch, roll and yaw
+    void set_limit_flag_pitch_roll_yaw(bool flag);
+
     //
     // virtual functions that should be implemented by child classes
     //

@@ -85,6 +85,9 @@ public:
     */
     inline void push(element_type element)
     {
+        if (buffer == nullptr) {
+            return;
+        }
         // Advance head to next available index
         _head = (_head+1)%_size;
         // New data is written at the head

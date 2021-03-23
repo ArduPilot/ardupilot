@@ -133,6 +133,7 @@ protected:
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     AP_Float        _yaw_scaler;                    // scaling factor applied to the yaw mixing
+    AP_Float        _dcp_trim;                      // used to easily trim dcp axis
 
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range

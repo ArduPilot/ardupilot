@@ -288,6 +288,9 @@ void AP_IOMCU::read_rc_input()
     if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
     }
+    if (rc_input.flags_failsafe && rc().ignore_rc_failsafe()) {
+        rc_input.flags_failsafe = false;
+    }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_last_input_ms = AP_HAL::millis();
     }

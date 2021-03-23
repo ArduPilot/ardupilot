@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     AP_SUBGROUPINFO(_pid_accel_z, "_ACCZ_", 4, AC_PosControl, AC_PID),
 
     // @Param: _POSXY_P
-    // @DisplayName: Position (horizonal) controller P gain
+    // @DisplayName: Position (horizontal) controller P gain
     // @Description: Position controller P gain.  Converts the distance (in the latitude direction) to the target location into a desired speed which is then passed to the loiter latitude rate controller
     // @Range: 0.500 2.000
     // @User: Standard

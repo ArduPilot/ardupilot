@@ -183,7 +183,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: RATE_MS
     // @DisplayName: GPS update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -193,7 +193,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz is not allowed
+    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -571,7 +571,8 @@ void AP_GPS::detect_instance(uint8_t instance)
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
-             _baudrates[dstate->current_baud] == 115200) &&
+//             _baudrates[dstate->current_baud] == 115200) &&
+            _baudrates[dstate->current_baud] == 460800) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
@@ -1417,6 +1418,11 @@ bool AP_GPS::calc_blend_weights(void)
         if (get_rate_ms(i) > max_rate_ms) {
             max_rate_ms = get_rate_ms(i);
         }
+        if (isinf(state[i].speed_accuracy) ||
+            isinf(state[i].horizontal_accuracy) ||
+            isinf(state[i].vertical_accuracy)) {
+            return false;
+        }
     }
     if ((int32_t)(max_ms - min_ms) < (int32_t)(2 * max_rate_ms)) {
         // data is not too delayed so use the oldest time_stamp to give a chance for data from that receiver to be updated
@@ -1541,6 +1547,10 @@ bool AP_GPS::calc_blend_weights(void)
             }
             sum_of_all_weights += 1.0f;
         }
+    }
+
+    if (!is_positive(sum_of_all_weights)) {
+        return false;
     }
 
     // calculate an overall weight

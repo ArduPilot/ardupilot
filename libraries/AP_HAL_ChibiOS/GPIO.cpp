@@ -18,6 +18,10 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
+#include <AP_InternalError/AP_InternalError.h>
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 using namespace ChibiOS;
 
@@ -31,6 +35,7 @@ static struct gpio_entry {
     bool is_input;
     uint8_t mode;
     thread_reference_t thd_wait;
+    uint16_t isr_quota;
 } _gpio_tab[] = HAL_GPIO_PINS;
 
 #define NUM_PINS ARRAY_SIZE(_gpio_tab)
@@ -313,6 +318,21 @@ static void pal_interrupt_cb_functor(void *arg)
     if (!(g->fn)) {
         return;
     }
+    if (g->isr_quota >= 1) {
+        /*
+          we have an interrupt quota enabled for this pin. If the
+          quota remaining drops to 1 without it being refreshed in
+          timer_tick then we disable the interrupt source. This is to
+          prevent CPU overload due to very high GPIO interrupt counts
+         */
+        if (g->isr_quota == 1) {
+            osalSysLockFromISR();
+            palDisableLineEventI(g->pal_line);
+            osalSysUnlockFromISR();
+            return;
+        }
+        g->isr_quota--;
+    }
     (g->fn)(g->pin_num, palReadLine(g->pal_line), now);
 }
 
@@ -366,3 +386,28 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
 
     return msg == MSG_OK;
 }
+
+#ifndef IOMCU_FW
+/*
+  timer to setup interrupt quotas for a 100ms period from
+  monitor thread
+*/
+void GPIO::timer_tick()
+{
+    // allow 100k interrupts/second max for GPIO interrupt sources, which is
+    // 10k per 100ms call to timer_tick()
+    const uint16_t quota = 10000U;
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (_gpio_tab[i].isr_quota == 1) {
+            // we ran out of ISR quota for this pin since the last
+            // check. This is not really an internal error, but we use
+            // INTERNAL_ERROR() to get the reporting mechanism
+#ifndef HAL_NO_UARTDRIVER
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"ISR flood on pin %u", _gpio_tab[i].pin_num);
+#endif
+            INTERNAL_ERROR(AP_InternalError::error_t::gpio_isr);
+        }
+        _gpio_tab[i].isr_quota = quota;
+    }
+}
+#endif // IOMCU_FW

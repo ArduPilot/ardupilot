@@ -9,6 +9,7 @@
 #include "AP_Mount_SToRM32_serial.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
+
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
@@ -207,6 +208,21 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // 23 formerly _K_RATE
 
     // 24 is AVAILABLE
+/**
+    // @Param: _PAN_REF
+    // @DisplayName: Mount pan reference
+    // @Description: Mount pan reference - 0:Local device coordinates, 1:relative to North
+    // @Values: 0:Local,1:Global
+    // @User: Standard
+    AP_GROUPINFO("_PAN_REF", 23, AP_Mount, state[0]._pan_frame, 0),
+**/
+
+    // @Param: _PAN_CONTROL
+    // @DisplayName: Mount pan control support
+    // @Description: Mount supports pan without yawing the copter
+    // @Values: -1:Auto,0:No,1:Yes
+    // @User: Standard
+    AP_GROUPINFO("_PAN_CONTROL", 24, AP_Mount, state[0]._has_pan_control, -1),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -390,6 +406,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
 
+
     AP_GROUPEND
 };
 
@@ -513,9 +530,12 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
     if (instance >= AP_MOUNT_MAX_INSTANCES || _backends[instance] == nullptr) {
         return false;
     }
-
-    // ask backend if it support pan
-    return _backends[instance]->has_pan_control();
+    if(state[instance]._has_pan_control < 0) {
+        // ask backend if it support pan
+        return _backends[instance]->has_pan_control();
+    } else {
+        return state[instance]._has_pan_control == 1;
+    }
 }
 
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
@@ -579,8 +599,20 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
         return MAV_RESULT_FAILED;
     }
 
+    float yaw_alt = packet.param3;
+    MAV_MOUNT_MODE mode = (MAV_MOUNT_MODE) packet.param7;
+    if(mode == MAV_MOUNT_MODE_MAVLINK_TARGETING) {
+       bool relative = ((int)packet.param6 == MAV_FRAME_LOCAL_FLU);
+       if(!relative) {
+            yaw_alt = degrees(wrap_PI(radians(yaw_alt*.01) - AP::ahrs().yaw))*100.0f;
+       }
+       if(!this->has_pan_control()) {
+           yaw_alt = 0.0f;
+       }
+    }
+
     // send message to backend
-    _backends[_primary]->control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+    _backends[_primary]->control(packet.param1, packet.param2, packet.param3, mode);
 
     return MAV_RESULT_ACCEPTED;
 }

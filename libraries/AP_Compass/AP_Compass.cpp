@@ -732,7 +732,9 @@ void Compass::init()
     }
 #endif
 
+#if COMPASS_MAX_INSTANCES > 1
     _reorder_compass_params();
+#endif
 
     if (_compass_count == 0) {
         // detect available backends. Only called once
@@ -801,6 +803,7 @@ Compass::Priority Compass::_update_priority_list(int32_t dev_id)
 #endif
 
 
+#if COMPASS_MAX_INSTANCES > 1
 // This method reorganises devid list to match
 // priority list, only call before detection at boot
 void Compass::_reorder_compass_params()
@@ -808,7 +811,16 @@ void Compass::_reorder_compass_params()
     mag_state swap_state;
     StateIndex curr_state_id;
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        curr_state_id = _get_state_id(i);
+        if (_priority_did_list[i] == 0) {
+            continue;
+        }
+        curr_state_id = COMPASS_MAX_INSTANCES;
+        for (StateIndex j(0); j<COMPASS_MAX_INSTANCES; j++) {
+            if (_priority_did_list[i] == _state[j].dev_id) {
+                curr_state_id = j;
+                break;
+            }
+        }
         if (curr_state_id != COMPASS_MAX_INSTANCES && uint8_t(curr_state_id) != uint8_t(i)) {
             //let's swap
             swap_state.copy_from(_state[curr_state_id]);
@@ -817,6 +829,7 @@ void Compass::_reorder_compass_params()
         }
     }
 }
+#endif
 
 void Compass::mag_state::copy_from(const Compass::mag_state& state)
 {
@@ -1103,14 +1116,25 @@ void Compass::_probe_external_i2c_compasses(void)
                     true, ROTATION_NONE));
     }
 
+#ifdef HAL_COMPASS_RM3100_I2C_ADDR
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
+#else
+    // RM3100 can be on 4 different addresses
+    const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR1,
+                                         HAL_COMPASS_RM3100_I2C_ADDR2,
+                                         HAL_COMPASS_RM3100_I2C_ADDR3,
+                                         HAL_COMPASS_RM3100_I2C_ADDR4 };
+#endif
     // external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
-        ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, HAL_COMPASS_RM3100_I2C_ADDR),
-                    true, ROTATION_NONE));
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), true, ROTATION_NONE));
+        }
     }
     FOREACH_I2C_INTERNAL(i) {
-        ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, HAL_COMPASS_RM3100_I2C_ADDR),
-                    all_external, ROTATION_NONE));
+        for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
+            ADD_BACKEND(DRIVER_RM3100, AP_Compass_RM3100::probe(GET_I2C_DEVICE(i, rm3100_addresses[j]), all_external, ROTATION_NONE));
+        }
     }
 }
 

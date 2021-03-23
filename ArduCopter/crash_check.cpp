@@ -65,7 +65,7 @@ void Copter::crash_check()
         // keep logging even if disarmed:
         AP::logger().set_force_log_disarmed(true);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming");
+        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: angle_error = %f", angle_error);
         // disarm motors
         copter.arming.disarm();
     }

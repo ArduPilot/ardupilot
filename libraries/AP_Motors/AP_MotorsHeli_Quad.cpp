@@ -210,9 +210,6 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
-    limit.roll = false;
-    limit.pitch = false;
-    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -232,6 +229,16 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
     }
+
+    // updates below mid collective flag
+    if (collective_out <= _collective_mid_pct) {
+        _heliflags.below_mid_collective = true;
+    } else {
+        _heliflags.below_mid_collective = false;
+    }
+
+    // updates takeoff collective flag based on 50% hover collective
+    update_takeoff_collective_flag(collective_out);
 
     float collective_range = (_collective_max - _collective_min) * 0.001f;
 
