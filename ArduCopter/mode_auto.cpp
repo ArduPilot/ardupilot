@@ -1173,21 +1173,20 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 {
     // To-Do: check if we have already landed
-
+    // set state to fly to location
+    state = State::FlyToLocation;
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
-        // set state to fly to location
-        state = State::FlyToLocation;
-
         const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
-        // set landing state
-        state = State::Descending;
+        // calculate stopping point
+        Vector3f stopping_point;
+        wp_nav->get_wp_stopping_point(stopping_point);
+        const Location target_loc(stopping_point);
 
-        // initialise landing controller
-        land_start();
+        wp_start(target_loc);
     }
 }
 
