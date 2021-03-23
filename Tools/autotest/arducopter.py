@@ -5691,7 +5691,7 @@ class AutoTestCopter(AutoTest):
             # Test for pre-arm check fail when state is not running
             self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
             self.set_parameter("SIM_IE24_STATE", 8)
-            self.wait_statustext("Status not running")
+            self.wait_statustext("Status not running", timeout=40)
             self.try_arm(result=False,
                          expect_msg="Status not running")
             self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
