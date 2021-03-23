@@ -525,11 +525,6 @@ void GCS_MAVLINK_Copter::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", copter.get_frame_string());
 }
 
-void msmits ()
-{
-
-}
-
 void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &msg)  // is this right? I have no idea
 {
     if(msg.sysid != sysid_my_gcs()) {                                               // is this right? I have no idea what it does
@@ -585,7 +580,7 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
         RC_Channels::set_override(12, 1500, tnow);                  // ch 13 from the pilot will be overrided by 1500
     }
 
-    hal.schedular->delay(20);
+    hal.scheduler->delay(20);
                                                                     // ending of my code
 }
 
