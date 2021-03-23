@@ -286,7 +286,7 @@ void Plane::update_loiter(uint16_t radius)
                 (control_mode == &mode_auto || control_mode == &mode_guided) &&
                 auto_state.crosstrack &&
                 current_loc.get_distance(next_WP_loc) > radius*3) ||
-               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == 1)) {
+               (control_mode == &mode_rtl && quadplane.available() && quadplane.rtl_mode == QuadPlane::RTL_MODE::SWITCH_QRTL)) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
           navigate to it like in auto-mode for normal crosstrack behavior
