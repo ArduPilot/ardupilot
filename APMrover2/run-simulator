@@ -2,6 +2,9 @@
 /bin/rm -rf logs mav.tlog  mav.tlog.raw
 export MASTER_DRONE=1
 python3 ../Tools/autotest/sim_vehicle.py --map --console -L Moab --instance=2
+
+#python3 ../Tools/autotest/sim_vehicle.py --map --console -L Moab --instance=1
+
 #python3 ../Tools/autotest/sim_vehicle.py --map --console -L Moab -I 2
 #python3 ../Tools/autotest/sim_vehicle.py --instance=2 --map --console -L Moab 
 #output add <ip-address>:14551
