@@ -330,15 +330,7 @@ private:
     bool scale_latlon_from_origin(const Location &origin,
                                   const Vector2l &point,
                                   Vector2f &pos_cm) WARN_IF_UNUSED;
-
-    // read_scaled_latlon_from_storage - reads a latitude/longitude
-    // from offset in permanent storage, transforms them into an
-    // offset-from-origin and deposits the result into pos_cm.
-    // read_offset is increased by the storage space used by the
-    // latitude/longitude
-    bool read_scaled_latlon_from_storage(const Location &origin,
-                                         uint16_t &read_offset,
-                                         Vector2f &pos_cm) WARN_IF_UNUSED;
+   
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
     // transforms them into an offset-from-origin and deposits the
