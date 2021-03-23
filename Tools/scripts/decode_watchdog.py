@@ -247,6 +247,10 @@ class DecodeWatchDog(object):
                     continue
                 value = value.strip()
 #                print("(%s)=(%s)" % (name, value))
+                if name in ["LR", "FICSR", "FA"]:
+                    value = int(value, 10)
+                    value = hex(value)
+                    value = value[2:]
                 if name not in self.df_components:
                     raise KeyError(name)
                 self.df_components[name](value).print_decoded()
@@ -266,7 +270,7 @@ class DecodeWatchDog(object):
                     continue
                 value = m.group(i+1)
                 # convert some things from base10 to hex:
-                if name in ["LR", "FICSR"]:
+                if name in ["LR", "FICSR", "FA"]:
                     value = int(value, 10)
                     value = hex(value)
                     value = value[2:]
