@@ -960,9 +960,23 @@ void AP_Logger_File::io_timer(void)
 
 bool AP_Logger_File::io_thread_alive() const
 {
-    // if the io thread hasn't had a heartbeat in a full seconds then it is dead
-    // this is enough time for a sdcard remount
-    return (AP_HAL::millis() - _io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
+    if (!hal.scheduler->is_system_initialized()) {
+        // the system has long pauses during initialisation
+        return false;
+    }
+    // if the io thread hasn't had a heartbeat in a while then it is
+    // considered dead. Three seconds is enough time for a sdcard remount.
+    uint32_t timeout_ms = 3000;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // the IO thread is working with hardware - writing to a physical
+    // disk.  Unfortunately these hardware devices do not obey our
+    // SITL speedup options, so we allow for it here.
+    SITL::SITL *sitl = AP::sitl();
+    if (sitl != nullptr) {
+        timeout_ms *= sitl->speedup;
+    }
+#endif
+    return (AP_HAL::millis() - _io_timer_heartbeat) < timeout_ms;
 }
 
 bool AP_Logger_File::logging_failed() const
