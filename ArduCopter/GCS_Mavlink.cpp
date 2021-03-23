@@ -557,7 +557,8 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     
                                                                     // beginning of my code
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
-    float k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
+    //float k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
+    float k = chx3in;
 
     //hal.console->printf("%5d", (int)rc().channel(3)->get_control_in());
     //hal.console->printf("/n");
