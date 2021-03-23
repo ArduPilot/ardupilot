@@ -348,6 +348,7 @@ private:
     } failsafe;
 
     enum Landing_ApproachStage {
+        RTL,
         LOITER_TO_ALT,
         ENSURE_RADIUS,
         WAIT_FOR_BREAKOUT,

@@ -953,6 +953,18 @@ void Plane::exit_mission_callback()
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
     switch (vtol_approach_s.approach_stage) {
+        case RTL:
+            {
+                // fly home and loiter at RTL alt
+                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                if (plane.reached_loiter_target()) {
+                    // decend to Q RTL alt
+                    plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
+                    plane.loiter_angle_reset();
+                    vtol_approach_s.approach_stage = LOITER_TO_ALT;
+                }
+                break;
+            }
         case LOITER_TO_ALT:
             {
                 update_loiter(fabsf(quadplane.fw_land_approach_radius));
