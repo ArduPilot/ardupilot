@@ -2683,7 +2683,7 @@ class AutoTest(ABC):
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
         self.drain_mav()
-        self.send_poll_message('SYSTEM_TIME')
+        self.send_poll_message('SYSTEM_TIME', quiet=True)
         m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
         if m is None:
             raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
@@ -4220,6 +4220,7 @@ class AutoTest(ABC):
                  p7,
                  target_sysid=None,
                  target_compid=None,
+                 quiet=False
                  ):
         """Send a MAVLink command long."""
         if target_sysid is None:
@@ -4230,18 +4231,19 @@ class AutoTest(ABC):
             command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
         except KeyError:
             command_name = "UNKNOWN=%u" % command
-        self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
-                      (
-                          target_sysid,
-                          target_compid,
-                          command_name,
-                          p1,
-                          p2,
-                          p3,
-                          p4,
-                          p5,
-                          p6,
-                          p7))
+        if not quiet:
+            self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
+                          (
+                              target_sysid,
+                              target_compid,
+                              command_name,
+                              p1,
+                              p2,
+                              p3,
+                              p4,
+                              p5,
+                              p6,
+                              p7))
         self.mav.mav.command_long_send(target_sysid,
                                        target_compid,
                                        command,
@@ -7534,7 +7536,7 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def send_poll_message(self, message_id, target_sysid=None, target_compid=None):
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
