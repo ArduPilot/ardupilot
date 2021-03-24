@@ -7,6 +7,9 @@ Unlike bidirectional-Dshot, the FETtec OneWire protocol does not need one DMA ch
 For purchase, connection and configuration information please see the [Ardupilot FETtec OneWire wiki page](https://ardupilot.org/copter/docs/common-fettec-onewire.html).
 
 
+
+
+
 ## Ardupilot to ESC protocol
 
 The FETtec OneWire protocol supports up to 22 ESCs. As most copters only use at most 12 motors, Ardupilot's implementation suports only 12 to save memory.
@@ -46,7 +49,7 @@ There are two types of messages sent to the ESCs:
     See *ESC to Ardupilot Protocol* section below and comments in `FETtecOneWire.cpp` for details.
 	
 
-### Timming
+### Timing
 
 Four ESCs need 90uS for the throttle request and telemetry reception. With four ESCs 11kHz are possible. As each additional ESC adds 11bits	and 16 telemetry bits, so the rate is lowered by each ESC. If you use 8 ESCs, it needs 160uS including telemetry response, so 5.8kHz are possible. 
 	
@@ -81,6 +84,24 @@ This information is used by Ardupilot to:
 - send the status of each ESC to the ground station or companion computer for real-time monitoring
 - Optionaly dynamically change the center frequency of the notch filters used to reduce frame vibration noise in the gyros
 - Optionaly measure battery voltage and power consumption
+
+
+## Full/Alternative Telemetry
+The telemetry can be switched to "per ESC" Mode, where one ESC answers with it's full telemetry as oneWire package including CRC and additionally the CRC Erros counted by the ESC..
+To use this mode OW_SET_TLM_TYPE must be send to each ESC. It make sense to set it while initializing.
+If this was successful set the ESC response with "OW OK".
+
+The answer is packed inside a OW package, that can be received with the FETtecOneWire::receive function, that also checks the CRC.
+
+As the packages are send in an uInt8_t array the values must be restored like as only temp is one byte long:
+        Telemetry[0]= telem[0]; //Temp
+        Telemetry[1]=(telem[1]<<8)|telem[2];//Volt
+        Telemetry[2]=(telem[3]<<8)|telem[4];//Current
+        Telemetry[3]=(telem[5]<<8)|telem[6];//ERPM
+        Telemetry[4]=(telem[7]<<8)|telem[8];//Consumption
+        Telemetry[5]=(telem[9]<<8)|telem[10];//CRCerr
+
+
 
 
 ## Extra features

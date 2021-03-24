@@ -60,6 +60,7 @@ private:
     bool _initialised;
     AP_HAL::UARTDriver *_uart;
     AP_Int32 motor_mask;
+    AP_Int8 pole_count;
 
     uint32_t _last_send_us;
     static constexpr uint32_t DELAY_TIME_US = 700;
@@ -68,8 +69,6 @@ private:
 #else
     static constexpr uint8_t MOTOR_COUNT_MAX = 12;                 /// OneWire supports up-to 25 ESCs, but Ardupilot only supports 12
 #endif
-    int8_t _telem_avail = -1;
-    uint16_t _motorpwm[MOTOR_COUNT_MAX] = {1000};
     uint8_t _telem_req_type; /// the requested telemetry type (telem_type::XXXXX)
 
 /**
@@ -78,7 +77,7 @@ private:
     @param BufLen count of bytes that should be used for CRC calculation
     @return 8 bit CRC
 */
-    uint8_t Get_crc8(uint8_t *Buf, uint16_t BufLen) const;
+    uint8_t get_crc8(uint8_t *Buf, uint16_t BufLen) const;
 
 /**
     transmits a FETtec OneWire frame to an ESC
@@ -86,7 +85,7 @@ private:
     @param Bytes  8 bit array of bytes. Where byte 1 contains the command, and all following bytes can be the payload
     @param Length length of the Bytes array
 */
-    void Transmit(uint8_t ESC_id, uint8_t *Bytes, uint8_t Length);
+    void transmit(uint8_t ESC_id, uint8_t *Bytes, uint8_t Length);
 
 /**
     reads the FETtec OneWire answer frame of an ESC
@@ -125,11 +124,24 @@ private:
     uint8_t InitESCs();
 
 /**
+    sets the telemetry mode to full mode, where one ESC answers with all telem values including CRC Error count and a CRC
+    @return returns the response code
+*/
+    uint8_t set_full_telemetry(uint8_t active);
+
+/**
     checks if the requested telemetry is available.
     @param Telemetry 16bit array where the read Telemetry will be stored in.
     @param return the telemetry request number or -1 if unavailable
 */
     int8_t CheckForTLM(uint16_t *Telemetry);
+
+/**
+    checks if the requested telemetry is available.
+    @param Telemetry 16bit array where the read Telemetry will be stored in.
+    @param return the esc id request number or -1 if unavailable
+*/
+    int8_t check_for_full_telemetry(uint16_t *Telemetry);
 
 /**
     does almost all of the job.
@@ -161,6 +173,10 @@ private:
     uint8_t _FoundESCs;
     uint8_t _ScanActive;
     uint8_t _SetupActive;
+
+    static constexpr uint8_t use_full_telemetry = 1; //Set to 1 to use alternative, set to 0 to use standard TLM
+    uint8_t _set_full_telemetry_active = 1; //Helper to set alternative TLM for every ESC
+    uint8_t _set_full_telemetry_retry_count = 0; 
     uint8_t _IgnoreOwnBytes;
     int8_t _minID = MOTOR_COUNT_MAX;
     int8_t _maxID;
@@ -189,6 +205,7 @@ private:
       OW_REQ_SW_VER,
       OW_BEEP = 13,
       OW_SET_FAST_COM_LENGTH = 26,
+      OW_SET_TLM_TYPE = 27, //1 for alternative Telemetry. ESC sens full telem per ESC: Temp, Volt, Current, ERPM, Consumption, CrcErrCount
       OW_SET_LED_TMP_COLOR = 51,
     };
 
@@ -224,8 +241,8 @@ private:
       uint8_t setFastCommand[4] = {OW_SET_FAST_COM_LENGTH, 0, 0, 0};
     } _is;
 
-    uint8_t _ResponseLength[OW_SET_FAST_COM_LENGTH+1]; // OW_SET_LED_TMP_COLOR is ignored here
-    uint8_t _RequestLength[OW_SET_FAST_COM_LENGTH+1];  // OW_SET_LED_TMP_COLOR is ignored here
+    uint8_t _ResponseLength[OW_SET_TLM_TYPE+1]; // OW_SET_LED_TMP_COLOR is ignored here
+    uint8_t _RequestLength[OW_SET_TLM_TYPE+1];  // OW_SET_LED_TMP_COLOR is ignored here
 
 };
 #endif // HAL_AP_FETTECONEWIRE_ENABLED
