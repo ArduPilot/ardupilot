@@ -39,13 +39,23 @@ public:
         OA_SUCCESS                      // success
     };
 
+    // path planner responsible for a particular result
+    enum OAPathPlannerUsed : uint8_t {
+        None = 0,
+        BendyRulerHorizontal,
+        BendyRulerVertical,
+        Dijkstras
+    };
+
     // provides an alternative target location if path planning around obstacles is required
     // returns true and updates result_origin and result_destination with an intermediate path
+    // path_planner_used updated with which path planner produced the result
     OA_RetState mission_avoidance(const Location &current_loc,
                            const Location &origin,
                            const Location &destination,
                            Location &result_origin,
-                           Location &result_destination) WARN_IF_UNUSED;
+                           Location &result_destination,
+                           OAPathPlannerUsed &path_planner_used) WARN_IF_UNUSED;
 
     // enumerations for _TYPE parameter
     enum OAPathPlanTypes {
@@ -63,9 +73,6 @@ public:
 
     uint16_t get_options() const { return _options;}
 
-    // helper function to return type of BendyRuler in use. This is used by AC_WPNav_OA
-    AP_OABendyRuler::OABendyType get_bendy_type() const;
-
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -73,6 +80,9 @@ private:
     // avoidance thread that continually updates the avoidance_result structure based on avoidance_request
     void avoidance_thread();
     bool start_thread();
+
+    // helper function to map OABendyType to OAPathPlannerUsed
+    OAPathPlannerUsed map_bendytype_to_pathplannerused(AP_OABendyRuler::OABendyType bendy_type);
 
     // an avoidance request from the navigation code
     struct avoidance_info {
@@ -89,6 +99,7 @@ private:
         Location origin_new;        // intermediate origin.  The start of line segment that vehicle should follow
         Location destination_new;   // intermediate destination vehicle should move towards
         uint32_t result_time_ms;    // system time the result was calculated (used to verify the result is recent)
+        OAPathPlannerUsed path_planner_used;    // path planner that produced the result
         OA_RetState ret_state;      // OA_SUCCESS if the vehicle should move along the path from origin_new to destination_new
     } avoidance_result;
 
