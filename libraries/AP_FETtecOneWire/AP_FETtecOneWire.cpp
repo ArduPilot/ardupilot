@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_FETtecOneWire, motor_mask, 0),
-    AP_GROUPINFO("POLES",  2, AP_FETtecOneWire, pole_count, 0),
+    AP_GROUPINFO("POLES",  2, AP_FETtecOneWire, pole_count, 14),
     
     AP_GROUPEND
 };
@@ -123,7 +123,10 @@ void AP_FETtecOneWire::update()
                     break;
 
                 case telem_type::ERPM:
-                    update_rpm(i, requestedTelemetry[i]*100/(pole_count/2));
+                if (pole_count <2){ //If Parameter is invalid use 14 Poles
+                    pole_count = 14;
+                }
+                    update_rpm(i, requestedTelemetry[i]*100/(pole_count.get()/2));
                     break;
 
                 case telem_type::CONSUMPTION:
