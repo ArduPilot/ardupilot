@@ -55,6 +55,7 @@ private:
     bool _initialised;
     AP_HAL::UARTDriver *_uart;
     AP_Int32 motor_mask;
+    AP_Int8 pole_count;
 
     uint32_t _last_send_us;
     static constexpr uint32_t DELAY_TIME_US = 700;
