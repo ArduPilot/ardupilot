@@ -1349,7 +1349,6 @@ class AutoTest(ABC):
         ret = [
             '--sitl=127.0.0.1:5502',
             '--streamrate=%u' % self.sitl_streamrate(),
-            '--cmd="set heartbeat %u"' % self.speedup,
             '--target-system=%u' % self.sysid_thismav(),
             '--target-component=1',
         ]
