@@ -193,10 +193,6 @@
     #define HAL_BATT_CURR_SCALE  1
     #define HAL_BATT_VOLT_PIN    1
     #define HAL_BATT_VOLT_SCALE  1
-    #define HAL_RGBLED_RED   24
-    #define HAL_RGBLED_GREEN 25
-    #define HAL_RGBLED_BLUE  26
-    #define HAL_RGBLED_NORMAL_POLARITY false
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE
     #define HAL_GPIO_A_LED_PIN 66
     #define HAL_GPIO_B_LED_PIN 67
