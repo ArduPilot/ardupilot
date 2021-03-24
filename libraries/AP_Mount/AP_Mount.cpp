@@ -471,6 +471,7 @@ void AP_Mount::init()
         // init new instance
         if (_backends[instance] != nullptr) {
             _backends[instance]->init();
+            set_mode_to_default(instance);
             if (!primary_set) {
                 _primary = instance;
                 primary_set = true;
