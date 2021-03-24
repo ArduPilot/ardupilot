@@ -2,13 +2,13 @@
 FETtec OneWire
 ==============
 
-This is a half duplex serial protocol with a 2Mbit/s Baudrate created by Felix Niessen (former Flyduino KISS developer) from `FETtec <https://fettec.net/>`_.
+This is a half duplex serial protocol with a 2Mbit/s Baudrate created by FETtec.
 
 
 Ardupilot to ESC protocol
 =========================
+The FETtec OneWire protocol ist made to have a digital protocol with a wide range of supported microcontrollers (already working on STM32, ESP32, RaspberryPi...). While DSHOT is using analog pulse width and converts this to a digital signal (requires DMA channels for each channel), FETtec OneWire uses one hardware serial, wich is already fully digital for all connected motors including telemetry.
 
-How many bytes per message?
 There are two types of messages:
 	- Configuration message consists of six frame bytes + payload bytes.
 	Byte 0 is the transfer direction(e.g. 0x01 Master to Slave)
@@ -19,6 +19,8 @@ There are two types of messages:
 	Byte 5-254 is the payload
 	Byte 6-255 is CRC (last Byte after the Payload)
 	
+    Note: The CRC is a well known bytewise 8bit CRC not bitwise as DSHOT is.
+
 	- Fast Throttle Signal
 	The signal is used to transfer the eleven bit throttle signals with as few bytes as possible
 	The structure is a bit more complex. In the first two bytes are frame header and telemetry request as well as the first parts of the throttle
@@ -26,28 +28,19 @@ There are two types of messages:
 	
 	If telemetry is requested the ESCs will answer them in the ESC-ID order. See comments in onewire.c for details.
 	
-Which CRC? What proprieties has this CRC?
-	The CRC is a well known bytewise 8bit CRC not bitwise as DSHOT is. 
 
+FETtec ESCs supports currenty up to 22. As most copters only use at most 12 motors the Ardupilot implementation limits it to 12 to save memory.
+All motors wait for the complete message with all throttle signals bevor change the power. Four ESCs need 90uS for the throttle request and telemetry receiption. With four ESCs 11kHz are possible. As each additional ESC adds 11bits	and 16 telemetry bits, so the rate is lowered by each ESC. If you use 8 ESCs, it needs 160uS including telemetry response, so 5.8kHz are possible. 
+	
+You need at least a 4Hz motor signal (max 250ms between messages) before the motors disarm.
 
-How many ESCs are supported? At which Rate?
-	Four ESCs need 90uS for the throttle request and telemetry receiption. With four ESCs 11kHz are possible. As each additional ESC adds 11bits
-	and 16 telemetry bits the rate is lowered by each ESC. 
-	
-	8 ESCs need 160uS including telemetry response, so 5.8kHz are possible. 
-	
-	
-What is the pause time between messages?
-	250ms then the Motors will disarm.
-	
-What can we configure in the ESCs?
-	Every setting that the ESCs offer. The FETtec configurator uses OneWire too. Even the firmware updater bootloader uses onewire. 
-	
-What is the signal resolution?
-	11bits per throttle signal, 16 bits per telemetry type.
-	
-Can the motors rotate in both directions? How is that done ?
-	yes this is standard. (1020-2000 is throttle forward, 980-0 is throttle backward)
+The FETtec configurator offers all settings. Configuration and Firmware updates are also made via OneWire so a passthough is possible.
+Often used parameters are for example: 
+-> Motor direction. If your motor spins in the wrong direction you can change it easily without rewiring
+-> Motor beeps. Enables or disables Motor beeps
+-> Soft brake. If you have props that "unscrew" if they are stopped to fast you can use the Softbreak option. 
+
+3D Mode is not required with OneWire as it is standard. (1020-2000 is throttle forward, 980-0 is throttle backward)
 	
 	
 ESC to Ardupilot protocol
@@ -55,14 +48,12 @@ ESC to Ardupilot protocol
 
 It supports ESC telemetry, so information from the ESC status can be sent back to the autopilot:
 
-- Electronic rotations per minute (eRPM) (must be divided by number of motor poles to translate to propeller RPM)
+- Electronic rotations per minute (eRPM/100) (must be divided by number of motor poles to translate to propeller RPM)
 - Input voltage (V/10)
 - Current draw (A/10)
 - Power consumption (mAh)
 - Temperature (°C)
 
-At which Rate?
- As described above. 
 This information allows the autopilot to:
 
 - dynamically change the center frequency of the notch filters used to reduce frame vibration noise in the gyros
