@@ -558,17 +558,16 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
                                                                     // beginning of my code
     uint16_t i = hal.rcin->read(5);         // reading ch6 from pilot
     int16_t k = rc().channel(3)->get_control_in();
-    k = constrain_int16(k,0,1000);
     //float k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
 
     if (k == 0) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "k == 0! %5.3f", (double)3.142f);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k == 0!", (double)3.142f);
     }
     if (k >= 0) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "k >= 0! %5.3f", (double)3.142f);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k >= 0!", (double)3.142f);
     }
     if (k <= 0) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "k <= 0! %5.3f", (double)3.142f);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k <= 0!", (double)3.142f);
     }
 
     //hal.console->printf("%5d", (int)rc().channel(3)->get_control_in());
