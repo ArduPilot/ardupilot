@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 
@@ -217,6 +218,8 @@ void init()
 
 void panic(const char *errormsg, ...)
 {
+#if !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_NO_LOGGING)
+    INTERNAL_ERROR(AP_InternalError::error_t::panic);
     va_list ap;
 
     va_start(ap, errormsg);
@@ -225,9 +228,17 @@ void panic(const char *errormsg, ...)
 
     hal.scheduler->delay_microseconds(10000);
     while (1) {
+        va_start(ap, errormsg);
         vprintf(errormsg, ap);
+        va_end(ap);
         hal.scheduler->delay(500);
     }
+#else
+    // we don't support variable args in bootlaoder
+    chSysHalt(errormsg);
+    // we will never get here, this just to silence a warning
+    while (1) {}
+#endif
 }
 
 uint32_t micros()

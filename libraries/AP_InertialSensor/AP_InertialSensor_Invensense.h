@@ -95,6 +95,9 @@ private:
     /* Poll for new data (non-blocking) */
     void _poll_data();
 
+    // debug function to watch for register changes
+    void _check_register_change(void);
+
     /* Read and write functions taking the differences between buses into
      * account */
     bool _block_read(uint8_t reg, uint8_t *buf, uint32_t size);
@@ -124,6 +127,12 @@ private:
     LowPassFilter2pFloat _temp_filter;
 
     enum Rotation _rotation;
+
+    // enable checking of unexpected resets of offsets
+    bool _enable_offset_checking;
+
+    // ICM-20602 y offset register. See usage for explanation
+    uint8_t _saved_y_ofs_high;
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;

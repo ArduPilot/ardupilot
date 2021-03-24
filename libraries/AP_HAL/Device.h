@@ -42,6 +42,8 @@ public:
     FUNCTOR_TYPEDEF(PeriodicCb, void);
     typedef void* PeriodicHandle;
 
+    FUNCTOR_TYPEDEF(BankSelectCb, bool, uint8_t);
+
     Device(enum BusType type)
     {
         _bus_id.devid_s.bus_type = type;
@@ -149,6 +151,20 @@ public:
      */
     bool check_next_register(void);
 
+    // checked registers
+    struct checkreg {
+        uint8_t bank;
+        uint8_t regnum;
+        uint8_t value;
+    };
+    
+    /**
+     * check next register value for correctness, with return of
+     * failure value. Return false if value is incorrect or register
+     * checking has not been setup
+     */
+    bool check_next_register(struct checkreg &fail);
+    
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -322,17 +338,15 @@ protected:
     }
 
 private:
-    // checked registers
-    struct checkreg {
-        uint8_t regnum;
-        uint8_t value;
-    };
+    BankSelectCb _bank_select;
+
     struct {
         uint8_t n_allocated;
         uint8_t n_set;
         uint8_t next;
         uint8_t frequency;
         uint8_t counter;
+        struct checkreg last_reg_fail;
         struct checkreg *regs;
     } _checked;
 };
