@@ -337,7 +337,7 @@ void AP_ESC_Telem::update()
                 get_rpm(i, rpm);
 
                 logger->Write_ESC(i, AP_HAL::micros64(),
-                                (int32_t) rpm * 100,
+                                (int32_t) rpm,
                                 _telem_data[i].voltage_cv,
                                 _telem_data[i].current_ca,
                                 _telem_data[i].temperature_deg * 100,

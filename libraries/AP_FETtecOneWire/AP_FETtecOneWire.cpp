@@ -33,7 +33,8 @@ const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] = {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_FETtecOneWire, motor_mask, 0),
-
+    AP_GROUPINFO("POLES",  2, AP_FETtecOneWire, pole_count, 0),
+    
     AP_GROUPEND
 };
 
@@ -107,7 +108,7 @@ void AP_FETtecOneWire::update()
             if (mask & esc_mask) { // only update telemetry of enabled ESCs
                 switch(_telem_avail) {
                 case telem_type::TEMP:
-                    t.temperature_deg = int16_t(requestedTelemetry[i]),
+                    t.temperature_deg = int16_t(requestedTelemetry[i]);
                     update_telem_data(i, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
                     break;
 
@@ -122,7 +123,7 @@ void AP_FETtecOneWire::update()
                     break;
 
                 case telem_type::ERPM:
-                    update_rpm(i, requestedTelemetry[i]);
+                    update_rpm(i, requestedTelemetry[i]*100/(pole_count/2));
                     break;
 
                 case telem_type::CONSUMPTION:
