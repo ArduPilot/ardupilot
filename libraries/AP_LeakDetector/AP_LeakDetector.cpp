@@ -7,7 +7,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @Param: 1_PIN
     // @DisplayName: Pin that leak detector is connected to
     // @Description: Pin that the leak detector is connected to
-    // @Values: -1:Disabled,50:Pixhawk Aux1,51:Pixhawk Aux2,52:Pixhawk Aux3,53:Pixhawk Aux4,54:Pixhawk Aux5,55:Pixhawk Aux6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC,11:Navigator Leak1
+    // @Values: -1:Disabled,50:Pixhawk Aux1,51:Pixhawk Aux2,52:Pixhawk Aux3,53:Pixhawk Aux4,54:Pixhawk Aux5,55:Pixhawk Aux6,13:Pixhawk 3.3ADC1,14:Pixhawk 3.3ADC2,15:Pixhawk 6.6ADC,27:Navigator Built-In
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("1_PIN", 1, AP_LeakDetector, _pin[0], -1),
@@ -80,7 +80,7 @@ void AP_LeakDetector::init()
             _drivers[i] = new AP_LeakDetector_Analog(*this, _state[i]);
             break;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
-        case 11:
+        case 27:
             _state[i].instance = i;
             _drivers[i] = new AP_LeakDetector_Digital(*this, _state[i]);
             break;
