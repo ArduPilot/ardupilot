@@ -378,12 +378,12 @@ private:
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
-    Mode::Number control_mode;
+    Mode *flightmode;
     Mode::Number prev_control_mode;
 
     RCMapper rcmap;
 
-    // intertial nav alt when we armed
+    // inertial nav alt when we armed
     float arming_altitude_m;
 
     // Failsafe
@@ -515,7 +515,9 @@ private:
 #endif
 
     // Landing Gear Controller
+#if LANDING_GEAR_ENABLED == ENABLED
     AP_LandingGear landinggear;
+#endif
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN && MODE_AUTO_ENABLED == ENABLED
@@ -608,6 +610,12 @@ private:
         RELEASE_GRIPPER                 = (1<<5),   // 32
     };
 
+
+    enum class FlightOptions {
+        DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
+        DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
+    };
+
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
                                                       Failsafe_Action_Land,
@@ -640,6 +648,7 @@ private:
     void fast_loop() override;
     bool start_takeoff(float alt) override;
     bool set_target_location(const Location& target_loc) override;
+    bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     void rc_loop();
@@ -690,6 +699,9 @@ private:
     // crash_check.cpp
     void crash_check();
     void thrust_loss_check();
+    void yaw_imbalance_check();
+    LowPassFilterFloat yaw_I_filt{0.05f};
+    uint32_t last_yaw_warn_ms;
     void parachute_check();
     void parachute_release();
     void parachute_manual_release();
@@ -735,7 +747,9 @@ private:
 #endif
 
     // fence.cpp
+#if AC_FENCE == ENABLED
     void fence_check();
+#endif
 
     // heli.cpp
     void heli_init();
@@ -759,8 +773,10 @@ private:
     void set_land_complete_maybe(bool b);
     void update_throttle_mix();
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // landing_gear.cpp
     void landinggear_update();
+#endif
 
     // standby.cpp
     void standby_update();
@@ -791,7 +807,7 @@ private:
     // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
-    uint8_t get_mode() const override { return (uint8_t)control_mode; }
+    uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
     void update_flight_mode();
     void notify_flight_mode();
 
@@ -894,7 +910,6 @@ private:
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
 
-    Mode *flightmode;
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeAcro_Heli mode_acro;

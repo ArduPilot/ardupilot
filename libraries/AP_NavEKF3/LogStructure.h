@@ -182,8 +182,8 @@ struct PACKED log_XKF3 {
 // @Field: SM: Magnetic field variance
 // @Field: SVT: Square root of the total airspeed variance
 // @Field: errRP: Filtered error in roll/pitch estimate
-// @Field: OFN: Most recent position recent magnitude (North component)
-// @Field: OFE: Most recent position recent magnitude (East component)
+// @Field: OFN: Most recent position reset (North component)
+// @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
 // @Field: SS: Filter solution status
@@ -199,8 +199,8 @@ struct PACKED log_XKF4 {
     int16_t sqrtvarM;
     int16_t sqrtvarVT;
     float   tiltErr;
-    int8_t  offsetNorth;
-    int8_t  offsetEast;
+    float  offsetNorth;
+    float  offsetEast;
     uint16_t faults;
     uint8_t timeouts;
     uint32_t solution;
@@ -428,13 +428,13 @@ struct PACKED log_XKV {
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBcccccfbbHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------??-----", "F-------??-----" }, \
+      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
-      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s------", "F------"}, \
+      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------"}, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
       "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \

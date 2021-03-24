@@ -31,7 +31,7 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
     // only get useful information from the custom_mode, which maps to
     // the APM flight mode and has a well defined meaning in the
     // ArduPlane documentation
-    switch (copter.control_mode) {
+    switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
     case Mode::Number::RTL:
     case Mode::Number::LOITER:
@@ -72,7 +72,7 @@ MAV_MODE GCS_MAVLINK_Copter::base_mode() const
 
 uint32_t GCS_Copter::custom_mode() const
 {
-    return (uint32_t)copter.control_mode;
+    return (uint32_t)copter.flightmode->mode_number();
 }
 
 MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
@@ -332,7 +332,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Raw sensor stream rate
     // @Description: Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and SENSOR_OFFSETS to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("RAW_SENS", 0, GCS_MAVLINK_Parameters, streamRates[0],  0),
@@ -341,7 +341,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Extended status stream rate to ground station
     // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXT_STAT", 1, GCS_MAVLINK_Parameters, streamRates[1],  0),
@@ -350,7 +350,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: RC Channel stream rate to ground station
     // @Description: Stream rate of SERVO_OUTPUT_RAW and RC_CHANNELS to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
@@ -359,7 +359,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Raw Control stream rate to ground station
     // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("RAW_CTRL", 3, GCS_MAVLINK_Parameters, streamRates[3],  0),
@@ -368,7 +368,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Position stream rate to ground station
     // @Description: Stream rate of GLOBAL_POSITION_INT and LOCAL_POSITION_NED to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("POSITION", 4, GCS_MAVLINK_Parameters, streamRates[4],  0),
@@ -377,7 +377,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Extra data type 1 stream rate to ground station
     // @Description: Stream rate of ATTITUDE, SIMSTATE (SITL only), AHRS2 and PID_TUNING to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXTRA1",   5, GCS_MAVLINK_Parameters, streamRates[5],  0),
@@ -386,7 +386,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Extra data type 2 stream rate to ground station
     // @Description: Stream rate of VFR_HUD to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXTRA2",   6, GCS_MAVLINK_Parameters, streamRates[6],  0),
@@ -395,7 +395,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Extra data type 3 stream rate to ground station
     // @Description: Stream rate of AHRS, HWSTATUS, SYSTEM_TIME, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, BATTERY2, MOUNT_STATUS, OPTICAL_FLOW, GIMBAL_REPORT, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION and RPM to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("EXTRA3",   7, GCS_MAVLINK_Parameters, streamRates[7],  0),
@@ -404,7 +404,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @DisplayName: Parameter stream rate to ground station
     // @Description: Stream rate of PARAM_VALUE to ground station
     // @Units: Hz
-    // @Range: 0 10
+    // @Range: 0 50
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PARAMS",   8, GCS_MAVLINK_Parameters, streamRates[8],  0),
@@ -685,15 +685,17 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet)
 {
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
     switch (packet.command) {
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
-        if (!copter.camera_mount.has_pan_control()) {
+        // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
+        if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
+            !copter.camera_mount.has_pan_control()) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 (float)packet.param3 * 0.01f,
                 0.0f,
-                0,0);
+                0,
+                false);
         }
         break;
 #endif
@@ -776,7 +778,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_CHANGE_SPEED:
-        // param1 : Speed type (0=Airspeed, 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
+        // param1 : Speed type (0 or 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
         // param2 : new speed in m/s
         // param3 : unused
         // param4 : unused
@@ -794,8 +796,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_MISSION_START:
-        if (copter.motors->armed() &&
-            copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
+        if (copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             copter.set_auto_armed(true);
             if (copter.mode_auto.mission.state() != AP_Mission::MISSION_RUNNING) {
                 copter.mode_auto.mission.start_or_resume();
@@ -863,6 +864,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 #endif
 
+#if LANDING_GEAR_ENABLED == ENABLED
         case MAV_CMD_AIRFRAME_CONFIGURATION: {
             // Param 1: Select which gear, not used in ArduPilot
             // Param 2: 0 = Deploy, 1 = Retract
@@ -877,6 +879,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             }
             return MAV_RESULT_FAILED;
         }
+#endif
 
         /* Solo user presses Fly button */
     case MAV_CMD_SOLO_BTN_FLY_CLICK: {
@@ -925,7 +928,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             } else {
                 // assume that shots modes are all done in guided.
                 // NOTE: this may need to change if we add a non-guided shot mode
-                bool shot_mode = (!is_zero(packet.param1) && (copter.control_mode == Mode::Number::GUIDED || copter.control_mode == Mode::Number::GUIDED_NOGPS));
+                bool shot_mode = (!is_zero(packet.param1) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS));
 
                 if (!shot_mode) {
 #if MODE_BRAKE_ENABLED == ENABLED
@@ -955,13 +958,14 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
     switch (msg.msgid) {
 #if HAL_MOUNT_ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
-        if (!copter.camera_mount.has_pan_control()) {
-            // if the mount doesn't do pan control then yaw the entire vehicle instead:
+        // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
+        if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
+            !copter.camera_mount.has_pan_control()) {
             copter.flightmode->auto_yaw.set_fixed_yaw(
                 mavlink_msg_mount_control_get_input_c(&msg) * 0.01f,
                 0.0f,
                 0,
-                0);
+                false);
 
             break;
         }

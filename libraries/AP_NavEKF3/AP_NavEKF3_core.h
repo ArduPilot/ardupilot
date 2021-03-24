@@ -147,7 +147,8 @@ public:
     void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-    void getWind(Vector3f &wind) const;
+    // returns true if wind state estimation is active
+    bool getWind(Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units / 1000
     void getMagNED(Vector3f &magNED) const;
@@ -381,8 +382,8 @@ public:
     // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
     bool using_external_yaw(void) const;
 
-    // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-    void writeDefaultAirSpeed(float airspeed);
+    // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+    void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
     // request a reset the yaw to the EKF-GSF value
     void EKFGSF_requestYawReset();
@@ -680,7 +681,7 @@ private:
 
     // helper functions for readIMUData
     bool readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &dVel_dt);
-    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng);
+    bool readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAng_dt);
 
     // helper functions for correcting IMU data
     void correctDeltaAngle(Vector3f &delAng, float delAngDT, uint8_t gyro_index);
@@ -947,6 +948,8 @@ private:
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
 
+    bool getGPSLLH(struct Location &loc) const;
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
@@ -990,6 +993,7 @@ private:
     ftype innovVtas;                // innovation output from fusion of airspeed measurements
     ftype varInnovVtas;             // innovation variance output from fusion of airspeed measurements
     float defaultAirSpeed;          // default equivalent airspeed in m/s to be used if the measurement is unavailable. Do not use if not positive.
+    float defaultAirSpeedVariance;  // default equivalent airspeed variance in (m/s)**2 to be used when defaultAirSpeed is specified. 
     bool magFusePerformed;          // boolean set to true when magnetometer fusion has been perfomred in that time step
     MagCal effectiveMagCal;         // the actual mag calibration being used as the default
     uint32_t prevTasStep_ms;        // time stamp of last TAS fusion step
@@ -1025,7 +1029,6 @@ private:
     bool lastInhibitMagStates;      // previous inhibitMagStates
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
-    bool inhibitDelVelBiasStates;   // true when IMU delta velocity bias states are inactive
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsNotAvailable;           // bool true when valid GPS data is not available
     struct Location EKF_origin;     // LLH origin of the NED axis system
@@ -1054,6 +1057,8 @@ private:
     range_elements rangeDataDelayed;// Range finder data at the fusion time horizon
     tas_elements tasDataNew;        // TAS data at the current time horizon
     tas_elements tasDataDelayed;    // TAS data at the fusion time horizon
+    float tasErrVar;                // TAS error variance (m/s)**2
+    bool usingDefaultAirspeed;      // true when a default airspeed is being used instead of a measured value
     mag_elements magDataDelayed;    // Magnetometer data at the fusion time horizon
     gps_elements gpsDataNew;        // GPS data at the current time horizon
     gps_elements gpsDataDelayed;    // GPS data at the fusion time horizon
@@ -1074,6 +1079,7 @@ private:
     bool optFlowFusionDelayed;      // true when the optical flow fusion has been delayed
     bool airSpdFusionDelayed;       // true when the air speed fusion has been delayed
     bool sideSlipFusionDelayed;     // true when the sideslip fusion has been delayed
+    bool airDataFusionWindOnly;     // true when  sideslip and airspeed fusion is only allowed to modify the wind states
     Vector3f lastMagOffsets;        // Last magnetometer offsets from COMPASS_ parameters. Used to detect parameter changes.
     bool lastMagOffsetsValid;       // True when lastMagOffsets has been initialized
     Vector2f posResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
@@ -1299,7 +1305,7 @@ private:
     uint32_t takeoffExpectedSet_ms;   // system time at which expectTakeoff was set
     bool expectTakeoff;               // external state from vehicle conrol code - takeoff expected
 
-    // control of post takeoff magentic field and heading resets
+    // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
     uint8_t magYawAnomallyCount;    // Number of times the yaw has been reset due to a magnetic anomaly during initial ascent
     bool finalInflightMagInit;      // true when the final post takeoff initialisation of magnetic field states been performed
@@ -1317,6 +1323,11 @@ private:
     Vector3f accel_prev;                // accelerometer vector from previous time step (m/s/s)
     bool onGroundNotMoving;             // true when on the ground and not moving
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
+
+	// variables used to inhibit accel bias learning
+    bool inhibitDelVelBiasStates;       // true when all IMU delta velocity bias states are de-activated
+    bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
+	Vector3f dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external navigation fusion

@@ -70,7 +70,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
-    // @Description: Degrees of elevator added for full throttle application. Increase to compensate for throttle causing down pitch.
+    // @Description: Pitch up to add in proportion to throttle. 100% throttle will add this number of degrees to the pitch target.
     // @Range: 0 5
     // @Increment: 0.01
     // @User: Advanced
@@ -197,12 +197,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
-    // @Param: FBWA_TDRAG_CHAN
-    // @DisplayName: FBWA taildragger channel
-    // @Description: This is a RC input channel which when it goes above 1700 enables FBWA taildragger takeoff mode. It should be assigned to a momentary switch. Once this feature is enabled it will stay enabled until the aircraft goes above TKOFF_TDRAG_SPD1 airspeed, changes mode, or the pitch goes above the initial pitch when this is engaged or goes below 0 pitch. When enabled the elevator will be forced to TKOFF_TDRAG_ELEV. This option allows for easier takeoffs on taildraggers in FBWA mode, and also makes it easier to test auto-takeoff steering handling in FBWA. Setting it to 0 disables this option.
-    // @User: Standard
-    GSCALAR(fbwa_tdrag_chan,          "FBWA_TDRAG_CHAN",  0),
-
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
@@ -279,68 +273,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
     
-#if GEOFENCE_ENABLED == ENABLED
-    // @Param: FENCE_ACTION
-    // @DisplayName: Action on geofence breach
-    // @Description: What to do on fence breach. If this is set to 0 then no action is taken, and geofencing is disabled. If this is set to 1 then the plane will enter GUIDED mode, with the target waypoint as the fence return point. If this is set to 2 then the fence breach is reported to the ground station, but no other action is taken. If set to 3 then the plane enters guided mode but the pilot retains manual throttle control. If set to 4 the plane enters RTL mode, with the target waypoint as the closest rally point (or home point if there are no rally points).
-    // @Values: 0:None,1:GuidedMode,2:ReportOnly,3:GuidedModeThrPass,4:RTL_Mode
-    // @User: Standard
-    GSCALAR(fence_action,           "FENCE_ACTION",   0),
-
-    // @Param: FENCE_TOTAL
-    // @DisplayName: Fence Total
-    // @Description: Number of geofence points currently loaded
-    // @User: Advanced
-    GSCALAR(fence_total,            "FENCE_TOTAL",    0),
-
-    // @Param: FENCE_CHANNEL
-    // @DisplayName: Fence Channel
-    // @Description: RC Channel to use to enable geofence. PWM input above 1750 enables the geofence
-    // @User: Standard
-    GSCALAR(fence_channel,          "FENCE_CHANNEL",  0),
-
-    // @Param: FENCE_MINALT
-    // @DisplayName: Fence Minimum Altitude
-    // @Description: Minimum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_minalt,           "FENCE_MINALT",   0),
-
-    // @Param: FENCE_MAXALT
-    // @DisplayName: Fence Maximum Altitude
-    // @Description: Maximum altitude allowed before geofence triggers
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_maxalt,           "FENCE_MAXALT",   0),
-
-    // @Param: FENCE_RETALT
-    // @DisplayName: Fence Return Altitude
-    // @Description: Altitude the aircraft will transit to when a fence breach occurs.  If FENCE_RETALT is <= 0 then the midpoint between FENCE_MAXALT and FENCE_MINALT is used, unless FENCE_MAXALT < FENCE_MINALT.  If FENCE_MAXALT < FENCE_MINALT AND FENCE_RETALT is <= 0 then ALT_HOLD_RTL is the altitude used on a fence breach.
-    // @Units: m
-    // @Range: 0 32767
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(fence_retalt,           "FENCE_RETALT",   0),
-
-    // @Param: FENCE_AUTOENABLE
-    // @DisplayName: Fence automatic enable
-    // @Description: When set to 1, geofence automatically enables after an auto takeoff and automatically disables at the beginning of an auto landing.  When on the ground before takeoff the fence is disabled.  When set to 2, the fence autoenables after an auto takeoff, but only disables the fence floor during landing. It is highly recommended to not use this option for line of sight flying and use a fence enable channel instead. When set to 3 the fence auto-enables when the vehicle is armed and disables when disarmed and arming will fail if the fence cannot be enabled or is outside the fence. Option 3 cannot be used with a non-zero FENCE_MINALT
-    // @Values: 0:NoAutoEnable,1:AutoEnable,2:AutoEnableDisableFloorOnly,3:EnableWhenArmed
-    // @User: Standard
-    GSCALAR(fence_autoenable,       "FENCE_AUTOENABLE", 0),
-
-    // @Param: FENCE_RET_RALLY
-    // @DisplayName: Fence Return to Rally
-    // @Description: When set to 1: on fence breach the plane will return to the nearest rally point rather than the fence return point.  If no rally points have been defined the plane will return to the home point.  
-    // @Values: 0:FenceReturnPoint,1:NearestRallyPoint
-    // @User: Standard
-    GSCALAR(fence_ret_rally,        "FENCE_RET_RALLY",  0),     
-#endif
-
     // @Param: STALL_PREVENTION
     // @DisplayName: Enable stall prevention
     // @Description: Enables roll limits at low airspeed in roll limiting flight modes. Roll limits based on aerodynamic load factor in turns and scale on ARSPD_FBW_MIN that must be set correctly. Without airspeed sensor, uses synthetic airspeed from wind speed estimate that may both be inaccurate.
@@ -378,6 +310,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Use terrain following
     // @Description: This enables terrain following for CRUISE mode, FBWB mode, RTL and for rally points. To use this option you also need to set TERRAIN_ENABLE to 1, which enables terrain data fetching from the GCS, and you need to have a GCS that supports sending terrain data to the aircraft. When terrain following is enabled then CRUISE and FBWB mode will hold height above terrain rather than height above home. In RTL the return to launch altitude will be considered to be a height above the terrain. Rally point altitudes will be taken as height above the terrain. This option does not affect mission items, which have a per-waypoint flag for whether they are height above home or height above the terrain. To use terrain following missions you need a ground station which can set the waypoint type to be a terrain height waypoint when creating the mission.
     // @Values: 0:Disabled,1:Enabled
+    // @Bitmask: 0: Enable all modes, 1:FBWB, 2:Cruise, 3:Auto, 4:RTL, 5:Avoid_ADSB, 6:Guided, 7:Loiter, 8:Circle, 9:QRTL, 10:QLand, 11:Qloiter
     // @User: Standard
     GSCALAR(terrain_follow, "TERRAIN_FOLLOW",  0),
 
@@ -706,18 +639,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
-    // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode	after geofence takeover.
-    // @User: Advanced
-    GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",  0),
-
-    // @Param: RST_MISSION_CH
-    // @DisplayName: Reset Mission Channel
-    // @Description: Enables a channel to reset the mission to the first waypoint. Mission restart is triggered by channel rising above 1750 PWM. 0 disables.
-    // @User: Advanced
-    GSCALAR(reset_mission_chan,      "RST_MISSION_CH",  0),
-
     // @Param: TRIM_ARSPD_CM
     // @DisplayName: Target airspeed
     // @Description: Target airspeed in cm/s in automatic throttle modes. Value is as an indicated (calibrated/apparent) airspeed.
@@ -862,9 +783,9 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
 #if CAMERA == ENABLED
     // @Group: CAM_
@@ -884,12 +805,6 @@ const AP_Param::Info Plane::var_info[] = {
 	// @Group: CHUTE_
     // @Path: ../libraries/AP_Parachute/AP_Parachute.cpp
     GOBJECT(parachute,		"CHUTE_", AP_Parachute),
-
-    // @Param: CHUTE_CHAN
-    // @DisplayName: Parachute release channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for manually releasing the parachute. When this channel goes above 1700 the parachute will be released
-    // @User: Advanced
-    GSCALAR(parachute_channel,      "CHUTE_CHAN",  0),
 #endif
 
     // @Group: RNGFND
@@ -1073,6 +988,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,  "RALLY_",       AP_Rally),
 
+#if AC_FENCE == ENABLED
+    // @Group: FENCE_
+    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
+    GOBJECT(fence, "FENCE_",        AC_Fence),
+#endif
+
 #if AP_AHRS_NAVEKF_AVAILABLE
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -1199,7 +1120,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL.
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1343,7 +1264,7 @@ ParametersG2::ParametersG2(void) :
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
-const AP_Param::ConversionInfo conversion_table[] = {
+static const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_log_bitmask_old,    0,      AP_PARAM_INT16, "LOG_BITMASK" },
     { Parameters::k_param_rally_limit_km_old, 0,      AP_PARAM_FLOAT, "RALLY_LIMIT_KM" },
     { Parameters::k_param_rally_total_old,    0,      AP_PARAM_INT8, "RALLY_TOTAL" },
@@ -1387,6 +1308,28 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_arming,             3,      AP_PARAM_INT8,  "ARMING_RUDDER" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
     { Parameters::k_param_arming,           128,     AP_PARAM_INT16,  "ARMING_CHECK" },
+
+    { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
+    { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
+    { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
+    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
+    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
+};
+
+struct RCConversionInfo {
+    uint16_t old_key; // k_param_*
+    uint32_t old_group_element; // index in old object
+    RC_Channel::AUX_FUNC fun; // new function
+};
+
+static const RCConversionInfo rc_option_conversion[] = {
+    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
+    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
+    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
+    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
+    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
+    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
+    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
 };
 
 void Plane::load_parameters(void)
@@ -1431,35 +1374,106 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    // Convert flap to RCx_OPTION
-    AP_Int8 flap_output;
-    AP_Param::ConversionInfo flap_info = {
-        Parameters::k_param_flapin_channel_old,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    if (AP_Param::find_old_parameter(&flap_info, &flap_output) && flap_output.get() != 0) {
-        RC_Channel *flapin = rc().channel(flap_output - 1);
-        if (flapin != nullptr && !flapin->option.configured()) {
-            flapin->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::FLAP); // save the new param
+    // Convert chan params to RCx_OPTION
+    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
+        AP_Int8 chan_param;
+        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
+        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
+            RC_Channel *chan = rc().channel(chan_param.get() - 1);
+            if (chan != nullptr && !chan->option.configured()) {
+                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
+            }
         }
     }
 
-    // Convert SOAR_ENABLE_CH to RCx_OPTION
-    AP_Int8 soar_enable_ch;
-    AP_Param::ConversionInfo soar_info = {
-        Parameters::k_param_g2,
-        968,
+    enum ap_var_type ptype_fence_type;
+    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
+    if (fence_type_new && !fence_type_new->configured()) {
+        // If we find the new parameter and it hasn't been configured
+        // attempt to upgrade the altitude fences.
+        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
+        AP_Int16 fence_alt_min_old;
+        AP_Param::ConversionInfo fence_alt_min_info_old = {
+            Parameters::k_param_fence_minalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
+            if (fence_alt_min_old.configured()) {
+                //
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
+            }
+        }
+
+        AP_Int16 fence_alt_max_old;
+        AP_Param::ConversionInfo fence_alt_max_info_old = {
+            Parameters::k_param_fence_maxalt,
+            0,
+            AP_PARAM_INT16,
+            nullptr
+        };
+        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
+            if (fence_alt_max_old.configured()) {
+                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
+            }
+        }
+
+        fence_type_new->set_and_save((int8_t)fence_type_new_val);
+    }
+
+    AP_Int8 fence_action_old;
+    AP_Param::ConversionInfo fence_action_info_old = {
+        Parameters::k_param_fence_action,
+        0,
         AP_PARAM_INT8,
-        nullptr
+        "FENCE_ACTION"
     };
-    if (AP_Param::find_old_parameter(&soar_info, &soar_enable_ch) && soar_enable_ch.get() != 0) {
-        RC_Channel *soar_ch = rc().channel(soar_enable_ch - 1);
-        if (soar_ch != nullptr && !soar_ch->option.configured()) {
-            soar_ch->option.set_and_save((int16_t)RC_Channel::AUX_FUNC::SOARING); // save the new param
+    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
+        enum ap_var_type ptype;
+        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
+        uint8_t fence_action_new_val;
+        if (fence_action_new && !fence_action_new->configured()) {
+            switch(fence_action_old.get()) {
+                case 0: // FENCE_ACTION_NONE
+                case 2: // FENCE_ACTION_REPORT_ONLY
+                default:
+                    fence_action_new_val = AC_FENCE_ACTION_REPORT_ONLY;
+                    break;
+                case 1: // FENCE_ACTION_GUIDED
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED;
+                    break;
+                case 3: // FENCE_ACTION_GUIDED_THR_PASS
+                    fence_action_new_val = AC_FENCE_ACTION_GUIDED_THROTTLE_PASS;
+                    break;
+                case 4: // FENCE_ACTION_RTL
+                    fence_action_new_val = AC_FENCE_ACTION_RTL_AND_LAND;
+                    break;
+            }
+            fence_action_new->set_and_save((int8_t)fence_action_new_val);
+            
+            // Now upgrade the new fence enable at the same time
+            enum ap_var_type ptype_fence_enable;
+            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
+            // fences were used if there was a count, and the old fence action was not zero
+            AC_Fence *ap_fence = AP::fence();
+            bool fences_exist = false;
+            if (ap_fence) {
+                // If the fence library is present, attempt to read the fence count
+                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
+            }
+            
+            bool fences_used = fence_action_old.get() != 0;
+            if (fence_enable && !fence_enable->configured()) {
+                // The fence enable parameter exists, so now set it accordingly
+                fence_enable->set_and_save(fences_exist && fences_used);
+            }
         }
     }
+
+#if AP_TERRAIN_AVAILABLE
+    g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

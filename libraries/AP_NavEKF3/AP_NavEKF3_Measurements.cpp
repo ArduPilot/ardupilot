@@ -431,8 +431,8 @@ void NavEKF3_core::readIMUData()
     imuDataNew.accel_index = accel_index_active;
     
     // Get delta angle data from primary gyro or primary if not available
-    readDeltaAngle(gyro_index_active, imuDataNew.delAng);
-    imuDataNew.delAngDT = MAX(ins.get_delta_angle_dt(gyro_index_active),1.0e-4f);
+    readDeltaAngle(gyro_index_active, imuDataNew.delAng, imuDataNew.delAngDT);
+    imuDataNew.delAngDT = MAX(imuDataNew.delAngDT, 1.0e-4f);
     imuDataNew.gyro_index = gyro_index_active;
 
     // Get current time stamp
@@ -530,8 +530,8 @@ bool NavEKF3_core::readDeltaVelocity(uint8_t ins_index, Vector3f &dVel, float &d
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_accel_count()) {
-        ins.get_delta_velocity(ins_index,dVel);
-        dVel_dt = MAX(ins.get_delta_velocity_dt(ins_index),1.0e-4f);
+        ins.get_delta_velocity(ins_index,dVel,dVel_dt);
+        dVel_dt = MAX(dVel_dt,1.0e-4f);
         return true;
     }
     return false;
@@ -710,11 +710,11 @@ void NavEKF3_core::readGpsData()
 
 // read the delta angle and corresponding time interval from the IMU
 // return false if data is not available
-bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng) {
+bool NavEKF3_core::readDeltaAngle(uint8_t ins_index, Vector3f &dAng, float &dAngDT) {
     const auto &ins = dal.ins();
 
     if (ins_index < ins.get_gyro_count()) {
-        ins.get_delta_angle(ins_index,dAng);
+        ins.get_delta_angle(ins_index, dAng, dAngDT);
         return true;
     }
     return false;
@@ -815,15 +815,17 @@ void NavEKF3_core::correctEkfOriginHeight()
 // check for new airspeed data and update stored measurements if available
 void NavEKF3_core::readAirSpdData()
 {
+    const float EAS2TAS = dal.get_EAS2TAS();
     // if airspeed reading is valid and is set by the user to be used and has been updated then
     // we take a new reading, convert from EAS to TAS and set the flag letting other functions
     // know a new measurement is available
+
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
         airspeed->use(selected_airspeed) &&
         airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
-        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * dal.get_EAS2TAS();
+        tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
 
@@ -835,6 +837,16 @@ void NavEKF3_core::readAirSpdData()
     }
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
+    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
+    // Allow use of a default value if the measurement times out
+    if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 5000 && is_positive(defaultAirSpeed)) {
+        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
+        easErrVar = MAX(defaultAirSpeedVariance, easErrVar);
+        usingDefaultAirspeed = true;
+    } else {
+        usingDefaultAirspeed = false;
+    }
+    tasErrVar =  easErrVar * sq(EAS2TAS);
 }
 
 /********************************************************
@@ -978,10 +990,11 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     yawMeasTime_ms = timeStamp_ms;
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void NavEKF3_core::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void NavEKF3_core::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
     defaultAirSpeed = airspeed;
+    defaultAirSpeedVariance = sq(uncertainty);
 }
 
 /********************************************************
@@ -1306,7 +1319,7 @@ void NavEKF3_core::updateMovementCheck(void)
     }
 
     const float gyro_limit = radians(3.0f);
-    const float gyro_diff_limit = 0.1;
+    const float gyro_diff_limit = 0.2f;
     const float accel_limit = 1.0f;
     const float accel_diff_limit = 5.0f;
     const float hysteresis_ratio = 0.7f;
@@ -1342,18 +1355,18 @@ void NavEKF3_core::updateMovementCheck(void)
     const float accel_diff_ratio = accel_diff / accel_diff_limit;
     bool logStatusChange = false;
     if (onGroundNotMoving) {
-        if (gyro_length_ratio > 1.0f ||
-            fabsf(accel_length_ratio) > 1.0f ||
-            gyro_diff_ratio > 1.0f ||
-            accel_diff_ratio > 1.0f)
+        if (gyro_length_ratio > frontend->_ognmTestScaleFactor ||
+            fabsf(accel_length_ratio) > frontend->_ognmTestScaleFactor ||
+            gyro_diff_ratio > frontend->_ognmTestScaleFactor ||
+            accel_diff_ratio > frontend->_ognmTestScaleFactor)
         {
             onGroundNotMoving = false;
             logStatusChange = true;
         }
-    } else if (gyro_length_ratio < hysteresis_ratio &&
-            fabsf(accel_length_ratio) < hysteresis_ratio &&
-            gyro_diff_ratio < hysteresis_ratio &&
-            accel_diff_ratio < hysteresis_ratio)
+    } else if (gyro_length_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            fabsf(accel_length_ratio) < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            gyro_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio &&
+            accel_diff_ratio < frontend->_ognmTestScaleFactor * hysteresis_ratio)
     {
         onGroundNotMoving = true;
         logStatusChange = true;

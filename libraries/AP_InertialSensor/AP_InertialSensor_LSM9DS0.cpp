@@ -387,7 +387,7 @@ AP_InertialSensor_LSM9DS0::AP_InertialSensor_LSM9DS0(AP_InertialSensor &imu,
     , _rotation_a(rotation_a)
     , _rotation_g(rotation_g)
     , _rotation_gH(rotation_gH)
-    , _temp_filter(80, 1)
+    , _temp_filter(400, 1)
 {
 }
 
@@ -695,10 +695,13 @@ void AP_InertialSensor_LSM9DS0::_poll_data()
     }
 
     // check next register value for correctness
-    if (!_dev_gyro->check_next_register()) {
+    AP_HAL::Device::checkreg reg;
+    if (!_dev_gyro->check_next_register(reg)) {
+        log_register_change(_dev_gyro->get_bus_id(), reg);
         _inc_gyro_error_count(_gyro_instance);
     }
-    if (!_dev_accel->check_next_register()) {
+    if (!_dev_accel->check_next_register(reg)) {
+        log_register_change(_dev_accel->get_bus_id(), reg);
         _inc_accel_error_count(_accel_instance);
     }
 }
@@ -739,7 +742,7 @@ void AP_InertialSensor_LSM9DS0::_read_data_transaction_a()
     _notify_new_accel_raw_sample(_accel_instance, accel_data, AP_HAL::micros64());
 
     // read temperature every 10th sample
-    if (_temp_counter == 10) {
+    if (_temp_counter++ >= 10) {
         int16_t traw;
         const uint8_t regtemp = OUT_TEMP_L_XM | 0xC0;
         _temp_counter = 0;

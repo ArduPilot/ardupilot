@@ -56,8 +56,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
-    return fence_checks(display_failure)
-        & parameter_checks(display_failure)
+    return parameter_checks(display_failure)
         & motor_checks(display_failure)
         & pilot_throttle_checks(display_failure)
         & oa_checks(display_failure)
@@ -418,21 +417,29 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
-    // run mandatory gps checks first
-    if (!mandatory_gps_checks(display_failure)) {
-        AP_Notify::flags.pre_arm_gps_check = false;
-        return false;
-    }
-
-    // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
-
     // check if fence requires GPS
     bool fence_requires_gps = false;
     #if AC_FENCE == ENABLED
     // if circular or polygon fence is enabled we need GPS
     fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
     #endif
+
+    // check if flight mode requires GPS
+    bool mode_requires_gps = copter.flightmode->requires_GPS();
+
+    // call parent gps checks
+    if (mode_requires_gps || fence_requires_gps) {
+        if (!AP_Arming::gps_checks(display_failure)) {
+            AP_Notify::flags.pre_arm_gps_check = false;
+            return false;
+        }
+    }
+
+    // run mandatory gps checks first
+    if (!mandatory_gps_checks(display_failure)) {
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
 
     // return true if GPS is not required
     if (!mode_requires_gps && !fence_requires_gps) {
@@ -449,12 +456,6 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     // warn about hdop separately - to prevent user confusion with no gps lock
     if (copter.gps.get_hdop() > copter.g.gps_hdop_good) {
         check_failed(ARMING_CHECK_GPS, display_failure, "High GPS HDOP");
-        AP_Notify::flags.pre_arm_gps_check = false;
-        return false;
-    }
-
-    // call parent gps checks
-    if (!AP_Arming::gps_checks(display_failure)) {
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
@@ -553,13 +554,23 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         }
     }
 
-    // check EKF compass variance is below failsafe threshold
-    float vel_variance, pos_variance, hgt_variance, tas_variance;
-    Vector3f mag_variance;
-    ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
-    if (copter.g.fs_ekf_thresh > 0 && mag_variance.length() >= copter.g.fs_ekf_thresh) {
-        check_failed(display_failure, "EKF compass variance");
-        return false;
+    // check EKF's compass, position and velocity variances are below failsafe threshold
+    if (copter.g.fs_ekf_thresh > 0.0f) {
+        float vel_variance, pos_variance, hgt_variance, tas_variance;
+        Vector3f mag_variance;
+        ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        if (mag_variance.length() >= copter.g.fs_ekf_thresh) {
+            check_failed(display_failure, "EKF compass variance");
+            return false;
+        }
+        if (pos_variance >= copter.g.fs_ekf_thresh) {
+            check_failed(display_failure, "EKF position variance");
+            return false;
+        }
+        if (vel_variance >= copter.g.fs_ekf_thresh) {
+            check_failed(display_failure, "EKF velocity variance");
+            return false;
+        }
     }
 
     // check home and EKF origin are not too far
@@ -641,8 +652,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 #endif
 
-    Mode::Number control_mode = copter.control_mode;
-
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method == AP_Arming::Method::MAVLINK)) {
         check_failed(true, "Mode not armable");
@@ -708,7 +717,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         }
 
         // check throttle is not too high - skips checks if arming from GCS in Guided
-        if (!(method == AP_Arming::Method::MAVLINK && (control_mode == Mode::Number::GUIDED || control_mode == Mode::Number::GUIDED_NOGPS))) {
+        if (!(method == AP_Arming::Method::MAVLINK && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
                 check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
@@ -716,7 +725,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             }
             // in manual modes throttle must be at zero
             #if FRAME_CONFIG != HELI_FRAME
-            if ((copter.flightmode->has_manual_throttle() || control_mode == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
+            if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
                 check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
                 return false;
             }
@@ -843,7 +852,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.motors->armed(true);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    AP::logger().Write_Mode((uint8_t)copter.control_mode, copter.control_mode_reason);
+    AP::logger().Write_Mode((uint8_t)copter.flightmode->mode_number(), copter.control_mode_reason);
 
     // re-enable failsafe
     copter.failsafe_enable();

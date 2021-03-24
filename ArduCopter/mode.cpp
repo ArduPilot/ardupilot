@@ -185,7 +185,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
 
     // return immediately if we are already in the desired mode
-    if (mode == control_mode) {
+    if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
         return true;
     }
@@ -271,13 +271,12 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     exit_mode(flightmode, new_flightmode);
 
     // store previous flight mode (only used by tradeheli's autorotation)
-    prev_control_mode = control_mode;
+    prev_control_mode = flightmode->mode_number();
 
     // update flight mode
     flightmode = new_flightmode;
-    control_mode = mode;
     control_mode_reason = reason;
-    logger.Write_Mode((uint8_t)control_mode, reason);
+    logger.Write_Mode((uint8_t)flightmode->mode_number(), reason);
     gcs().send_message(MSG_HEARTBEAT);
 
 #if HAL_ADSB_ENABLED
@@ -292,7 +291,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #endif
 
 #if CAMERA == ENABLED
-    camera.set_is_auto_mode(control_mode == Mode::Number::AUTO);
+    camera.set_is_auto_mode(flightmode->mode_number() == Mode::Number::AUTO);
 #endif
 
     // update notify object
@@ -402,14 +401,8 @@ void Copter::exit_mode(Mode *&old_flightmode,
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
 void Copter::notify_flight_mode() {
     AP_Notify::flags.autopilot_mode = flightmode->is_autopilot();
-    AP_Notify::flags.flight_mode = (uint8_t)control_mode;
+    AP_Notify::flags.flight_mode = (uint8_t)flightmode->mode_number();
     notify.set_flight_mode_str(flightmode->name4());
-}
-
-void Mode::update_navigation()
-{
-    // run autopilot to make high level decisions about control modes
-    run_autopilot();
 }
 
 // get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle

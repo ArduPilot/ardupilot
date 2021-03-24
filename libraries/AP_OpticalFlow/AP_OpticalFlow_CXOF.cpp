@@ -63,7 +63,6 @@ AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(OpticalFlow &_frontend)
     }
 
     // look for first serial driver with protocol defined as OpticalFlow
-    // this is the only optical flow sensor which uses the serial protocol
     AP_HAL::UARTDriver *uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_OpticalFlow, 0);
     if (uart == nullptr) {
         return nullptr;

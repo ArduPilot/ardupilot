@@ -25,11 +25,12 @@ public:
 
 private:
     // find an embedded file
-    static const uint8_t *find_file(const char *name, uint32_t &size);
+    static const uint8_t *find_file(const char *name, uint32_t &size, uint32_t &crc);
 
     struct embedded_file {
         const char *filename;
         uint32_t size;
+        uint32_t crc;
         const uint8_t *contents;
     };
     static const struct embedded_file files[];

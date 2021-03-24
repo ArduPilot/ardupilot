@@ -466,9 +466,14 @@ void NavEKF3_core::FuseOptFlow()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = t78*(P[13][0]*t2*t5-P[13][4]*t2*t7+P[13][1]*t2*t15+P[13][6]*t2*t10+P[13][2]*t2*t19-P[13][3]*t2*t22+P[13][5]*t2*t27);
-                Kfusion[14] = t78*(P[14][0]*t2*t5-P[14][4]*t2*t7+P[14][1]*t2*t15+P[14][6]*t2*t10+P[14][2]*t2*t19-P[14][3]*t2*t22+P[14][5]*t2*t27);
-                Kfusion[15] = t78*(P[15][0]*t2*t5-P[15][4]*t2*t7+P[15][1]*t2*t15+P[15][6]*t2*t10+P[15][2]*t2*t19-P[15][3]*t2*t22+P[15][5]*t2*t27);
+                for (uint8_t index = 0; index < 3; index++) {
+                    const uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = t78*(P[stateIndex][0]*t2*t5-P[stateIndex][4]*t2*t7+P[stateIndex][1]*t2*t15+P[stateIndex][6]*t2*t10+P[stateIndex][2]*t2*t19-P[stateIndex][3]*t2*t22+P[stateIndex][5]*t2*t27);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);
@@ -637,9 +642,14 @@ void NavEKF3_core::FuseOptFlow()
             }
 
             if (!inhibitDelVelBiasStates) {
-                Kfusion[13] = -t78*(P[13][0]*t2*t5+P[13][5]*t2*t8-P[13][6]*t2*t10+P[13][1]*t2*t16-P[13][2]*t2*t19+P[13][3]*t2*t22+P[13][4]*t2*t27);
-                Kfusion[14] = -t78*(P[14][0]*t2*t5+P[14][5]*t2*t8-P[14][6]*t2*t10+P[14][1]*t2*t16-P[14][2]*t2*t19+P[14][3]*t2*t22+P[14][4]*t2*t27);
-                Kfusion[15] = -t78*(P[15][0]*t2*t5+P[15][5]*t2*t8-P[15][6]*t2*t10+P[15][1]*t2*t16-P[15][2]*t2*t19+P[15][3]*t2*t22+P[15][4]*t2*t27);
+                for (uint8_t index = 0; index < 3; index++) {
+                    const uint8_t stateIndex = index + 13;
+                    if (!dvelBiasAxisInhibit[index]) {
+                        Kfusion[stateIndex] = -t78*(P[stateIndex][0]*t2*t5+P[stateIndex][5]*t2*t8-P[stateIndex][6]*t2*t10+P[stateIndex][1]*t2*t16-P[stateIndex][2]*t2*t19+P[stateIndex][3]*t2*t22+P[stateIndex][4]*t2*t27);
+                    } else {
+                        Kfusion[stateIndex] = 0.0f;
+                    }
+                }
             } else {
                 // zero indexes 13 to 15 = 3*4 bytes
                 memset(&Kfusion[13], 0, 12);

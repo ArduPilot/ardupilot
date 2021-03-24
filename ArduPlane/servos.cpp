@@ -556,8 +556,13 @@ void Plane::set_servos_controlled(void)
 
     // let EKF know to start GSF yaw estimator before takeoff movement starts so that yaw angle is better estimated
     const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (!is_flying() && arming.is_armed()) {
-        bool throw_detected = sq(ahrs.get_accel_ef().x) + sq(ahrs.get_accel_ef().y) > sq(g.takeoff_throttle_min_accel);
+    if (arming.is_armed()) {
+        // Check if rate of change of velocity along X axis exceeds 1-g which normally indicates a throw.
+        // Tests with hand carriage of micro UAS indicates that a 1-g threshold does not false trigger prior
+        // to the throw, but there is margin to increase this threshold if false triggering becomes problematic.
+        const float accel_x_due_to_gravity = GRAVITY_MSS * ahrs.sin_pitch();
+        const float accel_x_due_to_throw = ahrs.get_accel().x - accel_x_due_to_gravity;
+        bool throw_detected = accel_x_due_to_throw > GRAVITY_MSS;
         bool throttle_up_detected = throttle > aparm.throttle_cruise;
         if (throw_detected || throttle_up_detected) {
             plane.ahrs.setTakeoffExpected(true);

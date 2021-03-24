@@ -37,8 +37,15 @@ bool ModeLand::init(bool ignore_checks)
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 
     return true;
 }
@@ -160,5 +167,5 @@ void Copter::set_mode_land_with_pause(ModeReason reason)
 // landing_with_GPS - returns true if vehicle is landing using GPS
 bool Copter::landing_with_GPS()
 {
-    return (control_mode == Mode::Number::LAND && land_with_gps);
+    return (flightmode->mode_number() == Mode::Number::LAND && land_with_gps);
 }

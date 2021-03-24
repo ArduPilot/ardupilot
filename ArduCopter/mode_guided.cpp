@@ -44,6 +44,7 @@ bool ModeGuided::init(bool ignore_checks)
 {
     // start in position control mode
     pos_control_start();
+    send_notification = false;
     return true;
 }
 
@@ -62,6 +63,10 @@ void ModeGuided::run()
     case Guided_WP:
         // run position controller
         pos_control_run();
+        if (send_notification && wp_nav->reached_wp_destination()) {
+            send_notification = false;
+            gcs().send_mission_item_reached_message(0);
+        }
         break;
 
     case Guided_Velocity:
@@ -257,6 +262,9 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+
+    send_notification = true;
+
     return true;
 }
 
@@ -300,6 +308,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+
+    send_notification = true;
+
     return true;
 }
 
@@ -395,8 +406,10 @@ void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
     if (wp_nav->reached_wp_destination()) {
+#if LANDING_GEAR_ENABLED == ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
+#endif
 
         // switch to position control mode but maintain current target
         const Vector3f target = wp_nav->get_wp_destination();
@@ -591,7 +604,7 @@ void ModeGuided::angle_control_run()
 
     // wrap yaw request
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
-    float yaw_rate_in = wrap_180_cd(guided_angle_state.yaw_rate_cds);
+    float yaw_rate_in = guided_angle_state.yaw_rate_cds;
 
     float climb_rate_cms = 0.0f;
     if (!guided_angle_state.use_thrust) {

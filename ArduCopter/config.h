@@ -101,7 +101,7 @@
 #endif
 
 #ifndef RANGEFINDER_WPNAV_FILT_HZ
- # define RANGEFINDER_WPNAV_FILT_HZ   0.25f // filter frequency for rangefinder altitude provided to waypoint navigation class
+ # define RANGEFINDER_WPNAV_FILT_HZ   0.5f // filter frequency for rangefinder altitude provided to waypoint navigation class
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
@@ -378,6 +378,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Landing Gear support
+#ifndef LANDING_GEAR_ENABLED
+ #define LANDING_GEAR_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -559,7 +565,7 @@
  # define ROLL_PITCH_YAW_INPUT_MAX      4500        // roll, pitch and yaw input range
 #endif
 #ifndef DEFAULT_ANGLE_MAX
- # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
+ # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
 #endif
 #ifndef ANGLE_RATE_MAX
  # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes

@@ -640,7 +640,72 @@ Vector3f AP_AHRS_NavEKF::wind_estimate(void) const
 // if we have an estimate
 bool AP_AHRS_NavEKF::airspeed_estimate(float &airspeed_ret) const
 {
-    return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+    bool ret = false;
+    if (airspeed_sensor_enabled()) {
+        airspeed_ret = AP::airspeed()->get_airspeed();
+        return true;
+    }
+
+    if (!_flags.wind_estimation) {
+        return false;
+    }
+
+    // estimate it via nav velocity and wind estimates
+
+    // get wind estimates
+    Vector3f wind_vel;
+    switch (active_EKF_type()) {
+    case EKFType::NONE:
+        return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SITL:
+        if (EKF3.getWind(-1,wind_vel)) {
+             ret = true;
+        } else {
+            ret = false;
+        }
+        break;
+#endif
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        ret = EKF3.getWind(-1,wind_vel);
+        break;
+#endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
+    }
+
+    // estimate it via nav velocity and wind estimates
+    Vector3f nav_vel;
+    float true_airspeed;
+    if (ret && have_inertial_nav() && get_velocity_NED(nav_vel)) {
+        Vector3f true_airspeed_vec = nav_vel - wind_vel;
+        true_airspeed = true_airspeed_vec.length();
+        float gnd_speed = nav_vel.length();
+        if (_wind_max > 0) {
+            float tas_lim_lower = MAX(0.0f, (gnd_speed - _wind_max));
+            float tas_lim_upper = MAX(tas_lim_lower, (gnd_speed + _wind_max));
+            true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
+        } else {
+            true_airspeed = MAX(0.0f, true_airspeed);
+        }
+        airspeed_ret = true_airspeed / get_EAS2TAS();
+    } else {
+        // fallback to DCM if airspeed estimate if EKF has wind but no velocity estimate
+        ret = AP_AHRS_DCM::airspeed_estimate(get_active_airspeed_index(), airspeed_ret);
+    }
+
+    return ret;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
@@ -1824,14 +1889,14 @@ void AP_AHRS_NavEKF::writeExtNavData(const Vector3f &pos, const Quaternion &quat
 #endif
 }
 
-// Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
-void AP_AHRS_NavEKF::writeDefaultAirSpeed(float airspeed)
+// Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
+void AP_AHRS_NavEKF::writeDefaultAirSpeed(float airspeed, float uncertainty)
 {
 #if HAL_NAVEKF2_AVAILABLE
     EKF2.writeDefaultAirSpeed(airspeed);
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    EKF3.writeDefaultAirSpeed(airspeed);
+    EKF3.writeDefaultAirSpeed(airspeed, uncertainty);
 #endif
 }
 
@@ -1946,9 +2011,7 @@ void AP_AHRS_NavEKF::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) cons
         return;
     }
     ret.zero();
-    const AP_InertialSensor &_ins = AP::ins();
-    _ins.get_delta_velocity((uint8_t)imu_idx, ret);
-    dt = _ins.get_delta_velocity_dt((uint8_t)imu_idx);
+    AP::ins().get_delta_velocity((uint8_t)imu_idx, ret, dt);
     ret -= accel_bias*dt;
     ret = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;

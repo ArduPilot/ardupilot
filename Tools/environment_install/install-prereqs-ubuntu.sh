@@ -51,7 +51,7 @@ function heading() {
 }
 
 # Install lsb-release as it is needed to check Ubuntu version
-if package_is_installed "lsb-release" -eq 1; then
+if ! package_is_installed "lsb-release"; then
     heading "Installing lsb-release"
     $APT_GET install lsb-release
     echo "Done!"
@@ -71,7 +71,7 @@ elif [ ${RELEASE_CODENAME} == 'disco' ]; then
 elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-elif [ ${RELEASE_CODENAME} == 'focal' ]; then
+elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -85,8 +85,38 @@ elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
 else
-    SITLFML_VERSION="2.4"
-    SITLCFML_VERSION="2.4"
+    # We assume APT based system, so let's try with apt-cache first.
+    SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
+    SITLFML_VERSION=$(apt-cache search -n '^libsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
+    # If we cannot retrieve the number with apt-cache, try a last time with dpkg-query
+    re='^[+-]?[0-9]+([.][0-9]+)?$'
+    if ! [[ $SITLCFML_VERSION =~ $re ]] || ! [[ $SITLFML_VERSION =~ $re ]] ; then
+        # Extract the floating point number that is the version of the libcsfml package.
+        SITLCFML_VERSION=$(dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
+        # And same for libsfml-audio.
+        SITLFML_VERSION=$(dpkg-query --search libsfml-audio | cut -d":" -f1 | grep libsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
+    fi
+fi
+
+# Check whether the specific ARM pkg-config package is available or whether we should emulate the effect of installing it.
+# Check if we need to manually install libtool-bin
+ARM_PKG_CONFIG_NOT_PRESENT=0
+if [ -z "$(apt-cache search -n '^pkg-config-arm-linux-gnueabihf')" ]; then
+    ARM_PKG_CONFIG_NOT_PRESENT=$(dpkg-query --search pkg-config-arm-linux-gnueabihf |& grep -c "dpkg-query:")
+fi
+if [ "$ARM_PKG_CONFIG_NOT_PRESENT" -eq 1 ]; then
+    INSTALL_PKG_CONFIG=""
+    # No need to install Ubuntu's pkg-config-arm-linux-gnueabihf, instead install the base pkg-config.
+    sudo apt-get install pkg-config
+    if [ -f /usr/share/pkg-config-crosswrapper ]; then
+        # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
+        sudo ln -s /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
+    else
+        echo "Warning: unable to link to pkg-config-crosswrapper"
+    fi
+else
+    # Package is available so install it later.
+    INSTALL_PKG_CONFIG="pkg-config-arm-linux-gnueabihf"
 fi
 
 # Lists of packages to install
@@ -96,9 +126,9 @@ PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8"
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
   PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
 fi
-ARM_LINUX_PKGS="g++-arm-linux-gnueabihf pkg-config-arm-linux-gnueabihf"
+ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
-SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing"
+SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   SITL_PKGS="$SITL_PKGS xterm ${PYTHON_V}-matplotlib ${PYTHON_V}-serial ${PYTHON_V}-scipy ${PYTHON_V}-opencv libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION} ${PYTHON_V}-yaml"
@@ -151,7 +181,7 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ]; then
+if [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
@@ -166,7 +196,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'groovy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'focal' ]; then
+  elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif apt-cache search python-wxgtk3.0 | grep wx; then
@@ -199,7 +229,7 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
 fi
 
 heading "Removing modemmanager package that could conflict with firmware uploading"
-if package_is_installed "modemmanager" -eq 1; then
+if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
 fi
 echo "Done!"

@@ -261,9 +261,10 @@ def start_SITL(binary,
                breakpoints=[],
                disable_breakpoints=False,
                customisations=[],
-               lldb=False):
+               lldb=False,
+               supplementary=False):
 
-    if model is None:
+    if model is None and not supplementary:
         raise ValueError("model must not be None")
 
     """Launch a SITL instance."""
@@ -333,27 +334,28 @@ def start_SITL(binary,
             raise RuntimeError("DISPLAY was not set")
 
     cmd.append(binary)
-    if wipe:
-        cmd.append('-w')
-    if synthetic_clock:
-        cmd.append('-S')
-    if home is not None:
-        cmd.extend(['--home', home])
-    cmd.extend(['--model', model])
-    if speedup != 1:
-        cmd.extend(['--speedup', str(speedup)])
-    if defaults_filepath is not None:
-        if type(defaults_filepath) == list:
-            if len(defaults_filepath):
-                cmd.extend(['--defaults', ",".join(defaults_filepath)])
-        else:
-            cmd.extend(['--defaults', defaults_filepath])
-    if unhide_parameters:
-        cmd.extend(['--unhide-groups'])
-    cmd.extend(customisations)
+    if not supplementary:
+        if wipe:
+            cmd.append('-w')
+        if synthetic_clock:
+            cmd.append('-S')
+        if home is not None:
+            cmd.extend(['--home', home])
+        cmd.extend(['--model', model])
+        if speedup != 1:
+            cmd.extend(['--speedup', str(speedup)])
+        if defaults_filepath is not None:
+            if type(defaults_filepath) == list:
+                if len(defaults_filepath):
+                    cmd.extend(['--defaults', ",".join(defaults_filepath)])
+            else:
+                cmd.extend(['--defaults', defaults_filepath])
+        if unhide_parameters:
+            cmd.extend(['--unhide-groups'])
+        # somewhere for MAVProxy to connect to:
+        cmd.append('--uartC=tcp:2')
 
-    # somewhere for MAVProxy to connect to:
-    cmd.append('--uartC=tcp:2')
+    cmd.extend(customisations)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         global windowID

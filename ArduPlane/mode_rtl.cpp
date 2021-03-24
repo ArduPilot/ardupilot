@@ -7,7 +7,8 @@ bool ModeRTL::_enter()
     plane.do_RTL(plane.get_RTL_altitude());
     plane.rtl.done_climb = false;
 
-    switch_QRTL();
+    // do not check if we have reached the loiter target if switching from loiter this will trigger as the nav controller has not yet proceeded the new destination
+    switch_QRTL(false);
 
     return true;
 }
@@ -18,20 +19,31 @@ void ModeRTL::update()
     plane.calc_nav_pitch();
     plane.calc_throttle();
 
-    if (plane.g2.rtl_climb_min > 0) {
+    bool alt_threshold_reached = false;
+    if (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN) {
+        // Climb to ALT_HOLD_RTL before turning. This overrides RTL_CLIMB_MIN.
+        alt_threshold_reached = plane.current_loc.alt > plane.next_WP_loc.alt;
+    } else if (plane.g2.rtl_climb_min > 0) {
         /*
-          when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
-          until we have climbed by RTL_CLIMB_MIN meters
-         */
-        if (!plane.rtl.done_climb && (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min) {
-            plane.prev_WP_loc = plane.current_loc;
-            plane.setup_glide_slope();
-            plane.rtl.done_climb = true;
-        }
-        if (!plane.rtl.done_climb) {
-            plane.roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
-            plane.nav_roll_cd = constrain_int32(plane.nav_roll_cd, -plane.roll_limit_cd, plane.roll_limit_cd);
-        }
+           when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
+           until we have climbed by RTL_CLIMB_MIN meters
+           */
+        alt_threshold_reached = (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min;
+    } else {
+        return;
+    }
+
+    if (!plane.rtl.done_climb && alt_threshold_reached) {
+        plane.prev_WP_loc = plane.current_loc;
+        plane.setup_glide_slope();
+        plane.rtl.done_climb = true;
+    }
+    if (!plane.rtl.done_climb) {
+        // Constrain the roll limit as a failsafe, that way if something goes wrong the plane will
+        // eventually turn back and go to RTL instead of going perfectly straight. This also leaves
+        // some leeway for fighting wind.
+        plane.roll_limit_cd = MIN(plane.roll_limit_cd, plane.g.level_roll_limit*100);
+        plane.nav_roll_cd = constrain_int32(plane.nav_roll_cd, -plane.roll_limit_cd, plane.roll_limit_cd);
     }
 }
 
@@ -80,7 +92,7 @@ void ModeRTL::navigate()
 
 
 // Switch to QRTL if enabled and within radius
-bool ModeRTL::switch_QRTL()
+bool ModeRTL::switch_QRTL(bool check_loiter_target)
 {
     if (!plane.quadplane.available() || (plane.quadplane.rtl_mode != 1)) {
         return false;
@@ -91,7 +103,7 @@ bool ModeRTL::switch_QRTL()
         qrtl_radius = abs(plane.aparm.loiter_radius);
     }
 
-    if (plane.nav_controller->reached_loiter_target() ||
+    if ( (check_loiter_target && plane.nav_controller->reached_loiter_target()) ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
          plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
         /*

@@ -54,11 +54,16 @@ float Plane::get_speed_scaler(void)
  */
 bool Plane::stick_mixing_enabled(void)
 {
+#if AC_FENCE == ENABLED
+    const bool stickmixing = fence_stickmixing();
+#else
+    const bool stickmixing = true;
+#endif
     if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != STICK_MIXING_DISABLED &&
             g.stick_mixing != STICK_MIXING_VTOL_YAW &&
-            geofence_stickmixing() &&
+            stickmixing &&
             failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
             // we're in an auto mode, and haven't triggered failsafe

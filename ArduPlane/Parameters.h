@@ -62,12 +62,12 @@ public:
         k_param_flap_1_speed,
         k_param_flap_2_percent,
         k_param_flap_2_speed,
-        k_param_reset_switch_chan,
+        k_param_reset_switch_chan, // unused - moved to RC option
         k_param_manual_level, // unused
         k_param_land_pitch_cd,  // unused - moved to AP_Landing
         k_param_ins_old,            // *** Deprecated, remove with next eeprom number change
         k_param_stick_mixing,
-        k_param_reset_mission_chan,
+        k_param_reset_mission_chan, // unused - moved to RC option
         k_param_land_flare_alt, // unused - moved to AP_Landing
         k_param_land_flare_sec, // unused - moved to AP_Landing
         k_param_crosstrack_min_distance, // unused
@@ -119,7 +119,7 @@ public:
         k_param_glide_slope_min,
         k_param_stab_pitch_down,
         k_param_terrain_lookahead,
-        k_param_fbwa_tdrag_chan,
+        k_param_fbwa_tdrag_chan, // unused - moved to RC option
         k_param_rangefinder_landing,
         k_param_land_flap_percent,  // unused - moved to AP_Landing
         k_param_takeoff_flap_percent,
@@ -142,7 +142,7 @@ public:
         k_param_rpm_sensor,
         k_param_parachute,
         k_param_arming = 100,
-        k_param_parachute_channel,
+        k_param_parachute_channel, // unused - moved to RC option
         k_param_crash_accel_threshold,
         k_param_override_safety,
         k_param_land_throttle_slewrate, // 104 unused - moved to AP_Landing
@@ -312,7 +312,7 @@ public:
         k_param_loiter_radius,
         k_param_fence_action,
         k_param_fence_total,
-        k_param_fence_channel,
+        k_param_fence_channel, // unused - moved to RC option
         k_param_fence_minalt,
         k_param_fence_maxalt,
 
@@ -350,6 +350,7 @@ public:
         k_param_gcs4,          // stream rates
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
+        k_param_fence,         // vehicle fence
     };
 
     AP_Int16 format_version;
@@ -396,17 +397,6 @@ public:
     AP_Int16 waypoint_radius;
     AP_Int16 waypoint_max_radius;
     AP_Int16 rtl_radius;
-
-#if GEOFENCE_ENABLED == ENABLED
-    AP_Int8 fence_action;
-    AP_Int8 fence_total;
-    AP_Int8 fence_channel;
-    AP_Int16 fence_minalt;    // meters
-    AP_Int16 fence_maxalt;    // meters
-    AP_Int16 fence_retalt;    // meters
-    AP_Enum<FenceAutoEnable> fence_autoenable;
-    AP_Int8 fence_ret_rally;
-#endif
 
     // Fly-by-wire
     //
@@ -456,8 +446,6 @@ public:
     AP_Int16 dspoiler_rud_rate;
     AP_Int16 num_resets;
     AP_Int32 log_bitmask;
-    AP_Int8 reset_switch_chan;
-    AP_Int8 reset_mission_chan;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
     AP_Int16 FBWB_min_altitude_cm;
@@ -482,12 +470,11 @@ public:
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
 #if AP_TERRAIN_AVAILABLE
-    AP_Int8 terrain_follow;
+    AP_Int32 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
     AP_Int16 glide_slope_min;
     AP_Float glide_slope_threshold;
-    AP_Int8 fbwa_tdrag_chan;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU
@@ -495,7 +482,6 @@ public:
     AP_Int8 override_safety;
 #endif
     AP_Int16 gcs_pid_mask;
-    AP_Int8 parachute_channel;
 };
 
 /*

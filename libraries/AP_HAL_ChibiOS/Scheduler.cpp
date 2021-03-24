@@ -346,8 +346,10 @@ void Scheduler::_rcout_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(1000);
     }
+#if HAL_USE_PWM == TRUE
     // trampoline into the rcout thread
     ((RCOutput*)hal.rcout)->rcout_thread();
+#endif
 #endif
 }
 
@@ -760,7 +762,7 @@ void Scheduler::check_stack_free(void)
         if (stack_free(tp->wabase) < min_stack) {
             // use task priority for line number. This allows us to
             // identify the task fairly reliably
-            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->prio);
+            AP::internalerror().error(AP_InternalError::error_t::stack_overflow, tp->realprio);
         }
     }
 }

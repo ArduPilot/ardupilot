@@ -45,6 +45,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
     if (!should_handle_log_message()) {
         return;
     }
+    _last_mavlink_log_transfer_message_handled_ms = AP_HAL::millis();
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         handle_log_request_list(link, msg);

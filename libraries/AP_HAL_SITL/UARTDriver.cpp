@@ -104,6 +104,9 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _uart_baudrate = baudrate;
             _uart_start_connection();
         } else if (strcmp(devtype, "fifo") == 0) {
+            if(strcmp(args1, "gps") == 0) {
+                UNUSED_RESULT(asprintf(&args1, "/tmp/gps_fifo%d", (int)_sitlState->get_instance()));
+            }
             ::printf("Reading FIFO file @ %s\n", args1);
             _fd = ::open(args1, O_RDONLY | O_NONBLOCK);
             if (_fd >= 0) {
@@ -134,6 +137,9 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
                 ::printf("UDP multicast connection %s:%u\n", ip, port);
                 _udp_start_multicast(ip, port);
             }
+        } else if (strcmp(devtype,"none") == 0) {
+            // skipping port
+            ::printf("Skipping port %s\n", args1);
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }

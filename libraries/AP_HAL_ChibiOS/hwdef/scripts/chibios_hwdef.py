@@ -108,6 +108,9 @@ uart_serial_num = {}
 mcu_type = None
 dual_USB_enabled = False
 
+# list of device patterns that can't be shared
+dma_noshare = []
+
 def is_int(str):
     '''check if a string is an integer'''
     try:
@@ -615,10 +618,43 @@ def make_line(label):
     return line
 
 
-def enable_can(f, num_ifaces):
+def enable_can(f):
     '''setup for a CAN enabled board'''
-    f.write('#define HAL_NUM_CAN_IFACES %d\n' % num_ifaces)
-    env_vars['HAL_NUM_CAN_IFACES'] = str(num_ifaces)
+    global mcu_series
+    if mcu_series.startswith("STM32H7") or mcu_series.startswith("STM32G4"):
+        prefix = "FDCAN"
+        cast = "CanType"
+    else:
+        prefix = "CAN"
+        cast = "bxcan::CanType"
+
+    # allow for optional CAN_ORDER option giving bus order
+    can_order_str = get_config('CAN_ORDER', required=False, aslist=True)
+    if can_order_str:
+        can_order = [int(s) for s in can_order_str]
+    else:
+        can_order = []
+        for i in range(1,3):
+            if 'CAN%u' % i in bytype or (i == 1 and 'CAN' in bytype):
+                can_order.append(i)
+
+    base_list = []
+    for i in can_order:
+        base_list.append("reinterpret_cast<%s*>(uintptr_t(%s%s_BASE))" % (cast, prefix, i))
+        f.write("#define HAL_CAN_IFACE%u_ENABLE\n" % i)
+
+    can_rev_order = [-1]*3
+    for i in range(len(can_order)):
+        can_rev_order[can_order[i]-1] = i
+
+    f.write('#define HAL_CAN_INTERFACE_LIST %s\n' % ','.join([str(i-1) for i in can_order]))
+    f.write('#define HAL_CAN_INTERFACE_REV_LIST %s\n' % ','.join([str(i) for i in can_rev_order]))
+    f.write('#define HAL_CAN_BASE_LIST %s\n' % ','.join(base_list))
+    f.write('#define HAL_NUM_CAN_IFACES %d\n' % len(base_list))
+    global mcu_type
+    if 'CAN' in bytype and mcu_type.startswith("STM32F3"):
+        f.write('#define CAN1_BASE CAN_BASE\n')
+    env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
 
 def has_sdcard_spi():
@@ -710,10 +746,7 @@ def write_mcu_config(f):
             f.write('#define %s\n' % d[7:])
 
     if have_type_prefix('CAN') and not using_chibios_can:
-        if 'CAN1' in bytype and 'CAN2' in bytype:
-            enable_can(f, 2)
-        else:
-            enable_can(f, 1)
+        enable_can(f)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     env_vars['BOARD_FLASH_SIZE'] = flash_size
@@ -808,18 +841,12 @@ def write_mcu_config(f):
 #define CH_CFG_USE_WAITEXIT FALSE
 #define CH_CFG_USE_DYNAMIC FALSE
 #define CH_CFG_USE_MEMPOOLS FALSE
-#define CH_CFG_USE_OBJ_FIFOS FALSE
 #define CH_DBG_FILL_THREADS FALSE
 #define CH_CFG_USE_SEMAPHORES FALSE
 #define CH_CFG_USE_HEAP FALSE
 #define CH_CFG_USE_MUTEXES FALSE
-#define CH_CFG_USE_CONDVARS FALSE
-#define CH_CFG_USE_CONDVARS_TIMEOUT FALSE
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
-#define CH_CFG_USE_MESSAGES FALSE
-#define CH_CFG_USE_MAILBOXES FALSE
-#define CH_CFG_USE_FACTORY FALSE
 #define CH_CFG_USE_MEMCORE FALSE
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
@@ -1362,14 +1389,15 @@ def parse_timer(str):
         error("Bad timer definition %s" % str)
 
 
-def write_PWM_config(f):
+def write_PWM_config(f, ordered_timers):
     '''write PWM config defines'''
     rc_in = None
     rc_in_int = None
     alarm = None
     bidir = None
     pwm_out = []
-    pwm_timers = []
+    # start with the ordered list from the dma resolver
+    pwm_timers = ordered_timers
     has_bidir = False
     for l in bylabel.keys():
         p = bylabel[l]
@@ -1387,6 +1415,7 @@ def write_PWM_config(f):
                     bidir = p
                 if p.type not in pwm_timers:
                     pwm_timers.append(p.type)
+
 
     f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
     if not pwm_out and not alarm:
@@ -1471,7 +1500,7 @@ def write_PWM_config(f):
     f.write('// PWM timer config\n')
     if bidir is not None:
         f.write('#define HAL_WITH_BIDIR_DSHOT\n')
-    for t in sorted(pwm_timers):
+    for t in pwm_timers:
         n = int(t[3:])
         f.write('#define STM32_PWM_USE_TIM%u TRUE\n' % n)
         f.write('#define STM32_TIM%u_SUPPRESS_ISR\n' % n)
@@ -1479,7 +1508,8 @@ def write_PWM_config(f):
     f.write('// PWM output config\n')
     groups = []
     have_complementary = False
-    for t in sorted(pwm_timers):
+
+    for t in pwm_timers:
         group = len(groups) + 1
         n = int(t[3:])
         chan_list = [255, 255, 255, 255]
@@ -1750,6 +1780,8 @@ def write_hwdef_header(outfilename):
 
 ''')
 
+    dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))
+
     write_mcu_config(f)
     write_SPI_config(f)
     write_ADC_config(f)
@@ -1761,13 +1793,13 @@ def write_hwdef_header(outfilename):
 
     write_peripheral_enable(f)
 
-    dma_unassigned = dma_resolver.write_dma_header(f, periph_list, mcu_type,
+    dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                                    dma_exclude=get_dma_exclude(periph_list),
                                                    dma_priority=get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
-                                                   dma_noshare=get_config('DMA_NOSHARE', default='', spaces=True))
+                                                   dma_noshare=dma_noshare)
 
     if not args.bootloader:
-        write_PWM_config(f)
+        write_PWM_config(f, ordered_timers)
         write_I2C_config(f)
         write_UART_config(f)
     else:
@@ -1917,6 +1949,8 @@ def build_peripheral_list():
                 if label[-1] == 'N':
                     label = label[:-1]
                 peripherals.append(label)
+                # RCIN DMA channel cannot be shared as it is running all the time
+                dma_noshare.append(label)
             elif not p.has_extra('ALARM') and not p.has_extra('RCININT'):
                 # get the TIMn_UP DMA channels for DShot
                 label = p.type + '_UP'

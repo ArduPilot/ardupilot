@@ -154,6 +154,8 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
+
+    uint16_t get_pilot_velocity_z_max_dn() const;
     
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
@@ -200,7 +202,8 @@ private:
     AC_Loiter *loiter_nav;
     
     // maximum vertical velocity the pilot may request
-    AP_Int16 pilot_velocity_z_max;
+    AP_Int16 pilot_velocity_z_max_up;
+    AP_Int16 pilot_velocity_z_max_dn;
 
     // vertical acceleration the pilot may request
     AP_Int16 pilot_accel_z;
@@ -597,6 +600,7 @@ private:
         OPTION_DELAY_ARMING=(1<<11),
         OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
         OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
+        OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
     };
 
     AP_Float takeoff_failure_scalar;

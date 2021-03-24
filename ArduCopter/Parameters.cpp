@@ -311,7 +311,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
     // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8
+    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
     // @User: Advanced
     GSCALAR(flight_mode_chan, "FLTMODE_CH",         CH_MODE_DEFAULT),
 
@@ -500,9 +500,11 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(parachute, "CHUTE_", AP_Parachute),
 #endif
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     GOBJECT(landinggear,    "LGR_", AP_LandingGear),
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: IM_
@@ -627,9 +629,9 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(barometer, "BARO", AP_Baro),
 
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -1045,6 +1047,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("RTL_OPTIONS", 43, ParametersG2, rtl_options, 0),
 #endif
 
+    // @Param: FLIGHT_OPTIONS
+    // @DisplayName: Flight mode options
+    // @Description: Flight mode specific options
+    // @Bitmask: 0:Disable thrust loss check, 1:Disable yaw imbalance warning
+    // @User: Advanced
+    AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
+
     AP_GROUPEND
 };
 
@@ -1154,8 +1163,10 @@ void Copter::load_parameters(void)
     AP_Param::load_all();
     AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // convert landing gear parameters
     convert_lgr_parameters();
+#endif
 
     // convert fs_options parameters
     convert_fs_options_params();
@@ -1327,6 +1338,7 @@ void Copter::convert_pid_parameters(void)
     SRV_Channels::upgrade_parameters();
 }
 
+#if LANDING_GEAR_ENABLED == ENABLED
 /*
   convert landing gear parameters
  */
@@ -1408,6 +1420,7 @@ void Copter::convert_lgr_parameters(void)
         servo_reversed->set_and_save_ifchanged(1);
     }
 }
+#endif
 
 #if FRAME_CONFIG == HELI_FRAME
 // handle conversion of tradheli parameters from Copter-3.6 to Copter-3.7

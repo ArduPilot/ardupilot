@@ -68,9 +68,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     // GPS driver
-    // @Group: GPS_
+    // @Group: GPS
     // @Path: ../../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS_", AP_GPS),
+    GOBJECT(gps, "GPS", AP_GPS),
 
     // @Param: GPS_PORT
     // @DisplayName: GPS Serial Port
@@ -142,6 +142,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: OUT
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels, "OUT",     SRV_Channels),
+
+    // PWM type for ESCs (to allow for DShot and OneShot)
+    GSCALAR(esc_pwm_type, "ESC_PWM_TYPE",     0),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP

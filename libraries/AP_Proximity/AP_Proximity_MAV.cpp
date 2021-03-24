@@ -79,7 +79,8 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         const float distance = packet.current_distance * 0.01f;
         _distance_min = packet.min_distance * 0.01f;
         _distance_max = packet.max_distance * 0.01f;
-        if (distance <= _distance_max && distance >= _distance_min) {
+        const bool in_range = distance <= _distance_max && distance >= _distance_min;
+        if (in_range && !check_obstacle_near_ground(yaw_angle_deg, distance)) {
             boundary.set_face_attributes(face, yaw_angle_deg, distance);
             // update OA database
             database_push(yaw_angle_deg, distance);
@@ -137,24 +138,25 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
     // variables to calculate closest angle and distance for each face
     AP_Proximity_Boundary_3D::Face face;
-    float face_distance;
-    float face_yaw_deg;
+    float face_distance = FLT_MAX;
+    float face_yaw_deg = 0.0f;
     bool face_distance_valid = false;
+
+    // reset this  boundary to fill with new data
+    boundary.reset();
 
     // iterate over message's sectors
     for (uint8_t j = 0; j < total_distances; j++) {
         const uint16_t distance_cm = packet.distances[j];
-        if (distance_cm == 0 ||
-            distance_cm == 65535 ||
-            distance_cm < packet.min_distance ||
-            distance_cm > packet.max_distance)
-        {
+        const float packet_distance_m = distance_cm * 0.01f;
+        const float mid_angle = wrap_360((float)j * increment + yaw_correction);
+
+        const bool range_check = distance_cm == 0 || distance_cm == 65535 || distance_cm < packet.min_distance ||
+                                 distance_cm > packet.max_distance;
+        if (range_check || check_obstacle_near_ground(mid_angle, packet_distance_m)) {
             // sanity check failed, ignore this distance value
             continue;
         }
-
-        const float packet_distance_m = distance_cm * 0.01f;
-        const float mid_angle = wrap_360((float)j * increment + yaw_correction);
 
         // get face for this latest reading
         AP_Proximity_Boundary_3D::Face latest_face = boundary.get_face(mid_angle);
@@ -226,11 +228,20 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     Matrix3f body_to_ned;
     const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
-    const Vector3f obstacle(packet.x, packet.y, packet.z * -1.0f);
-    if (obstacle.length() < _distance_min || obstacle.length() > _distance_max || obstacle.is_zero()) {
+    const Vector3f obstacle_FRD(packet.x, packet.y, packet.z);
+    const float obstacle_distance = obstacle_FRD.length();
+    if (obstacle_distance < _distance_min || obstacle_distance > _distance_max || is_zero(obstacle_distance)) {
         // message isn't healthy
         return;
     }
+    if (check_obstacle_near_ground(obstacle_FRD)) {
+        // obstacle is probably near ground
+        return;
+    }
+
+    // convert to FRU
+    const Vector3f obstacle(obstacle_FRD.x, obstacle_FRD.y, obstacle_FRD.z * -1.0f);
+
     // extract yaw and pitch from Obstacle Vector
     const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
     const float pitch = wrap_180(degrees(M_PI_2 - atan2f(norm(obstacle.x, obstacle.y), obstacle.z))); 

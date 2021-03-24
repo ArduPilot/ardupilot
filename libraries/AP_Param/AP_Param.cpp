@@ -1468,8 +1468,6 @@ bool AP_Param::load_all()
     
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
-        // note that this is an || not an && for robustness
-        // against power off while adding a variable
         if (is_sentinal(phdr)) {
             // we've reached the sentinal
             sentinal_offset = ofs;

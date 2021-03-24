@@ -371,7 +371,7 @@ void SoaringController::update_cruising()
 
 void SoaringController::update_vario()
 {
-    _vario.update(polar_K, polar_CD0, polar_B);
+    _vario.update(thermal_bank, polar_K, polar_CD0, polar_B);
 }
 
 

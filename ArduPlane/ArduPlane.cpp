@@ -58,6 +58,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_BattMonitor, &plane.battery, read, 10, 300),
     SCHED_TASK_CLASS(AP_Baro, &plane.barometer, accumulate, 50, 150),
     SCHED_TASK_CLASS(AP_Notify,      &plane.notify,  update, 50, 300),
+#if AC_FENCE == ENABLED
+    SCHED_TASK_CLASS(AC_Fence,       &plane.fence,   update, 10, 100),
+#endif
     SCHED_TASK(read_rangefinder,       50,    100),
     SCHED_TASK_CLASS(AP_ICEngine, &plane.g2.ice_control, update, 10, 100),
     SCHED_TASK_CLASS(Compass,          &plane.compass,              cal_update, 50, 50),
@@ -66,6 +69,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(OpticalFlow, &plane.optflow, update,    50,    50),
 #endif
     SCHED_TASK(one_second_loop,         1,    400),
+    SCHED_TASK(three_hz_loop,           3,    75),
     SCHED_TASK(check_long_failsafe,     3,    400),
     SCHED_TASK(rpm_update,             10,    100),
 #if AP_AIRSPEED_AUTOCAL_ENABLE
@@ -243,7 +247,12 @@ void Plane::update_logging2(void)
 void Plane::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-    afs.check(failsafe.last_heartbeat_ms, geofence_breached(), failsafe.AFS_last_valid_rc_ms);
+#if AC_FENCE == ENABLED
+    const bool fence_breached = fence.get_breaches() != 0;
+#else
+    const bool fence_breached = false;
+#endif
+    afs.check(failsafe.last_heartbeat_ms, fence_breached, failsafe.AFS_last_valid_rc_ms);
 }
 #endif
 
@@ -267,7 +276,8 @@ void Plane::one_second_loop()
     adsb.set_stall_speed_cm(aparm.airspeed_min);
     adsb.set_max_speed(aparm.airspeed_max);
 #endif
-    ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2));
+    ahrs.writeDefaultAirSpeed((float)((aparm.airspeed_min + aparm.airspeed_max)/2),
+                              (float)((aparm.airspeed_max - aparm.airspeed_min)/2));
 
     // sync MAVLink system ID
     mavlink_system.sysid = g.sysid_this_mav;
@@ -296,6 +306,13 @@ void Plane::one_second_loop()
             // reset the landing altitude correction
             landing.alt_offset = 0;
     }
+}
+
+void Plane::three_hz_loop()
+{
+#if AC_FENCE == ENABLED
+    fence_check();
+#endif
 }
 
 void Plane::compass_save()
@@ -390,9 +407,6 @@ void Plane::update_GPS_10Hz(void)
             }
         }
 
-        // see if we've breached the geo-fence
-        geofence_check(false);
-
         // update wind estimate
         ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
@@ -477,7 +491,6 @@ void Plane::update_alt()
 #if PARACHUTE == ENABLED
     parachute.set_sink_rate(auto_state.sink_rate);
 #endif
-    geofence_check(true);
 
     update_flight_stage();
 
@@ -490,7 +503,7 @@ void Plane::update_alt()
 
         float target_alt = relative_target_altitude_cm();
 
-        if (control_mode == &mode_rtl && !rtl.done_climb && g2.rtl_climb_min > 0) {
+        if (control_mode == &mode_rtl && !rtl.done_climb && (g2.rtl_climb_min > 0 || (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN))) {
             // ensure we do the initial climb in RTL. We add an extra
             // 10m in the demanded height to push TECS to climb
             // quickly

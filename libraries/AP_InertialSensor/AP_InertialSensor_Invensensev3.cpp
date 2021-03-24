@@ -280,7 +280,9 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 check_registers:
     // check next register value for correctness
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
-    if (!dev->check_next_register()) {
+    AP_HAL::Device::checkreg reg;
+    if (!dev->check_next_register(reg)) {
+        log_register_change(dev->get_bus_id(), reg);
         _inc_gyro_error_count(gyro_instance);
         _inc_accel_error_count(accel_instance);
     }

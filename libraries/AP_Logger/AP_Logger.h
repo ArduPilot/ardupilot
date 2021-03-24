@@ -148,6 +148,9 @@ enum class LogEvent : uint8_t {
     STANDBY_ENABLE = 74,
     STANDBY_DISABLE = 75,
 
+    FENCE_FLOOR_ENABLE = 80,
+    FENCE_FLOOR_DISABLE = 81,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
@@ -550,6 +553,9 @@ private:
         LISTING, // actively sending log_entry packets
         SENDING, // actively sending log_sending packets
     } transfer_activity = TransferActivity::IDLE;
+
+    // last time we handled a log-transfer-over-mavlink message:
+    uint32_t _last_mavlink_log_transfer_message_handled_ms;
 
     // next log list entry to send
     uint16_t _log_next_list_entry;

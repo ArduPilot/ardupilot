@@ -288,7 +288,7 @@ protected:
 private:
 
     // Switch to QRTL if enabled and within radius
-    bool switch_QRTL();
+    bool switch_QRTL(bool check_loiter_target = true);
 };
 
 class ModeStabilize : public Mode
@@ -444,6 +444,10 @@ public:
     bool _enter() override;
 
 protected:
+private:
+
+    void set_tailsitter_roll_pitch(const float roll_input, const float pitch_input);
+    void set_limited_roll_pitch(const float roll_input, const float pitch_input);
 
 };
 

@@ -98,6 +98,10 @@
 #include "afs_plane.h"
 #endif
 
+#if AC_FENCE == ENABLED
+#include <AC_Fence/AC_Fence.h>
+#endif
+
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -256,7 +260,11 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-    
+
+#if AC_FENCE == ENABLED
+    AC_Fence fence;
+#endif
+
     ModeCircle mode_circle;
     ModeStabilize mode_stabilize;
     ModeTraining mode_training;
@@ -303,7 +311,7 @@ private:
 
     // last time we ran roll/pitch stabilization
     uint32_t last_stabilize_ms;
-    
+
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throtttle) has fallen below the failsafe threshold
@@ -328,10 +336,10 @@ private:
 
         // the time when the last HEARTBEAT message arrived from a GCS
         uint32_t last_heartbeat_ms;
-        
+
         // A timer used to track how long we have been in a "short failsafe" condition due to loss of RC signal
         uint32_t short_timer_ms;
-        
+
         uint32_t last_valid_rc_ms;
 
         //keeps track of the last valid rc as it relates to the AFS system
@@ -368,6 +376,7 @@ private:
     // The calculated airspeed to use in FBW-B.  Also used in higher modes for insuring min ground speed is met.
     // Also used for flap deployment criteria.  Centimeters per second.
     int32_t target_airspeed_cm;
+    int32_t new_airspeed_cm = -1;  //temp variable for AUTO and GUIDED mode speed changes
 
     // The difference between current and desired airspeed.  Used in the pitch controller.  Meters per second.
     float airspeed_error;
@@ -420,7 +429,7 @@ private:
         // this is a 0..36000 value, or -1 for disabled
         int32_t hold_course_cd = -1;
 
-        // locked_course and locked_course_cd are used in stabilize mode 
+        // locked_course and locked_course_cd are used in stabilize mode
         // when ground steering is active, and for steering in auto-takeoff
         bool locked_course;
         float locked_course_err;
@@ -438,7 +447,7 @@ private:
         // the highest airspeed we have reached since entering AUTO. Used
         // to control ground takeoff
         float highest_airspeed;
-        
+
         // turn angle for next leg of mission
         float next_turn_angle {90};
 
@@ -447,13 +456,13 @@ private:
 
         // time when we first pass min GPS speed on takeoff
         uint32_t takeoff_speed_time_ms;
-        
+
         // distance to next waypoint
         float wp_distance;
-        
+
         // proportion to next waypoint
         float wp_proportion;
-        
+
         // last time is_flying() returned true in milliseconds
         uint32_t last_flying_ms;
 
@@ -548,7 +557,7 @@ private:
         AP_Vehicle::FixedWing::FlightStage last_flight_stage;
     } gear;
 #endif
-    
+
     struct {
         // on hard landings, only check once after directly a landing so you
         // don't trigger a crash when picking up the aircraft
@@ -572,7 +581,7 @@ private:
 
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
-	
+
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
     int8_t  throttle_watt_limit_min; // for reverse thrust
@@ -646,7 +655,7 @@ private:
         // previous target bearing, used to update sum_cd
         int32_t old_target_bearing_cd;
 
-        // Total desired rotation in a loiter.  Used for Loiter Turns commands. 
+        // Total desired rotation in a loiter.  Used for Loiter Turns commands.
         int32_t total_cd;
 
         // total angle completed in the loiter so far
@@ -779,6 +788,28 @@ private:
     // terrain disable for non AUTO modes, set with an RC Option switch
     bool non_auto_terrain_disable;
     bool terrain_disabled();
+#if AP_TERRAIN_AVAILABLE
+    bool terrain_enabled_in_current_mode() const;
+    enum class terrain_bitmask {
+        ALL             = 1U << 0,
+        FLY_BY_WIRE_B   = 1U << 1,
+        CRUISE          = 1U << 2,
+        AUTO            = 1U << 3,
+        RTL             = 1U << 4,
+        AVOID_ADSB      = 1U << 5,
+        GUIDED          = 1U << 6,
+        LOITER          = 1U << 7,
+        CIRCLE          = 1U << 8,
+        QRTL            = 1U << 9,
+        QLAND           = 1U << 10,
+        QLOITER         = 1U << 11,
+    };
+    struct TerrainLookupTable{
+       Mode::Number mode_num;
+       terrain_bitmask bitmask;
+    };
+    static const TerrainLookupTable Terrain_lookup[];
+#endif
 
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
@@ -826,7 +857,6 @@ private:
     void calc_nav_yaw_ground(void);
 
     // GCS_Mavlink.cpp
-    void send_fence_status(mavlink_channel_t chan);
     void send_servo_out(mavlink_channel_t chan);
 
     // Log.cpp
@@ -918,25 +948,11 @@ private:
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
-    // geofence.cpp
-    uint8_t max_fencepoints(void) const;
-    Vector2l get_fence_point_with_index(uint8_t i) const;
-    void set_fence_point_with_index(const Vector2l &point, unsigned i);
-    void geofence_load(void);
-    bool geofence_present(void) const;
-    void geofence_update_pwm_enabled_state();
-    bool geofence_set_enabled(bool enable);
-    bool geofence_enabled(void);
-    bool geofence_set_floor_enabled(bool floor_enable);
-    bool geofence_check_minalt(void);
-    bool geofence_check_maxalt(void);
-    void geofence_check(bool altitude_check_only);
-    bool geofence_prearm_check(void);
-    bool geofence_stickmixing(void);
-    void geofence_send_status(mavlink_channel_t chan);
-    bool geofence_breached(void);
-    void geofence_disable_and_send_error_msg(const char *errorMsg);
-    void disable_fence_for_landing(void);
+#if AC_FENCE == ENABLED
+    // fence.cpp
+    void fence_check();
+    bool fence_stickmixing() const;
+#endif
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
@@ -955,9 +971,10 @@ private:
     void afs_fs_check(void);
 #endif
     void one_second_loop(void);
+    void three_hz_loop(void);
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     void airspeed_ratio_update(void);
-#endif 
+#endif
     void compass_save(void);
     void update_logging1(void);
     void update_logging2(void);
@@ -1018,7 +1035,6 @@ private:
     int8_t takeoff_tail_hold(void);
     int16_t get_takeoff_pitch_min_cd(void);
     void landing_gear_update(void);
-    void complete_auto_takeoff(void);
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);
@@ -1106,7 +1122,7 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
-    
+
     enum class CrowMode {
         NORMAL,
         PROGRESSIVE,

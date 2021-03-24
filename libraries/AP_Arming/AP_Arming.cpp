@@ -463,6 +463,18 @@ bool AP_Arming::gps_checks(bool report)
     const AP_GPS &gps = AP::gps();
     if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_GPS)) {
 
+        // Any failure messages from GPS backends
+        if ((checks_to_perform & ARMING_CHECK_ALL) ||
+            (checks_to_perform & ARMING_CHECK_GPS)) {
+            char failure_msg[50] = {};
+            if (!AP::gps().backends_healthy(failure_msg, ARRAY_SIZE(failure_msg))) {
+                if (failure_msg[0] != '\0') {
+                    check_failed(ARMING_CHECK_GPS, report, "%s", failure_msg);
+                }
+                return false;
+            }
+        }
+
         //GPS OK?
         if (!AP::ahrs().home_is_set() ||
             gps.status() < AP_GPS::GPS_OK_FIX_3D) {
@@ -1141,7 +1153,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  osd_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
-        &  disarm_switch_checks(report);
+        &  disarm_switch_checks(report)
+        &  fence_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1165,6 +1178,14 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
         if (!AP::gps().prepare_for_arming()) {
             return false;
+        }
+    }
+
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        // If a fence is set to auto-enable, turn on the fence
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(true);
         }
     }
     
@@ -1234,6 +1255,13 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         fft->save_params_on_disarm();
     }
 #endif
+
+    AC_Fence *fence = AP::fence();
+    if (fence != nullptr) {
+        if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
+            fence->enable(false);
+        }
+    }
 
     return true;
 }

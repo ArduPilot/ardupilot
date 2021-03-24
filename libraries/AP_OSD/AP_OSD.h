@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_OLC/AP_OLC.h>
 
+
 #ifndef OSD_ENABLED
 #define OSD_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
@@ -136,6 +137,8 @@ private:
     AP_OSD_Setting altitude{true, 23, 8};
     AP_OSD_Setting bat_volt{true, 24, 1};
     AP_OSD_Setting rssi{true, 1, 1};
+    AP_OSD_Setting restvolt{false, 24, 2};
+    AP_OSD_Setting avgcellvolt{false, 24, 3};
     AP_OSD_Setting current{true, 25, 2};
     AP_OSD_Setting batused{true, 23, 3};
     AP_OSD_Setting sats{true, 1, 3};
@@ -180,6 +183,7 @@ private:
     AP_OSD_Setting clk{false, 0, 0};
     AP_OSD_Setting callsign{false, 0, 0};
     AP_OSD_Setting vtx_power{false, 0, 0};
+    AP_OSD_Setting hgt_abvterr{true, 23, 7};
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
@@ -196,6 +200,8 @@ private:
 
     void draw_altitude(uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
+    void draw_avgcellvolt(uint8_t x, uint8_t y);
+    void draw_restvolt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
@@ -218,7 +224,6 @@ private:
 #if HAL_PLUSCODE_ENABLE
     void draw_pluscode(uint8_t x, uint8_t y);
 #endif
-
     //helper functions
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
@@ -250,6 +255,8 @@ private:
     void draw_callsign(uint8_t x, uint8_t y);
     void draw_current2(uint8_t x, uint8_t y);
     void draw_vtx_power(uint8_t x, uint8_t y);
+    void draw_hgt_abvterr(uint8_t x, uint8_t y);
+
 
     struct {
         bool load_attempted;
@@ -448,6 +455,11 @@ public:
 
     AP_Int8 warn_rssi;
     AP_Int8 warn_nsat;
+    AP_Int32 warn_terr;
+    AP_Float warn_avgcellvolt;
+    AP_Float max_battery_voltage;
+    AP_Int8 cell_count;
+    AP_Float warn_restvolt;
     AP_Float warn_batvolt;
     AP_Float warn_bat2volt;
     AP_Int8 msgtime_s;

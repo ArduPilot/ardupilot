@@ -275,8 +275,15 @@ void ModeRTL::descent_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 // rtl_descent_run - implements the final descent to the RTL_ALT
@@ -363,8 +370,15 @@ void ModeRTL::land_start()
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
+#if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
+#endif
+
+#if AC_FENCE == ENABLED
+    // disable the fence on landing
+    copter.fence.auto_disable_fence_for_landing();
+#endif
 }
 
 bool ModeRTL::is_landing() const

@@ -254,6 +254,15 @@ bool AP_BLHeli::blheli_4way_process_byte(uint8_t c)
     return true;
 }
 
+
+/*
+  send a MSP protocol ack
+ */
+void AP_BLHeli::msp_send_ack(uint8_t cmd)
+{
+    msp_send_reply(cmd, 0, 0);
+}
+
 /*
   send a MSP protocol reply
  */
@@ -265,7 +274,10 @@ void AP_BLHeli::msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len)
     *b++ = '>';
     *b++ = len;
     *b++ = cmd;
-    memcpy(b, buf, len);
+    // acks do not have a payload
+    if (len > 0) {
+        memcpy(b, buf, len);
+    }
     b += len;
     uint8_t c = 0;
     for (uint8_t i=0; i<len+2; i++) {
@@ -319,9 +331,14 @@ void AP_BLHeli::msp_process_command(void)
         msp_send_reply(msp.cmdMSP, (const uint8_t *)ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
         break;
 
+    /*
+      Notes:
+        version 3.3.1 adds a reply to MSP_SET_MOTOR which was missing
+        version 3.3.0 requires a workaround in blheli suite to handle MSP_SET_MOTOR without an ack
+    */
     case MSP_FC_VERSION: {
         debug("MSP_FC_VERSION");
-        uint8_t version[3] = { 3, 3, 0 };
+        uint8_t version[3] = { 3, 3, 1 };
         msp_send_reply(msp.cmdMSP, version, sizeof(version));
         break;
     }
@@ -406,10 +423,15 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
-        uint8_t buf[6];
+        uint8_t buf[10];
         putU16(&buf[0], 1030); // min throttle
         putU16(&buf[2], 2000); // max throttle
         putU16(&buf[4], 1000); // min command
+        // API 1.42
+        buf[6] = num_motors; // motorCount
+        buf[7] = motor_poles; // motorPoleCount
+        buf[8] = 0; // useDshotTelemetry
+        buf[9] = 0; // FEATURE_ESC_SENSOR
         msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
         break;
     }
@@ -452,6 +474,7 @@ void AP_BLHeli::msp_process_command(void)
         } else {
             debug("mixed type, Motors Disabled");
         }
+        msp_send_ack(msp.cmdMSP);
         break;
     }
 
@@ -718,19 +741,16 @@ bool AP_BLHeli::BL_ConnectEx(void)
         blheli.interface_mode[blheli.chan] = imSIL_BLB;
         debug("Interface type imSIL_BLB");
         break;
-    case 0x1F06:
-    case 0x3306:
-    case 0x3406:
-    case 0x3506:
-    case 0x2B06:
-    case 0x4706:
-        blheli.interface_mode[blheli.chan] = imARM_BLB;
-        debug("Interface type imARM_BLB");
-        break;
     default:
-        blheli.ack = ACK_D_GENERAL_ERROR;        
-        debug("Unknown interface type 0x%04x", *devword);
-        break;
+        // BLHeli_32 MCU ID hi > 0x00 and < 0x90 / lo always = 0x06
+        if ((blheli.deviceInfo[blheli.chan][1] > 0x00) && (blheli.deviceInfo[blheli.chan][1] < 0x90) && (blheli.deviceInfo[blheli.chan][0] == 0x06)) {
+            blheli.interface_mode[blheli.chan] = imARM_BLB;
+            debug("Interface type imARM_BLB");
+        } else {
+            blheli.ack = ACK_D_GENERAL_ERROR;
+            debug("Unknown interface type 0x%04x", *devword);
+            break;
+        }
     }
     blheli.deviceInfo[blheli.chan][3] = blheli.interface_mode[blheli.chan];
     if (blheli.interface_mode[blheli.chan] != 0) {
@@ -809,7 +829,7 @@ bool AP_BLHeli::BL_WriteA(uint8_t cmd, const uint8_t *buf, uint16_t nbytes, uint
 
 uint8_t AP_BLHeli::BL_WriteFlash(const uint8_t *buf, uint16_t n)
 {
-    return BL_WriteA(CMD_PROG_FLASH, buf, n, 250);
+    return BL_WriteA(CMD_PROG_FLASH, buf, n, 500);
 }
 
 bool AP_BLHeli::BL_VerifyFlash(const uint8_t *buf, uint16_t n)
@@ -899,7 +919,7 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceReset(%u)", unsigned(blheli.buf[0]));
         if (blheli.buf[0] >= num_motors) {
             debug("bad reset channel %u", blheli.buf[0]);
-            blheli.ack = ACK_D_GENERAL_ERROR;
+            blheli.ack = ACK_I_INVALID_CHANNEL;
             blheli_send_reply(&blheli.buf[0], 1);            
             break;
         }
@@ -922,6 +942,8 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceInitFlash(%u)", unsigned(blheli.buf[0]));
         if (blheli.buf[0] >= num_motors) {
             debug("bad channel %u", blheli.buf[0]);
+            blheli.ack = ACK_I_INVALID_CHANNEL;
+            blheli_send_reply(&blheli.buf[0], 1);
             break;
         }
         blheli.chan = blheli.buf[0];
@@ -1052,7 +1074,7 @@ void AP_BLHeli::blheli_process_command(void)
         debug("cmd_DeviceWriteEEprom n=%u im=%u", nbytes, blheli.interface_mode[blheli.chan]);
         switch (blheli.interface_mode[blheli.chan]) {
         case imATM_BLB:
-            BL_WriteA(CMD_PROG_EEPROM, buf, nbytes, 1000);
+            BL_WriteA(CMD_PROG_EEPROM, buf, nbytes, 3000);
             break;
         default:
             blheli.ack = ACK_D_GENERAL_ERROR;

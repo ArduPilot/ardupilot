@@ -8,7 +8,9 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container:
+      image: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+      options: --user 1001
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -18,7 +20,8 @@ jobs:
         ]
         config: [
             unit-tests,
-            python-cleanliness
+            python-cleanliness,
+            # examples,
         ]
     steps:
       # git checkout the PR
@@ -49,7 +52,7 @@ jobs:
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
-        shell: bash
+        shell: 'script -q -e -c "bash {0}"'
         run: |
           if [[ ${{ matrix.toolchain }} = "clang" ]]; then
             export CC=clang-7

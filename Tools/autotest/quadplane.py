@@ -284,8 +284,8 @@ class AutoTestQuadPlane(AutoTest):
         self.load_mission(filename)
         if fence is not None:
             self.load_fence(fence)
-        self.mavproxy.send('wp list\n')
-        self.mavproxy.expect('Requesting [0-9]+ waypoints')
+        if self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
@@ -544,8 +544,8 @@ class AutoTestQuadPlane(AutoTest):
             # Step 4: take off as a copter land as a plane, make sure we track
             self.progress("Flying with gyro FFT - vtol to plane")
             self.load_mission("quadplane-gyro-mission.txt")
-            self.mavproxy.send('wp list\n')
-            self.mavproxy.expect('Requesting [0-9]+ waypoints')
+            if self.mavproxy is not None:
+                self.mavproxy.send('wp list\n')
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -588,6 +588,7 @@ class AutoTestQuadPlane(AutoTest):
             "QAutoTune": "See https://github.com/ArduPilot/ardupilot/issues/10411",
             "FRSkyPassThrough": "Currently failing",
             "CPUFailsafe": "servo channel values not scaled like ArduPlane",
+            "GyroFFT": "flapping test",
         }
 
     def test_pilot_yaw(self):
@@ -659,6 +660,27 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("RTL")
         self.wait_disarmed(timeout=300)
 
+    def tailsitter(self):
+        '''tailsitter test'''
+        self.set_parameter('Q_FRAME_CLASS', 10)
+        self.set_parameter('Q_ENABLE', 1)
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        value_before = self.get_servo_channel_value(3)
+        self.progress("Before: %u" % value_before)
+        self.change_mode('QHOVER')
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60:
+                break
+            value_after = self.get_servo_channel_value(3)
+            self.progress("After: t=%f output=%u" % ((now - tstart), value_after))
+            if value_before != value_after:
+                raise NotAchievedException("Changed throttle output on mode change to QHOVER")
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -689,6 +711,11 @@ class AutoTestQuadPlane(AutoTest):
 
             ("GyroFFT", "Fly Gyro FFT",
              self.fly_gyro_fft),
+
+            ("Tailsitter",
+             "Test tailsitter support",
+             self.tailsitter),
+
 
             ("LogUpload",
              "Log upload",
