@@ -529,7 +529,7 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
 
 // find_oldest_log - find oldest log
 // returns 0 if no log was found
-uint16_t AP_Logger_Backend::find_oldest_log()
+uint16_t LoggerThread::find_oldest_log()
 {
     if (_cached_oldest_log != 0) {
         return _cached_oldest_log;
