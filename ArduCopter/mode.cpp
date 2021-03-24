@@ -781,12 +781,12 @@ float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
     if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
         return 0.0f;
     }
-    float yaw_request;
 
     // range check expo
     g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
 
     // calculate yaw rate request
+    float yaw_request;
     if (is_zero(g2.acro_y_expo)) {
         yaw_request = stick_angle * g.acro_yaw_p;
     } else {
