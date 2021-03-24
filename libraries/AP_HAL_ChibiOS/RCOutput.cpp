@@ -24,7 +24,9 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
 #if HAL_USE_PWM == TRUE
 
 using namespace ChibiOS;
@@ -712,6 +714,29 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 #endif //#ifdef DISABLE_DSHOT
 }
 
+void RCOutput::print_group_setup_error(pwm_group &group, const char* error_string)
+{
+#ifndef HAL_NO_UARTDRIVER
+    uint8_t min_chan = UINT8_MAX;
+    uint8_t max_chan = 0;
+    for (uint8_t j = 0; j < 4; j++) {
+        uint8_t chan = group.chan[j];
+        if (chan == CHAN_DISABLED) {
+            continue;
+        }
+        chan += chan_offset;
+        min_chan = MIN(min_chan,chan);
+        max_chan = MAX(max_chan,chan);
+    }
+
+    if (min_chan == max_chan) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Chan %i, %s: %s",min_chan+1,get_output_mode_string(group.current_mode),error_string);
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Chan %i to %i, %s: %s",min_chan+1,max_chan+1,get_output_mode_string(group.current_mode),error_string);
+    }
+#endif
+}
+
 /*
   setup a group for DMA output at a given bitrate. The bit_width is
   the value for a pulse width in the DMA buffer for a full bit.
@@ -728,6 +753,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_allocate, void, Shared_DMA *),
                                           FUNCTOR_BIND_MEMBER(&RCOutput::dma_deallocate, void, Shared_DMA *));
         if (!group.dma_handle) {
+            print_group_setup_error(group, "failed to allocate DMA");
             return false;
         }
     }
@@ -742,6 +768,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
         group.dma_buffer = (uint32_t *)hal.util->malloc_type(buffer_length, AP_HAL::Util::MEM_DMA_SAFE);
         if (!group.dma_buffer) {
             group.dma_handle->unlock();
+            print_group_setup_error(group, "failed to allocate DMA buffer");
             return false;
         }
         group.dma_buffer_len = buffer_length;
@@ -775,6 +802,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     }
     if (prescaler > 0x8000) {
         group.dma_handle->unlock();
+        print_group_setup_error(group, "failed to match clock speed");
         return false;
     }
 
@@ -934,6 +962,7 @@ void RCOutput::set_output_mode(uint16_t mask, const enum output_mode mode)
             continue;
         }
         if (mode_requires_dma(thismode) && !group.have_up_dma) {
+            print_group_setup_error(group, "failed, no DMA");
             thismode = MODE_PWM_NORMAL;
         }
         if (mode > MODE_PWM_NORMAL) {
