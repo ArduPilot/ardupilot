@@ -561,17 +561,24 @@ void GCS_MAVLINK_Copter::handle_rc_channels_override(const mavlink_message_t &ms
     k = constrain_int16(k,0,1000);
     //float k = hal.rcin->read(3);         // reading ch4 (YAW) from pilot
 
-    //gcs().send_text(MAV_SEVERITY_CRITICAL, "hello world! %5.3f", (double)3.142f);
-    gcs().send_text(MAV_SEVERITY_CRITICAL, k, (double)3.142f);
+    if (k == 0) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k == 0! %5.3f", (double)3.142f);
+    }
+    if (k >= 0) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k >= 0! %5.3f", (double)3.142f);
+    }
+    if (k <= 0) {
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "k <= 0! %5.3f", (double)3.142f);
+    }
 
     //hal.console->printf("%5d", (int)rc().channel(3)->get_control_in());
     //hal.console->printf("/n");
 
     if (i >= 1850) {                                               // if ch6 from the pilot is high then this part will work
         RC_Channels::set_override(8, override_data[0], tnow);      // ch9 from the pilot will be overrided by ch1 from MavLink
-        RC_Channels::set_override(9, override_data[8], tnow);      // ch10 from the pilot will be overrided by ch9 from MavLink
+        RC_Channels::set_override(9, override_data[1], tnow);      // ch10 from the pilot will be overrided by ch2 from MavLink
         RC_Channels::set_override(10, override_data[4], tnow);     // ch11 from the pilot will be overrided by ch5 from MavLink
-        RC_Channels::set_override(11, override_data[9], tnow);     // ch12 from the pilot will be overrided by ch10 from MavLink
+        RC_Channels::set_override(11, override_data[2], tnow);     // ch12 from the pilot will be overrided by ch3 from MavLink
         RC_Channels::set_override(12, override_data[5], tnow);     // ch13 from the pilot will be overrided by ch6 from MavLink
         if (k >= 450) {                             // if ch4 (=YAW) from the pilot is centered then this part will work
             if (k <= 550) {
