@@ -84,7 +84,9 @@ void DSP::step_hanning(FFTWindowStateSITL* fft, FloatBuffer& samples, uint16_t a
     // apply hanning window to gyro samples and store result in _freq_bins
     // hanning starts and ends with 0, could be skipped for minor speed improvement
     uint32_t read_window = samples.peek(&fft->_freq_bins[0], fft->_window_size);
-    assert(read_window == fft->_window_size);
+    if (read_window != fft->_window_size) {
+        return;
+    }
     samples.advance(advance);
     mult_f32(&fft->_freq_bins[0], &fft->_hanning_window[0], &fft->_freq_bins[0], fft->_window_size);
 }
