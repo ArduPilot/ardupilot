@@ -274,8 +274,6 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     unsigned nmsgs = 0;
     int fd = _bus.fd[_desc.subdev];
 
-    assert(fd >= 0);
-
     if (send && send_len != 0) {
         msgs[nmsgs].tx_buf = (uint64_t) send;
         msgs[nmsgs].rx_buf = 0;
@@ -354,8 +352,6 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
 {
     struct spi_ioc_transfer msgs[1] = { };
     int fd = _bus.fd[_desc.subdev];
-
-    assert(fd >= 0);
 
     if (!send || !recv || len == 0) {
         return false;
