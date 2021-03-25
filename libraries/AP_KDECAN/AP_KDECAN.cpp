@@ -462,7 +462,7 @@ void AP_KDECAN::loop()
                             update_rpm(idx, _telemetry[idx].rpm * 60UL * 2 / num_poles * 100);
 
                             TelemetryData t {
-                                .temperature_deg =_telemetry[idx].temp,
+                                .temperature_cdeg = int16_t(_telemetry[idx].temp * 100),
                                 .voltage_cv = _telemetry[idx].voltage,
                                 .current_ca = uint16_t(_telemetry[idx].current),
                             };
