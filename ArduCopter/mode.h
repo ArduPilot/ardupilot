@@ -548,6 +548,9 @@ protected:
 
 class ModeAutoTune : public Mode {
 
+    // ParametersG2 sets a pointer within our autotune object:
+    friend class ParametersG2;
+
 public:
     // inherit constructor
     using Mode::Mode;
@@ -569,6 +572,11 @@ protected:
 
     const char *name() const override { return "AUTOTUNE"; }
     const char *name4() const override { return "ATUN"; }
+
+private:
+
+    AutoTune autotune;
+
 };
 #endif
 
