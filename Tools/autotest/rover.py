@@ -4679,9 +4679,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_disarmed()
 
     def test_poly_fence_object_avoidance_guided(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_guided_pathfinding(
             target_system=target_system,
             target_component=target_component)
@@ -4692,7 +4689,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         #     target_component=target_component)
 
     def test_poly_fence_object_avoidance_auto(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        self.load_complex_fence("rover-path-planning-fence.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.context_push()
         ex = None
@@ -4722,7 +4719,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_poly_fence_object_avoidance_auto_inclusion_groups(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence-inclusion.txt")
+        self.load_complex_fence("rover-path-planning-fence-inclusion.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.context_push()
         ex = None
@@ -4770,7 +4767,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         )
 
     def test_poly_fence_object_avoidance_guided_pathfinding(self, target_system=1, target_component=1):
-        self.load_fence("rover-path-planning-fence.txt")
+        self.load_complex_fence("rover-path-planning-fence.txt")
         self.context_push()
         ex = None
         try:
@@ -4941,16 +4938,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.disarm_vehicle()
 
     def test_poly_fence_object_avoidance_guided_bendy_ruler(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -4976,8 +4971,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_poly_fence_object_avoidance_bendy_ruler_easier(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
         self.test_poly_fence_object_avoidance_auto_bendy_ruler_easier(
             target_system=target_system, target_component=target_component)
         self.test_poly_fence_object_avoidance_guided_bendy_ruler_easier(
@@ -4988,16 +4981,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         test can go away once we've nailed that one.  The only
         difference here is the target point.
         '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -5027,18 +5018,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         test can go away once we've nailed that one.  The only
         difference here is the target point.
         '''
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
-        self.load_fence("rover-path-bendyruler-fence.txt")
+        self.load_complex_fence("rover-path-bendyruler-fence.txt")
         self.load_mission("rover-path-bendyruler-mission-easier.txt")
         self.context_push()
         ex = None
         try:
             self.set_parameter("AVOID_ENABLE", 3)
             self.set_parameter("OA_TYPE", 1)
-            self.set_parameter("OA_LOOKAHEAD", 50)
             self.reboot_sitl()
+            self.set_parameter("OA_BR_LOOKAHEAD", 50)
             self.change_mode('AUTO')
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -5062,9 +5050,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise ex
 
     def test_poly_fence_object_avoidance(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
-
         self.test_poly_fence_object_avoidance_auto(
             target_system=target_system,
             target_component=target_component)
@@ -5076,8 +5061,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_component=target_component)
 
     def test_poly_fence_object_avoidance_bendy_ruler(self, target_system=1, target_component=1):
-        if not self.mavproxy_can_do_mision_item_protocols():
-            return
         # bendy Ruler isn't as flexible as Dijkstra for planning, so
         # it gets a simpler test:
         self.test_poly_fence_object_avoidance_guided_bendy_ruler(
@@ -6048,6 +6031,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         return {
             "DriveMaxRCIN": "currently triggers Arithmetic Exception",
             "SlewRate": "got timing report failure on CI",
+            "PolyFenceObjectAvoidanceBendyRuler": "Has been disabled for ages, now its more obvious",
+            "PolyFenceObjectAvoidanceBendyRulerEasier": "Has been disabled for ages, now its more obvious",
         }
 
     def rc_defaults(self):
