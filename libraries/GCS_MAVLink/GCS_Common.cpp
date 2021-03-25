@@ -326,6 +326,8 @@ void GCS_MAVLINK::send_distance_sensor()
     // sending them here, and allow the later proximity code to manage
     // them
     bool filter_possible_proximity_sensors = false;
+
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity != nullptr) {
         for (uint8_t i = 0; i < proximity->num_sensors(); i++) {
@@ -334,6 +336,7 @@ void GCS_MAVLINK::send_distance_sensor()
             }
         }
     }
+#endif
 
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if (!HAVE_PAYLOAD_SPACE(chan, DISTANCE_SENSOR)) {
@@ -371,6 +374,7 @@ void GCS_MAVLINK::send_rangefinder() const
 
 void GCS_MAVLINK::send_proximity()
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP_Proximity::get_singleton();
     if (proximity == nullptr) {
         return; // this is wrong, but pretend we sent data and don't requeue
@@ -428,6 +432,7 @@ void GCS_MAVLINK::send_proximity()
                 0,                                                        // Measurement covariance in centimeters, 0 for unknown / invalid readings
                 0, 0, nullptr, 0);
     }
+#endif // HAL_PROXIMITY_ENABLED
 }
 
 // report AHRS2 state
@@ -3239,26 +3244,32 @@ void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
         rangefinder->handle_msg(msg);
     }
 
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_obstacle_distance(const mavlink_message_t &msg)
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_obstacle_distance_3d(const mavlink_message_t &msg)
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity != nullptr) {
         proximity->handle_msg(msg);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
