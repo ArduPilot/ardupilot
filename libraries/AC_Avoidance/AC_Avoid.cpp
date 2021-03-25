@@ -361,6 +361,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         }
     }
 
+#if HAL_PROXIMITY_ENABLED
     // get distance from proximity sensor
     float proximity_alt_diff;
     AP_Proximity *proximity = AP::proximity();
@@ -371,6 +372,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
             limit_alt = true;
         }
     }
+#endif
 
     // limit climb rate
     if (limit_alt) {
@@ -1084,6 +1086,7 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
  */
 void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &desired_vel_cms, Vector3f &backup_vel, float kP_z, float accel_cmss_z, float dt)
 {
+#if HAL_PROXIMITY_ENABLED
     // exit immediately if proximity sensor is not present
     AP_Proximity *proximity = AP::proximity();
     if (!proximity) {
@@ -1211,6 +1214,7 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector3f &d
     desired_vel_cms = Vector3f{safe_vel_2d.x, safe_vel_2d.y, safe_vel.z};
     const Vector2f backup_vel_xy = _ahrs.body_to_earth2D(desired_back_vel_cms_xy);
     backup_vel = Vector3f{backup_vel_xy.x, backup_vel_xy.y, desired_back_vel_cms_z};
+#endif // HAL_PROXIMITY_ENABLED
 }
 
 /*
@@ -1371,6 +1375,7 @@ float AC_Avoid::distance_to_lean_pct(float dist_m)
 // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
 void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity *proximity = AP::proximity();
     if (proximity == nullptr) {
         return;
@@ -1414,6 +1419,7 @@ void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_ne
             }
         }
     }
+#endif // HAL_PROXIMITY_ENABLED
 }
 
 // singleton instance
