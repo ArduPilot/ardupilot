@@ -819,7 +819,7 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
     esc.count++;
 
     TelemetryData t {
-        .temperature_deg = esc.temp,
+        .temperature_cdeg = int16_t(esc.temp * 100),
         .voltage_cv = esc.voltage,
         .current_ca = esc.current,
     };
