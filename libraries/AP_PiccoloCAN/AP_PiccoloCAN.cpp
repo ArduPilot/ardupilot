@@ -409,7 +409,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         // There are no common error bits between the Gen-1 and Gen-2 ICD
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
         TelemetryData t {
-            .temperature_deg = esc.escTemperature,
+            .temperature_cdeg = int16_t(esc.escTemperature * 100),
             .voltage_cv = esc.voltage,
             .current_ca = uint16_t(esc.current),
         };
@@ -421,7 +421,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         esc.newTelemetry = true;
     } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
         TelemetryData t { };
-        t.motor_temp_deg = esc.fetTemperature;
+        t.motor_temp_cdeg = int16_t(esc.fetTemperature * 100);
         update_telem_data(addr, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
 
         esc.newTelemetry = true;
