@@ -67,6 +67,7 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 // Configuration
 #include "defines.h"
@@ -128,9 +129,6 @@
 #endif
 #if RANGEFINDER_ENABLED == ENABLED
  # include <AP_RangeFinder/AP_RangeFinder.h>
-#endif
-#if PROXIMITY_ENABLED == ENABLED
- # include <AP_Proximity/AP_Proximity.h>
 #endif
 
 #include <AP_Mount/AP_Mount.h>
