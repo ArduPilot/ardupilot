@@ -13,11 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_LightWareSerial.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/crc.h>
-#include "AP_Proximity_LightWareSerial.h"
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -138,3 +140,5 @@ bool AP_Proximity_LightWareSerial::parse_byte(uint8_t b)
 
     return false;
 }
+
+#endif // HAL_PROXIMITY_ENABLED

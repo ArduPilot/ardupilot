@@ -13,13 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Avoidance/AP_OADatabase.h>
-#include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity.h"
-#include "AP_Proximity_Backend.h"
 #include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
@@ -205,3 +205,5 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
 
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
 }
+
+#endif // HAL_PROXIMITY_ENABLED

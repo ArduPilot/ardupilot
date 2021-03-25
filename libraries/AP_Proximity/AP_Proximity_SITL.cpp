@@ -13,11 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Proximity_SITL.h"
 
+#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_Param/AP_Param.h>
-#include "AP_Proximity_SITL.h"
+
 #include <AC_Fence/AC_Fence.h>
 #include <stdio.h>
 
@@ -124,3 +127,5 @@ bool AP_Proximity_SITL::get_upward_distance(float &distance) const
 }
 
 #endif // CONFIG_HAL_BOARD
+
+#endif // HAL_PROXIMITY_ENABLED

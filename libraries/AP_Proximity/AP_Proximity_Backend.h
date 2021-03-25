@@ -14,9 +14,11 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include "AP_Proximity_Boundary_3D.h"
 
@@ -118,3 +120,5 @@ protected:
     // Methods to manipulate 3D boundary in this class
     AP_Proximity_Boundary_3D boundary;
 };
+
+#endif // HAL_PROXIMITY_ENABLED
