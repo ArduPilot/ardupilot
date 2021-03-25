@@ -1623,6 +1623,9 @@ class AutoTest(ABC):
             required_bootcount = old_bootcount + 1
         while True:
             if time.time() - tstart > timeout:
+                self.progress("Didn't get a reboot, but here are some variables")
+                for p in ['LOG_DISARMED']:
+                    self.progress("%s=%f" % (p, self.get_parameter(p)))
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
                 current_bootcount = self.get_parameter('STAT_BOOTCNT',
