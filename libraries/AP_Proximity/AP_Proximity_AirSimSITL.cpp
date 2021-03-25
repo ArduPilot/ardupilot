@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "AP_Proximity_AirSimSITL.h"
+
+#if HAL_PROXIMITY_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
@@ -93,4 +95,6 @@ bool AP_Proximity_AirSimSITL::get_upward_distance(float &distance) const
     return false;
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#endif // HAL_PROXIMITY_ENABLED

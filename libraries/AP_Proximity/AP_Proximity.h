@@ -14,8 +14,16 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_PROXIMITY_ENABLED
+#define HAL_PROXIMITY_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if HAL_PROXIMITY_ENABLED
+
+#include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -187,3 +195,5 @@ private:
 namespace AP {
     AP_Proximity *proximity();
 };
+
+#endif // HAL_PROXIMITY_ENABLED
