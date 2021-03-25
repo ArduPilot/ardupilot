@@ -918,7 +918,6 @@ private:
     ModeAuto mode_auto;
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
-    AutoTune autotune;
     ModeAutoTune mode_autotune;
 #endif
 #if MODE_BRAKE_ENABLED == ENABLED
