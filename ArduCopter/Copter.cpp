@@ -107,7 +107,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if RANGEFINDER_ENABLED == ENABLED
     SCHED_TASK(read_rangefinder,      20,    100),
 #endif
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50),
 #endif
 #if BEACON_ENABLED == ENABLED
@@ -427,7 +427,7 @@ void Copter::ten_hz_logging_loop()
     }
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
         logger.Write_Proximity(g2.proximity);  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED

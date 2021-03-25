@@ -477,7 +477,7 @@ bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 // check nothing is too close to vehicle
 bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 {
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
 
     if (!AP_Arming::proximity_checks(display_failure)) {
         return false;

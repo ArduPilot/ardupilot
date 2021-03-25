@@ -821,7 +821,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
 #endif
 
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     AP_SUBGROUPINFO(proximity, "PRX", 8, ParametersG2, AP_Proximity),
@@ -1065,7 +1065,7 @@ ParametersG2::ParametersG2(void)
 #if BEACON_ENABLED == ENABLED
     , beacon(copter.serial_manager)
 #endif
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     , proximity()
 #endif
 #if ADVANCED_FAILSAFE == ENABLED
