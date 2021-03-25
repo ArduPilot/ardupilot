@@ -3834,6 +3834,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                                         target_component=target_component)
         self.test_poly_fence_noarms_inclusion_polyfence(target_system=target_system,
                                                         target_component=target_component)
+        self.test_poly_fence_noarms_inclusion_circle_group(target_system=target_system,
+                                                           target_component=target_component)
 
     def test_poly_fence_noarms_exclusion_circle(self, target_system=1, target_component=1):
         self.start_subtest("Ensure not armable when within an exclusion circle")
@@ -3934,6 +3936,112 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if self.arm_motors_with_rc_input():
             raise NotAchievedException(
                 "Armed when outside an inclusion zone")
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           [])
+        self.wait_fence_not_breached()
+
+    def test_poly_fence_noarms_inclusion_circle_group(self, target_system=1, target_component=1):
+        self.start_subtest("Ensure not armable when outside two inclusion circles of difrent groups")
+
+        here = self.mav.location()
+
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                0, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, -100, -100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                1, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, 100, 100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
+        self.drain_mav()
+        self.assert_fence_breached()
+        if self.arm_motors_with_rc_input():
+            raise NotAchievedException(
+                "Armed when outside an inclusion groups")
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           [])
+        self.wait_fence_not_breached()
+
+    def test_poly_fence_arms_inclusion_circle_group(self, target_system=1, target_component=1):
+        self.start_subtest("Ensure armable when outside an inclusion circle but within another in a second group")
+
+        here = self.mav.location()
+
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                0, # p2 - group
+                0, # p3
+                0, # p4
+                int(here.lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                1, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+                mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                0, # current
+                0, # autocontinue
+                5, # p1 - radius
+                1, # p2 - group
+                0, # p3
+                0, # p4
+                int(self.offset_location_ne(here, 100, 100).lat * 1e7), # latitude
+                int(here.lng * 1e7), # longitude
+                33.0000, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_FENCE),
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+                                           items)
+        self.delay_sim_time(5) # ArduPilot only checks for breaches @1Hz
+        self.drain_mav()
+        self.wait_fence_not_breached()
+        if not self.arm_vehicle():
+            raise NotAchievedException(
+                "Did not arm in inclusion group")
+
+        self.disarm_vehicle()
 
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            [])
@@ -4352,6 +4460,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_fence_upload_timeouts()
 
         self.test_poly_fence_noarms(target_system=target_system, target_component=target_component)
+        self.test_poly_fence_arms_inclusion_circle_group(target_system=target_system, target_component=target_component)
 
         self.arm_vehicle()
 
