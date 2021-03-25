@@ -546,6 +546,7 @@ void AP_Logger::Write_Beacon(AP_Beacon &beacon)
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
 
+#if HAL_PROXIMITY_ENABLED
 // Write proximity sensor distances
 void AP_Logger::Write_Proximity(AP_Proximity &proximity)
 {
@@ -608,6 +609,7 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
         }
     }
 }
+#endif
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
