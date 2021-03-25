@@ -1413,7 +1413,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     update_rpm(last_telem_esc, td.rpm);
 
     TelemetryData t {
-        .temperature_deg = td.temperature,
+        .temperature_cdeg = int16_t(td.temperature * 100),
         .voltage_cv = td.voltage,
         .current_ca = td.current,
         .consumption_mah = td.consumption,
