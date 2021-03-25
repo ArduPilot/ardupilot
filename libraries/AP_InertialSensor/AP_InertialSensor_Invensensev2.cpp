@@ -772,8 +772,6 @@ int AP_Invensensev2_AuxiliaryBusSlave::_set_passthrough(uint8_t reg, uint8_t siz
 int AP_Invensensev2_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
                                                    uint8_t size)
 {
-    assert(buf);
-
     if (_registered) {
         hal.console->printf("Error: can't passthrough when slave is already configured\n");
         return -1;

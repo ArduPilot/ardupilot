@@ -85,9 +85,6 @@ AuxiliaryBusSlave *AuxiliaryBus::request_next_slave(uint8_t addr)
 int AuxiliaryBus::register_periodic_read(AuxiliaryBusSlave *slave, uint8_t reg,
                                          uint8_t size)
 {
-    assert(slave->_instance == _n_slaves);
-    assert(_n_slaves < _max_slaves);
-
     int r = _configure_periodic_read(slave, reg, size);
     if (r < 0)
         return r;
