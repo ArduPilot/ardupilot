@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Proximity.h"
+
+#if HAL_PROXIMITY_ENABLED
+
 #include <Filter/LowPassFilter.h>
 
 #define PROXIMITY_NUM_SECTORS         8       // number of sectors
@@ -156,3 +160,4 @@ private:
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
 };
 
+#endif // HAL_PROXIMITY_ENABLED

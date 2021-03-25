@@ -13,8 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_TeraRangerTower.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -103,3 +105,5 @@ void AP_Proximity_TeraRangerTower::update_sector_data(int16_t angle_deg, uint16_
     }
     _last_distance_received_ms = AP_HAL::millis();
 }
+
+#endif // HAL_PROXIMITY_ENABLED

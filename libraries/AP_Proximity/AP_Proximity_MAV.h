@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 class AP_Proximity_MAV : public AP_Proximity_Backend
 {
@@ -42,3 +43,5 @@ private:
     uint32_t _last_upward_update_ms;    // system time of last update of upward distance
     float _distance_upward;             // upward distance in meters
 };
+
+#endif // HAL_PROXIMITY_ENABLED

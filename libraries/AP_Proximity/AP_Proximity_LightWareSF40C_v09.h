@@ -1,8 +1,8 @@
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend_Serial.h"
 
+#if HAL_PROXIMITY_ENABLED
 #define PROXIMITY_SF40C_TIMEOUT_MS            200                               // requests timeout after 0.2 seconds
 
 class AP_Proximity_LightWareSF40C_v09 : public AP_Proximity_Backend_Serial
@@ -88,3 +88,5 @@ private:
     uint8_t _motor_direction = 99;      // motor direction as reported by lidar
     int16_t _forward_direction = 999;   // forward direction as reported by lidar
 };
+
+#endif // HAL_PROXIMITY_ENABLED

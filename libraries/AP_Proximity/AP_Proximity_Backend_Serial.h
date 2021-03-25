@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 class AP_Proximity_Backend_Serial : public AP_Proximity_Backend
 {
@@ -16,3 +17,5 @@ protected:
 
     AP_HAL::UARTDriver *_uart;              // uart for communicating with sensor
 };
+
+#endif // HAL_PROXIMITY_ENABLED
