@@ -358,9 +358,9 @@ void AP_ToshibaCAN::loop()
                         _esc_present_bitmask_recent |= ((uint32_t)1 << esc_id);
 
                         TelemetryData t {
-                            .temperature_deg = int16_t(_telemetry[esc_id].esc_temp)
+                            .temperature_cdeg = int16_t(_telemetry[esc_id].esc_temp)
                         };
-                        t.motor_temp_deg = int16_t(_telemetry[esc_id].motor_temp);
+                        t.motor_temp_cdeg = int16_t(_telemetry[esc_id].motor_temp * 100);
                         update_telem_data(esc_id, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE |
                             AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
                     }
