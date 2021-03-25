@@ -843,6 +843,7 @@ bool AP_Arming::system_checks(bool report)
 // check nothing is too close to vehicle
 bool AP_Arming::proximity_checks(bool report) const
 {
+#if HAL_PROXIMITY_ENABLED
     const AP_Proximity *proximity = AP::proximity();
     // return true immediately if no sensor present
     if (proximity == nullptr) {
@@ -857,6 +858,7 @@ bool AP_Arming::proximity_checks(bool report) const
         check_failed(report, "check proximity sensor");
         return false;
     }
+#endif
 
     return true;
 }
