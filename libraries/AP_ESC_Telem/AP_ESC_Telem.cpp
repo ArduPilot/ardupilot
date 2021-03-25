@@ -106,7 +106,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     return false;
 }
 
-// get an individual ESC's temperature in cnti-degrees if available, returns true on success
+// get an individual ESC's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -130,7 +130,7 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
     return true;
 }
 
-// get an individual ESC's current if available, returns true on success
+// get an individual ESC's current in centi-Ampere if available, returns true on success
 bool AP_ESC_Telem::get_current_ca(uint8_t esc_index, uint16_t& amps_ca) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -142,7 +142,7 @@ bool AP_ESC_Telem::get_current_ca(uint8_t esc_index, uint16_t& amps_ca) const
     return true;
 }
 
-// get an individual ESC's voltage if available, returns true on success
+// get an individual ESC's voltage in centi-Volt if available, returns true on success
 bool AP_ESC_Telem::get_voltage_cv(uint8_t esc_index, uint16_t& volts_cv) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -154,7 +154,7 @@ bool AP_ESC_Telem::get_voltage_cv(uint8_t esc_index, uint16_t& volts_cv) const
     return true;
 }
 
-// get an individual ESC's energy consumption if available, returns true on success
+// get an individual ESC's energy consumption in mili-Ampere.hour if available, returns true on success
 bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, uint16_t& consumption_mah) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -166,7 +166,7 @@ bool AP_ESC_Telem::get_consumption_mah(uint8_t esc_index, uint16_t& consumption_
     return true;
 }
 
-// get an individual ESC's usage time if available, returns true on success
+// get an individual ESC's usage time in seconds if available, returns true on success
 bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
