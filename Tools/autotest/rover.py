@@ -4721,6 +4721,36 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def test_poly_fence_object_avoidance_auto_inclusion_groups(self, target_system=1, target_component=1):
+        self.load_fence("rover-path-planning-fence-inclusion.txt")
+        self.load_mission("rover-path-planning-mission.txt")
+        self.context_push()
+        ex = None
+        try:
+            self.set_parameter("AVOID_ENABLE", 3)
+            self.set_parameter("OA_TYPE", 2)
+            self.set_parameter("FENCE_MARGIN", 0) # FIXME: https://github.com/ArduPilot/ardupilot/issues/11601
+            self.reboot_sitl()
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_parameter("FENCE_ENABLE", 1)
+            if self.mavproxy is not None:
+                self.mavproxy.send("fence list\n")
+            # target_loc is copied from the mission file
+            target_loc = mavutil.location(40.073799, -105.229156)
+            self.wait_location(target_loc, timeout=300)
+            # mission has RTL as last item
+            self.wait_distance_to_home(3, 7, timeout=300)
+            self.disarm_vehicle()
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def send_guided_mission_item(self, loc, target_system=1, target_component=1):
         self.mav.mav.mission_item_send(
             target_system,
@@ -5036,6 +5066,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             return
 
         self.test_poly_fence_object_avoidance_auto(
+            target_system=target_system,
+            target_component=target_component)
+        self.test_poly_fence_object_avoidance_auto_inclusion_groups(
             target_system=target_system,
             target_component=target_component)
         self.test_poly_fence_object_avoidance_guided(
