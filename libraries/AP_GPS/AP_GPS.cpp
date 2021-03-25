@@ -606,6 +606,38 @@ void AP_GPS::detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
+    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
+        // don't change the baud rate on the first time this loop is run.
+        // this allows the user to specify their baud rate in SERIALx_BAUD and attempt to
+        // config/detect/connect, before the auto-baud starts.
+        if (dstate->last_baud_change_ms != 0) {
+            // try the next baud rate
+            // incrementing like this will skip the first element in array of bauds
+            // this is okay, and relied upon
+            dstate->current_baud++;
+            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                dstate->current_baud = 0;
+            }
+            uint32_t baudrate = _baudrates[dstate->current_baud];
+            _port[instance]->begin(baudrate);
+            _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        }
+        // record last time baud rate changed
+        dstate->last_baud_change_ms = now;
+
+        if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
+            if (_type[instance] == GPS_TYPE_HEMI) {
+                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+            } else if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+                       _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+                static const char blob[] = UBLOX_SET_BINARY_460800;
+                send_blob_start(instance, blob, sizeof(blob));
+            } else {
+                send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+            }
+        }
+    }
+
     // don't build the less common GPS drivers on F1 AP_Periph
 #if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
@@ -626,32 +658,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         break;
     }
 #endif // HAL_BUILD_AP_PERIPH
-
-    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
-        // incrementing like this will skip the first element in array of bauds
-        // this is okay, and relied upon
-        dstate->current_baud++;
-        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-            dstate->current_baud = 0;
-        }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
-        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        dstate->last_baud_change_ms = now;
-
-        if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
-            if (_type[instance] == GPS_TYPE_HEMI) {
-                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
-            } else if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
-                       _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
-                static const char blob[] = UBLOX_SET_BINARY_460800;
-                send_blob_start(instance, blob, sizeof(blob));
-            } else {
-                send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
-            }
-        }
-    }
 
     if (_auto_config == GPS_AUTO_CONFIG_ENABLE && new_gps == nullptr) {
         send_blob_update(instance);
