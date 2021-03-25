@@ -66,6 +66,7 @@
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
 #include <AP_TemperatureSensor/TSYS01.h>
+#include <AP_Proximity/AP_Proximity.h>
 
 // Local modules
 #include "defines.h"
@@ -91,10 +92,6 @@
 
 #if GRIPPER_ENABLED == ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
-#endif
-
-#if PROXIMITY_ENABLED == ENABLED
-#include <AP_Proximity/AP_Proximity.h>
 #endif
 
 #if AVOIDANCE_ENABLED == ENABLED
