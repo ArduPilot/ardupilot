@@ -330,7 +330,9 @@ public:
                           uint8_t sequence,
                           const RallyLocation &rally_point);
     void Write_Beacon(AP_Beacon &beacon);
+#if HAL_PROXIMITY_ENABLED
     void Write_Proximity(AP_Proximity &proximity);
+#endif
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool ignore_chg, float margin, const Location &final_dest, const Location &oa_dest);
     void Write_OADijkstra(uint8_t state, uint8_t error_id, uint8_t curr_point, uint8_t tot_points, const Location &final_dest, const Location &oa_dest);
