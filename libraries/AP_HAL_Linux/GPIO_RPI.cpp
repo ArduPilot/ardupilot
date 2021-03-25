@@ -198,7 +198,6 @@ void GPIO_RPI::pinMode(uint8_t pin, uint8_t output)
 
 void GPIO_RPI::pinMode(uint8_t pin, uint8_t output, uint8_t alt)
 {
-    assert(alt < 6);
     if (output == HAL_GPIO_INPUT) {
         set_gpio_mode_in(pin);
     } else if (output == HAL_GPIO_ALT) {
