@@ -106,7 +106,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     return false;
 }
 
-// get an individual ESC's temperature in degrees if available, returns true on success
+// get an individual ESC's temperature in cnti-degrees if available, returns true on success
 bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -114,11 +114,11 @@ bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE)) {
         return false;
     }
-    temp = _telem_data[esc_index].temperature_deg;
+    temp = _telem_data[esc_index].temperature_cdeg;
     return true;
 }
 
-// get an individual motor's temperature in degrees if available, returns true on success
+// get an individual motor's temperature in centi-degrees if available, returns true on success
 bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
@@ -126,7 +126,7 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
         || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE)) {
         return false;
     }
-    temp = _telem_data[esc_index].motor_temp_deg;
+    temp = _telem_data[esc_index].motor_temp_cdeg;
     return true;
 }
 
@@ -211,7 +211,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
         // fill in output arrays
         for (uint8_t j = 0; j < 4; j++) {
             const uint8_t esc_id = i * 4 + j;
-            temperature[j] = _telem_data[esc_id].temperature_deg;
+            temperature[j] = _telem_data[esc_id].temperature_cdeg;
             voltage[j] = _telem_data[esc_id].voltage_cv;
             current[j] = _telem_data[esc_id].current_ca;
             current_tot[j] = constrain_float(_telem_data[esc_id].consumption_mah, 0, UINT16_MAX);
@@ -243,7 +243,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
 // record an update to the telemetry data together with timestamp
 // this should be called by backends when new telemetry values are available
-void AP_ESC_Telem::update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint8_t data_mask)
+void AP_ESC_Telem::update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint16_t data_mask)
 {
     // rpm and telemetry data are not protected by a semaphore even though updated from different threads
     // all data is per-ESC and only written from the update thread and read by the user thread
@@ -256,10 +256,10 @@ void AP_ESC_Telem::update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backe
     }
 
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
-        _telem_data[esc_index].temperature_deg = new_data.temperature_deg;
+        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) {
-        _telem_data[esc_index].motor_temp_deg = new_data.motor_temp_deg;
+        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE) {
         _telem_data[esc_index].voltage_cv = new_data.voltage_cv;
@@ -340,9 +340,9 @@ void AP_ESC_Telem::update()
                                 (int32_t) rpm * 100,
                                 _telem_data[i].voltage_cv,
                                 _telem_data[i].current_ca,
-                                _telem_data[i].temperature_deg * 100,
+                                _telem_data[i].temperature_cdeg,
                                 _telem_data[i].consumption_mah,
-                                _telem_data[i].motor_temp_deg,
+                                _telem_data[i].motor_temp_cdeg,
                                 _rpm_data[i].error_rate);
                 _last_telem_log_ms[i] = AP_HAL::millis();
             }

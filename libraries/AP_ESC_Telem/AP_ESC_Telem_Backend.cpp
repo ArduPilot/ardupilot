@@ -36,7 +36,7 @@ void AP_ESC_Telem_Backend::update_rpm(uint8_t esc_index, uint16_t new_rpm, float
 }
 
 // callback to update the data in the frontend, should be called by the driver when new data is available
-void AP_ESC_Telem_Backend::update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint8_t data_present_mask) {
+void AP_ESC_Telem_Backend::update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint16_t data_present_mask) {
     _frontend->update_telem_data(esc_index, new_data, data_present_mask);
 }
 

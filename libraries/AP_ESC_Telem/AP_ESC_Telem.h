@@ -24,7 +24,7 @@ public:
     // get an individual ESC's rpm if available, returns true on success
     bool get_rpm(uint8_t esc_index, float& rpm) const;
 
-    // get an individual ESC's temperature in degrees if available, returns true on success
+    // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
 
     // get an individual motor's temperature in degrees if available, returns true on success
@@ -72,7 +72,7 @@ private:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
     void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate);
     // callback to update the data in the frontend, should be called by the driver when new data is available
-    void update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint8_t data_mask);
+    void update_telem_data(uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, uint16_t data_mask);
 
     AP_ESC_Telem_Backend* _backends[ESC_MAX_BACKENDS];
 

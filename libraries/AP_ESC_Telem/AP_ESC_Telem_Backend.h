@@ -14,14 +14,14 @@ class AP_ESC_Telem_Backend {
 public:
 
     struct TelemetryData {
-        int16_t  temperature_deg;   // degrees C, negative values allowed
+        int16_t  temperature_cdeg;  // centi-degrees C, negative values allowed
         uint16_t voltage_cv;        // centi-volts
         uint16_t current_ca;        // centi-amps
         uint16_t consumption_mah;   // mAh
         uint32_t usage_s;           // usage seconds
-        int16_t  motor_temp_deg;    // degrees C, negative values allowed
+        int16_t  motor_temp_cdeg;   // centi-degrees C, negative values allowed
         uint32_t last_update_ms;    // last update time, determines whether active
-        uint8_t  types;             // telemetry types present
+        uint16_t types;             // telemetry types present
         uint16_t count;             // number of times updated
     };
 
@@ -56,7 +56,7 @@ protected:
     void update_rpm(uint8_t esc_index, uint16_t new_rpm, float error_rate = 0.0f);
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
-    void update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint8_t data_present_mask);
+    void update_telem_data(uint8_t esc_index, const TelemetryData& new_data, uint16_t data_present_mask);
 
 private:
 };
