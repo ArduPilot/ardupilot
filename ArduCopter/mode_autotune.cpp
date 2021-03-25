@@ -125,28 +125,28 @@ bool AutoTune::position_ok()
 */
 bool ModeAutoTune::init(bool ignore_checks)
 {
-    return copter.autotune.init();
+    return autotune.init();
 }
 
 
 void ModeAutoTune::run()
 {
-    copter.autotune.run();
+    autotune.run();
 }
 
 void ModeAutoTune::save_tuning_gains()
 {
-    copter.autotune.save_tuning_gains();
+    autotune.save_tuning_gains();
 }
 
 void ModeAutoTune::stop()
 {
-    copter.autotune.stop();
+    autotune.stop();
 }
 
 void ModeAutoTune::reset()
 {
-    copter.autotune.reset();
+    autotune.reset();
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED
