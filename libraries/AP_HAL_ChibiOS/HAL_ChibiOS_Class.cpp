@@ -300,7 +300,6 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
     sdStart((SerialDriver*)&HAL_STDOUT_SERIAL, &stdoutcfg);
 #endif
 
-    assert(callbacks);
     g_callbacks = callbacks;
 
     //Takeover main
