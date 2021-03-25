@@ -774,7 +774,6 @@ void AP_InertialSensor::_start_backends()
 /* Find the N instance of the backend that has already been successfully detected */
 AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, uint8_t instance)
 {
-    assert(_backends_detected);
     uint8_t found = 0;
 
     for (uint8_t i = 0; i < _backend_count; i++) {
