@@ -16,7 +16,11 @@ lcov --no-external --capture --directory $PWD -o "$INFO_FILE" 2>&1 | tee $LCOV_L
 # remove files we do not intentionally test:
 lcov --remove "$INFO_FILE" ".waf*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
 lcov --remove "$INFO_FILE" "$PWD/modules/gtest/*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
+lcov --remove "$INFO_FILE" "$PWD/modules/uavcan/*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
 lcov --remove "$INFO_FILE" "$PWD/build/linux/libraries/*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
+lcov --remove "$INFO_FILE" "$PWD/build/sitl/libraries/*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
+lcov --remove "$INFO_FILE" "$PWD/build/sitl/modules/*" -o "$INFO_FILE" 2>&1 | tee -a $LCOV_LOG
+
 
 genhtml "$INFO_FILE" -o "$REPORT_DIR" 2>&1 | tee $GENHTML_LOG
 
