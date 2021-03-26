@@ -107,6 +107,7 @@ void AP_Stats::update()
     }
     const uint32_t params_reset = params.reset;
     if (params_reset != reset || params_reset == 0) {
+        gcs().send_text(MAV_SEVERITY_INFO, "stats reset (%u %u)", (unsigned)params_reset, (unsigned)reset);
         params.bootcount.set_and_save_ifchanged(params_reset == 0 ? 1 : 0);
         params.flttime.set_and_save_ifchanged(0);
         params.runtime.set_and_save_ifchanged(0);
