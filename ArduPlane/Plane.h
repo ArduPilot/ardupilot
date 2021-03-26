@@ -862,7 +862,6 @@ private:
     // Log.cpp
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
-    void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();
