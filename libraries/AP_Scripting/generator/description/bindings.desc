@@ -131,6 +131,7 @@ singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_M
 
 include AP_Proximity/AP_Proximity.h
 
+singleton AP_Proximity depends HAL_PROXIMITY_ENABLED == 1
 singleton AP_Proximity alias proximity
 singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
