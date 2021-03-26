@@ -11,6 +11,7 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include <AP_Math/location.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -486,6 +487,13 @@ void AP_Mount::update()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->update();
+
+            // assign retract/deploy servo channel
+            const SRV_Channel::Aux_servo_function_t retract_ch = (instance == 0) ? SRV_Channel::Aux_servo_function_t::k_mount_open : SRV_Channel::Aux_servo_function_t::k_mount2_open;
+            if (SRV_Channels::function_assigned(retract_ch)) {
+                const int16_t deploy_percent = (state[instance]._mode == MAV_MOUNT_MODE_RETRACT) ? 0 : 100;
+                SRV_Channels::set_output_scaled(retract_ch, deploy_percent);
+            }
         }
     }
 }

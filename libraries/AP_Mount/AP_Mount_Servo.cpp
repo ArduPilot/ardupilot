@@ -10,13 +10,11 @@ void AP_Mount_Servo::init()
         _roll_idx = SRV_Channel::k_mount_roll;
         _tilt_idx = SRV_Channel::k_mount_tilt;
         _pan_idx  = SRV_Channel::k_mount_pan;
-        _open_idx = SRV_Channel::k_mount_open;
     } else {
         // this must be the 2nd mount
         _roll_idx = SRV_Channel::k_mount2_roll;
         _tilt_idx = SRV_Channel::k_mount2_tilt;
         _pan_idx  = SRV_Channel::k_mount2_pan;
-        _open_idx = SRV_Channel::k_mount2_open;
     }
 
     // check which servos have been assigned
@@ -26,8 +24,6 @@ void AP_Mount_Servo::init()
 // update mount position - should be called periodically
 void AP_Mount_Servo::update()
 {
-    static bool mount_open = 0;     // 0 is closed
-
     // check servo map every three seconds to allow users to modify parameters
     uint32_t now = AP_HAL::millis();
     if (now - _last_check_servo_map_ms > 3000) {
@@ -100,13 +96,6 @@ void AP_Mount_Servo::update()
         default:
             //do nothing
             break;
-    }
-
-    // move mount to a "retracted position" into the fuselage with a fourth servo
-    bool mount_open_new = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
-    if (mount_open != mount_open_new) {
-        mount_open = mount_open_new;
-        move_servo(_open_idx, mount_open_new, 0, 1);
     }
 
     // write the results to the servos
