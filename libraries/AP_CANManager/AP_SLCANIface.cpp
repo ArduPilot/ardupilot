@@ -688,9 +688,12 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         // Also send this frame over can_iface when in passthrough mode,
         // We just push this frame without caring for priority etc
         if (_can_iface) {
-            if (_can_iface->send(out_frame, AP_HAL::native_micros64() + 100000, out_flags) == 1) {
-                rx_queue_.pop();
-                num_tries = 0;
+            bool read = false;
+            bool write = true;
+            _can_iface->select(read, write, &out_frame, 0); // select without blocking
+            if (write && _can_iface->send(out_frame, AP_HAL::native_micros64() + 100000, out_flags) == 1) {
+                    rx_queue_.pop();
+                    num_tries = 0;
             } else if (num_tries > 8) {
                 rx_queue_.pop();
                 num_tries = 0;
