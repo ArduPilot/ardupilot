@@ -631,7 +631,6 @@ void Copter::log_init(void)
 #else // LOGGING_ENABLED
 
 void Copter::Log_Write_Control_Tuning() {}
-void Copter::Log_Write_Performance() {}
 void Copter::Log_Write_Attitude(void) {}
 void Copter::Log_Write_EKF_POS() {}
 void Copter::Log_Write_MotBatt() {}

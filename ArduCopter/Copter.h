@@ -782,7 +782,6 @@ private:
 
     // Log.cpp
     void Log_Write_Control_Tuning();
-    void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_EKF_POS();
     void Log_Write_MotBatt();
