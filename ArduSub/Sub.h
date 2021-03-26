@@ -428,7 +428,6 @@ private:
     void rpm_update();
 #endif
     void Log_Write_Control_Tuning();
-    void Log_Write_Performance();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
     void Log_Write_Data(LogDataID id, int32_t value);
