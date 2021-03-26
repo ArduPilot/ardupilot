@@ -208,7 +208,8 @@ public:
     void checkPoweringOff(void);
 
     // reset battery remaining percentage
-    bool reset_remaining(uint16_t battery_mask, float percentage);
+    bool reset_remaining_mask(uint16_t battery_mask, float percentage);
+    bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
 
     static const struct AP_Param::GroupInfo var_info[];
 
