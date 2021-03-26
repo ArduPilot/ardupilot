@@ -3833,7 +3833,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_
 {
     const uint16_t battery_mask = packet.param1;
     const float percentage = packet.param2;
-    if (AP::battery().reset_remaining(battery_mask, percentage)) {
+    if (AP::battery().reset_remaining_mask(battery_mask, percentage)) {
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
