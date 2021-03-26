@@ -3,6 +3,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_RTC/AP_RTC.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 const extern AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -61,6 +63,7 @@ void AP_Stats::copy_variables_from_parameters()
 void AP_Stats::init()
 {
     params.bootcount.set_and_save(params.bootcount+1);
+    gcs().send_text(MAV_SEVERITY_INFO, "bootcount bumped to %u", (unsigned)params.bootcount+1);
 
     // initialise our variables from parameters:
     copy_variables_from_parameters();
