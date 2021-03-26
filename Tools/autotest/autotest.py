@@ -794,6 +794,10 @@ if __name__ == "__main__":
         "e.g. autotest.py --debug --gdb build.Tracker test.Tracker # run Tracker under gdb\n"
         "e.g. autotest.py --debug --gdb build.Sub test.Sub.DiveManual # do specific Sub test\n"
     )
+    parser.add_option("--autotest-server",
+                      action='store_true',
+                      default=False,
+                      help='Run in autotest-server mode; dangerous!')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -1099,6 +1103,12 @@ if __name__ == "__main__":
                 sys.exit(1)
             matched.extend(matches)
         steps = matched
+    elif opts.autotest_server:
+        # we will be changing this script to give a help message if
+        # --autotest-server isn't given, instead of assuming we want
+        # to do everything that happens on autotest.ardupilot.org,
+        # which includes some significant state-changing actions.
+        print("AutoTest-Server Mode")
 
     # skip steps according to --skip option:
     steps_to_run = [s for s in steps if should_run_step(s)]
