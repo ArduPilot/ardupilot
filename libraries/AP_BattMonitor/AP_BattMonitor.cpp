@@ -555,7 +555,7 @@ void AP_BattMonitor::checkPoweringOff(void)
   reset battery remaining percentage for batteries that integrate to
   calculate percentage remaining
 */
-bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
+bool AP_BattMonitor::reset_remaining_mask(uint16_t battery_mask, float percentage)
 {
     bool ret = true;
     Failsafe highest_failsafe = Failsafe::None;
