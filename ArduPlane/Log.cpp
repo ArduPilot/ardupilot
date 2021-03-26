@@ -527,7 +527,6 @@ void Plane::log_init(void)
 
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
-void Plane::Log_Write_Performance() {}
 void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
 void Plane::Log_Write_OFG_Guided() {}
