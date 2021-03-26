@@ -514,9 +514,12 @@ float Sub::get_auto_heading()
         float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        float desired_angle = pos_control.get_bearing_to_target();
-
-        float angle_error = wrap_180_cd(desired_angle - track_bearing);
+        const Vector2f target_vel_xy{pos_control.get_vel_target().x, pos_control.get_vel_target().y};
+        float angle_error = 0.0f;
+        if (target_vel_xy.length() >= pos_control.get_max_speed_xy() * 0.1f) {
+            const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;
+            angle_error = wrap_180_cd(desired_angle_cd - track_bearing);
+        }
         float angle_limited = constrain_float(angle_error, -g.xtrack_angle_limit * 100.0f, g.xtrack_angle_limit * 100.0f);
         return wrap_360_cd(track_bearing + angle_limited);
     }
