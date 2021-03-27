@@ -48,7 +48,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/ExpandingString.h>
 
-# if defined(STM32H7XX)
+# if defined(STM32H7XX) || defined(STM32G4)
 #include "CANFDIface.h"
 
 #define FDCAN1_IT0_IRQHandler      STM32_FDCAN1_IT0_HANDLER
@@ -56,14 +56,37 @@
 #define FDCAN2_IT0_IRQHandler      STM32_FDCAN2_IT0_HANDLER
 #define FDCAN2_IT1_IRQHandler      STM32_FDCAN2_IT1_HANDLER
 
-#define FDCAN_FRAME_BUFFER_SIZE 4         // Buffer size for 8 bytes data field
+#if defined(STM32G4)
+// on G4 FIFO elements are spaced at 18 words
+#define FDCAN_FRAME_BUFFER_SIZE 18
+#else
+// on H7 they are spaced at 4 words
+#define FDCAN_FRAME_BUFFER_SIZE 4
+#endif
 
 //Message RAM Allocations in Word lengths
+
+#if defined(STM32H7)
 #define MAX_FILTER_LIST_SIZE 80U            //80 element Standard Filter List elements or 40 element Extended Filter List
 #define FDCAN_NUM_RXFIFO0_SIZE 104U         //26 Frames
 #define FDCAN_TX_FIFO_BUFFER_SIZE 128U      //32 Frames
+#define MESSAGE_RAM_END_ADDR 0x4000B5FC
+
+#elif defined(STM32G4)
+#define MAX_FILTER_LIST_SIZE 80U            //80 element Standard Filter List elements or 40 element Extended Filter List
+#define FDCAN_NUM_RXFIFO0_SIZE 104U         //26 Frames
+#define FDCAN_TX_FIFO_BUFFER_SIZE 128U      //32 Frames
+#define FDCAN_MESSAGERAM_STRIDE 0x350       // separation of messageram areas
+#define FDCAN_EXFILTER_OFFSET 0x70
+#define FDCAN_RXFIFO0_OFFSET 0xB0
+#define FDCAN_RXFIFO1_OFFSET 0x188
+#define FDCAN_TXFIFO_OFFSET 0x278
 
 #define MESSAGE_RAM_END_ADDR 0x4000B5FC
+
+#else
+#error "Unsupported MCU for FDCAN"
+#endif
 
 extern AP_HAL::HAL& hal;
 
@@ -78,21 +101,32 @@ using namespace ChibiOS;
 #endif
 
 constexpr CANIface::CanType* const CANIface::Can[];
-static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES] = {nullptr};
+static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES];
+
+uint8_t CANIface::next_interface;
+
+// mapping from logical interface to physical. First physical is 0, first logical is 0
+static constexpr uint8_t can_interfaces[HAL_NUM_CAN_IFACES] = { HAL_CAN_INTERFACE_LIST };
+
+// mapping from physical interface back to logical. First physical is 0, first logical is 0
+static constexpr int8_t can_iface_to_idx[3] = { HAL_CAN_INTERFACE_REV_LIST };
+
 #define REG_SET_TIMEOUT 250 // if it takes longer than 250ms for setting a register we have failed
+
 static inline bool driver_initialised(uint8_t iface_index)
 {
-    if (iface_index >= HAL_NUM_CAN_IFACES) {
-        return false;
-    }
     if (can_ifaces[iface_index] == nullptr) {
         return false;
     }
     return true;
 }
 
-static inline void handleCANInterrupt(uint8_t iface_index, uint8_t line_index)
+static inline void handleCANInterrupt(uint8_t phys_index, uint8_t line_index)
 {
+    const int8_t iface_index = can_iface_to_idx[phys_index];
+    if (iface_index < 0 || iface_index >= HAL_NUM_CAN_IFACES) {
+        return;
+    }
     if (!driver_initialised(iface_index)) {
         //Just reset all the interrupts and return
         CANIface::Can[iface_index]->IR = FDCAN_IR_RF0N;
@@ -143,6 +177,11 @@ CANIface::CANIface(uint8_t index) :
     }
 }
 
+// constructor suitable for array
+CANIface::CANIface() :
+    CANIface(next_interface++)
+{}
+
 void CANIface::handleBusOffInterrupt()
 {
     _detected_bus_off = true;
@@ -158,7 +197,6 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
      * Hardware configuration
      */
     const uint32_t pclk = STM32_FDCANCLK;
-
 
     static const int MaxBS1 = 16;
     static const int MaxBS2 = 8;
@@ -326,6 +364,7 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
                 (uint32_t(frame.data[6]) << 16) |
                 (uint32_t(frame.data[5]) << 8)  |
                 (uint32_t(frame.data[4]) << 0);
+
     //Set Add Request
     can_->TXBAR = (1 << index);
 
@@ -358,6 +397,18 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+#if defined(STM32G4)
+    // not supported yet
+    can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
+    uint32_t while_start_ms = AP_HAL::millis();
+    while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+        if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+            return false;
+        }
+    }
+    initialised_ = true;
+    return true;
+#else
     uint32_t num_extid = 0, num_stdid = 0;
     uint32_t total_available_list_size = MAX_FILTER_LIST_SIZE;
     uint32_t* filter_ptr;
@@ -377,7 +428,11 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
     CriticalSectionLocker lock;
     //Allocate Message RAM for Standard ID Filter List
     if (num_stdid == 0) { //No Frame with Standard ID is to be accepted
+#if defined(STM32G4)
+        can_->RXGFC |= 0x2; //Reject All Standard ID Frames
+#else
         can_->GFC |= 0x2; //Reject All Standard ID Frames
+#endif
     } else if ((num_stdid < total_available_list_size) && (num_stdid <= 128)) {
         can_->SIDFC = (FDCANMessageRAMOffset_ << 2) | (num_stdid << 16);
         MessageRam_.StandardFilterSA = SRAMCAN_BASE + (FDCANMessageRAMOffset_ * 4U);
@@ -468,6 +523,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
     }
     initialised_ = true;
     return true;
+#endif // defined(STM32G4)
 }
 
 uint16_t CANIface::getNumFilters() const
@@ -490,16 +546,21 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 #endif
     }
 
-
     bitrate_ = bitrate;
     mode_ = mode;
     //Only do it once
     //Doing it second time will reset the previously initialised bus
     if (!clock_init_) {
         CriticalSectionLocker lock;
+#if defined(STM32G4)
+        RCC->APB1ENR1  |= RCC_APB1ENR1_FDCANEN;
+        RCC->APB1RSTR1 |= RCC_APB1RSTR1_FDCANRST;
+        RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_FDCANRST;
+#else
         RCC->APB1HENR  |= RCC_APB1HENR_FDCANEN;
         RCC->APB1HRSTR |= RCC_APB1HRSTR_FDCANRST;
         RCC->APB1HRSTR &= ~RCC_APB1HRSTR_FDCANRST;
+#endif
         clock_init_ = true;
     }
 
@@ -508,19 +569,24 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
      */
     if (!irq_init_) {
         CriticalSectionLocker lock;
-        if (self_index_ == 0) {
+        switch (can_interfaces[self_index_]) {
+        case 0:
             nvicEnableVector(FDCAN1_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN1_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
-        }
-# if HAL_NUM_CAN_IFACES > 1
-        else if (self_index_ == 1) {
+            break;
+        case 1:
             nvicEnableVector(FDCAN2_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
             nvicEnableVector(FDCAN2_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
+#ifdef FDCAN3_IT0_IRQn
+        case 2:
+            nvicEnableVector(FDCAN3_IT0_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            nvicEnableVector(FDCAN3_IT1_IRQn, CORTEX_MAX_KERNEL_PRIORITY);
+            break;
+#endif
         }
-# endif
         irq_init_ = true;
     }
-
 
     // Setup FDCAN for configuration mode and disable all interrupts
     {
@@ -576,11 +642,17 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
     //TODO: Do timing calculations for FDCAN
     can_->NBTP = ((timings.sjw << FDCAN_NBTP_NSJW_Pos)   |
                   (timings.bs1 << FDCAN_NBTP_NTSEG1_Pos) |
-                  (timings.bs2 << FDCAN_NBTP_TSEG2_Pos)  |
+                  (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
 
+    can_->DBTP = ((timings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
+                  (timings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
+                  (timings.prescaler << FDCAN_DBTP_DBRP_Pos));
+    
     //RX Config
+#if defined(STM32H7)
     can_->RXESC = 0; //Set for 8Byte Frames
+#endif
 
     //Setup Message RAM
     setupMessageRam();
@@ -595,9 +667,17 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
                 FDCAN_IE_RF0FE |  // Rx FIFO 0 FIFO Full
                 FDCAN_IE_RF1NE |  // RX FIFO 1 new message
                 FDCAN_IE_RF1FE;   // Rx FIFO 1 FIFO Full
+#if defined(STM32G4)
+    can_->ILS = FDCAN_ILS_PERR | FDCAN_ILS_SMSG;
+#else
     can_->ILS = FDCAN_ILS_TCL | FDCAN_ILS_BOE;  //Set Line 1 for Transmit Complete Event Interrupt and Bus Off Interrupt
+#endif
     // And Busoff error
+#if defined(STM32G4)
+    can_->TXBTIE = 0x7;
+#else
     can_->TXBTIE = 0xFFFFFFFF;
+#endif
     can_->ILE = 0x3;
 
     // If mode is Filtered then we finish the initialisation in configureFilter method
@@ -625,6 +705,17 @@ void CANIface::clear_rx()
 
 void CANIface::setupMessageRam()
 {
+#if defined(STM32G4)
+    const uint32_t base = SRAMCAN_BASE + FDCAN_MESSAGERAM_STRIDE * can_interfaces[self_index_];
+    memset((void*)base, 0, FDCAN_MESSAGERAM_STRIDE);
+    MessageRam_.StandardFilterSA = base;
+    MessageRam_.ExtendedFilterSA = base + FDCAN_EXFILTER_OFFSET;
+    MessageRam_.RxFIFO0SA = base + FDCAN_RXFIFO0_OFFSET;
+    MessageRam_.RxFIFO1SA = base + FDCAN_RXFIFO1_OFFSET;
+    MessageRam_.TxFIFOQSA = base + FDCAN_TXFIFO_OFFSET;
+
+    can_->TXBC = 0; // fifo mode
+#else
     uint32_t num_elements = 0;
 
     // Rx FIFO 0 start address and element count
@@ -648,6 +739,7 @@ void CANIface::setupMessageRam()
         AP_HAL::panic("CANFDIface: Message RAM Overflow!");
         return;
     }
+#endif
 }
 
 void CANIface::handleTxCompleteInterrupt(const uint64_t timestamp_us)
@@ -685,10 +777,12 @@ bool CANIface::readRxFIFO(uint8_t fifo_index)
     uint32_t index;
     uint64_t timestamp_us = AP_HAL::micros64();
     if (fifo_index == 0) {
+#if !defined(STM32G4)
         //Check if RAM allocated to RX FIFO
         if ((can_->RXF0C & FDCAN_RXF0C_F0S) == 0) {
             return false;
         }
+#endif
         //Register Message Lost as a hardware error
         if ((can_->RXF0S & FDCAN_RXF0S_RF0L) != 0) {
             stats.rx_errors++;
@@ -701,10 +795,12 @@ bool CANIface::readRxFIFO(uint8_t fifo_index)
             frame_ptr = (uint32_t *)(MessageRam_.RxFIFO0SA + (index * FDCAN_FRAME_BUFFER_SIZE * 4));
         }
     } else if (fifo_index == 1) {
+#if !defined(STM32G4)
         //Check if RAM allocated to RX FIFO
         if ((can_->RXF1C & FDCAN_RXF1C_F1S) == 0) {
             return false;
         }
+#endif
         //Register Message Lost as a hardware error
         if ((can_->RXF1S & FDCAN_RXF1S_RF1L) != 0) {
             stats.rx_errors++;
@@ -811,10 +907,12 @@ void CANIface::pollErrorFlags()
 
 bool CANIface::canAcceptNewTxFrame() const
 {
+#if !defined(STM32G4)
     //Check if Tx FIFO is allocated
     if ((can_->TXBC & FDCAN_TXBC_TFQS) == 0) {
         return false;
     }
+#endif
     if ((can_->TXFQS & FDCAN_TXFQS_TFQF) != 0) {
         return false;    //we don't have free space
     }
@@ -901,7 +999,7 @@ bool CANIface::select(bool &read, bool &write,
 {
     const bool in_read = read;
     const bool in_write= write;
-    uint64_t time = AP_HAL::micros();
+    uint64_t time = AP_HAL::micros64();
 
     if (!read && !write) {
         //invalid request
@@ -925,9 +1023,9 @@ bool CANIface::select(bool &read, bool &write,
         if ((read && in_read) || (write && in_write)) {
             return true;
         }
-        time = AP_HAL::micros();
+        time = AP_HAL::micros64();
     }
-    return true; // Return value doesn't matter as long as it is non-negative
+    return false;
 }
 
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
@@ -962,7 +1060,8 @@ void CANIface::get_stats(ExpandingString &str)
  */
 extern "C"
 {
-
+#ifdef HAL_CAN_IFACE1_ENABLE
+    // FDCAN1
     CH_IRQ_HANDLER(FDCAN1_IT0_IRQHandler);
     CH_IRQ_HANDLER(FDCAN1_IT0_IRQHandler)
     {
@@ -978,10 +1077,10 @@ extern "C"
         handleCANInterrupt(0, 1);
         CH_IRQ_EPILOGUE();
     }
+#endif
 
-
-# if HAL_NUM_CAN_IFACES > 1
-
+#ifdef HAL_CAN_IFACE2_ENABLE
+    // FDCAN2
     CH_IRQ_HANDLER(FDCAN2_IT0_IRQHandler);
     CH_IRQ_HANDLER(FDCAN2_IT0_IRQHandler)
     {
@@ -997,11 +1096,29 @@ extern "C"
         handleCANInterrupt(1, 1);
         CH_IRQ_EPILOGUE();
     }
+#endif
 
-# endif
+#ifdef HAL_CAN_IFACE3_ENABLE
+    // FDCAN3
+    CH_IRQ_HANDLER(FDCAN3_IT0_IRQHandler);
+    CH_IRQ_HANDLER(FDCAN3_IT0_IRQHandler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleCANInterrupt(2, 0);
+        CH_IRQ_EPILOGUE();
+    }
 
+    CH_IRQ_HANDLER(FDCAN3_IT1_IRQHandler);
+    CH_IRQ_HANDLER(FDCAN3_IT1_IRQHandler)
+    {
+        CH_IRQ_PROLOGUE();
+        handleCANInterrupt(2, 1);
+        CH_IRQ_EPILOGUE();
+    }
+#endif
+    
 } // extern "C"
 
-#endif //defined(STM32H7XX)
+#endif //defined(STM32H7XX) || defined(STM32G4)
 
 #endif //HAL_NUM_CAN_IFACES

@@ -45,6 +45,9 @@ public:
     Mode(const Mode &other) = delete;
     Mode &operator=(const Mode&) = delete;
 
+    // returns a unique number specific to this mode
+    virtual Number mode_number() const = 0;
+
     // child classes should override these methods
     virtual bool init(bool ignore_checks) {
         return true;
@@ -57,6 +60,9 @@ public:
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
+    virtual bool allows_save_trim() const { return false; }
+    virtual bool allows_autotune() const { return false; }
+    virtual bool allows_flip() const { return false; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -77,8 +83,6 @@ public:
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
 
-    void update_navigation();
-
     int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
@@ -97,9 +101,6 @@ public:
     }
 
 protected:
-
-    // navigation support functions
-    virtual void run_autopilot() {}
 
     // helper functions
     bool is_disarmed_or_landed() const;
@@ -254,6 +255,7 @@ class ModeAcro : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::ACRO; }
 
     enum class Trainer {
         OFF = 0,
@@ -276,6 +278,8 @@ public:
     void exit();
     // whether an air-mode aux switch has been toggled
     void air_mode_aux_changed();
+    bool allows_save_trim() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
@@ -313,6 +317,7 @@ class ModeAltHold : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::ALT_HOLD; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -324,6 +329,8 @@ public:
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
     }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
@@ -340,6 +347,7 @@ class ModeAuto : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::AUTO; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -394,7 +402,6 @@ protected:
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
     bool get_wp(Location &loc) override;
-    void run_autopilot() override;
 
 private:
 
@@ -517,7 +524,7 @@ private:
         float descend_max; // centimetres
     } nav_payload_place;
 
-    bool waiting_for_origin;    // true if waiting for origin before starting mission
+    bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -544,6 +551,7 @@ class ModeAutoTune : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::AUTOTUNE; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -570,6 +578,7 @@ class ModeBrake : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::BRAKE; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -601,6 +610,7 @@ class ModeCircle : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::CIRCLE; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -631,6 +641,7 @@ class ModeDrift : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::DRIFT; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -657,6 +668,7 @@ class ModeFlip : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::FLIP; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -702,6 +714,7 @@ class ModeFlowHold : public Mode {
 public:
     // need a constructor for parameters
     ModeFlowHold(void);
+    Number mode_number() const override { return Number::FLOWHOLD; }
 
     bool init(bool ignore_checks) override;
     void run(void) override;
@@ -713,6 +726,7 @@ public:
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
     }
+    bool allows_flip() const override { return true; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -784,6 +798,7 @@ class ModeGuided : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::GUIDED; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -859,6 +874,7 @@ class ModeGuidedNoGPS : public ModeGuided {
 public:
     // inherit constructor
     using ModeGuided::Mode;
+    Number mode_number() const override { return Number::GUIDED_NOGPS; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -882,6 +898,7 @@ class ModeLand : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::LAND; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -895,6 +912,11 @@ public:
 
     void do_not_use_GPS();
 
+    // returns true if LAND mode is trying to control X/Y position
+    bool controlling_position() const { return control_position; }
+
+    void set_land_pause(bool new_value) { land_pause = new_value; }
+
 protected:
 
     const char *name() const override { return "LAND"; }
@@ -904,6 +926,11 @@ private:
 
     void gps_run();
     void nogps_run();
+
+    bool control_position; // true if we are using an external reference to control position
+
+    uint32_t land_start_time;
+    bool land_pause;
 };
 
 
@@ -912,6 +939,7 @@ class ModeLoiter : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::LOITER; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -921,6 +949,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
 
 #if PRECISION_LANDING == ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
@@ -953,6 +982,7 @@ class ModePosHold : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::POSHOLD; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -962,6 +992,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
+    bool allows_autotune() const override { return true; }
 
 protected:
 
@@ -1033,6 +1064,7 @@ class ModeRTL : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::RTL; }
 
     bool init(bool ignore_checks) override;
     void run() override {
@@ -1142,6 +1174,7 @@ class ModeSmartRTL : public ModeRTL {
 public:
     // inherit constructor
     using ModeRTL::Mode;
+    Number mode_number() const override { return Number::SMART_RTL; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1187,6 +1220,7 @@ class ModeSport : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::SPORT; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1214,6 +1248,7 @@ class ModeStabilize : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::STABILIZE; }
 
     virtual void run() override;
 
@@ -1221,6 +1256,9 @@ public:
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(bool from_gcs) const override { return true; };
     bool is_autopilot() const override { return false; }
+    bool allows_save_trim() const override { return true; }
+    bool allows_autotune() const override { return true; }
+    bool allows_flip() const override { return true; }
 
 protected:
 
@@ -1252,15 +1290,17 @@ class ModeSystemId : public Mode {
 
 public:
     ModeSystemId(void);
+    Number mode_number() const override { return Number::SYSTEMID; }
 
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
+
     void set_magnitude(float input) { waveform_magnitude = input; }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -1319,6 +1359,7 @@ class ModeThrow : public Mode {
 public:
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::THROW; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1375,6 +1416,7 @@ class ModeAvoidADSB : public ModeGuided {
 public:
     // inherit constructor
     using ModeGuided::Mode;
+    Number mode_number() const override { return Number::AVOID_ADSB; }
 
     bool init(bool ignore_checks) override;
     void run() override;
@@ -1401,6 +1443,7 @@ public:
 
     // inherit constructor
     using ModeGuided::Mode;
+    Number mode_number() const override { return Number::FOLLOW; }
 
     bool init(bool ignore_checks) override;
     void exit();
@@ -1431,6 +1474,7 @@ public:
 
     // Inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::ZIGZAG; }
 
     enum class Destination : uint8_t {
         A,  // Destination A
@@ -1523,6 +1567,7 @@ public:
 
     // inherit constructor
     using Mode::Mode;
+    Number mode_number() const override { return Number::AUTOROTATE; }
 
     bool init(bool ignore_checks) override;
     void run() override;

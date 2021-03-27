@@ -6,8 +6,6 @@
 void Copter::run_nav_updates(void)
 {
     update_super_simple_bearing(false);
-
-    flightmode->update_navigation();
 }
 
 // distance between vehicle and home in cm

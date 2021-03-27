@@ -88,6 +88,14 @@ class AutoTestCopter(AutoTest):
     def default_frame(self):
         return "+"
 
+    def apply_defaultfile_parameters(self):
+        # Copter passes in a defaults_filepath in place of applying
+        # parameters afterwards.
+        pass
+
+    def defaults_filepath(self):
+        return self.model_defaults_filepath(self.vehicleinfo_key(), self.frame)
+
     def wait_disarmed_default_wait_time(self):
         return 120
 
@@ -315,7 +323,7 @@ class AutoTestCopter(AutoTest):
     # fly a square in alt_hold mode
     def fly_square(self, side=50, timeout=300):
 
-        self.takeoff(10, mode="ALT_HOLD")
+        self.takeoff(20, mode="ALT_HOLD")
 
         """Fly a square, flying N then E ."""
         tstart = self.get_sim_time()
@@ -400,15 +408,18 @@ class AutoTestCopter(AutoTest):
         self.save_wp()
 
         # save the stored mission to file
-        num_wp = self.save_mission_to_file(os.path.join(testdir,
-                                                        "ch7_mission.txt"))
+        mavproxy = self.start_mavproxy()
+        num_wp = self.save_mission_to_file_using_mavproxy(
+            mavproxy,
+            os.path.join(testdir, "ch7_mission.txt"))
+        self.stop_mavproxy(mavproxy)
         if not num_wp:
             self.fail_list.append("save_mission_to_file")
             self.progress("save_mission_to_file failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
-        self.set_current_waypoint(1)
         self.change_mode('AUTO')
+        self.set_current_waypoint(1)
         self.wait_waypoint(0, num_wp-1, timeout=500)
         self.progress("test: MISSION COMPLETE: passed!")
         self.land_and_disarm()
@@ -2105,8 +2116,8 @@ class AutoTestCopter(AutoTest):
 
         self.reboot_sitl()
         # Test UAVCAN GPS ordering working
-        gps1_det_text = self.wait_statustext("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
-        gps2_det_text = self.wait_statustext("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+        gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+        gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
         gps1_nodeid = int(gps1_det_text.split('-')[1])
         gps2_nodeid = int(gps2_det_text.split('-')[1])
         if gps1_nodeid is None or gps2_nodeid is None:
@@ -2134,11 +2145,11 @@ class AutoTestCopter(AutoTest):
             gps1_det_text = None
             gps2_det_text = None
             try:
-                gps1_det_text = self.wait_statustext("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+                gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
             try:
-                gps2_det_text = self.wait_statustext("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+                gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
 
@@ -2161,8 +2172,19 @@ class AutoTestCopter(AutoTest):
                 if case[3] != int(gps2_det_text.split('-')[1]):
                     raise NotAchievedException("Failed ordering for requested CASE:", case)
             if len(case[4]):
-                self.mavproxy.send('arm throttle\n')
-                self.mavproxy.expect(case[4])
+                self.context_collect('STATUSTEXT')
+                self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                             1,  # ARM
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             timeout=10,
+                             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                self.wait_statustext(case[4], check_context=True)
+                self.context_stop_collecting('STATUSTEXT')
         self.progress("############################### All GPS Order Cases Tests Passed")
         self.context_pop()
         self.fly_auto_test()
@@ -2703,6 +2725,11 @@ class AutoTestCopter(AutoTest):
         ex = None
         self.context_push()
 
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
+
         try:
             self.set_analog_rangefinder_parameters()
             self.set_parameter("RC9_OPTION", 10) # rangefinder
@@ -2750,6 +2777,9 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
+
+        self.stop_mavproxy(mavproxy)
+
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
@@ -4783,6 +4813,11 @@ class AutoTestCopter(AutoTest):
 
         '''
 
+        # we must start mavproxy here as otherwise we can't get the
+        # terrain database tiles - this leads to random failures in
+        # CI!
+        mavproxy = self.start_mavproxy()
+
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
@@ -4841,6 +4876,8 @@ class AutoTestCopter(AutoTest):
                 (max_post_arming_home_offset_delta_mm, delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
 
         self.wait_disarmed()
+
+        self.stop_mavproxy(mavproxy)
 
     def fly_precision_companion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
@@ -5296,13 +5333,15 @@ class AutoTestCopter(AutoTest):
         self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
         self.progress("new_loc: %s" % str(new_loc))
         heading = 0
-        self.mavproxy.send("map icon %f %f greenplane %f\n" %
-                           (new_loc.lat, new_loc.lng, heading))
+        if self.mavproxy is not None:
+            self.mavproxy.send("map icon %f %f greenplane %f\n" %
+                               (new_loc.lat, new_loc.lng, heading))
 
         expected_loc = copy.copy(new_loc)
         self.location_offset_ne(expected_loc, -foll_ofs_x, 0)
-        self.mavproxy.send("map icon %f %f hoop\n" %
-                           (expected_loc.lat, expected_loc.lng))
+        if self.mavproxy is not None:
+            self.mavproxy.send("map icon %f %f hoop\n" %
+                               (expected_loc.lat, expected_loc.lng))
         self.progress("expected_loc: %s" % str(expected_loc))
 
         last_sent = 0
@@ -5652,7 +5691,7 @@ class AutoTestCopter(AutoTest):
             # Test for pre-arm check fail when state is not running
             self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
             self.set_parameter("SIM_IE24_STATE", 8)
-            self.wait_statustext("Status not running")
+            self.wait_statustext("Status not running", timeout=40)
             self.try_arm(result=False,
                          expect_msg="Status not running")
             self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
@@ -6896,6 +6935,10 @@ class AutoTestHeli(AutoTestCopter):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION_AVC
+
+    def default_speedup(self):
+        '''Heli seems to be race-free'''
+        return 100
 
     def is_heli(self):
         return True

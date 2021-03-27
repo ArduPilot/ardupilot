@@ -14,6 +14,8 @@
  */
 
 #include "AP_Proximity.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include "AP_Proximity_LightWareSF40C_v09.h"
 #include "AP_Proximity_RPLidarA2.h"
 #include "AP_Proximity_TeraRangerTower.h"
@@ -502,3 +504,5 @@ AP_Proximity *proximity()
 }
 
 }
+
+#endif // HAL_PROXIMITY_ENABLED

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 #define PROXIMITY_RANGEFIDER_TIMEOUT_MS 200 // requests timeout after 0.2 seconds
 
@@ -33,3 +34,5 @@ private:
     uint32_t _last_upward_update_ms;    // system time of last update distance
     float _distance_upward = -1;        // upward distance in meters, negative if the last reading was out of range
 };
+
+#endif // HAL_PROXIMITY_ENABLED

@@ -110,7 +110,7 @@ void ModePosHold::run()
         pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
@@ -135,7 +135,7 @@ void ModePosHold::run()
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
 
         // set position controller targets
         pos_control->set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
@@ -149,7 +149,7 @@ void ModePosHold::run()
     case AltHold_Landed_Ground_Idle:
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-        loiter_nav->update();
+        loiter_nav->update(false);
         attitude_control->set_yaw_target_to_current_heading();
         init_wind_comp_estimate();
         FALLTHROUGH;
@@ -165,11 +165,6 @@ void ModePosHold::run()
 
     case AltHold_Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-#if AC_AVOID_ENABLED == ENABLED
-        // apply avoidance
-        copter.avoid.adjust_roll_pitch(target_roll, target_pitch, copter.aparm.angle_max);
-#endif
 
         // adjust climb rate using rangefinder
         if (copter.rangefinder_alt_ok()) {
@@ -424,7 +419,7 @@ void ModePosHold::run()
                 update_brake_angle_from_velocity(brake_pitch, -vel_fw);
 
                 // run loiter controller
-                loiter_nav->update();
+                loiter_nav->update(false);
 
                 // calculate final roll and pitch output by mixing loiter and brake controls
                 roll = mix_controls(brake_to_loiter_mix, brake_roll + wind_comp_roll, loiter_nav->get_roll());
@@ -455,7 +450,7 @@ void ModePosHold::run()
 
             case RPMode::LOITER:
                 // run loiter controller
-                loiter_nav->update();
+                loiter_nav->update(false);
 
                 // set roll angle based on loiter controller outputs
                 roll = loiter_nav->get_roll();

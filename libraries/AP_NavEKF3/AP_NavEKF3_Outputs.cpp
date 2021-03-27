@@ -339,10 +339,7 @@ bool NavEKF3_core::getGPSLLH(struct Location &loc) const
 {
     const auto &gps = dal.gps();
     if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
-        const struct Location &gpsloc = gps.location(selected_gps);
-        loc = gpsloc;
-        loc.relative_alt = 0;
-        loc.terrain_alt = 0;
+        loc = gps.location(selected_gps);
         return true;
     }
     return false;

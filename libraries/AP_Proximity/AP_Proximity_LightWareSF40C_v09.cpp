@@ -13,8 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_LightWareSF40C_v09.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -360,3 +362,5 @@ void AP_Proximity_LightWareSF40C_v09::clear_buffers()
     element_num = 0;
     memset(element_buf, 0, sizeof(element_buf));
 }
+
+#endif // HAL_PROXIMITY_ENABLED

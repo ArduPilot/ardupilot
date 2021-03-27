@@ -42,9 +42,18 @@ void AP_Periph_FW::rcout_init()
     for (uint8_t i=0; i<SERVO_OUT_RCIN_MAX; i++) {
         SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i), 1000);
     }
+
+    uint16_t esc_mask = 0;
     for (uint8_t i=0; i<SERVO_OUT_MOTOR_MAX; i++) {
-        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), UAVCAN_ESC_MAX_VALUE);
+        SRV_Channels::set_range(SRV_Channels::get_motor_function(i), UAVCAN_ESC_MAX_VALUE);
+        uint8_t chan;
+        if (SRV_Channels::find_channel(SRV_Channels::get_motor_function(i), chan)) {
+            esc_mask |= 1U << chan;
+        }
     }
+
+    // setup ESCs with the desired PWM type, allowing for DShot
+    hal.rcout->set_output_mode(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
 
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
@@ -68,7 +77,8 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 
     const uint8_t channel_count = MIN(num_channels, SERVO_OUT_MOTOR_MAX);
     for (uint8_t i=0; i<channel_count; i++) {
-        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), rc[i]);
+        // we don't support motor reversal yet on ESCs in AP_Periph
+        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), MAX(0,rc[i]));
     }
 
     rcout_has_new_data_to_update = true;

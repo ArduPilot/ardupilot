@@ -61,7 +61,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
     }
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     if (copter.g2.proximity.sensor_present()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
@@ -76,7 +76,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
-    switch (copter.control_mode) {
+    switch (copter.flightmode->mode_number()) {
     case Mode::Number::AUTO:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
@@ -106,7 +106,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         break;
     }
 
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     if (copter.g2.proximity.sensor_enabled()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }
@@ -126,7 +126,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
-#if PROXIMITY_ENABLED == ENABLED
+#if HAL_PROXIMITY_ENABLED
     if (!copter.g2.proximity.sensor_failed()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_PROXIMITY;
     }

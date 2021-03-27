@@ -162,8 +162,6 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     struct i2c_msg msgs[2] = { };
     unsigned nmsgs = 0;
 
-    assert(_bus.fd >= 0);
-
     if (send && send_len != 0) {
         msgs[nmsgs].addr = _address;
         msgs[nmsgs].flags = 0;
@@ -389,8 +387,6 @@ I2CDeviceManager::_create_device(I2CBus &b, uint8_t address) const
 
 void I2CDeviceManager::_unregister(I2CBus &b)
 {
-    assert(b.ref > 0);
-
     if (--b.ref > 0) {
         return;
     }

@@ -28,6 +28,8 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions.
     // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand
+    // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
+    // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
 
@@ -1524,7 +1526,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_NAV_PAYLOAD_PLACE:
-        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (m->cm)
+        packet.param1 = cmd.p1/100.0f; // copy max-descend parameter (cm->m)
         break;
 
     case MAV_CMD_NAV_SET_YAW_SPEED:

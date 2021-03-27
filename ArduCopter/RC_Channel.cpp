@@ -145,7 +145,7 @@ void RC_Channel_Copter::do_aux_function_change_mode(const Mode::Number mode,
     default:
         // return to flight mode switch's flight mode if we are currently
         // in this mode
-        if (copter.control_mode == mode) {
+        if (copter.flightmode->mode_number() == mode) {
             rc().reset_mode_switch();
         }
     }
@@ -201,7 +201,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::SAVE_TRIM:
             if ((ch_flag == AuxSwitchPos::HIGH) &&
-                (copter.control_mode <= Mode::Number::ACRO) &&
+                (copter.flightmode->allows_save_trim()) &&
                 (copter.channel_throttle->get_control_in() == 0)) {
                 copter.save_trim();
             }
@@ -213,7 +213,7 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (copter.control_mode == Mode::Number::AUTO || !copter.motors->armed()) {
+                if (copter.flightmode->mode_number() == Mode::Number::AUTO || !copter.motors->armed()) {
                     return;
                 }
 

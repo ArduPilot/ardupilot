@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Filter/Filter.h>
-#include "AP_Proximity.h"
 #include "AP_Proximity_LightWareSerial.h"
+
+#if HAL_PROXIMITY_ENABLED
+#include <Filter/Filter.h>
 
 class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
 {
@@ -100,3 +101,5 @@ private:
     } _sensor_state;
 
 };
+
+#endif // HAL_PROXIMITY_ENABLED

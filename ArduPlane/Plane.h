@@ -789,6 +789,28 @@ private:
     // terrain disable for non AUTO modes, set with an RC Option switch
     bool non_auto_terrain_disable;
     bool terrain_disabled();
+#if AP_TERRAIN_AVAILABLE
+    bool terrain_enabled_in_current_mode() const;
+    enum class terrain_bitmask {
+        ALL             = 1U << 0,
+        FLY_BY_WIRE_B   = 1U << 1,
+        CRUISE          = 1U << 2,
+        AUTO            = 1U << 3,
+        RTL             = 1U << 4,
+        AVOID_ADSB      = 1U << 5,
+        GUIDED          = 1U << 6,
+        LOITER          = 1U << 7,
+        CIRCLE          = 1U << 8,
+        QRTL            = 1U << 9,
+        QLAND           = 1U << 10,
+        QLOITER         = 1U << 11,
+    };
+    struct TerrainLookupTable{
+       Mode::Number mode_num;
+       terrain_bitmask bitmask;
+    };
+    static const TerrainLookupTable Terrain_lookup[];
+#endif
 
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
@@ -841,7 +863,6 @@ private:
     // Log.cpp
     void Log_Write_Fast(void);
     void Log_Write_Attitude(void);
-    void Log_Write_Performance();
     void Log_Write_Startup(uint8_t type);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();

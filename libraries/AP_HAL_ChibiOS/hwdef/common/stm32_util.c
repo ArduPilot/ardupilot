@@ -218,6 +218,8 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 #if defined(STM32F1)
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
+#elif defined(STM32G4)
+        *v++ = ((__IO uint32_t *)&TAMP->BKP0R)[idx++];
 #else
         *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
 #endif
@@ -243,6 +245,8 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
         __IO uint32_t *dr = (__IO uint32_t *)&BKP->DR1;
         dr[n/2] =   (*v) & 0xFFFF;
         dr[n/2+1] = (*v) >> 16;
+#elif defined(STM32G4)
+        ((__IO uint32_t *)&TAMP->BKP0R)[idx++] = *v++;
 #else
         ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
 #endif
@@ -320,7 +324,7 @@ void peripheral_power_enable(void)
 #endif
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
   then written back

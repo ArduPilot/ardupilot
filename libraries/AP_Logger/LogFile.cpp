@@ -546,6 +546,7 @@ void AP_Logger::Write_Beacon(AP_Beacon &beacon)
     WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
 }
 
+#if HAL_PROXIMITY_ENABLED
 // Write proximity sensor distances
 void AP_Logger::Write_Proximity(AP_Proximity &proximity)
 {
@@ -608,6 +609,7 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
         }
     }
 }
+#endif
 
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
@@ -627,6 +629,10 @@ void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points
 
 void AP_Logger::Write_OABendyRuler(uint8_t type, bool active, float target_yaw, float target_pitch, bool resist_chg, float margin, const Location &final_dest, const Location &oa_dest)
 {
+    int32_t oa_dest_alt, final_alt;
+    bool got_oa_dest = oa_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt);
+    bool got_final_dest = final_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, final_alt);
+    
     const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),
@@ -639,10 +645,10 @@ void AP_Logger::Write_OABendyRuler(uint8_t type, bool active, float target_yaw, 
         margin      : margin,
         final_lat   : final_dest.lat,
         final_lng   : final_dest.lng,
-        final_alt   : final_dest.alt,
+        final_alt   : got_final_dest ? final_alt : final_dest.alt,
         oa_lat      : oa_dest.lat,
         oa_lng      : oa_dest.lng,
-        oa_alt      : oa_dest.alt
+        oa_alt      : got_oa_dest ? oa_dest_alt : oa_dest.alt
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

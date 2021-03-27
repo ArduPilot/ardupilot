@@ -69,7 +69,7 @@ ModeSystemId::ModeSystemId(void) : Mode()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#define SYSTEM_ID_DELAY     1.0f      // speed below which it is always safe to switch to loiter
+#define SYSTEM_ID_DELAY     1.0f      // time in seconds waited after system id mode change for frequency sweep injection
 
 // systemId_init - initialise systemId controller
 bool ModeSystemId::init(bool ignore_checks)
