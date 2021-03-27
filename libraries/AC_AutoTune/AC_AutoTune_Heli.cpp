@@ -486,7 +486,8 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
 {
     float test_freq_incr = 0.25f * 3.14159f * 2.0f;
     static uint8_t prev_good_frq_cnt;
-    float max_gain = 1.4f;
+    static float prev_gain;
+//    float max_gain = 1.4f;
 
     if (frq_cnt < 12) {
         if (frq_cnt == 0) {
@@ -511,8 +512,7 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
         }
     } else {
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: cnt=%f freq=%f gain=%f phase=%f", (double)(frq_cnt), (double)(curr_test_freq),  (double)(gain[frq_cnt]),  (double)(phase[frq_cnt]));
-
-        if (gain[frq_cnt] > max_gain && phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f && tune_d < 0.6f * max_gain_d.max_allowed) {
+        if (phase[frq_cnt] <= 180.0f && phase[frq_cnt] >= 160.0f && tune_d < 0.6f * max_gain_d.max_allowed) {
             tune_d += 0.1f * max_gain_d.max_allowed;
         } else if (phase[frq_cnt] > 180.0f) {
             curr_test_freq = curr_test_freq - 0.5 * test_freq_incr;
@@ -520,13 +520,14 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
         } else if (phase[frq_cnt] < 160.0f) {
             curr_test_freq = curr_test_freq + 0.5 * test_freq_incr;
             freq[frq_cnt] = curr_test_freq;
-        } else if (gain[frq_cnt] <= max_gain || tune_d > 0.6f * max_gain_d.max_allowed) {
+        } else if ((!is_zero(prev_gain) && gain[frq_cnt] >= 1.1f * prev_gain) || tune_d > 0.6f * max_gain_d.max_allowed) {
             counter = AUTOTUNE_SUCCESS_COUNT;
 //            tune_d = 0.5f * tune_d;
             // reset curr_test_freq and frq_cnt for next test
             curr_test_freq = freq[0];
             frq_cnt = 0;
         }
+        prev_gain = gain[frq_cnt];
     }
     // reset determine_gain function
     determine_gain(0.0f, 0.0f, curr_test_freq, gain[frq_cnt], phase[frq_cnt], dwell_complete, true);
@@ -667,43 +668,70 @@ void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float
 // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
 void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d)
 {
-    float test_freq_incr = 0.5f * 3.14159f * 2.0f;
-    static uint8_t find_max_p = 0;
-    static uint8_t find_max_d = 0;
+    float test_freq_incr = 1.0f * 3.14159f * 2.0f;
+    static bool found_max_p = false;
+    static bool found_max_d = false;
+    static bool find_middle = false;
     if (frq_cnt < 12) {
         if (frq_cnt > 1 && phase[frq_cnt] > 161.0f && phase[frq_cnt] < 200.0f &&
-            phase[frq_cnt-1] > 90.0f && phase[frq_cnt-1] < 161.0f &&
-            !is_zero(phase[frq_cnt]) && find_max_p == 0) {
-            max_gain_p.freq = linear_interpolate(freq[frq_cnt-1],freq[frq_cnt],161.0f,phase[frq_cnt-1],phase[frq_cnt]);
-            max_gain_p.gain = linear_interpolate(gain[frq_cnt-1],gain[frq_cnt],161.0f,phase[frq_cnt-1],phase[frq_cnt]);
+            !find_middle && !found_max_p) {
+            find_middle = true;
+        } else if (find_middle && !found_max_p) {
+            if (phase[frq_cnt] > 161.0f) {
+                // interpolate between frq_cnt-2 and frq_cnt
+                max_gain_p.freq = linear_interpolate(freq[frq_cnt-2],freq[frq_cnt],161.0f,phase[frq_cnt-2],phase[frq_cnt]);
+                max_gain_p.gain = linear_interpolate(gain[frq_cnt-2],gain[frq_cnt],161.0f,phase[frq_cnt-2],phase[frq_cnt]);
+            } else {
+                // interpolate between frq_cnt-1 and frq_cnt
+                max_gain_p.freq = linear_interpolate(freq[frq_cnt],freq[frq_cnt-1],161.0f,phase[frq_cnt],phase[frq_cnt-1]);
+                max_gain_p.gain = linear_interpolate(gain[frq_cnt],gain[frq_cnt-1],161.0f,phase[frq_cnt],phase[frq_cnt-1]);
+            }
             max_gain_p.phase = 161.0f;
             max_gain_p.max_allowed = powf(10.0f,-1 * (log10f(max_gain_p.gain) * 20.0f + 2.42) / 20.0f);
-            find_max_p = 1;
+            found_max_p = true;
+            find_middle = false;
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max rate P freq=%f gain=%f ph=%f rate_p=%f", (double)(max_gain_p.freq), (double)(max_gain_p.gain), (double)(max_gain_p.phase), (double)(max_gain_p.max_allowed));
         }
-        if (frq_cnt > 1 && phase[frq_cnt] > 251.0f && phase[frq_cnt] < 300.0f &&
-            phase[frq_cnt-1] > 180.0f && phase[frq_cnt-1] < 251.0f &&
-            !is_zero(phase[frq_cnt]) && find_max_d == 0) {
-            max_gain_d.freq = linear_interpolate(freq[frq_cnt-1],freq[frq_cnt],251.0f,phase[frq_cnt-1],phase[frq_cnt]);
-            max_gain_d.gain = linear_interpolate(gain[frq_cnt-1],gain[frq_cnt],251.0f,phase[frq_cnt-1],phase[frq_cnt]);
+        if (frq_cnt > 1 && phase[frq_cnt] > 251.0f && phase[frq_cnt] < 330.0f &&
+            !find_middle && !found_max_d) {
+            find_middle = true;
+        } else if (find_middle && found_max_p && !found_max_d) {
+            if (phase[frq_cnt] > 251.0f) {
+                // interpolate between frq_cnt-2 and frq_cnt
+                max_gain_d.freq = linear_interpolate(freq[frq_cnt-2],freq[frq_cnt],251.0f,phase[frq_cnt-2],phase[frq_cnt]);
+                max_gain_d.gain = linear_interpolate(gain[frq_cnt-2],gain[frq_cnt],251.0f,phase[frq_cnt-2],phase[frq_cnt]);
+            } else {
+                // interpolate between frq_cnt-1 and frq_cnt
+                max_gain_d.freq = linear_interpolate(freq[frq_cnt],freq[frq_cnt-1],251.0f,phase[frq_cnt],phase[frq_cnt-1]);
+                max_gain_d.gain = linear_interpolate(gain[frq_cnt],gain[frq_cnt-1],251.0f,phase[frq_cnt],phase[frq_cnt-1]);
+            }
             max_gain_d.phase = 251.0f;
             max_gain_d.max_allowed = powf(10.0f,-1 * (log10f(max_gain_d.freq * max_gain_d.gain) * 20.0f + 2.42) / 20.0f);
-            find_max_d = 1;
+            found_max_d = true;
+            find_middle = false;
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Rate D freq=%f gain=%f ph=%f rate_d=%f", (double)(max_gain_d.freq), (double)(max_gain_d.gain), (double)(max_gain_d.phase), (double)(max_gain_d.max_allowed));
         }
-        if (frq_cnt > 1 && phase[frq_cnt] > 300.0f && !is_zero(phase[frq_cnt])) {
+        // stop progression in frequency.
+        if ((frq_cnt > 1 && phase[frq_cnt] > 330.0f && !is_zero(phase[frq_cnt])) || found_max_d) {
             frq_cnt = 11;
         }
         frq_cnt++;
         if (frq_cnt == 12) {
             counter = AUTOTUNE_SUCCESS_COUNT;
-            // reset curr_test_freq and frq_cnt for next test
+            // reset variables for next test
             curr_test_freq = freq[0];
             frq_cnt = 0;
+            found_max_p = false;
+            found_max_d = false;
+            find_middle = false;
 //            tune_p = 0.35f * max_gain_p.max_allowed;
             tune_d = 0.25f * max_gain_d.max_allowed;
         } else {
-            freq[frq_cnt] = freq[frq_cnt-1] + test_freq_incr;
+            if (find_middle) {
+                freq[frq_cnt] = freq[frq_cnt-1] - 0.5f * test_freq_incr;
+            } else {
+                freq[frq_cnt] = freq[frq_cnt-1] + test_freq_incr;
+            }
             curr_test_freq = freq[frq_cnt];
         }
     }
