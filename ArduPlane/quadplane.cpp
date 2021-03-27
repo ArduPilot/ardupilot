@@ -3586,7 +3586,7 @@ bool QuadPlane::show_vtol_view() const
 {
     bool show_vtol = in_vtol_mode();
 
-    if (is_tailsitter() && hal.util->get_soft_armed()) {
+    if (is_tailsitter()) {
         if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
             // in a vtol mode but still transitioning from forward flight
             return false;
