@@ -242,6 +242,10 @@ void QuadPlane::tailsitter_output(void)
  */
 bool QuadPlane::tailsitter_transition_fw_complete(void)
 {
+    if (!hal.util->get_soft_armed()) {
+        // instant trainsition when disarmed, no message
+        return true;
+    }
     if (plane.fly_inverted()) {
         // transition immediately
         gcs().send_text(MAV_SEVERITY_INFO, "Transition FW done, inverted flight");
@@ -273,6 +277,10 @@ bool QuadPlane::tailsitter_transition_fw_complete(void)
  */
 bool QuadPlane::tailsitter_transition_vtol_complete(void) const
 {
+    if (!hal.util->get_soft_armed()) {
+        // instant trainsition when disarmed, no message
+        return true;
+    }
     if (plane.fly_inverted()) {
         // transition immediately
         gcs().send_text(MAV_SEVERITY_INFO, "Transition VTOL done, inverted flight");
