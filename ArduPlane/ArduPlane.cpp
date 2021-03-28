@@ -507,7 +507,7 @@ void Plane::update_alt()
             // ensure we do the initial climb in RTL. We add an extra
             // 10m in the demanded height to push TECS to climb
             // quickly
-            target_alt = MAX(target_alt, prev_WP_loc.alt + (g2.rtl_climb_min+10)*100);
+            target_alt = MAX(target_alt, prev_WP_loc.alt - home.alt) + (g2.rtl_climb_min+10)*100;
         }
 
         SpdHgt_Controller->update_pitch_throttle(target_alt,
