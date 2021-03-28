@@ -352,7 +352,14 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
-    set_next_WP(cmd.content.location);
+    if ((plane.mission.is_nav_cmd(cmd)) &&(!(cmd.index == _mission_ETA_Relevant_Nav_WP_Cmd_Idx))) {
+		_mission_ETA_Relevant_Nav_WP_Cmd_Idx=cmd.index;
+		_avg_effective_speed=0; //Cumulative effective speed variable, only valid in ratio of EB_SPD_ETA_Cycles
+		_mission_next_wp_set_ms=0; //Time of the next WP command issued (mSec)
+		_EB_SPD_ETA_Cycles=0; //Number of recalculations of the above parameters since switching to the Next WP
+		//gcs().send_text(MAV_SEVERITY_INFO, "ETA is %d seconds", (int)current_loc.get_ETA(cmd.content.location));
+	}
+	set_next_WP(cmd.content.location);
 }
 
 void Plane::do_land(const AP_Mission::Mission_Command& cmd)

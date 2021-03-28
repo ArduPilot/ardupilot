@@ -415,6 +415,8 @@ void Plane::update_GPS_10Hz(void)
     }
 
     calc_gndspeed_undershoot();
+	Estimate_Bearing_SPD_ETA();
+
 }
 
 /*
