@@ -276,7 +276,12 @@ void Plane::Estimate_Bearing_SPD_ETA()
 					  horizontal_wind_vect.x = nedWind.x;  
 					  horizontal_wind_vect.y = nedWind.y;
 					  float l_bearing = current_loc.get_bearing(next_WP_loc); //radians
-					  float w_bearing = atan2f(-horizontal_wind_vect.y,-horizontal_wind_vect.x); //wind vector direction
+					  float w_bearing;
+					  if (!horizontal_wind_vect.is_zero()) {
+						  w_bearing = atan2f(-horizontal_wind_vect.y,-horizontal_wind_vect.x); //wind vector direction
+					  } else {
+						  w_bearing = 0; //does not matter if speed is zero
+					  }
 					  float l_dis = current_loc.get_distance(next_WP_loc); //distance to location in meters
 					  float angle_diff = l_bearing-w_bearing; //difference between bearing angle to location VS wind vector direction
 					  wind_on_bearing = cosf(angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component along the bearing-to-location direction
