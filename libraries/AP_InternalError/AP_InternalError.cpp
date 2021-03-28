@@ -62,6 +62,7 @@ void AP_InternalError::errors_as_string(uint8_t *buffer, const uint16_t len) con
         "dma_fail",
         "params_restored",
         "invalid arguments",
+        "flash",
     };
 
     static_assert((1U<<(ARRAY_SIZE(error_bit_descriptions))) == uint32_t(AP_InternalError::error_t::__LAST__), "too few descriptions for bits");
@@ -124,5 +125,14 @@ void AP_memory_guard_error(uint32_t size)
     if (!hal.util->get_soft_armed()) {
         ::printf("memory guard error size=%u\n", unsigned(size));
         AP_HAL::panic("memory guard size=%u\n", unsigned(size));
+    }
+}
+
+void AP_flash_error(uint32_t errors)
+{
+    INTERNAL_ERROR(AP_InternalError::error_t::flash);
+    if (!hal.util->get_soft_armed()) {
+        ::printf("flash error=%u\n", unsigned(errors));
+        AP_HAL::panic("flash error=%u\n", unsigned(errors));
     }
 }

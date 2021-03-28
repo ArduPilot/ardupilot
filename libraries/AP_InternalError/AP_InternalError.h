@@ -67,7 +67,8 @@ public:
         dma_fail                    = (1U << 27),  //0x8000000 134217728
         params_restored             = (1U << 28),  //0x10000000 268435456
         invalid_arg_or_result       = (1U << 29),  //0x20000000 536870912
-        __LAST__                    = (1U << 30),  // used only for sanity check
+        flash                       = (1U << 30),  //0x40000000 1073741824
+        __LAST__                    = (1U << 31),  // used only for sanity check
     };
 
     // if you've changed __LAST__ to be 32, then you will want to
@@ -106,6 +107,7 @@ namespace AP {
 extern "C" {
     void AP_stack_overflow(const char *thread_name);
     void AP_memory_guard_error(uint32_t size);
+    void AP_flash_error(uint32_t errors);
 }
 
 #define INTERNAL_ERROR(error_number) \
