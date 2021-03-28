@@ -15,6 +15,7 @@
 
 static Vector3f guided_pos_target_cm;       // position target (used by posvel controller only)
 static Vector3f guided_vel_target_cms;      // velocity target (used by velocity controller and posvel controller)
+static Vector3f guided_acc_target_cmss;     // acceleration target (used by posvelacc controller only)
 static uint32_t posvel_update_time_ms;      // system time of last target update to posvel controller (i.e. position and velocity update)
 static uint32_t vel_update_time_ms;         // system time of last target update to velocity controller
 
@@ -82,6 +83,11 @@ void ModeGuided::run()
     case Guided_Angle:
         // run angle controller
         angle_control_run();
+        break;
+
+    case Guided_PosVelAcc:
+        // run angle controller
+        posvelacc_control_run();
         break;
     }
  }
@@ -200,6 +206,33 @@ void ModeGuided::posvel_control_start()
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
+// initialise guided mode's posvelacc controller, same as posvel controller
+void ModeGuided::posvelacc_control_start()
+{
+    // set guided_mode to velocity controller
+    guided_mode = Guided_PosVelAcc;
+
+    pos_control->init_xy_controller();
+
+    // set speed and acceleration from wpnav's speed and acceleration
+    pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
+    pos_control->set_max_accel_xy(wp_nav->get_wp_acceleration());
+
+    const Vector3f& curr_pos = inertial_nav.get_position();
+    const Vector3f& curr_vel = inertial_nav.get_velocity();
+
+    // set target position and velocity to current position and velocity
+    pos_control->set_xy_target(curr_pos.x, curr_pos.y);
+    pos_control->set_desired_velocity_xy(curr_vel.x, curr_vel.y);
+    
+    // set vertical speed and acceleration
+    pos_control->set_max_speed_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
+    pos_control->set_max_accel_z(wp_nav->get_accel_z());
+
+    // pilot always controls yaw
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
+}
+
 bool ModeGuided::is_taking_off() const
 {
     return guided_mode == Guided_TakeOff;
@@ -261,7 +294,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     wp_nav->set_wp_destination(destination, terrain_alt);
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f());
+    copter.Log_Write_GuidedTarget(guided_mode, destination, Vector3f(), Vector3f());
 
     send_notification = true;
 
@@ -305,9 +338,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
-
+    
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    copter.Log_Write_GuidedTarget(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), Vector3f(), Vector3f());
 
     send_notification = true;
 
@@ -331,7 +364,7 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 
     // log target
     if (log_request) {
-        copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity);
+        copter.Log_Write_GuidedTarget(guided_mode, Vector3f(), velocity, Vector3f());
     }
 }
 
@@ -363,7 +396,38 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
     copter.pos_control->set_pos_target(guided_pos_target_cm);
 
     // log target
-    copter.Log_Write_GuidedTarget(guided_mode, destination, velocity);
+    copter.Log_Write_GuidedTarget(guided_mode, destination, velocity, Vector3f());
+    return true;
+}
+
+// set guided mode posvel target
+bool ModeGuided::set_destination_posvelacc(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+{
+#if AC_FENCE == ENABLED
+    // reject destination if outside the fence
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
+    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+#endif
+
+    // check we are in velocity control mode
+    if (guided_mode != Guided_PosVelAcc) {
+        posvelacc_control_start();
+    }
+
+    // set yaw state
+    set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+
+    posvel_update_time_ms = millis();
+    guided_pos_target_cm = destination;
+    guided_vel_target_cms = velocity;
+    guided_acc_target_cmss = acceleration;
+
+    // log target
+    copter.Log_Write_GuidedTarget(guided_mode, destination, velocity, acceleration);
     return true;
 }
 
@@ -397,7 +461,7 @@ void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, 
     // log target
     copter.Log_Write_GuidedTarget(guided_mode,
                            Vector3f(guided_angle_state.roll_cd, guided_angle_state.pitch_cd, guided_angle_state.yaw_cd),
-                           Vector3f(0.0f, 0.0f, climb_rate_cms_or_thrust));
+                           Vector3f(0.0f, 0.0f, climb_rate_cms_or_thrust), Vector3f());
 }
 
 // guided_takeoff_run - takeoff in guided mode
@@ -569,6 +633,72 @@ void ModeGuided::posvel_control_run()
     // send position and velocity targets to position controller
     pos_control->set_pos_target(guided_pos_target_cm);
     pos_control->set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
+
+    // run position controllers
+    pos_control->update_xy_controller();
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
+        // roll & pitch from waypoint controller, yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), target_yaw_rate);
+    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
+        // roll & pitch from position-velocity controller, yaw rate from mavlink command or mission item
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.rate_cds());
+    } else {
+        // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
+        attitude_control->input_euler_angle_roll_pitch_yaw(pos_control->get_roll(), pos_control->get_pitch(), auto_yaw.yaw(), true);
+    }
+}
+
+// called from guided_run
+void ModeGuided::posvelacc_control_run()
+{
+    // process pilot's yaw input
+    float target_yaw_rate = 0;
+
+    if (!copter.failsafe.radio && use_pilot_yaw()) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        if (!is_zero(target_yaw_rate)) {
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        make_safe_spool_down();
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // set velocity to zero and stop rotating if no updates received for 3 seconds
+    uint32_t tnow = millis();
+    if (tnow - posvel_update_time_ms > GUIDED_POSVEL_TIMEOUT_MS) {
+        guided_vel_target_cms.zero();
+        if (auto_yaw.mode() == AUTO_YAW_RATE) {
+            auto_yaw.set_rate(0.0f);
+        }
+    }
+
+    // calculate dt
+    float dt = pos_control->time_since_last_xy_update();
+
+    // sanity check dt
+    if (dt >= 0.2f) {
+        dt = 0.0f;
+    }
+
+    // advance position target using velocity target
+    guided_pos_target_cm += guided_vel_target_cms * dt + guided_acc_target_cmss * 0.5f * dt * dt;
+    guided_vel_target_cms += guided_acc_target_cmss * dt;
+
+    // send position and velocity targets to position controller
+    pos_control->set_pos_target(guided_pos_target_cm);
+    pos_control->set_desired_velocity_xy(guided_vel_target_cms.x, guided_vel_target_cms.y);
+    pos_control->set_desired_accel_xy(guided_acc_target_cmss.x, guided_acc_target_cmss.y);
 
     // run position controllers
     pos_control->update_xy_controller();
