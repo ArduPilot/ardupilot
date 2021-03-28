@@ -206,12 +206,13 @@ extern void AP_flash_error(uint32_t errors);
 static void stm32_flash_clear_errors(void)
 {
 #if defined(STM32H7)
+#ifndef HAL_BOOTLOADER_BUILD
     uint32_t errors = FLASH->SR1 & (FLASH_SR_CRCRDERR | FLASH_SR_DBECCERR | FLASH_SR_SNECCERR
         | FLASH_SR_OPERR | FLASH_SR_INCERR | FLASH_SR_STRBERR | FLASH_SR_PGSERR);
     if (errors) {
         AP_flash_error(errors);
     }
-
+#endif
     FLASH->CCR1 = ~0;
     FLASH->CCR2 = ~0;
 #else
