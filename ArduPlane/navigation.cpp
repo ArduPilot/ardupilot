@@ -285,19 +285,21 @@ void Plane::update_AHRS_wind_estimate()
 			original_AHRS_wind_vect_est.y = nedWind_est.y;
 			const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
             Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
-			float yawAngle = atan2f(-yawVect.y,-yawVect.x);
-			horizontal_airspeed_vect.x = cosf(yawAngle)*airspeed_measured; 
-			horizontal_airspeed_vect.y = sinf(yawAngle)*airspeed_measured;
-			gndVel.rotate(M_PI); //Rotate 180 degrees for Wind-direction directional / sign-corrected calculations
-			Vector2f new_AHRS_wind_estimate; //Vectorial difference of airspeed and achieved effective ground speed
-			new_AHRS_wind_estimate.x = horizontal_airspeed_vect.x-gndVel.x;
-			new_AHRS_wind_estimate.y = horizontal_airspeed_vect.y-gndVel.y;
-			if (new_AHRS_wind_estimate.length()>original_AHRS_wind_vect_est.length()) {
-				updated_AHRS_wind_estimate = new_AHRS_wind_estimate;  //Airspeed vs. Groundspeed (taking Yaw into account) indicates underestimation of Wind by AHRS - Use of updated horizontal components suggested
-				AHRS_wind_underestimation = new_AHRS_wind_estimate.length() - original_AHRS_wind_vect_est.length(); //degree of likely underestimation in m/sec
-				use_AHRS_wind_update=true;
-			} else {
-				use_AHRS_wind_update=false;
+			if (!yawVect.is_zero()) {
+				float yawAngle = atan2f(-yawVect.y,-yawVect.x);
+				horizontal_airspeed_vect.x = cosf(yawAngle)*airspeed_measured; 
+				horizontal_airspeed_vect.y = sinf(yawAngle)*airspeed_measured;
+				gndVel.rotate(M_PI); //Rotate 180 degrees for Wind-direction directional / sign-corrected calculations
+				Vector2f new_AHRS_wind_estimate; //Vectorial difference of airspeed and achieved effective ground speed
+				new_AHRS_wind_estimate.x = horizontal_airspeed_vect.x-gndVel.x;
+				new_AHRS_wind_estimate.y = horizontal_airspeed_vect.y-gndVel.y;
+				if (new_AHRS_wind_estimate.length()>original_AHRS_wind_vect_est.length()) {
+					updated_AHRS_wind_estimate = new_AHRS_wind_estimate;  //Airspeed vs. Groundspeed (taking Yaw into account) indicates underestimation of Wind by AHRS - Use of updated horizontal components suggested
+					AHRS_wind_underestimation = new_AHRS_wind_estimate.length() - original_AHRS_wind_vect_est.length(); //degree of likely underestimation in m/sec
+					use_AHRS_wind_update=true;
+				} else {
+					use_AHRS_wind_update=false;
+				}
 			}
 		}
 	}
