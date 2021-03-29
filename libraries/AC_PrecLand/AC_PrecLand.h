@@ -112,6 +112,9 @@ private:
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();
+    
+    // Attempt to match sensor frame with inertial frame, otherwise use the front of the inertial buffer (PLND_BUFFER parameter)
+    bool sync_frames();
 
     // parameters
     AP_Int8                     _enabled;           // enabled/disabled and behaviour
@@ -150,6 +153,8 @@ private:
         uint64_t time_usec;
     };
     ObjectArray<inertial_data_frame_s> *_inertial_history;
+    inertial_data_frame_s *_inertial_data_delayed;
+    uint16_t _inertial_frame_index;
 
     // backend state
     struct precland_state {

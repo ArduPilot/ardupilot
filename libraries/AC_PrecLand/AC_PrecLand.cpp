@@ -227,7 +227,7 @@ bool AC_PrecLand::get_target_position_cm(Vector2f& ret)
     if (!AP::ahrs().get_relative_position_NE_origin(curr_pos)) {
         return false;
     }
-    ret.x = (_target_pos_rel_out_NE.x + curr_pos.x) * 100.0f;   // m to cm
+    ret.x = (_target_pos_rel_out_NE.x + curr_pos.x) * 100.0f;   // m to cmd
     ret.y = (_target_pos_rel_out_NE.y  + curr_pos.y) * 100.0f;  // m to cm
     return true;
 }
@@ -271,7 +271,9 @@ void AC_PrecLand::handle_msg(const mavlink_message_t &msg)
 
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
-    const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
+    // Set inertial_data_delayed to the oldest sensor data in the buffer, by default.
+    // construct_pos_meas_using_rangefinder() is then called which attempts to match timestamped
+    //  sensor frame and overwrites _target_pos_rel_meas_NED calculated from matched inertial frame, if available
 
     switch (_estimator_type) {
         case ESTIMATOR_TYPE_RAW_SENSOR: {
@@ -286,18 +288,18 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
 
             // Predict
             if (target_acquired()) {
-                _target_pos_rel_est_NE.x -= inertial_data_delayed->inertialNavVelocity.x * inertial_data_delayed->dt;
-                _target_pos_rel_est_NE.y -= inertial_data_delayed->inertialNavVelocity.y * inertial_data_delayed->dt;
-                _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
-                _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
+                _target_pos_rel_est_NE.x -= _inertial_data_delayed->inertialNavVelocity.x * _inertial_data_delayed->dt;
+                _target_pos_rel_est_NE.y -= _inertial_data_delayed->inertialNavVelocity.y * _inertial_data_delayed->dt;
+                _target_vel_rel_est_NE.x = -_inertial_data_delayed->inertialNavVelocity.x;
+                _target_vel_rel_est_NE.y = -_inertial_data_delayed->inertialNavVelocity.y;
             }
 
             // Update if a new Line-Of-Sight measurement is available
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 _target_pos_rel_est_NE.x = _target_pos_rel_meas_NED.x;
                 _target_pos_rel_est_NE.y = _target_pos_rel_meas_NED.y;
-                _target_vel_rel_est_NE.x = -inertial_data_delayed->inertialNavVelocity.x;
-                _target_vel_rel_est_NE.y = -inertial_data_delayed->inertialNavVelocity.y;
+                _target_vel_rel_est_NE.x = -_inertial_data_delayed->inertialNavVelocity.x;
+                _target_vel_rel_est_NE.y = -_inertial_data_delayed->inertialNavVelocity.y;
 
                 _last_update_ms = AP_HAL::millis();
                 _target_acquired = true;
@@ -312,8 +314,8 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
         case ESTIMATOR_TYPE_KALMAN_FILTER: {
             // Predict
             if (target_acquired()) {
-                const float& dt = inertial_data_delayed->dt;
-                const Vector3f& vehicleDelVel = inertial_data_delayed->correctedVehicleDeltaVelocityNED;
+                const float& dt = _inertial_data_delayed->dt;
+                const Vector3f& vehicleDelVel = _inertial_data_delayed->correctedVehicleDeltaVelocityNED;
 
                 _ekf_x.predict(dt, -vehicleDelVel.x, _accel_noise*dt);
                 _ekf_y.predict(dt, -vehicleDelVel.y, _accel_noise*dt);
@@ -324,9 +326,9 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
                 float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*AP::ahrs().get_gyro().length()) + 0.02f);
                 if (!target_acquired()) {
                     // reset filter state
-                    if (inertial_data_delayed->inertialNavVelocityValid) {
-                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
-                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -inertial_data_delayed->inertialNavVelocity.y, sq(2.0f));
+                    if (_inertial_data_delayed->inertialNavVelocityValid) {
+                        _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, -_inertial_data_delayed->inertialNavVelocity.x, sq(2.0f));
+                        _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, -_inertial_data_delayed->inertialNavVelocity.y, sq(2.0f));
                     } else {
                         _ekf_x.init(_target_pos_rel_meas_NED.x, xy_pos_var, 0.0f, sq(10.0f));
                         _ekf_y.init(_target_pos_rel_meas_NED.y, xy_pos_var, 0.0f, sq(10.0f));
@@ -387,10 +389,10 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
     Vector3f target_vec_unit_body;
-    if (retrieve_los_meas(target_vec_unit_body)) {
-        const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
-
-        Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
+    // Match sensor and inertial frames or push front of buffer, into _inertial_data_delayed
+    // If frame sync fails (rather than just no sensor timestamp) then skip the update
+    if (retrieve_los_meas(target_vec_unit_body) && sync_frames()) {
+        Vector3f target_vec_unit_ned = _inertial_data_delayed->Tbn * target_vec_unit_body;
         bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
         bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
@@ -405,7 +407,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
 
             // Compute camera position relative to IMU
             Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
-            Vector3f cam_pos_ned = inertial_data_delayed->Tbn * (_cam_offset.get() - accel_body_offset);
+            Vector3f cam_pos_ned = _inertial_data_delayed->Tbn * (_cam_offset.get() - accel_body_offset);
 
             // Compute target position relative to IMU
             _target_pos_rel_meas_NED = Vector3f(target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt) + cam_pos_ned;
@@ -415,13 +417,47 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     return false;
 }
 
+// Set the active inertial frame, based on either sensor timestamp (higher priority) or PLND_BUFFER parameter
+// Return true if sensor does not send timestamp and front of buffer is used, or if sensor timestamp is successfully synced
+// Return false otherwise, so invalid sync is not propagated
+bool AC_PrecLand::sync_frames()
+{
+    // Retrieve timestamp from backend measurement.  If not zero, attempt to correlate with inertial history.
+    uint64_t _nearest_timestamp = 0;
+    uint16_t _nearest_index = 0;
+    uint64_t _los_timestamp = _backend->get_los_timestamp();
+    if (_los_timestamp != 0) {
+        // Search through inertial history for the nearest frame to the measurement timestamp
+        for (uint8_t i=0; i<_inertial_history->available(); i++) {
+            uint64_t _delta_usec = labs((*_inertial_history)[i]->time_usec - _los_timestamp);
+            if (!_nearest_timestamp || _delta_usec < _nearest_timestamp) {
+                _nearest_timestamp = _delta_usec;
+                _nearest_index = i;
+            }
+        }
+        // If the nearest timestamp delta is longer than a frame, it's after the last frame or before the first, so reject
+        if (_nearest_timestamp < 1000000/AP::scheduler().get_loop_rate_hz()) {
+            _inertial_data_delayed = (*_inertial_history)[_nearest_index];
+            _inertial_frame_index = _nearest_index;
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        // If timestamp isn't set, use the oldest inertial buffer frame
+        _inertial_data_delayed = (*_inertial_history)[0];
+        _inertial_frame_index = 0;
+        return true;
+    }
+}
+
 void AC_PrecLand::run_output_prediction()
 {
     _target_pos_rel_out_NE = _target_pos_rel_est_NE;
     _target_vel_rel_out_NE = _target_vel_rel_est_NE;
 
     // Predict forward from delayed time horizon
-    for (uint8_t i=1; i<_inertial_history->available(); i++) {
+    for (uint8_t i=_inertial_frame_index; i<_inertial_history->available(); i++) {
         const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
         _target_vel_rel_out_NE.x -= inertial_data->correctedVehicleDeltaVelocityNED.x;
         _target_vel_rel_out_NE.y -= inertial_data->correctedVehicleDeltaVelocityNED.y;
