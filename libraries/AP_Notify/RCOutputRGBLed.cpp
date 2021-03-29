@@ -44,7 +44,7 @@ RCOutputRGBLed::RCOutputRGBLed(uint8_t red_channel, uint8_t green_channel,
 {
 }
 
-bool RCOutputRGBLed::hw_init()
+bool RCOutputRGBLed::init()
 {
     hal.rcout->enable_ch(_red_channel);
     hal.rcout->enable_ch(_green_channel);
