@@ -32,14 +32,15 @@
 
 extern const AP_HAL::HAL& hal;
 
-PCA9685LED_I2C::PCA9685LED_I2C() : 
-    RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
+PCA9685LED_I2C::PCA9685LED_I2C(uint8_t _bus) : 
+    RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM),
+    bus(_bus)
 {
 }
 
 bool PCA9685LED_I2C::hw_init()
 {
-    _dev = hal.i2c_mgr->get_device(1, PCA9685_ADDRESS);
+    _dev = hal.i2c_mgr->get_device(bus, PCA9685_ADDRESS);
 
     if (!_dev) {
         return false;
