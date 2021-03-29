@@ -170,23 +170,6 @@ bool AP_Arming_Blimp::parameter_checks(bool display_failure)
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
             return false;
         }
-
-        // checks MOT_PWM_MIN/MAX for acceptable values
-        // if (!blimp.motors->check_mot_pwm_params()) {
-        //     check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check MOT_PWM_MIN/MAX");
-        //     return false;
-        // }
-
-        // ensure controllers are OK with us arming:
-        // char failure_msg[50];
-        // if (!blimp.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
-        //     check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
-        //     return false;
-        // }
-        // if (!blimp.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
-        //     check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
-        //     return false;
-        //}
     }
 
     return true;

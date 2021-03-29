@@ -280,12 +280,7 @@ void Mode::zero_throttle_and_relax_ac(bool spool_up)
 int32_t Mode::get_alt_above_ground_cm(void)
 {
     int32_t alt_above_ground_cm;
-    // if (blimp.get_rangefinder_height_interpolated_cm(alt_above_ground_cm)) {
-    //     return alt_above_ground_cm;
-    // }
-    // if (!pos_control->is_active_xy()) {
-    //     return blimp.current_loc.alt;
-    // }
+
     if (blimp.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, alt_above_ground_cm)) {
         return alt_above_ground_cm;
     }
@@ -293,113 +288,6 @@ int32_t Mode::get_alt_above_ground_cm(void)
     // Assume the Earth is flat:
     return blimp.current_loc.alt;
 }
-
-// void Mode::land_run_vertical_control(bool pause_descent)
-// {
-//     float cmb_rate = 0;
-//     if (!pause_descent) {
-//         float max_land_descent_velocity;
-//         if (g.land_speed_high > 0) {
-//             max_land_descent_velocity = -g.land_speed_high;
-//         } else {
-//             max_land_descent_velocity = pos_control->get_max_speed_down();
-//         }
-
-//         // Don't speed up for landing.
-//         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
-
-//         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-//         // cmb_rate = AC_AttitudeControl::sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
-
-//         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-//         // cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
-//     }
-
-//     // update altitude target and call position controller
-//     pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, true);
-//     pos_control->update_z_controller();
-// }
-
-// void Mode::land_run_horizontal_control()
-// {
-//     float target_roll = 0.0f;
-//     float target_pitch = 0.0f;
-//     float target_yaw_rate = 0;
-
-//     // relax loiter target if we might be landed
-//     if (blimp.ap.land_complete_maybe) {
-//         loiter_nav->soften_for_landing();
-//     }
-
-//     // process pilot inputs
-//     if (!blimp.failsafe.radio) {
-//         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && blimp.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
-//             AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
-//             // exit land if throttle is high
-//             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
-//                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
-//             }
-//         }
-
-//         if (g.land_repositioning) {
-
-//             // convert pilot input to lean angles
-//             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
-
-//             // record if pilot has overridden roll or pitch
-//             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
-//                 if (!blimp.ap.land_repo_active) {
-//                     AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
-//                 }
-//                 blimp.ap.land_repo_active = true;
-//             }
-//         }
-
-//         // get pilot's desired yaw rate
-//         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
-//         if (!is_zero(target_yaw_rate)) {
-//             auto_yaw.set_mode(AUTO_YAW_HOLD);
-//         }
-//     }
-
-//     // process roll, pitch inputs
-//     loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
-
-//     // run loiter controller
-//     loiter_nav->update();
-
-//     float nav_roll  = loiter_nav->get_roll();
-//     float nav_pitch = loiter_nav->get_pitch();
-
-//     if (g2.wp_navalt_min > 0) {
-//         // user has requested an altitude below which navigation
-//         // attitude is limited. This is used to prevent commanded roll
-//         // over on landing, which particularly affects heliblimps if
-//         // there is any position estimate drift after touchdown. We
-//         // limit attitude to 7 degrees below this limit and linearly
-//         // interpolate for 1m above that
-//         float attitude_limit_cd = linear_interpolate(700, blimp.aparm.angle_max, get_alt_above_ground_cm(),
-//                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-//         float total_angle_cd = norm(nav_roll, nav_pitch);
-//         if (total_angle_cd > attitude_limit_cd) {
-//             float ratio = attitude_limit_cd / total_angle_cd;
-//             nav_roll *= ratio;
-//             nav_pitch *= ratio;
-
-//             // tell position controller we are applying an external limit
-//             pos_control->set_limit_accel_xy();
-//         }
-//     }
-
-//     // call attitude controller
-//     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-//         // roll & pitch from waypoint controller, yaw rate from pilot
-//         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(nav_roll, nav_pitch, target_yaw_rate);
-//     } else {
-//         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-//         attitude_control->input_euler_angle_roll_pitch_yaw(nav_roll, nav_pitch, auto_yaw.yaw(), true);
-//     }
-// }
 
 float Mode::throttle_hover() const
 {
@@ -438,58 +326,6 @@ float Mode::get_pilot_desired_throttle() const
     return throttle_out;
 }
 
-// Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
-// {
-//     // Alt Hold State Machine Determination
-//     if (!motors->armed()) {
-//         // the aircraft should moved to a shut down state
-//         motors->set_desired_spool_state(Fins::DesiredSpoolState::SHUT_DOWN);
-
-//         // transition through states as aircraft spools down
-//         switch (motors->get_spool_state()) {
-
-//         case Fins::SpoolState::SHUT_DOWN:
-//             return AltHold_MotorStopped;
-
-//         case Fins::SpoolState::GROUND_IDLE:
-//             return AltHold_Landed_Ground_Idle;
-
-//         default:
-//             return AltHold_Landed_Pre_Takeoff;
-//         }
-
-//     } else if (takeoff.running() || takeoff.triggered(target_climb_rate_cms)) {
-//         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
-//         // the aircraft should progress through the take off procedure
-//         return AltHold_Takeoff;
-
-//     } else if (!blimp.ap.auto_armed || blimp.ap.land_complete) {
-//         // the aircraft is armed and landed
-//         if (target_climb_rate_cms < 0.0f && !blimp.ap.using_interlock) {
-//             // the aircraft should move to a ground idle state
-//             motors->set_desired_spool_state(Fins::DesiredSpoolState::GROUND_IDLE);
-
-//         } else {
-//             // the aircraft should prepare for imminent take off
-//             motors->set_desired_spool_state(Fins::DesiredSpoolState::THROTTLE_UNLIMITED);
-//         }
-
-//         if (motors->get_spool_state() == Fins::SpoolState::GROUND_IDLE) {
-//             // the aircraft is waiting in ground idle
-//             return AltHold_Landed_Ground_Idle;
-
-//         } else {
-//             // the aircraft can leave the ground at any time
-//             return AltHold_Landed_Pre_Takeoff;
-//         }
-
-//     } else {
-//         // the aircraft is in a flying state
-//         motors->set_desired_spool_state(Fins::DesiredSpoolState::THROTTLE_UNLIMITED);
-//         return AltHold_Flying;
-//     }
-// }
-
 // pass-through functions to reduce code churn on conversion;
 // these are candidates for moving into the Mode base
 // class.
@@ -522,14 +358,6 @@ GCS_Blimp &Mode::gcs()
 {
     return blimp.gcs();
 }
-
-// set_throttle_takeoff - allows modes to tell throttle controller we
-// are taking off so I terms can be cleared
-// void Mode::set_throttle_takeoff()
-// {
-//     // tell position controller to reset alt target and reset I terms
-//     pos_control->init_takeoff();
-// }
 
 uint16_t Mode::get_pilot_speed_dn()
 {

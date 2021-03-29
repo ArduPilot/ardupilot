@@ -147,13 +147,6 @@ void Blimp::failsafe_ekf_event()
     failsafe.ekf = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
 
-    // // sometimes LAND *does* require GPS so ensure we are in non-GPS land
-    // if (control_mode == Mode::Number::LAND && landing_with_GPS()) {
-    //     mode_land.do_not_use_GPS();
-    //     return;
-    // }
-    // LAND never requires GPS.
-
     // does this mode require position?
     if (!blimp.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
         return;

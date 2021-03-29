@@ -99,62 +99,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
-    // #if MODE_RTL_ENABLED == ENABLED
-    //     // @Param: RTL_ALT
-    //     // @DisplayName: RTL Altitude
-    //     // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
-    //     // @Units: cm
-    //     // @Range: 200 8000
-    //     // @Increment: 1
-    //     // @User: Standard
-    //     GSCALAR(rtl_altitude,   "RTL_ALT",     RTL_ALT),
-
-    //     // @Param: RTL_CONE_SLOPE
-    //     // @DisplayName: RTL cone slope
-    //     // @Description: Defines a cone above home which determines maximum climb
-    //     // @Range: 0.5 10.0
-    //     // @Increment: .1
-    //     // @Values: 0:Disabled,1:Shallow,3:Steep
-    //     // @User: Standard
-    //     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE_DEFAULT),
-
-    //     // @Param: RTL_SPEED
-    //     // @DisplayName: RTL speed
-    //     // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
-    //     // @Units: cm/s
-    //     // @Range: 0 2000
-    //     // @Increment: 50
-    //     // @User: Standard
-    //     GSCALAR(rtl_speed_cms,   "RTL_SPEED",     0),
-
-    //     // @Param: RTL_ALT_FINAL
-    //     // @DisplayName: RTL Final Altitude
-    //     // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    //     // @Units: cm
-    //     // @Range: 0 1000
-    //     // @Increment: 1
-    //     // @User: Standard
-    //     GSCALAR(rtl_alt_final,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
-
-    //     // @Param: RTL_CLIMB_MIN
-    //     // @DisplayName: RTL minimum climb
-    //     // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    //     // @Units: cm
-    //     // @Range: 0 3000
-    //     // @Increment: 10
-    //     // @User: Standard
-    //     GSCALAR(rtl_climb_min,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
-
-    //     // @Param: RTL_LOIT_TIME
-    //     // @DisplayName: RTL loiter time
-    //     // @Description: Time (in milliseconds) to loiter above home before beginning final descent
-    //     // @Units: ms
-    //     // @Range: 0 60000
-    //     // @Increment: 1000
-    //     // @User: Standard
-    //     GSCALAR(rtl_loiter_time,      "RTL_LOIT_TIME",    RTL_LOITER_TIME),
-    // #endif
-
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. See FS_OPTIONS param for additional actions, or for cases allowing Mission continuation, when GCS failsafe is enabled.

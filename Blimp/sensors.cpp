@@ -6,8 +6,6 @@ void Blimp::read_barometer(void)
     barometer.update();
 
     baro_alt = barometer.get_altitude() * 100.0f;
-
-    motors->set_air_density_ratio(barometer.get_air_density_ratio());
 }
 
 

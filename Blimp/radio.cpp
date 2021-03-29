@@ -36,25 +36,11 @@ void Blimp::init_rc_in()
 // init_rc_out -- initialise motors
 void Blimp::init_rc_out()
 {
-    // motors->init((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_type.get());
-    // MIR will need motors->init later when we switch to other fin config.
-
     // enable aux servos to cope with multiple output channels per motor
     SRV_Channels::enable_aux_servos();
 
-    // update rate must be set after motors->init() to allow for motor mapping
-    // motors->set_update_rate(g.rc_speed);
-
-    // motors->set_throttle_range(channel_down->get_radio_min(), channel_down->get_radio_max());
-
     // refresh auxiliary channel to function map
     SRV_Channels::update_aux_servo_function();
-
-    /*
-      setup a default safety ignore mask, so that servo gimbals can be active while safety is on
-     */
-    // uint16_t safety_ignore_mask = (~blimp.motors->get_motor_mask()) & 0x3FFF;
-    // BoardConfig.set_default_safety_ignore_mask(safety_ignore_mask);
 }
 
 
@@ -77,9 +63,6 @@ void Blimp::read_radio()
 
         // RC receiver must be attached if we've just got input
         ap.rc_receiver_present = true;
-
-        // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax blimps)
-        // radio_passthrough_to_motors();
 
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(channel_down->get_control_in(), dt);
@@ -156,7 +139,7 @@ void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
 // set_throttle_zero_flag - set throttle_zero flag from debounced throttle control
 // throttle_zero is used to determine if the pilot intends to shut down the motors
 // Basically, this signals when we are not flying.  We are either on the ground
-// or the pilot has shut down the blimp in the air and it is free-falling
+// or the pilot has shut down the vehicle in the air and it is free-floating
 void Blimp::set_throttle_zero_flag(int16_t throttle_control)
 {
     static uint32_t last_nonzero_throttle_ms = 0;
@@ -173,15 +156,6 @@ void Blimp::set_throttle_zero_flag(int16_t throttle_control)
     }
     //MIR What does this mean??
 }
-
-// pass pilot's inputs to motors library (used to allow wiggling servos while disarmed on heli, single, coax blimps)
-// void Blimp::radio_passthrough_to_motors()
-// {
-//     motors->set_radio_passthrough(channel_right->norm_input(),
-//                                   channel_front->norm_input(),
-//                                   channel_down->get_control_in_zero_dz()*0.001f,
-//                                   channel_yaw->norm_input());
-// }
 
 /*
   return the throttle input for mid-stick as a control-in value

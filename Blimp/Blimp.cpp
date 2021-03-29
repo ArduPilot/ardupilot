@@ -201,9 +201,6 @@ void Blimp::rc_loop()
 // ---------------------------
 void Blimp::throttle_loop()
 {
-    // update throttle_low_comp value (controls priority of throttle vs attitude control)
-    // update_throttle_mix();
-
     // check auto_armed status
     update_auto_armed();
 }
@@ -217,7 +214,6 @@ void Blimp::update_batt_compass(void)
 
     if (AP::compass().enabled()) {
         // update compass with throttle value - used for compassmot
-        // compass.set_throttle(motors->get_throttle());
         compass.set_voltage(battery.voltage());
         compass.read();
     }
@@ -287,9 +283,6 @@ void Blimp::three_hz_loop()
 {
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
-
-    // check if we've lost terrain data
-    // failsafe_terrain_check();
 }
 
 // one_hz_loop - runs at 1Hz

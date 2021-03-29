@@ -1,8 +1,6 @@
 #include "Blimp.h"
 
-//most of these will become parameters...
-//put here instead of Fins.h so that it can be changed without having to recompile the entire vehicle
-
+// This is the scale used for RC inputs so that they can be scaled to the float point values used in the sin wave code.
 #define FIN_SCALE_MAX 1000
 
 /*
@@ -119,17 +117,18 @@ void Fins::output()
         }
 
         if (turbo_mode) {
-            //double speed fins if offset at max... MIR
+            //double speed fins if offset at max...
             if (_amp[i] <= 0.6 && fabsf(_off[i]) >= 0.4) {
                 _omm[i] = 2;
             }
         }
 
         // finding and outputting current position for each servo from sine wave
-        _pos[i]= _amp[i]*cosf(freq_hz * _omm[i] * _time * 2 * M_PI) + _off[i]; //removed +MAX_AMP because output can do -ve numbers
+        _pos[i]= _amp[i]*cosf(freq_hz * _omm[i] * _time * 2 * M_PI) + _off[i];
         SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _pos[i] * FIN_SCALE_MAX);
     }
 
+    //For debugging purposes. Displays in the debug terminal so it doesn't flood the GCS.
     ::printf("FINS (amp %.1f %.1f %.1f %.1f   off %.1f %.1f %.1f %.1f   omm %.1f %.1f %.1f %.1f)\n",
              _amp[0], _amp[1], _amp[2], _amp[3], _off[0], _off[1], _off[2], _off[3], _omm[0], _omm[1], _omm[2], _omm[3]);
 }
@@ -143,7 +142,7 @@ void Fins::output_min()
     Fins::output();
 }
 
-// MIR - Probably want to completely get rid of the desired spool state thing.
+// TODO - Probably want to completely get rid of the desired spool state thing.
 void Fins::set_desired_spool_state(DesiredSpoolState spool)
 {
     if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {

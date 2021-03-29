@@ -482,7 +482,6 @@ private:
     void read_radio();
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
-    // void radio_passthrough_to_motors();
     int16_t get_throttle_mid(void);
 
     // sensors.cpp
@@ -507,7 +506,6 @@ private:
     // system.cpp
     void init_ardupilot() override;
     void startup_INS_ground();
-    // void update_dynamic_notch() override;
     bool position_ok() const;
     bool ekf_has_absolute_position() const;
     bool ekf_has_relative_position() const;
@@ -517,9 +515,6 @@ private:
     MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
     void allocate_motors(void);
-
-    // // tuning.cpp
-    // void tuning();
 
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
