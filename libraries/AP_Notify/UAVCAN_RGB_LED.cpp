@@ -43,7 +43,7 @@ UAVCAN_RGB_LED::UAVCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
 {
 }
 
-bool UAVCAN_RGB_LED::hw_init()
+bool UAVCAN_RGB_LED::init()
 {
     return true;
 }
