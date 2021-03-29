@@ -748,6 +748,12 @@ bool AP_Arming_Copter::mandatory_checks(bool display_failure)
         result = false;
     }
 
+    // check MOT_THST_HOVER is sensible
+    if (copter.motors->get_throttle_hover() > 1.0f) {
+        check_failed(display_failure, "MOT_THST_HOVER is too high");
+        result = false;
+    }
+
     return result;
 }
 
