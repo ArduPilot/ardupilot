@@ -74,16 +74,6 @@ bool Blimp::set_home(const Location& loc, bool lock)
     if (!home_was_set) {
         // record home is set
         AP::logger().Write_Event(LogEvent::SET_HOME);
-
-        // #if MODE_AUTO_ENABLED == ENABLED
-        //         // log new home position which mission library will pull from ahrs
-        //         if (should_log(MASK_LOG_CMD)) {
-        //             AP_Mission::Mission_Command temp_cmd;
-        //             if (mode_auto.mission.read_cmd_from_storage(0, temp_cmd)) {
-        //                 logger.Write_Mission_Cmd(mode_auto.mission, temp_cmd);
-        //             }
-        //         }
-        // #endif
     }
 
     // lock home position

@@ -17,7 +17,7 @@ void ModeLand::run()
 void Blimp::set_mode_land_with_pause(ModeReason reason)
 {
     set_mode(Mode::Number::LAND, reason);
-    // land_pause = true;
+    //TODO: Add pause
 
     // alert pilot to mode change
     AP_Notify::events.failsafe_mode_change = 1;

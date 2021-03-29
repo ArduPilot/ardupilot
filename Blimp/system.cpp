@@ -42,10 +42,6 @@ void Blimp::init_ardupilot()
     log_init();
 #endif
 
-    // update motor interlock state
-    // update_using_interlock();
-
-
     init_rc_in();               // sets up rc channels from radio
 
     // allocate the motors class
@@ -263,21 +259,6 @@ void Blimp::update_auto_armed()
         if (ap.land_complete && motors->get_spool_state() != Fins::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
-    } else {
-        // arm checks
-
-        // // for tradheli if motors are armed and throttle is above zero and the motor is started, auto_armed should be true
-        // if(motors->armed() && ap.using_interlock) {
-        //     if(!ap.throttle_zero && motors->get_spool_state() == Fins::SpoolState::THROTTLE_UNLIMITED) {
-        //         set_auto_armed(true);
-        //     }
-        // // if motors are armed and throttle is above zero auto_armed should be true
-        // // if motors are armed and we are in throw mode, then auto_armed should be true
-        // } else if (motors->armed() && !ap.using_interlock) {
-        //     if(!ap.throttle_zero) {
-        //         set_auto_armed(true);
-        //     }
-        // }
     }
 }
 
@@ -297,13 +278,13 @@ bool Blimp::should_log(uint32_t mask)
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
 {
-    return MAV_TYPE_QUADROTOR; //MIR changed to this for now - will need to deal with mavlink changes later
+    return MAV_TYPE_QUADROTOR; //TODO: Mavlink changes to allow type to be correct
 }
 
 // return string corresponding to frame_class
 const char* Blimp::get_frame_string()
 {
-    return "AIRFISH";
+    return "AIRFISH";  //TODO: Change to be able to change with different frame_classes
 }
 
 /*

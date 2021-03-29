@@ -157,21 +157,7 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
 
 void GCS_MAVLINK_Blimp::send_nav_controller_output() const
 {
-    //     if (!blimp.ap.initialised) {
-    //         return;
-    //     }
-    //     const Vector3f &targets = blimp.attitude_control->get_att_target_euler_cd();
-    //     const Mode *flightmode = blimp.flightmode;
-    //     mavlink_msg_nav_controller_output_send(
-    //         chan,
-    //         targets.x * 1.0e-2f,
-    //         targets.y * 1.0e-2f,
-    //         targets.z * 1.0e-2f,
-    //         flightmode->wp_bearing() * 1.0e-2f,
-    //         MIN(flightmode->wp_distance() * 1.0e-2f, UINT16_MAX),
-    //         blimp.pos_control->get_alt_error() * 1.0e-2f,
-    //         0,
-    //         flightmode->crosstrack_error() * 1.0e-2f);
+
 }
 
 float GCS_MAVLINK_Blimp::vfr_hud_airspeed() const
@@ -212,7 +198,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             return;
         }
         const AP_Logger::PID_Info *pid_info = nullptr;
-        switch (axes[i]) { //MIR Temp
+        switch (axes[i]) { //TODO This should probably become an acceleration controller?
         // case PID_TUNING_ROLL:
         //     pid_info = &blimp.attitude_control->get_rate_roll_pid().get_pid_info();
         //     break;
