@@ -29,6 +29,8 @@ public:
     // call at least 1Hz
     void update();
 
+    // called by main code to indicate the vehicle is flying (or not).
+    // Used to determine whether we update the flight-time statistic
     void set_flying(bool b);
 
     // accessor for is_flying
@@ -57,6 +59,11 @@ private:
         AP_Int32 reset;
     } params;
 
+    // copy current values of parameters into normal variables.  These
+    // normal variables are frobbed by the codebase, and are
+    // periodically copied back into the parameter variables with
+    // set_and_save_ifchanged.  This is designed so we don't do too
+    // many writes to storage which has caused issues in the past
     void copy_variables_from_parameters();
 
     uint64_t last_flush_ms; // in terms of system uptime
