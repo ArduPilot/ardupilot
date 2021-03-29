@@ -25,53 +25,13 @@ struct PACKED log_Control_Tuning {
 // Write a control tuning packet
 void Blimp::Log_Write_Control_Tuning()
 {
-    // get terrain altitude
-    // float terr_alt = 0.0f;
-    // float des_alt_m = 0.0f;
-    // int16_t target_climb_rate_cms = 0;
-    // if (!flightmode->has_manual_throttle()) {
-    //     des_alt_m = pos_control->get_alt_target() / 100.0f;
-    //     target_climb_rate_cms = pos_control->get_vel_target_z();
-    // }
 
-    // get surface tracking alts
-    // float desired_rangefinder_alt;
-    // if (!surface_tracking.get_target_dist_for_logging(desired_rangefinder_alt)) {
-    // desired_rangefinder_alt = AP::logger().quiet_nan();
-    // }
-
-    // struct log_Control_Tuning pkt = {
-    //     LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-    //     time_us             : AP_HAL::micros64(),
-    //     throttle_in         : attitude_control->get_throttle_in(),
-    //     angle_boost         : attitude_control->angle_boost(),
-    //     throttle_out        : motors->get_throttle(),
-    //     throttle_hover      : motors->get_throttle_hover(),
-    //     desired_alt         : des_alt_m,
-    //     inav_alt            : inertial_nav.get_altitude() / 100.0f,
-    //     baro_alt            : baro_alt,
-    //     desired_rangefinder_alt : desired_rangefinder_alt,
-    //     rangefinder_alt     : surface_tracking.get_dist_for_logging(),
-    //     terr_alt            : terr_alt,
-    //     target_climb_rate   : target_climb_rate_cms,
-    //     climb_rate          : int16_t(inertial_nav.get_velocity_z()) // float -> int16_t
-    // };
-    // logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
 // Write an attitude packet
 void Blimp::Log_Write_Attitude()
 {
-    // // Vector3f targets = attitude_control->get_att_target_euler_cd();
-    // targets.z = wrap_360_cd(targets.z);
-    // logger.Write_Attitude(targets);
-    // logger.Write_Rate(ahrs_view, *motors, *attitude_control, *pos_control);
-    // if (should_log(MASK_LOG_PID)) {
-    //     logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
-    //     logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
-    //     logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
-    //     // logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info() );
-    // }
+
 }
 
 // Write an EKF and POS packet
@@ -97,15 +57,7 @@ struct PACKED log_MotBatt {
 // Write an rate packet
 void Blimp::Log_Write_MotBatt()
 {
-    // struct log_MotBatt pkt_mot = {
-    //     LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
-    //     time_us         : AP_HAL::micros64(),
-    //     lift_max        : (float)(motors->get_lift_max()),
-    //     bat_volt        : (float)(motors->get_batt_voltage_filt()),
-    //     bat_res         : (float)(battery.get_resistance()),
-    //     th_limit        : (float)(motors->get_throttle_limit())
-    // };
-    // logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
+
 }
 
 struct PACKED log_Data_Int16t {
@@ -329,38 +281,6 @@ time_fade_out       : time_fade_out
     logger.WriteBlock(&pkt_sids, sizeof(pkt_sids));
 #endif
 }
-
-// // guided target logging
-// struct PACKED log_GuidedTarget {
-//     LOG_PACKET_HEADER;
-//     uint64_t time_us;
-//     uint8_t type;
-//     float pos_target_x;
-//     float pos_target_y;
-//     float pos_target_z;
-//     float vel_target_x;
-//     float vel_target_y;
-//     float vel_target_z;
-// };
-
-// Write a Guided mode target
-// pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
-// vel_target is cm/s
-// void Blimp::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
-// {
-//     struct log_GuidedTarget pkt = {
-//         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
-//         time_us         : AP_HAL::micros64(),
-//         type            : target_type,
-//         pos_target_x    : pos_target.x,
-//         pos_target_y    : pos_target.y,
-//         pos_target_z    : pos_target.z,
-//         vel_target_x    : vel_target.x,
-//         vel_target_y    : vel_target.y,
-//         vel_target_z    : vel_target.z
-//     };
-//     logger.WriteBlock(&pkt, sizeof(pkt));
-// }
 
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for

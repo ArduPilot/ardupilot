@@ -469,21 +469,10 @@ public:
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
 
-    // // button checking
-    // AP_Button *button_ptr;
-
 #if STATS_ENABLED == ENABLED
     // vehicle statistics
     AP_Stats stats;
 #endif
-
-
-    // ground effect compensation enable/disable
-    // AP_Int8 gndeffect_comp_enabled;
-
-    // temperature calibration handling
-    // AP_TempCalibration temp_calibration;
-
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;

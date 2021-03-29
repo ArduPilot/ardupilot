@@ -107,22 +107,6 @@ enum GuidedMode {
     Guided_Angle,
 };
 
-// // Airmode
-// enum class AirMode {
-//     AIRMODE_NONE,
-//     AIRMODE_DISABLED,
-//     AIRMODE_ENABLED,
-// };
-
-// // Safe RTL states
-// enum SmartRTLState {
-//     SmartRTL_WaitForPathCleanup,
-//     SmartRTL_PathFollow,
-//     SmartRTL_PreLandPosition,
-//     SmartRTL_Descend,
-//     SmartRTL_Land
-// };
-
 enum PayloadPlaceStateType {
     PayloadPlaceStateType_FlyToLocation,
     PayloadPlaceStateType_Calibrating_Hover_Start,
