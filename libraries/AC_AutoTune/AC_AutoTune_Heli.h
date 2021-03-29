@@ -81,6 +81,9 @@ protected:
     // get minimum rate Yaw filter value
     float get_yaw_rate_filt_min() const override;
 
+    // reverse direction for twitch test
+    bool twitch_reverse_direction() override { return positive_direction; }
+
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
     void Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);

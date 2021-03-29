@@ -187,6 +187,9 @@ protected:
     // get minimum rate Yaw filter value
     virtual float get_yaw_rate_filt_min() const = 0;
 
+    // reverse direction for twitch test
+    virtual bool twitch_reverse_direction() = 0;
+
     // get attitude for slow position hold in autotune mode
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
 
@@ -346,7 +349,7 @@ protected:
 
     // Feedforward test used to determine Rate FF gain
     void rate_ff_test_init();
-    void rate_ff_test_run(float max_angle_cds, float target_rate_cds);
+    void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
 
     // dwell test used to perform frequency dwells for rate gains
     void dwell_test_init(float filt_freq);

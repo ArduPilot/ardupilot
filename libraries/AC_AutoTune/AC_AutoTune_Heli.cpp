@@ -110,7 +110,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
     if (tune_type == SP_UP) {
         angle_dwell_test_run(curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
-        rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS);
+        rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS, dir_sign);
     } else if (tune_type == RP_UP || tune_type == RD_UP) {
         dwell_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if (tune_type == MAX_GAINS) {
@@ -416,6 +416,9 @@ void AC_AutoTune_Heli::updating_max_gains_all(AxisType test_axis)
 // FF is adjusted until rate requested is acheived
 void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command)
 {
+
+    static bool first_dir_complete;
+    static float first_dir_rff;
     if (ff_up_first_iter) {
         if (!is_zero(meas_rate)) {
             tune_ff = 5730.0f * meas_command / meas_rate;
@@ -424,10 +427,17 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
         ff_up_first_iter = false;
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 1.05f * fabsf(rate_target) &&
                fabsf(meas_rate) > 0.95f * fabsf(rate_target)) {
-        counter = AUTOTUNE_SUCCESS_COUNT;
-        tune_ff = 0.95f * tune_ff;
-        tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
-        ff_up_first_iter = true;
+        if (!first_dir_complete) {
+            first_dir_rff = tune_ff;
+            first_dir_complete = true;
+            positive_direction = !positive_direction;
+        } else {
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            tune_ff = 0.95f * 0.5 * (tune_ff + first_dir_rff);
+            tune_ff = constrain_float(tune_ff, AUTOTUNE_RFF_MIN, AUTOTUNE_RFF_MAX);
+            ff_up_first_iter = true;
+            first_dir_complete = false;
+        }
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) > 1.05f * fabsf(rate_target)) {
         tune_ff = 0.98f * tune_ff;
         if (tune_ff <= AUTOTUNE_RFF_MIN) {
@@ -435,6 +445,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
             counter = AUTOTUNE_SUCCESS_COUNT;
             AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
             ff_up_first_iter = true;
+            first_dir_complete = false;
         }
     } else if (is_positive(rate_target * meas_rate) && fabsf(meas_rate) < 0.95f * fabsf(rate_target)) {
         tune_ff = 1.02f * tune_ff;
@@ -443,6 +454,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
             counter = AUTOTUNE_SUCCESS_COUNT;
             AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
             ff_up_first_iter = true;
+            first_dir_complete = false;
         }
     } else {
         if (!is_zero(meas_rate)) {
