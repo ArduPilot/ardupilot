@@ -370,22 +370,60 @@ void Plane::update_fbwb_speed_height(void)
     calc_nav_pitch();
 }
 
+//Returns the wind compensation angle (heading difference from ground track) based on location bearing, AHRS wind & airspeed estimates
+float Plane::get_wind_compensated_heading_angle(const Location &loc1, const Location &loc2)
+{
+	float wind_compensated_heading_angle=0;
+	float airspeed_measured;
+	if ((!(loc1.same_latlon_as(loc2))) && (AP::ahrs().airspeed_estimate(airspeed_measured))) {
+		if (airspeed_measured>0) { //if we are flying by any chance, airspeed must be > 0
+			Vector3f nedWind = AP::ahrs().wind_estimate();
+			Vector2f horizontal_wind_vect; //use only the horizontal components for this calculation
+			horizontal_wind_vect.x = nedWind.x;  
+			horizontal_wind_vect.y = nedWind.y;
+			float l_bearing = loc1.get_bearing(loc2); //radians
+			float w_bearing;
+			if (!horizontal_wind_vect.is_zero()) {
+				w_bearing = atan2f(-horizontal_wind_vect.y,-horizontal_wind_vect.x); //wind vector direction
+			} else {
+				w_bearing=0; //does not matter if speed is zero
+			}
+			float c_angle_diff = l_bearing-w_bearing; //difference between bearing angle to location VS wind vector direction
+			float c_wind_prependicular_to_bearing = sinf(c_angle_diff)*horizontal_wind_vect.length(); //Calculate the Wind vector component prependicular to the bearing-to-location direction - we need to compensate this by heading
+			wind_compensated_heading_angle = l_bearing+acosf(c_wind_prependicular_to_bearing / airspeed_measured)-M_PI/2.0f; //Get the Heading angle compensated with the effect of wind vector if ground track is being followed
+			//Constrain return values to 00..2PI
+			if (wind_compensated_heading_angle>=2.0f*M_PI) {
+				wind_compensated_heading_angle -= 2.0f*M_PI;
+			}
+			if (wind_compensated_heading_angle<0) {
+				wind_compensated_heading_angle += 2.0f*M_PI;
+			}			
+		} //We are not even flying if airspeed is zero - result is irrelevant
+	} //might be a Loiter-type command, makes no sense to calculate wind compensation heading - also, if airspeed estimate fails, we can't calculate wind compensation angle, use zero as default
+    return(wind_compensated_heading_angle);
+}
+
+
 /*
   calculate the turn angle for the next leg of the mission
  */
 void Plane::setup_turn_angle(void)
 {
-    int32_t next_ground_course_cd = mission.get_next_ground_course_cd(-1);
-    if (next_ground_course_cd == -1) {
-        // the mission library can't determine a turn angle, assume 90 degrees
-        auto_state.next_turn_angle = 90.0f;
-    } else {
-        // get the heading of the current leg
-        int32_t ground_course_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
+ 	//if we can't determine a turn angle, assume 90 degrees
+	auto_state.next_turn_angle = 90.0f;
 
-        // work out the angle we need to turn through
-        auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
-    }
+	//Use wind-compensated headings instead of ground course bearings for setting up turn angle
+	AP_Mission::Mission_Command next_cmd;
+	int32_t next_heading_wind_compensated_angle_cd; //This will be our expected wind compensation angle on the next leg in CDs
+	int32_t current_heading_wind_compensated_angle_cd = degrees(get_wind_compensated_heading_angle(prev_WP_loc,next_WP_loc))*100.0f; //This is our current wind compensation angle in CDs
+	if ((mission.num_commands() >mission.get_current_nav_index()) && (mission.get_next_nav_cmd(mission.get_current_nav_index()+1,next_cmd))) {
+		next_heading_wind_compensated_angle_cd= degrees(get_wind_compensated_heading_angle(next_WP_loc, next_cmd.content.location))*100.0f; 
+	} else {
+		next_heading_wind_compensated_angle_cd = 0; //We don't seem to have any more nav commands with bearing to calculate next wind compensation angle - most likely end of mission reached
+	}
+
+	// work out the angle we need to turn through
+	auto_state.next_turn_angle = wrap_180_cd(next_ground_course_cd - ground_course_cd) * 0.01f;
 }    
 
 /*

@@ -975,6 +975,7 @@ private:
     void update_loiter(uint16_t radius);
     void update_cruise();
     void update_fbwb_speed_height(void);
+	float get_wind_compensated_heading_angle(const Location &loc1, const Location &loc2);
     void setup_turn_angle(void);
     bool reached_loiter_target(void);
 
