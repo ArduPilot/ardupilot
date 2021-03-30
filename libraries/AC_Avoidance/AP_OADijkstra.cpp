@@ -140,18 +140,14 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         Vector2f origin_pos;
         if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
             // convert offset from ekf origin to Location
-            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
-            origin_new = temp_loc;
+            origin_new = Location(Vector3f(origin_pos.x, origin_pos.y, current_loc.alt), current_loc.get_alt_frame());
         } else {
             // for first point use current loc as origin
             origin_new = current_loc;
         }
 
         // convert offset from ekf origin to Location
-        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
-        destination_new = destination;
-        destination_new.lat = temp_loc.lat;
-        destination_new.lng = temp_loc.lng;
+        destination_new = Location(Vector3f(dest_pos.x, dest_pos.y, destination.alt), destination.get_alt_frame());
 
         // check if we should advance to next point for next iteration
         const bool near_oa_wp = current_loc.get_distance(destination_new) <= 2.0f;
