@@ -846,7 +846,15 @@ public:
 
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
-    GuidedMode mode() const { return guided_mode; }
+    enum class SubMode {
+        TakeOff,
+        WP,
+        Velocity,
+        PosVel,
+        Angle,
+    };
+
+    SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
@@ -881,7 +889,7 @@ private:
     bool use_pilot_yaw(void) const;
 
     // controls which controller is run (pos or vel):
-    GuidedMode guided_mode = Guided_TakeOff;
+    SubMode guided_mode = SubMode::TakeOff;
     bool send_notification;     // used to send one time notification to ground station
 
 };
