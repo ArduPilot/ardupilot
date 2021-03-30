@@ -370,6 +370,9 @@ int SITL_State::sim_fd(const char *name, const char *arg)
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return _sitl->ie24_sim.fd();
+    } else if (streq(name, "ecoefi")) {
+        sitl_model->set_ecoefi(&_sitl->ecoefi_sim);
+        return _sitl->ecoefi_sim.fd();
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 != nullptr) {
             AP_HAL::panic("Only one gyus42v2 at a time");
@@ -492,6 +495,8 @@ int SITL_State::sim_fd_write(const char *name)
         return _sitl->richenpower_sim.write_fd();
     } else if (streq(name, "ie24")) {
         return _sitl->ie24_sim.write_fd();
+    } else if (streq(name, "ecoefi")) {
+        return _sitl->ecoefi_sim.write_fd();
     } else if (streq(name, "gyus42v2")) {
         if (gyus42v2 == nullptr) {
             AP_HAL::panic("No gyus42v2 created");
