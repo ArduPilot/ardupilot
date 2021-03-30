@@ -1570,6 +1570,16 @@ class AutoTest(ABC):
 
     def reboot_sitl_mav(self, required_bootcount=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
+        # we must make sure that stats have been reset - otherwise
+        # when we reboot we'll reset statistics again and lose our
+        # STAT_BOOTCNT increment:
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException("STAT_RESET did not go non-zero")
+            if self.get_parameter('STAT_RESET') != 0:
+                break
+
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
