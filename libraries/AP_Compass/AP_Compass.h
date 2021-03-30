@@ -212,8 +212,6 @@ public:
     bool use_for_yaw(uint8_t i) const;
     bool use_for_yaw(void) const;
 
-    void set_use_for_yaw(uint8_t i, bool use);
-
     /// Sets the local magnetic field declination.
     ///
     /// @param  radians             Local field declination.
