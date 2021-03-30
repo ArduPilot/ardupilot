@@ -97,15 +97,6 @@ enum AutoMode {
     Auto_NavPayloadPlace,
 };
 
-// Guided modes
-enum GuidedMode {
-    Guided_TakeOff,
-    Guided_WP,
-    Guided_Velocity,
-    Guided_PosVel,
-    Guided_Angle,
-};
-
 // Airmode
 enum class AirMode {
     AIRMODE_NONE,
