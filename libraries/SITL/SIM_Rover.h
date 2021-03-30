@@ -45,6 +45,11 @@ private:
     float skid_turn_rate = 140.0f;      // skid-steering vehicle's maximum turn rate in deg/sec
     bool skid_steering;                 // true if this vehicle is a skid-steering vehicle
 
+    // vectored thrust related members
+    bool vectored_thrust;                   // true if vehicle uses vectored thrust (i.e. steering controls direction of thrust)
+    float vectored_angle_max = 90.0f;       // maximum angle (in degrees) to which thrust can be turned
+    float vectored_turn_rate_max = 90.0f;   // maximum turn rate (in deg/sec) with full throttle angled at 90deg
+
     float turn_circle(float steering) const;
     float calc_yaw_rate(float steering, float speed);
     float calc_lat_accel(float steering_angle, float speed);
