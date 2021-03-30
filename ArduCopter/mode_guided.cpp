@@ -55,12 +55,12 @@ void ModeGuided::run()
     // call the correct auto controller
     switch (guided_mode) {
 
-    case Guided_TakeOff:
+    case SubMode::TakeOff:
         // run takeoff controller
         takeoff_run();
         break;
 
-    case Guided_WP:
+    case SubMode::WP:
         // run position controller
         pos_control_run();
         if (send_notification && wp_nav->reached_wp_destination()) {
@@ -69,17 +69,17 @@ void ModeGuided::run()
         }
         break;
 
-    case Guided_Velocity:
+    case SubMode::Velocity:
         // run velocity controller
         vel_control_run();
         break;
 
-    case Guided_PosVel:
+    case SubMode::PosVel:
         // run position-velocity controller
         posvel_control_run();
         break;
 
-    case Guided_Angle:
+    case SubMode::Angle:
         // run angle controller
         angle_control_run();
         break;
@@ -100,7 +100,7 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
-    guided_mode = Guided_TakeOff;
+    guided_mode = SubMode::TakeOff;
 
     // initialise wpnav destination
     Location target_loc = copter.current_loc;
@@ -139,7 +139,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 void ModeGuided::pos_control_start()
 {
     // set to position control mode
-    guided_mode = Guided_WP;
+    guided_mode = SubMode::WP;
 
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
@@ -159,7 +159,7 @@ void ModeGuided::pos_control_start()
 void ModeGuided::vel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Velocity;
+    guided_mode = SubMode::Velocity;
 
     // initialise horizontal speed, acceleration
     pos_control->set_max_speed_xy(wp_nav->get_default_speed_xy());
@@ -177,7 +177,7 @@ void ModeGuided::vel_control_start()
 void ModeGuided::posvel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_PosVel;
+    guided_mode = SubMode::PosVel;
 
     pos_control->init_xy_controller();
 
@@ -202,14 +202,14 @@ void ModeGuided::posvel_control_start()
 
 bool ModeGuided::is_taking_off() const
 {
-    return guided_mode == Guided_TakeOff;
+    return guided_mode == SubMode::TakeOff;
 }
 
 // initialise guided mode's angle controller
 void ModeGuided::angle_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = Guided_Angle;
+    guided_mode = SubMode::Angle;
 
     // set vertical speed and acceleration
     pos_control->set_max_speed_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up());
@@ -250,7 +250,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 #endif
 
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         pos_control_start();
     }
 
@@ -270,7 +270,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 
 bool ModeGuided::get_wp(Location& destination)
 {
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         return false;
     }
     return wp_nav->get_oa_wp_destination(destination);
@@ -292,7 +292,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 #endif
 
     // ensure we are in position control mode
-    if (guided_mode != Guided_WP) {
+    if (guided_mode != SubMode::WP) {
         pos_control_start();
     }
 
@@ -318,7 +318,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Velocity) {
+    if (guided_mode != SubMode::Velocity) {
         vel_control_start();
     }
 
@@ -349,7 +349,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 #endif
 
     // check we are in velocity control mode
-    if (guided_mode != Guided_PosVel) {
+    if (guided_mode != SubMode::PosVel) {
         posvel_control_start();
     }
 
@@ -371,7 +371,7 @@ bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vecto
 void ModeGuided::set_angle(const Quaternion &q, float climb_rate_cms_or_thrust, bool use_yaw_rate, float yaw_rate_rads, bool use_thrust)
 {
     // check we are in velocity control mode
-    if (guided_mode != Guided_Angle) {
+    if (guided_mode != SubMode::Angle) {
         angle_control_start();
     }
 
@@ -784,11 +784,11 @@ bool ModeGuided::limit_check()
 
 uint32_t ModeGuided::wp_distance() const
 {
-    switch(mode()) {
-    case Guided_WP:
+    switch(guided_mode) {
+    case SubMode::WP:
         return wp_nav->get_wp_distance_to_destination();
         break;
-    case Guided_PosVel:
+    case SubMode::PosVel:
         return pos_control->get_pos_error_xy();
         break;
     default:
@@ -798,25 +798,37 @@ uint32_t ModeGuided::wp_distance() const
 
 int32_t ModeGuided::wp_bearing() const
 {
-    switch(mode()) {
-    case Guided_WP:
+    switch(guided_mode) {
+    case SubMode::WP:
         return wp_nav->get_wp_bearing_to_destination();
         break;
-    case Guided_PosVel:
+    case SubMode::PosVel:
         return pos_control->get_bearing_to_target();
         break;
-    default:
+    case SubMode::TakeOff:
+    case SubMode::Velocity:
+    case SubMode::Angle:
+        // these do not have bearings
         return 0;
     }
+    // compiler guarantees we don't get here
+    return 0.0;
 }
 
 float ModeGuided::crosstrack_error() const
 {
-    if (mode() == Guided_WP) {
+    switch (guided_mode) {
+    case SubMode::WP:
         return wp_nav->crosstrack_error();
-    } else {
+    case SubMode::TakeOff:
+    case SubMode::Velocity:
+    case SubMode::PosVel:
+    case SubMode::Angle:
+        // no track to have a crosstrack to
         return 0;
     }
+    // compiler guarantees we don't get here
+    return 0;
 }
 
 #endif
