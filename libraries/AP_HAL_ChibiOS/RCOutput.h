@@ -425,6 +425,8 @@ private:
     uint8_t _dshot_rate;
     // dshot periods since the last push()
     uint8_t _dshot_cycle;
+    // in the very even pulse calibration step
+    bool _dshot_calibrating;
     // virtual timer for post-push() pulses
     virtual_timer_t _dshot_rate_timer;
 

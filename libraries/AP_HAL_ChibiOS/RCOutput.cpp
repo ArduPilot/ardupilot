@@ -137,13 +137,30 @@ void RCOutput::rcout_thread()
 
     chEvtWaitOne(EVT_PWM_START);
 
+    // it takes BLHeli32 about 30ms to calibrate frames on startup, in which it must see 10 good frames
+    // experiments show that this is quite fragile at lower rates, so run a calibration phase at a
+    // higher rate (2Khz) for 5s to get the motors armed before dropping the rate to the configured value
+    uint32_t cal_cycles = 5000000UL / 300UL;
+    _dshot_calibrating = true;
+    const uint32_t cycle_time_us = _dshot_period_us;
+    // while calibrating run at 3Khz to allow arming
+    _dshot_period_us = 300;
+
+    // prime the pump for calibration
+    chEvtSignal(rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
+
     // don't start calibrating until everything else is ready
     chEvtWaitOne(EVT_PWM_SEND);
 
     // dshot is quite sensitive to timing, it's important to output pulses as
     // regularly as possible at the correct bitrate
     while (true) {
-        chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
+        // while calibrating ignore all push-based requests and stick closely to the dshot period
+        if (_dshot_calibrating) {
+            chEvtWaitOne(EVT_PWM_SYNTHETIC_SEND);
+        } else {
+            chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
+        }
 
         // start the clock
         last_thread_run_us = AP_HAL::micros();
@@ -152,7 +169,7 @@ void RCOutput::rcout_thread()
         if (_dshot_cycle == 0) {
             last_cycle_run_us = AP_HAL::micros();
             // register a timer for the next tick if push() will not be providing it
-            if (_dshot_rate != 1) {
+            if (_dshot_rate != 1 || _dshot_calibrating) {
                 chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
             }
         }
@@ -177,6 +194,15 @@ void RCOutput::rcout_thread()
 
         // process any pending RC output requests
         timer_tick(time_out_us);
+
+        if (_dshot_calibrating) {
+                cal_cycles--;
+                if (cal_cycles == 0) {
+                    // calibration is done re-instate the desired rate
+                    _dshot_calibrating = false;
+                    _dshot_period_us = cycle_time_us;
+                }
+        }
     }
 }
 
@@ -185,7 +211,7 @@ void RCOutput::dshot_update_tick(void* p)
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
 
-    if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate) {
+    if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate || rcout->_dshot_calibrating) {
         chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
     chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
@@ -1331,7 +1357,8 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
                 value += 47;
             }
 
-            bool request_telemetry = (telem_request_mask & chan_mask)?true:false;
+            // according to sskaug requesting telemetry while trying to arm may interfere with the good frame calc
+            bool request_telemetry = (telem_request_mask & chan_mask) ? !_dshot_calibrating : false;
             uint16_t packet = create_dshot_packet(value, request_telemetry, group.bdshot.enabled);
             if (request_telemetry) {
                 telem_request_mask &= ~chan_mask;
