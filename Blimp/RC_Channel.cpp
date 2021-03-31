@@ -104,7 +104,7 @@ void RC_Channel_Blimp::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 }
 
 // do_aux_function - implement the function invoked by auxiliary switches
-void RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
+bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch (ch_option) {
 
@@ -183,9 +183,10 @@ void RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 
     default:
-        RC_Channel::do_aux_function(ch_option, ch_flag);
-        break;
+        return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
+
+    return true;
 }
 
 // save_trim - adds roll and pitch trims from the radio to ahrs
