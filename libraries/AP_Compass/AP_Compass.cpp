@@ -1563,6 +1563,14 @@ Compass::read(void)
         AP::logger().Write_Compass();
     }
 #endif
+
+    // Set _first_usable parameter
+    for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+        if (_use_for_yaw[i]) {
+            _first_usable = uint8_t(i);
+            break;
+        }
+    }
     return healthy();
 }
 
@@ -1705,7 +1713,7 @@ void Compass::try_set_initial_location()
 bool
 Compass::use_for_yaw(void) const
 {
-    return healthy(0) && use_for_yaw(0);
+    return healthy(_first_usable) && use_for_yaw(_first_usable);
 }
 
 /// return true if the specified compass can be used for yaw calculations
