@@ -1274,7 +1274,7 @@ class AutoTest(ABC):
 
     def __del__(self):
         if self.rc_thread is not None:
-            self.progress("Joining thread in __del__")
+            self.progress("Joining RC thread in __del__")
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None
@@ -3474,6 +3474,7 @@ class AutoTest(ABC):
                 continue
             bad_channels = ""
             for chan in map_copy:
+                self.progress("RC values good")
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
                 if chan_pwm != map_copy[chan]:
                     bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
@@ -8616,7 +8617,7 @@ switch value'''
                     self.check_logs("FRAMEWORK")
 
         if self.rc_thread is not None:
-            self.progress("Joining thread")
+            self.progress("Joining RC thread")
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None
