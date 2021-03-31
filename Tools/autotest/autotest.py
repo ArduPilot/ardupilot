@@ -704,6 +704,15 @@ def run_tests(steps):
             results.add(step,
                         '<span class="failed-text">FAILED</span>',
                         time.time() - t1)
+
+        global tester
+        if tester is not None and tester.rc_thread is not None:
+            if passed:
+                print("BAD: RC Thread still alive after run_step")
+            tester.rc_thread_should_quit = True
+            tester.rc_thread.join()
+            tester.rc_thread = None
+
     if not passed:
         keys = failed_testinstances.keys()
         if len(keys):
@@ -716,14 +725,6 @@ def run_tests(steps):
                     print("    %s (%s) (see %s)" % (desc, exception, debug_filename))
 
         print("FAILED %u tests: %s" % (len(failed), failed))
-
-    global tester
-    if tester is not None and tester.rc_thread is not None:
-        if passed:
-            print("BAD: RC Thread still alive after tests passed")
-        tester.rc_thread_should_quit = True
-        tester.rc_thread.join()
-        tester.rc_thread = None
 
     util.pexpect_close_all()
 
