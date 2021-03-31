@@ -43,28 +43,26 @@ extern const AP_HAL::HAL& hal;
 // time in milliseconds between autotune saves
 #define AUTOTUNE_SAVE_PERIOD 10000U
 
-// how much time we have to overshoot for to reduce gains
-#define AUTOTUNE_OVERSHOOT_TIME 100
-
-// how much time we have to undershoot for to increase gains
-#define AUTOTUNE_UNDERSHOOT_TIME 200
-
 // step size for increasing gains, percentage
-#define AUTOTUNE_INCREASE_STEP 5
+#define AUTOTUNE_INCREASE_FF_STEP 12
+#define AUTOTUNE_INCREASE_PD_STEP 5
+
+// step size for increasing gains when low impact, percentage
+#define AUTOTUNE_INCREASE_PD_LOW_STEP 30
 
 // step size for decreasing gains, percentage
-#define AUTOTUNE_DECREASE_STEP 8
+#define AUTOTUNE_DECREASE_FF_STEP 15
+#define AUTOTUNE_DECREASE_PD_STEP 20
 
-// min/max FF gains
-#define AUTOTUNE_MAX_FF 2.0f
-#define AUTOTUNE_MIN_FF 0.05f
+// limits on IMAX
+#define AUTOTUNE_MIN_IMAX 0.4
+#define AUTOTUNE_MAX_IMAX 0.9
 
-// tau ranges
-#define AUTOTUNE_MAX_TAU 0.7f
-#define AUTOTUNE_MIN_TAU 0.2f
+// ratio of I to P
+#define AUTOTUNE_I_RATIO 0.75
 
-#define AUTOTUNE_MIN_IMAX 2000
-#define AUTOTUNE_MAX_IMAX 4000
+// overshoot threshold
+#define AUTOTUNE_OVERSHOOT 1.1
 
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
@@ -72,10 +70,9 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
                          AC_PID &_rpid) :
     current(_gains),
     rpid(_rpid),
-    running(false),
     type(_type),
     aparm(parms),
-    saturated_surfaces(false)
+    ff_filter(2)
 {}
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -93,20 +90,19 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
  */
 static const struct {
     float tau;
-    float Pratio;
     float rmax;
 } tuning_table[] = {
-    { 0.70f, 0.050f,  20 },   // level 1
-    { 0.65f, 0.055f,  30 },   // level 2
-    { 0.60f, 0.060f,  40 },   // level 3
-    { 0.55f, 0.065f,  50 },   // level 4
-    { 0.50f, 0.070f,  60 },   // level 5
-    { 0.45f, 0.075f,  75 },   // level 6
-    { 0.40f, 0.080f,  90 },   // level 7
-    { 0.30f, 0.085f, 120 },   // level 8
-    { 0.20f, 0.090f, 160 },   // level 9
-    { 0.10f, 0.095f, 210 },   // level 10
-    { 0.05f, 0.100f, 300 },   // (yes, it goes to 11)
+    { 1.00, 20 },   // level 1
+    { 0.90, 30 },   // level 2
+    { 0.80, 40 },   // level 3
+    { 0.70, 50 },   // level 4
+    { 0.60, 60 },   // level 5
+    { 0.50, 75 },   // level 6
+    { 0.25, 90 },   // level 7
+    { 0.15, 120 },   // level 8
+    { 0.10, 160 },   // level 9
+    { 0.05, 210 },   // level 10
+    { 0.03, 300 },   // (yes, it goes to 11)
 };
 
 /*
@@ -115,14 +111,12 @@ static const struct {
 void AP_AutoTune::start(void)
 {
     running = true;
-    state = DEMAND_UNSATURATED;
+    state = ATState::IDLE;
     uint32_t now = AP_HAL::millis();
 
-    state_enter_ms = now;
     last_save_ms = now;
 
-    last_save = current;
-    restore = current;
+    restore = last_save = get_gains(current);
 
     uint8_t level = aparm.autotune_level;
     if (level > ARRAY_SIZE(tuning_table)) {
@@ -132,12 +126,19 @@ void AP_AutoTune::start(void)
         level = 1;
     }
 
-    current.rmax.set(tuning_table[level-1].rmax);
+    current.rmax_pos.set(tuning_table[level-1].rmax);
+    current.rmax_neg.set(tuning_table[level-1].rmax);
     current.tau.set(tuning_table[level-1].tau);
-
-    current.imax = constrain_float(current.imax, AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX);
+    rpid.kIMAX().set(constrain_float(rpid.kIMAX(), AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX));
 
     next_save = current;
+
+    // use 2Hz filters on the actuator and rate to reduce impact of noise
+    actuator_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
+    rate_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), 2);
+
+    // scale slew limit to more agressively find oscillations during autotune
+    rpid.set_slew_limit_scale(1.5*45);
 
     Debug("START FF -> %.3f\n", rpid.ff().get());
 }
@@ -150,82 +151,213 @@ void AP_AutoTune::stop(void)
     if (running) {
         running = false;
         save_gains(restore);
+        rpid.set_slew_limit_scale(45);
     }
 }
 
 
+// @LoggerMessage: ATNP
+// @Description: Plane AutoTune
+// @Vehicles: Plane
+// @Field: TimeUS: Time since system startup
+// @Field: Axis: which axis is currently being tuned
+// @Field: State: tuning state
+// @Field: Sur: control surface deflection
+// @Field: Tar: target rate
+// @Field: FF0: FF value single sample
+// @Field: FF: FF value
+// @Field: P: P value
+// @Field: D: D value
+// @Field: Action: action taken
+
 /*
   one update cycle of the autotuner
  */
-void AP_AutoTune::update(float desired_rate, float achieved_rate, float servo_out)
+void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
 {
     if (!running) {
         return;
     }
     check_save();
-
     // see what state we are in
-    ATState new_state;
-    float abs_desired_rate = fabsf(desired_rate);
-    uint32_t now = AP_HAL::millis();
+    ATState new_state = state;
+    const float desired_rate = pinfo.target;
+    // filter actuator without I term
+    const float actuator = actuator_filter.apply(pinfo.FF + pinfo.P + pinfo.D);
+    const float actual_rate = rate_filter.apply(pinfo.actual);
 
-    if (fabsf(servo_out) >= 45) {
-        // we have saturated the servo demand (not including
-        // integrator), we cannot get any information that would allow
-        // us to increase the gain
-        saturated_surfaces = true;
-    }
+    max_actuator = MAX(max_actuator, actuator);
+    min_actuator = MIN(min_actuator, actuator);
+    max_rate = MAX(max_rate, actual_rate);
+    min_rate = MIN(min_rate, actual_rate);
+    max_target = MAX(max_target, desired_rate);
+    min_target = MIN(min_target, desired_rate);
+    max_P = MAX(max_P, fabsf(pinfo.P));
+    max_D = MAX(max_D, fabsf(pinfo.D));
+    min_Dmod = MIN(min_Dmod, pinfo.Dmod);
 
-    if (abs_desired_rate < 0.8f * current.rmax) {
-        // we are not demanding max rate
-        new_state = DEMAND_UNSATURATED;
-    } else if (fabsf(achieved_rate) > abs_desired_rate) {
-        new_state = desired_rate > 0 ? DEMAND_OVER_POS : DEMAND_OVER_NEG;
+    int16_t att_limit_cd;
+    if (type == AUTOTUNE_ROLL) {
+        att_limit_cd = aparm.roll_limit_cd;
     } else {
-        new_state = desired_rate > 0 ? DEMAND_UNDER_POS : DEMAND_UNDER_NEG;
+        att_limit_cd = MIN(abs(aparm.pitch_limit_max_cd),abs(aparm.pitch_limit_min_cd));
     }
-    if (new_state != state) {
-        check_state_exit(now - state_enter_ms);
-        state = new_state;
-        state_enter_ms = now;
-        saturated_surfaces = false;
-    }
-    if (state != DEMAND_UNSATURATED) {
-        write_log(servo_out, desired_rate, achieved_rate);
-    }
-}
+    const float rate_threshold1 = 0.75 * MIN(att_limit_cd * 0.01 / current.tau.get(), current.rmax_pos);
+    const float rate_threshold2 = 0.25 * rate_threshold1;
 
-/*
-  called when we change state to see if we should change gains
- */
-void AP_AutoTune::check_state_exit(uint32_t state_time_ms)
-{
     switch (state) {
-    case DEMAND_UNSATURATED:
-        break;
-    case DEMAND_UNDER_POS:
-    case DEMAND_UNDER_NEG:
-        // we increase P if we have not saturated the surfaces during
-        // this state, and we have
-        if (state_time_ms >= AUTOTUNE_UNDERSHOOT_TIME && !saturated_surfaces) {
-            rpid.ff().set(rpid.ff() * (100+AUTOTUNE_INCREASE_STEP) * 0.01f);
-            if (rpid.ff() > AUTOTUNE_MAX_FF) {
-                rpid.ff().set(AUTOTUNE_MAX_FF);
-            }
-            Debug("UNDER FF -> %.3f\n", rpid.ff().get());
+    case ATState::IDLE:
+        if (desired_rate > rate_threshold1) {
+            new_state = ATState::DEMAND_POS;
+        } else if (desired_rate < -rate_threshold1) {
+            new_state = ATState::DEMAND_NEG;
         }
         break;
-    case DEMAND_OVER_POS:
-    case DEMAND_OVER_NEG:
-        if (state_time_ms >= AUTOTUNE_OVERSHOOT_TIME) {
-            rpid.ff().set(rpid.ff() * (100-AUTOTUNE_DECREASE_STEP) * 0.01f);
-            if (rpid.ff() < AUTOTUNE_MIN_FF) {
-                rpid.ff().set(AUTOTUNE_MIN_FF);
-            }
-            Debug("OVER FF -> %.3f\n", rpid.ff().get());
+    case ATState::DEMAND_POS:
+        if (desired_rate < rate_threshold2) {
+            new_state = ATState::IDLE;
+        }
+        break;
+    case ATState::DEMAND_NEG:
+        if (desired_rate > -rate_threshold2) {
+            new_state = ATState::IDLE;
         }
         break;
     }
+
+    AP::logger().Write(
+        type==AUTOTUNE_ROLL?"ATNR":"ATNP",
+        "TimeUS,Axis,State,Sur,Tar,FF0,FF,P,D,Action",
+        "s--dk-----",
+        "F--000000-",
+        "QBBffffffB",
+        AP_HAL::micros64(),
+        unsigned(type),
+        unsigned(new_state),
+        actuator,
+        desired_rate,
+        FF0,
+        current.FF,
+        current.P,
+        current.D,
+        unsigned(action));
+
+    if (new_state == state) {
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+
+    if (new_state != ATState::IDLE) {
+        // starting an event
+        min_actuator = max_actuator = min_rate = max_rate = 0;
+        state_enter_ms = now;
+        state = new_state;
+        return;
+    }
+
+    if ((state == ATState::DEMAND_POS && max_rate < 0.01 * current.rmax_pos) ||
+        (state == ATState::DEMAND_NEG && min_rate > -0.01 * current.rmax_neg)) {
+        // we didn't get enough rate
+        state = ATState::IDLE;
+        action = Action::LOW_RATE;
+        min_Dmod = 1;
+        max_P = max_D = 0;
+        return;
+    }
+
+    if (now - state_enter_ms < 100) {
+        // not long enough sample
+        state = ATState::IDLE;
+        action = Action::SHORT;
+        min_Dmod = 1;
+        max_P = max_D = 0;
+        return;
+    }
+
+    // we've finished an event. calculate the single-event FF value
+    if (state == ATState::DEMAND_POS) {
+        FF0 = max_actuator / (max_rate * scaler);
+    } else {
+        FF0 = min_actuator / (min_rate * scaler);
+    }
+
+    // apply median filter
+    float FF = ff_filter.apply(FF0);
+
+    const float old_FF = rpid.ff();
+
+    // limit size of change in FF
+    FF = constrain_float(FF,
+                         old_FF*(1-AUTOTUNE_DECREASE_FF_STEP*0.01),
+                         old_FF*(1+AUTOTUNE_INCREASE_FF_STEP*0.01));
+
+    // did the P or D components go over 15% of total actuator?
+    const float abs_actuator = MAX(max_actuator, fabsf(min_actuator));
+    const float PD_high = 0.15 * abs_actuator;
+    bool PD_significant = (max_P > PD_high || max_D > PD_high);
+
+    // see if we overshot
+    bool overshot = (state == ATState::DEMAND_POS)?
+        (max_rate > max_target*AUTOTUNE_OVERSHOOT):
+        (min_rate < min_target*AUTOTUNE_OVERSHOOT);
+
+    // adjust P and D
+    float D = rpid.kD();
+    float P = rpid.kP();
+
+    D = MAX(D, 0.0005);
+    P = MAX(P, 0.01);
+
+    // if the slew limiter kicked in or
+    if (min_Dmod < 1.0 || (overshot && PD_significant)) {
+        // we're overshooting or oscillating, decrease gains. We
+        // assume the gain that needs to be reduced is the one that
+        // peaked at a higher value
+        if (max_P < max_D) {
+            D *= (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+        } else {
+            P *= (100 - AUTOTUNE_DECREASE_PD_STEP)*0.01;
+        }
+        action = Action::LOWER_PD;
+    } else {
+        const float low_PD = 0.05 * MAX(max_actuator, fabsf(min_actuator));
+        // not oscillating or overshooting, increase the gains
+        if (max_P < low_PD) {
+            // P is very small, increase rapidly
+            P *= (100 + AUTOTUNE_INCREASE_PD_LOW_STEP)*0.01;
+        } else {
+            P *= (100 + AUTOTUNE_INCREASE_PD_STEP)*0.01;
+        }
+        if (max_D < low_PD) {
+            // D is very small, increase rapidly
+            D *= (100 + AUTOTUNE_INCREASE_PD_LOW_STEP)*0.01;
+        } else {
+            D *= (100 + AUTOTUNE_INCREASE_PD_STEP)*0.01;
+        }
+        action = Action::RAISE_PD;
+    }
+
+
+    rpid.ff().set(FF);
+    rpid.kP().set(P);
+    rpid.kD().set(D);
+    rpid.kI().set(P*AUTOTUNE_I_RATIO);
+    current.FF = FF;
+    current.P = P;
+    current.I = rpid.kI().get();
+    current.D = D;
+
+    Debug("FPID=(%.3f, %.3f, %.3f, %.3f)\n",
+          rpid.ff().get(),
+          rpid.kP().get(),
+          rpid.kI().get(),
+          rpid.kD().get());
+
+    min_Dmod = 1;
+    max_P = max_D = 0;
+    state = new_state;
+    state_enter_ms = now;
 }
 
 /*
@@ -241,67 +373,44 @@ void AP_AutoTune::check_save(void)
     // the last save period. This means the pilot has
     // AUTOTUNE_SAVE_PERIOD milliseconds to decide they don't like the
     // gains and switch out of autotune
-    ATGains tmp = current;
+    ATGains tmp = get_gains(current);
 
     save_gains(next_save);
-    Debug("SAVE FF -> %.3f\n", rpid.ff().get());
+    last_save = next_save;
 
     // restore our current gains
-    current = tmp;
+    set_gains(tmp);
 
     // if the pilot exits autotune they get these saved values
     restore = next_save;
 
     // the next values to save will be the ones we are flying now
-    next_save = current;
+    next_save = tmp;
     last_save_ms = AP_HAL::millis();
-}
-
-/*
-  log a parameter change from autotune
- */
-void AP_AutoTune::log_param_change(float v, const char *suffix)
-{
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (!logger->logging_started()) {
-        return;
-    }
-    char key[AP_MAX_NAME_SIZE+1];
-    if (type == AUTOTUNE_ROLL) {
-        strncpy(key, "RLL2SRV_", 9);
-        strncpy(&key[8], suffix, AP_MAX_NAME_SIZE-8);
-    } else {
-        strncpy(key, "PTCH2SRV_", 10);
-        strncpy(&key[9], suffix, AP_MAX_NAME_SIZE-9);
-    }
-    key[AP_MAX_NAME_SIZE] = 0;
-    logger->Write_Parameter(key, v);
 }
 
 /*
   set a float and save a float if it has changed by more than
   0.1%. This reduces the number of insignificant EEPROM writes
  */
-void AP_AutoTune::save_float_if_changed(AP_Float &v, float value, const char *suffix)
+void AP_AutoTune::save_float_if_changed(AP_Float &v, float value)
 {
     float old_value = v.get();
     v.set(value);
     if (value <= 0 || fabsf((value-old_value)/value) > 0.001f) {
         v.save();
-        log_param_change(v.get(), suffix);
     }
 }
 
 /*
   set a int16 and save if changed
  */
-void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix)
+void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value)
 {
     int16_t old_value = v.get();
     v.set(value);
     if (old_value != v.get()) {
         v.save();
-        log_param_change(v.get(), suffix);
     }
 }
 
@@ -311,35 +420,43 @@ void AP_AutoTune::save_int16_if_changed(AP_Int16 &v, int16_t value, const char *
  */
 void AP_AutoTune::save_gains(const ATGains &v)
 {
+    ATGains tmp = current;
     current = last_save;
-    save_float_if_changed(current.tau, v.tau, "TCONST");
-#if 0
-    save_float_if_changed(rpid.kP(), v.P, "P");
-    save_float_if_changed(rpid.kI(), v.I, "I");
-    save_float_if_changed(rpid.kD(), v.D, "D");
-    save_float_if_changed(rpid.ff(), v.FF, "FF");
-    save_int16_if_changed(current.rmax, v.rmax, "RMAX");
-    save_int16_if_changed(current.imax, v.imax, "IMAX");
-#endif
-    last_save = current;
+    save_float_if_changed(current.tau, v.tau);
+    save_int16_if_changed(current.rmax_pos, v.rmax_pos);
+    save_int16_if_changed(current.rmax_neg, v.rmax_neg);
+    save_float_if_changed(rpid.ff(), v.FF);
+    save_float_if_changed(rpid.kP(), v.P);
+    save_float_if_changed(rpid.kI(), v.I);
+    save_float_if_changed(rpid.kD(), v.D);
+    save_float_if_changed(rpid.kIMAX(), v.IMAX);
+    last_save = get_gains(current);
+    current = tmp;
 }
 
-void AP_AutoTune::write_log(float servo, float demanded, float achieved)
+/*
+  get gains with PID components
+ */
+AP_AutoTune::ATGains AP_AutoTune::get_gains(const ATGains &v)
 {
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (!logger->logging_started()) {
-        return;
-    }
+    ATGains ret = v;
+    ret.FF = rpid.ff();
+    ret.P = rpid.kP();
+    ret.I = rpid.kI();
+    ret.D = rpid.kD();
+    ret.IMAX = rpid.kIMAX();
+    return ret;
+}
 
-    struct log_ATRP pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_ATRP_MSG),
-        time_us    : AP_HAL::micros64(),
-        type       : static_cast<uint8_t>(type),
-    	state      : (uint8_t)state,
-        servo      : (int16_t)(servo*100),
-        demanded   : demanded,
-        achieved   : achieved,
-        P          : rpid.kP().get()
-    };
-    logger->WriteBlock(&pkt, sizeof(pkt));
+/*
+  set gains with PID components
+ */
+void AP_AutoTune::set_gains(const ATGains &v)
+{
+    current = v;
+    rpid.ff().set(v.FF);
+    rpid.kP().set(v.P);
+    rpid.kI().set(v.I);
+    rpid.kD().set(v.D);
+    rpid.kIMAX().set(v.IMAX);
 }

@@ -10,8 +10,9 @@ class AP_AutoTune {
 public:
     struct ATGains {
         AP_Float tau;
-        AP_Int16 rmax;
-        AP_Int16 imax;
+        AP_Int16 rmax_pos;
+        AP_Int16 rmax_neg;
+        float FF, P, I, D, IMAX;
     };
 
     enum ATType {
@@ -42,11 +43,11 @@ public:
     void stop(void);
 
     // update called whenever autotune mode is active. This is
-    // typically at 50Hz
-    void update(float desired_rate, float achieved_rate, float servo_out);
+    // called at the main loop rate
+    void update(AP_Logger::PID_Info &pid_info, float scaler);
 
     // are we running?
-    bool running:1;
+    bool running;
     
 private:
     // the current gains
@@ -58,9 +59,6 @@ private:
 
 	const AP_Vehicle::FixedWing &aparm;
 
-    // did we saturate surfaces?
-    bool saturated_surfaces:1;
-
     // values to restore if we leave autotune mode
     ATGains restore; 
 
@@ -71,25 +69,50 @@ private:
     ATGains next_save;
 
     // time when we last saved
-    uint32_t last_save_ms = 0;
+    uint32_t last_save_ms;
 
     // the demanded/achieved state
-    enum ATState {DEMAND_UNSATURATED,
-                  DEMAND_UNDER_POS, 
-                  DEMAND_OVER_POS,
-                  DEMAND_UNDER_NEG,
-                  DEMAND_OVER_NEG} state = DEMAND_UNSATURATED;
+    enum class ATState {IDLE,
+                        DEMAND_POS,
+                        DEMAND_NEG};
+    ATState state;
+
+    // the demanded/achieved state
+    enum class Action {NONE,
+                       LOW_RATE,
+                       SHORT,
+                       RAISE_PD,
+                       LOWER_PD};
+    Action action;
 
     // when we entered the current state
-    uint32_t state_enter_ms = 0;
+    uint32_t state_enter_ms;
 
     void check_save(void);
     void check_state_exit(uint32_t state_time_ms);
     void save_gains(const ATGains &v);
 
-    void write_log(float servo, float demanded, float achieved);
+    void save_float_if_changed(AP_Float &v, float value);
+    void save_int16_if_changed(AP_Int16 &v, int16_t value);
 
-    void log_param_change(float v, const char *suffix);
-    void save_float_if_changed(AP_Float &v, float value, const char *suffix);
-    void save_int16_if_changed(AP_Int16 &v, int16_t value, const char *suffix);
+    // get gains with PID components
+    ATGains get_gains(const ATGains &current);
+    void set_gains(const ATGains &v);
+
+    // 5 point mode filter for FF estimate
+    ModeFilterFloat_Size5 ff_filter;
+
+    LowPassFilterFloat actuator_filter;
+    LowPassFilterFloat rate_filter;
+
+    float max_actuator;
+    float min_actuator;
+    float max_rate;
+    float min_rate;
+    float max_target;
+    float min_target;
+    float max_P;
+    float max_D;
+    float min_Dmod;
+    float FF0;
 };
