@@ -93,7 +93,7 @@ public:
     bool have_skid_steering() const;
 
     // true if vehicle has vectored thrust (i.e. boat with motor on steering servo)
-    bool have_vectored_thrust() const { return is_positive(_vector_throttle_base); }
+    bool have_vectored_thrust() const { return is_positive(_vector_angle_max); }
 
     // output to motors and steering servos
     // ground_speed should be the vehicle's speed over the surface in m/s
@@ -184,7 +184,7 @@ protected:
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
-    AP_Float _vector_throttle_base;  // throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
+    AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
 
