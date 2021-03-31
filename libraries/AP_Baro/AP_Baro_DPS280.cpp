@@ -164,6 +164,12 @@ bool AP_Baro_DPS280::init()
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
+    // the DPS310 can get into a state on boot where the whoami is not
+    // read correctly at startup. Toggling the CS line gets its out of
+    // this state
+    dev->set_chip_select(true);
+    dev->set_chip_select(false);
+
     uint8_t whoami=0;
     if (!dev->read_registers(DPS280_REG_PID, &whoami, 1) ||
         whoami != DPS280_WHOAMI) {
