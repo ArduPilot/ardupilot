@@ -28,7 +28,7 @@ git bisect reset
 git bisect start
 git bisect bad
 git bisect good HEAD~1024
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa
 
 Work out who overflowed Omnbusf4pro:
 cp -a Tools Tools2
@@ -49,6 +49,8 @@ git bisect good $GOOD &&
 rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^
 time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"
 
+AP_FLAKE8_CLEAN
+
 '''
 
 import optparse
@@ -59,6 +61,7 @@ import sys
 import time
 import traceback
 
+
 def get_exception_stacktrace(e):
     if sys.version_info[0] >= 3:
         ret = "%s\n" % e
@@ -67,6 +70,7 @@ def get_exception_stacktrace(e):
                                                   tb=e.__traceback__))
         return ret
     return traceback.format_exc(e)
+
 
 class Bisect(object):
     def __init__(self, opts):
@@ -154,7 +158,7 @@ class Bisect(object):
             cmd_build.extend(piece)
         try:
             self.run_program("WAF-build", cmd_build)
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             # well, it definitely failed....
             if self.opts.build_failure_string is not None:
                 if self.opts.build_failure_string in self.program_output:
@@ -185,11 +189,10 @@ class BisectCITest(Bisect):
     def autotest_script(self):
         return os.path.join("Tools", "autotest", "autotest.py")
 
-
     def git_reset(self):
         try:
             self.run_program("Reset autotest directory", ["git", "reset", "--hard"])
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             self.exit_abort()
 
     def get_current_hash(self):
@@ -211,15 +214,14 @@ class BisectCITest(Bisect):
         try:
             self.run_program("Update submodules",
                              ["git", "submodule", "update", "--init", "--recursive"])
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             self.exit_abort()
 
         try:
             self.run_program("Check autotest directory out from master",
                              ["git", "checkout", self.opts.autotest_branch, "Tools/autotest"])
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             self.exit_abort()
-
 
         self.progress("Build")
         cmd = [self.autotest_script()]
@@ -230,7 +232,7 @@ class BisectCITest(Bisect):
 
         try:
             self.run_program("Run autotest (build)", cmd)
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             self.git_reset()
             self.exit_skip()
 
@@ -246,7 +248,7 @@ class BisectCITest(Bisect):
                 self.run_program(
                     "Run autotest (%u/%u)" % (i+1, self.opts.autotest_test_passes),
                     cmd)
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError:
                 for ignore_string in self.opts.autotest_failure_ignore_string:
                     if ignore_string in self.program_output:
                         self.progress("Found ignore string (%s) in program output" % ignore_string)
@@ -255,7 +257,8 @@ class BisectCITest(Bisect):
                     if self.opts.autotest_failure_require_string not in self.program_output:
                         # it failed, but not for the reason we're looking
                         # for...
-                        self.progress("Did not find test failure string (%s); skipping" % self.opts.autotest_failure_require_string)
+                        self.progress("Did not find test failure string (%s); skipping" %
+                                      self.opts.autotest_failure_require_string)
                         code = self.exit_skip_code()
                         break
                 if not ignore:
@@ -321,10 +324,10 @@ if __name__ == '__main__':
                               type="string",
                               help="Branch on which the test exists.  The autotest directory will be reset to this branch")
     group_autotest.add_option("--autotest-failure-require-string",
-                             type='string',
-                             default=None,
-                             help="If supplied, must be present in"
-                             "test output to count as a failure")
+                              type='string',
+                              default=None,
+                              help="If supplied, must be present in"
+                              "test output to count as a failure")
     group_autotest.add_option("--autotest-failure-ignore-string",
                               type='string',
                               default=[],
