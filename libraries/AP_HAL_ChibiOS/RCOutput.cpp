@@ -189,7 +189,9 @@ void RCOutput::rcout_thread()
             // now unlock everything
             dshot_collect_dma_locks(time_out_us);
 
-            _dshot_cycle = (_dshot_cycle + 1) % _dshot_rate;
+            if (_dshot_rate > 0) {
+                _dshot_cycle = (_dshot_cycle + 1) % _dshot_rate;
+            }
         }
 
         // process any pending RC output requests
@@ -416,7 +418,8 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
 }
 
 /*
-  Set the dshot rate as a multiple of the loop rate
+  Set the dshot rate as a multiple of the loop rate.
+  This is called late after init_ardupilot() so groups will have been setup
  */
 void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
 {
@@ -426,6 +429,17 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
         _dshot_rate = 0;
         chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
         return;
+    }
+    // if there are non-dshot channels then do likewise
+    for (auto &group : pwm_group_list) {
+        if (group.current_mode == MODE_PWM_ONESHOT ||
+            group.current_mode == MODE_PWM_ONESHOT125 ||
+            group.current_mode == MODE_PWM_BRUSHED) {
+            _dshot_period_us = 1000UL;
+            _dshot_rate = 0;
+            chEvtSignal(rcout_thread_ctx, EVT_PWM_START);
+            return;
+        }
     }
 
     uint16_t drate = dshot_rate * loop_rate_hz;
@@ -1126,8 +1140,7 @@ void RCOutput::timer_tick(uint32_t time_out_us)
     if (min_pulse_trigger_us == 0) {
         return;
     }
-#if !APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-    // this exists simply to cater for non-multirotors whose loop rate might be 50Hz
+
     uint32_t now = AP_HAL::micros();
 
     if (now > min_pulse_trigger_us &&
@@ -1135,7 +1148,6 @@ void RCOutput::timer_tick(uint32_t time_out_us)
         // trigger at a minimum of 250Hz
         trigger_groups();
     }
-#endif
 }
 
 // send dshot for all groups that support it
