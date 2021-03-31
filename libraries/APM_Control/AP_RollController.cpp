@@ -41,35 +41,9 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 	// @Units: deg/s
 	// @Increment: 1
 	// @User: Advanced
-    AP_GROUPINFO("2SRV_RMAX",   4, AP_RollController, gains.rmax,       0),
+    AP_GROUPINFO("2SRV_RMAX",   4, AP_RollController, gains.rmax_pos,       0),
 
-    // @Param: 2SRV_IMAX
-	// @DisplayName: Integrator limit
-	// @Description: Limit of roll integrator gain in centi-degrees of servo travel. Servos are assumed to have +/- 4500 centi-degrees of travel, so a value of 3000 allows trim of up to 2/3 of servo travel range.
-	// @Range: 0 4500
-	// @Increment: 1
-	// @User: Advanced
-    AP_GROUPINFO("2SRV_IMAX",      5, AP_RollController, gains.imax,        3000),
-
-    // index 6 reserved for old FF
-
-    // @Param: 2SRV_SRMAX
-    // @DisplayName: Servo slew rate limit
-    // @Description: Sets an upper limit on the servo slew rate produced by the D-gain (roll rate feedback). If the amplitude of the control action produced by the roll rate feedback exceeds this value, then the D-gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive D-gain. The parameter should be set to no more than 25% of the servo's specified slew rate to allow for inertia and aerodynamic load effects. Note: The D-gain will not be reduced to less than 10% of the nominal value. A valule of zero will disable this feature.
-    // @Units: deg/s
-    // @Range: 0 500
-    // @Increment: 10.0
-    // @User: Advanced
-    AP_GROUPINFO("2SRV_SRMAX", 7, AP_RollController, _slew_rate_max, 150.0f),
-
-    // @Param: 2SRV_SRTAU
-    // @DisplayName: Servo slew rate decay time constant
-    // @Description: This sets the time constant used to recover the D-gain after it has been reduced due to excessive servo slew rate.
-    // @Units: s
-    // @Range: 0.5 5.0
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("2SRV_SRTAU", 8, AP_RollController, _slew_rate_tau, 1.0f),
+    // index 5, 6 reserved for old IMAX, FF
 
     // @Param: _RATE_P
     // @DisplayName: Roll axis rate controller P gain
@@ -137,18 +111,19 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Increment: 0.5
     // @User: Advanced
 
-    // @Param: _RATE_STAU
-    // @DisplayName: Roll slew rate decay time constant
-    // @Description: This sets the time constant used to recover the P+D gain after it has been reduced due to excessive slew rate.
-    // @Units: s
-    // @Range: 0.5 5.0
-    // @Increment: 0.1
-    // @User: Advanced
-
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
     
     AP_GROUPEND
 };
+
+// constructor
+AP_RollController::AP_RollController(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms)
+        : aparm(parms)
+        , _ahrs(ahrs)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    rate_pid.set_slew_limit_scale(45);
+}
 
 
 /*
@@ -158,7 +133,7 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
 {
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
-    bool limit_I = fabsf(last_ac_out) >= 45;
+    bool limit_I = fabsf(_last_out) >= 45;
     float rate_x = _ahrs.get_gyro().x;
     float aspeed;
     float old_I = rate_pid.get_i();
@@ -212,8 +187,13 @@ int32_t AP_RollController::_get_rate_out(float desired_rate, float scaler, bool 
     float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
 
     // remember the last output to trigger the I limit
-    last_ac_out = out;
+    _last_out = out;
 
+    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
+        // let autotune have a go at the values 
+        autotune->update(pinfo, scaler);
+    }
+    
     // output is scaled to notional centidegrees of deflection
     return constrain_int32(out * 100, -4500, 4500);
 }
@@ -249,10 +229,10 @@ int32_t AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool d
 	float desired_rate = angle_err * 0.01f / gains.tau;
 
     // Limit the demanded roll rate
-    if (gains.rmax && desired_rate < -gains.rmax) {
-        desired_rate = - gains.rmax;
-    } else if (gains.rmax && desired_rate > gains.rmax) {
-        desired_rate = gains.rmax;
+    if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
+        desired_rate = - gains.rmax_pos;
+    } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
+        desired_rate = gains.rmax_pos;
     }
 
     return _get_rate_out(desired_rate, scaler, disable_integrator);
@@ -275,10 +255,12 @@ void AP_RollController::convert_pid()
         return;
     }
     float old_ff=0, old_p=1.0, old_i=0.3, old_d=0.08;
+    int16_t old_imax=3000;
     bool have_old = AP_Param::get_param_by_index(this, 1, AP_PARAM_FLOAT, &old_p);
     have_old |= AP_Param::get_param_by_index(this, 3, AP_PARAM_FLOAT, &old_i);
     have_old |= AP_Param::get_param_by_index(this, 2, AP_PARAM_FLOAT, &old_d);
     have_old |= AP_Param::get_param_by_index(this, 6, AP_PARAM_FLOAT, &old_ff);
+    have_old |= AP_Param::get_param_by_index(this, 5, AP_PARAM_INT16, &old_imax);
     if (!have_old) {
         // none of the old gains were set
         return;
@@ -289,5 +271,34 @@ void AP_RollController::convert_pid()
     rate_pid.kI().set_and_save_ifchanged(old_i * gains.tau);
     rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
-    rate_pid.kIMAX().set_and_save_ifchanged(gains.imax/4500.0);
+    rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
+}
+
+/*
+  start an autotune
+ */
+void AP_RollController::autotune_start(void)
+{
+    if (autotune == nullptr) {
+        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_ROLL, aparm, rate_pid);
+        if (autotune == nullptr) {
+            if (!failed_autotune_alloc) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed roll allocation");
+            }
+            failed_autotune_alloc = true;
+        }
+    }
+    if (autotune != nullptr) {
+        autotune->start();
+    }
+}
+
+/*
+  restore autotune gains
+ */
+void AP_RollController::autotune_restore(void)
+{
+    if (autotune != nullptr) {
+        autotune->stop();
+    }
 }
