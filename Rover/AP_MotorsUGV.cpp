@@ -80,13 +80,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_EXPO", 9, AP_MotorsUGV, _thrust_curve_expo, 0.0f),
 
-    // @Param: VEC_THR_BASE
-    // @DisplayName: Vector thrust throttle base
-    // @Description: Throttle level above which steering is scaled down when using vector thrust.  zero to disable vectored thrust
-    // @Units: %
-    // @Range: 0 100
-    // @User: Advanced
-    AP_GROUPINFO("VEC_THR_BASE", 10, AP_MotorsUGV, _vector_throttle_base, 0.0f),
+    // 10 was VEC_THR_BASE
 
     // @Param: SPD_SCA_BASE
     // @DisplayName: Motor speed scaling base speed
@@ -102,6 +96,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Range: 0.2 1.0
     // @User: Advanced
     AP_GROUPINFO("STR_THR_MIX", 12, AP_MotorsUGV, _steering_throttle_mix, 0.5f),
+
+    // @Param: VEC_ANGLEMAX
+    // @DisplayName: Vector thrust angle max
+    // @Description: The angle between steering's middle position and maximum position when using vectored thrust (boats only)
+    // @Units: deg
+    // @Range: 0 90
+    // @User: Standard
+    AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
 
     AP_GROUPEND
 };
@@ -478,7 +480,7 @@ void AP_MotorsUGV::sanity_check_parameters()
 {
     _throttle_min = constrain_int16(_throttle_min, 0, 20);
     _throttle_max = constrain_int16(_throttle_max, 30, 100);
-    _vector_throttle_base = constrain_float(_vector_throttle_base, 0.0f, 100.0f);
+    _vector_angle_max = constrain_float(_vector_angle_max, 0.0f, 90.0f);
 }
 
 // setup pwm output type
@@ -613,9 +615,49 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
         if (_scale_steering) {
             // vectored thrust handling
             if (have_vectored_thrust()) {
-                if (fabsf(throttle) > _vector_throttle_base) {
-                    // scale steering down linearly as throttle increases above _vector_throttle_base
-                    steering *= constrain_float(_vector_throttle_base / fabsf(throttle), 0.0f, 1.0f);
+
+                // normalise desired steering and throttle to ease calculations
+                float steering_norm = steering / 4500.0f;
+                const float throttle_norm = throttle / 100.0f;
+
+                // steering can never be more than throttle * tan(_vector_angle_max)
+                const float vector_angle_max_rad = radians(constrain_float(_vector_angle_max, 0.0f, 90.0f));
+                const float steering_norm_lim = fabsf(throttle_norm * tanf(vector_angle_max_rad));
+                if (fabsf(steering_norm) > steering_norm_lim) {
+                    if (is_positive(steering_norm)) {
+                        steering_norm = steering_norm_lim;
+                    }
+                    if (is_negative(steering_norm)) {
+                        steering_norm = -steering_norm_lim;
+                    }
+                    limit.steer_right = true;
+                    limit.steer_left = true;
+                }
+
+                if (!is_zero(throttle_norm)) {
+                    // calculate steering angle
+                    float steering_angle_rad = atanf(steering_norm / throttle_norm);
+                    // limit steering angle to vector_angle_max
+                    if (fabsf(steering_angle_rad) > vector_angle_max_rad) {
+                        steering_angle_rad = constrain_float(steering_angle_rad, -vector_angle_max_rad, vector_angle_max_rad);
+                        limit.steer_right = true;
+                        limit.steer_left = true;
+                     }
+
+                    // convert steering angle to steering output
+                    steering = steering_angle_rad / vector_angle_max_rad * 4500.0f;
+
+                    // scale up throttle to compensate for steering angle
+                    const float throttle_scaler_inv = cosf(steering_angle_rad);
+                    if (!is_zero(throttle_scaler_inv)) {
+                        throttle /= throttle_scaler_inv;
+                        if (throttle >= 100.0f) {
+                            limit.throttle_upper = true;
+                        }
+                        if (throttle <= -100.0f) {
+                            limit.throttle_lower = true;
+                        }
+                    }
                 }
             } else {
                 // scale steering down as speed increase above MOT_SPD_SCA_BASE (1 m/s default)
