@@ -136,8 +136,8 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
 {
     // Check for error codes
     if (raw_distance == 0xFFFF) {
-        // Too far away is unreliable so we dont enforce max range here
-        return false;
+        // Too far away
+        output_distance_cm = max_distance_cm() + TR_OUT_OF_RANGE_ADD_CM;
     } else if (raw_distance == 0x0000) {
         // Too close
         output_distance_cm = 0;
