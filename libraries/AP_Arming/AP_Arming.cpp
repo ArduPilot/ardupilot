@@ -415,7 +415,7 @@ bool AP_Arming::compass_checks(bool report)
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
 
         // check for first compass being disabled but 2nd or 3rd being enabled
-        if (!_compass.use_for_yaw(0) && (_compass.get_num_enabled() > 0)) {
+        if ((_compass.get_num_enabled() && !_compass.use_for_yaw(0) > 0)) {
             check_failed(ARMING_CHECK_COMPASS, report, "Compass1 disabled but others enabled");
             return false;
         }
