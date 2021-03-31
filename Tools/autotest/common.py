@@ -2191,14 +2191,10 @@ class AutoTest(ABC):
 
     def close(self):
         """Tidy up after running all tests."""
-        if self.use_map:
-            self.mavproxy.send("module unload map\n")
-            self.mavproxy.expect("Unloaded module map")
 
         if self.mav is not None:
             self.mav.close()
             self.mav = None
-        util.pexpect_close(self.mavproxy)
         self.stop_SITL()
 
         valgrind_log = util.valgrind_log_filepath(binary=self.binary,
@@ -5695,6 +5691,10 @@ Also, ignores heartbeats not from our target system'''
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
+            if self.use_map:
+                self.mavproxy.send("module unload map\n")
+                self.mavproxy.expect("Unloaded module map")
+
             self.expect_list_remove(self._mavproxy)
             util.pexpect_close(self._mavproxy)
             self._mavproxy = None
@@ -5836,7 +5836,6 @@ Also, ignores heartbeats not from our target system'''
         return self.sitl.isalive()
 
     def autostart_mavproxy(self):
-        return False
         return self.use_map
 
     def init(self):
