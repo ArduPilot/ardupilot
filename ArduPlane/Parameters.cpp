@@ -681,6 +681,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
 
+    // @Param: ALT_FBWCM_MAX
+    // @DisplayName: Maximum altitude for FBWB and CRUISE modes
+    // @Description: This is the maximum altitude in meters that FBWB and CRUISE modes will allow. If you attempt to descend upper this altitude the plane will hold level. A value of zero means no limit.
+    // @Units: m
+    // @User: Standard
+    GSCALAR(FBWB_max_altitude_m,   "ALT_FBWCM_MAX", 0),
+
     // @Param: FLAP_1_PERCNT
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps

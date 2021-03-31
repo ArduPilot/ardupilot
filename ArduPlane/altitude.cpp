@@ -352,10 +352,19 @@ int32_t Plane::calc_altitude_error_cm(void)
 }
 
 /*
-  check for FBWB_min_altitude_cm violation
+  check for min and max altitude: FBWB_min_altitude_cm and FBWB_max_altitude_m violation
  */
-void Plane::check_fbwb_minimum_altitude(void)
+void Plane::check_fbwb_altitude(void)//check_fbwb_minimum_altitude
 {
+    //check for max
+    if (g.FBWB_max_altitude_m != 0)
+    {
+        if (target_altitude.amsl_cm > home.alt + g.FBWB_max_altitude_m*1000) {
+            target_altitude.amsl_cm = home.alt + g.FBWB_max_altitude_m*1000;
+        }
+    }
+
+    //check for min 
     if (g.FBWB_min_altitude_cm == 0) {
         return;
     }
