@@ -157,7 +157,7 @@ void ModeRTL::climb_return_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         return;
     }
 
@@ -214,7 +214,7 @@ void ModeRTL::loiterathome_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         return;
     }
 
@@ -296,7 +296,7 @@ void ModeRTL::descent_run()
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         return;
     }
 
@@ -400,7 +400,7 @@ void ModeRTL::land_run(bool disarm_on_land)
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;

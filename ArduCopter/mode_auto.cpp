@@ -762,7 +762,7 @@ void ModeAuto::wp_run()
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         wp_nav->wp_and_spline_init();
         return;
     }
@@ -792,7 +792,7 @@ void ModeAuto::spline_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         wp_nav->wp_and_spline_init();
         return;
     }
@@ -833,7 +833,7 @@ void ModeAuto::land_run()
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
         return;
@@ -899,7 +899,7 @@ void ModeAuto::loiter_run()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_spool_down();
+        make_safe_ground_handling(true);
         wp_nav->wp_and_spline_init();
         return;
     }
