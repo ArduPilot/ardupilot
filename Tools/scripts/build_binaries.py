@@ -4,6 +4,8 @@
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
 based on build_binaries.sh by Andrew Tridgell, March 2013
+
+AP_FLAKE8_CLEAN
 """
 
 from __future__ import print_function
@@ -20,7 +22,8 @@ import sys
 import gzip
 
 # local imports
-import generate_manifest, gen_stable
+import generate_manifest
+import gen_stable
 import build_binaries_history
 
 if sys.version_info[0] < 3:
@@ -274,9 +277,9 @@ is bob we will attempt to checkout bob-AVR'''
         if not os.path.exists(versionfile):
             self.progress("%s does not exist" % (versionfile,))
             return
-        ss = ".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*" \
-             "(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*" \
-             "(?P<type>[A-Z_]+)[	 ]*"
+        ss = r".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*" \
+             r"(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*" \
+             r"(?P<type>[A-Z_]+)[	 ]*"
         content = self.read_string_from_filepath(versionfile)
         match = re.search(ss, content)
         if match is None:
@@ -721,7 +724,6 @@ is bob we will attempt to checkout bob-AVR'''
                            "AP_Periph",
                            "AP_Periph")
 
-
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")
@@ -748,7 +750,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.progress("Generating stable releases")
         gen_stable.make_all_stable(self.binaries)
         self.progress("Generate stable releases done")
-
 
     def validate(self):
         '''run pre-run validation checks'''
