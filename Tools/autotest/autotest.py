@@ -66,13 +66,15 @@ def get_default_params(atype, binary):
         frame = "+"
 
     home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
+    mavproxy_master = 'tcp:127.0.0.1:5760'
     sitl = util.start_SITL(binary,
                            wipe=True,
                            model=frame,
                            home=home,
                            speedup=10,
                            unhide_parameters=True)
-    mavproxy = util.start_MAVProxy_SITL(atype)
+    mavproxy = util.start_MAVProxy_SITL(atype,
+                                        master=mavproxy_master)
     print("Dumping defaults")
     idx = mavproxy.expect([r'Saved [0-9]+ parameters to (\S+)'])
     if idx == 0:
@@ -80,7 +82,8 @@ def get_default_params(atype, binary):
         util.pexpect_close(mavproxy)
         util.pexpect_close(sitl)
         sitl = util.start_SITL(binary, model=frame, home=home, speedup=10)
-        mavproxy = util.start_MAVProxy_SITL(atype)
+        mavproxy = util.start_MAVProxy_SITL(atype,
+                                            master=mavproxy_master)
         mavproxy.expect(r'Saved [0-9]+ parameters to (\S+)')
     parmfile = mavproxy.match.group(1)
     dest = buildlogs_path('%s-defaults.parm' % atype)
