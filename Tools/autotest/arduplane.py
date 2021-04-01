@@ -1691,7 +1691,7 @@ class AutoTestPlane(AutoTest):
                 % (distance, new_distance)
             )
 
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def rtl_climb_min(self):
         self.wait_ready_to_arm()
