@@ -477,13 +477,6 @@ void GCS_MAVLINK_Blimp::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", blimp.get_frame_string());
 }
 
-// a RC override message is considered to be a 'heartbeat' from the ground station for failsafe purposes
-void GCS_MAVLINK_Blimp::handle_rc_channels_override(const mavlink_message_t &msg)
-{
-    blimp.failsafe.last_heartbeat_ms = AP_HAL::millis();
-    GCS_MAVLINK::handle_rc_channels_override(msg);
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
@@ -637,15 +630,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_l
 void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_HEARTBEAT: {    // MAV ID: 0
-        // We keep track of the last time we received a heartbeat from our GCS for failsafe purposes
-        if (msg.sysid != blimp.g.sysid_my_gcs) {
-            break;
-        }
-        blimp.failsafe.last_heartbeat_ms = AP_HAL::millis();
-        break;
-    }
 
     // #if MODE_GUIDED_ENABLED == ENABLED
     //     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
