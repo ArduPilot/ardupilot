@@ -86,7 +86,7 @@ void AC_AutoTune_Heli::test_init()
     } else if (tune_type == SP_UP) {
         // initialize start frequency and determine gain function when dwell test is used
         if (freq_cnt == 0) {
-            test_freq[0] = 0.5f * 3.14159f * 2.0f;
+            test_freq[0] = 1.5f * 3.14159f * 2.0f;
             curr_test_freq = test_freq[0];
             test_accel_max = 0.0f;
             // reset determine_gain function for first use in the event autotune is restarted
@@ -556,10 +556,23 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     if (freq_cnt < 12) {
         if (freq_cnt == 0) {
             freq_cnt_max = 0;
+        } else if (gain[freq_cnt] > max_gain && tune_p > AUTOTUNE_SP_MIN) {
+            // exceeded max response gain already, reduce tuning gain to remain under max response gain
+            tune_p -= gain_incr;
+            // force counter to stay on frequency
+            freq_cnt -= 1;
+        } else if (gain[freq_cnt] > max_gain && tune_p <= AUTOTUNE_SP_MIN) {
+            // exceeded max response gain at the minimum allowable tuning gain. terminate testing.
+            tune_p = AUTOTUNE_SP_MIN;
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
         } else if (gain[freq_cnt] > gain[freq_cnt_max]) {
             freq_cnt_max = freq_cnt;
             phase_max = phase[freq_cnt];
             prev_gain = gain[freq_cnt];
+        } else if (gain[freq_cnt] > 0.0f && gain[freq_cnt] < 0.5f) {
+            // must be past peak, continue on to determine angle p
+            freq_cnt = 11;
         }
         freq_cnt++;
         if (freq_cnt == 12) {
@@ -590,7 +603,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             curr_test_freq = freq[freq_cnt];
             prev_gain = gain[freq_cnt];
         } else if (find_peak) {
-            // fine the frequency where the response gain is maximum
+            // find the frequency where the response gain is maximum
             if (gain[freq_cnt] > prev_gain) {
                 freq[freq_cnt] += 0.5 * test_freq_incr;
             } else {
