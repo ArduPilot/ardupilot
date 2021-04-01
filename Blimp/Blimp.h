@@ -212,8 +212,6 @@ private:
 
     // Failsafe
     struct {
-        uint32_t last_heartbeat_ms;      // the time when the last HEARTBEAT message arrived from a GCS - used for triggering gcs failsafe
-
         int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
 
         uint8_t radio               : 1; // A status flag for the radio failsafe
