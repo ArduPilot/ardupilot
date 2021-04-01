@@ -331,18 +331,6 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
       "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" },
 
-// @LoggerMessage: ATRP
-// @Description: Pitch/Roll AutoTune messages for Plane 
-// @Field: TimeUS: Time since system startup
-// @Field: Type: Type of autotune (0 = Roll/ 1 = Pitch)
-// @Field: State: AutoTune state
-// @Field: Servo: Normalised control surface output (between -4500 to 4500)
-// @Field: Demanded: Desired Pitch/Roll rate
-// @Field: Achieved: Achieved Pitch/Roll rate
-// @Field: P: Proportional part of PID
-    { LOG_ATRP_MSG, sizeof(AP_AutoTune::log_ATRP),
-      "ATRP", "QBBcfff",  "TimeUS,Type,State,Servo,Demanded,Achieved,P", "s---dd-", "F---00-" },
-
 // @LoggerMessage: STAT
 // @Description: Current status of the aircraft
 // @Field: TimeUS: Time since system startup
