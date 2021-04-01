@@ -105,6 +105,8 @@ protected:
     // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
 
+    void set_tune_sequence() override;
+
 private:
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is acheived

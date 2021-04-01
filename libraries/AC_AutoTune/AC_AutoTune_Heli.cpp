@@ -40,25 +40,19 @@
 #define AUTOTUNE_RFF_MIN                   0.025f    // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
+#define AUTOTUNE_SEQ_BITMASK_VFF             1
+#define AUTOTUNE_SEQ_BITMASK_RATE_D          2
+#define AUTOTUNE_SEQ_BITMASK_ANGLE_P         4
+#define AUTOTUNE_SEQ_BITMASK_MAX_GAIN        8
+
 // constructor
 AC_AutoTune_Heli::AC_AutoTune_Heli()
 {
-    //            tune_seq[0] = 4;  // RFF_UP
-    //            tune_seq[1] = 8;   // MAX_GAINS
-    //            tune_seq[2] = 0; // RD_UP
-    //            tune_seq[3] = 2; // RP_UP
-    //            tune_seq[2] = 6; // SP_UP
-    //            tune_seq[3] = 9; // tune complete
-    tune_seq[0] = RFF_UP;
-    tune_seq[1] = MAX_GAINS;
-    tune_seq[2] = RD_UP;
-    tune_seq[3] = SP_UP;
-    tune_seq[4] = TUNE_COMPLETE;
+    tune_seq[0] = TUNE_COMPLETE;
 }
 
 void AC_AutoTune_Heli::test_init()
 {
-
     if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
         rate_ff_test_init();
         step_time_limit_ms = 10000;
@@ -106,7 +100,7 @@ void AC_AutoTune_Heli::test_init()
 
 void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
-
+    
     if (tune_type == SP_UP) {
         angle_dwell_test_run(curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
@@ -115,6 +109,8 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         dwell_test_run(1, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
     } else if (tune_type == MAX_GAINS) {
         dwell_test_run(0, curr_test_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
+    } else if (tune_type == TUNE_COMPLETE) {
+        return;
     } else {
         step = UPDATE_GAINS;
     }
@@ -911,3 +907,28 @@ float AC_AutoTune_Heli::get_yaw_rate_filt_min() const
     return AUTOTUNE_RLPF_MIN;
 }
 
+void AC_AutoTune_Heli::set_tune_sequence()
+{
+    uint8_t seq_cnt = 0;
+
+    if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_VFF) {
+        tune_seq[seq_cnt] = RFF_UP;
+        seq_cnt++;
+    }
+    if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_RATE_D) {
+        tune_seq[seq_cnt] = MAX_GAINS;
+        seq_cnt++;
+        tune_seq[seq_cnt] = RD_UP;
+        seq_cnt++;
+    }
+    if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_ANGLE_P) {
+        tune_seq[seq_cnt] = SP_UP;
+        seq_cnt++;
+    }
+    if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_MAX_GAIN && !(seq_bitmask & AUTOTUNE_SEQ_BITMASK_RATE_D)) {
+        tune_seq[seq_cnt] = MAX_GAINS;
+        seq_cnt++;
+    }
+    tune_seq[seq_cnt] = TUNE_COMPLETE;
+
+}

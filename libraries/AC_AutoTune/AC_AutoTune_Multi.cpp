@@ -39,12 +39,7 @@
 // constructor
 AC_AutoTune_Multi::AC_AutoTune_Multi()
 {
-    tune_seq[0] = RD_UP;
-    tune_seq[1] = RD_DOWN;
-    tune_seq[2] = RP_UP;
-    tune_seq[3] = SP_DOWN;
-    tune_seq[4] = SP_UP;
-    tune_seq[5] = TUNE_COMPLETE;
+        tune_seq[0] = TUNE_COMPLETE;
 }
 
 void AC_AutoTune_Multi::do_gcs_announcements()

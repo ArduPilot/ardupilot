@@ -258,6 +258,8 @@ protected:
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
 
+    virtual void set_tune_sequence() = 0;
+
     // type of gains to load
     enum GainType {
         GAIN_ORIGINAL   = 0,
@@ -329,6 +331,7 @@ protected:
     AP_Int8  axis_bitmask;
     AP_Float aggressiveness;
     AP_Float min_d;
+    AP_Int8  seq_bitmask;
 
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;
