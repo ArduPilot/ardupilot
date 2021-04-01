@@ -484,12 +484,6 @@ void GCS_MAVLINK_Blimp::handle_rc_channels_override(const mavlink_message_t &msg
     GCS_MAVLINK::handle_rc_channels_override(msg);
 }
 
-void GCS_MAVLINK_Blimp::handle_command_ack(const mavlink_message_t &msg)
-{
-    blimp.command_ack_counter++;
-    GCS_MAVLINK::handle_command_ack(msg);
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
     return GCS_MAVLINK::_handle_command_preflight_calibration(packet);
