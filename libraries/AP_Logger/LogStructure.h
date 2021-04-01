@@ -1625,7 +1625,6 @@ enum LogMessages : uint8_t {
     LOG_CMD_MSG,
     LOG_MAVLINK_COMMAND_MSG,
     LOG_RADIO_MSG,
-    LOG_ATRP_MSG,
     LOG_IDS_FROM_CAMERA,
     LOG_TERRAIN_MSG,
     LOG_ESC_MSG,
