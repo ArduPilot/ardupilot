@@ -107,6 +107,9 @@ public:
     void set_integrator(float error, float i);
     void set_integrator(float i);
 
+    // set slew limiter scale factor
+    void set_slew_limit_scale(int8_t scale) { _slew_limit_scale = scale; }
+
     const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
 
     // parameter var table
@@ -144,6 +147,7 @@ protected:
     float _target;            // target value to enable filtering
     float _error;             // error value to enable filtering
     float _derivative;        // derivative value to enable filtering
+    int8_t _slew_limit_scale;
     uint16_t _reset_counter;  // loop counter for reset decay
     uint64_t _reset_last_update; //time in microseconds of last update to reset_I
 
