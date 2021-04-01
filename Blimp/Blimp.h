@@ -126,9 +126,6 @@ private:
     Parameters g;
     ParametersG2 g2;
 
-    // used to detect MAVLink acks from GCS to stop compassmot
-    uint8_t command_ack_counter;
-
     // primary input control channels
     RC_Channel *channel_right;
     RC_Channel *channel_front;
