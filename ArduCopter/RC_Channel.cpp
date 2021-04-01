@@ -716,6 +716,11 @@ void RC_Channels_Copter::rudder_10_second_callback()
         return;
     }
 
+    if (auto_trim_counter) {
+        // already in auto-trim
+        return;
+    }
+
     gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
     auto_trim_counter = 250;
     auto_trim_started = false;
