@@ -235,6 +235,15 @@ void __early_init(void) {
 #if defined(HAL_DISABLE_DCACHE)
   SCB_DisableDCache();
 #endif
+#if defined(STM32H7)
+  // disable cache on SRAM4 so we can use it for DMA
+  mpuConfigureRegion(MPU_REGION_5,
+                     0x38000000U,
+                     MPU_RASR_ATTR_AP_RW_RW |
+                     MPU_RASR_ATTR_NON_CACHEABLE |
+                     MPU_RASR_SIZE_64K |
+                     MPU_RASR_ENABLE);
+#endif
 }
 
 void __late_init(void) {
