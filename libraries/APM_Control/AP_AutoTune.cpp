@@ -99,10 +99,10 @@ static const struct {
     { 0.60, 60 },   // level 5
     { 0.50, 75 },   // level 6
     { 0.25, 90 },   // level 7
-    { 0.15, 120 },   // level 8
-    { 0.10, 160 },   // level 9
-    { 0.05, 210 },   // level 10
-    { 0.03, 300 },   // (yes, it goes to 11)
+    { 0.12, 120 },   // level 8
+    { 0.06, 160 },   // level 9
+    { 0.03, 210 },   // level 10
+    { 0.01, 300 },   // (yes, it goes to 11)
 };
 
 /*
