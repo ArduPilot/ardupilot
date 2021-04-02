@@ -2579,16 +2579,16 @@ void AP_Param::show(const AP_Param *ap, const char *s,
 {
     switch (type) {
     case AP_PARAM_INT8:
-        port->printf("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
+        ::printf("%s: %d\n", s, (int)((AP_Int8 *)ap)->get());
         break;
     case AP_PARAM_INT16:
-        port->printf("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
+        ::printf("%s: %d\n", s, (int)((AP_Int16 *)ap)->get());
         break;
     case AP_PARAM_INT32:
-        port->printf("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
+        ::printf("%s: %ld\n", s, (long)((AP_Int32 *)ap)->get());
         break;
     case AP_PARAM_FLOAT:
-        port->printf("%s: %f\n", s, (double)((AP_Float *)ap)->get());
+        ::printf("%s: %f\n", s, (double)((AP_Float *)ap)->get());
         break;
     default:
         break;
@@ -2616,7 +2616,7 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
         if (showKeyValues) {
-            port->printf("Key %u: Index %u: GroupElement %u  :  ", (unsigned)token.key, (unsigned)token.idx, (unsigned)token.group_element);
+            ::printf("Key %u: Index %u: GroupElement %u  :  ", (unsigned)_var_info[token.key].key, (unsigned)token.idx, (unsigned)token.group_element);
         }
         show(ap, token, type, port);
         hal.scheduler->delay(1);
