@@ -143,6 +143,7 @@ void AP_AutoTune::stop(void)
     if (running) {
         running = false;
         save_gains(restore);
+        current = restore;
         rpid.set_slew_limit_scale(45);
     }
 }
