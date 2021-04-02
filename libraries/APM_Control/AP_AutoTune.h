@@ -99,6 +99,9 @@ private:
     ATGains get_gains(const ATGains &current);
     void set_gains(const ATGains &v);
 
+    // update rmax and tau towards target
+    void update_rmax();
+
     // 5 point mode filter for FF estimate
     ModeFilterFloat_Size5 ff_filter;
 
@@ -115,4 +118,6 @@ private:
     float max_D;
     float min_Dmod;
     float FF_single;
+    int16_t target_rmax;
+    float target_tau;
 };

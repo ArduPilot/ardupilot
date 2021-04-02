@@ -126,9 +126,12 @@ void AP_AutoTune::start(void)
         level = 1;
     }
 
-    current.rmax_pos.set(tuning_table[level-1].rmax);
-    current.rmax_neg.set(tuning_table[level-1].rmax);
-    current.tau.set(tuning_table[level-1].tau);
+    target_rmax = tuning_table[level-1].rmax;
+    target_tau = tuning_table[level-1].tau;
+
+    // do first update of rmax and tau now
+    update_rmax();
+
     rpid.kIMAX().set(constrain_float(rpid.kIMAX(), AUTOTUNE_MIN_IMAX, AUTOTUNE_MAX_IMAX));
 
     next_save = current;
@@ -354,6 +357,9 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
           rpid.kI().get(),
           rpid.kD().get());
 
+    // move rmax and tau towards target
+    update_rmax();
+
     min_Dmod = 1;
     max_P = max_D = 0;
     state = new_state;
@@ -459,4 +465,22 @@ void AP_AutoTune::set_gains(const ATGains &v)
     rpid.kI().set(v.I);
     rpid.kD().set(v.D);
     rpid.kIMAX().set(v.IMAX);
+}
+
+void AP_AutoTune::update_rmax(void)
+{
+    if (current.rmax_pos == 0) {
+        // conservative initial value
+        current.rmax_pos.set(75);
+    }
+    // move by 20 deg/s per step
+    current.rmax_pos.set(constrain_int32(target_rmax,
+                                         current.rmax_pos.get()-20,
+                                         current.rmax_pos.get()+20));
+    current.rmax_neg.set(current.rmax_pos.get());
+
+    // move tau by max 15% per loop
+    current.tau.set(constrain_float(target_tau,
+                                    current.tau*0.85,
+                                    current.tau*1.15));
 }
