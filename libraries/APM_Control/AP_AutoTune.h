@@ -118,6 +118,4 @@ private:
     float max_D;
     float min_Dmod;
     float FF_single;
-    int16_t target_rmax;
-    float target_tau;
 };
