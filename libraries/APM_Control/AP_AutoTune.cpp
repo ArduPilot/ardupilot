@@ -236,7 +236,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         unsigned(new_state),
         actuator,
         desired_rate,
-        FF0,
+        FF_single,
         current.FF,
         current.P,
         current.D,
@@ -277,13 +277,13 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
 
     // we've finished an event. calculate the single-event FF value
     if (state == ATState::DEMAND_POS) {
-        FF0 = max_actuator / (max_rate * scaler);
+        FF_single = max_actuator / (max_rate * scaler);
     } else {
-        FF0 = min_actuator / (min_rate * scaler);
+        FF_single = min_actuator / (min_rate * scaler);
     }
 
     // apply median filter
-    float FF = ff_filter.apply(FF0);
+    float FF = ff_filter.apply(FF_single);
 
     const float old_FF = rpid.ff();
 

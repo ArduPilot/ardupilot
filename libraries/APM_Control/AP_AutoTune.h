@@ -114,5 +114,5 @@ private:
     float max_P;
     float max_D;
     float min_Dmod;
-    float FF0;
+    float FF_single;
 };
