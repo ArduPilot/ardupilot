@@ -157,6 +157,7 @@ void AP_AutoTune::stop(void)
 // @Field: State: tuning state
 // @Field: Sur: control surface deflection
 // @Field: Tar: target rate
+// @Field: Act: actual rate
 // @Field: FF0: FF value single sample
 // @Field: FF: FF value
 // @Field: P: P value
@@ -175,7 +176,9 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     // see what state we are in
     ATState new_state = state;
     const float desired_rate = pinfo.target;
-    // filter actuator without I term
+
+    // filter actuator without I term so we can take ratios without accounting
+    // for trim offsets
     const float actuator = actuator_filter.apply(pinfo.FF + pinfo.P + pinfo.D);
     const float actual_rate = rate_filter.apply(pinfo.actual);
 
@@ -195,6 +198,8 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     } else {
         att_limit_cd = MIN(abs(aparm.pitch_limit_max_cd),abs(aparm.pitch_limit_min_cd));
     }
+
+    // thresholds for when we consider an event to start and end
     const float rate_threshold1 = 0.75 * MIN(att_limit_cd * 0.01 / current.tau.get(), current.rmax_pos);
     const float rate_threshold2 = 0.25 * rate_threshold1;
 
@@ -222,15 +227,16 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     // like two different log msgs in one Write call
     AP::logger().Write(
         "ATRP",
-        "TimeUS,Axis,State,Sur,Tar,FF0,FF,P,D,Action",
-        "s#-dk-----",
-        "F--000000-",
-        "QBBffffffB",
+        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,D,Action",
+        "s#-dkk-----",
+        "F--0000000-",
+        "QBBfffffffB",
         AP_HAL::micros64(),
         unsigned(type),
         unsigned(new_state),
         actuator,
         desired_rate,
+        actual_rate,
         FF_single,
         current.FF,
         current.P,
