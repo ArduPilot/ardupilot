@@ -160,10 +160,22 @@ void AP_AutoTune::stop(void)
 
 
 // @LoggerMessage: ATNP
-// @Description: Plane AutoTune
+// @Description: Plane AutoTune pitch
 // @Vehicles: Plane
 // @Field: TimeUS: Time since system startup
-// @Field: Axis: which axis is currently being tuned
+// @Field: State: tuning state
+// @Field: Sur: control surface deflection
+// @Field: Tar: target rate
+// @Field: FF0: FF value single sample
+// @Field: FF: FF value
+// @Field: P: P value
+// @Field: D: D value
+// @Field: Action: action taken
+
+// @LoggerMessage: ATNR
+// @Description: Plane AutoTune roll
+// @Vehicles: Plane
+// @Field: TimeUS: Time since system startup
 // @Field: State: tuning state
 // @Field: Sur: control surface deflection
 // @Field: Tar: target rate
@@ -228,22 +240,41 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         break;
     }
 
-    AP::logger().Write(
-        type==AUTOTUNE_ROLL?"ATNR":"ATNP",
-        "TimeUS,Axis,State,Sur,Tar,FF0,FF,P,D,Action",
-        "s--dk-----",
-        "F--000000-",
-        "QBBffffffB",
-        AP_HAL::micros64(),
-        unsigned(type),
-        unsigned(new_state),
-        actuator,
-        desired_rate,
-        FF_single,
-        current.FF,
-        current.P,
-        current.D,
-        unsigned(action));
+    // unfortunately the LoggerDocumentation test doesn't
+    // like two different log msgs in one Write call
+    if (type == AUTOTUNE_ROLL) {
+        AP::logger().Write(
+            "ATNR",
+            "TimeUS,State,Sur,Tar,FF0,FF,P,D,Action",
+            "s-dk-----",
+            "F-000000-",
+            "QBffffffB",
+            AP_HAL::micros64(),
+            unsigned(new_state),
+            actuator,
+            desired_rate,
+            FF_single,
+            current.FF,
+            current.P,
+            current.D,
+            unsigned(action));
+    } else {
+        AP::logger().Write(
+            "ATNP",
+            "TimeUS,State,Sur,Tar,FF0,FF,P,D,Action",
+            "s-dk-----",
+            "F-000000-",
+            "QBffffffB",
+            AP_HAL::micros64(),
+            unsigned(new_state),
+            actuator,
+            desired_rate,
+            FF_single,
+            current.FF,
+            current.P,
+            current.D,
+            unsigned(action));
+    }
 
     if (new_state == state) {
         return;
