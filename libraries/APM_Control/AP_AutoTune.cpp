@@ -118,17 +118,6 @@ void AP_AutoTune::start(void)
 
     restore = last_save = get_gains(current);
 
-    uint8_t level = aparm.autotune_level;
-    if (level > ARRAY_SIZE(tuning_table)) {
-        level = ARRAY_SIZE(tuning_table);
-    }
-    if (level < 1) {
-        level = 1;
-    }
-
-    target_rmax = tuning_table[level-1].rmax;
-    target_tau = tuning_table[level-1].tau;
-
     // do first update of rmax and tau now
     update_rmax();
 
@@ -159,23 +148,11 @@ void AP_AutoTune::stop(void)
 }
 
 
-// @LoggerMessage: ATNP
-// @Description: Plane AutoTune pitch
+// @LoggerMessage: ATRP
+// @Description: Plane AutoTune
 // @Vehicles: Plane
 // @Field: TimeUS: Time since system startup
-// @Field: State: tuning state
-// @Field: Sur: control surface deflection
-// @Field: Tar: target rate
-// @Field: FF0: FF value single sample
-// @Field: FF: FF value
-// @Field: P: P value
-// @Field: D: D value
-// @Field: Action: action taken
-
-// @LoggerMessage: ATNR
-// @Description: Plane AutoTune roll
-// @Vehicles: Plane
-// @Field: TimeUS: Time since system startup
+// @Field: Axis: tuning axis
 // @Field: State: tuning state
 // @Field: Sur: control surface deflection
 // @Field: Tar: target rate
@@ -242,39 +219,22 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
 
     // unfortunately the LoggerDocumentation test doesn't
     // like two different log msgs in one Write call
-    if (type == AUTOTUNE_ROLL) {
-        AP::logger().Write(
-            "ATNR",
-            "TimeUS,State,Sur,Tar,FF0,FF,P,D,Action",
-            "s-dk-----",
-            "F-000000-",
-            "QBffffffB",
-            AP_HAL::micros64(),
-            unsigned(new_state),
-            actuator,
-            desired_rate,
-            FF_single,
-            current.FF,
-            current.P,
-            current.D,
-            unsigned(action));
-    } else {
-        AP::logger().Write(
-            "ATNP",
-            "TimeUS,State,Sur,Tar,FF0,FF,P,D,Action",
-            "s-dk-----",
-            "F-000000-",
-            "QBffffffB",
-            AP_HAL::micros64(),
-            unsigned(new_state),
-            actuator,
-            desired_rate,
-            FF_single,
-            current.FF,
-            current.P,
-            current.D,
-            unsigned(action));
-    }
+    AP::logger().Write(
+        "ATRP",
+        "TimeUS,Axis,State,Sur,Tar,FF0,FF,P,D,Action",
+        "s#-dk-----",
+        "F--000000-",
+        "QBBffffffB",
+        AP_HAL::micros64(),
+        unsigned(type),
+        unsigned(new_state),
+        actuator,
+        desired_rate,
+        FF_single,
+        current.FF,
+        current.P,
+        current.D,
+        unsigned(action));
 
     if (new_state == state) {
         return;
@@ -498,13 +458,23 @@ void AP_AutoTune::set_gains(const ATGains &v)
     rpid.kIMAX().set(v.IMAX);
 }
 
+/*
+  update RMAX and TAU parameters on each step. We move them gradually
+  towards the target to allow for a user going straight to a level 10
+  tune while starting with a poorly tuned plane
+ */
 void AP_AutoTune::update_rmax(void)
 {
+    uint8_t level = constrain_int32(aparm.autotune_level, 1, ARRAY_SIZE(tuning_table));
+
+    int16_t target_rmax = tuning_table[level-1].rmax;
+    float target_tau = tuning_table[level-1].tau;
+
     if (current.rmax_pos == 0) {
         // conservative initial value
         current.rmax_pos.set(75);
     }
-    // move by 20 deg/s per step
+    // move RMAX by 20 deg/s per step
     current.rmax_pos.set(constrain_int32(target_rmax,
                                          current.rmax_pos.get()-20,
                                          current.rmax_pos.get()+20));
