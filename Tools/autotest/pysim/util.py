@@ -228,7 +228,7 @@ def make_safe_filename(text):
     """Return a version of text safe for use as a filename."""
     r = re.compile("([^a-zA-Z0-9_.+-])")
     text.replace('/', '-')
-    filename = r.sub(lambda m: "%" + str(hex(ord(str(m.group(1))))).upper(), text)
+    filename = r.sub(lambda m: str(hex(ord(str(m.group(1))))).upper(), text)
     return filename
 
 
