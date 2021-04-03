@@ -295,9 +295,9 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
                          old_FF*(1-AUTOTUNE_DECREASE_FF_STEP*0.01),
                          old_FF*(1+AUTOTUNE_INCREASE_FF_STEP*0.01));
 
-    // did the P or D components go over 15% of total actuator?
+    // did the P or D components go over 30% of total actuator?
     const float abs_actuator = MAX(max_actuator, fabsf(min_actuator));
-    const float PD_high = 0.15 * abs_actuator;
+    const float PD_high = 0.3 * abs_actuator;
     bool PD_significant = (max_P > PD_high || max_D > PD_high);
 
     // see if we overshot
