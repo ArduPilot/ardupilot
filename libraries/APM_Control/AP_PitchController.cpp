@@ -307,8 +307,8 @@ int32_t AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool 
 	float rate_offset;
 	bool inverted;
 
-    if (gains.tau < 0.1f) {
-        gains.tau.set(0.1f);
+    if (gains.tau < 0.01f) {
+        gains.tau.set(0.01f);
     }
 
     rate_offset = _get_coordination_rate_offset(aspeed, inverted);
