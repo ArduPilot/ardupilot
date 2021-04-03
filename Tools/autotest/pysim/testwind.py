@@ -5,7 +5,7 @@ simple test of wind generation code
 from __future__ import print_function
 import time
 import util
-from rotmat import Vector3
+from pymavlink.rotmat import Vector3
 
 wind = util.Wind('7,90,0.1')
 

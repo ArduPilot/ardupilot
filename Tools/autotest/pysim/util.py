@@ -15,7 +15,7 @@ from math import acos, atan2, cos, pi, sqrt
 
 import pexpect
 
-from . rotmat import Matrix3, Vector3
+from pymavlink.rotmat import Vector3, Matrix3
 
 if (sys.version_info[0] >= 3):
     ENCODING = 'ascii'
