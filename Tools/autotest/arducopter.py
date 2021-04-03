@@ -16,8 +16,9 @@ import numpy
 
 from pymavlink import mavutil
 from pymavlink import mavextra
+from pymavlink import rotmat
 
-from pysim import util, rotmat
+from pysim import util
 
 from common import AutoTest
 from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
