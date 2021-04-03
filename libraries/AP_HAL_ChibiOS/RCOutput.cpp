@@ -40,12 +40,6 @@ extern AP_IOMCU iomcu;
 
 #define RCOU_SERIAL_TIMING_DEBUG 0
 
-#if RCOU_DSHOT_TIMING_DEBUG
-#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
-#else
-#define TOGGLE_PIN_DEBUG(pin) do {} while (0)
-#endif
-
 #define TELEM_IC_SAMPLE 16
 
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
@@ -57,9 +51,6 @@ static const eventmask_t EVT_PWM_SEND  = EVENT_MASK(11);
 static const eventmask_t EVT_PWM_START  = EVENT_MASK(12);
 static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
 static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
-
-// marker for a disabled channel
-#define CHAN_DISABLED 255
 
 // #pragma GCC optimize("Og")
 
@@ -104,7 +95,6 @@ void RCOutput::init()
 #endif
     chMtxObjectInit(&trigger_mutex);
     chVTObjectInit(&_dshot_rate_timer);
-
     // setup default output rate of 50Hz
     set_freq(0xFFFF ^ ((1U<<chan_offset)-1), 50);
 
@@ -510,6 +500,7 @@ void RCOutput::enable_ch(uint8_t chan)
     pwm_group *grp = find_chan(chan, i);
     if (grp) {
         en_mask |= 1U << (chan - chan_offset);
+        grp->ch_mask |= 1U << chan;
     }
 }
 
@@ -520,7 +511,16 @@ void RCOutput::disable_ch(uint8_t chan)
     if (grp) {
         pwmDisableChannel(grp->pwm_drv, i);
         en_mask &= ~(1U<<(chan - chan_offset));
+        grp->ch_mask &= ~(1U << chan);
     }
+}
+
+bool RCOutput::prepare_for_arming()
+{
+    // force all the ESCs to be active, in the future consider returning false
+    // if ESCs are not active that we require
+    _active_escs_mask = (en_mask << chan_offset);
+    return true;
 }
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
@@ -587,7 +587,7 @@ void RCOutput::push_local(void)
         }
         for (uint8_t j = 0; j < 4; j++) {
             uint8_t chan = group.chan[j];
-            if (chan == CHAN_DISABLED) {
+            if (!group.is_chan_enabled(j)) {
                 continue;
             }
             if (outmask & (1UL<<chan)) {
@@ -832,7 +832,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     group.pwm_started = true;
 
     for (uint8_t j=0; j<4; j++) {
-        if (group.chan[j] != CHAN_DISABLED) {
+        if (group.is_chan_enabled(j)) {
             pwmEnableChannel(group.pwm_drv, j, 0);
         }
     }
@@ -944,7 +944,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         pwmStart(group.pwm_drv, &group.pwm_cfg);
         group.pwm_started = true;
         for (uint8_t j=0; j<4; j++) {
-            if (group.chan[j] != CHAN_DISABLED) {
+            if (group.is_chan_enabled(j)) {
                 pwmEnableChannel(group.pwm_drv, j, 0);
             }
         }
@@ -1181,15 +1181,27 @@ void RCOutput::timer_tick(uint32_t time_out_us)
 // send dshot for all groups that support it
 void RCOutput::dshot_send_groups(uint32_t time_out_us)
 {
+#ifndef DISABLE_DSHOT
     if (serial_group) {
         return;
     }
-    // actually do a dshot send
+
     for (auto &group : pwm_group_list) {
-        if (group.can_send_dshot_pulse()) {
+        // send a dshot command
+        if (!_dshot_calibrating
+            && !hal.util->get_soft_armed()
+            && is_dshot_protocol(group.current_mode)
+            && group_escs_active(group) // only send when someone is listening
+            && (dshot_command_is_active(group)
+                || (_dshot_command_queue.pop(_dshot_current_command) && dshot_command_is_active(group)))) {
+            dshot_send_command(group, _dshot_current_command.command, _dshot_current_command.chan);
+            _dshot_current_command.cycle--;
+        // actually do a dshot send
+        } else if (group.can_send_dshot_pulse()) {
             dshot_send(group, time_out_us);
         }
     }
+#endif //#ifndef DISABLE_DSHOT
 }
 
 void RCOutput::dshot_send_next_group(void* p)
@@ -1333,6 +1345,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
         uint32_t now = AP_HAL::millis();
         if (bdshot_decode_dshot_telemetry(group, group.bdshot.prev_telem_chan)) {
             _bdshot.erpm_clean_frames[chan]++;
+            _active_escs_mask |= (1<<chan); // we know the ESC is functional at this point
         } else {
             _bdshot.erpm_errors[chan]++;
         }
@@ -1361,7 +1374,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
     for (uint8_t i=0; i<4; i++) {
         uint8_t chan = group.chan[i];
-        if (chan != CHAN_DISABLED) {
+        if (group.is_chan_enabled(i)) {
             // retrieve the last erpm values
             _bdshot.erpm[chan] = group.bdshot.erpm[i];
 
@@ -1381,7 +1394,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             pwm = constrain_int16(pwm, 1000, 2000);
             uint16_t value = 2 * (pwm - 1000);
 
-            if (chan_mask & (reversible_mask>>chan_offset)) {
+            if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
                 if (value < 1000) {
                     value = 2000 - value;
