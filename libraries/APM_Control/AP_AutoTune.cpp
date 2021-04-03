@@ -177,9 +177,11 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     ATState new_state = state;
     const float desired_rate = pinfo.target;
 
-    // filter actuator without I term so we can take ratios without accounting
-    // for trim offsets
-    const float actuator = actuator_filter.apply(pinfo.FF + pinfo.P + pinfo.D);
+    // filter actuator without I term so we can take ratios without
+    // accounting for trim offsets. We first need to include the I and
+    // clip to 45 degrees to get the right value of the real surface
+    const float clipped_actuator = constrain_float(pinfo.FF + pinfo.P + pinfo.D + pinfo.I, -45, 45) - pinfo.I;
+    const float actuator = actuator_filter.apply(clipped_actuator);
     const float actual_rate = rate_filter.apply(pinfo.actual);
 
     max_actuator = MAX(max_actuator, actuator);
