@@ -143,8 +143,8 @@ void RCOutput::rcout_thread()
     uint32_t cal_cycles = 5000000UL / 300UL;
     _dshot_calibrating = true;
     const uint32_t cycle_time_us = _dshot_period_us;
-    // while calibrating run at 3Khz to allow arming
-    _dshot_period_us = 300;
+    // while calibrating run at 2.5Khz to allow arming, this is the fastest rate that dshot150 can manage
+    _dshot_period_us = 400;
 
     // prime the pump for calibration
     chEvtSignal(rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
