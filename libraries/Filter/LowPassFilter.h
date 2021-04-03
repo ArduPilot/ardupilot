@@ -61,10 +61,14 @@ public:
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
     void reset(T value);
+    void reset() {
+        initialised = false;
+    }
 
 private:
     T _output;
     float alpha = 1.0f;
+    bool initialised;
 };
 
 // LPF base class
@@ -85,8 +89,8 @@ public:
     T apply(T sample);
     const T &get() const;
     void reset(T value);
-    void reset(void) { reset(T()); }
-    
+    void reset(void) { _filter.reset(); }
+
 protected:
     float _cutoff_freq;
 
