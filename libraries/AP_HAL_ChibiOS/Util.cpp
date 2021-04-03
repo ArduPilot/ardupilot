@@ -153,17 +153,24 @@ Util::safety_state Util::safety_switch_state(void)
 
 #ifdef HAL_PWM_ALARM
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
+#endif
 
-bool Util::toneAlarm_init()
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
+uint8_t  Util::_toneAlarm_types = 0;
+
+bool Util::toneAlarm_init(uint8_t types)
 {
+#ifdef HAL_PWM_ALARM
     _toneAlarm_pwm_group.pwm_cfg.period = 1000;
     pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
-
+#endif
+    _toneAlarm_types = types;
     return true;
 }
 
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
+#ifdef HAL_PWM_ALARM
     if (is_zero(frequency) || is_zero(volume)) {
         pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
     } else {
@@ -172,8 +179,29 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 
         pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
     }
-}
+#endif
+#if HAL_DSHOT_ALARM
+    // don't play the motors while flying
+    if ((_toneAlarm_types & ALARM_DSHOT) && (get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI)) {
+        return;
+    }
+
+    if (is_zero(frequency)) {   // silence
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_RESET, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1047) { // C
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP1, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1175) {  // D
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP2, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1319) {  // E
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP3, RCOutput::ALL_CHANNELS, duration_ms);
+    } else if (frequency < 1397) {  // F
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP4, RCOutput::ALL_CHANNELS, duration_ms);
+    } else {  // G+
+        hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
+    }
 #endif // HAL_PWM_ALARM
+}
+#endif
 
 /*
   set HW RTC in UTC microseconds
