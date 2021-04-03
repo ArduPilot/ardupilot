@@ -474,10 +474,19 @@ void AP_AutoTune::set_gains(const ATGains &v)
  */
 void AP_AutoTune::update_rmax(void)
 {
-    uint8_t level = constrain_int32(aparm.autotune_level, 1, ARRAY_SIZE(tuning_table));
+    uint8_t level = constrain_int32(aparm.autotune_level, 0, ARRAY_SIZE(tuning_table));
 
-    int16_t target_rmax = tuning_table[level-1].rmax;
-    float target_tau = tuning_table[level-1].tau;
+    int16_t target_rmax;
+    float target_tau;
+
+    if (level == 0) {
+        // this level means to keep current values of RMAX and TCONST
+        target_rmax = constrain_float(current.rmax_pos, 75, 720);
+        target_tau = current.tau;
+    } else {
+        target_rmax = tuning_table[level-1].rmax;
+        target_tau = tuning_table[level-1].tau;
+    }
 
     if (current.rmax_pos == 0) {
         // conservative initial value
@@ -487,7 +496,10 @@ void AP_AutoTune::update_rmax(void)
     current.rmax_pos.set(constrain_int32(target_rmax,
                                          current.rmax_pos.get()-20,
                                          current.rmax_pos.get()+20));
-    current.rmax_neg.set(current.rmax_pos.get());
+
+    if (level != 0 || current.rmax_neg.get() == 0) {
+        current.rmax_neg.set(current.rmax_pos.get());
+    }
 
     // move tau by max 15% per loop
     current.tau.set(constrain_float(target_tau,
