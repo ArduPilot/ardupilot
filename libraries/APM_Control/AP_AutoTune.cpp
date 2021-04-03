@@ -167,6 +167,8 @@ void AP_AutoTune::stop(void)
 // @Field: P: P value
 // @Field: D: D value
 // @Field: Action: action taken
+// @Field: RMAX: Rate maximum
+// @Field: TAU: time constant
 
 /*
   one update cycle of the autotuner
@@ -233,10 +235,10 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
     // like two different log msgs in one Write call
     AP::logger().Write(
         "ATRP",
-        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,D,Action",
-        "s#-dkk-----",
-        "F--0000000-",
-        "QBBfffffffB",
+        "TimeUS,Axis,State,Sur,Tar,Act,FF0,FF,P,D,Action,RMAX,TAU",
+        "s#-dkk-----ks",
+        "F--0000000-00",
+        "QBBfffffffBHf",
         AP_HAL::micros64(),
         unsigned(type),
         unsigned(new_state),
@@ -247,7 +249,9 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler)
         current.FF,
         current.P,
         current.D,
-        unsigned(action));
+        unsigned(action),
+        current.rmax_pos.get(),
+        current.tau);
 
     if (new_state == state) {
         return;
