@@ -132,6 +132,10 @@ void AP_AutoTune::start(void)
     // scale slew limit to more agressively find oscillations during autotune
     rpid.set_slew_limit_scale(1.5*45);
 
+    ff_filter.reset();
+    actuator_filter.reset();
+    rate_filter.reset();
+
     Debug("START FF -> %.3f\n", rpid.ff().get());
 }
 
